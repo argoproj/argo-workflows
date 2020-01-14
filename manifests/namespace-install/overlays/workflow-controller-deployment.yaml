@@ -1,12 +1,5 @@
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: workflow-controller
-spec:
-  template:
-    spec:
-      containers:
-      - name: workflow-controller
-        env:
-        - name: NAMESPACED
-          value: "true"
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value:
+    - --namespaced
+

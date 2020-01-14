@@ -262,11 +262,9 @@ spec:
         - workflow-controller-configmap
         - --executor-image
         - argoproj/argoexec:latest
+        - - --namespaced
         command:
         - workflow-controller
-        env:
-        - name: NAMESPACED
-          value: "true"
         image: argoproj/workflow-controller:latest
         name: workflow-controller
       serviceAccountName: argo

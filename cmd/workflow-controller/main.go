@@ -40,7 +40,7 @@ func NewRootCommand() *cobra.Command {
 		workflowWorkers         int    // --workflow-workers
 		podWorkers              int    // --pod-workers
 		namespaced              bool   // --namespaced
-		watchedNamespace        string // --watched-namespace
+		managedNamespace        string // --managed-namespace
 	)
 
 	var command = cobra.Command{
@@ -79,13 +79,12 @@ func NewRootCommand() *cobra.Command {
 				fmt.Fprintf(os.Stderr, "\n------------------------    WARNING    ------------------------\n")
 				fmt.Fprintf(os.Stderr, "Namespaced installation with configmap setting is deprecated, \n")
 				fmt.Fprintf(os.Stderr, "it will be removed in next major release. Instead please add \n")
-				fmt.Fprintf(os.Stderr, "\"--namespaced\" to workflow-controller start args or add \n")
-				fmt.Fprintf(os.Stderr, "NAMESPACED=\"true\" to ENV.\n")
+				fmt.Fprintf(os.Stderr, "\"--namespaced\" to workflow-controller start args.\n")
 				fmt.Fprintf(os.Stderr, "-----------------------------------------------------------------\n\n")
 			} else {
 				if namespaced {
-					if len(watchedNamespace) > 0 {
-						wfController.Config.Namespace = watchedNamespace
+					if len(managedNamespace) > 0 {
+						wfController.Config.Namespace = managedNamespace
 					} else {
 						wfController.Config.Namespace = namespace
 					}
@@ -118,8 +117,8 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.Flags().IntVar(&workflowWorkers, "workflow-workers", 8, "Number of workflow workers")
 	command.Flags().IntVar(&podWorkers, "pod-workers", 8, "Number of pod workers")
-	command.Flags().BoolVar(&namespaced, "namespaced", os.Getenv("NAMESPACED") == "true", "run workflow-controller as namespaced mode")
-	command.Flags().StringVar(&watchedNamespace, "watched-namespace", os.Getenv("WATCHED_NAMESPACE"), "namespace that workflow-controller watches, default to the installation namespace")
+	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
+	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
 	return &command
 }
 
