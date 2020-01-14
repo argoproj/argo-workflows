@@ -46,7 +46,7 @@ func (s *SmokeSuite) TestWorkflowTemplateBasic() {
 		WorkflowTemplate("@smoke/basic-wf-tmpl.yaml").
 		Workflow("@smoke/hello-world-wf-tmpl.yaml").
 		When().
-		CreateWorkflowTemplate().
+		CreateWorkflowTemplates().
 		SubmitWorkflow().
 		WaitForWorkflow(10 * time.Second).
 		Then().
