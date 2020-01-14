@@ -13,7 +13,7 @@ import (
 
 const envVarName = "MAX_WORKFLOW_SIZE"
 
-func getMaxWorkflowSize() int {
+func GetMaxWorkflowSize() int {
 	s, _ := strconv.Atoi(os.Getenv(envVarName))
 	if s == 0 {
 		s = 1024 * 1024
@@ -50,7 +50,7 @@ func getSize(wf *wfv1.Workflow) (int, error) {
 
 func IsLargeWorkflow(wf *wfv1.Workflow) (bool, error) {
 	size, err := getSize(wf)
-	return size > getMaxWorkflowSize(), err
+	return size > GetMaxWorkflowSize(), err
 }
 
 const tooLarge = "workflow is longer than maximum allowed size."
@@ -80,7 +80,7 @@ func CompressWorkflow(wf *wfv1.Workflow) error {
 	}
 	if large {
 		compressedSize, _ := getSize(wf)
-		return fmt.Errorf("%s compressed size %d > maxSize %d", tooLarge, compressedSize, getMaxWorkflowSize())
+		return fmt.Errorf("%s compressed size %d > maxSize %d", tooLarge, compressedSize, GetMaxWorkflowSize())
 	}
 	return nil
 }

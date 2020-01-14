@@ -1,20 +1,18 @@
 package sqldb
 
 import (
-	"context"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 
-	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 type OffloadNodeStatusRepo interface {
 	Save(wf *wfv1.Workflow) error
-	Get(name, namespace string) (*wfv1.Workflow, error)
+	Get(name, namespace, resourceVersion string) (*wfv1.Workflow, error)
 	List(namespace string) (wfv1.Workflows, error)
 	Delete(name, namespace string) error
 	IsEnabled() bool
@@ -35,93 +33,45 @@ func (wdc *nodeOffloadRepo) IsEnabled() bool {
 
 // Save will upsert the workflow
 func (wdc *nodeOffloadRepo) Save(wf *wfv1.Workflow) error {
-	log.WithFields(log.Fields{"name": wf.Name, "namespace": wf.Namespace}).Debug("Saving offloaded workflow")
-	wfdb, err := toRecord(wf)
+	logCtx := log.WithFields(log.Fields{"name": wf.Name, "namespace": wf.Namespace})
+	logCtx.Debug("Saving offloaded workflow")
+	record, err := toRecord(wf)
 	if err != nil {
 		return err
 	}
 
-	err = wdc.update(wfdb)
+	_, err = wdc.session.Collection(wdc.tableName).Insert(record)
 	if err != nil {
-		if errors.IsCode(CodeDBUpdateRowNotFound, err) {
-			return wdc.insert(wfdb)
-		} else {
-			log.Warn(err)
-			return errors.InternalErrorf("Error in inserting workflow in persistence. %v", err)
+		// if we have a duplicate, then it must have the same name+namespace+resourceVersion, which MUST mean that we
+		// have already written this record
+		if !strings.Contains(err.Error(), "duplicate key") {
+			return err
 		}
 	}
 
-	log.Info("Workflow update successfully into persistence")
-	return nil
+	logCtx.Info("Workflow offloaded into persistence")
+
+	// this might fail, which kind of fine (maybe a bug),
+	/// it might not delete all records, which is also fine, as we always key on resource version
+	err = wdc.session.Collection(wdc.tableName).
+		Find(db.Cond{"name": wf.Name}).
+		And(db.Cond{"namespace": wf.Namespace}).
+		And(db.Cond{"resourceversion <>": wf.ResourceVersion}).
+		And(db.Cond{"updatedat <": "now()"}).
+		Delete()
+
+	return err
 }
 
-func (wdc *nodeOffloadRepo) insert(wfDB *WorkflowRecord) error {
-	tx, err := wdc.session.NewTx(context.TODO())
-	if err != nil {
-		return errors.InternalErrorf("Error in creating transaction. %v", err)
-	}
-
-	defer func() {
-		if tx != nil {
-			err := tx.Close()
-			if err != nil {
-				log.Warnf("Transaction failed to close")
-			}
-		}
-	}()
-
-	_, err = tx.Collection(wdc.tableName).Insert(wfDB)
-	if err != nil {
-		return errors.InternalErrorf("Error in inserting workflow in persistence. %v", err)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return errors.InternalErrorf("Error in Committing workflow insert in persistence. %v", err)
-	}
-
-	return nil
-}
-
-func (wdc *nodeOffloadRepo) update(wfDB *WorkflowRecord) error {
-	tx, err := wdc.session.NewTx(context.TODO())
-	if err != nil {
-		return errors.InternalErrorf("Error in creating transaction. %v", err)
-	}
-
-	defer func() {
-		if tx != nil {
-			err := tx.Close()
-			if err != nil {
-				log.Warnf("Transaction failed to close")
-			}
-		}
-	}()
-
-	err = tx.Collection(wdc.tableName).UpdateReturning(wfDB)
-	if err != nil {
-		if strings.Contains(err.Error(), "upper: no more rows in this result set") {
-			return DBUpdateNoRowFoundError(err)
-		}
-		return errors.InternalErrorf("Error in updating workflow in persistence %v", err)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return errors.InternalErrorf("Error in Committing workflow update in persistence %v", err)
-	}
-
-	return nil
-}
-
-func (wdc *nodeOffloadRepo) Get(name, namespace string) (*wfv1.Workflow, error) {
-	log.WithFields(log.Fields{"name": name, "namespace": namespace}).Debug("Getting offloaded workflow")
+func (wdc *nodeOffloadRepo) Get(name, namespace, resourceVersion string) (*wfv1.Workflow, error) {
+	log.WithFields(log.Fields{"name": name, "namespace": namespace, "resourceVersion": resourceVersion}).Debug("Getting offloaded workflow")
 	wf := &WorkflowOnlyRecord{}
 	err := wdc.session.
 		Select("workflow").
 		From(wdc.tableName).
 		Where(db.Cond{"name": name}).
 		And(db.Cond{"namespace": namespace}).
+		And(db.Cond{"resourceversion": resourceVersion}).
 		One(wf)
 	if err != nil {
 		return nil, err

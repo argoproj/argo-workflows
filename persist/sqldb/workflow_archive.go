@@ -40,7 +40,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 func (r *workflowArchive) ListWorkflows(namespace string, limit int, offset int) (wfv1.Workflows, error) {
 	var wfMDs []WorkflowMetadata
 	err := r.
-		Select("name", "namespace", "id", "phase", "startedat", "finishedat").
+		Select("name", "namespace", "id", "phase", "startedat", "finishedat", "resourceversion").
 		From(tableName).
 		Where(namespaceEqual(namespace)).
 		OrderBy("-startedat").

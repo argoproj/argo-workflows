@@ -32,7 +32,7 @@ func (t *Then) Expect(block func(t *testing.T, metadata *metav1.ObjectMeta, stat
 		t.t.Fatal(err)
 	}
 	if wf.Status.OffloadNodeStatus {
-		offloaded, err := t.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace)
+		offloaded, err := t.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace, wf.ResourceVersion)
 		if err != nil {
 			t.t.Fatal(err)
 		}

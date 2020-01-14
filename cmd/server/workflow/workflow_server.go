@@ -82,7 +82,7 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *WorkflowGetReques
 	}
 
 	if wf.Status.OffloadNodeStatus {
-		offloaded, err := s.offloadNodeStatusRepo.Get(req.Name, req.Namespace)
+		offloaded, err := s.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace, wf.ResourceVersion)
 		if err != nil {
 			return nil, err
 		}
@@ -145,7 +145,7 @@ func (s *workflowServer) WatchWorkflows(req *WatchWorkflowsRequest, ws WorkflowS
 			return err
 		}
 		if wf.Status.OffloadNodeStatus {
-			offloaded, err := s.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace)
+			offloaded, err := s.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace, wf.ResourceVersion)
 			if err != nil {
 				return err
 			}
@@ -171,7 +171,7 @@ func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *WorkflowDelete
 	}
 
 	if wf.Status.OffloadNodeStatus {
-		err = s.offloadNodeStatusRepo.Delete(req.Name, req.Namespace)
+		err = s.offloadNodeStatusRepo.Delete(wf.Name, wf.Namespace)
 		if err != nil {
 			return nil, err
 		}

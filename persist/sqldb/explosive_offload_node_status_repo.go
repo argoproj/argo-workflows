@@ -19,7 +19,7 @@ func (n *explosiveOffloadNodeStatusRepo) Save(*v1alpha1.Workflow) error {
 	return fmt.Errorf("offload node status not supported")
 }
 
-func (n *explosiveOffloadNodeStatusRepo) Get(string, string) (*v1alpha1.Workflow, error) {
+func (n *explosiveOffloadNodeStatusRepo) Get(string, string, string) (*v1alpha1.Workflow, error) {
 	return nil, fmt.Errorf("offload node status not supported")
 }
 

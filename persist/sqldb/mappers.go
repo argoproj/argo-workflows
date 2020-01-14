@@ -11,12 +11,13 @@ import (
 )
 
 type WorkflowMetadata struct {
-	Id         string         `db:"id"`
-	Name       string         `db:"name"`
-	Phase      wfv1.NodePhase `db:"phase"`
-	Namespace  string         `db:"namespace"`
-	StartedAt  time.Time      `db:"startedat"`
-	FinishedAt time.Time      `db:"finishedat"`
+	Id              string         `db:"id"`
+	Name            string         `db:"name"`
+	Phase           wfv1.NodePhase `db:"phase"`
+	Namespace       string         `db:"namespace"`
+	ResourceVersion string         `db:"resourceversion"`
+	StartedAt       time.Time      `db:"startedat"`
+	FinishedAt      time.Time      `db:"finishedat"`
 }
 
 type WorkflowOnlyRecord struct {
@@ -44,12 +45,13 @@ func toRecord(wf *wfv1.Workflow) (*WorkflowRecord, error) {
 
 	return &WorkflowRecord{
 		WorkflowMetadata: WorkflowMetadata{
-			Id:         string(wf.UID),
-			Name:       wf.Name,
-			Namespace:  wf.Namespace,
-			Phase:      wf.Status.Phase,
-			StartedAt:  startT,
-			FinishedAt: endT,
+			Id:              string(wf.UID),
+			Name:            wf.Name,
+			Namespace:       wf.Namespace,
+			ResourceVersion: wf.ResourceVersion,
+			Phase:           wf.Status.Phase,
+			StartedAt:       startT,
+			FinishedAt:      endT,
 		},
 		WorkflowOnlyRecord: WorkflowOnlyRecord{Workflow: string(jsonWf)},
 	}, nil

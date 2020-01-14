@@ -286,16 +286,20 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
+	woc := newWorkflowOperationCtx(wf, wfc)
+
 	// Loading running workflow from persistence storage if nodeStatusOffload enabled
 	if wf.Status.OffloadNodeStatus {
-		wfDB, err := wfc.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace)
+		wfDB, err := wfc.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace, wf.ResourceVersion)
 		if err != nil {
-			log.Warnf("DB get operation failed. %v", err)
+			woc.log.Warnf("workflow loading failed: %v", err)
+			woc.markWorkflowFailed(fmt.Sprintf("workflow loading failed: %s", err.Error()))
+			woc.persistUpdates()
+			wfc.throttler.Remove(key)
+			return true
 		}
 		wf.Status.Nodes = wfDB.Status.Nodes
 	}
-
-	woc := newWorkflowOperationCtx(wf, wfc)
 
 	// Decompress the node if it is compressed
 	err = packer.DecompressWorkflow(woc.wf)
