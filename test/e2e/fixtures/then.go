@@ -15,6 +15,7 @@ type Then struct {
 	t                     *testing.T
 	diagnostics           *Diagnostics
 	workflowName          string
+	wfTemplateName        string
 	cronWorkflowName      string
 	client                v1alpha1.WorkflowInterface
 	cronClient            v1alpha1.CronWorkflowInterface

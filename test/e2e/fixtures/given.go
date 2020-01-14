@@ -16,9 +16,11 @@ type Given struct {
 	t                     *testing.T
 	diagnostics           *Diagnostics
 	client                v1alpha1.WorkflowInterface
+	wfTemplateClient      v1alpha1.WorkflowTemplateInterface
 	cronClient            v1alpha1.CronWorkflowInterface
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wf                    *wfv1.Workflow
+	wfTemplate            *wfv1.WorkflowTemplate
 	cronWf                *wfv1.CronWorkflow
 }
 
@@ -56,6 +58,44 @@ func (g *Given) Workflow(text string) *Given {
 		if err != nil {
 			g.t.Fatal(err)
 		}
+	}
+	return g
+}
+
+func (g *Given) WorkflowTemplate(text string) *Given {
+	var file string
+	if strings.HasPrefix(text, "@") {
+		file = strings.TrimPrefix(text, "@")
+	} else {
+		f, err := ioutil.TempFile("", "argo_e2e")
+		if err != nil {
+			g.t.Fatal(err)
+		}
+		_, err = f.Write([]byte(text))
+		if err != nil {
+			g.t.Fatal(err)
+		}
+		err = f.Close()
+		if err != nil {
+			g.t.Fatal(err)
+		}
+		file = f.Name()
+	}
+	// read the file in
+	{
+		file, err := ioutil.ReadFile(file)
+		if err != nil {
+			g.t.Fatal(err)
+		}
+		g.wfTemplate = &wfv1.WorkflowTemplate{}
+		err = yaml.Unmarshal(file, g.wfTemplate)
+		if err != nil {
+			g.t.Fatal(err)
+		}
+		if g.wfTemplate.GetLabels() == nil {
+			g.wfTemplate.SetLabels(map[string]string{})
+		}
+		g.wfTemplate.GetLabels()[label] = "true"
 	}
 	return g
 }
@@ -109,8 +149,10 @@ func (g *Given) When() *When {
 		t:                     g.t,
 		diagnostics:           g.diagnostics,
 		wf:                    g.wf,
+		wfTemplate:            g.wfTemplate,
 		cronWf:                g.cronWf,
 		client:                g.client,
+		wfTemplateClient:      g.wfTemplateClient,
 		cronClient:            g.cronClient,
 		offloadNodeStatusRepo: g.offloadNodeStatusRepo,
 	}

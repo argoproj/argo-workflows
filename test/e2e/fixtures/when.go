@@ -20,11 +20,14 @@ type When struct {
 	t                     *testing.T
 	diagnostics           *Diagnostics
 	wf                    *wfv1.Workflow
+	wfTemplate            *wfv1.WorkflowTemplate
 	cronWf                *wfv1.CronWorkflow
 	client                v1alpha1.WorkflowInterface
+	wfTemplateClient      v1alpha1.WorkflowTemplateInterface
 	cronClient            v1alpha1.CronWorkflowInterface
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	workflowName          string
+	wfTemplateName        string
 	cronWorkflowName      string
 }
 
@@ -40,6 +43,21 @@ func (w *When) SubmitWorkflow() *When {
 		w.workflowName = wf.Name
 	}
 	log.WithField("test", w.t.Name()).Info("Workflow submitted")
+	return w
+}
+
+func (w *When) CreateWorkflowTemplate() *When {
+	if w.wfTemplate == nil {
+		w.t.Fatal("No workflow template to create")
+	}
+	log.WithField("test", w.t.Name()).Info("Creating workflow template")
+	wfTmpl, err := w.wfTemplateClient.Create(w.wfTemplate)
+	if err != nil {
+		w.t.Fatal(err)
+	} else {
+		w.wfTemplateName = wfTmpl.Name
+	}
+	log.WithField("test", w.t.Name()).Info("Workflow template created")
 	return w
 }
 
@@ -111,6 +129,7 @@ func (w *When) Then() *Then {
 		t:                     w.t,
 		diagnostics:           w.diagnostics,
 		workflowName:          w.workflowName,
+		wfTemplateName:        w.wfTemplateName,
 		cronWorkflowName:      w.cronWorkflowName,
 		client:                w.client,
 		cronClient:            w.cronClient,

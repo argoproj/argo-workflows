@@ -45,6 +45,7 @@ type E2ESuite struct {
 	Diagnostics           *Diagnostics
 	RestConfig            *rest.Config
 	wfClient              v1alpha1.WorkflowInterface
+	wfTemplateClient      v1alpha1.WorkflowTemplateInterface
 	cronClient            v1alpha1.CronWorkflowInterface
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	KubeClient            kubernetes.Interface
@@ -70,6 +71,7 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	}
 
 	s.wfClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().Workflows(Namespace)
+	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
 	// TODO templates - but we also need templates tests
 	{
@@ -139,6 +141,19 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 		logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "cron workflow": cronWf.Name})
 		logCtx.Infof("Deleting cron workflow")
 		err = s.cronClient.Delete(cronWf.Name, nil)
+		if err != nil {
+			panic(err)
+		}
+	}
+	// delete all workflow templates
+	wfTmpl, err := s.wfTemplateClient.List(metav1.ListOptions{LabelSelector: label})
+	if err != nil {
+		panic(err)
+	}
+	for _, wfTmpl := range wfTmpl.Items {
+		logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow template": wfTmpl.Name})
+		logCtx.Infof("Deleting workflow template")
+		err = s.wfTemplateClient.Delete(wfTmpl.Name, nil)
 		if err != nil {
 			panic(err)
 		}
@@ -258,6 +273,7 @@ func (s *E2ESuite) Given() *Given {
 		t:                     s.T(),
 		diagnostics:           s.Diagnostics,
 		client:                s.wfClient,
+		wfTemplateClient:      s.wfTemplateClient,
 		cronClient:            s.cronClient,
 		offloadNodeStatusRepo: s.offloadNodeStatusRepo,
 	}
