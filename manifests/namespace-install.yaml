@@ -216,9 +216,6 @@ subjects:
   name: argo-server
 ---
 apiVersion: v1
-data:
-  config: |
-    namespace: argo
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
@@ -252,8 +249,6 @@ spec:
         - --auth-mode
         - client
         env:
-        - name: FORCE_NAMESPACE_ISOLATION
-          value: "true"
         - name: ARGO_NAMESPACE
           valueFrom:
             fieldRef:
@@ -291,11 +286,9 @@ spec:
         - workflow-controller-configmap
         - --executor-image
         - argoproj/argoexec:latest
+        - --namespaced
         command:
         - workflow-controller
-        env:
-        - name: FORCE_NAMESPACE_ISOLATION
-          value: "true"
         image: argoproj/workflow-controller:latest
         name: workflow-controller
       serviceAccountName: argo
