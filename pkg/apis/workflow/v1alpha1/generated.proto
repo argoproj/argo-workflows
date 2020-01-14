@@ -172,6 +172,9 @@ message CronWorkflowSpec {
 
   // FailedJobsHistoryLimit is the number of successful jobs to be kept at a time
   optional int32 failedJobsHistoryLimit = 7;
+
+  // Timezone is the timezone against which the cron schedule will be calculated, e.g. "Asia/Tokyo"
+  optional string timezone = 8;
 }
 
 message CronWorkflowStatus {
