@@ -1,6 +1,10 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
 import * as moment from 'moment';
 
+export interface Info {
+    managedNamespace?: string;
+}
+
 /**
  * Arguments to a template
  */
@@ -56,6 +60,7 @@ export interface Artifact {
      */
     s3?: S3Artifact;
 }
+
 /**
  * ArtifactLocation describes a location for a single or multiple artifacts.
  * It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
@@ -138,6 +143,7 @@ export interface GitArtifact {
      */
     usernameSecret?: kubernetes.SecretKeySelector;
 }
+
 /**
  * HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
  */
@@ -147,6 +153,7 @@ export interface HTTPArtifact {
      */
     url: string;
 }
+
 /**
  * Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
  */
@@ -160,6 +167,7 @@ export interface Inputs {
      */
     parameters?: Parameter[];
 }
+
 /**
  * Outputs hold parameters, artifacts, and results from a step
  */
@@ -177,6 +185,7 @@ export interface Outputs {
      */
     result?: string;
 }
+
 /**
  * Parameter indicate a passed string parameter to a service template with an optional default value
  */
@@ -198,6 +207,7 @@ export interface Parameter {
      */
     valueFrom?: ValueFrom;
 }
+
 /**
  * RawArtifact allows raw string content to be placed as an artifact in a container
  */
@@ -207,6 +217,7 @@ export interface RawArtifact {
      */
     data: string;
 }
+
 /**
  * ResourceTemplate is a template subtype to manipulate kubernetes resources
  */
@@ -228,6 +239,7 @@ export interface ResourceTemplate {
      */
     successCondition?: string;
 }
+
 /**
  * RetryStrategy provides controls on how to retry a workflow step
  */
@@ -301,6 +313,7 @@ export interface S3Bucket {
      */
     secretKeySecret: kubernetes.SecretKeySelector;
 }
+
 /**
  * Script is a template subtype to enable scripting through code steps
  */
@@ -444,6 +457,7 @@ export interface Sidecar {
      */
     workingDir?: string;
 }
+
 /**
  * SidecarOptions provide a way to customize the behavior of a sidecar and how it affects the main container.
  */
@@ -534,6 +548,7 @@ export interface Template {
      */
     templateRef?: TemplateRef;
 }
+
 /**
  * ValueFrom describes a location in which to obtain the value to a parameter
  */
