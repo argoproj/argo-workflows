@@ -249,12 +249,6 @@ spec:
         - --auth-mode
         - client
         - --namespaced
-        env:
-        - name: ARGO_NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
         image: argoproj/argo-server:latest
         name: argo-server
         ports:
