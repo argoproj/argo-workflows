@@ -141,8 +141,8 @@ func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
 func TestWorkflowTemplateServer_GetWorkflowTemplate(t *testing.T) {
 	server, ctx := getWorkflowTemplateServer()
 	wftReq := WorkflowTemplateGetRequest{
-		Name: "workflow-template-whalesay-template2",
-		Namespace:    "default",
+		Name:      "workflow-template-whalesay-template2",
+		Namespace: "default",
 	}
 	wftRsp, err := server.GetWorkflowTemplate(ctx, &wftReq)
 	if assert.NoError(t, err) {
@@ -173,8 +173,8 @@ func TestWorkflowTemplateServer_ListWorkflowTemplates(t *testing.T) {
 func TestWorkflowTemplateServer_DeleteWorkflowTemplate(t *testing.T) {
 	server, ctx := getWorkflowTemplateServer()
 	wftReq := WorkflowTemplateDeleteRequest{
-		Namespace:    "default",
-		Name: "workflow-template-whalesay-template2",
+		Namespace: "default",
+		Name:      "workflow-template-whalesay-template2",
 	}
 	_, err := server.DeleteWorkflowTemplate(ctx, &wftReq)
 	assert.NoError(t, err)
@@ -188,9 +188,9 @@ func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
 	assert.Nil(t, err)
 	wftObj1.Spec.Templates[0].Container.Image = "alpine:latest"
 	wftReq := WorkflowTemplateUpdateRequest{
-		Namespace:    "default",
-		Name: "workflow-template-whalesay-template2",
-		Template:     &wftObj1,
+		Namespace: "default",
+		Name:      "workflow-template-whalesay-template2",
+		Template:  &wftObj1,
 	}
 	wftRsp, err := server.UpdateWorkflowTemplate(ctx, &wftReq)
 

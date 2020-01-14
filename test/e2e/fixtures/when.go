@@ -20,14 +20,14 @@ type When struct {
 	t                     *testing.T
 	diagnostics           *Diagnostics
 	wf                    *wfv1.Workflow
-	wfTemplate            *wfv1.WorkflowTemplate
+	wfTemplates           []*wfv1.WorkflowTemplate
 	cronWf                *wfv1.CronWorkflow
 	client                v1alpha1.WorkflowInterface
 	wfTemplateClient      v1alpha1.WorkflowTemplateInterface
 	cronClient            v1alpha1.CronWorkflowInterface
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	workflowName          string
-	wfTemplateName        string
+	wfTemplateNames       []string
 	cronWorkflowName      string
 }
 
@@ -46,18 +46,20 @@ func (w *When) SubmitWorkflow() *When {
 	return w
 }
 
-func (w *When) CreateWorkflowTemplate() *When {
-	if w.wfTemplate == nil {
-		w.t.Fatal("No workflow template to create")
+func (w *When) CreateWorkflowTemplates() *When {
+	if len(w.wfTemplates) == 0 {
+		w.t.Fatal("No workflow templates to create")
 	}
-	log.WithField("test", w.t.Name()).Info("Creating workflow template")
-	wfTmpl, err := w.wfTemplateClient.Create(w.wfTemplate)
-	if err != nil {
-		w.t.Fatal(err)
-	} else {
-		w.wfTemplateName = wfTmpl.Name
+	for _, wfTmpl := range w.wfTemplates {
+		log.WithField("test", w.t.Name()).Infof("Creating workflow template %s", wfTmpl.Name)
+		wfTmpl, err := w.wfTemplateClient.Create(wfTmpl)
+		if err != nil {
+			w.t.Fatal(err)
+		} else {
+			w.wfTemplateNames = append(w.wfTemplateNames, wfTmpl.Name)
+		}
+		log.WithField("test", w.t.Name()).Infof("Workflow template created %s", wfTmpl.Name)
 	}
-	log.WithField("test", w.t.Name()).Info("Workflow template created")
 	return w
 }
 
@@ -129,7 +131,7 @@ func (w *When) Then() *Then {
 		t:                     w.t,
 		diagnostics:           w.diagnostics,
 		workflowName:          w.workflowName,
-		wfTemplateName:        w.wfTemplateName,
+		wfTemplateNames:       w.wfTemplateNames,
 		cronWorkflowName:      w.cronWorkflowName,
 		client:                w.client,
 		cronClient:            w.cronClient,
