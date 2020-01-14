@@ -40,8 +40,9 @@ import (
 // WorkflowController is the controller for workflow resources
 type WorkflowController struct {
 	// namespace of the workflow controller
-	namespace               string
-	forceNamespaceIsolation bool
+	namespace        string
+	namespaced       bool
+	managedNamespace string
 	// configMap is the name of the config map in which to derive configuration of the controller from
 	configMap string
 	// Config is the workflow controller's configuration
@@ -85,7 +86,7 @@ func NewWorkflowController(
 	kubeclientset kubernetes.Interface,
 	wfclientset wfclientset.Interface,
 	namespace string,
-	forceNamespaceIsolation bool,
+	namespaced bool,
 	executorImage,
 	executorImagePullPolicy,
 	configMap string,
@@ -96,7 +97,7 @@ func NewWorkflowController(
 		wfclientset:                wfclientset,
 		configMap:                  configMap,
 		namespace:                  namespace,
-		forceNamespaceIsolation:    forceNamespaceIsolation,
+		namespaced:                 namespaced,
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		wfQueue:                    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
@@ -111,7 +112,7 @@ func NewWorkflowController(
 // MetricsServer starts a prometheus metrics server if enabled in the configmap
 func (wfc *WorkflowController) MetricsServer(ctx context.Context) {
 	if wfc.Config.MetricsConfig.Enabled {
-		informer := util.NewWorkflowInformer(wfc.restConfig, wfc.isolatedNamespace(), workflowMetricsResyncPeriod, wfc.tweakWorkflowMetricslist)
+		informer := util.NewWorkflowInformer(wfc.restConfig, wfc.managedNamespace, workflowMetricsResyncPeriod, wfc.tweakWorkflowMetricslist)
 		go informer.Run(ctx.Done())
 		registry := metrics.NewWorkflowRegistry(informer)
 		metrics.RunServer(ctx, wfc.Config.MetricsConfig, registry)
@@ -131,7 +132,7 @@ func (wfc *WorkflowController) RunTTLController(ctx context.Context) {
 	ttlCtrl := ttlcontroller.NewController(
 		wfc.restConfig,
 		wfc.wfclientset,
-		wfc.isolatedNamespace(),
+		wfc.managedNamespace,
 		wfc.Config.InstanceID,
 	)
 	err := ttlCtrl.Run(ctx.Done())
@@ -154,7 +155,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 		return
 	}
 
-	wfc.wfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.isolatedNamespace(), workflowResyncPeriod, wfc.tweakWorkflowlist)
+	wfc.wfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.managedNamespace, workflowResyncPeriod, wfc.tweakWorkflowlist)
 	wfc.wftmplInformer = wfc.newWorkflowTemplateInformer()
 
 	wfc.addWorkflowInformerHandler()
@@ -454,7 +455,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 	c := wfc.kubeclientset.CoreV1().RESTClient()
 	resource := "pods"
-	namespace := wfc.isolatedNamespace()
+	namespace := wfc.managedNamespace
 	// completed=false
 	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
 	labelSelector := labels.NewSelector().
@@ -512,15 +513,5 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 }
 
 func (wfc *WorkflowController) newWorkflowTemplateInformer() wfextvv1alpha1.WorkflowTemplateInformer {
-	return wfextv.NewSharedInformerFactoryWithOptions(wfc.wfclientset, workflowTemplateResyncPeriod, wfextv.WithNamespace(wfc.isolatedNamespace())).Argoproj().V1alpha1().WorkflowTemplates()
-}
-
-func (wfc *WorkflowController) isolatedNamespace() string {
-	if wfc.Config.Namespace != "" {
-		return wfc.Config.Namespace
-	}
-	if wfc.forceNamespaceIsolation {
-		return wfc.namespace
-	}
-	return ""
+	return wfextv.NewSharedInformerFactoryWithOptions(wfc.wfclientset, workflowTemplateResyncPeriod, wfextv.WithNamespace(wfc.managedNamespace)).Argoproj().V1alpha1().WorkflowTemplates()
 }

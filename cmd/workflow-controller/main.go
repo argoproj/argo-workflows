@@ -33,7 +33,6 @@ func NewRootCommand() *cobra.Command {
 	var (
 		clientConfig            clientcmd.ClientConfig
 		configMap               string // --configmap
-		forceNamespaceIsolation bool
 		executorImage           string // --executor-image
 		executorImagePullPolicy string // --executor-image-pull-policy
 		logLevel                string // --loglevel
@@ -69,7 +68,7 @@ func NewRootCommand() *cobra.Command {
 			wfclientset := wfclientset.NewForConfigOrDie(config)
 
 			// start a controller on instances of our custom resource
-			wfController := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, forceNamespaceIsolation, executorImage, executorImagePullPolicy, configMap)
+			wfController := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, namespaced, executorImage, executorImagePullPolicy, configMap)
 			err = wfController.ResyncConfig()
 			if err != nil {
 				return err
@@ -82,18 +81,14 @@ func NewRootCommand() *cobra.Command {
 				fmt.Fprintf(os.Stderr, "it will be removed in next major release. Instead please add \n")
 				fmt.Fprintf(os.Stderr, "\"--namespaced\" to workflow-controller start args.\n")
 				fmt.Fprintf(os.Stderr, "-----------------------------------------------------------------\n\n")
-			} else {
-				if namespaced {
-					if len(managedNamespace) > 0 {
-						wfController.Config.Namespace = managedNamespace
-					} else {
-						wfController.Config.Namespace = namespace
-					}
+			}
+			if namespaced {
+				if managedNamespace == "" {
+					managedNamespace = namespace
 				}
 			}
-			//
 
-			cronController := cron.NewCronController(wfclientset, config, namespace, forceNamespaceIsolation)
+			cronController := cron.NewCronController(wfclientset, config, namespace, managedNamespace)
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
