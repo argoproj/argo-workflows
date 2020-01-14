@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo/workflow/artifacts/oss"
 	"io"
 	"io/ioutil"
 	"net/url"
@@ -20,6 +19,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/argoproj/argo/workflow/artifacts/oss"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

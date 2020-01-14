@@ -20,7 +20,7 @@ func (ossDriver *OSSArtifactDriver) newOSSClient() (aliyunoss.Client, error) {
 	return *client, err
 }
 
-// Load downloads artifacts from OSS compliant storage, e.g., downloading an artifact into local path
+// Downloads artifacts from OSS compliant storage, e.g., downloading an artifact into local path
 func (ossDriver *OSSArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
 		func() (bool, error) {

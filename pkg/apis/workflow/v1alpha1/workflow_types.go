@@ -562,7 +562,7 @@ type ArtifactLocation struct {
 	Raw *RawArtifact `json:"raw,omitempty" protobuf:"bytes,7,opt,name=raw"`
 
 	// OSS contains OSS artifact location details
-	OSS *OSSArtifact `json:"oss,omitempty" protobuf:"bytes,2,opt,name=oss"`
+	OSS *OSSArtifact `json:"oss,omitempty" protobuf:"bytes,8,opt,name=oss"`
 }
 
 type ArtifactRepositoryRef struct {
@@ -1101,14 +1101,13 @@ type OSSBucket struct {
 
 	// SecretKeySecret is the secret selector to the bucket's secret key
 	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret"`
-
 }
 
 // OSSArtifact is the location of an OSS artifact
 type OSSArtifact struct {
 	OSSBucket `json:",inline"`
 
-	// Key is the key in the bucket where the artifact resides
+	// Key is the path in the bucket where the artifact resides
 	Key string `json:"key"`
 }
 
@@ -1118,7 +1117,7 @@ func (o *OSSArtifact) String() string {
 }
 
 func (o *OSSArtifact) HasLocation() bool {
-	return o != nil && o.Bucket != ""
+	return o != nil && o.Bucket != "" && o.Endpoint != "" && o.Key != ""
 }
 
 // ExecutorConfig holds configurations of an executor container.

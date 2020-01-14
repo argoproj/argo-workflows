@@ -145,10 +145,6 @@ type OSSArtifactRepository struct {
 
 	// KeyFormat is defines the format of how to store keys. Can reference workflow variables
 	KeyFormat string `json:"keyFormat,omitempty"`
-
-	// KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
-	// DEPRECATED. Use KeyFormat instead
-	KeyPrefix string `json:"keyPrefix,omitempty"`
 }
 
 // ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository
