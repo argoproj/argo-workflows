@@ -20,7 +20,7 @@ IMAGE_TAG             := $(VERSION)
 DEV_IMAGE             := false
 else
 VERSION               := $(shell cat VERSION)
-IMAGE_TAG             := $(GIT_BRANCH)
+IMAGE_TAG             := $(subst /,-,$(GIT_BRANCH))
 DEV_IMAGE             := true
 endif
 endif
