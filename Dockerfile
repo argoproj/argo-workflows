@@ -65,10 +65,11 @@ RUN git init
 RUN git remote add origin https://github.com/argoproj/argo.git
 RUN git fetch --no-tags --depth=1  origin
 COPY --from=argo-ui node_modules ui/node_modules
-COPY --from=argo-ui dist ui/dist
+RUN mkdir -p ui/dist
+COPY --from=argo-ui dist/app ui/dist/app
 # stop make from trying to re-build this without yarn installed
 RUN touch ui/dist/app
-RUN make dist/argo-linux-amd64 dist/workflow-controller-linux-amd64 dist/argoexec-linux-amd64 dist/argo-server-linux-amd64
+RUN make dist/argo-server-linux-amd64 dist/argo-linux-amd64 dist/workflow-controller-linux-amd64 dist/argoexec-linux-amd64 dist/argo-server-linux-amd64
 
 ####################################################################################################
 # argoexec
