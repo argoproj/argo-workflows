@@ -155,19 +155,19 @@ cmd/server/static/files.go: ui/dist/app $(GOPATH)/bin/staticfiles
 	# Pack UI into a Go file.
 	staticfiles -o cmd/server/static/files.go ui/dist/app
 
-dist/argo-server-linux-amd64: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
+dist/argo-server-linux-amd64: cmd/server/static/files.go vendor $(ARGO_SERVER_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-server-linux-amd64 ./cmd/server
 
-dist/argo-server-linux-ppc64le: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
+dist/argo-server-linux-ppc64le: cmd/server/static/files.go vendor $(ARGO_SERVER_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-server-linux-ppc64le ./cmd/server
 
-dist/argo-server-linux-s390x: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
+dist/argo-server-linux-s390x: cmd/server/static/files.go vendor $(ARGO_SERVER_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-server-linux-s390x ./cmd/server
 
-dist/argo-server-darwin-amd64: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
+dist/argo-server-darwin-amd64: cmd/server/static/files.go vendor $(ARGO_SERVER_PKGS)
 	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-server-darwin-amd64 ./cmd/server
 
-dist/argo-server-windows-amd64: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
+dist/argo-server-windows-amd64: cmd/server/static/files.go vendor $(ARGO_SERVER_PKGS)
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-server-windows-amd64 ./cmd/server
 
 .PHONY: argo-server-image
