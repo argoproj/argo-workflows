@@ -20,7 +20,6 @@ import (
 
 type workflowServer struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
-	//wfKubeService         *kubeService
 }
 
 func NewWorkflowServer(offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) WorkflowServiceServer {
@@ -126,15 +125,22 @@ func (s *workflowServer) WatchWorkflows(req *WatchWorkflowsRequest, ws WorkflowS
 	defer watch.Stop()
 	ctx := ws.Context()
 
+	log.Debug("Piping events to channel")
+
 	for next := range watch.ResultChan() {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
 		}
-		wf := next.Object.(*v1alpha1.Workflow)
+		gvk := next.Object.GetObjectKind().GroupVersionKind().String()
+		logCtx := log.WithFields(log.Fields{"type": next.Type, "objectKind": gvk})
+		logCtx.Debug("Received event")
+		wf, ok := next.Object.(*v1alpha1.Workflow)
+		if !ok {
+			return fmt.Errorf("watch object was not a workflow %v", gvk)
+		}
 		err := packer.DecompressWorkflow(wf)
-		logCtx := log.WithFields(log.Fields{"type": next.Type, "namespace": wf.Namespace, "workflowName": wf.Name})
 		if err != nil {
 			return err
 		}
@@ -150,6 +156,7 @@ func (s *workflowServer) WatchWorkflows(req *WatchWorkflowsRequest, ws WorkflowS
 		if err != nil {
 			return err
 		}
+
 	}
 
 	return nil

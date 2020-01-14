@@ -558,6 +558,8 @@ func (s *ArgoServerSuite) TestWorkflowStream() {
 		When().
 		SubmitWorkflow()
 
+	time.Sleep(1 * time.Second)
+
 	// use the watch to make sure that the workflow has succeeded
 	s.Run("Watch", func(t *testing.T) {
 		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflow-events/argo?listOptions.fieldSelector=metadata.name=basic", nil)
