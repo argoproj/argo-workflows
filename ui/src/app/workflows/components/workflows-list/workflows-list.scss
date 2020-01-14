@@ -143,32 +143,6 @@
     }
   }
 
-  // TODO(simon): Figure this out
-  //@include breakpoint(xxlarge up) {
-  //  &__summary {
-  //    margin-top: 5.3em;
-  //  }
-  //
-  //  &__filter-expander {
-  //    display: inline;
-  //  }
-  //
-  //  &__filter--expanded {
-  //    max-height: 1000px;
-  //    transition: max-height 0.5s ease-in-out;
-  //  }
-  //
-  //  &__filters-expander {
-  //    display: none;
-  //  }
-  //
-  //  &__filters-container {
-  //    max-height: 10000px;
-  //    &::before {
-  //      display: none;
-  //    }
-  //  }
-  //}
 
   &__filter-label {
     vertical-align: bottom;

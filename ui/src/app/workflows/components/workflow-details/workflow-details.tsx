@@ -12,6 +12,7 @@ import {services} from '../../../shared/services';
 
 import {WorkflowArtifacts, WorkflowDag, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowSummaryPanel, WorkflowTimeline, WorkflowYamlViewer} from '..';
 import {Consumer, ContextApis} from '../../../shared/context';
+import {Utils} from '../../../shared/utils';
 import {WorkflowParametersPanel} from '../workflow-parameters-panel';
 
 require('./workflow-details.scss');
@@ -22,32 +23,6 @@ function parseSidePanelParam(param: string) {
         return {type, nodeId, container: container || 'main'};
     }
     return null;
-}
-
-// TODO(simon): most likely extract this to a util file
-function isWorkflowSuspended(wf: models.Workflow): boolean {
-    if (wf === null || wf.spec === null) {
-        return false;
-    }
-    if (wf.spec.suspend !== undefined && wf.spec.suspend) {
-        return true;
-    }
-    if (wf.status && wf.status.nodes) {
-        for (const node of Object.values(wf.status.nodes)) {
-            if (node.type === 'Suspend' && node.phase === 'Running') {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-// TODO(simon): most likely extract this to a util file
-function isWorkflowRunning(wf: models.Workflow): boolean {
-    if (wf === null || wf.spec === null) {
-        return false;
-    }
-    return wf.status.phase === 'Running';
 }
 
 export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {workflow: models.Workflow}> {
@@ -132,19 +107,19 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                     {
                                         title: 'Suspend',
                                         iconClassName: 'fa fa-pause',
-                                        disabled: !isWorkflowRunning(this.state.workflow) || isWorkflowSuspended(this.state.workflow),
+                                        disabled: !Utils.isWorkflowRunning(this.state.workflow) || Utils.isWorkflowSuspended(this.state.workflow),
                                         action: () => this.suspendWorkflow(ctx)
                                     },
                                     {
                                         title: 'Resume',
                                         iconClassName: 'fa fa-play',
-                                        disabled: !isWorkflowSuspended(this.state.workflow),
+                                        disabled: !Utils.isWorkflowSuspended(this.state.workflow),
                                         action: () => this.resumeWorkflow(ctx)
                                     },
                                     {
                                         title: 'Terminate',
                                         iconClassName: 'fa fa-times-circle',
-                                        disabled: !isWorkflowRunning(this.state.workflow),
+                                        disabled: !Utils.isWorkflowRunning(this.state.workflow),
                                         action: () => this.terminateWorkflow(ctx)
                                     },
                                     {
