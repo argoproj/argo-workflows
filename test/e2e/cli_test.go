@@ -69,6 +69,36 @@ func (s *CLISuite) TestRoot() {
 	})
 }
 
+func (s *CLISuite) TestTemplate() {
+
+	s.Given().RunCli([]string{"template", "create", "smoke/workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
+		assert.NoError(t, err)
+		assert.Contains(t, output, "Name:")
+		assert.Contains(t, output, "Namespace:")
+		assert.Contains(t, output, "Created:")
+	})
+
+	s.Given().RunCli([]string{"template", "list"}, func(t *testing.T, output string, err error) {
+		assert.NoError(t, err)
+		assert.Contains(t, output, "NAME")
+	})
+
+	s.Given().RunCli([]string{"template", "get", "not-found"}, func(t *testing.T, output string, err error) {
+		assert.Error(t, err, "exit status 1")
+		assert.Contains(t, output, `"not-found" not found`)
+	}).RunCli([]string{"template", "get", "workflow-template-whalesay-template"}, func(t *testing.T, output string, err error) {
+		if assert.NoError(t, err) {
+			assert.Contains(t, output, "Name:")
+			assert.Contains(t, output, "Namespace:")
+			assert.Contains(t, output, "Created:")
+		}
+	})
+
+	s.Given().RunCli([]string{"template", "delete", "workflow-template-whalesay-template"}, func(t *testing.T, output string, err error) {
+		assert.NoError(t, err)
+	})
+}
+
 func (s *CLISuite) TestCron() {
 
 	s.Given().RunCli([]string{"cron", "create", "testdata/basic.yaml"}, func(t *testing.T, output string, err error) {

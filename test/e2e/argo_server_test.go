@@ -738,13 +738,52 @@ func (s *ArgoServerSuite) TestWorkflowTemplates() {
 			Equal(1)
 	})
 
+	var resourceVersion string
 	s.Run("Get", func(t *testing.T) {
-		s.e(t).GET("/api/v1/workflow-templates/argo/test").
+		s.e(t).GET("/api/v1/workflow-templates/argo/not-found").
 			Expect().
-			Status(200)
+			Status(404)
+
+		resourceVersion = s.e(t).GET("/api/v1/workflow-templates/argo/test").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.metadata.resourceVersion").
+			String().
+			Raw()
 	})
 
-	// TODO - update
+	s.Run("Update", func(t *testing.T) {
+		s.e(t).PUT("/api/v1/workflow-templates/argo/test").
+			WithBytes([]byte(`{"template": {
+    "metadata": {
+      "name": "test",
+      "resourceVersion": "` + resourceVersion + `",
+      "labels": {
+        "argo-e2e": "true"
+      }
+    },
+    "spec": {
+      "templates": [
+        {
+          "name": "run-workflow",
+          "container": {
+            "name": "",
+            "image": "docker/whalesay:dev",
+            "imagePullPolicy": "IfNotPresent"
+          }
+        }
+      ],
+      "entrypoint": "run-workflow"
+    }
+  }
+}`)).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.spec.templates[0].container.image").
+			Equal("docker/whalesay:dev")
+	})
 
 	s.Run("Delete", func(t *testing.T) {
 		s.e(t).DELETE("/api/v1/workflow-templates/argo/test").
