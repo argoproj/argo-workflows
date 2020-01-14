@@ -303,6 +303,10 @@
           "description": "Suspend is a flag that will stop new CronWorkflows from running if set to true",
           "type": "boolean"
         },
+        "timezone": {
+          "description": "Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\"",
+          "type": "string"
+        },
         "workflowSpec": {
           "description": "WorkflowSpec is the spec of the workflow to be run",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"

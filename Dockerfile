@@ -82,6 +82,8 @@ ENTRYPOINT [ "argoexec" ]
 # workflow-controller
 ####################################################################################################
 FROM scratch as workflow-controller
+# Add timezone data
+COPY --from=argo-build /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/workflow-controller-linux-amd64 /bin/workflow-controller
 ENTRYPOINT [ "workflow-controller" ]
 

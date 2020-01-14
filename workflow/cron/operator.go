@@ -26,13 +26,13 @@ type cronWfOperationCtx struct {
 	cronWfIf    typed.CronWorkflowInterface
 }
 
-func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface, cronWfIf typed.CronWorkflowInterface) (*cronWfOperationCtx, error) {
+func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface) (*cronWfOperationCtx, error) {
 	return &cronWfOperationCtx{
 		name:        cronWorkflow.ObjectMeta.Name,
 		cronWf:      cronWorkflow,
 		wfClientset: wfClientset,
 		wfClient:    wfClientset.ArgoprojV1alpha1().Workflows(cronWorkflow.Namespace),
-		cronWfIf:    cronWfIf,
+		cronWfIf:    wfClientset.ArgoprojV1alpha1().CronWorkflows(cronWorkflow.Namespace),
 	}, nil
 }
 
