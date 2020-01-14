@@ -8,12 +8,11 @@ import (
 
 	"github.com/argoproj/pkg/errors"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/server/workflowtemplate"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	"github.com/argoproj/argo/cmd/server/workflowtemplate"
 
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
@@ -58,13 +57,11 @@ func apiServerDeleteWorkflowTemplates(allWFs bool, wfTmplNames []string) {
 	wftmplApiClient, ctx := GetWFtmplApiServerGRPCClient(conn)
 
 	var delWFTmplNames []string
-	var err error
 	if allWFs {
 		wftmplReq := workflowtemplate.WorkflowTemplateListRequest{
 			Namespace: ns,
 		}
-		var wftmplList *wfv1.WorkflowTemplateList
-		wftmplList, err = wftmplApiClient.ListWorkflowTemplates(ctx, &wftmplReq)
+		wftmplList, err := wftmplApiClient.ListWorkflowTemplates(ctx, &wftmplReq)
 		if err != nil {
 			log.Fatal(err)
 		}
