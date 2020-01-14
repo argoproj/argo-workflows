@@ -7,5 +7,12 @@ bases:
 - ./argo-ui-rbac
 
 patchesStrategicMerge:
-- ./overlays/workflow-controller-configmap.yaml
 - ./overlays/argo-ui-deployment.yaml
+
+patchesJson6902:
+- target:
+    version: v1
+    group: apps
+    kind: Deployment
+    name: workflow-controller
+  path: ./overlays/workflow-controller-deployment.yaml
