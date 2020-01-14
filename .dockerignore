@@ -4,8 +4,7 @@
 .idea
 assets
 coverage.out
-cmd
 dist
-ui
 vendor
+ui/dist
 ui/node_modules

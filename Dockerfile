@@ -23,6 +23,11 @@ RUN wget -O docker.tgz "https://download.docker.com/linux/static/${DOCKER_CHANNE
     tar --extract --file docker.tgz --strip-components 1 --directory /usr/local/bin/ && \
     rm docker.tgz
 
+# Install dep
+ENV DEP_VERSION=0.5.0
+RUN wget https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-amd64 -O /usr/local/bin/dep && \
+    chmod +x /usr/local/bin/dep
+
 ####################################################################################################
 # argoexec-base
 # Used as the base for both the release and development version of argoexec
@@ -39,30 +44,56 @@ COPY hack/ssh_known_hosts /etc/ssh/ssh_known_hosts
 COPY --from=builder /usr/local/bin/docker /usr/local/bin/
 
 ####################################################################################################
+
+FROM node:11.15.0 as argo-ui
+
+ADD ["ui", "."]
+
+RUN yarn install
+RUN yarn build
+
+####################################################################################################
+# Argo Build stage which performs the actual build of Argo binaries
+####################################################################################################
+FROM builder as argo-build
+
+# Perform the build
+WORKDIR /go/src/github.com/argoproj/argo
+COPY . .
+# stop the annoying git related error messages
+RUN git init
+RUN git remote add origin https://github.com/argoproj/argo.git
+RUN git fetch --no-tags --depth=1  origin
+COPY --from=argo-ui node_modules ui/node_modules
+COPY --from=argo-ui dist ui/dist
+# stop make from trying to re-build this without yarn installed
+RUN touch ui/dist/app
+RUN make dist/argo-linux-amd64 dist/workflow-controller-linux-amd64 dist/argoexec-linux-amd64 dist/argo-server-linux-amd64
+
+####################################################################################################
 # argoexec
 ####################################################################################################
 FROM argoexec-base as argoexec
-COPY argoexec /usr/local/bin/
+COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argoexec-linux-amd64 /usr/local/bin/argoexec
 ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################
 # workflow-controller
 ####################################################################################################
 FROM scratch as workflow-controller
-COPY workflow-controller /bin/
+COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/workflow-controller-linux-amd64 /bin/workflow-controller
 ENTRYPOINT [ "workflow-controller" ]
-
 
 ####################################################################################################
 # argocli
 ####################################################################################################
 FROM scratch as argocli
-COPY argo /bin/
+COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argo-linux-amd64 /bin/argo
 ENTRYPOINT [ "argo" ]
 
 ####################################################################################################
 # argo-server
 ####################################################################################################
 FROM scratch as argo-server
-COPY argo-server /bin/
+COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argo-server-linux-amd64 /usr/local/bin/argo-server
 ENTRYPOINT [ "argo-server" ]
