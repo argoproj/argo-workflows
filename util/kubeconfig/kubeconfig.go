@@ -153,6 +153,7 @@ func GetBearerToken(in *restclient.Config) (string, error) {
 			}
 			return "", nil
 		}
+		return "", nil
 	case tokenVersion2:
 		return getV2Token()
 	}
