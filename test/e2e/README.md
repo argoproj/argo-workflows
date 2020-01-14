@@ -54,7 +54,7 @@ kubectl -n argo scale deploy/workflow-controller --replicas 0
 The run `cmd/workflow-controller/main.go` using these arguments, which enable debug logging, and make sure you use locally build image:
 
 ```
---loglevel debug --executor-image argoproj/argoexec:noc --executor-image-pull-policy Never
+--loglevel debug --executor-image argoproj/argoexec:your-branch --executor-image-pull-policy Never
 ```
 
 ### Running The Argo Server In Your IDE
