@@ -1,10 +1,9 @@
-# This example demonstrates the loading of a hard-wired input artifact from an S3 compliant
-# store. This can be AWS S3, Google Cloud Storage (GCS) with interoperability enabled,
-# or a self-hosted minio service. S3 guards access to buckets using an access key and
+# This example demonstrates the loading of a hard-wired input artifact from an OSS compliant
+# store. OSS guards access to buckets using an access key and
 # secret key, which will be stored as regular Kubernetes secrets, and referenced in the
 # workflow using secret selectors. To create the secret required for this example, first
 # run the following command:
-# $ kubectl create secret generic my-oss-credentials --from-literal=accessKey=<YOUR-ACCESS-ID> --from-literal=secretKey=<YOUR-SECRET-KEY>
+# $ kubectl create secret generic my-oss-credentials --from-literal=accessKey=<YOUR-OSS-ACCESS-ID> --from-literal=secretKey=<YOUR-OSS-SECRET-KEY>
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -18,9 +17,9 @@ spec:
       - name: my-art
         path: /my-artifact
         oss:
-          endpoint: s3.amazonaws.com
-          bucket: my-bucket-name
-          key: test/mydirectory/test.txt
+          endpoint: http://oss-cn-hangzhou-zmf.aliyuncs.com
+          bucket: test-bucket-name
+          key: test/mydirectory/test.txt # this is path in the bucket
           # accessKeySecret and secretKeySecret are secret selectors.
           # It references the k8s secret named 'my-oss-credentials'.
           # This secret is expected to have have the keys 'accessKey'
