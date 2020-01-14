@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/gavv/httpexpect.v2"
@@ -572,6 +573,7 @@ func (s *ArgoServerSuite) TestWorkflowStream() {
 			s := bufio.NewScanner(resp.Body)
 			for s.Scan() {
 				line := s.Text()
+				log.WithField("line", line).Debug()
 				// make sure we have this enabled
 				if line == "" {
 					continue
