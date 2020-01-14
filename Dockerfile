@@ -49,7 +49,7 @@ FROM node:11.15.0 as argo-ui
 
 ADD ["ui", "."]
 
-RUN yarn install
+RUN yarn install --frozen-lockfile --ignore-optional --non-interactive
 RUN yarn build
 
 ####################################################################################################
