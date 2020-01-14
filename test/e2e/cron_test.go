@@ -5,6 +5,8 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/pkg/humanize"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,9 +35,9 @@ func (s *CronSuite) TestBasic() {
 }
 
 func (s *CronSuite) TestBasicTimezone() {
-	 // This test works by scheduling a CronWorkflow for the next minute, but using the local time of another timezone
-	 // then seeing if the Workflow was ran within the next minute. Since this test would be trivial if the selected
-	 // timezone was the same as the local timezone, a little-used timezone is used.
+	// This test works by scheduling a CronWorkflow for the next minute, but using the local time of another timezone
+	// then seeing if the Workflow was ran within the next minute. Since this test would be trivial if the selected
+	// timezone was the same as the local timezone, a little-used timezone is used.
 	testTimezone := "Pacific/Niue"
 	testLocation, err := time.LoadLocation(testTimezone)
 	if err != nil {
@@ -186,14 +188,14 @@ func wfInformerListOptionsFunc(options *v1.ListOptions, cronWfName string) {
 
 func TestCronSuite(t *testing.T) {
 	// To ensure consistency, always start at the next 30 second mark
-	//_, _, sec := time.Now().Clock()
-	//var toWait time.Duration
-	//if sec <= 30 {
-	//	toWait = time.Duration(30-sec) * time.Second
-	//} else {
-	//	toWait = time.Duration(90-sec) * time.Second
-	//}
-	//logrus.Infof("Waiting %s to start", humanize.Duration(toWait))
-	//time.Sleep(toWait)
+	_, _, sec := time.Now().Clock()
+	var toWait time.Duration
+	if sec <= 30 {
+		toWait = time.Duration(30-sec) * time.Second
+	} else {
+		toWait = time.Duration(90-sec) * time.Second
+	}
+	logrus.Infof("Waiting %s to start", humanize.Duration(toWait))
+	time.Sleep(toWait)
 	suite.Run(t, new(CronSuite))
 }
