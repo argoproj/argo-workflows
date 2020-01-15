@@ -191,7 +191,7 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 
 func (s *E2ESuite) printDiagnostics() {
 	s.Diagnostics.Print()
-	wfs, err := s.wfClient.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + Namespace, LabelSelector: label})
+	wfs, err := s.wfClient.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + Namespace})
 	if err != nil {
 		s.T().Fatal(err)
 	}

@@ -11,6 +11,7 @@ import (
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/cmd/server/workflow"
+	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -37,6 +38,12 @@ func NewRetryCommand() *cobra.Command {
 				if err != nil {
 					log.Fatal(err)
 				}
+
+				err = packer.DecompressWorkflow(wf)
+				if err != nil {
+					log.Fatal(err)
+				}
+
 				wf, err = util.RetryWorkflow(kubeClient, wfClient, wf)
 				if err != nil {
 					log.Fatal(err)
