@@ -5,6 +5,7 @@ import (
 
 	"github.com/argoproj/pkg/cli"
 	"github.com/argoproj/pkg/stats"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 	"k8s.io/client-go/kubernetes"
@@ -17,10 +18,12 @@ import (
 
 func NewServerCommand() *cobra.Command {
 	var (
-		logLevel  string // --loglevel
-		authMode  string
-		configMap string
-		port      int
+		logLevel         string // --loglevel
+		authMode         string
+		configMap        string
+		port             int
+		namespaced       bool   // --namespaced
+		managedNamespace string // --managed-namespace
 	)
 
 	var command = cobra.Command{
@@ -49,12 +52,23 @@ func NewServerCommand() *cobra.Command {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
+			if !namespaced && managedNamespace != "" {
+				log.Warn("ignoring --managed-namespace because --namespaced is false")
+				managedNamespace = ""
+			}
+			if namespaced && managedNamespace == "" {
+				managedNamespace = namespace
+			}
+
+			log.WithFields(log.Fields{"namespace": namespace, "managedNamespace": managedNamespace}).Info()
+
 			opts := apiserver.ArgoServerOpts{
-				Namespace:     namespace,
-				WfClientSet:   wflientset,
-				KubeClientset: kubeConfig,
-				RestConfig:    config,
-				AuthMode:      authMode,
+				Namespace:        namespace,
+				WfClientSet:      wflientset,
+				KubeClientset:    kubeConfig,
+				RestConfig:       config,
+				AuthMode:         authMode,
+				ManagedNamespace: managedNamespace,
 			}
 			err = opts.ValidateOpts()
 			if err != nil {
@@ -69,5 +83,7 @@ func NewServerCommand() *cobra.Command {
 	command.Flags().StringVar(&authMode, "auth-mode", "server", "API server authentication mode. One of: client|server|hybrid")
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
+	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
+	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that watches, default to the installation namespace")
 	return &command
 }
