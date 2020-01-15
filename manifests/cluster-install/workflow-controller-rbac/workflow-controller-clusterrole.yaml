@@ -72,4 +72,3 @@ rules:
   - update
   - patch
   - delete
-  - create

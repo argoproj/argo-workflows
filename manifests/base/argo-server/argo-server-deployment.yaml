@@ -25,10 +25,3 @@ spec:
               path: /
             initialDelaySeconds: 5
             periodSeconds: 30
-          env:
-            # TODO - maybe unused
-            - name: ARGO_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: metadata.namespace
