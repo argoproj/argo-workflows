@@ -780,7 +780,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplates() {
 
 		// make sure list options work correctly
 		s.Given().
-			WorkflowTemplate("@smoke/basic-wf-tmpl.yaml")
+			WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml")
 
 		s.e(t).GET("/api/v1/workflow-templates/argo").
 			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
