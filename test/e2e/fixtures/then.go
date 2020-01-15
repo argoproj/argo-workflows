@@ -15,7 +15,7 @@ type Then struct {
 	t                     *testing.T
 	diagnostics           *Diagnostics
 	workflowName          string
-	wfTemplateName        string
+	wfTemplateNames       []string
 	cronWorkflowName      string
 	client                v1alpha1.WorkflowInterface
 	cronClient            v1alpha1.CronWorkflowInterface
@@ -42,7 +42,7 @@ func (t *Then) Expect(block func(t *testing.T, metadata *metav1.ObjectMeta, stat
 	return t
 }
 
-func (t *Then) ExpectCron(block func(*testing.T, *wfv1.CronWorkflow)) *Then {
+func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *Then {
 	if t.cronWorkflowName == "" {
 		t.t.Fatal("No cron workflow to test")
 	}
@@ -55,7 +55,7 @@ func (t *Then) ExpectCron(block func(*testing.T, *wfv1.CronWorkflow)) *Then {
 	return t
 }
 
-func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(*testing.T, *wfv1.WorkflowList)) *Then {
+func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *testing.T, wfList *wfv1.WorkflowList)) *Then {
 	log.WithFields(log.Fields{"test": t.t.Name()}).Info("Getting relevant workflows")
 	wfList, err := t.client.List(listOptions)
 	if err != nil {
@@ -67,7 +67,7 @@ func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(*te
 	return t
 }
 
-func (t *Then) RunCli(args []string, block func(*testing.T, string, error)) *Then {
+func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err error)) *Then {
 	output, err := runCli(t.diagnostics, args)
 	block(t.t, output, err)
 	return t
