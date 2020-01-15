@@ -11,29 +11,19 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-type backfillResourceVersion struct {
+type backfillNodes struct {
 	tableName string
 }
 
-func (s backfillResourceVersion) String() string {
-	return fmt.Sprintf("backfillResourceVersion{%s}", s.tableName)
+func (s backfillNodes) String() string {
+	return fmt.Sprintf("backfillNodes{%s}", s.tableName)
 }
 
-func (s backfillResourceVersion) Apply(session sqlbuilder.Database) error {
-	log.Info("Back-filling resource versions")
-	for _, tableName := range []string{s.tableName, "argo_archived_workflows"} {
-		err := backfillTable(session, tableName)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func backfillTable(session sqlbuilder.Database, tableName string) error {
-	rs, err := session.SelectFrom(tableName).
+func (s backfillNodes) Apply(session sqlbuilder.Database) error {
+	log.Info("Backfill node status")
+	rs, err := session.SelectFrom(s.tableName).
 		Columns("workflow").
-		Where(db.Cond{"resourceversion": nil}).
+		Where(db.Cond{"version": nil}).
 		Query()
 	if err != nil {
 		return err
@@ -49,13 +39,17 @@ func backfillTable(session sqlbuilder.Database, tableName string) error {
 		if err != nil {
 			return err
 		}
-		logCtx := log.WithFields(log.Fields{"name": wf.Name, "namespace": wf.Namespace, "resourceVersion": wf.ResourceVersion})
-		logCtx.Info("Back-filling resource version")
+		marshalled, version, err := nodeStatusVersion(wf.Status.Nodes)
+		if err != nil {
+			return err
+		}
+		logCtx := log.WithFields(log.Fields{"name": wf.Name, "namespace": wf.Namespace, "version": version})
+		logCtx.Info("Back-filling node status")
 		res, err := session.Update(tableName).
-			Set("resourceversion", wf.ResourceVersion).
+			Set("version", wf.ResourceVersion).
+			Set("nodes", marshalled).
 			Where(db.Cond{"name": wf.Name}).
 			And(db.Cond{"namespace": wf.Namespace}).
-			And(db.Cond{"resourceversion": nil}).
 			Exec()
 		if err != nil {
 			return err

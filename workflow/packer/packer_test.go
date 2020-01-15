@@ -9,7 +9,7 @@ import (
 )
 
 func TestDefault(t *testing.T) {
-	assert.Equal(t, 1024*1024, GetMaxWorkflowSize())
+	assert.Equal(t, 1024*1024, getMaxWorkflowSize())
 }
 
 func TestDecompressWorkflow(t *testing.T) {

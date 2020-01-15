@@ -81,13 +81,12 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *WorkflowGetReques
 		return nil, err
 	}
 
-	if wf.Status.OffloadNodeStatus {
-		offloaded, err := s.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace, wf.ResourceVersion)
+	if wf.Status.IsOffloadNodeStatus() {
+		offloadedNodes, err := s.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace, wf.GetOffloadNodeStatusVersion())
 		if err != nil {
 			return nil, err
 		}
-		wf.Status.Nodes = offloaded.Status.Nodes
-		wf.Status.CompressedNodes = offloaded.Status.CompressedNodes
+		wf.Status.Nodes = offloadedNodes
 	}
 	err = packer.DecompressWorkflow(wf)
 	if err != nil {
@@ -108,8 +107,17 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *WorkflowListReq
 	if err != nil {
 		return nil, err
 	}
+	offloadedNodes, err := s.offloadNodeStatusRepo.List(req.Namespace)
+	if err != nil {
+		return nil, err
+	}
+	for i, wf := range wfList.Items {
+		if wf.Status.IsOffloadNodeStatus() {
+			wfList.Items[i].Status.Nodes = offloadedNodes[sqldb.PrimaryKey{Name: wf.Name, Namespace: wf.Namespace, Version: wf.GetOffloadNodeStatusVersion()}]
+		}
+	}
 
-	return wfList, nil
+	return &v1alpha1.WorkflowList{Items: wfList.Items}, nil
 }
 
 func (s *workflowServer) WatchWorkflows(req *WatchWorkflowsRequest, ws WorkflowService_WatchWorkflowsServer) error {
@@ -144,12 +152,12 @@ func (s *workflowServer) WatchWorkflows(req *WatchWorkflowsRequest, ws WorkflowS
 		if err != nil {
 			return err
 		}
-		if wf.Status.OffloadNodeStatus {
-			offloaded, err := s.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace, wf.ResourceVersion)
+		if wf.Status.IsOffloadNodeStatus() {
+			offloadedNodes, err := s.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace, wf.GetOffloadNodeStatusVersion())
 			if err != nil {
 				return err
 			}
-			wf.Status.Nodes = offloaded.Status.Nodes
+			wf.Status.Nodes = offloadedNodes
 		}
 		logCtx.Debug("Sending event")
 		err = ws.Send(&WorkflowWatchEvent{Type: string(next.Type), Object: wf})
@@ -170,7 +178,7 @@ func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *WorkflowDelete
 		return nil, err
 	}
 
-	if wf.Status.OffloadNodeStatus {
+	if wf.Status.IsOffloadNodeStatus() {
 		err = s.offloadNodeStatusRepo.Delete(wf.Name, wf.Namespace)
 		if err != nil {
 			return nil, err

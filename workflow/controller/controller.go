@@ -289,23 +289,23 @@ func (wfc *WorkflowController) processNextItem() bool {
 	woc := newWorkflowOperationCtx(wf, wfc)
 
 	// Loading running workflow from persistence storage if nodeStatusOffload enabled
-	if wf.Status.OffloadNodeStatus {
-		wfDB, err := wfc.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace, wf.ResourceVersion)
+	if wf.Status.IsOffloadNodeStatus() {
+		nodes, err := wfc.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace, wf.GetOffloadNodeStatusVersion())
 		if err != nil {
-			woc.log.Warnf("workflow loading failed: %v", err)
-			woc.markWorkflowFailed(fmt.Sprintf("workflow loading failed: %s", err.Error()))
+			woc.log.Warnf("getting offloaded nodes failed: %v", err)
+			woc.markWorkflowError(err, true)
 			woc.persistUpdates()
 			wfc.throttler.Remove(key)
 			return true
 		}
-		wf.Status.Nodes = wfDB.Status.Nodes
+		woc.wf.Status.Nodes = nodes
 	}
 
 	// Decompress the node if it is compressed
 	err = packer.DecompressWorkflow(woc.wf)
 	if err != nil {
 		woc.log.Warnf("workflow decompression failed: %v", err)
-		woc.markWorkflowFailed(fmt.Sprintf("workflow decompression failed: %s", err.Error()))
+		woc.markWorkflowError(err, true)
 		woc.persistUpdates()
 		wfc.throttler.Remove(key)
 		return true

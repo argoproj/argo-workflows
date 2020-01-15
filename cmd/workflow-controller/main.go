@@ -18,12 +18,10 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/argoproj/argo/workflow/cron"
-	"github.com/argoproj/argo/workflow/packer"
-
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/controller"
+	"github.com/argoproj/argo/workflow/cron"
 )
 
 const (
@@ -84,7 +82,6 @@ func NewRootCommand() *cobra.Command {
 				"namespace":               namespace,
 				"namespaced":              namespaced,
 				"managedNamespace":        managedNamespace,
-				"maxWorkflowSize":         packer.GetMaxWorkflowSize(),
 			}).Info()
 
 			// start a controller on instances of our custom resource

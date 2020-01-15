@@ -7,12 +7,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
 
 	"github.com/argoproj/argo/cmd/server/auth"
+	"github.com/argoproj/argo/persist/sqldb"
+	"github.com/argoproj/argo/persist/sqldb/mocks"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	v1alpha "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 )
@@ -361,7 +364,9 @@ func getWorkflowServer() (WorkflowServiceServer, context.Context) {
 	_ = json.Unmarshal([]byte(wf3), &wfObj3)
 	_ = json.Unmarshal([]byte(wf4), &wfObj4)
 	_ = json.Unmarshal([]byte(wf5), &wfObj5)
-	server := NewWorkflowServer(nil)
+	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
+	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.PrimaryKey]v1alpha1.Nodes{}, nil)
+	server := NewWorkflowServer(offloadNodeStatusRepo)
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := v1alpha.NewSimpleClientset(&wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
@@ -390,10 +395,7 @@ func getWorkflow(ctx context.Context, server WorkflowServiceServer, namespace st
 }
 
 func getWorkflowList(ctx context.Context, server WorkflowServiceServer, namespace string) (*v1alpha1.WorkflowList, error) {
-	req := WorkflowListRequest{
-		Namespace: namespace,
-	}
-	return server.ListWorkflows(ctx, &req)
+	return server.ListWorkflows(ctx, &WorkflowListRequest{Namespace: namespace})
 
 }
 

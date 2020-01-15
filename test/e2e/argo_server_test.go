@@ -341,22 +341,40 @@ func (s *ArgoServerSuite) TestWorkflows() {
 			Status(200)
 	})
 
+	s.Given().
+		WorkflowName("test").
+		When().
+		WaitForWorkflowStarted(20*time.Second)
+
 	s.Run("List", func(t *testing.T) {
-		s.e(t).GET("/api/v1/workflows/").
+		j := s.e(t).GET("/api/v1/workflows/").
 			WithQuery("listOptions.labelSelector", "argo-e2e").
 			Expect().
 			Status(200).
-			JSON().
+			JSON()
+		j.
 			Path("$.items").
 			Array().
 			Length().
 			Equal(1)
+		// check we are loading offloaded node status
+		j.Path("$.items[0].status.offloadNodeStatusVersion").
+			NotNull()
+		j.Path("$.items[0].status.nodes").
+			NotNull()
 	})
 
 	s.Run("Get", func(t *testing.T) {
-		s.e(t).GET("/api/v1/workflows/argo/test").
+		j := s.e(t).GET("/api/v1/workflows/argo/test").
 			Expect().
-			Status(200)
+			Status(200).
+			JSON()
+		// check we are loading offloaded node status
+		j.
+			Path("$.status.offloadNodeStatusVersion").
+			NotNull()
+		j.Path("$.status.nodes").
+			NotNull()
 		s.e(t).GET("/api/v1/workflows/argo/not-found").
 			Expect().
 			Status(404)
@@ -556,9 +574,8 @@ func (s *ArgoServerSuite) TestWorkflowStream() {
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
-		SubmitWorkflow()
-
-	time.Sleep(1 * time.Second)
+		SubmitWorkflow().
+		WaitForWorkflowStarted(10*time.Second)
 
 	// use the watch to make sure that the workflow has succeeded
 	s.Run("Watch", func(t *testing.T) {

@@ -3,6 +3,7 @@
 package mocks
 
 import (
+	sqldb "github.com/argoproj/argo/persist/sqldb"
 	mock "github.com/stretchr/testify/mock"
 
 	v1alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -27,22 +28,22 @@ func (_m *OffloadNodeStatusRepo) Delete(name string, namespace string) error {
 	return r0
 }
 
-// Get provides a mock function with given fields: name, namespace, resourceVersion
-func (_m *OffloadNodeStatusRepo) Get(name string, namespace string, resourceVersion string) (*v1alpha1.Workflow, error) {
-	ret := _m.Called(name, namespace, resourceVersion)
+// Get provides a mock function with given fields: name, namespace, version
+func (_m *OffloadNodeStatusRepo) Get(name string, namespace string, version string) (v1alpha1.Nodes, error) {
+	ret := _m.Called(name, namespace, version)
 
-	var r0 *v1alpha1.Workflow
-	if rf, ok := ret.Get(0).(func(string, string, string) *v1alpha1.Workflow); ok {
-		r0 = rf(name, namespace, resourceVersion)
+	var r0 v1alpha1.Nodes
+	if rf, ok := ret.Get(0).(func(string, string, string) v1alpha1.Nodes); ok {
+		r0 = rf(name, namespace, version)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*v1alpha1.Workflow)
+			r0 = ret.Get(0).(v1alpha1.Nodes)
 		}
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string, string, string) error); ok {
-		r1 = rf(name, namespace, resourceVersion)
+		r1 = rf(name, namespace, version)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -65,15 +66,15 @@ func (_m *OffloadNodeStatusRepo) IsEnabled() bool {
 }
 
 // List provides a mock function with given fields: namespace
-func (_m *OffloadNodeStatusRepo) List(namespace string) (v1alpha1.Workflows, error) {
+func (_m *OffloadNodeStatusRepo) List(namespace string) (map[sqldb.PrimaryKey]v1alpha1.Nodes, error) {
 	ret := _m.Called(namespace)
 
-	var r0 v1alpha1.Workflows
-	if rf, ok := ret.Get(0).(func(string) v1alpha1.Workflows); ok {
+	var r0 map[sqldb.PrimaryKey]v1alpha1.Nodes
+	if rf, ok := ret.Get(0).(func(string) map[sqldb.PrimaryKey]v1alpha1.Nodes); ok {
 		r0 = rf(namespace)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(v1alpha1.Workflows)
+			r0 = ret.Get(0).(map[sqldb.PrimaryKey]v1alpha1.Nodes)
 		}
 	}
 
@@ -87,16 +88,23 @@ func (_m *OffloadNodeStatusRepo) List(namespace string) (v1alpha1.Workflows, err
 	return r0, r1
 }
 
-// Save provides a mock function with given fields: wf
-func (_m *OffloadNodeStatusRepo) Save(wf *v1alpha1.Workflow) error {
-	ret := _m.Called(wf)
+// Save provides a mock function with given fields: name, namespace, nodes
+func (_m *OffloadNodeStatusRepo) Save(name string, namespace string, nodes v1alpha1.Nodes) (string, error) {
+	ret := _m.Called(name, namespace, nodes)
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(*v1alpha1.Workflow) error); ok {
-		r0 = rf(wf)
+	var r0 string
+	if rf, ok := ret.Get(0).(func(string, string, v1alpha1.Nodes) string); ok {
+		r0 = rf(name, namespace, nodes)
 	} else {
-		r0 = ret.Error(0)
+		r0 = ret.Get(0).(string)
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string, v1alpha1.Nodes) error); ok {
+		r1 = rf(name, namespace, nodes)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }

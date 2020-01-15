@@ -31,12 +31,12 @@ func (t *Then) Expect(block func(t *testing.T, metadata *metav1.ObjectMeta, stat
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	if wf.Status.OffloadNodeStatus {
-		offloaded, err := t.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace, wf.ResourceVersion)
+	if wf.Status.IsOffloadNodeStatus() {
+		offloadedNodes, err := t.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace, wf.GetOffloadNodeStatusVersion())
 		if err != nil {
 			t.t.Fatal(err)
 		}
-		wf.Status.Nodes = offloaded.Status.Nodes
+		wf.Status.Nodes = offloadedNodes
 	}
 	block(t.t, &wf.ObjectMeta, &wf.Status)
 	return t

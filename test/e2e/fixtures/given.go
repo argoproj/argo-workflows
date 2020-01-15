@@ -22,6 +22,7 @@ type Given struct {
 	wf                    *wfv1.Workflow
 	wfTemplate            *wfv1.WorkflowTemplate
 	cronWf                *wfv1.CronWorkflow
+	workflowName          string
 }
 
 // creates a workflow based on the parameter, this may be:
@@ -59,6 +60,11 @@ func (g *Given) Workflow(text string) *Given {
 			g.t.Fatal(err)
 		}
 	}
+	return g
+}
+
+func (g *Given) WorkflowName(name string) *Given {
+	g.workflowName = name
 	return g
 }
 
@@ -155,5 +161,6 @@ func (g *Given) When() *When {
 		wfTemplateClient:      g.wfTemplateClient,
 		cronClient:            g.cronClient,
 		offloadNodeStatusRepo: g.offloadNodeStatusRepo,
+		workflowName:          g.workflowName,
 	}
 }

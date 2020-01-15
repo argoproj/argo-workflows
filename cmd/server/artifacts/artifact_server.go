@@ -157,12 +157,12 @@ func (a *ArtifactServer) getWorkflow(ctx context.Context, namespace string, work
 	if err != nil {
 		return nil, err
 	}
-	if wf.Status.OffloadNodeStatus {
-		offloadedWf, err := a.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace, wf.ResourceVersion)
+	if wf.Status.IsOffloadNodeStatus() {
+		offloadedNodes, err := a.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace, wf.GetOffloadNodeStatusVersion())
 		if err != nil {
 			return nil, err
 		}
-		wf.Status.Nodes = offloadedWf.Status.Nodes
+		wf.Status.Nodes = offloadedNodes
 	}
 	return wf, nil
 }

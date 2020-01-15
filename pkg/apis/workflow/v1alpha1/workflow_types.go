@@ -776,8 +776,9 @@ type WorkflowStatus struct {
 	// Nodes is a mapping between a node ID and the node's status.
 	Nodes Nodes `json:"nodes,omitempty" protobuf:"bytes,6,rep,name=nodes"`
 
-	// Whether on not node status has been offloaded to a database. If true, then Nodes and CompressedNodes will be empty.
-	OffloadNodeStatus bool `json:"offloadNodeStatus,omitempty" protobuf:"bytes,10,rep,name=offloadNodeStatus"`
+	// Whether on not node status has been offloaded to a database. If exists, then Nodes and CompressedNodes will be empty.
+	// This will actually be populated with a hash of the offloaded data.
+	OffloadNodeStatusVersion string `json:"offloadNodeStatusVersion,omitempty" protobuf:"bytes,10,rep,name=offloadNodeStatusVersion"`
 
 	// StoredTemplates is a mapping between a template ref and the node's status.
 	StoredTemplates map[string]Template `json:"storedTemplates,omitempty" protobuf:"bytes,9,rep,name=storedTemplates"`
@@ -788,6 +789,18 @@ type WorkflowStatus struct {
 
 	// Outputs captures output values and artifact locations produced by the workflow via global outputs
 	Outputs *Outputs `json:"outputs,omitempty" protobuf:"bytes,8,opt,name=outputs"`
+}
+
+func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
+	return ws.OffloadNodeStatusVersion != ""
+}
+
+func (ws *WorkflowStatus) GetOffloadNodeStatusVersion() string {
+	return ws.OffloadNodeStatusVersion
+}
+
+func (wf *Workflow) GetOffloadNodeStatusVersion() string {
+	return wf.Status.GetOffloadNodeStatusVersion()
 }
 
 type RetryPolicy string

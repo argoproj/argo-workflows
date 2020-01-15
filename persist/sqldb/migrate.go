@@ -74,18 +74,24 @@ func migrate(cfg migrateCfg, session sqlbuilder.Database) error {
 		// huh - why does the pkey not have the same name as the table - history
 		ansiSQLChange(`alter table argo_archived_workflows drop constraint argo_workflow_history_pkey`),
 		ansiSQLChange(`alter table argo_archived_workflows add primary key(id)`),
-		// add resource version to tables
-		ansiSQLChange(`alter table ` + cfg.tableName + ` add resourceversion varchar(256)`),
-		ansiSQLChange(`alter table argo_archived_workflows add resourceversion varchar(256)`),
-		backfillResourceVersion(cfg),
+		// argo_archived_workflows now looks like:
+		// id  | name | phase | namespace | workflow | startedat | finishedat
+		// add version to tables
+		ansiSQLChange(`alter table ` + cfg.tableName + ` add column version varchar(64)`),
+		ansiSQLChange(`alter table ` + cfg.tableName + ` add column nodes text`),
+		backfillNodes(cfg),
+		ansiSQLChange(`alter table ` + cfg.tableName + ` drop column workflow`),
+		ansiSQLChange(`alter table ` + cfg.tableName + ` drop column id`),
+		ansiSQLChange(`alter table ` + cfg.tableName + ` drop column phase`),
+		ansiSQLChange(`alter table ` + cfg.tableName + ` drop column startedat`),
+		ansiSQLChange(`alter table ` + cfg.tableName + ` drop column finishedat`),
+		ansiSQLChange(`alter table ` + cfg.tableName + ` alter column version set not null`),
 		ansiSQLChange(`alter table ` + cfg.tableName + ` drop constraint ` + cfg.tableName + `_pkey`),
-		ansiSQLChange(`alter table ` + cfg.tableName + ` alter column resourceversion set not null`),
-		ansiSQLChange(`alter table ` + cfg.tableName + ` add primary key(name,namespace,resourceversion)`),
-		ansiSQLChange(`alter table argo_archived_workflows alter column resourceversion set not null`),
-		// added updated at column
+		ansiSQLChange(`alter table ` + cfg.tableName + ` add primary key(name,namespace,version)`),
 		ansiSQLChange(`alter table ` + cfg.tableName + ` add column updatedat timestamp not null default current_timestamp`),
+		// argo_workflows now looks like:
+		//  name | namespace | version | nodes | updatedat
 	} {
-
 		if changeSchemaVersion > schemaVersion {
 			log.WithFields(log.Fields{"changeSchemaVersion": changeSchemaVersion, "change": change}).Info("Applying database change")
 			err := change.Apply(session)
