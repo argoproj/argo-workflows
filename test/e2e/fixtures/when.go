@@ -62,21 +62,6 @@ func (w *When) CreateWorkflowTemplate() *When {
 	return w
 }
 
-func (w *When) CreateWorkflowTemplate() *When {
-	if w.wfTemplate == nil {
-		w.t.Fatal("No workflow template to create")
-	}
-	log.WithField("test", w.t.Name()).Info("Creating workflow template")
-	wfTmpl, err := w.wfTemplateClient.Create(w.wfTemplate)
-	if err != nil {
-		w.t.Fatal(err)
-	} else {
-		w.wfTemplateName = wfTmpl.Name
-	}
-	log.WithField("test", w.t.Name()).Info("Workflow template created")
-	return w
-}
-
 func (w *When) CreateCronWorkflow() *When {
 	if w.cronWf == nil {
 		w.t.Fatal("No cron workflow to create")

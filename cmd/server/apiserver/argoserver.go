@@ -39,29 +39,31 @@ import (
 )
 
 type argoServer struct {
-	namespace     string
-	kubeClientset *kubernetes.Clientset
-	authenticator auth.Gatekeeper
-	configName    string
-	stopCh        chan struct{}
+	namespace        string
+	managedNamespace string
+	kubeClientset    *kubernetes.Clientset
+	authenticator    auth.Gatekeeper
+	configName       string
+	stopCh           chan struct{}
 }
 
 type ArgoServerOpts struct {
-	Namespace     string
-	KubeClientset *kubernetes.Clientset
-	WfClientSet   *versioned.Clientset
-	RestConfig    *rest.Config
-	AuthMode      string
-	ConfigName    string
+	Namespace        string
+	KubeClientset    *kubernetes.Clientset
+	WfClientSet      *versioned.Clientset
+	RestConfig       *rest.Config
+	AuthMode         string
+	ConfigName       string
 	ManagedNamespace string
 }
 
 func NewArgoServer(opts ArgoServerOpts) *argoServer {
 	return &argoServer{
-		namespace:     opts.Namespace,
-		kubeClientset: opts.KubeClientset,
-		authenticator: auth.NewGatekeeper(opts.AuthMode, opts.WfClientSet, opts.KubeClientset, opts.RestConfig),
-		configName:    opts.ConfigName,
+		namespace:        opts.Namespace,
+		managedNamespace: opts.ManagedNamespace,
+		kubeClientset:    opts.KubeClientset,
+		authenticator:    auth.NewGatekeeper(opts.AuthMode, opts.WfClientSet, opts.KubeClientset, opts.RestConfig),
+		configName:       opts.ConfigName,
 	}
 }
 
