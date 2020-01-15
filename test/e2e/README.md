@@ -54,7 +54,7 @@ kubectl -n argo scale deploy/workflow-controller --replicas 0
 The run `cmd/workflow-controller/main.go` using these arguments, which enable debug logging, and make sure you use locally build image:
 
 ```
---loglevel debug --executor-image argoproj/argoexec:your-branch --executor-image-pull-policy Never --namespaced
+--loglevel debug --executor-image argoproj/argoexec:your-branch --executor-image-pull-policy Never
 ```
 
 ### Running The Argo Server In Your IDE
@@ -77,12 +77,30 @@ The run `cmd/server/main.go` using these arguments, which enable debug logging, 
 If you're making changes to the executor, run:
 
 ```
-make executor-image
+make executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/ IMAGE_TAG=dev 
 ```
 
 ### To Switch Between Postgres and MySQL
 
-TODO
+Edit `test/e2e/manifest/workflow-controller-config.yaml` and comment/un-comment correct section.
+
+```
+kubectl -n argo apply test/e2e/manifest/workflow-controller-config.yaml
+```
+
+Then either for Postgres: 
+
+```
+kubectl -n argo scale deploy/mysql --replicas 0
+kubectl -n argo scale deploy/postgres --replicas 1
+```
+
+Or for MySQL
+
+```
+kubectl -n argo scale deploy/postgres --replicas 0
+kubectl -n argo scale deploy/mysql --replicas 1
+```
 
 To access the Postgres database as follows:
 
