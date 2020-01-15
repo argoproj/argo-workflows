@@ -39,10 +39,10 @@ func NewRetryCommand() *cobra.Command {
 					log.Fatal(err)
 				}
 
-			err = packer.DecompressWorkflow(wf)
-			if err != nil {
-				log.Fatal(err)
-			}
+				err = packer.DecompressWorkflow(wf)
+				if err != nil {
+					log.Fatal(err)
+				}
 
 				wf, err = util.RetryWorkflow(kubeClient, wfClient, wf)
 				if err != nil {
