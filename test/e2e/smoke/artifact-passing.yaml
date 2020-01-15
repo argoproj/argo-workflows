@@ -2,6 +2,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: artifact-passing
+  labels:
+    argo-e2e: true
 spec:
   entrypoint: artifact-example
   templates:
@@ -21,6 +23,7 @@ spec:
         image: docker/whalesay:latest
         command: [sh, -c]
         args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+        imagePullPolicy: IfNotPresent
       outputs:
         artifacts:
           - name: hello-art
@@ -33,5 +36,6 @@ spec:
             path: /tmp/message
       container:
         image: docker/whalesay:latest
+        imagePullPolicy: IfNotPresent
         command: [sh, -c]
         args: ["cat /tmp/message"]

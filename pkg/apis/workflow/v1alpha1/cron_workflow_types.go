@@ -26,7 +26,7 @@ type CronWorkflowList struct {
 
 type CronWorkflowSpec struct {
 	// WorkflowSpec is the spec of the workflow to be run
-	WorkflowSpec WorkflowSpec `json:"workflowSpec,omitempty" protobuf:"bytes,1,opt,name=workflowSpec,casttype=WorkflowSpec"`
+	WorkflowSpec WorkflowSpec `json:"workflowSpec" protobuf:"bytes,1,opt,name=workflowSpec,casttype=WorkflowSpec"`
 	// Schedule is a schedule to run the Workflow in Cron format
 	Schedule string `json:"schedule" protobuf:"bytes,2,opt,name=schedule"`
 	// ConcurrencyPolicy is the K8s-style concurrency policy that will be used

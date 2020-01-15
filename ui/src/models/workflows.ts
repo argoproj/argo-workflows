@@ -522,17 +522,17 @@ export interface Template {
     /**
      * DAG template
      */
-    dag: DAGTemplate;
+    dag?: DAGTemplate;
 
     /**
      * Template is the name of the template which is used as the base of this template.
      */
-    template: string;
+    template?: string;
 
     /**
      * TemplateRef is the reference to the template resource which is used as the base of this template.
      */
-    templateRef: TemplateRef;
+    templateRef?: TemplateRef;
 }
 /**
  * ValueFrom describes a location in which to obtain the value to a parameter
@@ -572,7 +572,7 @@ export interface Workflow {
     kind?: string;
     metadata: kubernetes.ObjectMeta;
     spec: WorkflowSpec;
-    status: WorkflowStatus;
+    status?: WorkflowStatus;
 }
 
 export function compareWorkflows(first: Workflow, second: Workflow) {
@@ -594,7 +594,7 @@ export function compareWorkflows(first: Workflow, second: Workflow) {
     return moment(jStart).diff(iStart);
 }
 
-export type NodeType = 'Pod' | 'Steps' | 'StepGroup' | 'DAG' | 'Retry' | 'Skipped' | 'TaskGroup';
+export type NodeType = 'Pod' | 'Steps' | 'StepGroup' | 'DAG' | 'Retry' | 'Skipped' | 'TaskGroup' | 'Suspend';
 
 export interface NodeStatus {
     /**
@@ -694,12 +694,12 @@ export interface NodeStatus {
      * TemplateRef is the reference to the template resource which this node corresponds to.
      * Not applicable to virtual nodes (e.g. Retry, StepGroup)
      */
-    templateRef: TemplateRef;
+    templateRef?: TemplateRef;
 
     /**
      * TemplateScope is the template scope in which the template of this node was retrieved.
      */
-    templateScope: string;
+    templateScope?: string;
 }
 
 export interface TemplateRef {
@@ -715,14 +715,14 @@ export interface TemplateRef {
      * RuntimeResolution skips validation at creation time.
      * By enabling this option, you can create the referred workflow template before the actual runtime.
      */
-    runtimeResolution: boolean;
+    runtimeResolution?: boolean;
 }
 
 export interface WorkflowStatus {
     /**
      * Phase a simple, high-level summary of where the workflow is in its lifecycle.
      */
-    phase: string;
+    phase: NodePhase;
     startedAt: kubernetes.Time;
     finishedAt: kubernetes.Time;
     /**
@@ -816,6 +816,11 @@ export interface WorkflowSpec {
      * Volumes is a list of volumes that can be mounted by containers in a workflow.
      */
     volumes?: kubernetes.Volume[];
+
+    /**
+     * Suspend will suspend the workflow and prevent execution of any future steps in the workflow
+     */
+    suspend?: boolean;
 }
 
 export interface DAGTemplate {

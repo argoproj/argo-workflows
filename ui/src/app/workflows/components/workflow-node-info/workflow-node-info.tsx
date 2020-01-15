@@ -4,6 +4,7 @@ import * as moment from 'moment';
 import * as React from 'react';
 
 import * as models from '../../../../models';
+import {Timestamp} from '../../../shared/components/timestamp';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 
@@ -17,7 +18,8 @@ function nodeDuration(node: models.NodeStatus, now: moment.Moment) {
 interface Props {
     node: models.NodeStatus;
     workflow: models.Workflow;
-    onShowContainerLogs?: (nodeId: string, container: string) => any;
+    archived: boolean;
+    onShowContainerLogs: (nodeId: string, container: string) => any;
     onShowYaml?: (nodeId: string) => any;
 }
 
@@ -47,9 +49,16 @@ export const WorkflowNodeSummary = (props: Props) => {
                 </span>
             )
         },
-        ...(props.node.message ? [{title: 'MESSAGE', value: <span className='workflow-node-info__multi-line'>{props.node.message}</span>}] : []),
-        {title: 'START TIME', value: props.node.startedAt},
-        {title: 'END TIME', value: props.node.finishedAt || '-'},
+        ...(props.node.message
+            ? [
+                  {
+                      title: 'MESSAGE',
+                      value: <span className='workflow-node-info__multi-line'>{props.node.message}</span>
+                  }
+              ]
+            : []),
+        {title: 'START TIME', value: <Timestamp date={props.node.startedAt} />},
+        {title: 'END TIME', value: <Timestamp date={props.node.finishedAt} />},
         {
             title: 'DURATION',
             value: (
@@ -115,10 +124,16 @@ export const WorkflowNodeContainer = (props: {
     const attributes = [
         {title: 'NAME', value: container.name || 'main'},
         {title: 'IMAGE', value: container.image},
-        {title: 'COMMAND', value: <span className='workflow-node-info__multi-line'>{(container.command || []).join(' ')}</span>},
+        {
+            title: 'COMMAND',
+            value: <span className='workflow-node-info__multi-line'>{(container.command || []).join(' ')}</span>
+        },
         container.source
             ? {title: 'SOURCE', value: <span className='workflow-node-info__multi-line'>{container.source}</span>}
-            : {title: 'ARGS', value: <span className='workflow-node-info__multi-line'>{(container.args || []).join(' ')}</span>}
+            : {
+                  title: 'ARGS',
+                  value: <span className='workflow-node-info__multi-line'>{(container.args || []).join(' ')}</span>
+              }
     ];
     return (
         <div className='white-box'>
@@ -176,7 +191,7 @@ export const WorkflowNodeArtifacts = (props: Props) => {
             props.node.outputs.artifacts &&
             props.node.outputs.artifacts.map(artifact =>
                 Object.assign({}, artifact, {
-                    downloadUrl: services.workflows.getArtifactDownloadUrl(props.workflow, props.node.id, artifact.name),
+                    downloadUrl: services.workflows.getArtifactDownloadUrl(props.workflow, props.node.id, artifact.name, props.archived),
                     stepName: props.node.name,
                     dateCreated: props.node.finishedAt,
                     nodeName: props.node.name
@@ -190,8 +205,13 @@ export const WorkflowNodeArtifacts = (props: Props) => {
                     <div className='columns small-12 text-center'>No data to display</div>
                 </div>
             )}
+            {artifacts.length > 0 && props.archived && (
+                <p>
+                    <i className='fa fa-exclamation-triangle' /> Artifacts for archived workflows maybe be overwritten by a more recent workflow with the same name.
+                </p>
+            )}
             {artifacts.map(artifact => (
-                <div className='row' key={artifact.path}>
+                <div className='row' key={artifact.name}>
                     <div className='columns small-1'>
                         <a href={artifact.downloadUrl}>
                             {' '}
@@ -208,7 +228,7 @@ export const WorkflowNodeArtifacts = (props: Props) => {
                                 {artifact.path}
                             </span>
                             <span title={artifact.dateCreated.toString()} className='muted'>
-                                {artifact.dateCreated}
+                                <Timestamp date={artifact.dateCreated} />
                             </span>
                         </div>
                     </div>

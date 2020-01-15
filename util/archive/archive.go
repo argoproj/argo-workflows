@@ -7,9 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/util"
-	log "github.com/sirupsen/logrus"
 )
 
 type flusher interface {
