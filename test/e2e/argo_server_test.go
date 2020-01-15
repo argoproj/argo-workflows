@@ -697,6 +697,36 @@ func (s *ArgoServerSuite) TestArchivedWorkflow() {
 }
 
 func (s *ArgoServerSuite) TestWorkflowTemplates() {
+
+	s.Run("Lint", func(t *testing.T) {
+		s.e(t).POST("/api/v1/workflow-templates/argo/lint").
+			WithBytes([]byte(`{
+  "template": {
+    "metadata": {
+      "name": "test",
+      "labels": {
+         "argo-e2e": "true"
+      }
+    },
+    "spec": {
+      "templates": [
+        {
+          "name": "run-workflow",
+          "container": {
+            "name": "",
+            "image": "docker/whalesay:latest",
+            "imagePullPolicy": "IfNotPresent"
+          }
+        }
+      ],
+      "entrypoint": "run-workflow"
+    }
+  }
+}`)).
+			Expect().
+			Status(200)
+	})
+
 	s.Run("Create", func(t *testing.T) {
 		s.e(t).POST("/api/v1/workflow-templates/argo").
 			WithBytes([]byte(`{
