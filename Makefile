@@ -49,7 +49,7 @@ CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join 
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 
 .PHONY: build
-build: clis executor-image controller-image dist/install.yaml dist/namespace-install.yaml dist/quick-start-postgres.yaml dist/quick-start-mysql.yaml
+build: clis executor-image controller-image dist/install.yaml dist/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
 
 vendor: Gopkg.toml
 	# Get Go dependencies
@@ -204,25 +204,25 @@ dist/namespace-install.yaml: manifests/namespace-install
 	# Create namespace instnall manifests
 	cat manifests/namespace-install.yaml | sed 's/:latest/:$(IMAGE_TAG)/' > dist/namespace-install.yaml
 
-dist/quick-start-mysql.yaml: manifests/namespace-install.yaml
+manifests/quick-start-mysql.yaml: manifests/namespace-install.yaml
 	# Create MySQL quick-start manifests
-	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(IMAGE_TAG)/' > dist/quick-start-mysql.yaml
+	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(IMAGE_TAG)/' > manifests/quick-start-mysql.yaml
 
 .PHONY: install-mysql
-install-mysql: dist/quick-start-mysql.yaml
+install-mysql: manifests/quick-start-mysql.yaml
 	# Install MySQL quick-start
 	kubectl get ns argo || kubectl create ns argo
-	kubectl -n argo apply -f dist/quick-start-mysql.yaml
+	kubectl -n argo apply -f manifests/quick-start-mysql.yaml
 
-dist/quick-start-postgres.yaml: manifests/namespace-install.yaml
+manifests/quick-start-postgres.yaml: manifests/namespace-install.yaml
 	# Create Postgres quick-start manifests
-	kustomize build manifests/quick-start/postgres | sed 's/:latest/:$(IMAGE_TAG)/' > dist/quick-start-postgres.yaml
+	kustomize build manifests/quick-start/postgres | sed 's/:latest/:$(IMAGE_TAG)/' > manifests/quick-start-postgres.yaml
 
 .PHONY: install-postgres
-install-postgres: dist/quick-start-postgres.yaml
+install-postgres: manifests/quick-start-postgres.yaml
 	# Install Postgres quick-start
 	kubectl get ns argo || kubectl create ns argo
-	kubectl -n argo apply -f dist/quick-start-postgres.yaml
+	kubectl -n argo apply -f manifests/quick-start-postgres.yaml
 
 .PHONY: install
 install: install-postgres
@@ -378,14 +378,6 @@ ifeq ($(GITHUB_TOKEN),)
 	exit 1
 endif
 	# Upload assets to Github
-	./hack/upload-asset.sh $(VERSION) cmd/server/workflow/workflow.swagger.json
-	./hack/upload-asset.sh $(VERSION) cmd/server/cronworkflow/cron-workflow.swagger.json
-	./hack/upload-asset.sh $(VERSION) cmd/server/workflowarchive/workflow-archive.swagger.json
-	./hack/upload-asset.sh $(VERSION) cmd/server/workflowtemplate/workflow-template.swagger.json
-	./hack/upload-asset.sh $(VERSION) dist/install.yaml
-	./hack/upload-asset.sh $(VERSION) dist/namespace-install.yaml
-	./hack/upload-asset.sh $(VERSION) dist/quick-start-postgres.yaml
-	./hack/upload-asset.sh $(VERSION) dist/quick-start-mysql.yaml
 	./hack/upload-asset.sh $(VERSION) dist/argo-darwin-amd64
 	./hack/upload-asset.sh $(VERSION) dist/argo-linux-amd64
 	./hack/upload-asset.sh $(VERSION) dist/argo-linux-ppc64le
