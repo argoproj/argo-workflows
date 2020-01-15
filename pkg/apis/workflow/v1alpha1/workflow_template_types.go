@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"strings"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -14,12 +16,26 @@ type WorkflowTemplate struct {
 	Spec              WorkflowTemplateSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 }
 
+type WorkflowTemplates []WorkflowTemplate
+
+func (w WorkflowTemplates) Len() int {
+	return len(w)
+}
+
+func (w WorkflowTemplates) Less(i, j int) bool {
+	return strings.Compare(w[j].ObjectMeta.Name, w[i].ObjectMeta.Name) > 0
+}
+
+func (w WorkflowTemplates) Swap(i, j int) {
+	w[i], w[j] = w[j], w[i]
+}
+
 // WorkflowTemplateList is list of WorkflowTemplate resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type WorkflowTemplateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-	Items           []WorkflowTemplate `json:"items" protobuf:"bytes,2,rep,name=items"`
+	Items           WorkflowTemplates `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
 var _ TemplateGetter = &WorkflowTemplate{}

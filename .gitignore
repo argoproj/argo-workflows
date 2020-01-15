@@ -6,7 +6,12 @@ dist/
 # delve debug binaries
 cmd/**/debug
 hack/**/debug
+/argo
+/argoexec
+/argo-server
 debug.test
 *.iml
-coverage.out
+/coverage.out
 .envrc
+/.vendor-new
+/workflow-controller

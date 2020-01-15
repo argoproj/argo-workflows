@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/argoproj/argo/workflow/cron"
 
 	"github.com/argoproj/pkg/cli"
@@ -67,8 +69,16 @@ func NewRootCommand() *cobra.Command {
 			kubeclientset := kubernetes.NewForConfigOrDie(config)
 			wfclientset := wfclientset.NewForConfigOrDie(config)
 
+			if !namespaced && managedNamespace != "" {
+				log.Warn("ignoring --managed-namespace because --namespaced is false")
+				managedNamespace = ""
+			}
+			if namespaced && managedNamespace == "" {
+				managedNamespace = namespace
+			}
+
 			// start a controller on instances of our custom resource
-			wfController := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, executorImage, executorImagePullPolicy, configMap)
+			wfController := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, configMap)
 			err = wfController.ResyncConfig()
 			if err != nil {
 				return err
@@ -81,18 +91,9 @@ func NewRootCommand() *cobra.Command {
 				fmt.Fprintf(os.Stderr, "it will be removed in next major release. Instead please add \n")
 				fmt.Fprintf(os.Stderr, "\"--namespaced\" to workflow-controller start args.\n")
 				fmt.Fprintf(os.Stderr, "-----------------------------------------------------------------\n\n")
-			} else {
-				if namespaced {
-					if len(managedNamespace) > 0 {
-						wfController.Config.Namespace = managedNamespace
-					} else {
-						wfController.Config.Namespace = namespace
-					}
-				}
 			}
-			//
 
-			cronController := cron.NewCronController(wfclientset, config, namespace)
+			cronController := cron.NewCronController(wfclientset, config, namespace, wfController.GetManagedNamespace())
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -104,7 +105,6 @@ func NewRootCommand() *cobra.Command {
 
 			// Wait forever
 			select {}
-
 		},
 	}
 

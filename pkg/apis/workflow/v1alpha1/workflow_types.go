@@ -96,12 +96,34 @@ type Workflow struct {
 	Status            WorkflowStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
 }
 
+// Workflows is a sort interface which sorts running jobs earlier before considering FinishedAt
+type Workflows []Workflow
+
+func (w Workflows) Len() int      { return len(w) }
+func (w Workflows) Swap(i, j int) { w[i], w[j] = w[j], w[i] }
+func (w Workflows) Less(i, j int) bool {
+	iStart := w[i].ObjectMeta.CreationTimestamp
+	iFinish := w[i].Status.FinishedAt
+	jStart := w[j].ObjectMeta.CreationTimestamp
+	jFinish := w[j].Status.FinishedAt
+	if iFinish.IsZero() && jFinish.IsZero() {
+		return !iStart.Before(&jStart)
+	}
+	if iFinish.IsZero() && !jFinish.IsZero() {
+		return true
+	}
+	if !iFinish.IsZero() && jFinish.IsZero() {
+		return false
+	}
+	return jFinish.Before(&iFinish)
+}
+
 // WorkflowList is list of Workflow resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type WorkflowList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-	Items           []Workflow `json:"items" protobuf:"bytes,2,opt,name=items"`
+	Items           Workflows `json:"items" protobuf:"bytes,2,opt,name=items"`
 }
 
 var _ TemplateGetter = &Workflow{}
@@ -246,8 +268,9 @@ type WorkflowSpec struct {
 
 	// SecurityContext holds pod-level security attributes and common container settings.
 	// Optional: Defaults to empty.  See type description for default values of each field.
-	// +optiona
+	// +optional
 	SecurityContext *apiv1.PodSecurityContext `json:"securityContext,omitempty" protobuf:"bytes,26,opt,name=securityContext"`
+
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,27,opt,name=podSpecPatch"`
@@ -431,6 +454,17 @@ func (tmpl *Template) HasPodSpecPatch() bool {
 	return tmpl.PodSpecPatch != ""
 }
 
+type Artifacts []Artifact
+
+func (a Artifacts) GetArtifactByName(name string) *Artifact {
+	for _, art := range a {
+		if art.Name == name {
+			return &art
+		}
+	}
+	return nil
+}
+
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 type Inputs struct {
 	// Parameters are a list of parameters passed as inputs
@@ -441,7 +475,7 @@ type Inputs struct {
 	// Artifact are a list of artifacts passed as inputs
 	// +patchStrategy=merge
 	// +patchMergeKey=name
-	Artifacts []Artifact `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,opt,name=artifacts"`
+	Artifacts Artifacts `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,opt,name=artifacts"`
 }
 
 // Pod metdata
@@ -576,7 +610,7 @@ type Outputs struct {
 	// Artifacts holds the list of output artifacts produced by a step
 	// +patchStrategy=merge
 	// +patchMergeKey=name
-	Artifacts []Artifact `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
+	Artifacts Artifacts `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
 
 	// Result holds the result (stdout) of a script template
 	Result *string `json:"result,omitempty" protobuf:"bytes,3,opt,name=result"`
@@ -695,7 +729,7 @@ type Arguments struct {
 	// Artifacts is the list of artifacts to pass to the template or workflow
 	// +patchStrategy=merge
 	// +patchMergeKey=name
-	Artifacts []Artifact `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
+	Artifacts Artifacts `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
 }
 
 var _ ArgumentsProvider = &Arguments{}
@@ -741,6 +775,9 @@ type WorkflowStatus struct {
 
 	// Nodes is a mapping between a node ID and the node's status.
 	Nodes Nodes `json:"nodes,omitempty" protobuf:"bytes,6,rep,name=nodes"`
+
+	// Whether on not node status has been offloaded to a database. If true, then Nodes and CompressedNodes will be empty.
+	OffloadNodeStatus bool `json:"offloadNodeStatus,omitempty" protobuf:"bytes,10,rep,name=offloadNodeStatus"`
 
 	// StoredTemplates is a mapping between a template ref and the node's status.
 	StoredTemplates map[string]Template `json:"storedTemplates,omitempty" protobuf:"bytes,9,rep,name=storedTemplates"`
@@ -1250,12 +1287,7 @@ type SuspendTemplate struct {
 
 // GetArtifactByName returns an input artifact by its name
 func (in *Inputs) GetArtifactByName(name string) *Artifact {
-	for _, art := range in.Artifacts {
-		if art.Name == name {
-			return &art
-		}
-	}
-	return nil
+	return in.Artifacts.GetArtifactByName(name)
 }
 
 // GetParameterByName returns an input parameter by its name
@@ -1293,14 +1325,13 @@ func (out *Outputs) HasOutputs() bool {
 	return false
 }
 
+func (out *Outputs) GetArtifactByName(name string) *Artifact {
+	return out.Artifacts.GetArtifactByName(name)
+}
+
 // GetArtifactByName retrieves an artifact by its name
 func (args *Arguments) GetArtifactByName(name string) *Artifact {
-	for _, art := range args.Artifacts {
-		if art.Name == name {
-			return &art
-		}
-	}
-	return nil
+	return args.Artifacts.GetArtifactByName(name)
 }
 
 // GetParameterByName retrieves a parameter by its name
