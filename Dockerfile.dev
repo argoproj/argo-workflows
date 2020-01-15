@@ -63,10 +63,3 @@ ENTRYPOINT [ "workflow-controller" ]
 FROM scratch as argocli
 COPY argo /bin/
 ENTRYPOINT [ "argo" ]
-
-####################################################################################################
-# argo-server
-####################################################################################################
-FROM scratch as argo-server
-COPY argo-server /bin/
-ENTRYPOINT [ "argo-server" ]

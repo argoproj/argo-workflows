@@ -37,6 +37,7 @@ func NewLintCommand() *cobra.Command {
 				if err != nil {
 					log.Fatal(err)
 				}
+				fmt.Printf("WorkflowTemplate manifests validated\n")
 			} else {
 				wftmplGetter := &LazyWorkflowTemplateGetter{}
 				validateDir := cmdutil.MustIsDir(args[0])
@@ -50,7 +51,7 @@ func NewLintCommand() *cobra.Command {
 					if err != nil {
 						log.Fatal(err)
 					}
-					fmt.Printf("Workflow manifests validated\n")
+					fmt.Printf("WorkflowTemplate manifests validated\n")
 				} else {
 					yamlFiles := make([]string, 0)
 					for _, filePath := range args {
@@ -67,7 +68,7 @@ func NewLintCommand() *cobra.Command {
 						}
 					}
 				}
-				fmt.Printf("Workflow manifests validated\n")
+				fmt.Printf("WorkflowTemplate manifests validated\n")
 			}
 
 		},

@@ -28,7 +28,6 @@ func (s *CLISuite) AfterTest(suiteName, testName string) {
 	_ = os.Unsetenv("ARGO_SERVER")
 }
 
-
 func (s *CLISuite) TestCompletion() {
 	s.Given().RunCli([]string{"completion", "bash"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
@@ -65,6 +64,41 @@ func (s *CLISuite) TestRoot() {
 		assert.Contains(t, output, "ServiceAccount:")
 		assert.Contains(t, output, "Status:")
 		assert.Contains(t, output, "Created:")
+	})
+}
+
+func (s *CLISuite) TestTemplate() {
+
+	s.Given().RunCli([]string{"template", "lint", "smoke/workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
+		assert.NoError(t, err)
+		assert.Contains(t, output, "validated")
+	})
+
+	s.Given().RunCli([]string{"template", "create", "smoke/workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
+		assert.NoError(t, err)
+		assert.Contains(t, output, "Name:")
+		assert.Contains(t, output, "Namespace:")
+		assert.Contains(t, output, "Created:")
+	})
+
+	s.Given().RunCli([]string{"template", "list"}, func(t *testing.T, output string, err error) {
+		assert.NoError(t, err)
+		assert.Contains(t, output, "NAME")
+	})
+
+	s.Given().RunCli([]string{"template", "get", "not-found"}, func(t *testing.T, output string, err error) {
+		assert.Error(t, err, "exit status 1")
+		assert.Contains(t, output, `"not-found" not found`)
+	}).RunCli([]string{"template", "get", "workflow-template-whalesay-template"}, func(t *testing.T, output string, err error) {
+		if assert.NoError(t, err) {
+			assert.Contains(t, output, "Name:")
+			assert.Contains(t, output, "Namespace:")
+			assert.Contains(t, output, "Created:")
+		}
+	})
+
+	s.Given().RunCli([]string{"template", "delete", "workflow-template-whalesay-template"}, func(t *testing.T, output string, err error) {
+		assert.NoError(t, err)
 	})
 }
 
@@ -116,7 +150,7 @@ func (s *CLISuite) TestArchive() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(30 * time.Second).
+		WaitForWorkflow(30*time.Second).
 		Then().
 		Expect(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID

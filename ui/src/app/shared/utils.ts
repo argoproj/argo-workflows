@@ -92,5 +92,33 @@ export const Utils = {
         } catch {
             return null;
         }
+    },
+
+    isNodeSuspended(node: models.NodeStatus): boolean {
+        return node.type === 'Suspend' && node.phase === 'Running';
+    },
+
+    isWorkflowSuspended(wf: models.Workflow): boolean {
+        if (wf === null || wf.spec === null) {
+            return false;
+        }
+        if (wf.spec.suspend !== undefined && wf.spec.suspend) {
+            return true;
+        }
+        if (wf.status && wf.status.nodes) {
+            for (const node of Object.values(wf.status.nodes)) {
+                if (node.type === 'Suspend' && node.phase === 'Running') {
+                    return true;
+                }
+            }
+        }
+        return false;
+    },
+
+    isWorkflowRunning(wf: models.Workflow): boolean {
+        if (wf === null || wf.spec === null) {
+            return false;
+        }
+        return wf.status.phase === 'Running';
     }
 };
