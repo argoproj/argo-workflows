@@ -43,8 +43,8 @@ func (s *SmokeSuite) TestArtifactPassing() {
 
 func (s *SmokeSuite) TestWorkflowTemplateBasic() {
 	s.Given().
-		WorkflowTemplate("@smoke/basic-wf-tmpl.yaml").
-		Workflow("@smoke/hello-world-wf-tmpl.yaml").
+		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
+		Workflow("@smoke/hello-world-workflow-tmpl.yaml").
 		When().
 		CreateWorkflowTemplates().
 		SubmitWorkflow().
