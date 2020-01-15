@@ -322,6 +322,7 @@ func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
 }
 
 func (s *ArgoServerSuite) TestWorkflows() {
+
 	s.Run("Create", func(t *testing.T) {
 		s.e(t).POST("/api/v1/workflows/argo").
 			WithBytes([]byte(`{
@@ -329,7 +330,7 @@ func (s *ArgoServerSuite) TestWorkflows() {
     "metadata": {
       "name": "test",
       "labels": {
-         "argo-e2e": "true"
+         "argo-e2e": "subject"
       }
     },
     "spec": {
@@ -353,8 +354,12 @@ func (s *ArgoServerSuite) TestWorkflows() {
 	})
 
 	s.Run("List", func(t *testing.T) {
+		// make sure list options work correctly
+		s.Given().
+			Workflow("@smoke/basic.yaml")
+
 		s.e(t).GET("/api/v1/workflows/").
-			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
 			Expect().
 			Status(200).
 			JSON().
@@ -434,7 +439,7 @@ func (s *ArgoServerSuite) TestCronWorkflows() {
     "metadata": {
       "name": "test",
       "labels": {
-        "argo-e2e": "true"
+        "argo-e2e": "subject"
       }
     },
     "spec": {
@@ -459,8 +464,12 @@ func (s *ArgoServerSuite) TestCronWorkflows() {
 	})
 
 	s.Run("List", func(t *testing.T) {
+		// make sure list options work correctly
+		s.Given().
+			CronWorkflow("@testdata/basic.yaml")
+
 		s.e(t).GET("/api/v1/cron-workflows/").
-			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
 			Expect().
 			Status(200).
 			JSON().
@@ -745,7 +754,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplates() {
     "metadata": {
       "name": "test",
       "labels": {
-         "argo-e2e": "true"
+         "argo-e2e": "subject"
       }
     },
     "spec": {
@@ -768,8 +777,13 @@ func (s *ArgoServerSuite) TestWorkflowTemplates() {
 	})
 
 	s.Run("List", func(t *testing.T) {
+
+		// make sure list options work correctly
+		s.Given().
+			WorkflowTemplate("@smoke/basic-wf-tmpl.yaml")
+
 		s.e(t).GET("/api/v1/workflow-templates/argo").
-			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
 			Expect().
 			Status(200).
 			JSON().

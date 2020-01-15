@@ -50,8 +50,11 @@ func (wts *WorkflowTemplateServer) GetWorkflowTemplate(ctx context.Context, req 
 
 func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, req *WorkflowTemplateListRequest) (*v1alpha1.WorkflowTemplateList, error) {
 	wfClient := auth.GetWfClient(ctx)
-
-	wfList, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).List(v1.ListOptions{})
+	options := v1.ListOptions{}
+	if req.ListOptions != nil {
+		options = *req.ListOptions
+	}
+	wfList, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).List(options)
 	if err != nil {
 		return nil, err
 	}

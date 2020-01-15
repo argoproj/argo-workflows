@@ -2,6 +2,7 @@ package fixtures
 
 import (
 	"fmt"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -16,7 +17,9 @@ type Diagnostics struct {
 }
 
 func (d *Diagnostics) Logf(format string, args ...interface{}) {
-	d.Log(log.Fields{}, fmt.Sprintf(format, args...))
+	for _, line := range strings.Split(fmt.Sprintf(format, args...), "\n") {
+		d.Log(log.Fields{}, line)
+	}
 }
 
 func (d *Diagnostics) Log(context log.Fields, message string) {
