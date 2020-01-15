@@ -73,11 +73,11 @@ func NewRootCommand() *cobra.Command {
 			log.WithFields(log.Fields{"namespace": namespace, "managedNamespace": managedNamespace}).Info()
 
 			opts := apiserver.ArgoServerOpts{
-				Namespace:     namespace,
-				WfClientSet:   wflientset,
-				KubeClientset: kubeConfig,
-				RestConfig:    config,
-				AuthMode:      authMode,
+				Namespace:        namespace,
+				WfClientSet:      wflientset,
+				KubeClientset:    kubeConfig,
+				RestConfig:       config,
+				AuthMode:         authMode,
 				ManagedNamespace: managedNamespace,
 			}
 			err = opts.ValidateOpts()
