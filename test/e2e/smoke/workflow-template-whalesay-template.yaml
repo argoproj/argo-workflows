@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: basic-wf-tmpl
+  name: workflow-template-whalesay-template
 spec:
   templates:
     - name: whalesay-template
