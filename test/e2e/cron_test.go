@@ -5,6 +5,8 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/pkg/humanize"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -186,14 +188,14 @@ func wfInformerListOptionsFunc(options *v1.ListOptions, cronWfName string) {
 
 func TestCronSuite(t *testing.T) {
 	// To ensure consistency, always start at the next 30 second mark
-	//_, _, sec := time.Now().Clock()
-	//var toWait time.Duration
-	//if sec <= 30 {
-	//	toWait = time.Duration(30-sec) * time.Second
-	//} else {
-	//	toWait = time.Duration(90-sec) * time.Second
-	//}
-	//logrus.Infof("Waiting %s to start", humanize.Duration(toWait))
-	//time.Sleep(toWait)
+	_, _, sec := time.Now().Clock()
+	var toWait time.Duration
+	if sec <= 30 {
+		toWait = time.Duration(30-sec) * time.Second
+	} else {
+		toWait = time.Duration(90-sec) * time.Second
+	}
+	logrus.Infof("Waiting %s to start", humanize.Duration(toWait))
+	time.Sleep(toWait)
 	suite.Run(t, new(CronSuite))
 }
