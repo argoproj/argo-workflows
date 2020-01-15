@@ -35,11 +35,14 @@ RUN wget https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-lin
 FROM debian:9.6-slim as argoexec-base
 # NOTE: keep the version synced with https://storage.googleapis.com/kubernetes-release/release/stable.txt
 ENV KUBECTL_VERSION=1.15.1
+ENV JQ_VERSION=1.6
 RUN apt-get update && \
-    apt-get install -y curl jq procps git tar mime-support && \
+    apt-get install -y curl procps git tar mime-support && \
     rm -rf /var/lib/apt/lists/* && \
     curl -L -o /usr/local/bin/kubectl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl && \
-    chmod +x /usr/local/bin/kubectl
+    chmod +x /usr/local/bin/kubectl && \
+    curl -L -o /usr/local/bin/jq -LO https://github.com/stedolan/jq/releases/download/jq-${JQ_VERSION}/jq-linux64 && \
+    chmod +x /usr/local/bin/jq
 COPY hack/ssh_known_hosts /etc/ssh/ssh_known_hosts
 COPY --from=builder /usr/local/bin/docker /usr/local/bin/
 

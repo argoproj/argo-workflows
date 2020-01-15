@@ -42,6 +42,7 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	unstructutil "github.com/argoproj/argo/util/unstructured"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/validate"
 )
@@ -342,6 +343,12 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error 
 		if err != nil {
 			return false, err
 		}
+
+		err = packer.DecompressWorkflow(wf)
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		updated := false
 		if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
 			wf.Spec.Suspend = nil
@@ -441,6 +448,10 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 	replaceRegexp := regexp.MustCompile("^" + wf.ObjectMeta.Name)
 	newWF.Status.Nodes = make(map[string]wfv1.NodeStatus)
 	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
+	err := packer.DecompressWorkflow(wf)
+	if err != nil {
+		log.Fatal(err)
+	}
 	for _, node := range wf.Status.Nodes {
 		newNode := node.DeepCopy()
 		if strings.HasPrefix(node.Name, onExitNodeName) {
