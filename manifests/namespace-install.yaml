@@ -248,6 +248,7 @@ spec:
       - args:
         - --auth-mode
         - client
+        - --namespaced
         image: argoproj/argo-server:latest
         name: argo-server
         ports:

@@ -61,6 +61,17 @@ func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 		})
 }
 
+func (s *ArgoServerSuite) TestInfo() {
+	s.Run("Get", func(t *testing.T) {
+		s.e(t).GET("/api/v1/info").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.managedNamespace").
+			Equal("argo")
+	})
+}
+
 func (s *ArgoServerSuite) TestUnauthorized() {
 	token := s.bearerToken
 	defer func() { s.bearerToken = token }()
