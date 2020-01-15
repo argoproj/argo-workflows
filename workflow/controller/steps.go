@@ -139,7 +139,6 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 		node.Outputs = outputs
 		woc.wf.Status.Nodes[node.ID] = *node
 	}
-
 	_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 	return node, nil
 }
@@ -240,11 +239,24 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 
 	node = woc.getNodeByName(sgNodeName)
 	// Return if not all children completed
+	completed := true
 	for _, childNodeID := range node.Children {
-		if !woc.wf.Status.Nodes[childNodeID].Completed() {
-			return node
+		childNode := woc.wf.Status.Nodes[childNodeID]
+		step := nodeSteps[childNode.Name]
+		if !childNode.Completed() {
+			completed = false
+		} else {
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(step.Name, step.OnExit, stepsCtx.boundaryID, stepsCtx.tmplCtx)
+			if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+				// The onExit node is either not complete or has errored out, return.
+				completed = false
+			}
 		}
 	}
+	if !completed {
+		return node
+	}
+
 	// All children completed. Determine step group status as a whole
 	for _, childNodeID := range node.Children {
 		childNode := woc.wf.Status.Nodes[childNodeID]

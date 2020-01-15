@@ -215,6 +215,11 @@ message DAGTask {
   // ContinueOn makes argo to proceed with the following step even if this step fails.
   // Errors and Failed states can be specified
   optional ContinueOn continueOn = 10;
+
+  // OnExit is a template reference which is invoked at the end of the
+  // template, irrespective of the success, failure, or error of the
+  // primary template.
+  optional string onExit = 11;
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -750,6 +755,9 @@ message Template {
   // +patchMergeKey=ip
   repeated k8s.io.api.core.v1.HostAlias hostAliases = 29;
 
+  // SecurityContext holds pod-level security attributes and common container settings.
+  // Optional: Defaults to empty.  See type description for default values of each field.
+  // +optional
   optional k8s.io.api.core.v1.PodSecurityContext securityContext = 30;
 
   // PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
@@ -1018,6 +1026,11 @@ message WorkflowStep {
   // ContinueOn makes argo to proceed with the following step even if this step fails.
   // Errors and Failed states can be specified
   optional ContinueOn continueOn = 9;
+
+  // OnExit is a template reference which is invoked at the end of the
+  // template, irrespective of the success, failure, or error of the
+  // primary template.
+  optional string onExit = 11;
 }
 
 // WorkflowTemplate is the definition of a workflow template resource
