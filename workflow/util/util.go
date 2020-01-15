@@ -39,10 +39,10 @@ import (
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
-	"github.com/argoproj/argo/util/file"
 	"github.com/argoproj/argo/util/retry"
 	unstructutil "github.com/argoproj/argo/util/unstructured"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/validate"
 )
@@ -165,6 +165,46 @@ type SubmitOpts struct {
 
 // SubmitWorkflow validates and submit a single workflow and override some of the fields of the workflow
 func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts *SubmitOpts) (*wfv1.Workflow, error) {
+
+	err := ApplySubmitOpts(wf, opts)
+	if err != nil {
+		return nil, err
+	}
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace))
+	err = validate.ValidateWorkflow(wftmplGetter, wf, validate.ValidateOpts{})
+	if err != nil {
+		return nil, err
+	}
+	if opts.DryRun {
+		return wf, nil
+	} else if opts.ServerDryRun {
+		wf, err := CreateServerDryRun(wf, wfClientset)
+		if err != nil {
+			return nil, err
+		}
+		return wf, err
+	} else {
+		return wfIf.Create(wf)
+	}
+}
+
+// CreateServerDryRun fills the workflow struct with the server's representation without creating it and returns an error, if there is any
+func CreateServerDryRun(wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*wfv1.Workflow, error) {
+	// Keep the workflow metadata because it will be overwritten by the Post request
+	workflowTypeMeta := wf.TypeMeta
+	err := wfClientset.ArgoprojV1alpha1().RESTClient().Post().
+		Namespace(wf.Namespace).
+		Resource("workflows").
+		Body(wf).
+		Param("dryRun", "All").
+		Do().
+		Into(wf)
+	wf.TypeMeta = workflowTypeMeta
+	return wf, err
+}
+
+// Apply the Submit options into workflow object
+func ApplySubmitOpts(wf *wfv1.Workflow, opts *SubmitOpts) error {
 	if opts == nil {
 		opts = &SubmitOpts{}
 	}
@@ -181,7 +221,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 	if opts.Labels != "" {
 		passedLabels, err := cmdutil.ParseLabels(opts.Labels)
 		if err != nil {
-			return nil, fmt.Errorf("Expected labels of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s", opts.Labels)
+			return fmt.Errorf("Expected labels of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s", opts.Labels)
 		}
 		for k, v := range passedLabels {
 			labels[k] = v
@@ -197,7 +237,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 		for _, paramStr := range opts.Parameters {
 			parts := strings.SplitN(paramStr, "=", 2)
 			if len(parts) == 1 {
-				return nil, fmt.Errorf("Expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
+				return fmt.Errorf("Expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
 			}
 			param := wfv1.Parameter{
 				Name:  parts[0],
@@ -214,19 +254,19 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 			if cmdutil.IsURL(opts.ParameterFile) {
 				body, err = ReadFromUrl(opts.ParameterFile)
 				if err != nil {
-					return nil, errors.InternalWrapError(err)
+					return errors.InternalWrapError(err)
 				}
 			} else {
 				body, err = ioutil.ReadFile(opts.ParameterFile)
 				if err != nil {
-					return nil, errors.InternalWrapError(err)
+					return errors.InternalWrapError(err)
 				}
 			}
 
 			yamlParams := map[string]json.RawMessage{}
 			err = yaml.Unmarshal(body, &yamlParams)
 			if err != nil {
-				return nil, errors.InternalWrapError(err)
+				return errors.InternalWrapError(err)
 			}
 
 			for k, v := range yamlParams {
@@ -267,39 +307,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 	if opts.OwnerReference != nil {
 		wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *opts.OwnerReference))
 	}
-
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace))
-	err := validate.ValidateWorkflow(wftmplGetter, wf, validate.ValidateOpts{})
-	if err != nil {
-		return nil, err
-	}
-
-	if opts.DryRun {
-		return wf, nil
-	} else if opts.ServerDryRun {
-		wf, err := CreateServerDryRun(wf, wfClientset)
-		if err != nil {
-			return nil, err
-		}
-		return wf, err
-	} else {
-		return wfIf.Create(wf)
-	}
-}
-
-// CreateServerDryRun fills the workflow struct with the server's representation without creating it and returns an error, if there is any
-func CreateServerDryRun(wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*wfv1.Workflow, error) {
-	// Keep the workflow metadata because it will be overwritten by the Post request
-	workflowTypeMeta := wf.TypeMeta
-	err := wfClientset.ArgoprojV1alpha1().RESTClient().Post().
-		Namespace(wf.Namespace).
-		Resource("workflows").
-		Body(wf).
-		Param("dryRun", "All").
-		Do().
-		Into(wf)
-	wf.TypeMeta = workflowTypeMeta
-	return wf, err
+	return nil
 }
 
 // SuspendWorkflow suspends a workflow by setting spec.suspend to true. Retries conflict errors
@@ -335,6 +343,12 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error 
 		if err != nil {
 			return false, err
 		}
+
+		err = packer.DecompressWorkflow(wf)
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		updated := false
 		if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
 			wf.Spec.Suspend = nil
@@ -434,6 +448,10 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 	replaceRegexp := regexp.MustCompile("^" + wf.ObjectMeta.Name)
 	newWF.Status.Nodes = make(map[string]wfv1.NodeStatus)
 	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
+	err := packer.DecompressWorkflow(wf)
+	if err != nil {
+		log.Fatal(err)
+	}
 	for _, node := range wf.Status.Nodes {
 		newNode := node.DeepCopy()
 		if strings.HasPrefix(node.Name, onExitNodeName) {
@@ -606,22 +624,6 @@ func TerminateWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
 		time.Sleep(100 * time.Millisecond)
 	}
 	return err
-}
-
-// DecompressWorkflow decompresses the compressed status of a workflow (if compressed)
-func DecompressWorkflow(wf *wfv1.Workflow) error {
-	if wf.Status.CompressedNodes != "" {
-		nodeContent, err := file.DecodeDecompressString(wf.Status.CompressedNodes)
-		if err != nil {
-			return errors.InternalWrapError(err)
-		}
-		err = json.Unmarshal([]byte(nodeContent), &wf.Status.Nodes)
-		if err != nil {
-			return err
-		}
-		wf.Status.CompressedNodes = ""
-	}
-	return nil
 }
 
 // Reads from stdin

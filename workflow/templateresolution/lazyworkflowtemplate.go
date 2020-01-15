@@ -1,10 +1,11 @@
 package templateresolution
 
 import (
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	v1alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // lazyWorkflowTemplate retrieves WorkflowTemplate lazily.

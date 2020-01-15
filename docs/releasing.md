@@ -1,64 +1,26 @@
 # Release Instructions
 
-1. Update CHANGELOG.md with changes in the release
+1. Prepare release:
 
-2. Update VERSION with new tag
-
-3. Update codegen, manifests with new tag
-
-```bash
-make codegen manifests IMAGE_NAMESPACE=argoproj IMAGE_TAG=vX.Y.Z
+```
+make prepare-release VERSION=v2.5.0
 ```
 
-4. Commit VERSION and manifest changes
+2. Release:
 
-```bash
-git add .
-git commit -m "Update version to vX.Y.Z"
+```
+make release VERSION=$VERSION
 ```
 
-5. git tag the release
+3. If stable:
 
-```bash
-git tag vX.Y.Z
 ```
-
-6. Build both the controller and UI release
-
-In argo repo:
-```bash
-make release IMAGE_NAMESPACE=argoproj IMAGE_TAG=vX.Y.Z
-```
-
-In argo-ui repo:
-```bash
-IMAGE_NAMESPACE=argoproj IMAGE_TAG=vX.Y.Z yarn docker
-```
-
-8. If successful, publish the release:
-```bash
-export ARGO_RELEASE=vX.Y.Z
-docker push argoproj/workflow-controller:${ARGO_RELEASE}
-docker push argoproj/argoexec:${ARGO_RELEASE}
-docker push argoproj/argocli:${ARGO_RELEASE}
-docker push argoproj/argoui:${ARGO_RELEASE}
-```
-
-9. Push commits and tags to git. Run the following in both the argo and argo-ui repos:
-
-In argo repo:
-```bash
-git push upstream
-git push upstream ${ARGO_RELEASE}
 git tag stable
-git push upstream stable
+git push stable stable
 ```
 
-In argo-ui repo:
-```bash
-git push upstream ${ARGO_RELEASE}
-```
+4. Update Homebrew.
 
-10. Draft GitHub release with the content from CHANGELOG.md, and CLI binaries produced in the `dist` directory
+5. Draft GitHub release with the content from CHANGELOG.md, and CLI binaries produced in the `dist` directory
 
 * https://github.com/argoproj/argo/releases/new

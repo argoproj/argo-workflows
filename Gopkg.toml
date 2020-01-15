@@ -4,6 +4,7 @@ required = [
   "k8s.io/code-generator/cmd/informer-gen",
   "k8s.io/code-generator/cmd/lister-gen",
   "gonum.org/v1/gonum/graph",
+  "github.com/golang/glog",
 ]
 
 [[constraint]]

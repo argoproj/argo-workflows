@@ -8,11 +8,6 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
@@ -20,6 +15,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/utils/pointer"
+
+	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 // Reusable k8s pod spec portions used in workflow pods
