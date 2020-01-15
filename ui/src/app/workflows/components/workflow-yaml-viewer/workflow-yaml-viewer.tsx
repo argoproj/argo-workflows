@@ -1,7 +1,7 @@
 import {SlideContents, Utils as ArgoUtils} from 'argo-ui';
 import * as React from 'react';
-import * as yaml from 'yamljs';
 
+import * as jsYaml from 'js-yaml';
 import * as models from '../../../../models';
 import {Utils} from '../../../shared/utils';
 
@@ -25,6 +25,7 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
 
     public render() {
         const contents: JSX.Element[] = [];
+        contents.push(<h3 key='title'>YAML</h3>);
         if (this.props.selectedNode) {
             const parentNode = this.props.workflow.status.nodes[this.props.selectedNode.boundaryID];
             if (parentNode) {
@@ -34,45 +35,47 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
                 if (this.props.selectedNode) {
                     nodeName = this.normalizeNodeName(this.props.selectedNode.displayName || this.props.selectedNode.name);
                 }
-                let parentTemplateStr = yaml.stringify(parentTemplate, 4, 1);
+                let parentTemplateStr = jsYaml.dump(parentTemplate);
                 if (nodeName) {
                     parentTemplateStr = this.highlightStep(parentTemplate, nodeName, parentTemplateStr);
                 }
                 contents.push(
-                    <div className='workflow-yaml-section'>
+                    <div className='workflow-yaml-section' key='parent-node'>
                         <h4>Parent Node</h4>
-                        <div dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(parentTemplateStr)}} />
+                        <div className='yaml-box' dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(parentTemplateStr)}} />
                     </div>
                 );
             }
 
             const template = Utils.getResolvedTemplates(this.props.workflow, this.props.selectedNode);
-            const templateStr = yaml.stringify(template, 4, 1);
+            const templateStr = jsYaml.dump(template);
             contents.push(
-                <div className='workflow-yaml-section'>
+                <div className='workflow-yaml-section' key='current-node'>
                     <h4>Current Node</h4>
-                    <div dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(templateStr)}} />
+                    <div className='yaml-box' dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(templateStr)}} />
                 </div>
             );
         }
         const templates = this.props.workflow.spec.templates;
         if (templates && Object.keys(templates).length) {
-            const templatesStr = yaml.stringify(templates, 4, 1);
+            const templatesStr = jsYaml.dump(templates);
             contents.push(
                 <SlideContents
                     title={'Templates'}
-                    contents={<div dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(templatesStr)}} />}
+                    key='templates'
+                    contents={<div className='yaml-box' dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(templatesStr)}} />}
                     className='workflow-yaml-section'
                 />
             );
         }
         const storedTemplates = this.props.workflow.status.storedTemplates;
         if (storedTemplates && Object.keys(storedTemplates).length) {
-            const storedTemplatesStr = yaml.stringify(storedTemplates, 4, 1);
+            const storedTemplatesStr = jsYaml.dump(storedTemplates);
             contents.push(
                 <SlideContents
                     title={'Stored Templates'}
-                    contents={<div dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(storedTemplatesStr)}} />}
+                    key='stored-templates'
+                    contents={<div className='yaml-box' dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(storedTemplatesStr)}} />}
                     className='workflow-yaml-section'
                 />
             );
@@ -114,7 +117,7 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
         const steps: (models.WorkflowStep | models.DAGTask)[] = (template.dag && template.dag.tasks) || (template.steps || []).reduce((first, second) => first.concat(second), []);
         const step = steps.find(item => item.name === highlightedStepName);
         if (step) {
-            const stepLines = yaml.stringify(step, 1, 1).split('\n');
+            const stepLines = jsYaml.dump(step).split('\n');
             firstLineStepToHighlight = `name: ${highlightedStepName}`;
             lastLineStepToHighlight = stepLines[stepLines.length - 2];
         }

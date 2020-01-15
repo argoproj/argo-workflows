@@ -4,12 +4,14 @@ import * as React from 'react';
 import * as models from '../../../../models';
 import {Utils} from '../../../shared/utils';
 
+import {Timestamp} from '../../../shared/components/timestamp';
 import {WorkflowSteps} from '../workflow-steps/workflow-steps';
 
 require('./workflow-list-item.scss');
 
 export interface WorkflowListItemProps {
     workflow: models.Workflow;
+    archived: boolean;
 }
 
 export const WorkflowListItem = (props: WorkflowListItemProps) => (
@@ -19,7 +21,9 @@ export const WorkflowListItem = (props: WorkflowListItemProps) => (
                 <div className='workflow-list-item__status-icon'>
                     <i className={classNames('fa', Utils.statusIconClasses(props.workflow.status.phase))} aria-hidden='true' />
                 </div>
-                <div className='workflow-list-item__status-message'>{props.workflow.metadata.creationTimestamp}</div>
+                <div className='workflow-list-item__status-message'>
+                    <Timestamp date={props.workflow.metadata.creationTimestamp} />
+                </div>
             </div>
         </div>
 
@@ -36,13 +40,21 @@ export const WorkflowListItem = (props: WorkflowListItemProps) => (
                             <div className='columns large-4'>NAME:</div>
                             <div className='columns large-8'>{props.workflow.metadata.name}</div>
                         </div>
+                        {props.archived && (
+                            <div className='workflow-list-item__content-details-row row'>
+                                <div className='columns large-4'>UID:</div>
+                                <div className='columns large-8'>{props.workflow.metadata.uid}</div>
+                            </div>
+                        )}
                         <div className='workflow-list-item__content-details-row row'>
                             <div className='columns large-4'>NAMESPACE:</div>
                             <div className='columns large-8'>{props.workflow.metadata.namespace}</div>
                         </div>
                         <div className='workflow-list-item__content-details-row row'>
-                            <div className='columns large-4'>CREATED AT:</div>
-                            <div className='columns large-8'>{props.workflow.metadata.creationTimestamp}</div>
+                            <div className='columns large-4'>CREATED:</div>
+                            <div className='columns large-8'>
+                                <Timestamp date={props.workflow.metadata.creationTimestamp} />
+                            </div>
                         </div>
                     </div>
                 </div>
