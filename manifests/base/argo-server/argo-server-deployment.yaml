@@ -14,8 +14,8 @@ spec:
       serviceAccountName: argo-server
       containers:
         - name: argo-server
-          image: argoproj/argo-server:latest
-          args: [--auth-mode, client]
+          image: argoproj/argocli:latest
+          args: [server, --auth-mode, client]
           ports:
             - containerPort: 2746
           readinessProbe:

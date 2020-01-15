@@ -8,7 +8,6 @@ cmd/**/debug
 hack/**/debug
 /argo
 /argoexec
-/argo-server
 debug.test
 *.iml
 /coverage.out

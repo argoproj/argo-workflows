@@ -246,10 +246,11 @@ spec:
     spec:
       containers:
       - args:
+        - server
         - --auth-mode
         - client
         - --namespaced
-        image: argoproj/argo-server:latest
+        image: argoproj/argocli:latest
         name: argo-server
         ports:
         - containerPort: 2746
