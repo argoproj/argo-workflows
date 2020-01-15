@@ -20,7 +20,7 @@ type Given struct {
 	cronClient            v1alpha1.CronWorkflowInterface
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wf                    *wfv1.Workflow
-	wfTemplate            *wfv1.WorkflowTemplate
+	wfTemplates           []*wfv1.WorkflowTemplate
 	cronWf                *wfv1.CronWorkflow
 }
 
@@ -87,15 +87,16 @@ func (g *Given) WorkflowTemplate(text string) *Given {
 		if err != nil {
 			g.t.Fatal(err)
 		}
-		g.wfTemplate = &wfv1.WorkflowTemplate{}
-		err = yaml.Unmarshal(file, g.wfTemplate)
+		wfTemplate := &wfv1.WorkflowTemplate{}
+		err = yaml.Unmarshal(file, wfTemplate)
 		if err != nil {
 			g.t.Fatal(err)
 		}
-		if g.wfTemplate.GetLabels() == nil {
-			g.wfTemplate.SetLabels(map[string]string{})
+		if wfTemplate.GetLabels() == nil {
+			wfTemplate.SetLabels(map[string]string{})
 		}
-		g.wfTemplate.GetLabels()[label] = "true"
+		wfTemplate.GetLabels()[label] = "true"
+		g.wfTemplates = append(g.wfTemplates, wfTemplate)
 	}
 	return g
 }
@@ -149,7 +150,7 @@ func (g *Given) When() *When {
 		t:                     g.t,
 		diagnostics:           g.diagnostics,
 		wf:                    g.wf,
-		wfTemplate:            g.wfTemplate,
+		wfTemplates:           g.wfTemplates,
 		cronWf:                g.cronWf,
 		client:                g.client,
 		wfTemplateClient:      g.wfTemplateClient,
