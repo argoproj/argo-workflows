@@ -71,6 +71,11 @@ func (s *CLISuite) TestRoot() {
 
 func (s *CLISuite) TestTemplate() {
 
+	s.Given().RunCli([]string{"template", "lint", "smoke/workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
+		assert.NoError(t, err)
+		assert.Contains(t, output, "validated")
+	})
+
 	s.Given().RunCli([]string{"template", "create", "smoke/workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
 		assert.Contains(t, output, "Name:")
