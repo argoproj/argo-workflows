@@ -192,6 +192,7 @@ rules:
   - update
   - patch
   - delete
+  - create
 - apiGroups:
   - argoproj.io
   resources:
@@ -220,6 +221,7 @@ rules:
   - update
   - patch
   - delete
+  - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -340,6 +342,12 @@ spec:
       - args:
         - --auth-mode
         - client
+        env:
+        - name: ARGO_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
         image: argoproj/argo-server:latest
         name: argo-server
         ports:

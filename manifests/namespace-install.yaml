@@ -107,6 +107,7 @@ rules:
   - update
   - patch
   - delete
+  - create
 - apiGroups:
   - argoproj.io
   resources:
@@ -247,6 +248,12 @@ spec:
       - args:
         - --auth-mode
         - client
+        env:
+        - name: ARGO_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
         image: argoproj/argo-server:latest
         name: argo-server
         ports:
