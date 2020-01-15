@@ -11,7 +11,7 @@ import (
 
 func NewTokenCommand() *cobra.Command {
 	return &cobra.Command{
-		Use: "token",
+		Use:   "token",
 		Short: "Print the token",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 0 {
