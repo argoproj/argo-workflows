@@ -172,9 +172,24 @@ verify-codegen:
 	diff ./dist/swagger.json ./api/openapi-spec/swagger.json
 
 .PHONY: manifests
-manifests:
-	# Create manifests
+manifests: dist/manifests
+
+dist/manifests: manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml
+	touch dist/manifests
+
+manifests/install.yaml: manifests/base manifests/cluster-install
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
+
+manifests/namespace-install.yaml: manifests/base manifests/namespace-install
+	env VERSION=$(VERSION) ./hack/update-manifests.sh
+
+manifests/quick-start-mysql.yaml: manifests/base manifests/namespace-install manifests/quick-start
+	# Create MySQL quick-start manifests
+	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(IMAGE_TAG)/' > manifests/quick-start-mysql.yaml
+
+manifests/quick-start-postgres.yaml: manifests/base manifests/namespace-install manifests/quick-start
+	# Create Postgres quick-start manifests
+	kustomize build manifests/quick-start/postgres | sed 's/:latest/:$(IMAGE_TAG)/' > manifests/quick-start-postgres.yaml
 
 # lint/test/etc
 
@@ -196,27 +211,12 @@ else
 	go test -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
 endif
 
-dist/install.yaml: manifests/cluster-install
-	# Create cluster install manifests
-	cat manifests/install.yaml | sed 's/:latest/:$(IMAGE_TAG)/' > dist/install.yaml
-
-dist/namespace-install.yaml: manifests/namespace-install
-	# Create namespace instnall manifests
-	cat manifests/namespace-install.yaml | sed 's/:latest/:$(IMAGE_TAG)/' > dist/namespace-install.yaml
-
-manifests/quick-start-mysql.yaml: manifests/namespace-install.yaml
-	# Create MySQL quick-start manifests
-	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(IMAGE_TAG)/' > manifests/quick-start-mysql.yaml
 
 .PHONY: install-mysql
 install-mysql: manifests/quick-start-mysql.yaml
 	# Install MySQL quick-start
 	kubectl get ns argo || kubectl create ns argo
 	kubectl -n argo apply -f manifests/quick-start-mysql.yaml
-
-manifests/quick-start-postgres.yaml: manifests/namespace-install.yaml
-	# Create Postgres quick-start manifests
-	kustomize build manifests/quick-start/postgres | sed 's/:latest/:$(IMAGE_TAG)/' > manifests/quick-start-postgres.yaml
 
 .PHONY: install-postgres
 install-postgres: manifests/quick-start-postgres.yaml
