@@ -50,7 +50,7 @@ GOPROTOBINARY=go
 # 2. protoc-gen-gofast - fork of golang golang/protobuf. Faster code generation
 go build -i -o dist/protoc-gen-gofast ./vendor/github.com/gogo/protobuf/protoc-gen-gofast
 GOPROTOBINARY=gofast
-# 3. protoc-gen-gogofas'export PS1="\[\033[36m\]\u\[\033[m\]@\[\033[32m\]\h:\[\033[33;1m\]\w\[\033[m\]\$ "t - faster code generation and gogo extensions and flexibility in controlling
+# 3. protoc-gen-gogofast - faster code generation and gogo extensions and flexibility in controlling
 # the generated go code (e.g. customizing field names, nullable fields)
 go build -i -o dist/protoc-gen-gogofast ./vendor/github.com/gogo/protobuf/protoc-gen-gogofast
 GOPROTOBINARY=gogofast

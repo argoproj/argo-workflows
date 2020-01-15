@@ -8,6 +8,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/argoproj/argo/workflow/cron"
+
 	"github.com/argoproj/pkg/cli"
 	kubecli "github.com/argoproj/pkg/kube/cli"
 	"github.com/argoproj/pkg/stats"
@@ -21,7 +23,6 @@ import (
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/controller"
-	"github.com/argoproj/argo/workflow/cron"
 )
 
 const (
@@ -75,14 +76,6 @@ func NewRootCommand() *cobra.Command {
 			if namespaced && managedNamespace == "" {
 				managedNamespace = namespace
 			}
-
-			log.WithFields(log.Fields{
-				"executorImage":           executorImage,
-				"executorImagePullPolicy": executorImagePullPolicy,
-				"namespace":               namespace,
-				"namespaced":              namespaced,
-				"managedNamespace":        managedNamespace,
-			}).Info()
 
 			// start a controller on instances of our custom resource
 			wfController := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, configMap)

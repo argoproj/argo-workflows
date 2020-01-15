@@ -409,21 +409,21 @@ func (woc *wfOperationCtx) persistUpdates() {
 	// Send succeeded pods or completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 	// Notice we do not need to label the pod if we will delete it later for GC. Otherwise, that may even result in
 	// errors if we label a pod that was deleted already.
-	if woc.wf.Spec.PodGC != nil {
-		switch woc.wf.Spec.PodGC.Strategy {
+	if wf.Spec.PodGC != nil {
+		switch wf.Spec.PodGC.Strategy {
 		case wfv1.PodGCOnPodSuccess:
 			for podName := range woc.succeededPods {
-				woc.controller.gcPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
+				woc.controller.gcPods <- fmt.Sprintf("%s/%s", wf.ObjectMeta.Namespace, podName)
 			}
 		case wfv1.PodGCOnPodCompletion:
 			for podName := range woc.completedPods {
-				woc.controller.gcPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
+				woc.controller.gcPods <- fmt.Sprintf("%s/%s", wf.ObjectMeta.Namespace, podName)
 			}
 		}
 	} else {
 		// label pods which will not be deleted
 		for podName := range woc.completedPods {
-			woc.controller.completedPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
+			woc.controller.completedPods <- fmt.Sprintf("%s/%s", wf.ObjectMeta.Namespace, podName)
 		}
 	}
 }

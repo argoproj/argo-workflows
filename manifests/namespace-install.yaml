@@ -165,6 +165,20 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - configmaps
+  verbs:
+  - get
+  - watch
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+- apiGroups:
+  - ""
+  resources:
   - pods
   - pods/exec
   - pods/log
@@ -248,12 +262,7 @@ spec:
       - args:
         - --auth-mode
         - client
-        env:
-        - name: ARGO_NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
+        - --namespaced
         image: argoproj/argo-server:latest
         name: argo-server
         ports:

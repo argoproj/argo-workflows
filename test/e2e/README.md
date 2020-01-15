@@ -72,6 +72,21 @@ The run `cmd/server/main.go` using these arguments, which enable debug logging, 
 ```
 
 
+### Running The Argo Server In Your IDE
+
+```
+kubectl -n argo scale deploy/argo-server --replicas 0
+```
+
+Kill any port forwards on 2746.
+
+The run `cmd/server/main.go` using these arguments, which enable debug logging, and make sure you use locally build image:
+
+```
+--loglevel debug --auth-mode client
+```
+
+
 ### To Update The Executor
 
 If you're making changes to the executor, run:

@@ -23,6 +23,7 @@ import (
 	"github.com/argoproj/argo/cmd/server/artifacts"
 	"github.com/argoproj/argo/cmd/server/auth"
 	"github.com/argoproj/argo/cmd/server/cronworkflow"
+	"github.com/argoproj/argo/cmd/server/info"
 	"github.com/argoproj/argo/cmd/server/static"
 	"github.com/argoproj/argo/cmd/server/workflow"
 	"github.com/argoproj/argo/cmd/server/workflowarchive"
@@ -52,6 +53,7 @@ type ArgoServerOpts struct {
 	RestConfig    *rest.Config
 	AuthMode      string
 	ConfigName    string
+	ManagedNamespace string
 }
 
 func NewArgoServer(opts ArgoServerOpts) *argoServer {
@@ -167,6 +169,8 @@ func (as *argoServer) newGRPCServer(offloadNodeStatusRepo sqldb.OffloadNodeStatu
 	}
 
 	grpcServer := grpc.NewServer(sOpts...)
+
+	info.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace))
 	workflow.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(offloadNodeStatusRepo))
 	workflowtemplate.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer())
 	cronworkflow.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer())
@@ -200,6 +204,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	// we use our own Marshaler
 	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.JSONMarshaler))
 	gwmux := runtime.NewServeMux(gwMuxOpts)
+	mustRegisterGWHandler(info.RegisterInfoServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflow.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowtemplate.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(cronworkflow.RegisterCronWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
