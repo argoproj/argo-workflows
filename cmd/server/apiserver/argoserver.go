@@ -23,6 +23,7 @@ import (
 	"github.com/argoproj/argo/cmd/server/artifacts"
 	"github.com/argoproj/argo/cmd/server/auth"
 	"github.com/argoproj/argo/cmd/server/cronworkflow"
+	"github.com/argoproj/argo/cmd/server/info"
 	"github.com/argoproj/argo/cmd/server/static"
 	"github.com/argoproj/argo/cmd/server/workflow"
 	"github.com/argoproj/argo/cmd/server/workflowarchive"
@@ -38,28 +39,31 @@ import (
 )
 
 type argoServer struct {
-	namespace     string
-	kubeClientset *kubernetes.Clientset
-	authenticator auth.Gatekeeper
-	configName    string
-	stopCh        chan struct{}
+	namespace        string
+	managedNamespace string
+	kubeClientset    *kubernetes.Clientset
+	authenticator    auth.Gatekeeper
+	configName       string
+	stopCh           chan struct{}
 }
 
 type ArgoServerOpts struct {
-	Namespace     string
-	KubeClientset *kubernetes.Clientset
-	WfClientSet   *versioned.Clientset
-	RestConfig    *rest.Config
-	AuthMode      string
-	ConfigName    string
+	Namespace        string
+	KubeClientset    *kubernetes.Clientset
+	WfClientSet      *versioned.Clientset
+	RestConfig       *rest.Config
+	AuthMode         string
+	ConfigName       string
+	ManagedNamespace string
 }
 
 func NewArgoServer(opts ArgoServerOpts) *argoServer {
 	return &argoServer{
-		namespace:     opts.Namespace,
-		kubeClientset: opts.KubeClientset,
-		authenticator: auth.NewGatekeeper(opts.AuthMode, opts.WfClientSet, opts.KubeClientset, opts.RestConfig),
-		configName:    opts.ConfigName,
+		namespace:        opts.Namespace,
+		managedNamespace: opts.ManagedNamespace,
+		kubeClientset:    opts.KubeClientset,
+		authenticator:    auth.NewGatekeeper(opts.AuthMode, opts.WfClientSet, opts.KubeClientset, opts.RestConfig),
+		configName:       opts.ConfigName,
 	}
 }
 
@@ -167,6 +171,8 @@ func (as *argoServer) newGRPCServer(offloadNodeStatusRepo sqldb.OffloadNodeStatu
 	}
 
 	grpcServer := grpc.NewServer(sOpts...)
+
+	info.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace))
 	workflow.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(offloadNodeStatusRepo))
 	workflowtemplate.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer())
 	cronworkflow.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer())
@@ -200,6 +206,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	// we use our own Marshaler
 	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.JSONMarshaler))
 	gwmux := runtime.NewServeMux(gwMuxOpts)
+	mustRegisterGWHandler(info.RegisterInfoServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflow.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowtemplate.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(cronworkflow.RegisterCronWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
