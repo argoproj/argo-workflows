@@ -43,6 +43,7 @@ rules:
   - update
   - patch
   - delete
+  - create
 - apiGroups:
   - argoproj.io
   resources:
@@ -71,3 +72,4 @@ rules:
   - update
   - patch
   - delete
+  - create
