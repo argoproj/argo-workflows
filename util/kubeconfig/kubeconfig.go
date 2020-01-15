@@ -102,22 +102,22 @@ func GetBearerToken(in *restclient.Config) (string, error) {
 		if in.ExecProvider != nil {
 			tc, err := in.TransportConfig()
 			if err != nil {
-				return "", nil
+				return "", err
 			}
 
 			auth, err := exec.GetAuthenticator(in.ExecProvider)
 			if err != nil {
-				return "", nil
+				return "", err
 			}
-
+			tc.TLS.GetCert = nil
 			err = auth.UpdateTransportConfig(tc)
 			if err != nil {
-				return "", nil
+				return "", err
 			}
 
 			rt, err := transport.New(tc)
 			if err != nil {
-				return "", nil
+				return "", err
 			}
 
 			req := http.Request{Header: map[string][]string{}}
