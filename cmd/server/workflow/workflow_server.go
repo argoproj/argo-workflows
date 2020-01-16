@@ -113,7 +113,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *WorkflowListReq
 	}
 	for i, wf := range wfList.Items {
 		if wf.Status.IsOffloadNodeStatus() {
-			wfList.Items[i].Status.Nodes = offloadedNodes[sqldb.PrimaryKey{UID: string(wf.UID), Version: wf.GetOffloadNodeStatusVersion()}]
+			wfList.Items[i].Status.Nodes = offloadedNodes[sqldb.UUIDVersion{UID: string(wf.UID), Version: wf.GetOffloadNodeStatusVersion()}]
 		}
 	}
 

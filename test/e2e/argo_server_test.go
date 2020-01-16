@@ -321,7 +321,7 @@ func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
 		Status(200)
 }
 
-func (s *ArgoServerSuite) TestWorkflows() {
+func (s *ArgoServerSuite) TestWorkflowService() {
 
 	s.Run("Create", func(t *testing.T) {
 		s.e(t).POST("/api/v1/workflows/argo").
@@ -445,7 +445,7 @@ func (s *ArgoServerSuite) TestWorkflows() {
 	})
 }
 
-func (s *ArgoServerSuite) TestCronWorkflows() {
+func (s *ArgoServerSuite) TestCronWorkflowService() {
 	s.Run("Create", func(t *testing.T) {
 		s.e(t).POST("/api/v1/cron-workflows/argo").
 			WithBytes([]byte(`{
@@ -548,7 +548,7 @@ func (s *ArgoServerSuite) TestCronWorkflows() {
 }
 
 // make sure we can download an artifact
-func (s *ArgoServerSuite) TestWorkflowArtifact() {
+func (s *ArgoServerSuite) TestArtifactServer() {
 	var uid types.UID
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -585,7 +585,7 @@ func (s *ArgoServerSuite) TestWorkflowArtifact() {
 }
 
 // do some basic testing on the stream methods
-func (s *ArgoServerSuite) TestWorkflowStream() {
+func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -662,7 +662,7 @@ func (s *ArgoServerSuite) TestWorkflowStream() {
 	})
 }
 
-func (s *ArgoServerSuite) TestArchivedWorkflow() {
+func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 	var uid types.UID
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -729,7 +729,7 @@ func (s *ArgoServerSuite) TestArchivedWorkflow() {
 	})
 }
 
-func (s *ArgoServerSuite) TestWorkflowTemplates() {
+func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 
 	s.Run("Lint", func(t *testing.T) {
 		s.e(t).POST("/api/v1/workflow-templates/argo/lint").

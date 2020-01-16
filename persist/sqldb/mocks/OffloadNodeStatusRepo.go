@@ -66,15 +66,15 @@ func (_m *OffloadNodeStatusRepo) IsEnabled() bool {
 }
 
 // List provides a mock function with given fields: namespace
-func (_m *OffloadNodeStatusRepo) List(namespace string) (map[sqldb.PrimaryKey]v1alpha1.Nodes, error) {
+func (_m *OffloadNodeStatusRepo) List(namespace string) (map[sqldb.UUIDVersion]v1alpha1.Nodes, error) {
 	ret := _m.Called(namespace)
 
-	var r0 map[sqldb.PrimaryKey]v1alpha1.Nodes
-	if rf, ok := ret.Get(0).(func(string) map[sqldb.PrimaryKey]v1alpha1.Nodes); ok {
+	var r0 map[sqldb.UUIDVersion]v1alpha1.Nodes
+	if rf, ok := ret.Get(0).(func(string) map[sqldb.UUIDVersion]v1alpha1.Nodes); ok {
 		r0 = rf(namespace)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[sqldb.PrimaryKey]v1alpha1.Nodes)
+			r0 = ret.Get(0).(map[sqldb.UUIDVersion]v1alpha1.Nodes)
 		}
 	}
 

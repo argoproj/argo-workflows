@@ -85,13 +85,14 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 		if err != nil {
 			panic(err)
 		}
-		wcConfig.Persistence.PostgreSQL.Host = "localhost"
+		persistence := wcConfig.Persistence
+		persistence.PostgreSQL.Host = "localhost"
 		// we assume that this is enabled for tests
-		session, tableName, err := sqldb.CreateDBSession(s.KubeClient, Namespace, wcConfig.Persistence)
+		session, tableName, err := sqldb.CreateDBSession(s.KubeClient, Namespace, persistence)
 		if err != nil {
 			panic(err)
 		}
-		s.offloadNodeStatusRepo = sqldb.NewOffloadNodeStatusRepo(tableName, session)
+		s.offloadNodeStatusRepo = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
 	}
 
 	// delete all workflows

@@ -24,7 +24,7 @@ func (n *explosiveOffloadNodeStatusRepo) Get(string, string) (wfv1.Nodes, error)
 	return nil, notSupportedError
 }
 
-func (n *explosiveOffloadNodeStatusRepo) List(string) (map[PrimaryKey]wfv1.Nodes, error) {
+func (n *explosiveOffloadNodeStatusRepo) List(string) (map[UUIDVersion]wfv1.Nodes, error) {
 	return nil, notSupportedError
 }
 

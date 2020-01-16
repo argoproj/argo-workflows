@@ -6,7 +6,8 @@ import (
 )
 
 type migrateCfg struct {
-	tableName string
+	clusterName string
+	tableName   string
 }
 
 type change interface {
@@ -39,10 +40,11 @@ func migrate(cfg migrateCfg, session sqlbuilder.Database) error {
 	if err != nil {
 		return err
 	}
-	log.WithField("schemaVersion", schemaVersion).Info("Migrating database schema")
+	log.WithFields(log.Fields{"clusterName": cfg.clusterName, "schemaVersion": schemaVersion}).Info("Migrating database schema")
 
 	// try and make changes idempotent, as it is possible for the change to apply, but the archive update to fail
 	// and therefore try and apply again next try
+
 	for changeSchemaVersion, change := range []change{
 		ansiSQLChange(`create table if not exists ` + cfg.tableName + ` (
     id varchar(128) ,
@@ -70,34 +72,51 @@ func migrate(cfg migrateCfg, session sqlbuilder.Database) error {
 		ansiSQLChange(`create unique index idx_name on ` + cfg.tableName + `(name, namespace)`),
 		ansiSQLChange(`alter table ` + cfg.tableName + ` drop constraint ` + cfg.tableName + `_pkey`),
 		ansiSQLChange(`alter table ` + cfg.tableName + ` add primary key(name,namespace)`),
-		ansiSQLChange(`drop index idx_name`),
 		// huh - why does the pkey not have the same name as the table - history
 		ansiSQLChange(`alter table argo_archived_workflows drop constraint argo_workflow_history_pkey`),
 		ansiSQLChange(`alter table argo_archived_workflows add primary key(id)`),
+		// ***
+		// THE CHANGES ABOVE THIS LINE MAY BE IN PER-PRODUCTION SYSTEMS - DO NOT CHANGE THEM
+		// ***
+		ansiSQLChange(`alter table argo_archived_workflows rename column id to uid`),
+		ansiSQLChange(`alter table argo_archived_workflows alter column uid set not null`),
+		ansiSQLChange(`alter table argo_archived_workflows alter column phase set not null`),
+		ansiSQLChange(`alter table argo_archived_workflows alter column namespace set not null`),
+		ansiSQLChange(`alter table argo_archived_workflows alter column workflow set not null`),
+		ansiSQLChange(`alter table argo_archived_workflows alter column startedat set not null`),
+		ansiSQLChange(`alter table argo_archived_workflows alter column finishedat set not null`),
+		ansiSQLChange(`alter table argo_archived_workflows add clustername varchar(64)`), // DNS entry can only be max 63 bytes
+		backfillClusterName{clusterName: cfg.clusterName, tableName: "argo_archived_workflows"},
+		ansiSQLChange(`alter table argo_archived_workflows alter column clustername set not null`),
+		ansiSQLChange(`alter table argo_archived_workflows drop constraint argo_archived_workflows_pkey`),
+		ansiSQLChange(`alter table argo_archived_workflows add primary key(clustername,uid)`),
+		ansiSQLChange(`create index on argo_archived_workflows (clustername,namespace)`),
 		// argo_archived_workflows now looks like:
-		// id  | name | phase | namespace | workflow | startedat | finishedat
+		// clustername(not null) uid(not null) | phase(not null) | namespace(not null) | workflow(not null) | startedat(not null)  | finishedat(not null)
 		// remove unused columns
 		ansiSQLChange(`alter table ` + cfg.tableName + ` drop column phase`),
 		ansiSQLChange(`alter table ` + cfg.tableName + ` drop column startedat`),
 		ansiSQLChange(`alter table ` + cfg.tableName + ` drop column finishedat`),
-		// add version to tables
-		ansiSQLChange(`alter table ` + cfg.tableName + ` alter column id set not null`),
-		// move all data from workflows into version+nodes
+		ansiSQLChange(`alter table ` + cfg.tableName + ` rename column id to uid`),
+		ansiSQLChange(`alter table ` + cfg.tableName + ` alter column uid set not null`),
+		ansiSQLChange(`alter table ` + cfg.tableName + ` alter column namespace set not null`),
+		ansiSQLChange(`alter table ` + cfg.tableName + ` add column clustername varchar(64)`), // DNS cannot be longer than 64 bytes
+		backfillClusterName(cfg),
+		ansiSQLChange(`alter table ` + cfg.tableName + ` alter column clustername set not null`),
 		ansiSQLChange(`alter table ` + cfg.tableName + ` add column version varchar(64)`),
 		ansiSQLChange(`alter table ` + cfg.tableName + ` add column nodes text`),
-		backfillNodes(cfg),
+		backfillNodes{tableName: cfg.tableName},
 		ansiSQLChange(`alter table ` + cfg.tableName + ` alter column nodes set not null`),
+		ansiSQLChange(`alter table ` + cfg.tableName + ` drop column workflow`),
 		// add a timestamp column to indicate updated time
 		ansiSQLChange(`alter table ` + cfg.tableName + ` add column updatedat timestamp not null default current_timestamp`),
-		// remove unused columns
-		ansiSQLChange(`alter table ` + cfg.tableName + ` drop column workflow`),
 		// remove the old primary key and add a new one
 		ansiSQLChange(`alter table ` + cfg.tableName + ` drop constraint ` + cfg.tableName + `_pkey`),
-		ansiSQLChange(`alter table ` + cfg.tableName + ` add primary key(id,version)`),
 		ansiSQLChange(`alter table ` + cfg.tableName + ` drop column name`),
-		ansiSQLChange(`create index on ` + cfg.tableName + ` (namespace)`),
+		ansiSQLChange(`alter table ` + cfg.tableName + ` add primary key(clustername,uid,version)`),
+		ansiSQLChange(`create index on ` + cfg.tableName + ` (clustername,namespace)`),
 		// argo_workflows now looks like:
-		//  name | namespace | version | nodes | updatedat
+		//  clustername(not null) | uid(not null) | namespace(not null) | version(not null) | nodes(not null) | updatedat(not null)
 	} {
 		if changeSchemaVersion > schemaVersion {
 			log.WithFields(log.Fields{"changeSchemaVersion": changeSchemaVersion, "change": change}).Info("Applying database change")
@@ -105,7 +124,7 @@ func migrate(cfg migrateCfg, session sqlbuilder.Database) error {
 			if err != nil {
 				return err
 			}
-			_, err = session.Exec("update schema_history set schema_version=?", changeSchemaVersion)
+			_, err = session.Exec("update schema_history set schema_version ? where schema_version = ?", changeSchemaVersion, schemaVersion)
 			if err != nil {
 				return err
 			}

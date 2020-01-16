@@ -13,33 +13,35 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
+type UUIDVersion struct {
+	UID, Version string
+}
+
 type OffloadNodeStatusRepo interface {
 	Save(uid, namespace string, nodes wfv1.Nodes) (string, error)
 	Get(uid, version string) (wfv1.Nodes, error)
-	List(namespace string) (map[PrimaryKey]wfv1.Nodes, error)
+	List(namespace string) (map[UUIDVersion]wfv1.Nodes, error)
 	ListOldUIDs(namespace string) ([]string, error)
 	Delete(uid string) error
 	IsEnabled() bool
 }
 
-func NewOffloadNodeStatusRepo(tableName string, session sqlbuilder.Database) OffloadNodeStatusRepo {
-	return &nodeOffloadRepo{tableName, session}
-}
-
-type PrimaryKey struct {
-	UID     string `db:"id"`
-	Version string `db:"version"`
+func NewOffloadNodeStatusRepo(session sqlbuilder.Database, clusterName, tableName string) OffloadNodeStatusRepo {
+	return &nodeOffloadRepo{session: session, clusterName: clusterName, tableName: tableName}
 }
 
 type nodesRecord struct {
-	PrimaryKey
-	Namespace string `db:"namespace"`
-	Nodes     string `db:"nodes"`
+	ClusterName string `db:"clustername"`
+	UID         string `db:"uid"`
+	Version     string `db:"version"`
+	Namespace   string `db:"namespace"`
+	Nodes       string `db:"nodes"`
 }
 
 type nodeOffloadRepo struct {
-	tableName string
-	session   sqlbuilder.Database
+	session     sqlbuilder.Database
+	clusterName string
+	tableName   string
 }
 
 func (wdc *nodeOffloadRepo) IsEnabled() bool {
@@ -65,12 +67,11 @@ func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (strin
 	}
 
 	record := &nodesRecord{
-		PrimaryKey: PrimaryKey{
-			UID:     uid,
-			Version: version,
-		},
-		Namespace: namespace,
-		Nodes:     marshalled,
+		ClusterName: wdc.clusterName,
+		UID:         uid,
+		Version:     version,
+		Namespace:   namespace,
+		Nodes:       marshalled,
 	}
 
 	logCtx := log.WithFields(log.Fields{"uid": uid, "version": version})
@@ -91,7 +92,8 @@ func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (strin
 	// We also want to keep enough around so that we can service watches.
 	_, err = wdc.session.
 		DeleteFrom(wdc.tableName).
-		Where(db.Cond{"id": uid}).
+		Where(db.Cond{"clustername": wdc.clusterName}).
+		And(db.Cond{"uid": uid}).
 		And(db.Cond{"version <>": version}).
 		And(oldCondition).
 		Exec()
@@ -105,9 +107,9 @@ func (wdc *nodeOffloadRepo) Get(uid, version string) (wfv1.Nodes, error) {
 	log.WithFields(log.Fields{"uid": uid, "version": version}).Debug("Getting offloaded nodes")
 	r := &nodesRecord{}
 	err := wdc.session.
-		Select("nodes").
-		From(wdc.tableName).
-		Where(db.Cond{"id": uid}).
+		SelectFrom(wdc.tableName).
+		Where(db.Cond{"clustername": wdc.clusterName}).
+		And(db.Cond{"uid": uid}).
 		And(db.Cond{"version": version}).
 		One(r)
 	if err != nil {
@@ -121,25 +123,26 @@ func (wdc *nodeOffloadRepo) Get(uid, version string) (wfv1.Nodes, error) {
 	return *nodes, nil
 }
 
-func (wdc *nodeOffloadRepo) List(namespace string) (map[PrimaryKey]wfv1.Nodes, error) {
+func (wdc *nodeOffloadRepo) List(namespace string) (map[UUIDVersion]wfv1.Nodes, error) {
 	log.WithFields(log.Fields{"namespace": namespace}).Debug("Listing offloaded nodes")
 	var records []nodesRecord
 	err := wdc.session.
-		Collection(wdc.tableName).
-		Find(namespaceEqual(namespace)).
+		SelectFrom(wdc.tableName).
+		Where(db.Cond{"clustername": wdc.clusterName}).
+		And(namespaceEqual(namespace)).
 		All(&records)
 	if err != nil {
 		return nil, err
 	}
 
-	res := make(map[PrimaryKey]wfv1.Nodes)
+	res := make(map[UUIDVersion]wfv1.Nodes)
 	for _, r := range records {
 		nodes := &wfv1.Nodes{}
 		err = json.Unmarshal([]byte(r.Nodes), nodes)
 		if err != nil {
 			return nil, err
 		}
-		res[r.PrimaryKey] = *nodes
+		res[UUIDVersion{UID: r.UID, Version: r.Version}] = *nodes
 	}
 
 	return res, nil
@@ -149,24 +152,26 @@ var oldCondition = db.Cond{"updatedat + interval '5' minute <": "now()"}
 
 func (wdc *nodeOffloadRepo) ListOldUIDs(namespace string) ([]string, error) {
 	log.WithFields(log.Fields{"namespace": namespace}).Debug("Listing old offloaded nodes")
-	var records []PrimaryKey
+	var uids []string
 	err := wdc.session.
-		Select("id","version").
+		Select("uid").
 		From(wdc.tableName).
-		Where(namespaceEqual(namespace)).
+		Where(db.Cond{"clustername": wdc.clusterName}).
+		And(namespaceEqual(namespace)).
 		And(oldCondition).
-		All(&records)
+		All(&uids)
 	if err != nil {
 		return nil, err
-	}
-	uids := make([]string, len(records))
-	for i, r := range records {
-		uids[i] = r.UID
 	}
 	return uids, nil
 }
 
 func (wdc *nodeOffloadRepo) Delete(uid string) error {
 	log.WithFields(log.Fields{"uid": uid}).Debug("Deleting offloaded nodes")
-	return wdc.session.Collection(wdc.tableName).Find(db.Cond{"id": uid}).Delete()
+	_, err := wdc.session.
+		DeleteFrom(wdc.tableName).
+		Where(db.Cond{"clustername": wdc.clusterName}).
+		And(db.Cond{"uid": uid}).
+		Exec()
+	return err
 }

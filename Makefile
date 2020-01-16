@@ -234,7 +234,7 @@ ifeq ($(CI),false)
 	make down
 endif
 	# Patch deployments
-	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "$(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)", "--executor-image-pull-policy", "Never", "--namespaced"]}, {"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "ALWAYS_OFFLOAD_NODE_STATUS", "value": "true"}]}]'
+	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "$(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)", "--executor-image-pull-policy", "Never", "--namespaced"]}, {"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "ALWAYS_OFFLOAD_NODE_STATUS", "value": "true"}, {"name": "WORKFLOW_GC_PERIOD", "value": "30s"}]}]'
 	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["server", "--loglevel", "debug", "--auth-mode", "client", "--namespaced"]}, {"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "ARGO_V2_TOKEN", "value": "password"}]}]'
 ifeq ($(CI),false)
 	make up

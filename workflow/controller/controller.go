@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -255,8 +256,17 @@ func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) 
 }
 
 func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan struct{}) {
-	ticker := time.NewTicker(5 * time.Second)
-
+	value, ok := os.LookupEnv("WORKFLOW_GC_PERIOD")
+	periodicity := 5 * time.Minute
+	if ok {
+		var err error
+		periodicity, err = time.ParseDuration(value)
+		if err != nil {
+			log.WithFields(log.Fields{"err": err, "value": value}).Fatal("Failed to parse WORKFLOW_GC_PERIOD")
+		}
+	}
+	log.Infof("Performing periodic GC every %v", periodicity)
+	ticker := time.NewTicker(periodicity)
 	for {
 		select {
 		case <-stopCh:

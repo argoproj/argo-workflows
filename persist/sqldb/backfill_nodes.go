@@ -45,7 +45,7 @@ func (s backfillNodes) Apply(session sqlbuilder.Database) error {
 		}
 		logCtx := log.WithFields(log.Fields{"name": wf.Name, "namespace": wf.Namespace, "version": version})
 		logCtx.Info("Back-filling node status")
-		res, err := session.Update(tableName).
+		res, err := session.Update(archiveTableName).
 			Set("version", wf.ResourceVersion).
 			Set("nodes", marshalled).
 			Where(db.Cond{"name": wf.Name}).

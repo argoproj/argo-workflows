@@ -66,9 +66,9 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 		}
 		log.Info("Persistence Session created successfully")
 		wfc.session = session
-		wfc.offloadNodeStatusRepo = sqldb.NewOffloadNodeStatusRepo(tableName, session)
+		wfc.offloadNodeStatusRepo = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
 		if persistence.Archive {
-			wfc.wfArchive = sqldb.NewWorkflowArchive(session)
+			wfc.wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName())
 			log.Info("Workflow archiving is enabled")
 		} else {
 			log.Info("Workflow archiving is disabled")
