@@ -35,9 +35,9 @@ func (s *CronSuite) TestBasic() {
 }
 
 func (s *CronSuite) TestBasicTimezone() {
-	 // This test works by scheduling a CronWorkflow for the next minute, but using the local time of another timezone
-	 // then seeing if the Workflow was ran within the next minute. Since this test would be trivial if the selected
-	 // timezone was the same as the local timezone, a little-used timezone is used.
+	// This test works by scheduling a CronWorkflow for the next minute, but using the local time of another timezone
+	// then seeing if the Workflow was ran within the next minute. Since this test would be trivial if the selected
+	// timezone was the same as the local timezone, a little-used timezone is used.
 	testTimezone := "Pacific/Niue"
 	testLocation, err := time.LoadLocation(testTimezone)
 	if err != nil {

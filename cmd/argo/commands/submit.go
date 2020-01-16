@@ -5,6 +5,13 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
+
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/argoproj/argo/cmd/argo/commands/cron"
+	"github.com/argoproj/argo/cmd/argo/commands/template"
+	"github.com/argoproj/argo/pkg/apis/workflow"
 
 	"github.com/spf13/cobra"
 	apimachineryversion "k8s.io/apimachinery/pkg/version"
@@ -34,20 +41,25 @@ func NewSubmitCommand() *cobra.Command {
 		submitOpts    util.SubmitOpts
 		cliSubmitOpts cliSubmitOpts
 		priority      int32
+		from          string
 	)
 	var command = &cobra.Command{
 		Use:   "submit FILE1 FILE2...",
 		Short: "submit a workflow",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
 			if cmd.Flag("priority").Changed {
 				cliSubmitOpts.priority = &priority
 			}
 
-			SubmitWorkflows(args, &submitOpts, &cliSubmitOpts)
+			if from != "" {
+				SubmitWorkflowFromResource(from, &submitOpts, &cliSubmitOpts)
+			} else {
+				if len(args) == 0 {
+					cmd.HelpFunc()(cmd, args)
+					os.Exit(1)
+				}
+				SubmitWorkflowsFromFile(args, &submitOpts, &cliSubmitOpts)
+			}
 		},
 	}
 	command.Flags().StringVar(&submitOpts.Name, "name", "", "override metadata.name")
@@ -65,6 +77,7 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().Int32Var(&priority, "priority", 0, "workflow priority")
 	command.Flags().StringVarP(&submitOpts.ParameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
 	command.Flags().StringVarP(&submitOpts.Labels, "labels", "l", "", "Comma separated labels to apply to the workflow. Will override previous values.")
+	command.Flags().StringVar(&from, "from", "", "Submit from a WorkflowTempalte or CronWorkflow. E.g., --from=CronWorkflow/hello-world-cwf")
 	// Only complete files with appropriate extension.
 	err := command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})
 	if err != nil {
@@ -73,7 +86,61 @@ func NewSubmitCommand() *cobra.Command {
 	return command
 }
 
-func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
+func SubmitWorkflowsFromFile(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
+	fileContents, err := util.ReadManifest(filePaths...)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var workflows []wfv1.Workflow
+	for _, body := range fileContents {
+		wfs := unmarshalWorkflows(body, cliOpts.strict)
+		workflows = append(workflows, wfs...)
+	}
+
+	submitWorkflows(workflows, submitOpts, cliOpts)
+}
+
+func SubmitWorkflowFromResource(resourceIdentifier string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
+
+	resIdSplit := strings.Split(resourceIdentifier, "/")
+	if len(resIdSplit) != 2 {
+		log.Fatalf("resource identifier '%s' is malformed. Expected is KIND/NAME, e.g. CronWorkflow/hello-world-cwf", resourceIdentifier)
+	}
+
+	var workflowToSubmit *wfv1.Workflow
+	switch resIdSplit[0] {
+	case workflow.CronWorkflowKind:
+		cwfIf := cron.InitCronWorkflowClient()
+		cwf, err := cwfIf.Get(resIdSplit[1], v1.GetOptions{})
+		if err != nil {
+			log.Fatalf("Unable to get CronWorkflow '%s': %s", resIdSplit[1], err)
+		}
+		workflowToSubmit, err = common.ConvertCronWorkflowToWorkflow(cwf)
+		if err != nil {
+			log.Fatalf("Unable to create Workflow from CronWorkflow '%s': %s", resIdSplit[1], err)
+		}
+	case workflow.WorkflowTemplateKind:
+		if submitOpts.Entrypoint == "" {
+			log.Fatalf("When submitting a Workflow from a WorkflowTemplate an entrypoint must be passed with --entrypoint")
+		}
+		wftmplIf := template.InitWorkflowTemplateClient()
+		wfTmpl, err := wftmplIf.Get(resIdSplit[1], v1.GetOptions{})
+		if err != nil {
+			log.Fatalf("Unable to get WorkflowTemplate '%s'", resIdSplit[1])
+		}
+		workflowToSubmit, err = common.ConvertWorkflowTemplateToWorkflow(wfTmpl, submitOpts.Entrypoint)
+		if err != nil {
+			log.Fatalf("Unable to create Workflow from WorkflowTemplate '%s': %s", resIdSplit[1], err)
+		}
+	default:
+		log.Fatalf("Resource Kind '%s' is not supported with --from", resIdSplit[0])
+	}
+
+	submitWorkflows([]wfv1.Workflow{*workflowToSubmit}, submitOpts, cliOpts)
+}
+
+func submitWorkflows(workflows []wfv1.Workflow, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
 	if submitOpts == nil {
 		submitOpts = &util.SubmitOpts{}
 	}
@@ -86,17 +153,6 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 	defaultNS, _, err := client.Config.Namespace()
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	fileContents, err := util.ReadManifest(filePaths...)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var workflows []wfv1.Workflow
-	for _, body := range fileContents {
-		wfs := unmarshalWorkflows(body, cliOpts.strict)
-		workflows = append(workflows, wfs...)
 	}
 
 	if cliOpts.watch {

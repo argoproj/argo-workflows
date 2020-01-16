@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"os"
+	"regexp"
 	"testing"
 	"time"
 
@@ -67,6 +68,48 @@ func (s *CLISuite) TestRoot() {
 		assert.Contains(t, output, "Started:")
 		assert.Contains(t, output, "Duration:")
 	})
+
+	var createdWorkflowName string
+	s.Given().CronWorkflow("@testdata/basic.yaml").
+		When().
+		CreateCronWorkflow().
+		RunCli([]string{"submit", "--from", "CronWorkflow/test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+			assert.Contains(t, output, "Name:                test-cron-wf-basic-")
+			r := regexp.MustCompile(`Name:\s+?(test-cron-wf-basic-[a-z0-9]+)`)
+			res := r.FindStringSubmatch(output)
+			if len(res) != 2 {
+				assert.Fail(t, "Internal test error, please report a bug")
+			}
+			createdWorkflowName = res[1]
+		}).
+		WaitForWorkflowFromName(createdWorkflowName, 15*time.Second).
+		Then().
+		ExpectWorkflowFromName(createdWorkflowName, func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+
+	s.Given().WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
+		When().
+		CreateWorkflowTemplates().
+		RunCli([]string{"submit", "--from", "WorkflowTemplate/workflow-template-whalesay-template"}, func(t *testing.T, output string, err error) {
+			assert.Errorf(t, err, "When submitting a Workflow from a WorkflowTemplate an entrypoint must be passed with --entrypoint")
+		}).
+		RunCli([]string{"submit", "--from", "WorkflowTemplate/workflow-template-whalesay-template", "--entrypoint", "whalesay-template", "--parameter", "message=TEST"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+			assert.Contains(t, output, "Name:                workflow-template-whalesay-template-")
+			r := regexp.MustCompile(`Name:\s+?(workflow-template-whalesay-template-[a-z0-9]+)`)
+			res := r.FindStringSubmatch(output)
+			if len(res) != 2 {
+				assert.Fail(t, "Internal test error, please report a bug")
+			}
+			createdWorkflowName = res[1]
+		}).
+		WaitForWorkflowFromName(createdWorkflowName, 15*time.Second).
+		Then().
+		ExpectWorkflowFromName(createdWorkflowName, func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
 }
 
 func (s *CLISuite) TestTemplate() {
@@ -154,7 +197,7 @@ func (s *CLISuite) TestArchive() {
 		SubmitWorkflow().
 		WaitForWorkflow(30*time.Second).
 		Then().
-		Expect(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
 		}).RunCli([]string{"archive", "list"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)

@@ -79,9 +79,13 @@ func (w *When) CreateCronWorkflow() *When {
 }
 
 func (w *When) WaitForWorkflow(timeout time.Duration) *When {
-	logCtx := log.WithFields(log.Fields{"test": w.t.Name(), "workflow": w.workflowName})
+	return w.WaitForWorkflowFromName(w.workflowName, timeout)
+}
+
+func (w *When) WaitForWorkflowFromName(workflowName string, timeout time.Duration) *When {
+	logCtx := log.WithFields(log.Fields{"test": w.t.Name(), "workflow": workflowName})
 	logCtx.Info("Waiting on workflow")
-	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", w.workflowName)).String()}
+	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", workflowName)).String()}
 	watch, err := w.client.Watch(opts)
 	if err != nil {
 		w.t.Fatal(err)
@@ -123,6 +127,12 @@ func (w *When) DeleteWorkflow() *When {
 	if err != nil {
 		w.t.Fatal(err)
 	}
+	return w
+}
+
+func (w *When) RunCli(args []string, block func(t *testing.T, output string, err error)) *When {
+	output, err := runCli(w.diagnostics, args)
+	block(w.t, output, err)
 	return w
 }
 

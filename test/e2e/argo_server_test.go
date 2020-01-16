@@ -542,7 +542,7 @@ func (s *ArgoServerSuite) TestWorkflowArtifact() {
 		SubmitWorkflow().
 		WaitForWorkflow(15 * time.Second).
 		Then().
-		Expect(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
 		})
 
@@ -657,7 +657,7 @@ func (s *ArgoServerSuite) TestArchivedWorkflow() {
 		SubmitWorkflow().
 		WaitForWorkflow(20 * time.Second).
 		Then().
-		Expect(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
 		})
 	s.Given().
