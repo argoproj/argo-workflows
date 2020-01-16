@@ -2,12 +2,8 @@ package cron
 
 import (
 	"context"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/pkg/client/informers/externalversions"
-	extv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/util"
+	"time"
+
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,20 +15,27 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"time"
+
+	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/pkg/client/informers/externalversions"
+	extv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 // Controller is a controller for cron workflows
 type Controller struct {
-	namespace      string
-	cron           *cron.Cron
-	nameEntryIDMap map[string]cron.EntryID
-	wfClientset    versioned.Interface
-	wfInformer     cache.SharedIndexInformer
-	wfQueue        workqueue.RateLimitingInterface
-	cronWfInformer extv1alpha1.CronWorkflowInformer
-	cronWfQueue    workqueue.RateLimitingInterface
-	restConfig     *rest.Config
+	namespace        string
+	managedNamespace string
+	cron             *cron.Cron
+	nameEntryIDMap   map[string]cron.EntryID
+	wfClientset      versioned.Interface
+	wfInformer       cache.SharedIndexInformer
+	wfQueue          workqueue.RateLimitingInterface
+	cronWfInformer   extv1alpha1.CronWorkflowInformer
+	cronWfQueue      workqueue.RateLimitingInterface
+	restConfig       *rest.Config
 }
 
 const (
@@ -45,15 +48,17 @@ func NewCronController(
 	wfclientset versioned.Interface,
 	restConfig *rest.Config,
 	namespace string,
+	managedNamespace string,
 ) *Controller {
 	return &Controller{
-		wfClientset:    wfclientset,
-		namespace:      namespace,
-		cron:           cron.New(),
-		restConfig:     restConfig,
-		nameEntryIDMap: make(map[string]cron.EntryID),
-		wfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		cronWfQueue:    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfClientset:      wfclientset,
+		namespace:        namespace,
+		managedNamespace: managedNamespace,
+		cron:             cron.New(),
+		restConfig:       restConfig,
+		nameEntryIDMap:   make(map[string]cron.EntryID),
+		wfQueue:          workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		cronWfQueue:      workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 	}
 }
 
@@ -62,10 +67,10 @@ func (cc *Controller) Run(ctx context.Context) {
 	defer cc.wfQueue.ShutDown()
 	log.Infof("Starting CronWorkflow controller")
 
-	cc.cronWfInformer = cc.newCronWorkflowInformer()
+	cc.cronWfInformer = externalversions.NewSharedInformerFactoryWithOptions(cc.wfClientset, cronWorkflowResyncPeriod, externalversions.WithNamespace(cc.managedNamespace)).Argoproj().V1alpha1().CronWorkflows()
 	cc.addCronWorkflowInformerHandler()
 
-	cc.wfInformer = util.NewWorkflowInformer(cc.restConfig, "", cronWorkflowResyncPeriod, wfInformerListOptionsFunc)
+	cc.wfInformer = util.NewWorkflowInformer(cc.restConfig, cc.managedNamespace, cronWorkflowResyncPeriod, wfInformerListOptionsFunc)
 	cc.addWorkflowInformerHandler()
 
 	cc.cron.Start()
@@ -208,11 +213,6 @@ func (cc *Controller) processNextWorkflowItem() bool {
 
 	woc.enforceHistoryLimit()
 	return true
-}
-
-func (cc *Controller) newCronWorkflowInformer() extv1alpha1.CronWorkflowInformer {
-	informerFactory := externalversions.NewSharedInformerFactory(cc.wfClientset, cronWorkflowResyncPeriod)
-	return informerFactory.Argoproj().V1alpha1().CronWorkflows()
 }
 
 func (cc *Controller) addCronWorkflowInformerHandler() {

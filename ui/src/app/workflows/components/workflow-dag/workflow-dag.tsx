@@ -78,7 +78,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
                             style={{left: node.x - node.width / 2, top: node.y - node.height / 2, width: node.width, height: node.height}}
                             onClick={() => this.props.nodeClicked && this.props.nodeClicked(node)}>
                             <div
-                                className={`fas workflow-dag__node-status workflow-dag__node-status--${node.phase.toLocaleLowerCase()}`}
+                                className={`fas workflow-dag__node-status workflow-dag__node-status--${Utils.isNodeSuspended(node) ? 'suspended' : node.phase.toLocaleLowerCase()}`}
                                 style={{lineHeight: NODE_HEIGHT + 'px'}}
                             />
                             <div className='workflow-dag__node-title' style={{lineHeight: NODE_HEIGHT + 'px'}}>

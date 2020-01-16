@@ -1,13 +1,14 @@
 package commands
 
 import (
-	"github.com/argoproj/argo/cmd/argo/commands/cron"
-	"os"
+	"github.com/spf13/cobra"
 
+	"github.com/argoproj/argo/cmd/argo/commands/cron"
+
+	"github.com/argoproj/argo/cmd/argo/commands/archive"
+	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/cmd/argo/commands/template"
 	"github.com/argoproj/argo/util/cmd"
-	"github.com/spf13/cobra"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -34,26 +35,18 @@ func NewCommand() *cobra.Command {
 	command.AddCommand(NewResubmitCommand())
 	command.AddCommand(NewResumeCommand())
 	command.AddCommand(NewRetryCommand())
+	command.AddCommand(NewServerCommand())
 	command.AddCommand(NewSubmitCommand())
 	command.AddCommand(NewSuspendCommand())
-	command.AddCommand(NewWaitCommand())
+	command.AddCommand(NewTokenCommand())
+	command.AddCommand(NewWatchCommand())
 	command.AddCommand(NewWatchCommand())
 	command.AddCommand(NewTerminateCommand())
+	command.AddCommand(archive.NewArchiveCommand())
 	command.AddCommand(cmd.NewVersionCmd(CLIName))
 	command.AddCommand(template.NewTemplateCommand())
 	command.AddCommand(cron.NewCronWorkflowCommand())
-
-	addKubectlFlagsToCmd(command)
+	client.AddKubectlFlagsToCmd(command)
+	client.AddArgoServerFlagsToCmd(command)
 	return command
-}
-
-func addKubectlFlagsToCmd(cmd *cobra.Command) {
-	// The "usual" clientcmd/kubectl flags
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-	overrides := clientcmd.ConfigOverrides{}
-	kflags := clientcmd.RecommendedConfigOverrideFlags("")
-	cmd.PersistentFlags().StringVar(&loadingRules.ExplicitPath, "kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
-	clientcmd.BindOverrideFlags(&overrides, cmd.PersistentFlags(), kflags)
-	clientConfig = clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
 }

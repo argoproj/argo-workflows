@@ -2,26 +2,33 @@ package fixtures
 
 import (
 	"fmt"
-	"github.com/argoproj/pkg/humanize"
 	"testing"
 	"time"
+
+	"github.com/argoproj/pkg/humanize"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 
+	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
 
 type When struct {
-	t                *testing.T
-	wf               *wfv1.Workflow
-	cronWf           *wfv1.CronWorkflow
-	client           v1alpha1.WorkflowInterface
-	cronClient       v1alpha1.CronWorkflowInterface
-	workflowName     string
-	cronWorkflowName string
+	t                     *testing.T
+	diagnostics           *Diagnostics
+	wf                    *wfv1.Workflow
+	wfTemplates           []*wfv1.WorkflowTemplate
+	cronWf                *wfv1.CronWorkflow
+	client                v1alpha1.WorkflowInterface
+	wfTemplateClient      v1alpha1.WorkflowTemplateInterface
+	cronClient            v1alpha1.CronWorkflowInterface
+	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
+	workflowName          string
+	wfTemplateNames       []string
+	cronWorkflowName      string
 }
 
 func (w *When) SubmitWorkflow() *When {
@@ -36,6 +43,23 @@ func (w *When) SubmitWorkflow() *When {
 		w.workflowName = wf.Name
 	}
 	log.WithField("test", w.t.Name()).Info("Workflow submitted")
+	return w
+}
+
+func (w *When) CreateWorkflowTemplates() *When {
+	if len(w.wfTemplates) == 0 {
+		w.t.Fatal("No workflow templates to create")
+	}
+	for _, wfTmpl := range w.wfTemplates {
+		log.WithField("test", w.t.Name()).Infof("Creating workflow template %s", wfTmpl.Name)
+		wfTmpl, err := w.wfTemplateClient.Create(wfTmpl)
+		if err != nil {
+			w.t.Fatal(err)
+		} else {
+			w.wfTemplateNames = append(w.wfTemplateNames, wfTmpl.Name)
+		}
+		log.WithField("test", w.t.Name()).Infof("Workflow template created %s", wfTmpl.Name)
+	}
 	return w
 }
 
@@ -58,11 +82,11 @@ func (w *When) WaitForWorkflow(timeout time.Duration) *When {
 	logCtx := log.WithFields(log.Fields{"test": w.t.Name(), "workflow": w.workflowName})
 	logCtx.Info("Waiting on workflow")
 	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", w.workflowName)).String()}
-	watchIf, err := w.client.Watch(opts)
+	watch, err := w.client.Watch(opts)
 	if err != nil {
 		w.t.Fatal(err)
 	}
-	defer watchIf.Stop()
+	defer watch.Stop()
 	timeoutCh := make(chan bool, 1)
 	go func() {
 		time.Sleep(timeout)
@@ -70,7 +94,7 @@ func (w *When) WaitForWorkflow(timeout time.Duration) *When {
 	}()
 	for {
 		select {
-		case event := <-watchIf.ResultChan():
+		case event := <-watch.ResultChan():
 			wf, ok := event.Object.(*wfv1.Workflow)
 			if ok {
 				if !wf.Status.FinishedAt.IsZero() {
@@ -104,10 +128,13 @@ func (w *When) DeleteWorkflow() *When {
 
 func (w *When) Then() *Then {
 	return &Then{
-		t:                w.t,
-		workflowName:     w.workflowName,
-		cronWorkflowName: w.cronWorkflowName,
-		client:           w.client,
-		cronClient:       w.cronClient,
+		t:                     w.t,
+		diagnostics:           w.diagnostics,
+		workflowName:          w.workflowName,
+		wfTemplateNames:       w.wfTemplateNames,
+		cronWorkflowName:      w.cronWorkflowName,
+		client:                w.client,
+		cronClient:            w.cronClient,
+		offloadNodeStatusRepo: w.offloadNodeStatusRepo,
 	}
 }

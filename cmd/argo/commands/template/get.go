@@ -6,11 +6,15 @@ import (
 	"log"
 	"os"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
+
+	"github.com/argoproj/pkg/humanize"
+
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	"github.com/argoproj/argo/cmd/server/workflowtemplate"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 func NewGetCommand() *cobra.Command {
@@ -26,13 +30,33 @@ func NewGetCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			wftmplClient := InitWorkflowTemplateClient()
-			for _, arg := range args {
-				wftmpl, err := wftmplClient.Get(arg, metav1.GetOptions{})
-				if err != nil {
-					log.Fatal(err)
+			var wftmpl *wfv1.WorkflowTemplate
+			var err error
+			if client.ArgoServer != "" {
+				conn := client.GetClientConn()
+				defer conn.Close()
+				ns, _, _ := client.Config.Namespace()
+				wftmplApiClient, ctx := GetWFtmplApiServerGRPCClient(conn)
+				for _, arg := range args {
+					wfTempReq := workflowtemplate.WorkflowTemplateGetRequest{
+						Name:      arg,
+						Namespace: ns,
+					}
+					wftmpl, err = wftmplApiClient.GetWorkflowTemplate(ctx, &wfTempReq)
+					if err != nil {
+						log.Fatal(err)
+					}
+					printWorkflowTemplate(wftmpl, output)
 				}
-				printWorkflowTemplate(wftmpl, output)
+			} else {
+				wftmplClient := InitWorkflowTemplateClient()
+				for _, arg := range args {
+					wftmpl, err = wftmplClient.Get(arg, metav1.GetOptions{})
+					if err != nil {
+						log.Fatal(err)
+					}
+					printWorkflowTemplate(wftmpl, output)
+				}
 			}
 		},
 	}
