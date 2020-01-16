@@ -304,7 +304,7 @@
           "type": "boolean"
         },
         "timezone": {
-          "description": "Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\"",
+          "description": "Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\". Default is machine's local time.",
           "type": "string"
         },
         "workflowSpec": {

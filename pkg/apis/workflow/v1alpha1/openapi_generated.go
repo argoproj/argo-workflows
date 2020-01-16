@@ -601,7 +601,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 					},
 					"timezone": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\"",
+							Description: "Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\". Default is machine's local time.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
