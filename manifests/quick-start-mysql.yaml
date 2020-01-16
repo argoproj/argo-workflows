@@ -363,7 +363,7 @@ spec:
         - --auth-mode
         - client
         - --namespaced
-        image: argoproj/argocli:master
+        image: argoproj/argocli:quick-start
         name: argo-server
         ports:
         - containerPort: 2746
@@ -425,11 +425,11 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:master
+        - argoproj/argoexec:quick-start
         - --namespaced
         command:
         - workflow-controller
-        image: argoproj/workflow-controller:master
+        image: argoproj/workflow-controller:quick-start
         name: workflow-controller
       serviceAccountName: argo
 ---

@@ -211,18 +211,15 @@ else
 	go test -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
 endif
 
-
-.PHONY: install-mysql
-install-mysql: manifests/quick-start-mysql.yaml
-	# Install MySQL quick-start
-	kubectl get ns argo || kubectl create ns argo
-	kubectl -n argo apply -f manifests/quick-start-mysql.yaml
+test/e2e/manifests/postgres.yaml: manifests/quick-start-postgres.yaml
+	# Create Postgres e2e manifests
+	kustomize build test/e2e/manifests/postgres | sed 's/:latest/:$(IMAGE_TAG)/' > test/e2e/manifests/postgres.yaml
 
 .PHONY: install-postgres
-install-postgres: manifests/quick-start-postgres.yaml
+install-postgres: test/e2e/manifests/postgres.yaml
 	# Install Postgres quick-start
 	kubectl get ns argo || kubectl create ns argo
-	kubectl -n argo apply -f manifests/quick-start-postgres.yaml
+	kubectl -n argo apply -f test/e2e/manifests/postgres.yaml
 
 .PHONY: install
 install: install-postgres
@@ -232,11 +229,6 @@ start: controller-image cli-image install
 	# Start development environment
 ifeq ($(CI),false)
 	make down
-endif
-	# Patch deployments
-	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "$(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)", "--executor-image-pull-policy", "Never", "--namespaced"]}]}]'
-	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["server", "--loglevel", "debug", "--auth-mode", "client", "--namespaced"]}, {"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "ARGO_V2_TOKEN", "value": "password"}]}]'
-ifeq ($(CI),false)
 	make up
 endif
 	make executor-image
