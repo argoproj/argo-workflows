@@ -123,8 +123,7 @@ func (cc *Controller) processNextCronItem() bool {
 		return true
 	}
 
-	cronWfIf := cc.wfClientset.ArgoprojV1alpha1().CronWorkflows(cronWf.Namespace)
-	cronWorkflowOperationCtx, err := newCronWfOperationCtx(cronWf, cc.wfClientset, cronWfIf)
+	cronWorkflowOperationCtx, err := newCronWfOperationCtx(cronWf, cc.wfClientset)
 	if err != nil {
 		log.Error(err)
 		return true
@@ -142,7 +141,12 @@ func (cc *Controller) processNextCronItem() bool {
 		delete(cc.nameEntryIDMap, key.(string))
 	}
 
-	entryId, err := cc.cron.AddJob(cronWf.Spec.Schedule, cronWorkflowOperationCtx)
+	cronSchedule := cronWf.Spec.Schedule
+	if cronWf.Spec.Timezone != "" {
+		cronSchedule = "CRON_TZ=" + cronWf.Spec.Timezone + " " + cronSchedule
+	}
+
+	entryId, err := cc.cron.AddJob(cronSchedule, cronWorkflowOperationCtx)
 	if err != nil {
 		log.Errorf("could not schedule CronWorkflow: %s", err)
 		return true

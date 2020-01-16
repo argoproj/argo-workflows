@@ -54,6 +54,8 @@ ENTRYPOINT [ "argoexec" ]
 # workflow-controller
 ####################################################################################################
 FROM scratch as workflow-controller
+# Add timezone data
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY workflow-controller /bin/
 ENTRYPOINT [ "workflow-controller" ]
 
