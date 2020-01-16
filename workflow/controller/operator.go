@@ -358,7 +358,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	err := packer.CompressWorkflow(woc.wf)
 	if packer.IsTooLargeError(err) || os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true" {
 		if woc.controller.offloadNodeStatusRepo.IsEnabled() {
-			offloadVersion, err := woc.controller.offloadNodeStatusRepo.Save(woc.wf.Name, woc.wf.Namespace, nodes)
+			offloadVersion, err := woc.controller.offloadNodeStatusRepo.Save(string(woc.wf.UID), woc.wf.Namespace, nodes)
 			if err != nil {
 				woc.log.Warnf("Failed to offload node status: %v", err)
 				woc.markWorkflowError(err, true)

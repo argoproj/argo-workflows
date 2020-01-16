@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -65,6 +66,7 @@ type WorkflowController struct {
 	wfQueue               workqueue.RateLimitingInterface
 	podQueue              workqueue.RateLimitingInterface
 	completedPods         chan string
+	gcWorkflows           chan types.UID
 	gcPods                chan string // pods to be deleted depend on GC strategy
 	throttler             Throttler
 	session               sqlbuilder.Database
@@ -101,6 +103,7 @@ func NewWorkflowController(
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		wfQueue:                    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:                   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		gcWorkflows:                make(chan types.UID, 512),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 	}
@@ -165,6 +168,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.podInformer.Run(ctx.Done())
 	go wfc.podLabeler(ctx.Done())
 	go wfc.podGarbageCollector(ctx.Done())
+	go wfc.workflowGarbageCollector(ctx.Done())
+	go wfc.periodicWorkflowGarbageCollector(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	for _, informer := range []cache.SharedIndexInformer{wfc.wfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
@@ -233,6 +238,60 @@ func (wfc *WorkflowController) podGarbageCollector(stopCh <-chan struct{}) {
 	}
 }
 
+func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) {
+	for {
+		select {
+		case <-stopCh:
+			return
+		case uid := <-wfc.gcWorkflows:
+			logCtx := log.WithField("uid", uid)
+			logCtx.Debug("Performing workflow GC")
+			err := wfc.offloadNodeStatusRepo.Delete(string(uid))
+			if err != nil {
+				logCtx.WithField("err", err).Error("GC failed")
+			}
+		}
+	}
+}
+
+func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan struct{}) {
+	ticker := time.NewTicker(5 * time.Second)
+
+	for {
+		select {
+		case <-stopCh:
+			ticker.Stop()
+			return
+		case <-ticker.C:
+			if wfc.offloadNodeStatusRepo.IsEnabled() {
+				log.Info("Performing periodic workflow GC")
+				uids, err := wfc.offloadNodeStatusRepo.ListOldUIDs(wfc.GetManagedNamespace())
+				if err != nil {
+					log.WithField("err", err).Error("Failed to list offloaded nodes")
+				}
+				list, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.GetManagedNamespace()).List(metav1.ListOptions{})
+				if err != nil {
+					log.WithField("err", err).Error("Failed to list workflows")
+				}
+				wfs := make(map[types.UID]bool)
+				for _, wf := range list.Items {
+					wfs[wf.UID] = true
+				}
+				log.WithFields(log.Fields{"len_wfs": len(wfs), "len_offload_uids": len(uids)}).Info("Examining workflows")
+				for _, uid := range uids {
+					_, ok := wfs[types.UID(uid)]
+					if !ok {
+						err := wfc.offloadNodeStatusRepo.Delete(string(uid))
+						if err != nil {
+							log.WithField("err", err).Error("Failed to delete offloaded nodes")
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 func (wfc *WorkflowController) runWorker() {
 	for wfc.processNextItem() {
 	}
@@ -290,7 +349,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 
 	// Loading running workflow from persistence storage if nodeStatusOffload enabled
 	if wf.Status.IsOffloadNodeStatus() {
-		nodes, err := wfc.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace, wf.GetOffloadNodeStatusVersion())
+		nodes, err := wfc.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
 		if err != nil {
 			woc.log.Warnf("getting offloaded nodes failed: %v", err)
 			woc.markWorkflowError(err, true)
@@ -390,13 +449,7 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 
 func (wfc *WorkflowController) tweakWorkflowlist(options *metav1.ListOptions) {
 	options.FieldSelector = fields.Everything().String()
-	// completed notin (true)
-	incompleteReq, err := labels.NewRequirement(common.LabelKeyCompleted, selection.NotIn, []string{"true"})
-	if err != nil {
-		panic(err)
-	}
 	labelSelector := labels.NewSelector().
-		Add(*incompleteReq).
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 	options.LabelSelector = labelSelector.String()
 }
@@ -447,6 +500,17 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 				// key function.
 				key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 				if err == nil {
+					un, ok := obj.(*unstructured.Unstructured)
+					if ok {
+						logCtx := log.WithField("uid", un.GetUID())
+						wf, err := util.FromUnstructured(un)
+						if err != nil {
+							logCtx.Error(err)
+						} else if wf.Status.IsOffloadNodeStatus() {
+							logCtx.Info("Queuing workflow for GC")
+							wfc.gcWorkflows <- un.GetUID()
+						}
+					}
 					wfc.wfQueue.Add(key)
 					wfc.throttler.Remove(key)
 				}

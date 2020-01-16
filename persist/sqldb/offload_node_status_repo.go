@@ -14,10 +14,11 @@ import (
 )
 
 type OffloadNodeStatusRepo interface {
-	Save(name, namespace string, nodes wfv1.Nodes) (string, error)
-	Get(name, namespace, version string) (wfv1.Nodes, error)
+	Save(uid, namespace string, nodes wfv1.Nodes) (string, error)
+	Get(uid, version string) (wfv1.Nodes, error)
 	List(namespace string) (map[PrimaryKey]wfv1.Nodes, error)
-	Delete(name, namespace string) error
+	ListOldUIDs(namespace string) ([]string, error)
+	Delete(uid string) error
 	IsEnabled() bool
 }
 
@@ -26,14 +27,14 @@ func NewOffloadNodeStatusRepo(tableName string, session sqlbuilder.Database) Off
 }
 
 type PrimaryKey struct {
-	Name      string `db:"name"`
-	Namespace string `db:"namespace"`
-	Version   string `db:"version"`
+	UID     string `db:"id"`
+	Version string `db:"version"`
 }
 
 type nodesRecord struct {
 	PrimaryKey
-	Nodes string `db:"nodes"`
+	Namespace string `db:"namespace"`
+	Nodes     string `db:"nodes"`
 }
 
 type nodeOffloadRepo struct {
@@ -56,7 +57,7 @@ func nodeStatusVersion(s wfv1.Nodes) (string, string, error) {
 	return string(marshalled), fmt.Sprintf("fnv:%v", h.Sum32()), nil
 }
 
-func (wdc *nodeOffloadRepo) Save(name, namespace string, nodes wfv1.Nodes) (string, error) {
+func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (string, error) {
 
 	marshalled, version, err := nodeStatusVersion(nodes)
 	if err != nil {
@@ -65,14 +66,14 @@ func (wdc *nodeOffloadRepo) Save(name, namespace string, nodes wfv1.Nodes) (stri
 
 	record := &nodesRecord{
 		PrimaryKey: PrimaryKey{
-			Name:      name,
-			Namespace: namespace,
-			Version:   version,
+			UID:     uid,
+			Version: version,
 		},
-		Nodes: marshalled,
+		Namespace: namespace,
+		Nodes:     marshalled,
 	}
 
-	logCtx := log.WithFields(log.Fields{"name": name, "namespace": namespace, "version": version})
+	logCtx := log.WithFields(log.Fields{"uid": uid, "version": version})
 	logCtx.Debug("Offloading nodes")
 	_, err = wdc.session.Collection(wdc.tableName).Insert(record)
 	if err != nil {
@@ -90,11 +91,9 @@ func (wdc *nodeOffloadRepo) Save(name, namespace string, nodes wfv1.Nodes) (stri
 	// We also want to keep enough around so that we can service watches.
 	_, err = wdc.session.
 		DeleteFrom(wdc.tableName).
-		Where(db.Cond{"name": name}).
-		And(db.Cond{"namespace": namespace}).
+		Where(db.Cond{"id": uid}).
 		And(db.Cond{"version <>": version}).
-		// TODO - probably needs to be shorter - but how short?
-		And(db.Cond{"updatedat + interval '10' second <": "now()"}).
+		And(oldCondition).
 		Exec()
 	if err != nil {
 		return "", err
@@ -102,14 +101,13 @@ func (wdc *nodeOffloadRepo) Save(name, namespace string, nodes wfv1.Nodes) (stri
 	return version, nil
 }
 
-func (wdc *nodeOffloadRepo) Get(name, namespace, version string) (wfv1.Nodes, error) {
-	log.WithFields(log.Fields{"name": name, "namespace": namespace, "version": version}).Debug("Getting offloaded nodes")
+func (wdc *nodeOffloadRepo) Get(uid, version string) (wfv1.Nodes, error) {
+	log.WithFields(log.Fields{"uid": uid, "version": version}).Debug("Getting offloaded nodes")
 	r := &nodesRecord{}
 	err := wdc.session.
 		Select("nodes").
 		From(wdc.tableName).
-		Where(db.Cond{"name": name}).
-		And(db.Cond{"namespace": namespace}).
+		Where(db.Cond{"id": uid}).
 		And(db.Cond{"version": version}).
 		One(r)
 	if err != nil {
@@ -147,7 +145,28 @@ func (wdc *nodeOffloadRepo) List(namespace string) (map[PrimaryKey]wfv1.Nodes, e
 	return res, nil
 }
 
-func (wdc *nodeOffloadRepo) Delete(name, namespace string) error {
-	log.WithFields(log.Fields{"name": name, "namespace": namespace}).Debug("Deleting offloaded node")
-	return wdc.session.Collection(wdc.tableName).Find(db.Cond{"name": name}).And(db.Cond{"namespace": namespace}).Delete()
+var oldCondition = db.Cond{"updatedat + interval '5' minute <": "now()"}
+
+func (wdc *nodeOffloadRepo) ListOldUIDs(namespace string) ([]string, error) {
+	log.WithFields(log.Fields{"namespace": namespace}).Debug("Listing old offloaded nodes")
+	var records []PrimaryKey
+	err := wdc.session.
+		Select("id","version").
+		From(wdc.tableName).
+		Where(namespaceEqual(namespace)).
+		And(oldCondition).
+		All(&records)
+	if err != nil {
+		return nil, err
+	}
+	uids := make([]string, len(records))
+	for i, r := range records {
+		uids[i] = r.UID
+	}
+	return uids, nil
+}
+
+func (wdc *nodeOffloadRepo) Delete(uid string) error {
+	log.WithFields(log.Fields{"uid": uid}).Debug("Deleting offloaded nodes")
+	return wdc.session.Collection(wdc.tableName).Find(db.Cond{"id": uid}).Delete()
 }

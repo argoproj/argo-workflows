@@ -82,7 +82,7 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *WorkflowGetReques
 	}
 
 	if wf.Status.IsOffloadNodeStatus() {
-		offloadedNodes, err := s.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace, wf.GetOffloadNodeStatusVersion())
+		offloadedNodes, err := s.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
 		if err != nil {
 			return nil, err
 		}
@@ -113,7 +113,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *WorkflowListReq
 	}
 	for i, wf := range wfList.Items {
 		if wf.Status.IsOffloadNodeStatus() {
-			wfList.Items[i].Status.Nodes = offloadedNodes[sqldb.PrimaryKey{Name: wf.Name, Namespace: wf.Namespace, Version: wf.GetOffloadNodeStatusVersion()}]
+			wfList.Items[i].Status.Nodes = offloadedNodes[sqldb.PrimaryKey{UID: string(wf.UID), Version: wf.GetOffloadNodeStatusVersion()}]
 		}
 	}
 
@@ -153,7 +153,7 @@ func (s *workflowServer) WatchWorkflows(req *WatchWorkflowsRequest, ws WorkflowS
 			return err
 		}
 		if wf.Status.IsOffloadNodeStatus() {
-			offloadedNodes, err := s.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace, wf.GetOffloadNodeStatusVersion())
+			offloadedNodes, err := s.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
 			if err != nil {
 				return err
 			}
@@ -173,18 +173,7 @@ func (s *workflowServer) WatchWorkflows(req *WatchWorkflowsRequest, ws WorkflowS
 func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *WorkflowDeleteRequest) (*WorkflowDeleteResponse, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	if wf.Status.IsOffloadNodeStatus() {
-		err = s.offloadNodeStatusRepo.Delete(wf.Name, wf.Namespace)
-		if err != nil {
-			return nil, err
-		}
-	}
-	err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Delete(req.Name, &metav1.DeleteOptions{})
+	err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Delete(req.Name, &metav1.DeleteOptions{})
 	if err != nil {
 		return nil, err
 	}

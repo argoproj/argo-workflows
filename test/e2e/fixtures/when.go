@@ -116,7 +116,7 @@ func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
 		w.t.Fatal(err)
 	}
 	if wf.Status.IsOffloadNodeStatus() {
-		offloadedNodes, err := w.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace, wf.GetOffloadNodeStatusVersion())
+		offloadedNodes, err := w.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
 		if err != nil {
 			w.t.Fatal(err)
 		}

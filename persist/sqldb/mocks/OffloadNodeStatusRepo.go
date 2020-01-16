@@ -14,13 +14,13 @@ type OffloadNodeStatusRepo struct {
 	mock.Mock
 }
 
-// Delete provides a mock function with given fields: name, namespace
-func (_m *OffloadNodeStatusRepo) Delete(name string, namespace string) error {
-	ret := _m.Called(name, namespace)
+// Delete provides a mock function with given fields: uid
+func (_m *OffloadNodeStatusRepo) Delete(uid string) error {
+	ret := _m.Called(uid)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string) error); ok {
-		r0 = rf(name, namespace)
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(uid)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -28,13 +28,13 @@ func (_m *OffloadNodeStatusRepo) Delete(name string, namespace string) error {
 	return r0
 }
 
-// Get provides a mock function with given fields: name, namespace, version
-func (_m *OffloadNodeStatusRepo) Get(name string, namespace string, version string) (v1alpha1.Nodes, error) {
-	ret := _m.Called(name, namespace, version)
+// Get provides a mock function with given fields: uid, version
+func (_m *OffloadNodeStatusRepo) Get(uid string, version string) (v1alpha1.Nodes, error) {
+	ret := _m.Called(uid, version)
 
 	var r0 v1alpha1.Nodes
-	if rf, ok := ret.Get(0).(func(string, string, string) v1alpha1.Nodes); ok {
-		r0 = rf(name, namespace, version)
+	if rf, ok := ret.Get(0).(func(string, string) v1alpha1.Nodes); ok {
+		r0 = rf(uid, version)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(v1alpha1.Nodes)
@@ -42,8 +42,8 @@ func (_m *OffloadNodeStatusRepo) Get(name string, namespace string, version stri
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, string) error); ok {
-		r1 = rf(name, namespace, version)
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(uid, version)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -88,20 +88,43 @@ func (_m *OffloadNodeStatusRepo) List(namespace string) (map[sqldb.PrimaryKey]v1
 	return r0, r1
 }
 
-// Save provides a mock function with given fields: name, namespace, nodes
-func (_m *OffloadNodeStatusRepo) Save(name string, namespace string, nodes v1alpha1.Nodes) (string, error) {
-	ret := _m.Called(name, namespace, nodes)
+// ListOldUIDs provides a mock function with given fields: namespace
+func (_m *OffloadNodeStatusRepo) ListOldUIDs(namespace string) ([]string, error) {
+	ret := _m.Called(namespace)
+
+	var r0 []string
+	if rf, ok := ret.Get(0).(func(string) []string); ok {
+		r0 = rf(namespace)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(namespace)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// Save provides a mock function with given fields: uid, namespace, nodes
+func (_m *OffloadNodeStatusRepo) Save(uid string, namespace string, nodes v1alpha1.Nodes) (string, error) {
+	ret := _m.Called(uid, namespace, nodes)
 
 	var r0 string
 	if rf, ok := ret.Get(0).(func(string, string, v1alpha1.Nodes) string); ok {
-		r0 = rf(name, namespace, nodes)
+		r0 = rf(uid, namespace, nodes)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string, string, v1alpha1.Nodes) error); ok {
-		r1 = rf(name, namespace, nodes)
+		r1 = rf(uid, namespace, nodes)
 	} else {
 		r1 = ret.Error(1)
 	}

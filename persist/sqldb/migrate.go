@@ -76,19 +76,26 @@ func migrate(cfg migrateCfg, session sqlbuilder.Database) error {
 		ansiSQLChange(`alter table argo_archived_workflows add primary key(id)`),
 		// argo_archived_workflows now looks like:
 		// id  | name | phase | namespace | workflow | startedat | finishedat
-		// add version to tables
-		ansiSQLChange(`alter table ` + cfg.tableName + ` add column version varchar(64)`),
-		ansiSQLChange(`alter table ` + cfg.tableName + ` add column nodes text`),
-		backfillNodes(cfg),
-		ansiSQLChange(`alter table ` + cfg.tableName + ` drop column workflow`),
-		ansiSQLChange(`alter table ` + cfg.tableName + ` drop column id`),
+		// remove unused columns
 		ansiSQLChange(`alter table ` + cfg.tableName + ` drop column phase`),
 		ansiSQLChange(`alter table ` + cfg.tableName + ` drop column startedat`),
 		ansiSQLChange(`alter table ` + cfg.tableName + ` drop column finishedat`),
-		ansiSQLChange(`alter table ` + cfg.tableName + ` alter column version set not null`),
-		ansiSQLChange(`alter table ` + cfg.tableName + ` drop constraint ` + cfg.tableName + `_pkey`),
-		ansiSQLChange(`alter table ` + cfg.tableName + ` add primary key(name,namespace,version)`),
+		// add version to tables
+		ansiSQLChange(`alter table ` + cfg.tableName + ` alter column id set not null`),
+		// move all data from workflows into version+nodes
+		ansiSQLChange(`alter table ` + cfg.tableName + ` add column version varchar(64)`),
+		ansiSQLChange(`alter table ` + cfg.tableName + ` add column nodes text`),
+		backfillNodes(cfg),
+		ansiSQLChange(`alter table ` + cfg.tableName + ` alter column nodes set not null`),
+		// add a timestamp column to indicate updated time
 		ansiSQLChange(`alter table ` + cfg.tableName + ` add column updatedat timestamp not null default current_timestamp`),
+		// remove unused columns
+		ansiSQLChange(`alter table ` + cfg.tableName + ` drop column workflow`),
+		// remove the old primary key and add a new one
+		ansiSQLChange(`alter table ` + cfg.tableName + ` drop constraint ` + cfg.tableName + `_pkey`),
+		ansiSQLChange(`alter table ` + cfg.tableName + ` add primary key(id,version)`),
+		ansiSQLChange(`alter table ` + cfg.tableName + ` drop column name`),
+		ansiSQLChange(`create index on ` + cfg.tableName + ` (namespace)`),
 		// argo_workflows now looks like:
 		//  name | namespace | version | nodes | updatedat
 	} {
