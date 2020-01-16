@@ -1,4 +1,3 @@
-# This is an auto-generated file. DO NOT EDIT
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
@@ -70,91 +69,6 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - secrets
-  verbs:
-  - get
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  labels:
-    rbac.authorization.k8s.io/aggregate-to-admin: "true"
-  name: argo-aggregate-to-admin
-rules:
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workflows
-  - workflows/finalizers
-  - workflowtemplates
-  - workflowtemplates/finalizers
-  - cronworkflows
-  - cronworkflows/finalizers
-  verbs:
-  - create
-  - delete
-  - deletecollection
-  - get
-  - list
-  - patch
-  - update
-  - watch
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  labels:
-    rbac.authorization.k8s.io/aggregate-to-edit: "true"
-  name: argo-aggregate-to-edit
-rules:
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workflows
-  - workflows/finalizers
-  - workflowtemplates
-  - workflowtemplates/finalizers
-  - cronworkflows
-  - cronworkflows/finalizers
-  verbs:
-  - create
-  - delete
-  - deletecollection
-  - get
-  - list
-  - patch
-  - update
-  - watch
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  labels:
-    rbac.authorization.k8s.io/aggregate-to-view: "true"
-  name: argo-aggregate-to-view
-rules:
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workflows
-  - workflows/finalizers
-  - workflowtemplates
-  - workflowtemplates/finalizers
-  - cronworkflows
-  - cronworkflows/finalizers
-  verbs:
-  - get
-  - list
-  - watch
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: argo-cluster-role
-rules:
-- apiGroups:
-  - ""
-  resources:
   - pods
   - pods/exec
   verbs:
@@ -210,6 +124,12 @@ rules:
   - get
   - list
 - apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+- apiGroups:
   - argoproj.io
   resources:
   - cronworkflows
@@ -221,12 +141,11 @@ rules:
   - update
   - patch
   - delete
-  - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: Role
 metadata:
-  name: argo-server-cluster-role
+  name: argo-server-role
 rules:
 - apiGroups:
   - ""
@@ -272,6 +191,27 @@ rules:
   - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: workflow-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - watch
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - pods/log
+  verbs:
+  - get
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: argo-binding
@@ -284,35 +224,86 @@ subjects:
   name: argo
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: argo-binding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: argo-cluster-role
-subjects:
-- kind: ServiceAccount
-  name: argo
-  namespace: argo
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: RoleBinding
 metadata:
   name: argo-server-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: argo-server-cluster-role
+  kind: Role
+  name: argo-server-role
 subjects:
 - kind: ServiceAccount
   name: argo-server
-  namespace: argo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: workflow-default-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: workflow-role
+subjects:
+- kind: ServiceAccount
+  name: default
 ---
 apiVersion: v1
+data:
+  config: |
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        accessKeySecret:
+          name: my-minio-cred
+          key: accesskey
+        secretKeySecret:
+          name: my-minio-cred
+          key: secretkey
+    persistence:
+      connectionPool:
+        maxIdleConns: 100
+        maxOpenConns: 0
+      nodeStatusOffLoad: true
+      archive: true
+      postgresql:
+        host: postgres
+        port: 5432
+        database: postgres
+        tableName: argo_workflows
+        userNameSecret:
+          name: argo-postgres-config
+          key: username
+        passwordSecret:
+          name: argo-postgres-config
+          key: password
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    app: postgres
+  name: argo-postgres-config
+stringData:
+  password: password
+  username: postgres
+type: Opaque
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    app: minio
+  name: my-minio-cred
+stringData:
+  accesskey: admin
+  secretkey: password
+type: Opaque
 ---
 apiVersion: v1
 kind: Service
@@ -324,6 +315,34 @@ spec:
     targetPort: 2746
   selector:
     app: argo-server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: minio
+  name: minio
+spec:
+  ports:
+  - port: 9000
+    protocol: TCP
+    targetPort: 9000
+  selector:
+    app: minio
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: postgres
+  name: postgres
+spec:
+  ports:
+  - port: 5432
+    protocol: TCP
+    targetPort: 5432
+  selector:
+    app: postgres
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -341,7 +360,16 @@ spec:
       containers:
       - args:
         - server
+        - --namespaced
+        - --auth-mode
+        - client
+        - --loglevel
+        - debug
+        env:
+        - name: ARGO_V2_TOKEN
+          value: password
         image: argoproj/argocli:latest
+        imagePullPolicy: Never
         name: argo-server
         ports:
         - containerPort: 2746
@@ -353,6 +381,31 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 30
       serviceAccountName: argo-server
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: postgres
+  name: postgres
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+      name: postgres
+    spec:
+      containers:
+      - env:
+        - name: POSTGRES_PASSWORD
+          value: password
+        image: postgres:12-alpine
+        name: main
+        ports:
+        - containerPort: 5432
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -373,8 +426,55 @@ spec:
         - workflow-controller-configmap
         - --executor-image
         - argoproj/argoexec:latest
+        - --namespaced
+        - --loglevel
+        - debug
+        - --executor-image-pull-policy
+        - Never
         command:
         - workflow-controller
         image: argoproj/workflow-controller:latest
+        imagePullPolicy: Never
         name: workflow-controller
       serviceAccountName: argo
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: minio
+  name: minio
+spec:
+  containers:
+  - command:
+    - minio
+    - server
+    - /data
+    env:
+    - name: MINIO_ACCESS_KEY
+      value: admin
+    - name: MINIO_SECRET_KEY
+      value: password
+    image: minio/minio
+    lifecycle:
+      postStart:
+        exec:
+          command:
+          - mkdir
+          - -p
+          - /data/my-bucket
+    livenessProbe:
+      httpGet:
+        path: /minio/health/live
+        port: 9000
+      initialDelaySeconds: 5
+      periodSeconds: 10
+    name: main
+    ports:
+    - containerPort: 9000
+    readinessProbe:
+      httpGet:
+        path: /minio/health/ready
+        port: 9000
+      initialDelaySeconds: 5
+      periodSeconds: 10
