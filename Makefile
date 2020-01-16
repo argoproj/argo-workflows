@@ -10,7 +10,7 @@ export DOCKER_BUILDKIT = 1
 
 # docker image publishing options
 IMAGE_NAMESPACE       ?= argoproj
-ifeq ($(GIT_BRANCH),MASTER)
+ifeq ($(GIT_BRANCH),master)
 VERSION               := latest
 IMAGE_TAG             := latest
 DEV_IMAGE             := true
@@ -47,9 +47,11 @@ endif
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
+MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
+E2_MANIFESTS     := $(shell find test/e2e/manifests -mindepth 2 -type f)
 
 .PHONY: build
-build: clis executor-image controller-image dist/install.yaml dist/namespace-install.yaml dist/quick-start-postgres.yaml dist/quick-start-mysql.yaml
+build: clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
 
 vendor: Gopkg.toml
 	# Get Go dependencies
@@ -172,9 +174,21 @@ verify-codegen:
 	diff ./dist/swagger.json ./api/openapi-spec/swagger.json
 
 .PHONY: manifests
-manifests:
-	# Create manifests
+manifests: manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml
+
+manifests/install.yaml: $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
+
+manifests/namespace-install.yaml: $(MANIFESTS)
+	env VERSION=$(VERSION) ./hack/update-manifests.sh
+
+manifests/quick-start-mysql.yaml: $(MANIFESTS)
+	# Create MySQL quick-start manifests
+	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(IMAGE_TAG)/' > manifests/quick-start-mysql.yaml
+
+manifests/quick-start-postgres.yaml: $(MANIFESTS)
+	# Create Postgres quick-start manifests
+	kustomize build manifests/quick-start/postgres | sed 's/:latest/:$(IMAGE_TAG)/' > manifests/quick-start-postgres.yaml
 
 # lint/test/etc
 
@@ -196,33 +210,19 @@ else
 	go test -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
 endif
 
-dist/install.yaml: manifests/cluster-install
-	# Create cluster install manifests
-	cat manifests/install.yaml | sed 's/:latest/:$(IMAGE_TAG)/' > dist/install.yaml
+test/e2e/manifests/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
+	# Create Postgres e2e manifests
+	kustomize build test/e2e/manifests/postgres > test/e2e/manifests/postgres.yaml
 
-dist/namespace-install.yaml: manifests/namespace-install
-	# Create namespace instnall manifests
-	cat manifests/namespace-install.yaml | sed 's/:latest/:$(IMAGE_TAG)/' > dist/namespace-install.yaml
-
-dist/quick-start-mysql.yaml: manifests/namespace-install.yaml
-	# Create MySQL quick-start manifests
-	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(IMAGE_TAG)/' > dist/quick-start-mysql.yaml
-
-.PHONY: install-mysql
-install-mysql: dist/quick-start-mysql.yaml
-	# Install MySQL quick-start
-	kubectl get ns argo || kubectl create ns argo
-	kubectl -n argo apply -f dist/quick-start-mysql.yaml
-
-dist/quick-start-postgres.yaml: manifests/namespace-install.yaml
-	# Create Postgres quick-start manifests
-	kustomize build manifests/quick-start/postgres | sed 's/:latest/:$(IMAGE_TAG)/' > dist/quick-start-postgres.yaml
+dist/postgres.yaml: test/e2e/manifests/postgres.yaml
+	# Create Postgres e2e manifests
+	cat test/e2e/manifests/postgres.yaml | sed 's/:latest/:$(IMAGE_TAG)/' > dist/postgres.yaml
 
 .PHONY: install-postgres
-install-postgres: dist/quick-start-postgres.yaml
+install-postgres: dist/postgres.yaml
 	# Install Postgres quick-start
 	kubectl get ns argo || kubectl create ns argo
-	kubectl -n argo apply -f dist/quick-start-postgres.yaml
+	kubectl -n argo apply -f dist/postgres.yaml
 
 .PHONY: install
 install: install-postgres
@@ -232,11 +232,6 @@ start: controller-image cli-image install
 	# Start development environment
 ifeq ($(CI),false)
 	make down
-endif
-	# Patch deployments
-	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "$(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)", "--executor-image-pull-policy", "Never", "--namespaced"]}]}]'
-	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["server", "--loglevel", "debug", "--auth-mode", "client", "--namespaced"]}, {"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "ARGO_V2_TOKEN", "value": "password"}]}]'
-ifeq ($(CI),false)
 	make up
 endif
 	make executor-image
@@ -309,8 +304,6 @@ test-cli:
 
 .PHONY: clean
 clean:
-	# Remove namepsace
-	kubectl delete ns argo || true
 	# Remove images
 	[ "`docker images -q $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)
 	[ "`docker images -q $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)
@@ -373,24 +366,6 @@ ifneq ($(GIT_BRANCH),master)
 endif
 endif
 	# Publish release
-ifeq ($(GITHUB_TOKEN),)
-	echo "GITHUB_TOKEN not found, please visit https://github.com/settings/tokens to create one, it needs the "public_repo" role" >&2
-	exit 1
-endif
-	# Upload assets to Github
-	./hack/upload-asset.sh $(VERSION) cmd/server/workflow/workflow.swagger.json
-	./hack/upload-asset.sh $(VERSION) cmd/server/cronworkflow/cron-workflow.swagger.json
-	./hack/upload-asset.sh $(VERSION) cmd/server/workflowarchive/workflow-archive.swagger.json
-	./hack/upload-asset.sh $(VERSION) cmd/server/workflowtemplate/workflow-template.swagger.json
-	./hack/upload-asset.sh $(VERSION) dist/install.yaml
-	./hack/upload-asset.sh $(VERSION) dist/namespace-install.yaml
-	./hack/upload-asset.sh $(VERSION) dist/quick-start-postgres.yaml
-	./hack/upload-asset.sh $(VERSION) dist/quick-start-mysql.yaml
-	./hack/upload-asset.sh $(VERSION) dist/argo-darwin-amd64
-	./hack/upload-asset.sh $(VERSION) dist/argo-linux-amd64
-	./hack/upload-asset.sh $(VERSION) dist/argo-linux-ppc64le
-	./hack/upload-asset.sh $(VERSION) dist/argo-linux-s390x
-	./hack/upload-asset.sh $(VERSION) dist/argo-windows-amd64
 	# Push images to Docker Hub
 	docker push $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)
 	docker push $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)

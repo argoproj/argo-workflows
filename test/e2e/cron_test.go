@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"fmt"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
 	"github.com/argoproj/argo/workflow/common"
@@ -12,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -23,6 +25,52 @@ type CronSuite struct {
 func (s *CronSuite) TestBasic() {
 	s.Given().
 		CronWorkflow("@testdata/basic.yaml").
+		When().
+		CreateCronWorkflow().
+		Wait(1 * time.Minute).
+		Then().
+		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+			assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
+		})
+}
+
+func (s *CronSuite) TestBasicTimezone() {
+	 // This test works by scheduling a CronWorkflow for the next minute, but using the local time of another timezone
+	 // then seeing if the Workflow was ran within the next minute. Since this test would be trivial if the selected
+	 // timezone was the same as the local timezone, a little-used timezone is used.
+	testTimezone := "Pacific/Niue"
+	testLocation, err := time.LoadLocation(testTimezone)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	hour, min, _ := time.Now().In(testLocation).Clock()
+	min++
+	if min == 60 {
+		min = 0
+		hour = (hour + 1) % 24
+	}
+	scheduleInTestTimezone := strconv.Itoa(min) + " " + strconv.Itoa(hour) + " * * *"
+	s.Given().
+		CronWorkflow(fmt.Sprintf(`
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-basic
+  labels:
+    argo-e2e: true
+spec:
+  schedule: "%s"
+  timezone: "%s"
+  workflowSpec:
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: python:alpine3.6
+          imagePullPolicy: IfNotPresent
+          command: ["sh", -c]
+          args: ["echo hello"]
+`, scheduleInTestTimezone, testTimezone)).
 		When().
 		CreateCronWorkflow().
 		Wait(1 * time.Minute).

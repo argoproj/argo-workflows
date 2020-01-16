@@ -3032,6 +3032,10 @@
           "type": "integer",
           "format": "int32",
           "title": "FailedJobsHistoryLimit is the number of successful jobs to be kept at a time"
+        },
+        "timezone": {
+          "type": "string",
+          "description": "Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\". Default is machine's local time."
         }
       }
     },

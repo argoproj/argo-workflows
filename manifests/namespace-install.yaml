@@ -247,8 +247,6 @@ spec:
       containers:
       - args:
         - server
-        - --auth-mode
-        - client
         - --namespaced
         image: argoproj/argocli:latest
         name: argo-server
