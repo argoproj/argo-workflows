@@ -10,7 +10,7 @@ export DOCKER_BUILDKIT = 1
 
 # docker image publishing options
 IMAGE_NAMESPACE       ?= argoproj
-ifeq ($(GIT_BRANCH),MASTER)
+ifeq ($(GIT_BRANCH),master)
 VERSION               := latest
 IMAGE_TAG             := latest
 DEV_IMAGE             := true
@@ -368,16 +368,6 @@ ifneq ($(GIT_BRANCH),master)
 endif
 endif
 	# Publish release
-ifeq ($(GITHUB_TOKEN),)
-	echo "GITHUB_TOKEN not found, please visit https://github.com/settings/tokens to create one, it needs the "public_repo" role" >&2
-	exit 1
-endif
-	# Upload assets to Github
-	./hack/upload-asset.sh $(VERSION) dist/argo-darwin-amd64
-	./hack/upload-asset.sh $(VERSION) dist/argo-linux-amd64
-	./hack/upload-asset.sh $(VERSION) dist/argo-linux-ppc64le
-	./hack/upload-asset.sh $(VERSION) dist/argo-linux-s390x
-	./hack/upload-asset.sh $(VERSION) dist/argo-windows-amd64
 	# Push images to Docker Hub
 	docker push $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)
 	docker push $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)
