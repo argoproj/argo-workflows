@@ -7,7 +7,7 @@ spec:
   templates:
     - name: whalesay
       templateRef:
-        name: basic-wf-tmpl
+        name: workflow-template-whalesay-template
         template: whalesay-template
       inputs:
         parameters:

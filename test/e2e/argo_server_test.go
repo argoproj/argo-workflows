@@ -61,6 +61,17 @@ func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 		})
 }
 
+func (s *ArgoServerSuite) TestInfo() {
+	s.Run("Get", func(t *testing.T) {
+		s.e(t).GET("/api/v1/info").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.managedNamespace").
+			Equal("argo")
+	})
+}
+
 func (s *ArgoServerSuite) TestUnauthorized() {
 	token := s.bearerToken
 	defer func() { s.bearerToken = token }()
@@ -311,6 +322,7 @@ func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
 }
 
 func (s *ArgoServerSuite) TestWorkflows() {
+
 	s.Run("Create", func(t *testing.T) {
 		s.e(t).POST("/api/v1/workflows/argo").
 			WithBytes([]byte(`{
@@ -318,7 +330,7 @@ func (s *ArgoServerSuite) TestWorkflows() {
     "metadata": {
       "name": "test",
       "labels": {
-         "argo-e2e": "true"
+         "argo-e2e": "subject"
       }
     },
     "spec": {
@@ -342,8 +354,12 @@ func (s *ArgoServerSuite) TestWorkflows() {
 	})
 
 	s.Run("List", func(t *testing.T) {
+		// make sure list options work correctly
+		s.Given().
+			Workflow("@smoke/basic.yaml")
+
 		s.e(t).GET("/api/v1/workflows/").
-			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
 			Expect().
 			Status(200).
 			JSON().
@@ -423,7 +439,7 @@ func (s *ArgoServerSuite) TestCronWorkflows() {
     "metadata": {
       "name": "test",
       "labels": {
-        "argo-e2e": "true"
+        "argo-e2e": "subject"
       }
     },
     "spec": {
@@ -448,8 +464,12 @@ func (s *ArgoServerSuite) TestCronWorkflows() {
 	})
 
 	s.Run("List", func(t *testing.T) {
+		// make sure list options work correctly
+		s.Given().
+			CronWorkflow("@testdata/basic.yaml")
+
 		s.e(t).GET("/api/v1/cron-workflows/").
-			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
 			Expect().
 			Status(200).
 			JSON().
@@ -697,8 +717,9 @@ func (s *ArgoServerSuite) TestArchivedWorkflow() {
 }
 
 func (s *ArgoServerSuite) TestWorkflowTemplates() {
-	s.Run("Create", func(t *testing.T) {
-		s.e(t).POST("/api/v1/workflow-templates/argo").
+
+	s.Run("Lint", func(t *testing.T) {
+		s.e(t).POST("/api/v1/workflow-templates/argo/lint").
 			WithBytes([]byte(`{
   "template": {
     "metadata": {
@@ -726,9 +747,43 @@ func (s *ArgoServerSuite) TestWorkflowTemplates() {
 			Status(200)
 	})
 
+	s.Run("Create", func(t *testing.T) {
+		s.e(t).POST("/api/v1/workflow-templates/argo").
+			WithBytes([]byte(`{
+  "template": {
+    "metadata": {
+      "name": "test",
+      "labels": {
+         "argo-e2e": "subject"
+      }
+    },
+    "spec": {
+      "templates": [
+        {
+          "name": "run-workflow",
+          "container": {
+            "name": "",
+            "image": "docker/whalesay:latest",
+            "imagePullPolicy": "IfNotPresent"
+          }
+        }
+      ],
+      "entrypoint": "run-workflow"
+    }
+  }
+}`)).
+			Expect().
+			Status(200)
+	})
+
 	s.Run("List", func(t *testing.T) {
+
+		// make sure list options work correctly
+		s.Given().
+			WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml")
+
 		s.e(t).GET("/api/v1/workflow-templates/argo").
-			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
 			Expect().
 			Status(200).
 			JSON().
@@ -738,13 +793,52 @@ func (s *ArgoServerSuite) TestWorkflowTemplates() {
 			Equal(1)
 	})
 
+	var resourceVersion string
 	s.Run("Get", func(t *testing.T) {
-		s.e(t).GET("/api/v1/workflow-templates/argo/test").
+		s.e(t).GET("/api/v1/workflow-templates/argo/not-found").
 			Expect().
-			Status(200)
+			Status(404)
+
+		resourceVersion = s.e(t).GET("/api/v1/workflow-templates/argo/test").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.metadata.resourceVersion").
+			String().
+			Raw()
 	})
 
-	// TODO - update
+	s.Run("Update", func(t *testing.T) {
+		s.e(t).PUT("/api/v1/workflow-templates/argo/test").
+			WithBytes([]byte(`{"template": {
+    "metadata": {
+      "name": "test",
+      "resourceVersion": "` + resourceVersion + `",
+      "labels": {
+        "argo-e2e": "true"
+      }
+    },
+    "spec": {
+      "templates": [
+        {
+          "name": "run-workflow",
+          "container": {
+            "name": "",
+            "image": "docker/whalesay:dev",
+            "imagePullPolicy": "IfNotPresent"
+          }
+        }
+      ],
+      "entrypoint": "run-workflow"
+    }
+  }
+}`)).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.spec.templates[0].container.image").
+			Equal("docker/whalesay:dev")
+	})
 
 	s.Run("Delete", func(t *testing.T) {
 		s.e(t).DELETE("/api/v1/workflow-templates/argo/test").

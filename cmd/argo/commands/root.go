@@ -35,6 +35,7 @@ func NewCommand() *cobra.Command {
 	command.AddCommand(NewResubmitCommand())
 	command.AddCommand(NewResumeCommand())
 	command.AddCommand(NewRetryCommand())
+	command.AddCommand(NewServerCommand())
 	command.AddCommand(NewSubmitCommand())
 	command.AddCommand(NewSuspendCommand())
 	command.AddCommand(NewTokenCommand())
