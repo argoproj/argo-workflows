@@ -309,8 +309,6 @@ test-cli:
 
 .PHONY: clean
 clean:
-	# Remove namepsace
-	kubectl delete ns argo || true
 	# Remove images
 	[ "`docker images -q $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)
 	[ "`docker images -q $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)
