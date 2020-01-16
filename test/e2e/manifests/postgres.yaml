@@ -368,7 +368,7 @@ spec:
         env:
         - name: ARGO_V2_TOKEN
           value: password
-        image: argoproj/argocli:quick-start
+        image: argoproj/argocli:latest
         imagePullPolicy: Never
         name: argo-server
         ports:
@@ -425,7 +425,7 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:quick-start
+        - argoproj/argoexec:latest
         - --namespaced
         - --loglevel
         - debug
@@ -433,7 +433,7 @@ spec:
         - Never
         command:
         - workflow-controller
-        image: argoproj/workflow-controller:quick-start
+        image: argoproj/workflow-controller:latest
         imagePullPolicy: Never
         name: workflow-controller
       serviceAccountName: argo

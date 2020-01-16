@@ -212,13 +212,17 @@ endif
 
 test/e2e/manifests/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
 	# Create Postgres e2e manifests
-	kustomize build test/e2e/manifests/postgres | sed 's/:latest/:$(IMAGE_TAG)/' > test/e2e/manifests/postgres.yaml
+	kustomize build test/e2e/manifests/postgres > test/e2e/manifests/postgres.yaml
+
+dist/postgres.yaml: test/e2e/manifests/postgres.yaml
+	# Create Postgres e2e manifests
+	cat test/e2e/manifests/postgres.yaml | sed 's/:latest/:$(IMAGE_TAG)/' > dist/postgres.yaml
 
 .PHONY: install-postgres
-install-postgres: test/e2e/manifests/postgres.yaml
+install-postgres: dist/postgres.yaml
 	# Install Postgres quick-start
 	kubectl get ns argo || kubectl create ns argo
-	kubectl -n argo apply -f test/e2e/manifests/postgres.yaml
+	kubectl -n argo apply -f dist/postgres.yaml
 
 .PHONY: install
 install: install-postgres
