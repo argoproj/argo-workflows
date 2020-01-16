@@ -49,7 +49,7 @@ CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join 
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 
 .PHONY: build
-build: clis executor-image controller-image dist/install.yaml dist/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
+build: clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
 
 vendor: Gopkg.toml
 	# Get Go dependencies

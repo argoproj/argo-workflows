@@ -95,9 +95,3 @@ FROM scratch as argocli
 COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argo-linux-amd64 /bin/argo
 ENTRYPOINT [ "argo" ]
 
-####################################################################################################
-# argo-server
-####################################################################################################
-FROM scratch as argo-server
-COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argo-server-linux-amd64 /usr/local/bin/argo-server
-ENTRYPOINT [ "argo-server" ]
