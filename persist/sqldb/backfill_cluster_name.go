@@ -18,7 +18,7 @@ func (s backfillClusterName) String() string {
 }
 
 func (s backfillClusterName) Apply(session sqlbuilder.Database) error {
-	log.WithField("clustername", s.clusterName).Info("Backfill archived cluster name")
+	log.WithField("clustername", s.clusterName).Info("Back-filling cluster name")
 	rs, err := session.
 		Select("uid").
 		From(s.tableName).

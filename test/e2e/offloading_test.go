@@ -15,7 +15,7 @@ type OffloadingSuite struct {
 }
 
 func (s *OffloadingSuite) TestOffloading() {
-	assert.Equal(s.T(), 0, s.OffloadedCount())
+	assert.Equal(s.T(), 0, s.Persistence.OffloadedCount())
 
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -23,7 +23,7 @@ func (s *OffloadingSuite) TestOffloading() {
 		SubmitWorkflow().
 		WaitForWorkflow(10 * time.Second)
 
-	assert.NotEqual(s.T(), 0, s.OffloadedCount())
+	assert.NotEqual(s.T(), 0, s.Persistence.OffloadedCount())
 
 	s.Given().
 		WorkflowName("basic").
@@ -32,7 +32,7 @@ func (s *OffloadingSuite) TestOffloading() {
 
 	time.Sleep(3*time.Second)
 
-	assert.Equal(s.T(), 0, s.OffloadedCount())
+	assert.Equal(s.T(), 0, s.Persistence.OffloadedCount())
 }
 
 func TestOffloadingSuite(t *testing.T) {

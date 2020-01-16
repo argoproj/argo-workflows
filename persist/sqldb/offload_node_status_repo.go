@@ -95,7 +95,7 @@ func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (strin
 		Where(db.Cond{"clustername": wdc.clusterName}).
 		And(db.Cond{"uid": uid}).
 		And(db.Cond{"version <>": version}).
-		And(oldCondition).
+		And(db.Cond{"updatedat + interval '5' minute <": "now()"}).
 		Exec()
 	if err != nil {
 		return "", err
@@ -148,18 +148,15 @@ func (wdc *nodeOffloadRepo) List(namespace string) (map[UUIDVersion]wfv1.Nodes, 
 	return res, nil
 }
 
-var oldCondition = db.Cond{"updatedat + interval '5' minute <": "now()"}
-
 func (wdc *nodeOffloadRepo) ListOldUIDs(namespace string) ([]string, error) {
 	log.WithFields(log.Fields{"namespace": namespace}).Debug("Listing old offloaded nodes")
+	row, err := wdc.session.
+		Query("select distinct uid from "+wdc.tableName+" where clustername = ? and namespace = ? and updatedat + interval '5' minute < now()", wdc.clusterName, namespace)
+	if err != nil {
+		return nil, err
+	}
 	var uids []string
-	err := wdc.session.
-		Select("uid").
-		From(wdc.tableName).
-		Where(db.Cond{"clustername": wdc.clusterName}).
-		And(namespaceEqual(namespace)).
-		And(oldCondition).
-		All(&uids)
+	err = sqlbuilder.NewIterator(row).All(uids)
 	if err != nil {
 		return nil, err
 	}

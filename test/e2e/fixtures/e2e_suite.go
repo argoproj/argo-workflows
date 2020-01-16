@@ -16,8 +16,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
-	"upper.io/db.v3/lib/sqlbuilder"
-	"upper.io/db.v3/postgresql"
 
 	"github.com/argoproj/argo/cmd/argo/commands"
 	"github.com/argoproj/argo/persist/sqldb"
@@ -44,13 +42,13 @@ func init() {
 type E2ESuite struct {
 	suite.Suite
 	Diagnostics           *Diagnostics
+	Persistence           *Persistence
 	RestConfig            *rest.Config
 	wfClient              v1alpha1.WorkflowInterface
 	wfTemplateClient      v1alpha1.WorkflowTemplateInterface
 	cronClient            v1alpha1.CronWorkflowInterface
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	KubeClient            kubernetes.Interface
-	db                    sqlbuilder.Database
 }
 
 func (s *E2ESuite) SetupSuite() {
@@ -161,29 +159,9 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 		}
 	}
 	// create database collection
-	s.db, err = postgresql.Open(postgresql.ConnectionURL{User: "postgres", Password: "password", Host: "localhost"})
-	if err != nil {
-		panic(err)
-	}
-	// delete everything offloaded
-	_, err = s.db.DeleteFrom("argo_workflows").Exec()
-	if err != nil {
-		panic(err)
-	}
-	_, err = s.db.DeleteFrom("argo_archived_workflows").Exec()
-	if err != nil {
-		panic(err)
-	}
+	s.Persistence = newPersistence()
+	s.Persistence.DeleteEverything()
 }
-
-func (s *E2ESuite) OffloadedCount() int {
-	count, err := s.db.Collection("argo_workflows").Find().Count()
-	if err != nil {
-		s.T().Fatal(err)
-	}
-	return int(count)
-}
-
 func (s *E2ESuite) Run(name string, f func(t *testing.T)) {
 	t := s.T()
 	if t.Failed() {
@@ -196,7 +174,7 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 	if s.T().Failed() {
 		s.printDiagnostics()
 	}
-	_ = s.db.Close()
+	_ = s.Persistence.Close()
 }
 
 func (s *E2ESuite) printDiagnostics() {
