@@ -85,7 +85,7 @@ cli-image: dist/argo-linux-amd64
 	# Create CLI image
 ifeq ($(DEV_IMAGE),true)
 	cp dist/argo-linux-amd64 argo
-	docker build -t $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG) --target argocli -f Dockerfile.dev.
+	docker build -t $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG) --target argocli -f Dockerfile.dev .
 	rm -f argo
 else
 	docker build -t $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG) --target argocli .
