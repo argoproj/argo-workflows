@@ -129,7 +129,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			RestartPolicy:         apiv1.RestartPolicyNever,
 			Volumes:               woc.createVolumes(),
 			ActiveDeadlineSeconds: activeDeadlineSeconds,
-			ServiceAccountName:    woc.wf.Spec.ServiceAccountName,
 			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
 		},
 	}
