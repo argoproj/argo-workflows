@@ -47,6 +47,8 @@ endif
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
+MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
+E2_MANIFESTS     := $(shell find test/e2e/manifests -mindepth 2 -type f)
 
 .PHONY: build
 build: clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
@@ -172,22 +174,19 @@ verify-codegen:
 	diff ./dist/swagger.json ./api/openapi-spec/swagger.json
 
 .PHONY: manifests
-manifests: dist/manifests
+manifests: manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml
 
-dist/manifests: manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml
-	touch dist/manifests
-
-manifests/install.yaml: manifests/base manifests/cluster-install
+manifests/install.yaml: $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
-manifests/namespace-install.yaml: manifests/base manifests/namespace-install
+manifests/namespace-install.yaml: $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
-manifests/quick-start-mysql.yaml: manifests/base manifests/namespace-install manifests/quick-start
+manifests/quick-start-mysql.yaml: $(MANIFESTS)
 	# Create MySQL quick-start manifests
 	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(IMAGE_TAG)/' > manifests/quick-start-mysql.yaml
 
-manifests/quick-start-postgres.yaml: manifests/base manifests/namespace-install manifests/quick-start
+manifests/quick-start-postgres.yaml: $(MANIFESTS)
 	# Create Postgres quick-start manifests
 	kustomize build manifests/quick-start/postgres | sed 's/:latest/:$(IMAGE_TAG)/' > manifests/quick-start-postgres.yaml
 
@@ -211,7 +210,7 @@ else
 	go test -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
 endif
 
-test/e2e/manifests/postgres.yaml: manifests/quick-start-postgres.yaml
+test/e2e/manifests/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
 	# Create Postgres e2e manifests
 	kustomize build test/e2e/manifests/postgres | sed 's/:latest/:$(IMAGE_TAG)/' > test/e2e/manifests/postgres.yaml
 

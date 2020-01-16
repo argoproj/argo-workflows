@@ -360,9 +360,9 @@ spec:
       containers:
       - args:
         - server
+        - --namespaced
         - --auth-mode
         - client
-        - --namespaced
         - --loglevel
         - debug
         env:

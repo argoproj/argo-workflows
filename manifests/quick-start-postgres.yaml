@@ -360,8 +360,6 @@ spec:
       containers:
       - args:
         - server
-        - --auth-mode
-        - client
         - --namespaced
         image: argoproj/argocli:quick-start
         name: argo-server
