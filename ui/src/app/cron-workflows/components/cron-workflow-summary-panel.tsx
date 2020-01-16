@@ -19,6 +19,7 @@ export const CronWorkflowSummaryPanel = (props: Props) => {
         {title: 'Name', value: props.cronWorkflow.metadata.name},
         {title: 'Namespace', value: props.cronWorkflow.metadata.namespace},
         {title: 'Schedule', value: props.cronWorkflow.spec.schedule},
+        {title: 'Timezone', value: props.cronWorkflow.spec.timezone},
         {
             title: 'Concurrency Policy',
             value: props.cronWorkflow.spec.concurrencyPolicy ? props.cronWorkflow.spec.concurrencyPolicy : 'Allow'
