@@ -145,6 +145,13 @@ jobs:
       - store_artifacts:
           path: test-results
           destination: .
+  docker-build:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    machine:
+      image: ubuntu-1604:201903-01
+    steps:
+      - checkout
+      - run: docker build .
   ui:
     docker:
       - image: node:11.15.0
@@ -178,3 +185,4 @@ workflows:
       - test
       - ui
       - e2e
+      - docker-build
