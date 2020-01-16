@@ -124,7 +124,7 @@ func migrate(cfg migrateCfg, session sqlbuilder.Database) error {
 			if err != nil {
 				return err
 			}
-			_, err = session.Exec("update schema_history set schema_version = ? where schema_version = ?", changeSchemaVersion, schemaVersion)
+			_, err = session.Exec("update schema_history set schema_version = ? where schema_version = ?", changeSchemaVersion, changeSchemaVersion-1)
 			if err != nil {
 				return err
 			}
