@@ -95,18 +95,18 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 
 	mainCtr.Name = common.MainContainerName
 
-	var ActiveDeadlineSeconds *int64
+	var activeDeadlineSeconds *int64
 	wfDeadline := woc.getWorkflowDeadline()
 	if wfDeadline == nil {
-		ActiveDeadlineSeconds = tmpl.ActiveDeadlineSeconds
+		activeDeadlineSeconds = tmpl.ActiveDeadlineSeconds
 	} else {
 		wfActiveDeadlineSeconds := int64((*wfDeadline).Sub(time.Now().UTC()).Seconds())
 		if wfActiveDeadlineSeconds < 0 {
-			ActiveDeadlineSeconds = tmpl.ActiveDeadlineSeconds
+			return nil, nil
 		} else if tmpl.ActiveDeadlineSeconds == nil || wfActiveDeadlineSeconds < *tmpl.ActiveDeadlineSeconds {
-			ActiveDeadlineSeconds = &wfActiveDeadlineSeconds
+			activeDeadlineSeconds = &wfActiveDeadlineSeconds
 		} else {
-			ActiveDeadlineSeconds = tmpl.ActiveDeadlineSeconds
+			activeDeadlineSeconds = tmpl.ActiveDeadlineSeconds
 		}
 	}
 
@@ -128,12 +128,8 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		Spec: apiv1.PodSpec{
 			RestartPolicy:         apiv1.RestartPolicyNever,
 			Volumes:               woc.createVolumes(),
-<<<<<<< HEAD
-			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
-=======
-			ActiveDeadlineSeconds: ActiveDeadlineSeconds,
+			ActiveDeadlineSeconds: activeDeadlineSeconds,
 			ServiceAccountName:    woc.wf.Spec.ServiceAccountName,
->>>>>>> .
 			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
 		},
 	}
