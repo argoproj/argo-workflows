@@ -356,7 +356,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 	s.Given().
 		WorkflowName("test").
 		When().
-		WaitForWorkflowStarted(20*time.Second)
+		WaitForWorkflowToStart(20*time.Second)
 
 	s.Run("List", func(t *testing.T) {
 		j := s.e(t).GET("/api/v1/workflows/").
@@ -591,7 +591,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflowStarted(10*time.Second)
+		WaitForWorkflowToStart(10 * time.Second)
 
 	// use the watch to make sure that the workflow has succeeded
 	s.Run("Watch", func(t *testing.T) {

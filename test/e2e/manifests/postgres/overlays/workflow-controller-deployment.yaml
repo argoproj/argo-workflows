@@ -13,3 +13,10 @@
 - op: add
   path: /spec/template/spec/containers/0/args/-
   value: Never
+- op: add
+  path: /spec/template/spec/containers/0/env
+  value:
+    - name: ALWAYS_OFFLOAD_NODE_STATUS
+      value: "true"
+    - name: WORKFLOW_GC_PERIOD
+      value: 30s

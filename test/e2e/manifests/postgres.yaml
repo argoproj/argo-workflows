@@ -433,6 +433,11 @@ spec:
         - Never
         command:
         - workflow-controller
+        env:
+        - name: ALWAYS_OFFLOAD_NODE_STATUS
+          value: "true"
+        - name: WORKFLOW_GC_PERIOD
+          value: 30s
         image: argoproj/workflow-controller:latest
         imagePullPolicy: Never
         name: workflow-controller

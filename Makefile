@@ -48,7 +48,7 @@ ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join 
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
-E2_MANIFESTS     := $(shell find test/e2e/manifests -mindepth 2 -type f)
+E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 
 .PHONY: build
 build: clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml

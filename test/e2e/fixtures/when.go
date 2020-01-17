@@ -123,7 +123,7 @@ func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
 		wf.Status.Nodes = offloadedNodes
 	}
 }
-func (w *When) WaitForWorkflowStarted(timeout time.Duration) *When {
+func (w *When) WaitForWorkflowToStart(timeout time.Duration) *When {
 	return w.WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 		return !wf.Status.StartedAt.IsZero()
 	}, timeout)
