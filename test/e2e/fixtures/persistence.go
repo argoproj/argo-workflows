@@ -1,20 +1,43 @@
 package fixtures
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/yaml"
 	"upper.io/db.v3/lib/sqlbuilder"
-	"upper.io/db.v3/postgresql"
+
+	"github.com/argoproj/argo/persist/sqldb"
+	"github.com/argoproj/argo/workflow/config"
 )
 
 type Persistence struct {
-	session sqlbuilder.Database
+	session               sqlbuilder.Database
+	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 }
 
-func newPersistence() *Persistence {
-	session, err := postgresql.Open(postgresql.ConnectionURL{User: "postgres", Password: "password", Host: "localhost"})
+func newPersistence(kubeClient kubernetes.Interface) *Persistence {
+	cm, err := kubeClient.CoreV1().ConfigMaps(Namespace).Get("workflow-controller-configmap", metav1.GetOptions{})
 	if err != nil {
 		panic(err)
 	}
-	return &Persistence{session}
+	wcConfig := &config.WorkflowControllerConfig{}
+	err = yaml.Unmarshal([]byte(cm.Data["config"]), wcConfig)
+	if err != nil {
+		panic(err)
+	}
+	persistence := wcConfig.Persistence
+	if persistence.PostgreSQL != nil {
+		persistence.PostgreSQL.Host = "localhost"
+	}
+	if persistence.MySQL != nil {
+		persistence.MySQL.Host = "localhost"
+	}
+	session, tableName, err := sqldb.CreateDBSession(kubeClient, Namespace, persistence)
+	if err != nil {
+		panic(err)
+	}
+	offloadNodeStatusRepo := sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+	return &Persistence{session, offloadNodeStatusRepo}
 }
 
 func (s *Persistence) OffloadedCount() int {

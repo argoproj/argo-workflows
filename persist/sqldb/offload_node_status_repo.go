@@ -80,7 +80,7 @@ func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (strin
 	if err != nil {
 		// if we have a duplicate, then it must have the same name+namespace+offloadVersion, which MUST mean that we
 		// have already written this record
-		if !strings.Contains(err.Error(), "duplicate key") {
+		if !isDuplicateKeyError(err) {
 			return "", err
 		}
 	}
@@ -90,17 +90,23 @@ func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (strin
 	// This might fail, which kind of fine (maybe a bug).
 	// It might not delete all records, which is also fine, as we always key on resource version.
 	// We also want to keep enough around so that we can service watches.
-	_, err = wdc.session.
-		DeleteFrom(wdc.tableName).
-		Where(db.Cond{"clustername": wdc.clusterName}).
-		And(db.Cond{"uid": uid}).
-		And(db.Cond{"version <>": version}).
-		And(db.Cond{"updatedat + interval '5' minute <": "now()"}).
-		Exec()
-	if err != nil {
-		return "", err
-	}
+	//_, err = wdc.session.
+	//	Query("delete from "+wdc.tableName+" where clustername = ? and uid = ? and version <> ? and updatedat + interval '5' minute < current_timestamp", wdc.clusterName, uid, version)
+	//if err != nil {
+	//	return "", err
+	//}
 	return version, nil
+}
+
+func isDuplicateKeyError(err error) bool {
+	// postgres
+	if strings.Contains(err.Error(), "duplicate key") {
+		return true
+	}
+	if strings.Contains(err.Error(), "Duplicate entry") {
+		return true
+	}
+	return false
 }
 
 func (wdc *nodeOffloadRepo) Get(uid, version string) (wfv1.Nodes, error) {
@@ -151,7 +157,7 @@ func (wdc *nodeOffloadRepo) List(namespace string) (map[UUIDVersion]wfv1.Nodes, 
 func (wdc *nodeOffloadRepo) ListOldUIDs(namespace string) ([]string, error) {
 	log.WithFields(log.Fields{"namespace": namespace}).Debug("Listing old offloaded nodes")
 	row, err := wdc.session.
-		Query("select distinct uid from "+wdc.tableName+" where clustername = ? and namespace = ? and updatedat + interval '5' minute < now()", wdc.clusterName, namespace)
+		Query("select distinct uid from "+wdc.tableName+" where clustername = ? and namespace = ? and updatedat + interval '5' minute < current_timestamp", wdc.clusterName, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -164,11 +170,20 @@ func (wdc *nodeOffloadRepo) ListOldUIDs(namespace string) ([]string, error) {
 }
 
 func (wdc *nodeOffloadRepo) Delete(uid string) error {
-	log.WithFields(log.Fields{"uid": uid}).Debug("Deleting offloaded nodes")
-	_, err := wdc.session.
+	logCtx := log.WithFields(log.Fields{"uid": uid})
+	logCtx.Debug("Deleting offloaded nodes")
+	rs, err := wdc.session.
 		DeleteFrom(wdc.tableName).
 		Where(db.Cond{"clustername": wdc.clusterName}).
 		And(db.Cond{"uid": uid}).
 		Exec()
-	return err
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := rs.RowsAffected()
+	if err != nil {
+		return err
+	}
+	logCtx.WithField("rowsAffected", rowsAffected).Debug("Deleted offloaded nodes")
+	return nil
 }

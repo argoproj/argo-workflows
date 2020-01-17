@@ -28,6 +28,7 @@ endif
 # perform static compilation
 STATIC_BUILD          ?= true
 CI                    ?= false
+DB                    ?= postgres
 
 override LDFLAGS += \
   -X ${PACKAGE}.version=$(VERSION) \
@@ -218,14 +219,31 @@ dist/postgres.yaml: test/e2e/manifests/postgres.yaml
 	# Create Postgres e2e manifests
 	cat test/e2e/manifests/postgres.yaml | sed 's/:latest/:$(IMAGE_TAG)/' > dist/postgres.yaml
 
-.PHONY: install-postgres
-install-postgres: dist/postgres.yaml
-	# Install Postgres quick-start
-	kubectl get ns argo || kubectl create ns argo
-	kubectl -n argo apply -f dist/postgres.yaml
+test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml: test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml
+test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml:
+	cp test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml
+
+test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml: test/e2e/manifests/postgres/overlays/workflow-controller-deployment.yaml
+test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml:
+	cp test/e2e/manifests/postgres/overlays/workflow-controller-deployment.yaml test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml
+
+test/e2e/manifests/mysql.yaml: $(MANIFESTS) $(E2E_MANIFESTS) test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml
+	# Create Postgres e2e manifests
+	kustomize build test/e2e/manifests/mysql > test/e2e/manifests/mysql.yaml
+
+dist/mysql.yaml: test/e2e/manifests/mysql.yaml
+	# Create MySQL e2e manifests
+	cat test/e2e/manifests/mysql.yaml | sed 's/:latest/:$(IMAGE_TAG)/' > dist/mysql.yaml
 
 .PHONY: install
-install: install-postgres
+install: dist/postgres.yaml dist/mysql.yaml
+	# Install Postgres quick-start
+	kubectl get ns argo || kubectl create ns argo
+ifeq ($(DB),postgres)
+	kubectl -n argo apply -f dist/postgres.yaml
+else
+	kubectl -n argo apply -f dist/mysql.yaml
+endif
 
 .PHONY: start
 start: controller-image cli-image install

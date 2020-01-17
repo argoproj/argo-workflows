@@ -361,7 +361,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	if wf.Status.IsOffloadNodeStatus() {
 		nodes, err := wfc.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
 		if err != nil {
-			woc.log.Warnf("getting offloaded nodes failed: %v", err)
+			woc.log.Errorf("getting offloaded nodes failed: %v", err)
 			woc.markWorkflowError(err, true)
 			woc.persistUpdates()
 			wfc.throttler.Remove(key)
@@ -373,7 +373,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	// Decompress the node if it is compressed
 	err = packer.DecompressWorkflow(woc.wf)
 	if err != nil {
-		woc.log.Warnf("workflow decompression failed: %v", err)
+		woc.log.Errorf("workflow decompression failed: %v", err)
 		woc.markWorkflowError(err, true)
 		woc.persistUpdates()
 		wfc.throttler.Remove(key)

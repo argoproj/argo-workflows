@@ -117,7 +117,11 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, clusterName, names
 		session.SetMaxOpenConns(persistPool.MaxOpenConns)
 		session.SetMaxIdleConns(persistPool.MaxIdleConns)
 	}
-
+	// this is needed to make MySQL run in a Golang-compatible UTF-8 character set.
+	_, err = session.Exec("SET NAMES 'utf8mb4'; SET CHARACTER SET utf8mb4;")
+	if err != nil {
+		return nil, "", err
+	}
 	err = migrate(migrateCfg{clusterName, cfg.TableName}, session)
 	if err != nil {
 		return nil, "", err
