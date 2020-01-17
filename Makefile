@@ -162,6 +162,7 @@ ifeq ($(DEV_IMAGE),true)
 else
 	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG) --target argoexec .
 endif
+	touch dist/executor-image
 
 # generation
 
@@ -237,12 +238,11 @@ install-postgres: dist/postgres.yaml
 install: install-postgres
 
 .PHONY: start
-start:
-	#controller-image cli-image executor-image
+start: controller-image cli-image executor-image
 	# Start development environment
 ifeq ($(K3D),true)
 	# importing images into k3d
-	k3d import-images $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG) $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG) $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)
+	k3d import-images $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG) $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG) $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG) docker/whalesay:latest
 endif
 	make install
 ifeq ($(CI),false)
