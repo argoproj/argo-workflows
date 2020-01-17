@@ -673,13 +673,13 @@ func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 		Expect(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
 		})
-	s.Given().
-		Workflow("@smoke/basic-2.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(15 * time.Second)
-
 	s.Run("List", func(t *testing.T) {
+		s.Given().
+			Workflow("@smoke/basic-2.yaml").
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(20 * time.Second)
+
 		s.e(t).GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "argo-e2e").
 			Expect().
