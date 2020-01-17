@@ -17,7 +17,7 @@ func Test_getDefaultTokenVersion(t *testing.T) {
 		assert.Equal(t, tokenVersion2, getDefaultTokenVersion())
 		token, err := GetBearerToken(nil)
 		if assert.NoError(t, err) {
-			assert.Equal(t, "token", token)
+			assert.Equal(t, "v2:token", token)
 		}
 	})
 }
@@ -32,7 +32,7 @@ func Test_getV2Token(t *testing.T) {
 		defer func() { _ = os.Unsetenv("ARGO_V2_TOKEN") }()
 		token, err := getV2Token()
 		if assert.NoError(t, err) {
-			assert.Equal(t, "token", token)
+			assert.Equal(t, "v2:token", token)
 		}
 	})
 }

@@ -49,7 +49,7 @@ ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join 
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
-E2_MANIFESTS     := $(shell find test/e2e/manifests -mindepth 2 -type f)
+E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 
 .PHONY: build
 build: clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
@@ -110,7 +110,9 @@ dist/argo-windows-amd64: vendor cmd/server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-windows-amd64 ./cmd/argo
 
 .PHONY: cli-image
-cli-image: dist/argo-linux-amd64
+cli-image: dist/cli-image
+
+dist/cli-image: dist/argo-linux-amd64
 	# Create CLI image
 ifeq ($(DEV_IMAGE),true)
 	cp dist/argo-linux-amd64 argo
@@ -119,6 +121,7 @@ ifeq ($(DEV_IMAGE),true)
 else
 	docker build -t $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG) --target argocli .
 endif
+	touch dist/cli-image
 
 .PHONY: clis
 clis: dist/argo-linux-amd64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/argo-darwin-amd64 dist/argo-windows-amd64 cli-image
@@ -129,7 +132,9 @@ dist/workflow-controller-linux-amd64: vendor $(CONTROLLER_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/workflow-controller-linux-amd64 ./cmd/workflow-controller
 
 .PHONY: controller-image
-controller-image: dist/workflow-controller-linux-amd64
+controller-image: dist/controller-image
+
+dist/controller-image: dist/workflow-controller-linux-amd64
 	# Create controller image
 ifeq ($(DEV_IMAGE),true)
 	cp dist/workflow-controller-linux-amd64 workflow-controller
@@ -138,6 +143,7 @@ ifeq ($(DEV_IMAGE),true)
 else
 	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG) --target workflow-controller .
 endif
+	touch dist/controller-image
 
 # argoexec
 
@@ -145,7 +151,9 @@ dist/argoexec-linux-amd64: vendor $(ARGOEXEC_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argoexec-linux-amd64 ./cmd/argoexec
 
 .PHONY: executor-image
-executor-image: dist/argoexec-linux-amd64
+executor-image: dist/executor-image
+
+dist/executor-image: dist/argoexec-linux-amd64
 	# Create executor image
 ifeq ($(DEV_IMAGE),true)
 	cp dist/argoexec-linux-amd64 argoexec
