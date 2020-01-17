@@ -18,5 +18,3 @@
   value:
     - name: ARGO_V2_TOKEN
       value: password
-    - name: WORKFLOW_GC_PERIOD
-      value: 30s
