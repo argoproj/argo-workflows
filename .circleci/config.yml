@@ -47,44 +47,7 @@ commands:
             - go-v5-master-{{ .Environment.CIRCLE_JOB }}
             - go-v4-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
             - go-v4-master-{{ .Environment.CIRCLE_JOB }}
-  go_junit_report:
-    steps:
-      - run:
-          name: Install Go test report to Junit test report
-          command: go get github.com/jstemmer/go-junit-report
-jobs:
-  test:
-    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
-    machine:
-      image: ubuntu-1604:201903-01
-    steps:
-      - restore_go_cache
-      - install_golang
-      - go_junit_report
-      - checkout
-      - dep_ensure
-      - run:
-          name: Run tests
-          command: |
-            mkdir -p test-results
-            trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
-            make test 2>&1 | tee test-results/test.out
-      - run:
-          name: Verify code generation
-          command: make verify-codegen
-      - save_go_cache
-      - run:
-          name: Uploading code coverage
-          command: bash <(curl -s https://codecov.io/bash) -f coverage.out
-      - store_test_results:
-          path: test-results
-      - store_artifacts:
-          path: test-results
-          destination: .
   e2e:
-    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
-    machine:
-      image: ubuntu-1604:201903-01
     steps:
       - run:
           name: Install Kustomize
@@ -121,7 +84,7 @@ jobs:
           background: true
       - run:
           name: Start Argo
-          command: mkdir dist && KUBECONFIG=~/.kube/config make start
+          command: mkdir dist && KUBECONFIG=~/.kube/config make start DB=$DB
       - run:
           name: Establish port forward
           command: make pf
@@ -145,6 +108,56 @@ jobs:
       - store_artifacts:
           path: test-results
           destination: .
+  go_junit_report:
+    steps:
+      - run:
+          name: Install Go test report to Junit test report
+          command: go get github.com/jstemmer/go-junit-report
+jobs:
+  test:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    machine:
+      image: ubuntu-1604:201903-01
+    steps:
+      - restore_go_cache
+      - install_golang
+      - go_junit_report
+      - checkout
+      - dep_ensure
+      - run:
+          name: Run tests
+          command: |
+            mkdir -p test-results
+            trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
+            make test 2>&1 | tee test-results/test.out
+      - run:
+          name: Verify code generation
+          command: make verify-codegen
+      - save_go_cache
+      - run:
+          name: Uploading code coverage
+          command: bash <(curl -s https://codecov.io/bash) -f coverage.out
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+          destination: .
+  e2e-postgres:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    machine:
+      image: ubuntu-1604:201903-01
+    environment:
+      DB: postgres
+    steps:
+      - e2e
+  e2e-mysql:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    machine:
+      image: ubuntu-1604:201903-01
+    environment:
+      DB: mysql
+    steps:
+      - e2e
   docker-build:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
@@ -184,5 +197,6 @@ workflows:
     jobs:
       - test
       - ui
-      - e2e
+      - e2e-postgres
+      - e2e-mysql
       - docker-build

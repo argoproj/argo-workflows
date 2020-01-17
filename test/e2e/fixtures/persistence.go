@@ -48,8 +48,11 @@ func (s *Persistence) OffloadedCount() int {
 	return int(count)
 }
 
-func (s *Persistence) Close() error {
-	return s.session.Close()
+func (s *Persistence) Close() {
+	err := s.session.Close()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (s *Persistence) DeleteEverything() {

@@ -53,11 +53,6 @@ func (s *E2ESuite) SetupSuite() {
 	if os.IsNotExist(err) {
 		s.T().Skip("Skipping test: " + err.Error())
 	}
-}
-
-func (s *E2ESuite) BeforeTest(_, _ string) {
-	s.Diagnostics = &Diagnostics{}
-	var err error
 	s.RestConfig, err = kubeconfig.DefaultRestConfig()
 	if err != nil {
 		panic(err)
@@ -70,6 +65,15 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	s.wfClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().Workflows(Namespace)
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
+	s.Persistence = newPersistence(s.KubeClient)
+}
+
+func (s *E2ESuite) TearDownSuite() {
+	s.Persistence.Close()
+}
+
+func (s *E2ESuite) BeforeTest(_, _ string) {
+	s.Diagnostics = &Diagnostics{}
 
 	// delete all workflows
 	list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: label})
@@ -137,7 +141,6 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 		}
 	}
 	// create database collection
-	s.Persistence = newPersistence(s.KubeClient)
 	s.Persistence.DeleteEverything()
 }
 func (s *E2ESuite) Run(name string, f func(t *testing.T)) {
@@ -152,7 +155,6 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 	if s.T().Failed() {
 		s.printDiagnostics()
 	}
-	_ = s.Persistence.Close()
 }
 
 func (s *E2ESuite) printDiagnostics() {
