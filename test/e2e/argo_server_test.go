@@ -34,12 +34,12 @@ type ArgoServerSuite struct {
 	bearerToken string
 }
 
-func GetServiceAccountToken() string{
+func GetServiceAccountToken() string {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
 	overrides := clientcmd.ConfigOverrides{}
 	config := clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
-	restConfig, err :=  config.ClientConfig()
+	restConfig, err := config.ClientConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -48,10 +48,10 @@ func GetServiceAccountToken() string{
 	if err != nil {
 		log.Fatal(err)
 	}
-	secretList, err :=clientset.CoreV1().Secrets("argo").List(metav1.ListOptions{})
-	
-	for _,sec := range secretList.Items{
-		if strings.HasPrefix(sec.Name, "argo-server-token"){
+	secretList, err := clientset.CoreV1().Secrets("argo").List(metav1.ListOptions{})
+
+	for _, sec := range secretList.Items {
+		if strings.HasPrefix(sec.Name, "argo-server-token") {
 			return string(sec.Data["token"])
 		}
 	}
@@ -617,7 +617,11 @@ func (s *ArgoServerSuite) TestWorkflowStream() {
 		resp, err := http.DefaultClient.Do(req)
 		assert.NoError(t, err)
 		assert.NotNil(t, resp)
-		defer func() { if resp !=nil {_ = resp.Body.Close()} }()
+		defer func() {
+			if resp != nil {
+				_ = resp.Body.Close()
+			}
+		}()
 		if assert.Equal(t, 200, resp.StatusCode) {
 			assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
 			s := bufio.NewScanner(resp.Body)
