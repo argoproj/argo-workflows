@@ -68,9 +68,8 @@ Kill any port forwards on 2746.
 The run `cmd/server/main.go` using these arguments, which enable debug logging, and make sure you use locally build image:
 
 ```
-server --loglevel debug --auth-mode client
+See dist/postgres.yaml
 ```
-
 
 ### Running The Argo Server In Your IDE
 
@@ -83,7 +82,7 @@ Kill any port forwards on 2746.
 The run `cmd/server/main.go` using these arguments, which enable debug logging, and make sure you use locally build image:
 
 ```
---loglevel debug --auth-mode client
+See dist/postgres.yaml
 ```
 
 
