@@ -28,6 +28,7 @@ endif
 # perform static compilation
 STATIC_BUILD          ?= true
 CI                    ?= false
+K3D                   ?= $(shell if [ "$(KUBECONFIG)" = "$(HOME)/.config/k3d/k3s-default/kubeconfig.yaml" ]; then echo true; else echo false; fi)
 
 override LDFLAGS += \
   -X ${PACKAGE}.version=$(VERSION) \
@@ -228,13 +229,18 @@ install-postgres: dist/postgres.yaml
 install: install-postgres
 
 .PHONY: start
-start: controller-image cli-image install
+start:
+	#controller-image cli-image executor-image
 	# Start development environment
+ifeq ($(K3D),true)
+	# importing images into k3d
+	k3d import-images $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG) $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG) $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)
+endif
+	make install
 ifeq ($(CI),false)
 	make down
 	make up
 endif
-	make executor-image
 	# Make the CLI
 	make cli
 	# Switch to "argo" ns.
