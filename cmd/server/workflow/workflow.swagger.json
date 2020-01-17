@@ -3905,7 +3905,7 @@
     "v1alpha1TTLStrategy": {
       "type": "object",
       "properties": {
-        "secondsAfterCompleted": {
+        "secondsAfterCompletion": {
           "type": "integer",
           "format": "int32"
         },
@@ -3913,7 +3913,7 @@
           "type": "integer",
           "format": "int32"
         },
-        "secondsAfterFailed": {
+        "secondsAfterFailure": {
           "type": "integer",
           "format": "int32"
         }
@@ -4277,7 +4277,7 @@
         "ttlSecondsAfterFinished": {
           "type": "integer",
           "format": "int32",
-          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution\n(Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be\ndeleted after ttlSecondsAfterFinished expires. If this field is unset,\nttlSecondsAfterFinished will not expire. If this field is set to zero,\nttlSecondsAfterFinished expires immediately after the Workflow finishes.\nDEPRECATED: Use TTLStrategy.SecondsAfterCompleted instead."
+          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution\n(Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be\ndeleted after ttlSecondsAfterFinished expires. If this field is unset,\nttlSecondsAfterFinished will not expire. If this field is set to zero,\nttlSecondsAfterFinished expires immediately after the Workflow finishes.\nDEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead."
         },
         "ttlStrategy": {
           "$ref": "#/definitions/v1alpha1TTLStrategy",
