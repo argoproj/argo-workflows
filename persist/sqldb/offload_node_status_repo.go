@@ -90,11 +90,21 @@ func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (strin
 	// This might fail, which kind of fine (maybe a bug).
 	// It might not delete all records, which is also fine, as we always key on resource version.
 	// We also want to keep enough around so that we can service watches.
-	_, err = wdc.session.
-		Query("delete from "+wdc.tableName+" where clustername = ? and uid = ? and version <> ? and updatedat + interval '5' minute < current_timestamp", wdc.clusterName, uid, version)
+	rs, err := wdc.session.
+		DeleteFrom(wdc.tableName).
+		Where(db.Cond{"clustername": wdc.clusterName}).
+		And(db.Cond{"uid": uid}).
+		And(db.Cond{"version <>": version}).
+		And("updatedat < current_timestamp - interval '5' minute").
+		Exec()
 	if err != nil {
 		return "", err
 	}
+	rowsAffected, err := rs.RowsAffected()
+	if err != nil {
+		return "", err
+	}
+	logCtx.WithField("rowsAffected", rowsAffected).Debug("Deleted offloaded nodes")
 	return version, nil
 }
 
@@ -158,7 +168,7 @@ func (wdc *nodeOffloadRepo) List(namespace string) (map[UUIDVersion]wfv1.Nodes, 
 func (wdc *nodeOffloadRepo) ListOldUIDs(namespace string) ([]string, error) {
 	log.WithFields(log.Fields{"namespace": namespace}).Debug("Listing old offloaded nodes")
 	row, err := wdc.session.
-		Query("select distinct uid from "+wdc.tableName+" where clustername = ? and namespace = ? and updatedat + interval '5' minute < current_timestamp", wdc.clusterName, namespace)
+		Query("select distinct uid from "+wdc.tableName+" where clustername = ? and namespace = ? and updatedat < current_timestamp - interval '5' minute", wdc.clusterName, namespace)
 	if err != nil {
 		return nil, err
 	}
