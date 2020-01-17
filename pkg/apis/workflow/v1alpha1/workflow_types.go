@@ -131,9 +131,9 @@ var _ TemplateStorage = &Workflow{}
 
 // TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed
 type TTLStrategy struct {
-	SecondsAfterCompleted *int32 `json:"secondsAfterCompleted,omitempty" protobuf:"bytes,1,opt,name=secondsAfterCompleted"`
-	SecondsAfterSuccess   *int32 `json:"secondsAfterSuccess,omitempty" protobuf:"bytes,2,opt,name=secondsAfterSuccess"`
-	SecondsAfterFailed    *int32 `json:"secondsAfterFailed,omitempty" protobuf:"bytes,3,opt,name=secondsAfterFailed"`
+	SecondsAfterCompletion *int32 `json:"secondsAfterCompletion,omitempty" protobuf:"bytes,1,opt,name=secondsAfterCompletion"`
+	SecondsAfterSuccess    *int32 `json:"secondsAfterSuccess,omitempty" protobuf:"bytes,2,opt,name=secondsAfterSuccess"`
+	SecondsAfterFailure    *int32 `json:"secondsAfterFailure,omitempty" protobuf:"bytes,3,opt,name=secondsAfterFailure"`
 }
 
 // WorkflowSpec is the specification of a Workflow.
@@ -229,7 +229,7 @@ type WorkflowSpec struct {
 	// deleted after ttlSecondsAfterFinished expires. If this field is unset,
 	// ttlSecondsAfterFinished will not expire. If this field is set to zero,
 	// ttlSecondsAfterFinished expires immediately after the Workflow finishes.
-	// DEPRECATED: Use TTLStrategy.SecondsAfterCompleted instead.
+	// DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.
 	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished,omitempty" protobuf:"bytes,18,opt,name=ttlSecondsAfterFinished"`
 
 	// TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
