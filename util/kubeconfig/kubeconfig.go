@@ -2,6 +2,7 @@ package kubeconfig
 
 import (
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -37,10 +38,13 @@ func GetRestConfig(token string) (*restclient.Config, error) {
 // convert the REST config into a bearer token
 func GetBearerToken(in *restclient.Config) (string, error) {
 
+	if token := getEnvToken(); token != "" {
+		return token, nil
+	}
+
 	if in == nil {
 		return "", errors.Errorf("RestClient can't be nil")
 	}
-
 	if in.ExecProvider != nil {
 		tc, err := in.TransportConfig()
 		if err != nil {
@@ -95,4 +99,9 @@ func GetBearerToken(in *restclient.Config) (string, error) {
 		}
 	}
 	return in.BearerToken, nil
+}
+
+// Get the Auth token from environment variable
+func getEnvToken() string {
+	return os.Getenv("ARGO_TOKEN")
 }

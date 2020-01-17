@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -17,10 +18,11 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
-	"github.com/argoproj/argo/util/kubeconfig"
 )
 
 const baseUrl = "http://localhost:2746"
@@ -32,13 +34,37 @@ type ArgoServerSuite struct {
 	bearerToken string
 }
 
+func GetServiceAccountToken() string{
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
+	overrides := clientcmd.ConfigOverrides{}
+	config := clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
+	restConfig, err :=  config.ClientConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// create the clientset
+	clientset, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		log.Fatal(err)
+	}
+	secretList, err :=clientset.CoreV1().Secrets("argo").List(metav1.ListOptions{})
+	
+	for _,sec := range secretList.Items{
+		if strings.HasPrefix(sec.Name, "argo-server-token"){
+			return string(sec.Data["token"])
+		}
+	}
+	return ""
+}
 func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
 	var err error
-	s.bearerToken, err = kubeconfig.GetBearerToken(s.RestConfig)
+	s.bearerToken = GetServiceAccountToken()
 	if err != nil {
 		panic(err)
 	}
+
 }
 
 func (s *ArgoServerSuite) AfterTest(suiteName, testName string) {

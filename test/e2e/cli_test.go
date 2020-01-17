@@ -21,6 +21,7 @@ type CLISuite struct {
 func (s *CLISuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
 	_ = os.Setenv("ARGO_SERVER", "localhost:2746")
+	_ = os.Setenv("ARGO_TOKEN", GetServiceAccountToken())
 }
 
 func (s *CLISuite) AfterTest(suiteName, testName string) {
