@@ -22,12 +22,12 @@ func getDefaultTokenVersion() tokenVersion {
 	return value
 }
 
-func getV2Token() (string, error) {
+func getV2TokenBody() (string, error) {
 	token := os.Getenv("ARGO_V2_TOKEN")
 	if token == "" {
 		return "", fmt.Errorf("no v2 token defined")
 	}
-	return formatToken(2, token), nil
+	return token, nil
 }
 
 func parseToken(token string) (tokenVersion, string, error) {
