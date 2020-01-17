@@ -372,7 +372,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 		woc.log.Warnf("Error compressing workflow: %v", err)
 		woc.markWorkflowError(err, true)
 	}
-	woc.wf, err = wfClient.Update(woc.wf)
+	wf, err := wfClient.Update(woc.wf)
 	if err != nil {
 		woc.log.Warnf("Error updating workflow: %v %s", err, apierr.ReasonForError(err))
 		if argokubeerr.IsRequestEntityTooLargeErr(err) {
@@ -383,11 +383,14 @@ func (woc *wfOperationCtx) persistUpdates() {
 			return
 		}
 		woc.log.Info("Re-applying updates on latest version and retrying update")
-		woc.wf, err = woc.reapplyUpdate(wfClient)
+		wf, err := woc.reapplyUpdate(wfClient)
 		if err != nil {
 			woc.log.Infof("Failed to re-apply update: %+v", err)
 			return
 		}
+		woc.wf = wf
+	} else {
+		woc.wf = wf
 	}
 
 	// restore to pre-compressed state
