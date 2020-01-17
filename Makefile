@@ -11,7 +11,7 @@ export DOCKER_BUILDKIT = 1
 # docker image publishing options
 IMAGE_NAMESPACE       ?= argoproj
 ifeq ($(GIT_BRANCH),master)
-VERSION               := latest
+VERSION               := $(shell cat VERSION)
 IMAGE_TAG             := latest
 DEV_IMAGE             := true
 else
