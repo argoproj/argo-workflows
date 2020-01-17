@@ -156,7 +156,7 @@ func (wdc *nodeOffloadRepo) ListOldUIDs(namespace string) ([]string, error) {
 		return nil, err
 	}
 	var uids []string
-	err = sqlbuilder.NewIterator(row).All(uids)
+	err = sqlbuilder.NewIterator(row).All(&uids)
 	if err != nil {
 		return nil, err
 	}
