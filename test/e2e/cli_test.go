@@ -153,19 +153,23 @@ func (s *CLISuite) TestArchive() {
 		Then().
 		Expect(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
-		}).RunCli([]string{"archive", "list"}, func(t *testing.T, output string, err error) {
-		assert.NoError(t, err)
-		assert.Contains(t, output, "NAMESPACE NAME")
-		assert.Contains(t, output, "argo basic")
-	})
+		}).
+		RunCli([]string{"archive", "list"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "NAMESPACE NAME")
+				assert.Contains(t, output, "argo basic")
+			}
+		})
 	s.Given().RunCli([]string{"archive", "get", string(uid)}, func(t *testing.T, output string, err error) {
-		assert.NoError(t, err)
-		assert.Contains(t, output, "Succeeded")
+		if assert.NoError(t, err) {
+			assert.Contains(t, output, "Succeeded")
+		}
 	})
 	s.Given().RunCli([]string{"archive", "delete", string(uid)}, func(t *testing.T, output string, err error) {
-		assert.NoError(t, err)
-		assert.Contains(t, output, "Archived workflow")
-		assert.Contains(t, output, "deleted")
+		if assert.NoError(t, err) {
+			assert.Contains(t, output, "Archived workflow")
+			assert.Contains(t, output, "deleted")
+		}
 	})
 }
 

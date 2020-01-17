@@ -431,6 +431,8 @@ spec:
         - debug
         - --executor-image-pull-policy
         - Never
+        - --container-runtime-executor
+        - pns
         command:
         - workflow-controller
         image: argoproj/workflow-controller:latest
