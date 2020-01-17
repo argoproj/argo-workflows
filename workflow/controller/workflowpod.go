@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
@@ -93,6 +94,22 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	wfSpec := woc.wf.Spec.DeepCopy()
 
 	mainCtr.Name = common.MainContainerName
+
+	var activeDeadlineSeconds *int64
+	wfDeadline := woc.getWorkflowDeadline()
+	if wfDeadline == nil {
+		activeDeadlineSeconds = tmpl.ActiveDeadlineSeconds
+	} else {
+		wfActiveDeadlineSeconds := int64((*wfDeadline).Sub(time.Now().UTC()).Seconds())
+		if wfActiveDeadlineSeconds < 0 {
+			return nil, nil
+		} else if tmpl.ActiveDeadlineSeconds == nil || wfActiveDeadlineSeconds < *tmpl.ActiveDeadlineSeconds {
+			activeDeadlineSeconds = &wfActiveDeadlineSeconds
+		} else {
+			activeDeadlineSeconds = tmpl.ActiveDeadlineSeconds
+		}
+	}
+
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nodeID,
@@ -111,7 +128,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		Spec: apiv1.PodSpec{
 			RestartPolicy:         apiv1.RestartPolicyNever,
 			Volumes:               woc.createVolumes(),
-			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
+			ActiveDeadlineSeconds: activeDeadlineSeconds,
 			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
 		},
 	}
