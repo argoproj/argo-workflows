@@ -159,18 +159,18 @@ func (s *CLISuite) TestArchive() {
 				assert.Contains(t, output, "NAMESPACE NAME")
 				assert.Contains(t, output, "argo basic")
 			}
+		}).
+		RunCli([]string{"archive", "get", string(uid)}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Succeeded")
+			}
+		}).
+		RunCli([]string{"archive", "delete", string(uid)}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Archived workflow")
+				assert.Contains(t, output, "deleted")
+			}
 		})
-	s.Given().RunCli([]string{"archive", "get", string(uid)}, func(t *testing.T, output string, err error) {
-		if assert.NoError(t, err) {
-			assert.Contains(t, output, "Succeeded")
-		}
-	})
-	s.Given().RunCli([]string{"archive", "delete", string(uid)}, func(t *testing.T, output string, err error) {
-		if assert.NoError(t, err) {
-			assert.Contains(t, output, "Archived workflow")
-			assert.Contains(t, output, "deleted")
-		}
-	})
 }
 
 func TestCliSuite(t *testing.T) {
