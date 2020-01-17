@@ -605,7 +605,7 @@ func (s *ArgoServerSuite) TestWorkflowStream() {
 		When().
 		SubmitWorkflow()
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(2 * time.Second)
 
 	// use the watch to make sure that the workflow has succeeded
 	s.Run("Watch", func(t *testing.T) {
@@ -616,7 +616,8 @@ func (s *ArgoServerSuite) TestWorkflowStream() {
 		req.Close = true
 		resp, err := http.DefaultClient.Do(req)
 		assert.NoError(t, err)
-		defer func() { _ = resp.Body.Close() }()
+		assert.NotNil(t, resp)
+		defer func() { if resp !=nil {_ = resp.Body.Close()} }()
 		if assert.Equal(t, 200, resp.StatusCode) {
 			assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
 			s := bufio.NewScanner(resp.Body)
