@@ -204,11 +204,11 @@ manifests/namespace-install.yaml: $(MANIFESTS)
 
 manifests/quick-start-mysql.yaml: $(MANIFESTS)
 	# Create MySQL quick-start manifests
-	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(IMAGE_TAG)/' > manifests/quick-start-mysql.yaml
+	kustomize build manifests/quick-start/mysql > manifests/quick-start-mysql.yaml
 
 manifests/quick-start-postgres.yaml: $(MANIFESTS)
 	# Create Postgres quick-start manifests
-	kustomize build manifests/quick-start/postgres | sed 's/:latest/:$(IMAGE_TAG)/' > manifests/quick-start-postgres.yaml
+	kustomize build manifests/quick-start/postgres > manifests/quick-start-postgres.yaml
 
 # lint/test/etc
 
@@ -248,9 +248,8 @@ install-postgres: dist/postgres.yaml
 install: install-postgres
 
 .PHONY: start
-start: controller-image cli-image executor-image
+start: controller-image cli-image executor-image install
 	# Start development environment
-	make install
 ifeq ($(CI),false)
 	make down
 	make up
