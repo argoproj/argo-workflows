@@ -108,7 +108,9 @@ data:
       - --gloglevel
       - "6"
       env:
-      - name: SOME_ENV_VAR
+      # ARGO_TRACE enables some tracing information for debugging purposes. Currently it enables
+      # logging of S3 request/response payloads (including auth headers)
+      - name: ARGO_TRACE
         value: "1"
 
     # metricsConfig controls the path and port for prometheus metrics
