@@ -83,6 +83,7 @@ func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (strin
 		if !isDuplicateKeyError(err) {
 			return "", err
 		}
+		logCtx.Debug("Ignoring duplicate key error")
 	}
 
 	logCtx.Info("Nodes offloaded, cleaning up old offloads")
@@ -173,9 +174,13 @@ func (wdc *nodeOffloadRepo) ListOldUIDs(namespace string) ([]string, error) {
 		return nil, err
 	}
 	var uids []string
-	err = sqlbuilder.NewIterator(row).All(&uids)
-	if err != nil {
-		return nil, err
+	for row.Next() {
+		uid := ""
+		err := row.Scan(&uid)
+		if err != nil {
+			return nil, err
+		}
+		uids = append(uids, uid)
 	}
 	return uids, nil
 }
