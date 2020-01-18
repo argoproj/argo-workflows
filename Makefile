@@ -54,7 +54,7 @@ E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 .PHONY: build
 build: clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
 
-vendor: Gopkg.toml
+vendor: Gopkg.toml Gopkg.lock
 	# Get Go dependencies
 	rm -Rf .vendor-new
 	dep ensure -v
