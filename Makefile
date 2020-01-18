@@ -47,7 +47,6 @@ endif
 KUBECTX          := $(shell kubectl config current-context)
 ALLOWED_KUBECTXS := docker-desktop|docker-for-desktop|minikube
 
-
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
@@ -113,7 +112,7 @@ dist/argo-windows-amd64: vendor cmd/server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-windows-amd64 ./cmd/argo
 
 .PHONY: cli-image
-cli-image: dist/argo-linux-amd64
+cli-image: dist/argo-linux-amd64 local
 	# Create CLI image
 ifeq ($(DEV_IMAGE),true)
 	cp dist/argo-linux-amd64 argo
@@ -131,7 +130,7 @@ clis: dist/argo-linux-amd64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/a
 dist/workflow-controller-linux-amd64: vendor $(CONTROLLER_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/workflow-controller-linux-amd64 ./cmd/workflow-controller
 
-.PHONY: controller-image
+.PHONY: controller-image local
 controller-image: dist/workflow-controller-linux-amd64
 	# Create controller image
 ifeq ($(DEV_IMAGE),true)
@@ -147,7 +146,7 @@ endif
 dist/argoexec-linux-amd64: vendor $(ARGOEXEC_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argoexec-linux-amd64 ./cmd/argoexec
 
-.PHONY: executor-image
+.PHONY: executor-image local
 executor-image: dist/argoexec-linux-amd64
 	# Create executor image
 ifeq ($(DEV_IMAGE),true)
