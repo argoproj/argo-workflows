@@ -309,7 +309,7 @@ clean:
 	[ "`docker images -q $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)
 	[ "`docker images -q $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)
 	# Delete build files
-	git clean -fxd -e .idea -e vendor -e ui/node_modules
+	rm -Rf dist ui/dist
 
 # pre-push
 
