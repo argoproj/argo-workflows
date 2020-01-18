@@ -291,7 +291,7 @@ func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan st
 				for _, uid := range uids {
 					_, ok := wfs[types.UID(uid)]
 					if !ok {
-						err := wfc.offloadNodeStatusRepo.Delete(string(uid))
+						err := wfc.offloadNodeStatusRepo.Delete(uid)
 						if err != nil {
 							log.WithField("err", err).Error("Failed to delete offloaded nodes")
 						}
@@ -459,7 +459,13 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 
 func (wfc *WorkflowController) tweakWorkflowlist(options *metav1.ListOptions) {
 	options.FieldSelector = fields.Everything().String()
+	// completed notin (true)
+	incompleteReq, err := labels.NewRequirement(common.LabelKeyCompleted, selection.NotIn, []string{"true"})
+	if err != nil {
+		panic(err)
+	}
 	labelSelector := labels.NewSelector().
+		Add(*incompleteReq).
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 	options.LabelSelector = labelSelector.String()
 }

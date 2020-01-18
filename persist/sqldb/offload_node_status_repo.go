@@ -83,6 +83,7 @@ func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (strin
 		if !isDuplicateKeyError(err) {
 			return "", err
 		}
+		logCtx.WithField("err", err).Debug("Ignoring duplicate key error")
 	}
 
 	logCtx.Info("Nodes offloaded, cleaning up old offloads")
