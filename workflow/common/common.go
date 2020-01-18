@@ -89,6 +89,8 @@ const (
 	EnvVarKubeletPort = "ARGO_KUBELET_PORT"
 	// EnvVarKubeletInsecure is used to disable the TLS verification
 	EnvVarKubeletInsecure = "ARGO_KUBELET_INSECURE"
+	// EnvVarArgoTrace is used enable tracing statements in Argo components
+	EnvVarArgoTrace = "ARGO_TRACE"
 
 	// ContainerRuntimeExecutorDocker to use docker as container runtime executor
 	ContainerRuntimeExecutorDocker = "docker"
