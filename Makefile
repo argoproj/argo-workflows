@@ -44,11 +44,15 @@ VERSION = ${GIT_TAG}
 override LDFLAGS += -X ${PACKAGE}.gitTag=${GIT_TAG}
 endif
 
+KUBECTX          := $(shell kubectl config current-context)
+ALLOWED_KUBECTXS := docker-desktop|docker-for-desktop|minikube
+
+
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
-E2_MANIFESTS     := $(shell find test/e2e/manifests -mindepth 2 -type f)
+E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 
 .PHONY: build
 build: clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
@@ -218,8 +222,16 @@ dist/postgres.yaml: test/e2e/manifests/postgres.yaml
 	# Create Postgres e2e manifests
 	cat test/e2e/manifests/postgres.yaml | sed 's/:latest/:$(IMAGE_TAG)/' > dist/postgres.yaml
 
+local:
+ifneq ($(CI),true)
+	# kubectx $(KUBECTX) must be in $(ALLOWED_KUBECTXS)
+ifeq ($(findstring $(KUBECTX),$(ALLOWED_KUBECTXS)),)
+	exit 1
+endif
+endif
+
 .PHONY: install-postgres
-install-postgres: dist/postgres.yaml
+install-postgres: dist/postgres.yaml local
 	# Install Postgres quick-start
 	kubectl get ns argo || kubectl create ns argo
 	kubectl -n argo apply -f dist/postgres.yaml
@@ -228,7 +240,7 @@ install-postgres: dist/postgres.yaml
 install: install-postgres
 
 .PHONY: start
-start: controller-image cli-image install
+start: local controller-image cli-image install
 	# Start development environment
 ifeq ($(CI),false)
 	make down
@@ -241,7 +253,7 @@ endif
 	kubectl config set-context --current --namespace=argo
 
 .PHONY: down
-down:
+down: local
 	# Scale down
 	kubectl -n argo scale deployment/argo-server --replicas 0
 	kubectl -n argo scale deployment/workflow-controller --replicas 0
@@ -250,7 +262,7 @@ down:
 	[ "`kubectl -n argo get pod -l app=workflow-controller -o name`" = "" ] || kubectl -n argo wait --for=delete pod -l app=workflow-controller  --timeout 2m
 
 .PHONY: up
-up:
+up: local
 	# Scale up
 	kubectl -n argo scale deployment/workflow-controller --replicas 1
 	kubectl -n argo scale deployment/argo-server --replicas 1
@@ -258,26 +270,26 @@ up:
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
 
 .PHONY: pf
-pf:
+pf: local
 	# Start port-forwards
 	./hack/port-forward.sh
 
 .PHONY: pf-bg
-pf-bg:
+pf-bg: local
 	# Start port-forwards in the background
 	./hack/port-forward.sh &
 
 .PHONY: logs
-logs:
+logs: local
 	# Tail logs
 	kubectl -n argo logs -f -l app --max-log-requests 10
 
 .PHONY: postgres-cli
-postgres-cli:
+postgres-cli: local
 	kubectl exec -ti `kubectl get pod -l app=postgres -o name|cut -c 5-` -- psql -U postgres
 
 .PHONY: mysql-cli
-mysql-cli:
+mysql-cli: local
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
 .PHONY: test-e2e
@@ -303,7 +315,7 @@ test-cli:
 # clean
 
 .PHONY: clean
-clean:
+clean: local
 	# Remove images
 	[ "`docker images -q $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)
 	[ "`docker images -q $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)
