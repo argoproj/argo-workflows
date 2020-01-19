@@ -29,6 +29,8 @@ func GetRestConfig(token string) (*restclient.Config, error) {
 	}
 	restConfig.BearerToken = ""
 	restConfig.BearerTokenFile = ""
+	restConfig.Username = ""
+	restConfig.Password = ""
 	if token != "" {
 		restConfig.BearerToken = token
 	}
