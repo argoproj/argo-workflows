@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "Argo",
-    "version": "v2.4.0"
+    "version": "v2.5.0"
   },
   "paths": {},
   "definitions": {
@@ -1201,11 +1201,11 @@
       "description": "TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed",
       "type": "object",
       "properties": {
-        "secondsAfterCompleted": {
+        "secondsAfterCompletion": {
           "type": "integer",
           "format": "int32"
         },
-        "secondsAfterFailed": {
+        "secondsAfterFailure": {
           "type": "integer",
           "format": "int32"
         },
@@ -1763,7 +1763,7 @@
           "x-kubernetes-patch-strategy": "merge"
         },
         "ttlSecondsAfterFinished": {
-          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompleted instead.",
+          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.",
           "type": "integer",
           "format": "int32"
         },

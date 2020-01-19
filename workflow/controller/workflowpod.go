@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
@@ -93,6 +94,22 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	wfSpec := woc.wf.Spec.DeepCopy()
 
 	mainCtr.Name = common.MainContainerName
+
+	var activeDeadlineSeconds *int64
+	wfDeadline := woc.getWorkflowDeadline()
+	if wfDeadline == nil {
+		activeDeadlineSeconds = tmpl.ActiveDeadlineSeconds
+	} else {
+		wfActiveDeadlineSeconds := int64((*wfDeadline).Sub(time.Now().UTC()).Seconds())
+		if wfActiveDeadlineSeconds < 0 {
+			return nil, nil
+		} else if tmpl.ActiveDeadlineSeconds == nil || wfActiveDeadlineSeconds < *tmpl.ActiveDeadlineSeconds {
+			activeDeadlineSeconds = &wfActiveDeadlineSeconds
+		} else {
+			activeDeadlineSeconds = tmpl.ActiveDeadlineSeconds
+		}
+	}
+
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nodeID,
@@ -111,7 +128,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		Spec: apiv1.PodSpec{
 			RestartPolicy:         apiv1.RestartPolicyNever,
 			Volumes:               woc.createVolumes(),
-			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
+			ActiveDeadlineSeconds: activeDeadlineSeconds,
 			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
 		},
 	}
@@ -131,7 +148,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
-	if woc.controller.Config.ContainerRuntimeExecutor == common.ContainerRuntimeExecutorPNS {
+	if woc.controller.GetContainerRuntimeExecutor() == common.ContainerRuntimeExecutorPNS {
 		pod.Spec.ShareProcessNamespace = pointer.BoolPtr(true)
 	}
 
@@ -319,7 +336,7 @@ func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Container, error) {
 	ctr := woc.newExecContainer(common.WaitContainerName, tmpl)
 	ctr.Command = []string{"argoexec", "wait"}
-	switch woc.controller.Config.ContainerRuntimeExecutor {
+	switch woc.controller.GetContainerRuntimeExecutor() {
 	case common.ContainerRuntimeExecutorPNS:
 		ctr.SecurityContext = &apiv1.SecurityContext{
 			Capabilities: &apiv1.Capabilities{
@@ -374,19 +391,19 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 	if woc.controller.Config.Executor != nil {
 		execEnvVars = append(execEnvVars, woc.controller.Config.Executor.Env...)
 	}
-	switch woc.controller.Config.ContainerRuntimeExecutor {
+	switch woc.controller.GetContainerRuntimeExecutor() {
 	case common.ContainerRuntimeExecutorK8sAPI:
 		execEnvVars = append(execEnvVars,
 			apiv1.EnvVar{
 				Name:  common.EnvVarContainerRuntimeExecutor,
-				Value: woc.controller.Config.ContainerRuntimeExecutor,
+				Value: woc.controller.GetContainerRuntimeExecutor(),
 			},
 		)
 	case common.ContainerRuntimeExecutorKubelet:
 		execEnvVars = append(execEnvVars,
 			apiv1.EnvVar{
 				Name:  common.EnvVarContainerRuntimeExecutor,
-				Value: woc.controller.Config.ContainerRuntimeExecutor,
+				Value: woc.controller.GetContainerRuntimeExecutor(),
 			},
 			apiv1.EnvVar{
 				Name: common.EnvVarDownwardAPINodeIP,
@@ -409,7 +426,7 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 		execEnvVars = append(execEnvVars,
 			apiv1.EnvVar{
 				Name:  common.EnvVarContainerRuntimeExecutor,
-				Value: woc.controller.Config.ContainerRuntimeExecutor,
+				Value: woc.controller.GetContainerRuntimeExecutor(),
 			},
 		)
 	}
@@ -434,7 +451,7 @@ func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 			},
 		})
 	}
-	switch woc.controller.Config.ContainerRuntimeExecutor {
+	switch woc.controller.GetContainerRuntimeExecutor() {
 	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorPNS:
 		return volumes
 	default:

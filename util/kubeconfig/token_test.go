@@ -32,9 +32,9 @@ func Test_getDefaultTokenVersion(t *testing.T) {
 		restConfig, err := clientcmd.DefaultClientConfig.ClientConfig()
 		os.Unsetenv("ARGO_TOKEN")
 		assert.NoError(t, err)
-		restConfig.BearerToken="test"
+		restConfig.BearerToken = "test"
 		token, err := GetBearerToken(restConfig)
 		assert.NoError(t, err)
-		assert.Equal(t,restConfig.BearerToken, token)
+		assert.Equal(t, restConfig.BearerToken, token)
 	})
 }

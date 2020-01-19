@@ -26,7 +26,6 @@ func (s *CLISuite) BeforeTest(suiteName, testName string) {
 
 func (s *CLISuite) AfterTest(suiteName, testName string) {
 	s.E2ESuite.AfterTest(suiteName, testName)
-	_ = os.Unsetenv("ARGO_SERVER")
 }
 
 func (s *CLISuite) TestCompletion() {
@@ -39,7 +38,7 @@ func (s *CLISuite) TestCompletion() {
 func (s *CLISuite) TestToken() {
 	s.Given().RunCli([]string{"token"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
-		assert.NotEmpty(t, output)
+		assert.Equal(t, "v2:password", output)
 	})
 }
 
@@ -157,20 +156,24 @@ func (s *CLISuite) TestArchive() {
 		Then().
 		Expect(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
-		}).RunCli([]string{"archive", "list"}, func(t *testing.T, output string, err error) {
-		assert.NoError(t, err)
-		assert.Contains(t, output, "NAMESPACE NAME")
-		assert.Contains(t, output, "argo basic")
-	})
-	s.Given().RunCli([]string{"archive", "get", string(uid)}, func(t *testing.T, output string, err error) {
-		assert.NoError(t, err)
-		assert.Contains(t, output, "Succeeded")
-	})
-	s.Given().RunCli([]string{"archive", "delete", string(uid)}, func(t *testing.T, output string, err error) {
-		assert.NoError(t, err)
-		assert.Contains(t, output, "Archived workflow")
-		assert.Contains(t, output, "deleted")
-	})
+		}).
+		RunCli([]string{"archive", "list"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "NAMESPACE NAME")
+				assert.Contains(t, output, "argo basic")
+			}
+		}).
+		RunCli([]string{"archive", "get", string(uid)}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Succeeded")
+			}
+		}).
+		RunCli([]string{"archive", "delete", string(uid)}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Archived workflow")
+				assert.Contains(t, output, "deleted")
+			}
+		})
 }
 
 func TestCliSuite(t *testing.T) {

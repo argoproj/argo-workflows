@@ -67,7 +67,6 @@ func GetBearerToken(in *restclient.Config) (string, error) {
 		if err != nil {
 			return "", nil
 		}
-
 		req := http.Request{Header: map[string][]string{}}
 
 		_, _ = rt.RoundTrip(&req)
@@ -79,17 +78,17 @@ func GetBearerToken(in *restclient.Config) (string, error) {
 		if in.AuthProvider.Name == "gcp" {
 			tc, err := in.TransportConfig()
 			if err != nil {
-				return "", nil
+				return "", err
 			}
 
 			auth, err := restclient.GetAuthProvider(in.Host, in.AuthProvider, in.AuthConfigPersister)
 			if err != nil {
-				return "", nil
+				return "", err
 			}
 
 			rt, err := transport.New(tc)
 			if err != nil {
-				return "", nil
+				return "", err
 			}
 			rt = auth.WrapTransport(rt)
 			req := http.Request{Header: map[string][]string{}}

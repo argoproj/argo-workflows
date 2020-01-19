@@ -628,11 +628,11 @@ message SuspendTemplate {
 
 // TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed
 message TTLStrategy {
-  optional int32 secondsAfterCompleted = 1;
+  optional int32 secondsAfterCompletion = 1;
 
   optional int32 secondsAfterSuccess = 2;
 
-  optional int32 secondsAfterFailed = 3;
+  optional int32 secondsAfterFailure = 3;
 }
 
 // TarStrategy will tar and gzip the file or directory when saving
@@ -921,7 +921,7 @@ message WorkflowSpec {
   // deleted after ttlSecondsAfterFinished expires. If this field is unset,
   // ttlSecondsAfterFinished will not expire. If this field is set to zero,
   // ttlSecondsAfterFinished expires immediately after the Workflow finishes.
-  // DEPRECATED: Use TTLStrategy.SecondsAfterCompleted instead.
+  // DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.
   optional int32 ttlSecondsAfterFinished = 18;
 
   // TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
@@ -1063,6 +1063,6 @@ message WorkflowTemplateSpec {
   repeated Template templates = 1;
 
   // Arguments hold arguments to the template.
-  optional Arguments arguments = 2;
+  optional Arguments arguments = 3;
 }
 
