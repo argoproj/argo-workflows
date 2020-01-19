@@ -16,7 +16,7 @@ type SmokeSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *SmokeSuite) TestBasic() {
+func (s *SmokeSuite) TestBasicWorkflow() {
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
