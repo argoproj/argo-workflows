@@ -358,7 +358,7 @@ func (s *ArgoServerSuite) TestWorkflows() {
 		s.Given().
 			Workflow("@smoke/basic.yaml")
 
-		s.e(t).GET("/api/v1/workflows/").
+		s.e(t).GET("/api/v1/workflows/argo").
 			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
 			Expect().
 			Status(200).
@@ -468,7 +468,7 @@ func (s *ArgoServerSuite) TestCronWorkflows() {
 		s.Given().
 			CronWorkflow("@testdata/basic.yaml")
 
-		s.e(t).GET("/api/v1/cron-workflows/").
+		s.e(t).GET("/api/v1/cron-workflows/argo").
 			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
 			Expect().
 			Status(200).

@@ -52,6 +52,7 @@ type WorkflowController struct {
 
 	// cliExecutorImagePullPolicy is the executor imagePullPolicy as specified from the command line
 	cliExecutorImagePullPolicy string
+	containerRuntimeExecutor   string
 
 	// restConfig is used by controller to send a SIGUSR1 to the wait sidecar using remotecommand.NewSPDYExecutor().
 	restConfig    *rest.Config
@@ -88,6 +89,7 @@ func NewWorkflowController(
 	managedNamespace string,
 	executorImage,
 	executorImagePullPolicy,
+	containerRuntimeExecutor,
 	configMap string,
 ) *WorkflowController {
 	wfc := WorkflowController{
@@ -99,6 +101,7 @@ func NewWorkflowController(
 		managedNamespace:           managedNamespace,
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
+		containerRuntimeExecutor:   containerRuntimeExecutor,
 		wfQueue:                    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:                   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		completedPods:              make(chan string, 512),
@@ -520,4 +523,11 @@ func (wfc *WorkflowController) GetManagedNamespace() string {
 		return wfc.managedNamespace
 	}
 	return wfc.Config.Namespace
+}
+
+func (wfc *WorkflowController) GetContainerRuntimeExecutor() string {
+	if wfc.containerRuntimeExecutor != "" {
+		return wfc.containerRuntimeExecutor
+	}
+	return wfc.Config.ContainerRuntimeExecutor
 }

@@ -86,7 +86,7 @@ func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *G
 	if wf == nil {
 		return nil, status.Error(codes.NotFound, "not found")
 	}
-	allowed, err := auth.CanI(ctx, "get", "workflow", wf.Namespace, wf.Name)
+	allowed, err := auth.CanI(ctx, "get", "workflows", wf.Namespace, wf.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req
 	if err != nil {
 		return nil, err
 	}
-	allowed, err := auth.CanI(ctx, "delete", "workflow", wf.Namespace, wf.Name)
+	allowed, err := auth.CanI(ctx, "delete", "workflows", wf.Namespace, wf.Name)
 	if err != nil {
 		return nil, err
 	}

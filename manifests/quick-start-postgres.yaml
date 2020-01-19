@@ -188,6 +188,8 @@ rules:
   - get
   - list
   - watch
+  - update
+  - patch
   - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -361,7 +363,7 @@ spec:
       - args:
         - server
         - --namespaced
-        image: argoproj/argocli:quick-start
+        image: argoproj/argocli:latest
         name: argo-server
         ports:
         - containerPort: 2746

@@ -13,3 +13,9 @@
 - op: add
   path: /spec/template/spec/containers/0/args/-
   value: Never
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: --container-runtime-executor
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: pns

@@ -22,7 +22,7 @@ func getDefaultTokenVersion() tokenVersion {
 	return value
 }
 
-func getV2Token() (string, error) {
+func getV2TokenBody() (string, error) {
 	token := os.Getenv("ARGO_V2_TOKEN")
 	if token == "" {
 		return "", fmt.Errorf("no v2 token defined")
@@ -34,7 +34,7 @@ func parseToken(token string) (tokenVersion, string, error) {
 	rx := regexp.MustCompile("(v[0-9]):(.*)")
 	find := rx.FindStringSubmatch(token)
 	if len(find) == 0 {
-		return tokenVersion0, "", fmt.Errorf("token tokenVersion not found")
+		return tokenVersion0, "", fmt.Errorf("token not found")
 	}
 	return find[1], find[2], nil
 }
