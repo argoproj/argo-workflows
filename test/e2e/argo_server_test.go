@@ -359,7 +359,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 		    When().
 		    WaitForWorkflowToStart(20*time.Second)
 
-		s.e(t).GET("/api/v1/workflows/argo").
+		j := s.e(t).GET("/api/v1/workflows/argo").
 			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
 			Expect().
 			Status(200).
