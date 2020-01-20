@@ -46,7 +46,7 @@ override LDFLAGS += -X ${PACKAGE}.gitTag=${GIT_TAG}
 endif
 
 KUBECTX          := $(shell kubectl config current-context)
-ALLOWED_KUBECTXS := docker-desktop|docker-for-desktop|minikube
+ALLOWED_KUBECTXS := docker-desktop|docker-for-desktop|minikube|k3s-default
 
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
