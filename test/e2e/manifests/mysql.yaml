@@ -8,8 +8,8 @@ spec:
     kind: CronWorkflow
     plural: cronworkflows
     shortNames:
-      - cronwf
-      - cwf
+    - cronwf
+    - cwf
   scope: Namespaced
   version: v1alpha1
 ---
@@ -19,21 +19,21 @@ metadata:
   name: workflows.argoproj.io
 spec:
   additionalPrinterColumns:
-    - JSONPath: .status.phase
-      description: Status of the workflow
-      name: Status
-      type: string
-    - JSONPath: .status.startedAt
-      description: When the workflow was started
-      format: date-time
-      name: Age
-      type: date
+  - JSONPath: .status.phase
+    description: Status of the workflow
+    name: Status
+    type: string
+  - JSONPath: .status.startedAt
+    description: When the workflow was started
+    format: date-time
+    name: Age
+    type: date
   group: argoproj.io
   names:
     kind: Workflow
     plural: workflows
     shortNames:
-      - wf
+    - wf
   scope: Namespaced
   version: v1alpha1
 ---
@@ -47,7 +47,7 @@ spec:
     kind: WorkflowTemplate
     plural: workflowtemplates
     shortNames:
-      - wftmpl
+    - wftmpl
   scope: Namespaced
   version: v1alpha1
 ---
@@ -66,150 +66,152 @@ kind: Role
 metadata:
   name: argo-role
 rules:
-  - apiGroups:
-      - ""
-    resources:
-      - pods
-      - pods/exec
-    verbs:
-      - create
-      - get
-      - list
-      - watch
-      - update
-      - patch
-      - delete
-  - apiGroups:
-      - ""
-    resources:
-      - configmaps
-    verbs:
-      - get
-      - watch
-      - list
-  - apiGroups:
-      - ""
-    resources:
-      - persistentvolumeclaims
-    verbs:
-      - create
-      - delete
-  - apiGroups:
-      - argoproj.io
-    resources:
-      - workflows
-      - workflows/finalizers
-    verbs:
-      - get
-      - list
-      - watch
-      - update
-      - patch
-      - delete
-      - create
-  - apiGroups:
-      - argoproj.io
-    resources:
-      - workflowtemplates
-      - workflowtemplates/finalizers
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - ""
-    resources:
-      - serviceaccounts
-    verbs:
-      - get
-      - list
-  - apiGroups:
-      - ""
-    resources:
-      - secrets
-    verbs:
-      - get
-  - apiGroups:
-      - argoproj.io
-    resources:
-      - cronworkflows
-      - cronworkflows/finalizers
-    verbs:
-      - get
-      - list
-      - watch
-      - update
-      - patch
-      - delete
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - pods/exec
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - watch
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - create
+  - delete
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflows
+  - workflows/finalizers
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+  - create
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowtemplates
+  - workflowtemplates/finalizers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+- apiGroups:
+  - argoproj.io
+  resources:
+  - cronworkflows
+  - cronworkflows/finalizers
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: argo-server-role
 rules:
-  - apiGroups:
-      - ""
-    resources:
-      - configmaps
-    verbs:
-      - get
-      - watch
-      - list
-  - apiGroups:
-      - ""
-    resources:
-      - secrets
-    verbs:
-      - get
-  - apiGroups:
-      - ""
-    resources:
-      - pods
-      - pods/exec
-      - pods/log
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - ""
-    resources:
-      - secrets
-    verbs:
-      - get
-  - apiGroups:
-      - argoproj.io
-    resources:
-      - workflows
-      - workflowtemplates
-      - cronworkflows
-    verbs:
-      - create
-      - get
-      - list
-      - watch
-      - delete
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - watch
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - pods/exec
+  - pods/log
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflows
+  - workflowtemplates
+  - cronworkflows
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: workflow-role
 rules:
-  - apiGroups:
-      - ""
-    resources:
-      - pods
-    verbs:
-      - get
-      - watch
-      - patch
-  - apiGroups:
-      - ""
-    resources:
-      - pods/log
-    verbs:
-      - get
-      - watch
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - watch
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - pods/log
+  verbs:
+  - get
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -220,8 +222,8 @@ roleRef:
   kind: Role
   name: argo-role
 subjects:
-  - kind: ServiceAccount
-    name: argo
+- kind: ServiceAccount
+  name: argo
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -232,8 +234,8 @@ roleRef:
   kind: Role
   name: argo-server-role
 subjects:
-  - kind: ServiceAccount
-    name: argo-server
+- kind: ServiceAccount
+  name: argo-server
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -244,8 +246,8 @@ roleRef:
   kind: Role
   name: workflow-role
 subjects:
-  - kind: ServiceAccount
-    name: default
+- kind: ServiceAccount
+  name: default
 ---
 apiVersion: v1
 data:
@@ -311,8 +313,8 @@ metadata:
   name: argo-server
 spec:
   ports:
-    - port: 2746
-      targetPort: 2746
+  - port: 2746
+    targetPort: 2746
   selector:
     app: argo-server
 ---
@@ -324,9 +326,9 @@ metadata:
   name: minio
 spec:
   ports:
-    - port: 9000
-      protocol: TCP
-      targetPort: 9000
+  - port: 9000
+    protocol: TCP
+    targetPort: 9000
   selector:
     app: minio
 ---
@@ -338,9 +340,9 @@ metadata:
   name: mysql
 spec:
   ports:
-    - port: 3306
-      protocol: TCP
-      targetPort: 3306
+  - port: 3306
+    protocol: TCP
+    targetPort: 3306
   selector:
     app: mysql
 ---
@@ -358,28 +360,28 @@ spec:
         app: argo-server
     spec:
       containers:
-        - args:
-            - server
-            - --namespaced
-            - --auth-mode
-            - client
-            - --loglevel
-            - debug
-          env:
-            - name: ARGO_V2_TOKEN
-              value: password
-          image: argoproj/argocli:latest
-          imagePullPolicy: Never
-          name: argo-server
-          ports:
-            - containerPort: 2746
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 2746
-              scheme: HTTP
-            initialDelaySeconds: 5
-            periodSeconds: 30
+      - args:
+        - server
+        - --namespaced
+        - --auth-mode
+        - client
+        - --loglevel
+        - debug
+        env:
+        - name: ARGO_V2_TOKEN
+          value: password
+        image: argoproj/argocli:latest
+        imagePullPolicy: Never
+        name: argo-server
+        ports:
+        - containerPort: 2746
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 2746
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 30
       serviceAccountName: argo-server
 ---
 apiVersion: apps/v1
@@ -399,19 +401,19 @@ spec:
       name: mysql
     spec:
       containers:
-        - env:
-            - name: MYSQL_USER
-              value: mysql
-            - name: MYSQL_PASSWORD
-              value: password
-            - name: MYSQL_DATABASE
-              value: argo
-            - name: MYSQL_RANDOM_ROOT_PASSWORD
-              value: "yes"
-          image: mysql:8
-          name: main
-          ports:
-            - containerPort: 5432
+      - env:
+        - name: MYSQL_USER
+          value: mysql
+        - name: MYSQL_PASSWORD
+          value: password
+        - name: MYSQL_DATABASE
+          value: argo
+        - name: MYSQL_RANDOM_ROOT_PASSWORD
+          value: "yes"
+        image: mysql:8
+        name: main
+        ports:
+        - containerPort: 5432
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -427,26 +429,28 @@ spec:
         app: workflow-controller
     spec:
       containers:
-        - args:
-            - --configmap
-            - workflow-controller-configmap
-            - --executor-image
-            - argoproj/argoexec:latest
-            - --namespaced
-            - --loglevel
-            - debug
-            - --executor-image-pull-policy
-            - Never
-          command:
-            - workflow-controller
-          env:
-            - name: ALWAYS_OFFLOAD_NODE_STATUS
-              value: "true"
-            - name: WORKFLOW_GC_PERIOD
-              value: 30s
-          image: argoproj/workflow-controller:latest
-          imagePullPolicy: Never
-          name: workflow-controller
+      - args:
+        - --configmap
+        - workflow-controller-configmap
+        - --executor-image
+        - argoproj/argoexec:latest
+        - --namespaced
+        - --loglevel
+        - debug
+        - --executor-image-pull-policy
+        - Never
+        - --container-runtime-executor
+        - pns
+        command:
+        - workflow-controller
+        env:
+        - name: ALWAYS_OFFLOAD_NODE_STATUS
+          value: "true"
+        - name: WORKFLOW_GC_PERIOD
+          value: 30s
+        image: argoproj/workflow-controller:latest
+        imagePullPolicy: Never
+        name: workflow-controller
       serviceAccountName: argo
 ---
 apiVersion: v1
@@ -457,35 +461,35 @@ metadata:
   name: minio
 spec:
   containers:
-    - command:
-        - minio
-        - server
-        - /data
-      env:
-        - name: MINIO_ACCESS_KEY
-          value: admin
-        - name: MINIO_SECRET_KEY
-          value: password
-      image: minio/minio
-      lifecycle:
-        postStart:
-          exec:
-            command:
-              - mkdir
-              - -p
-              - /data/my-bucket
-      livenessProbe:
-        httpGet:
-          path: /minio/health/live
-          port: 9000
-        initialDelaySeconds: 5
-        periodSeconds: 10
-      name: main
-      ports:
-        - containerPort: 9000
-      readinessProbe:
-        httpGet:
-          path: /minio/health/ready
-          port: 9000
-        initialDelaySeconds: 5
-        periodSeconds: 10
+  - command:
+    - minio
+    - server
+    - /data
+    env:
+    - name: MINIO_ACCESS_KEY
+      value: admin
+    - name: MINIO_SECRET_KEY
+      value: password
+    image: minio/minio
+    lifecycle:
+      postStart:
+        exec:
+          command:
+          - mkdir
+          - -p
+          - /data/my-bucket
+    livenessProbe:
+      httpGet:
+        path: /minio/health/live
+        port: 9000
+      initialDelaySeconds: 5
+      periodSeconds: 10
+    name: main
+    ports:
+    - containerPort: 9000
+    readinessProbe:
+      httpGet:
+        path: /minio/health/ready
+        port: 9000
+      initialDelaySeconds: 5
+      periodSeconds: 10

@@ -39,13 +39,14 @@ func init() {
 
 type E2ESuite struct {
 	suite.Suite
-	Diagnostics      *Diagnostics
-	Persistence      *Persistence
-	RestConfig       *rest.Config
-	wfClient         v1alpha1.WorkflowInterface
-	wfTemplateClient v1alpha1.WorkflowTemplateInterface
-	cronClient       v1alpha1.CronWorkflowInterface
-	KubeClient       kubernetes.Interface
+	Env
+	Diagnostics           *Diagnostics
+	Persistence           *Persistence
+	RestConfig            *rest.Config
+	wfClient              v1alpha1.WorkflowInterface
+	wfTemplateClient      v1alpha1.WorkflowTemplateInterface
+	cronClient            v1alpha1.CronWorkflowInterface
+	KubeClient            kubernetes.Interface
 }
 
 func (s *E2ESuite) SetupSuite() {
@@ -73,6 +74,7 @@ func (s *E2ESuite) TearDownSuite() {
 }
 
 func (s *E2ESuite) BeforeTest(_, _ string) {
+	s.SetEnv()
 	s.Diagnostics = &Diagnostics{}
 
 	// delete all workflows
@@ -155,6 +157,7 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 	if s.T().Failed() {
 		s.printDiagnostics()
 	}
+	s.UnsetEnv()
 }
 
 func (s *E2ESuite) printDiagnostics() {

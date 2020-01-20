@@ -14,6 +14,12 @@
   path: /spec/template/spec/containers/0/args/-
   value: Never
 - op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: --container-runtime-executor
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: pns
+- op: add
   path: /spec/template/spec/containers/0/env
   value:
     - name: ALWAYS_OFFLOAD_NODE_STATUS
