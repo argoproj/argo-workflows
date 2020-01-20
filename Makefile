@@ -28,6 +28,7 @@ endif
 # perform static compilation
 STATIC_BUILD          ?= true
 CI                    ?= false
+K3D                   ?= $(shell if [ "$(KUBECONFIG)" = "$(HOME)/.config/k3d/k3s-default/kubeconfig.yaml" ]; then echo true; else echo false; fi)
 
 override LDFLAGS += \
   -X ${PACKAGE}.version=$(VERSION) \
@@ -52,6 +53,7 @@ CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join 
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
+E2E_EXECUTOR     ?= pns
 
 .PHONY: build
 build: clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
@@ -112,7 +114,9 @@ dist/argo-windows-amd64: vendor cmd/server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-windows-amd64 ./cmd/argo
 
 .PHONY: cli-image
-cli-image: dist/argo-linux-amd64 local
+cli-image: dist/cli-image
+
+dist/cli-image: dist/argo-linux-amd64 local
 	# Create CLI image
 ifeq ($(DEV_IMAGE),true)
 	cp dist/argo-linux-amd64 argo
@@ -120,6 +124,10 @@ ifeq ($(DEV_IMAGE),true)
 	rm -f argo
 else
 	docker build -t $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG) --target argocli .
+endif
+	touch dist/cli-image
+ifeq ($(K3D),true)
+	k3d import-images $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)
 endif
 
 .PHONY: clis
@@ -130,8 +138,10 @@ clis: dist/argo-linux-amd64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/a
 dist/workflow-controller-linux-amd64: vendor $(CONTROLLER_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/workflow-controller-linux-amd64 ./cmd/workflow-controller
 
-.PHONY: controller-image local
-controller-image: dist/workflow-controller-linux-amd64
+.PHONY: controller-image
+controller-image: dist/controller-image
+
+dist/controller-image: dist/workflow-controller-linux-amd64 local
 	# Create controller image
 ifeq ($(DEV_IMAGE),true)
 	cp dist/workflow-controller-linux-amd64 workflow-controller
@@ -140,14 +150,21 @@ ifeq ($(DEV_IMAGE),true)
 else
 	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG) --target workflow-controller .
 endif
+	touch dist/controller-image
+ifeq ($(K3D),true)
+	# importing images into k3d
+	k3d import-images $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)
+endif
 
 # argoexec
 
 dist/argoexec-linux-amd64: vendor $(ARGOEXEC_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argoexec-linux-amd64 ./cmd/argoexec
 
-.PHONY: executor-image local
-executor-image: dist/argoexec-linux-amd64
+.PHONY: executor-image
+executor-image: dist/executor-image
+
+dist/executor-image: dist/argoexec-linux-amd64 local
 	# Create executor image
 ifeq ($(DEV_IMAGE),true)
 	cp dist/argoexec-linux-amd64 argoexec
@@ -155,6 +172,10 @@ ifeq ($(DEV_IMAGE),true)
 	rm -f argoexec
 else
 	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG) --target argoexec .
+endif
+	touch dist/executor-image
+ifeq ($(K3D),true)
+	k3d import-images $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)
 endif
 
 # generation
@@ -187,11 +208,11 @@ manifests/namespace-install.yaml: $(MANIFESTS)
 
 manifests/quick-start-mysql.yaml: $(MANIFESTS)
 	# Create MySQL quick-start manifests
-	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(IMAGE_TAG)/' > manifests/quick-start-mysql.yaml
+	kustomize build manifests/quick-start/mysql > manifests/quick-start-mysql.yaml
 
 manifests/quick-start-postgres.yaml: $(MANIFESTS)
 	# Create Postgres quick-start manifests
-	kustomize build manifests/quick-start/postgres | sed 's/:latest/:$(IMAGE_TAG)/' > manifests/quick-start-postgres.yaml
+	kustomize build manifests/quick-start/postgres > manifests/quick-start-postgres.yaml
 
 # lint/test/etc
 
@@ -219,7 +240,7 @@ test/e2e/manifests/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
 
 dist/postgres.yaml: test/e2e/manifests/postgres.yaml
 	# Create Postgres e2e manifests
-	cat test/e2e/manifests/postgres.yaml | sed 's/:latest/:$(IMAGE_TAG)/' > dist/postgres.yaml
+	cat test/e2e/manifests/postgres.yaml | sed 's/:latest/:$(IMAGE_TAG)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/postgres.yaml
 
 local:
 ifneq ($(CI),true)
@@ -239,13 +260,12 @@ install-postgres: dist/postgres.yaml local
 install: install-postgres
 
 .PHONY: start
-start: local controller-image cli-image install
+start: controller-image cli-image executor-image install local
 	# Start development environment
 ifeq ($(CI),false)
 	make down
 	make up
 endif
-	make executor-image
 	# Make the CLI
 	make cli
 	# Switch to "argo" ns.

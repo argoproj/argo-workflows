@@ -50,7 +50,7 @@ func GetRestConfig(token string) (*restclient.Config, error) {
 		restConfig.BearerTokenFile = ""
 		return restConfig, nil
 	case tokenVersion2:
-		value, err := getV2Token()
+		value, err := getV2TokenBody()
 		if err != nil {
 			return nil, err
 		}
@@ -154,7 +154,11 @@ func GetBearerToken(in *restclient.Config) (string, error) {
 			return "", nil
 		}
 	case tokenVersion2:
-		return getV2Token()
+		v2TokenBody, err := getV2TokenBody()
+		if err != nil {
+			return "", err
+		}
+		return formatToken(2, v2TokenBody), nil
 	}
 	return "", fmt.Errorf("invalid token version")
 }
