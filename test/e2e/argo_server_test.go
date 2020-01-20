@@ -353,13 +353,13 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			Status(200)
 	})
 
-	s.Given().
-		WorkflowName("test").
-		When().
-		WaitForWorkflowToStart(20*time.Second)
-
 	s.Run("List", func(t *testing.T) {
-		j := s.e(t).GET("/api/v1/workflows/").
+    	s.Given().
+	    	WorkflowName("test").
+		    When().
+		    WaitForWorkflowToStart(20*time.Second)
+
+		s.e(t).GET("/api/v1/workflows/argo").
 			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
 			Expect().
 			Status(200).
@@ -482,7 +482,7 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
 		s.Given().
 			CronWorkflow("@testdata/basic.yaml")
 
-		s.e(t).GET("/api/v1/cron-workflows/").
+		s.e(t).GET("/api/v1/cron-workflows/argo").
 			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
 			Expect().
 			Status(200).
