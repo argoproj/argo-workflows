@@ -1201,11 +1201,19 @@
       "description": "TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed",
       "type": "object",
       "properties": {
+<<<<<<< HEAD
         "secondsAfterCompletion": {
           "type": "integer",
           "format": "int32"
         },
         "secondsAfterFailure": {
+=======
+        "secondsAfterCompleted": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "secondsAfterFailed": {
+>>>>>>> e78dc2658f49a13376704572ce1b9b22e4ba847c
           "type": "integer",
           "format": "int32"
         },
@@ -1763,7 +1771,11 @@
           "x-kubernetes-patch-strategy": "merge"
         },
         "ttlSecondsAfterFinished": {
+<<<<<<< HEAD
           "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.",
+=======
+          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompleted instead.",
+>>>>>>> e78dc2658f49a13376704572ce1b9b22e4ba847c
           "type": "integer",
           "format": "int32"
         },
