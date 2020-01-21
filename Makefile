@@ -45,9 +45,6 @@ VERSION = ${GIT_TAG}
 override LDFLAGS += -X ${PACKAGE}.gitTag=${GIT_TAG}
 endif
 
-KUBECTX          := $(shell kubectl config current-context)
-ALLOWED_KUBECTXS := docker-desktop|docker-for-desktop|minikube|k3s-default
-
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
@@ -242,10 +239,11 @@ dist/postgres.yaml: test/e2e/manifests/postgres.yaml
 	# Create Postgres e2e manifests
 	cat test/e2e/manifests/postgres.yaml | sed 's/:latest/:$(IMAGE_TAG)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/postgres.yaml
 
+.PHONY: local
 local:
 ifneq ($(CI),true)
-	# kubectx $(KUBECTX) must be in $(ALLOWED_KUBECTXS)
-ifeq ($(findstring $(KUBECTX),$(ALLOWED_KUBECTXS)),)
+ifeq ($(findstring localhost,`kubectl config view --minify | grep 'server:' | grep -o localhost`),)
+	# we must run locally
 	exit 1
 endif
 endif
