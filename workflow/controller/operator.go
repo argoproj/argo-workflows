@@ -2111,3 +2111,8 @@ func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID str
 	}
 	return false, nil, nil
 }
+
+func todo() {
+	// TODO - deliberate lint fail
+	todo := ""
+}
