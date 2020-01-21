@@ -14,3 +14,6 @@ linters-settings:
     local-prefixes: github.com/argoproj/argo
 service:
   golangci-lint-version: 1.21.x
+  project-path: github.com/argoproj/argo
+  prepare:
+    - make cmd/server/static/static.go CI=true
