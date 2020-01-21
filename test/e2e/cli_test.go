@@ -36,7 +36,9 @@ func (s *CLISuite) TestCompletion() {
 func (s *CLISuite) TestToken() {
 	s.Given().RunCli([]string{"token"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
-		assert.Equal(t, fixtures.GetServiceAccountToken(s.RestConfig), output)
+		token, err := s.GetServiceAccountToken()
+		assert.NoError(t, err)
+		assert.Equal(t, token, output)
 	})
 }
 
