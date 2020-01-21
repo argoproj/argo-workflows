@@ -3,8 +3,6 @@ package fixtures
 import (
 	"bufio"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -28,15 +26,10 @@ import (
 	"github.com/argoproj/argo/workflow/packer"
 )
 
-var kubeConfig = os.Getenv("KUBECONFIG")
-
 const Namespace = "argo"
 const label = "argo-e2e"
 
 func init() {
-	if kubeConfig == "" {
-		kubeConfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
-	}
 	_ = commands.NewCommand()
 }
 
@@ -51,13 +44,6 @@ type E2ESuite struct {
 	cronClient            v1alpha1.CronWorkflowInterface
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	KubeClient            kubernetes.Interface
-}
-
-func (s *E2ESuite) SetupSuite() {
-	_, err := os.Stat(kubeConfig)
-	if os.IsNotExist(err) {
-		s.T().Skip("Skipping test: " + err.Error())
-	}
 }
 
 func (s *E2ESuite) BeforeTest(_, _ string) {

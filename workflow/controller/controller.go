@@ -278,20 +278,20 @@ func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan st
 		case <-ticker.C:
 			if wfc.offloadNodeStatusRepo.IsEnabled() {
 				log.Info("Performing periodic workflow GC")
-				uids, err := wfc.offloadNodeStatusRepo.ListOldUIDs(wfc.GetManagedNamespace())
+				oldUIDs, err := wfc.offloadNodeStatusRepo.ListOldUIDs(wfc.GetManagedNamespace())
 				if err != nil {
 					log.WithField("err", err).Error("Failed to list offloaded nodes")
 				}
-				list, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.GetManagedNamespace()).List(metav1.ListOptions{})
+				list, err := util.NewWorkflowLister(wfc.wfInformer).List()
 				if err != nil {
 					log.WithField("err", err).Error("Failed to list workflows")
 				}
 				wfs := make(map[types.UID]bool)
-				for _, wf := range list.Items {
+				for _, wf := range list {
 					wfs[wf.UID] = true
 				}
-				log.WithFields(log.Fields{"len_wfs": len(wfs), "len_offload_uids": len(uids)}).Info("Examining workflows")
-				for _, uid := range uids {
+				log.WithFields(log.Fields{"len_wfs": len(wfs), "len_old_uids": len(oldUIDs)}).Info("Comparing live workflows with old UIDs")
+				for _, uid := range oldUIDs {
 					_, ok := wfs[types.UID(uid)]
 					if !ok {
 						err := wfc.offloadNodeStatusRepo.Delete(string(uid))

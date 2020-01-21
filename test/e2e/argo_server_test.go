@@ -358,7 +358,6 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 		    When().
 		    WaitForWorkflowToStart(20*time.Second)
 
-	s.Run("List", func(t *testing.T) {
 		j := s.e(t).GET("/api/v1/workflows/argo").
 			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
 			Expect().
