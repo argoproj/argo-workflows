@@ -25,6 +25,10 @@ export class NamespaceFilter extends React.Component<Props, State> {
         };
     }
 
+    private get namespace() {
+        return this.state.namespace;
+    }
+
     private set namespace(namespace: string) {
         this.setState(state => {
             const namespaces = state.namespaces;
@@ -43,9 +47,12 @@ export class NamespaceFilter extends React.Component<Props, State> {
         services.info
             .get()
             .then(info => {
-                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
+                if (info.managedNamespace) {
+                    const namespaceChanged = info.managedNamespace !== this.namespace;
                     this.setState({editable: false, namespace: info.managedNamespace});
-                    this.props.onChange(info.managedNamespace);
+                    if (namespaceChanged) {
+                        this.props.onChange(info.managedNamespace);
+                    }
                 } else {
                     this.setState({editable: true});
                 }
