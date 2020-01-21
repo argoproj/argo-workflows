@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"os"
 	"testing"
 	"time"
 
@@ -20,8 +19,7 @@ type CLISuite struct {
 
 func (s *CLISuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
-	_ = os.Setenv("ARGO_SERVER", "localhost:2746")
-	_ = os.Setenv("ARGO_TOKEN", fixtures.GetServiceAccountToken())
+
 }
 
 func (s *CLISuite) AfterTest(suiteName, testName string) {
@@ -38,7 +36,7 @@ func (s *CLISuite) TestCompletion() {
 func (s *CLISuite) TestToken() {
 	s.Given().RunCli([]string{"token"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
-		assert.Equal(t, fixtures.GetServiceAccountToken(), output)
+		assert.Equal(t, fixtures.GetServiceAccountToken(s.RestConfig), output)
 	})
 }
 

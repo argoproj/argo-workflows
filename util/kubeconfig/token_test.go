@@ -22,8 +22,9 @@ func Test_getDefaultTokenVersion(t *testing.T) {
 	t.Run("Env token", func(t *testing.T) {
 		restConfig, err := clientcmd.DefaultClientConfig.ClientConfig()
 		assert.NoError(t, err)
-		restConfig.BearerToken="test"
+		restConfig.BearerToken="test12"
 		os.Setenv("ARGO_TOKEN", "test")
+		defer os.Unsetenv("ARGO_TOKEN")
 		token, err := GetBearerToken(restConfig)
 		assert.NoError(t, err)
 		assert.Equal(t,"test", token)

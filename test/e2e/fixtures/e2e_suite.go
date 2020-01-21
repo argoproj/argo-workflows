@@ -60,13 +60,14 @@ func (s *E2ESuite) SetupSuite() {
 }
 
 func (s *E2ESuite) BeforeTest(_, _ string) {
-	s.SetEnv()
+
 	s.Diagnostics = &Diagnostics{}
 	var err error
 	s.RestConfig, err = kubeconfig.DefaultRestConfig()
 	if err != nil {
 		panic(err)
 	}
+	s.SetEnv(s.RestConfig)
 	s.KubeClient, err = kubernetes.NewForConfig(s.RestConfig)
 	if err != nil {
 		panic(err)

@@ -33,7 +33,7 @@ type ArgoServerSuite struct {
 func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
 	var err error
-	s.bearerToken = fixtures.GetServiceAccountToken()
+	s.bearerToken = fixtures.GetServiceAccountToken(s.RestConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -72,7 +72,7 @@ func (s *ArgoServerSuite) TestInfo() {
 }
 
 func (s *ArgoServerSuite) TestUnauthorized() {
-	s.T().SkipNow() // TODO minikube doesn't support token auth
+	//s.T().SkipNow() // TODO minikube doesn't support token auth
 	token := s.bearerToken
 	defer func() { s.bearerToken = token }()
 	s.bearerToken = "test-token"

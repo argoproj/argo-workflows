@@ -1,13 +1,14 @@
 package fixtures
 
 import (
-	log "github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 	"os"
 	"os/exec"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 func runCli(diagnostics *Diagnostics, args []string) (string, error) {
@@ -20,23 +21,16 @@ func runCli(diagnostics *Diagnostics, args []string) (string, error) {
 	return stringOutput, err
 }
 
-
-func GetServiceAccountToken() string {
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-	overrides := clientcmd.ConfigOverrides{}
-	config := clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
-	restConfig, err := config.ClientConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
+func GetServiceAccountToken(restConfig *rest.Config) string {
 	// create the clientset
 	clientset, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
 	secretList, err := clientset.CoreV1().Secrets("argo").List(metav1.ListOptions{})
-
+	if err != nil {
+		log.Fatal(err)
+	}
 	for _, sec := range secretList.Items {
 		if strings.HasPrefix(sec.Name, "argo-server-token") {
 			return string(sec.Data["token"])
