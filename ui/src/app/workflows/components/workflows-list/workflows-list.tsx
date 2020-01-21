@@ -17,7 +17,7 @@ import {Query} from '../../../shared/components/query';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
-import {WorkflowSubmit} from "../workflow-submit";
+import {WorkflowSubmit} from '../workflow-submit';
 
 require('./workflows-list.scss');
 
