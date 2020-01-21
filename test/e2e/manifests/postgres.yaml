@@ -367,9 +367,6 @@ spec:
         - client
         - --loglevel
         - debug
-        env:
-        - name: ARGO_V2_TOKEN
-          value: password
         image: argoproj/argocli:latest
         imagePullPolicy: Never
         name: argo-server
