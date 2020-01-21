@@ -2117,6 +2117,7 @@ spec:
 `
 
 func TestEventInvalidSpec(t *testing.T) {
+	// Test whether a WorkflowFailed event is emitted in case of invalid spec
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(invalidSpec)
@@ -2150,6 +2151,7 @@ spec:
 `
 
 func TestEventTimeout(t *testing.T) {
+	// Test whether a WorkflowTimedOut event is emitted in case of timeout
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(timeout)
@@ -2196,6 +2198,7 @@ spec:
 `
 
 func TestEventFailArtifactRepoCm(t *testing.T) {
+	// Test whether a WorkflowFailed event is emitted in case of failure in loading artifact repository config map
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(failLoadArtifactRepoCm)
