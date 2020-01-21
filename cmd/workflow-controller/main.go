@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/argoproj/argo/workflow/cron"
 
 	"github.com/argoproj/pkg/cli"
@@ -31,16 +33,17 @@ const (
 // NewRootCommand returns an new instance of the workflow-controller main entrypoint
 func NewRootCommand() *cobra.Command {
 	var (
-		clientConfig            clientcmd.ClientConfig
-		configMap               string // --configmap
-		executorImage           string // --executor-image
-		executorImagePullPolicy string // --executor-image-pull-policy
-		logLevel                string // --loglevel
-		glogLevel               int    // --gloglevel
-		workflowWorkers         int    // --workflow-workers
-		podWorkers              int    // --pod-workers
-		namespaced              bool   // --namespaced
-		managedNamespace        string // --managed-namespace
+		clientConfig             clientcmd.ClientConfig
+		configMap                string // --configmap
+		executorImage            string // --executor-image
+		executorImagePullPolicy  string // --executor-image-pull-policy
+		containerRuntimeExecutor string
+		logLevel                 string // --loglevel
+		glogLevel                int    // --gloglevel
+		workflowWorkers          int    // --workflow-workers
+		podWorkers               int    // --pod-workers
+		namespaced               bool   // --namespaced
+		managedNamespace         string // --managed-namespace
 	)
 
 	var command = cobra.Command{
@@ -67,8 +70,16 @@ func NewRootCommand() *cobra.Command {
 			kubeclientset := kubernetes.NewForConfigOrDie(config)
 			wfclientset := wfclientset.NewForConfigOrDie(config)
 
+			if !namespaced && managedNamespace != "" {
+				log.Warn("ignoring --managed-namespace because --namespaced is false")
+				managedNamespace = ""
+			}
+			if namespaced && managedNamespace == "" {
+				managedNamespace = namespace
+			}
+
 			// start a controller on instances of our custom resource
-			wfController := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, executorImage, executorImagePullPolicy, configMap)
+			wfController := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
 			err = wfController.ResyncConfig()
 			if err != nil {
 				return err
@@ -81,18 +92,9 @@ func NewRootCommand() *cobra.Command {
 				fmt.Fprintf(os.Stderr, "it will be removed in next major release. Instead please add \n")
 				fmt.Fprintf(os.Stderr, "\"--namespaced\" to workflow-controller start args.\n")
 				fmt.Fprintf(os.Stderr, "-----------------------------------------------------------------\n\n")
-			} else {
-				if namespaced {
-					if len(managedNamespace) > 0 {
-						wfController.Config.Namespace = managedNamespace
-					} else {
-						wfController.Config.Namespace = namespace
-					}
-				}
 			}
-			//
 
-			cronController := cron.NewCronController(wfclientset, config, namespace)
+			cronController := cron.NewCronController(wfclientset, config, namespace, wfController.GetManagedNamespace())
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -104,7 +106,6 @@ func NewRootCommand() *cobra.Command {
 
 			// Wait forever
 			select {}
-
 		},
 	}
 
@@ -113,6 +114,7 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().StringVar(&executorImage, "executor-image", "", "Executor image to use (overrides value in configmap)")
 	command.Flags().StringVar(&executorImagePullPolicy, "executor-image-pull-policy", "", "Executor imagePullPolicy to use (overrides value in configmap)")
+	command.Flags().StringVar(&containerRuntimeExecutor, "container-runtime-executor", "", "Container runtime executor to use (overrides value in configmap)")
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.Flags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.Flags().IntVar(&workflowWorkers, "workflow-workers", 8, "Number of workflow workers")

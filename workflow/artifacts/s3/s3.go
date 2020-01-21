@@ -1,14 +1,17 @@
 package s3
 
 import (
+	"os"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/pkg/file"
 	argos3 "github.com/argoproj/pkg/s3"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
 )
 
 // S3ArtifactDriver is a driver for AWS S3
@@ -30,6 +33,7 @@ func (s3Driver *S3ArtifactDriver) newS3Client() (argos3.S3Client, error) {
 		AccessKey: s3Driver.AccessKey,
 		SecretKey: s3Driver.SecretKey,
 		RoleARN:   s3Driver.RoleARN,
+		Trace:     os.Getenv(common.EnvVarArgoTrace) == "1",
 	}
 	return argos3.NewS3Client(opts)
 }

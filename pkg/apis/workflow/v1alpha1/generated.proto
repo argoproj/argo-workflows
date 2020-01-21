@@ -172,6 +172,9 @@ message CronWorkflowSpec {
 
   // FailedJobsHistoryLimit is the number of successful jobs to be kept at a time
   optional int32 failedJobsHistoryLimit = 7;
+
+  // Timezone is the timezone against which the cron schedule will be calculated, e.g. "Asia/Tokyo". Default is machine's local time.
+  optional string timezone = 8;
 }
 
 message CronWorkflowStatus {
@@ -625,11 +628,11 @@ message SuspendTemplate {
 
 // TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed
 message TTLStrategy {
-  optional int32 secondsAfterCompleted = 1;
+  optional int32 secondsAfterCompletion = 1;
 
   optional int32 secondsAfterSuccess = 2;
 
-  optional int32 secondsAfterFailed = 3;
+  optional int32 secondsAfterFailure = 3;
 }
 
 // TarStrategy will tar and gzip the file or directory when saving
@@ -918,7 +921,7 @@ message WorkflowSpec {
   // deleted after ttlSecondsAfterFinished expires. If this field is unset,
   // ttlSecondsAfterFinished will not expire. If this field is set to zero,
   // ttlSecondsAfterFinished expires immediately after the Workflow finishes.
-  // DEPRECATED: Use TTLStrategy.SecondsAfterCompleted instead.
+  // DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.
   optional int32 ttlSecondsAfterFinished = 18;
 
   // TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
@@ -957,7 +960,7 @@ message WorkflowSpec {
 
   // SecurityContext holds pod-level security attributes and common container settings.
   // Optional: Defaults to empty.  See type description for default values of each field.
-  // +optiona
+  // +optional
   optional k8s.io.api.core.v1.PodSecurityContext securityContext = 26;
 
   // PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
@@ -984,6 +987,9 @@ message WorkflowStatus {
 
   // Nodes is a mapping between a node ID and the node's status.
   map<string, NodeStatus> nodes = 6;
+
+  // Whether on not node status has been offloaded to a database. If true, then Nodes and CompressedNodes will be empty.
+  optional bool offloadNodeStatus = 10;
 
   // StoredTemplates is a mapping between a template ref and the node's status.
   map<string, Template> storedTemplates = 9;
@@ -1057,6 +1063,6 @@ message WorkflowTemplateSpec {
   repeated Template templates = 1;
 
   // Arguments hold arguments to the template.
-  optional Arguments arguments = 2;
+  optional Arguments arguments = 3;
 }
 

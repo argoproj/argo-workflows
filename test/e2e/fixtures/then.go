@@ -1,29 +1,31 @@
 package fixtures
 
 import (
-	"os"
-	"os/exec"
 	"testing"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	argoexec "github.com/argoproj/pkg/exec"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/argoproj/argo/persist/sqldb"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
 
 type Then struct {
-	t                *testing.T
-	workflowName     string
-	cronWorkflowName string
-	client           v1alpha1.WorkflowInterface
-	cronClient       v1alpha1.CronWorkflowInterface
-	kubeClient       kubernetes.Interface
+	t                     *testing.T
+	diagnostics           *Diagnostics
+	workflowName          string
+	wfTemplateNames       []string
+	cronWorkflowName      string
+	client                v1alpha1.WorkflowInterface
+	cronClient            v1alpha1.CronWorkflowInterface
+	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
+	kubeClient            kubernetes.Interface
 }
 
-func (t *Then) Expect(block func(*testing.T, *wfv1.WorkflowStatus)) *Then {
+func (t *Then) Expect(block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
 	if t.workflowName == "" {
 		t.t.Fatal("No workflow to test")
 	}
@@ -32,11 +34,18 @@ func (t *Then) Expect(block func(*testing.T, *wfv1.WorkflowStatus)) *Then {
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	block(t.t, &wf.Status)
+	if wf.Status.OffloadNodeStatus {
+		offloaded, err := t.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace)
+		if err != nil {
+			t.t.Fatal(err)
+		}
+		wf.Status.Nodes = offloaded.Status.Nodes
+	}
+	block(t.t, &wf.ObjectMeta, &wf.Status)
 	return t
 }
 
-func (t *Then) ExpectCron(block func(*testing.T, *wfv1.CronWorkflow)) *Then {
+func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *Then {
 	if t.cronWorkflowName == "" {
 		t.t.Fatal("No cron workflow to test")
 	}
@@ -49,7 +58,7 @@ func (t *Then) ExpectCron(block func(*testing.T, *wfv1.CronWorkflow)) *Then {
 	return t
 }
 
-func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(*testing.T, *wfv1.WorkflowList)) *Then {
+func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *testing.T, wfList *wfv1.WorkflowList)) *Then {
 	log.WithFields(log.Fields{"test": t.t.Name()}).Info("Getting relevant workflows")
 	wfList, err := t.client.List(listOptions)
 	if err != nil {
@@ -78,16 +87,8 @@ func (t *Then) ExpectAuditEvents(block func(*testing.T, *apiv1.EventList)) *Then
 	return t
 }
 
-func (t *Then) RunCli(args []string, block func(*testing.T, string)) *Then {
-	cmd := exec.Command("../../../dist/argo", args...)
-	cmd.Env = os.Environ()
-	cmd.Dir = ""
-
-	output, err := argoexec.RunCommandExt(cmd, argoexec.CmdOpts{})
-	if err != nil {
-		t.t.Fatal(err)
-	}
-
-	block(t.t, output)
+func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err error)) *Then {
+	output, err := runCli(t.diagnostics, args)
+	block(t.t, output, err)
 	return t
 }

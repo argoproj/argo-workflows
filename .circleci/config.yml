@@ -8,16 +8,18 @@ commands:
       - restore_cache:
           name: Restore vendor cache
           keys:
-            - vendor-v2-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
-            - vendor-v1-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
+            - vendor-v6-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
       - run:
           name: Ensure dependencies
-          command: dep ensure -v
+          command: |
+            # dep ensure takes 5m, but is only needed if not cached
+            [[ -e vendor ]] || make vendor && touch vendor
       - save_cache:
           name: Save vendor cache
-          key: vendor-v2-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
+          key: vendor-v6-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - vendor
+          when: always
   install_golang:
     steps:
       - run:
@@ -31,18 +33,20 @@ commands:
     steps:
       - save_cache:
           name: Save Golang cache
-          key: go-v1-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
-          # https://circleci.com/docs/2.0/language-go/
+          key: go-v5-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - /home/circleci/.cache/go-build
             - /home/circleci/sdk/go1.12.6
+          when: always
   restore_go_cache:
     steps:
       - restore_cache:
           name: Restore Golang cache
           keys:
-            - go-v1-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
-            - go-v1-master-{{ .Environment.CIRCLE_JOB }}
+            - go-v5-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+            - go-v5-master-{{ .Environment.CIRCLE_JOB }}
+            - go-v4-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+            - go-v4-master-{{ .Environment.CIRCLE_JOB }}
   go_junit_report:
     steps:
       - run:
@@ -52,7 +56,7 @@ jobs:
   test:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
-      image: circleci/classic:201808-01
+      image: ubuntu-1604:201903-01
     steps:
       - restore_go_cache
       - install_golang
@@ -80,8 +84,11 @@ jobs:
   e2e:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
-      image: circleci/classic:201808-01
+      image: ubuntu-1604:201903-01
     steps:
+      - run:
+          name: Install Kustomize
+          command: cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
       - run:
           name: Install and start K3S v1.0.0
           command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.0 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
@@ -103,14 +110,7 @@ jobs:
           name: Create KUBECONFIG
           command: |
             mkdir -p ~/.kube
-            cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
-      - run: KUBECONFIG=~/.kube/config make cli start-e2e
-      - run:
-          name: Follow controller logs, to help diagnose failures
-          command: |
-            sleep 10
-            make logs-e2e
-          background: true
+            cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
       - run:
           name: Watch Docker events, to help diagnose failures
           command: docker events
@@ -119,6 +119,20 @@ jobs:
           name: Watch Kubernetes events, to help diagnose failures
           command: kubectl -n argo get events --watch
           background: true
+      - run:
+          name: Start Argo
+          command: mkdir dist && KUBECONFIG=~/.kube/config make start E2E_EXECUTOR=docker
+      - run:
+          name: Establish port forward
+          command: make pf
+          background: true
+      - run:
+          name: Follow logs, to help diagnose failures
+          command: make logs
+          background: true
+      - run:
+          name: Run smoke tests
+          command: make smoke
       - run:
           name: Run tests
           command: |
@@ -131,6 +145,13 @@ jobs:
       - store_artifacts:
           path: test-results
           destination: .
+  docker-build:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    machine:
+      image: ubuntu-1604:201903-01
+    steps:
+      - checkout
+      - run: docker build .
   ui:
     docker:
       - image: node:11.15.0
@@ -153,7 +174,7 @@ jobs:
       # - run: ./node_modules/.bin/codecov -p ..
       - run:
           name: Build
-          command: NODE_ENV='production' yarn build
+          command: yarn build
       - run:
           name: Lint
           command: yarn lint
@@ -164,3 +185,4 @@ workflows:
       - test
       - ui
       - e2e
+      - docker-build

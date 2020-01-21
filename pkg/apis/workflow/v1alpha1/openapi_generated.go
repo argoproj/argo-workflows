@@ -599,8 +599,15 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 							Format:      "int32",
 						},
 					},
+					"timezone": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\". Default is machine's local time.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
-				Required: []string{"schedule"},
+				Required: []string{"workflowSpec", "schedule"},
 			},
 		},
 		Dependencies: []string{
@@ -2188,7 +2195,7 @@ func schema_pkg_apis_workflow_v1alpha1_TTLStrategy(ref common.ReferenceCallback)
 				Description: "TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"secondsAfterCompleted": {
+					"secondsAfterCompletion": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"integer"},
 							Format: "int32",
@@ -2200,7 +2207,7 @@ func schema_pkg_apis_workflow_v1alpha1_TTLStrategy(ref common.ReferenceCallback)
 							Format: "int32",
 						},
 					},
-					"secondsAfterFailed": {
+					"secondsAfterFailure": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"integer"},
 							Format: "int32",
@@ -3145,7 +3152,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"ttlSecondsAfterFinished": {
 						SchemaProps: spec.SchemaProps{
-							Description: "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompleted instead.",
+							Description: "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
@@ -3289,6 +3296,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 									},
 								},
 							},
+						},
+					},
+					"offloadNodeStatus": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Whether on not node status has been offloaded to a database. If true, then Nodes and CompressedNodes will be empty.",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 					"storedTemplates": {

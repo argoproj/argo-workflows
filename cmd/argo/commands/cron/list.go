@@ -2,11 +2,12 @@ package cron
 
 import (
 	"fmt"
-	"github.com/argoproj/pkg/humanize"
 	"log"
 	"os"
 	"text/tabwriter"
 	"time"
+
+	"github.com/argoproj/pkg/humanize"
 
 	"github.com/spf13/cobra"
 	apiv1 "k8s.io/api/core/v1"
