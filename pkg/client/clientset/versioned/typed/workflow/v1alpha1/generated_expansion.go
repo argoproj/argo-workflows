@@ -2,6 +2,8 @@
 
 package v1alpha1
 
+type CronWorkflowExpansion interface{}
+
 type WorkflowExpansion interface{}
 
 type WorkflowTemplateExpansion interface{}

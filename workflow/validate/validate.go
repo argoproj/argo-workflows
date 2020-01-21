@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/robfig/cron"
+
 	"github.com/valyala/fasttemplate"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
@@ -169,6 +171,34 @@ func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNa
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
 		}
+	}
+	return nil
+}
+
+// ValidateCronWorkflow validates a CronWorkflow
+func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cronWf *wfv1.CronWorkflow) error {
+	if _, err := cron.ParseStandard(cronWf.Spec.Schedule); err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "cron schedule is malformed: %s", err)
+	}
+
+	switch cronWf.Spec.ConcurrencyPolicy {
+	case wfv1.AllowConcurrent, wfv1.ForbidConcurrent, wfv1.ReplaceConcurrent, "":
+		// Do nothing
+	default:
+		return errors.Errorf(errors.CodeBadRequest, "'%s' is not a valid concurrencyPolicy", cronWf.Spec.ConcurrencyPolicy)
+	}
+
+	if cronWf.Spec.StartingDeadlineSeconds != nil && *cronWf.Spec.StartingDeadlineSeconds < 0 {
+		return errors.Errorf(errors.CodeBadRequest, "startingDeadlineSeconds must be positive")
+	}
+
+	wf, err := common.ConvertToWorkflow(cronWf)
+	if err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "cannot convert to Workflow: %s", err)
+	}
+	err = ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+	if err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "cannot validate Workflow: %s", err)
 	}
 	return nil
 }

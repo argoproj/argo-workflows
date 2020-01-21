@@ -897,7 +897,7 @@ spec:
         arguments:
           parameters:
           - name: message
-            value: "{{item.os}} {{item.version}}"
+            value: "{{item.os}} {{item.version}} JSON({{item}})"
         withItems:
         - {os: debian, version: 9.1}
         - {os: debian, version: 9.1}
@@ -910,7 +910,7 @@ spec:
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
-      args: ["cowsay {{inputs.parameters.message}}"]
+      args: ["cowsay \"{{inputs.parameters.message}}\""]
 `
 
 func TestExpandWithItemsMap(t *testing.T) {
@@ -924,6 +924,7 @@ func TestExpandWithItemsMap(t *testing.T) {
 	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0].Steps[0])
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(newSteps))
+	assert.Equal(t, "debian 9.1 JSON({\"os\":\"debian\",\"version\":9.1})", *newSteps[0].Arguments.Parameters[0].Value)
 }
 
 var suspendTemplate = `
@@ -1932,6 +1933,61 @@ func TestWithParamAsJsonList(t *testing.T) {
 	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 4, len(pods.Items))
+}
+
+var stepsOnExit = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-on-exit
+spec:
+  entrypoint: suspend
+  templates:
+  - name: suspend
+    steps:
+    - - name: leafA
+        onExit: exitContainer
+        template: whalesay
+    - - name: leafB
+        onExit: exitContainer
+        template: whalesay
+
+  - name: whalesay
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["hello world"]
+
+  - name: exitContainer
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["goodbye world"]
+`
+
+func TestStepsOnExit(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// Test list expansion
+	wf := unmarshalWF(stepsOnExit)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	woc.operate()
+
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	onExitNodeIsPresent := false
+	for _, node := range wf.Status.Nodes {
+		if strings.Contains(node.Name, "onExit") {
+			onExitNodeIsPresent = true
+			break
+		}
+	}
+	assert.True(t, onExitNodeIsPresent)
 }
 
 var testTemplateScopeWorkflowYaml = `

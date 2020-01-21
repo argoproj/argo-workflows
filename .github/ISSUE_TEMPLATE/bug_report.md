@@ -53,3 +53,9 @@ kubectl logs <failedpodname> -c init
 kubectl logs <failedpodname> -c wait
 kubectl logs -n argo $(kubectl get pods -l app=workflow-controller -n argo -o name)
 ```
+
+---
+<!-- Issue Author: Don't delete this message to ecourage other users to support your issue! -->
+**Message from the maintainers**:
+
+If you are impacted by this bug please add a 👍 reaction to this issue! We often sort issues this way to know what to prioritize.

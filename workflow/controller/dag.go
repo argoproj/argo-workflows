@@ -201,8 +201,11 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 	return true
 }
 
-func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, boundaryID string) error {
-	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
+func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) (*wfv1.NodeStatus, error) {
+	node := woc.getNodeByName(nodeName)
+	if node == nil {
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSteps, templateScope, tmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
+	}
 
 	defer func() {
 		if woc.wf.Status.Nodes[node.ID].Completed() {
@@ -230,19 +233,19 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	}
 
 	// kick off execution of each target task asynchronously
-	for _, taskNames := range targetTasks {
-		woc.executeDAGTask(dagCtx, taskNames)
+	for _, taskName := range targetTasks {
+		woc.executeDAGTask(dagCtx, taskName)
 	}
 
 	// check if we are still running any tasks in this dag and return early if we do
 	dagPhase := dagCtx.assessDAGPhase(targetTasks, woc.wf.Status.Nodes)
 	switch dagPhase {
 	case wfv1.NodeRunning:
-		return nil
+		return node, nil
 	case wfv1.NodeError, wfv1.NodeFailed:
 		woc.updateOutboundNodesForTargetTasks(dagCtx, targetTasks, nodeName)
 		_ = woc.markNodePhase(nodeName, dagPhase)
-		return nil
+		return node, nil
 	}
 
 	// set outputs from tasks in order for DAG templates to support outputs
@@ -260,7 +263,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	}
 	outputs, err := getTemplateOutputsFromScope(tmpl, &scope)
 	if err != nil {
-		return err
+		return node, err
 	}
 	if outputs != nil {
 		node = woc.getNodeByName(nodeName)
@@ -271,7 +274,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	woc.updateOutboundNodesForTargetTasks(dagCtx, targetTasks, nodeName)
 
 	_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
-	return nil
+	return node, nil
 }
 
 func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(dagCtx *dagContext, targetTasks []string, nodeName string) {
@@ -300,11 +303,18 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	dagCtx.visited[taskName] = true
 
 	node := dagCtx.GetTaskNode(taskName)
+	task := dagCtx.getTask(taskName)
 	if node != nil && node.Completed() {
+		// Run the node's onExit node, if any. Only leaf nodes will have their onExit nodes executed here. Nodes that
+		// have dependencies will have their onExit nodes executed below
+		hasOnExitNode, onExitNode, err := woc.runOnExitNode(task.Name, task.OnExit, dagCtx.boundaryID)
+		if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+			// The onExit node is either not complete or has errored out, return.
+			return
+		}
 		return
 	}
 	// Check if our dependencies completed. If not, recurse our parents executing them if necessary
-	task := dagCtx.getTask(taskName)
 	dependenciesCompleted := true
 	dependenciesSuccessful := true
 	nodeName := dagCtx.taskNodeName(taskName)
@@ -312,7 +322,16 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		depNode := dagCtx.GetTaskNode(depName)
 		if depNode != nil {
 			if depNode.Completed() {
-				if !depNode.Successful() && !dagCtx.getTask(depName).ContinuesOn(depNode.Phase) {
+				depTask := dagCtx.getTask(depName)
+				// Run the node's onExit node, if any. Only nodes that have dependencies will have their onExit nodes
+				// executed here. Leaf nodes will have their onExit nodes executed above
+				hasOnExitNode, onExitNode, err := woc.runOnExitNode(depTask.Name, depTask.OnExit, dagCtx.boundaryID)
+				if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+					// The onExit node is either not complete or has errored out, return.
+					return
+				}
+
+				if !depNode.Successful() && !depTask.ContinuesOn(depNode.Phase) {
 					dependenciesSuccessful = false
 				}
 				continue

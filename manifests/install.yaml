@@ -2,8 +2,33 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
+  name: cronworkflows.argoproj.io
+spec:
+  group: argoproj.io
+  names:
+    kind: CronWorkflow
+    plural: cronworkflows
+    shortNames:
+    - cronwf
+    - cwf
+  scope: Namespaced
+  version: v1alpha1
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
   name: workflows.argoproj.io
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.phase
+    description: Status of the workflow
+    name: Status
+    type: string
+  - JSONPath: .status.startedAt
+    description: When the workflow was started
+    format: date-time
+    name: Age
+    type: date
   group: argoproj.io
   names:
     kind: Workflow
@@ -35,7 +60,7 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: argo-ui
+  name: argo-server
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -63,6 +88,8 @@ rules:
   - workflows/finalizers
   - workflowtemplates
   - workflowtemplates/finalizers
+  - cronworkflows
+  - cronworkflows/finalizers
   verbs:
   - create
   - delete
@@ -87,6 +114,8 @@ rules:
   - workflows/finalizers
   - workflowtemplates
   - workflowtemplates/finalizers
+  - cronworkflows
+  - cronworkflows/finalizers
   verbs:
   - create
   - delete
@@ -111,6 +140,8 @@ rules:
   - workflows/finalizers
   - workflowtemplates
   - workflowtemplates/finalizers
+  - cronworkflows
+  - cronworkflows/finalizers
   verbs:
   - get
   - list
@@ -161,6 +192,7 @@ rules:
   - update
   - patch
   - delete
+  - create
 - apiGroups:
   - argoproj.io
   resources:
@@ -177,12 +209,38 @@ rules:
   verbs:
   - get
   - list
+- apiGroups:
+  - argoproj.io
+  resources:
+  - cronworkflows
+  - cronworkflows/finalizers
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: argo-ui-cluster-role
+  name: argo-server-cluster-role
 rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - watch
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
 - apiGroups:
   - ""
   resources:
@@ -204,10 +262,15 @@ rules:
   resources:
   - workflows
   - workflowtemplates
+  - cronworkflows
   verbs:
+  - create
   - get
   - list
   - watch
+  - update
+  - patch
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -237,14 +300,14 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: argo-ui-binding
+  name: argo-server-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: argo-ui-cluster-role
+  name: argo-server-cluster-role
 subjects:
 - kind: ServiceAccount
-  name: argo-ui
+  name: argo-server
   namespace: argo
 ---
 apiVersion: v1
@@ -255,43 +318,42 @@ metadata:
 apiVersion: v1
 kind: Service
 metadata:
-  name: argo-ui
+  name: argo-server
 spec:
   ports:
-  - port: 80
-    targetPort: 8001
+  - port: 2746
+    targetPort: 2746
   selector:
-    app: argo-ui
+    app: argo-server
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: argo-ui
+  name: argo-server
 spec:
   selector:
     matchLabels:
-      app: argo-ui
+      app: argo-server
   template:
     metadata:
       labels:
-        app: argo-ui
+        app: argo-server
     spec:
       containers:
-      - env:
-        - name: ARGO_NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        - name: IN_CLUSTER
-          value: "true"
-        - name: ENABLE_WEB_CONSOLE
-          value: "false"
-        - name: BASE_HREF
-          value: /
-        image: argoproj/argoui:latest
-        name: argo-ui
-      serviceAccountName: argo-ui
+      - args:
+        - server
+        image: argoproj/argocli:latest
+        name: argo-server
+        ports:
+        - containerPort: 2746
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 2746
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 30
+      serviceAccountName: argo-server
 ---
 apiVersion: apps/v1
 kind: Deployment

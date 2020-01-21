@@ -1,10 +1,12 @@
 import * as React from 'react';
 
 import * as models from '../../../models';
+import {Timestamp} from '../../shared/components/timestamp';
 import {services} from '../../shared/services';
 
 interface Props {
     workflow: models.Workflow;
+    archived: boolean;
 }
 
 export const WorkflowArtifacts = (props: Props) => {
@@ -17,7 +19,7 @@ export const WorkflowArtifacts = (props: Props) => {
                 const items = nodeOutputs.artifacts || [];
                 return items.map(item =>
                     Object.assign({}, item, {
-                        downloadUrl: services.workflows.getArtifactDownloadUrl(props.workflow, node.id, item.name),
+                        downloadUrl: services.workflows.getArtifactDownloadUrl(props.workflow, node.id, item.name, props.archived),
                         stepName: node.name,
                         dateCreated: node.finishedAt,
                         nodeName
@@ -50,7 +52,9 @@ export const WorkflowArtifacts = (props: Props) => {
                         </div>
                         <div className='columns small-4'>{artifact.stepName}</div>
                         <div className='columns small-3'>{artifact.path}</div>
-                        <div className='columns small-3'>{artifact.dateCreated}</div>
+                        <div className='columns small-3'>
+                            <Timestamp date={artifact.dateCreated} />
+                        </div>
                     </div>
                 ))}
             </div>
