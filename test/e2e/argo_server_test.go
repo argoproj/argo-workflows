@@ -352,10 +352,11 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			Status(200)
 	})
 
-	s.Given().
-		WorkflowName("test").
-		When().
-		WaitForWorkflowToStart(20*time.Second)
+	s.Run("List", func(t *testing.T) {
+    	s.Given().
+	    	WorkflowName("test").
+		    When().
+		    WaitForWorkflowToStart(20*time.Second)
 
 	s.Run("List", func(t *testing.T) {
 		j := s.e(t).GET("/api/v1/workflows/argo").
