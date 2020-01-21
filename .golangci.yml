@@ -16,4 +16,4 @@ service:
   golangci-lint-version: 1.21.x
   project-path: github.com/argoproj/argo
   prepare:
-    - make cmd/server/static/static.go CI=true
+    - make cmd/server/static/files.go CI=true
