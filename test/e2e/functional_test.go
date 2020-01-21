@@ -98,11 +98,12 @@ func (s *FunctionalSuite) TestFastFailOnPodTermination() {
 }
 
 func (s *FunctionalSuite) TestEventOnNodeFail() {
+	// Test whether an WorkflowFailed event (with appropriate message) is emitted in case of node failure
 	s.Given().
 		Workflow("@expectedfailures/failed-step-event.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(120 * time.Second).
+		WaitForWorkflow(30 * time.Second).
 		Then().
 		ExpectAuditEvents(func(t *testing.T, events *apiv1.EventList) {
 			found := false
@@ -119,11 +120,12 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 }
 
 func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
+	// Test whether an WorkflowSuccess event is emitted in case of successfully completed workflow
 	s.Given().
 		Workflow("@functional/success-event.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(120 * time.Second).
+		WaitForWorkflow(30 * time.Second).
 		Then().
 		ExpectAuditEvents(func(t *testing.T, events *apiv1.EventList) {
 			found := false
@@ -140,6 +142,7 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 }
 
 func (s *FunctionalSuite) TestEventOnPVCFail() {
+	//  Test whether an WorkflowFailed event (with appropriate message) is emitted in case of error in creating the PVC
 	s.Given().
 		Workflow("@expectedfailures/volumes-pvc-fail-event.yaml").
 		When().
