@@ -226,8 +226,6 @@ rules:
   resources:
   - events
   verbs:
-  - get
-  - list
   - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1

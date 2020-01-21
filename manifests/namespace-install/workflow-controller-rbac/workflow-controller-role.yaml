@@ -83,6 +83,4 @@ rules:
   resources:
   - events
   verbs:
-  - get
-  - list
   - create
