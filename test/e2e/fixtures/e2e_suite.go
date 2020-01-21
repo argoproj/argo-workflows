@@ -3,8 +3,6 @@ package fixtures
 import (
 	"bufio"
 	"fmt"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -25,35 +23,27 @@ import (
 	"github.com/argoproj/argo/workflow/packer"
 )
 
-var kubeConfig = os.Getenv("KUBECONFIG")
-
 const Namespace = "argo"
 const label = "argo-e2e"
 
 func init() {
-	if kubeConfig == "" {
-		kubeConfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
-	}
 	_ = commands.NewCommand()
 }
 
 type E2ESuite struct {
 	suite.Suite
 	Env
-	Diagnostics           *Diagnostics
-	Persistence           *Persistence
-	RestConfig            *rest.Config
-	wfClient              v1alpha1.WorkflowInterface
-	wfTemplateClient      v1alpha1.WorkflowTemplateInterface
-	cronClient            v1alpha1.CronWorkflowInterface
-	KubeClient            kubernetes.Interface
+	Diagnostics      *Diagnostics
+	Persistence      *Persistence
+	RestConfig       *rest.Config
+	wfClient         v1alpha1.WorkflowInterface
+	wfTemplateClient v1alpha1.WorkflowTemplateInterface
+	cronClient       v1alpha1.CronWorkflowInterface
+	KubeClient       kubernetes.Interface
 }
 
 func (s *E2ESuite) SetupSuite() {
-	_, err := os.Stat(kubeConfig)
-	if os.IsNotExist(err) {
-		s.T().Skip("Skipping test: " + err.Error())
-	}
+    var err error
 	s.RestConfig, err = kubeconfig.DefaultRestConfig()
 	if err != nil {
 		panic(err)

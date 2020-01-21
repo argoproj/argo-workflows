@@ -370,6 +370,8 @@ spec:
         env:
         - name: ARGO_V2_TOKEN
           value: password
+        - name: UPPERIO_DB_DEBUG
+          value: "1"
         image: argoproj/argocli:latest
         imagePullPolicy: Never
         name: argo-server
@@ -448,6 +450,8 @@ spec:
           value: "true"
         - name: WORKFLOW_GC_PERIOD
           value: 30s
+        - name: UPPERIO_DB_DEBUG
+          value: "1"
         image: argoproj/workflow-controller:latest
         imagePullPolicy: Never
         name: workflow-controller

@@ -26,3 +26,5 @@
       value: "true"
     - name: WORKFLOW_GC_PERIOD
       value: 30s
+    - name: UPPERIO_DB_DEBUG
+      value: "1"
