@@ -240,6 +240,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	// Mark the parent node as running again and the lastChild as errored.
 	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
 	woc.markNodePhase(lastChild.Name, wfv1.NodeError)
+	// TODO - should lint fail
 	woc.processNodeRetries(n, retries)
 	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
