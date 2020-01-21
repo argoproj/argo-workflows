@@ -132,7 +132,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         }}>
                         <div>{this.renderWorkflows(ctx)}</div>
                         <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
-                            <WorkflowSubmit defaultWorkflow={exampleWorkflow(this.namespace)} />
+                            <WorkflowSubmit defaultWorkflow={exampleWorkflow(this.namespace)} ctx={ctx}/>
                         </SlidingPanel>
                     </Page>
                 )}

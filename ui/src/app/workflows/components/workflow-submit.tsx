@@ -2,11 +2,12 @@ import {Formik} from 'formik';
 import * as jsYaml from 'js-yaml';
 import * as React from 'react';
 import * as models from '../../../models';
-import {AppContext} from '../../shared/context';
+import {ContextApis} from '../../shared/context';
 import {services} from '../../shared/services';
 
 interface WorkflowSubmitProps {
     defaultWorkflow: models.Workflow;
+    ctx: ContextApis
 }
 
 interface WorkflowSubmitState {
@@ -32,12 +33,13 @@ export class WorkflowSubmit extends React.Component<WorkflowSubmitProps, Workflo
                     onSubmit={(values, {setSubmitting}) => {
                         services.workflows
                             .create(values.wf, values.wf.metadata.namespace)
-                            .then(wf => this.appContext.apis.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`))
-                            .catch(error => this.setState({error}));
-                        setTimeout(() => {
-                            alert(JSON.stringify(values, null, 2));
-                            setSubmitting(false);
-                        }, 400);
+                            .then(wf => this.props.ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`))
+                            .then(_ => setSubmitting(false))
+                            .catch(error => {
+                                this.setState({error});
+                                console.log(error);
+                                setSubmitting(false)
+                            });
                     }}>
                     {(formikApi: any) => (
                         <form onSubmit={formikApi.handleSubmit}>
@@ -113,9 +115,5 @@ export class WorkflowSubmit extends React.Component<WorkflowSubmitProps, Workflo
                 })}
             </div>
         );
-    }
-
-    private get appContext(): AppContext {
-        return this.context as AppContext;
     }
 }
