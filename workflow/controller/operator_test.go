@@ -199,8 +199,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
-	var retryLimit int32
-	retryLimit = 2
+	retryLimit := int32(2)
 	retries.Limit = &retryLimit
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
 	woc.wf.Status.Nodes[nodeID] = *node
@@ -240,8 +239,8 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	// Mark the parent node as running again and the lastChild as errored.
 	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
 	woc.markNodePhase(lastChild.Name, wfv1.NodeError)
-	// TODO - should lint fail
-	woc.processNodeRetries(n, retries)
+	_, _, err = woc.processNodeRetries(n, retries)
+	assert.NoError(t, err)
 	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
@@ -272,8 +271,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
-	var retryLimit int32
-	retryLimit = 2
+	retryLimit := int32(2)
 	retries.Limit = &retryLimit
 	retries.RetryPolicy = wfv1.RetryPolicyOnFailure
 	woc.wf.Status.Nodes[nodeID] = *node
@@ -314,7 +312,8 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	// Parent node should also be errored because retry on error is disabled
 	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
 	woc.markNodePhase(lastChild.Name, wfv1.NodeError)
-	woc.processNodeRetries(n, retries)
+	_, _, err = woc.processNodeRetries(n, retries)
+	assert.NoError(t, err)
 	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, wfv1.NodeError, n.Phase)
 }

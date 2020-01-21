@@ -13,17 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/util/retry"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/config"
-	"github.com/argoproj/argo/workflow/packer"
-	"github.com/argoproj/argo/workflow/templateresolution"
-	"github.com/argoproj/argo/workflow/util"
-	"github.com/argoproj/argo/workflow/validate"
 	"github.com/argoproj/pkg/humanize"
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
 	"github.com/argoproj/pkg/strftime"
@@ -37,6 +26,18 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
+
+	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/retry"
+	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/config"
+	"github.com/argoproj/argo/workflow/packer"
+	"github.com/argoproj/argo/workflow/templateresolution"
+	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/argo/workflow/validate"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
