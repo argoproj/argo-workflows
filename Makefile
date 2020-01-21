@@ -28,7 +28,7 @@ endif
 # perform static compilation
 STATIC_BUILD          ?= true
 CI                    ?= false
-K3D                   ?= $(shell if [ "$(kubectl config current-context)" = "k3s-default" ]; then echo true; else echo false; fi)
+K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 
 override LDFLAGS += \
   -X ${PACKAGE}.version=$(VERSION) \
