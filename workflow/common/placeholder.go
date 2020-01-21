@@ -1,6 +1,9 @@
 package common
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // placeholderGenerator is to generate dynamically-generated placeholder strings.
 type placeholderGenerator struct {
@@ -17,4 +20,8 @@ func (p *placeholderGenerator) NextPlaceholder() string {
 	s := fmt.Sprintf("placeholder-%d", p.index)
 	p.index = p.index + 1
 	return s
+}
+
+func (p *placeholderGenerator) IsPlaceholder(s string) bool {
+	return strings.HasPrefix(s, "placeholder-")
 }
