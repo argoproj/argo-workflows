@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -41,6 +42,7 @@ func init() {
 
 type E2ESuite struct {
 	suite.Suite
+	Env
 	Diagnostics           *Diagnostics
 	Persistence           *Persistence
 	RestConfig            *rest.Config
@@ -59,12 +61,18 @@ func (s *E2ESuite) SetupSuite() {
 }
 
 func (s *E2ESuite) BeforeTest(_, _ string) {
+
 	s.Diagnostics = &Diagnostics{}
 	var err error
 	s.RestConfig, err = kubeconfig.DefaultRestConfig()
 	if err != nil {
 		panic(err)
 	}
+	token, err := s.GetServiceAccountToken()
+	if err != nil {
+		panic(err)
+	}
+	s.SetEnv(token)
 	s.KubeClient, err = kubernetes.NewForConfig(s.RestConfig)
 	if err != nil {
 		panic(err)
@@ -162,6 +170,25 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	s.Persistence = newPersistence()
 	s.Persistence.DeleteEverything()
 }
+
+func (s *E2ESuite) GetServiceAccountToken() (string, error) {
+	// create the clientset
+	clientset, err := kubernetes.NewForConfig(s.RestConfig)
+	if err != nil {
+		return "", err
+	}
+	secretList, err := clientset.CoreV1().Secrets("argo").List(metav1.ListOptions{})
+	if err != nil {
+		return "", err
+	}
+	for _, sec := range secretList.Items {
+		if strings.HasPrefix(sec.Name, "argo-server-token") {
+			return string(sec.Data["token"]), nil
+		}
+	}
+	return "", nil
+}
+
 func (s *E2ESuite) Run(name string, f func(t *testing.T)) {
 	t := s.T()
 	if t.Failed() {
@@ -174,7 +201,7 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 	if s.T().Failed() {
 		s.printDiagnostics()
 	}
-	_ = s.Persistence.Close()
+	s.UnsetEnv()
 }
 
 func (s *E2ESuite) printDiagnostics() {

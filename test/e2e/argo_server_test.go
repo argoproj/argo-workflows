@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/test/e2e/fixtures"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -17,10 +19,6 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/e2e/fixtures"
-	"github.com/argoproj/argo/util/kubeconfig"
 )
 
 const baseUrl = "http://localhost:2746"
@@ -35,10 +33,11 @@ type ArgoServerSuite struct {
 func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
 	var err error
-	s.bearerToken, err = kubeconfig.GetBearerToken(s.RestConfig)
+	s.bearerToken, err = s.GetServiceAccountToken()
 	if err != nil {
 		panic(err)
 	}
+
 }
 
 func (s *ArgoServerSuite) AfterTest(suiteName, testName string) {
@@ -75,7 +74,7 @@ func (s *ArgoServerSuite) TestInfo() {
 func (s *ArgoServerSuite) TestUnauthorized() {
 	token := s.bearerToken
 	defer func() { s.bearerToken = token }()
-	s.bearerToken = ""
+	s.bearerToken = "test-token"
 	s.e(s.T()).GET("/api/v1/workflows/argo").
 		Expect().
 		Status(401)
@@ -359,7 +358,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 		WaitForWorkflowToStart(20*time.Second)
 
 	s.Run("List", func(t *testing.T) {
-		j := s.e(t).GET("/api/v1/workflows/").
+		j := s.e(t).GET("/api/v1/workflows/argo").
 			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
 			Expect().
 			Status(200).
@@ -482,7 +481,7 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
 		s.Given().
 			CronWorkflow("@testdata/basic.yaml")
 
-		s.e(t).GET("/api/v1/cron-workflows/").
+		s.e(t).GET("/api/v1/cron-workflows/argo").
 			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
 			Expect().
 			Status(200).
@@ -602,7 +601,12 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 		req.Close = true
 		resp, err := http.DefaultClient.Do(req)
 		assert.NoError(t, err)
-		defer func() { _ = resp.Body.Close() }()
+		assert.NotNil(t, resp)
+		defer func() {
+			if resp != nil {
+				_ = resp.Body.Close()
+			}
+		}()
 		if assert.Equal(t, 200, resp.StatusCode) {
 			assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
 			s := bufio.NewScanner(resp.Body)

@@ -45,7 +45,7 @@ type WorkflowTemplateSpec struct {
 	// Templates is a list of workflow templates.
 	Templates []Template `json:"templates" protobuf:"bytes,1,rep,name=templates"`
 	// Arguments hold arguments to the template.
-	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,2,opt,name=arguments"`
+	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
 }
 
 // GetTemplateByName retrieves a defined template by its name
