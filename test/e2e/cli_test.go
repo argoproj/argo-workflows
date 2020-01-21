@@ -19,6 +19,7 @@ type CLISuite struct {
 
 func (s *CLISuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
+
 }
 
 func (s *CLISuite) AfterTest(suiteName, testName string) {
@@ -35,7 +36,9 @@ func (s *CLISuite) TestCompletion() {
 func (s *CLISuite) TestToken() {
 	s.Given().RunCli([]string{"token"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
-		assert.Equal(t, "v2:password", output)
+		token, err := s.GetServiceAccountToken()
+		assert.NoError(t, err)
+		assert.Equal(t, token, output)
 	})
 }
 

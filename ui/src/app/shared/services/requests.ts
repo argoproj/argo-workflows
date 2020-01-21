@@ -18,7 +18,8 @@ const getToken = () => localStorage.getItem('token');
 
 const auth = (req: SuperAgentRequest) => {
     const token = getToken();
-    return (token !== null ? req.auth(token, {type: 'bearer'}) : req).on('error', handle);
+
+    return (token !== null && token !== '' ? req.auth(token, {type: 'bearer'}) : req).on('error', handle);
 };
 
 const handle = (err: any) => {
