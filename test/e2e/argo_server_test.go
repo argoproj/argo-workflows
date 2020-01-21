@@ -72,7 +72,6 @@ func (s *ArgoServerSuite) TestInfo() {
 }
 
 func (s *ArgoServerSuite) TestUnauthorized() {
-	//s.T().SkipNow() // TODO minikube doesn't support token auth
 	token := s.bearerToken
 	defer func() { s.bearerToken = token }()
 	s.bearerToken = "test-token"
