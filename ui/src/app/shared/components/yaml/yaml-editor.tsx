@@ -52,7 +52,7 @@ export class YamlEditor<T> extends React.Component<Props<T>, State> {
             <div>
                 {(this.state.editing && (
                     <button onClick={() => this.submit()} className='argo-button argo-button--base'>
-                        Save
+                        Submit
                     </button>
                 )) || (
                     <button onClick={() => this.setState({editing: true})} className='argo-button argo-button--base'>

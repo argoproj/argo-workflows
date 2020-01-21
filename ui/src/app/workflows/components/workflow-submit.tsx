@@ -12,6 +12,7 @@ interface WorkflowSubmitState {
     wfString: string;
 }
 
+
 export class WorkflowSubmit extends React.Component<WorkflowSubmitProps, WorkflowSubmitState> {
     constructor(props: WorkflowSubmitProps) {
         super(props);
@@ -33,34 +34,25 @@ export class WorkflowSubmit extends React.Component<WorkflowSubmitProps, Workflo
                         }, 400);
                     }}
                 >
-                    {({
-                          values,
-                          errors,
-                          touched,
-                          handleChange,
-                          handleBlur,
-                          handleSubmit,
-                          isSubmitting,
-                          setFieldValue
-                          /* and other goodies */
-                      }) => (
-                        <form onSubmit={handleSubmit}>
+                    {(formikApi: any) => (
+                        <form onSubmit={formikApi.handleSubmit}>
                             <div className='white-box editable-panel'>
                                 <h4>Submit New Workflow</h4>
-                                <button type="submit" className='argo-button argo-button--base' disabled={isSubmitting}>
+                                <button type="submit" className='argo-button argo-button--base'
+                                        disabled={formikApi.isSubmitting}>
                                     Submit
                                 </button>
                                 <textarea
                                     name={"wfString"}
                                     className='yaml'
-                                    value={values.wfString}
+                                    value={formikApi.values.wfString}
                                     onChange={e => {
-                                        handleChange(e);
+                                        formikApi.handleChange(e);
                                     }}
                                     onBlur={e => {
-                                        handleBlur(e);
+                                        formikApi.handleBlur(e);
                                         try {
-                                            setFieldValue("wf", jsYaml.load(e.currentTarget.value))
+                                            formikApi.setFieldValue("wf", jsYaml.load(e.currentTarget.value))
                                         } catch (e) {
                                             console.log("INVALID YAML")
                                         }
@@ -69,32 +61,11 @@ export class WorkflowSubmit extends React.Component<WorkflowSubmitProps, Workflo
                                     autoFocus={true}
                                 />
 
-                                <div className='white-box__details'>
-                                    {console.log(values.wf)}
-                                    {values.wf && values.wf.spec && values.wf.spec.arguments &&
-                                    values.wf.spec.arguments.parameters &&
-                                    values.wf.spec.arguments.parameters.map(function (param: models.Parameter, index: number) {
-                                        if (param != null) {
-                                            return (
-                                                <div className='argo-form-row'>
-                                                    <label className='argo-label-placeholder'
-                                                           htmlFor={"wf.spec.arguments.parameters[" + index + "].value"}>
-                                                        {param.name}
-                                                    </label>
-                                                    <input className='argo-field'
-                                                           key={"wf.spec.arguments.parameters[" + index + "].value"}
-                                                           name={"wf.spec.arguments.parameters[" + index + "].value"}
-                                                           type={"text"}
-                                                           value={param.value} onChange={handleChange} onBlur={e => {
-                                                        handleBlur(e);
-                                                        setFieldValue("wfString", jsYaml.dump(values.wf))
-                                                    }}/>
-                                                </div>
-                                            )
+                                {/* Workflow-level parameters*/}
+                                {formikApi.values.wf && formikApi.values.wf.spec && formikApi.values.wf.spec.arguments &&
+                                formikApi.values.wf.spec.arguments.parameters &&
+                                this.renderParameterFields("Workflow Parameters", "wf.spec.arguments", formikApi.values.wf.spec.arguments.parameters, formikApi)}
 
-                                        }
-                                    })}
-                                </div>
                             </div>
                         </form>
                     )}
@@ -103,9 +74,29 @@ export class WorkflowSubmit extends React.Component<WorkflowSubmitProps, Workflo
         )
     }
 
-
-    // private get appContext(): AppContext {
-    //     return this.context as AppContext;
-    // }
-
+    private renderParameterFields(sectionTitle: string, path: string, parameters: models.Parameter[], formikApi: any): JSX.Element {
+        return (<div className='white-box__details' style={{paddingTop: "50px"}}>
+            <h5>{sectionTitle}</h5>
+            {parameters.map(function (param: models.Parameter, index: number) {
+                if (param != null) {
+                    return (
+                        <div className='argo-form-row'>
+                            <label className='argo-label-placeholder'
+                                   htmlFor={path + ".parameters[" + index + "].value"}>
+                                {param.name}
+                            </label>
+                            <input className='argo-field'
+                                   key={path + ".parameters[" + index + "].value"}
+                                   name={path + ".parameters[" + index + "].value"}
+                                   type={"text"}
+                                   value={param.value} onChange={formikApi.handleChange} onBlur={e => {
+                                formikApi.handleBlur(e);
+                                formikApi.setFieldValue("wfString", jsYaml.dump(formikApi.values.wf))
+                            }}/>
+                        </div>
+                    )
+                }
+            })}
+        </div>)
+    }
 }
