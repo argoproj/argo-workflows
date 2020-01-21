@@ -1,11 +1,12 @@
 # https://github.com/golangci/golangci/wiki/Configuration
 run:
   deadline: 2m
+  skip-dirs:
+    - pkg/client
+    - vendor
+    - ui
   skip-files:
-    - "cmd/server/static/files.go"
-    - "pkg/client"
-    - "vendor/"
-    - "ui/"
+    - cmd/server/static/files.go
 linters:
   enable:
     - goimports
