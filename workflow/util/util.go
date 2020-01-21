@@ -43,6 +43,7 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	unstructutil "github.com/argoproj/argo/util/unstructured"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/config"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/validate"
 )
@@ -130,7 +131,15 @@ func FromUnstructured(un *unstructured.Unstructured) (*wfv1.Workflow, error) {
 			wf.Spec.TTLStrategy.SecondsAfterCompleted = wf.Spec.TTLSecondsAfterFinished
 		}
 	}
+
+	// Here we can add a function to set the defaults
+
 	return &wf, err
+}
+
+// SetDefaults for the workflow based upon the workflow controller configurations
+func SetDefaults(wf *wfv1.Workflow) (config config.WorkflowControllerConfig) {
+	fmt.Printf("hello world")
 }
 
 // ToUnstructured converts an workflow to an Unstructured object

@@ -271,6 +271,9 @@ func (wfc *WorkflowController) processNextItem() bool {
 		wfc.throttler.Remove(key)
 		return true
 	}
+	// Approach to set the defaults in the workflow
+	var wfcConfig config.WorkflowControllerConfig = wfc.Config
+	wf.SetDefaults(wfc_config)
 
 	if wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true" {
 		wfc.throttler.Remove(key)
