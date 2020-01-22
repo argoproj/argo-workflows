@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/argoproj/pkg/humanize"
+	"k8s.io/client-go/kubernetes"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +31,7 @@ type When struct {
 	workflowName          string
 	wfTemplateNames       []string
 	cronWorkflowName      string
+	kubeClient            kubernetes.Interface
 }
 
 func (w *When) SubmitWorkflow() *When {
@@ -162,5 +164,6 @@ func (w *When) Then() *Then {
 		client:                w.client,
 		cronClient:            w.cronClient,
 		offloadNodeStatusRepo: w.offloadNodeStatusRepo,
+		kubeClient:            w.kubeClient,
 	}
 }
