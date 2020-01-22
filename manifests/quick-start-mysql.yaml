@@ -413,6 +413,18 @@ spec:
         name: main
         ports:
         - containerPort: 5432
+        readinessProbe:
+          exec:
+            command:
+            - mysql
+            - -u
+            - mysql
+            - -ppassword
+            - argo
+            - -e
+            - SELECT 1
+          initialDelaySeconds: 15
+          timeoutSeconds: 2
 ---
 apiVersion: apps/v1
 kind: Deployment
