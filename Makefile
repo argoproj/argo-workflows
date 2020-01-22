@@ -1,4 +1,3 @@
-PACKAGE                := github.com/argoproj/argo
 
 BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
@@ -308,7 +307,7 @@ pf-bg:
 .PHONY: logs
 logs:
 	# Tail logs
-	kubectl -n argo logs -f -l app --max-log-requests 10
+	kubectl -n argo logs -f -l app --max-log-requests 10 --tail 100
 
 .PHONY: postgres-cli
 postgres-cli:
