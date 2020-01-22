@@ -39,7 +39,11 @@ func GetClientConn() *grpc.ClientConn {
 	return conn
 }
 
-func ContextWithAuthorization() context.Context {
+func GetContext() context.Context {
+	token := GetBearerToken()
+	if token == "" {
+		return context.Background()
+	}
 	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("grpcgateway-authorization", "Bearer "+GetBearerToken()))
 }
 

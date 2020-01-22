@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"os"
 	"reflect"
 	"regexp"
 	"runtime/debug"
@@ -379,22 +380,28 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if !woc.updated {
 		return
 	}
-	wf := woc.wf.DeepCopy()
-	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace)
+	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 	// try and compress nodes if needed
-	nodes := wf.Status.Nodes
-	err := packer.CompressWorkflow(wf)
-	if packer.IsTooLargeError(err) {
-		wf.Status.OffloadNodeStatus = woc.controller.offloadNodeStatusRepo.IsEnabled()
+	nodes := woc.wf.Status.Nodes
+
+	err := packer.CompressWorkflow(woc.wf)
+	if packer.IsTooLargeError(err) || os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true" {
+		if woc.controller.offloadNodeStatusRepo.IsEnabled() {
+			offloadVersion, err := woc.controller.offloadNodeStatusRepo.Save(string(woc.wf.UID), woc.wf.Namespace, nodes)
+			if err != nil {
+				woc.log.Warnf("Failed to offload node status: %v", err)
+				woc.markWorkflowError(err, true)
+			} else {
+				woc.wf.Status.Nodes = nil
+				woc.wf.Status.CompressedNodes = ""
+				woc.wf.Status.OffloadNodeStatusVersion = offloadVersion
+			}
+		}
 	} else if err != nil {
 		woc.log.Warnf("Error compressing workflow: %v", err)
-		woc.markWorkflowFailed(err.Error())
+		woc.markWorkflowError(err, true)
 	}
-	if wf.Status.OffloadNodeStatus {
-		wf.Status.Nodes = nil
-		wf.Status.CompressedNodes = ""
-	}
-	wf, err = wfClient.Update(wf)
+	woc.wf, err = wfClient.Update(woc.wf)
 	if err != nil {
 		woc.log.Warnf("Error updating workflow: %v %s", err, apierr.ReasonForError(err))
 		if argokubeerr.IsRequestEntityTooLargeErr(err) {
@@ -405,25 +412,17 @@ func (woc *wfOperationCtx) persistUpdates() {
 			return
 		}
 		woc.log.Info("Re-applying updates on latest version and retrying update")
-		err = woc.reapplyUpdate(wfClient)
+		woc.wf, err = woc.reapplyUpdate(wfClient)
 		if err != nil {
 			woc.log.Infof("Failed to re-apply update: %+v", err)
 			return
 		}
 	}
+
 	// restore to pre-compressed state
-	wf.Status.Nodes = nodes
-	wf.Status.CompressedNodes = ""
-	if wf.Status.OffloadNodeStatus {
-		err = woc.controller.offloadNodeStatusRepo.Save(wf)
-		if err != nil {
-			woc.log.Warnf("Error in persisting workflow : %v %s", err, apierr.ReasonForError(err))
-			woc.markWorkflowFailed(err.Error())
-			return
-		}
-	}
-	woc.wf = wf
-	woc.log.Info("Workflow update successful")
+	woc.wf.Status.Nodes = nodes
+	woc.wf.Status.CompressedNodes = ""
+	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
 
 	// HACK(jessesuen) after we successfully persist an update to the workflow, the informer's
 	// cache is now invalid. It's very common that we will need to immediately re-operate on a
@@ -439,21 +438,21 @@ func (woc *wfOperationCtx) persistUpdates() {
 	// Send succeeded pods or completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 	// Notice we do not need to label the pod if we will delete it later for GC. Otherwise, that may even result in
 	// errors if we label a pod that was deleted already.
-	if wf.Spec.PodGC != nil {
-		switch wf.Spec.PodGC.Strategy {
+	if woc.wf.Spec.PodGC != nil {
+		switch woc.wf.Spec.PodGC.Strategy {
 		case wfv1.PodGCOnPodSuccess:
 			for podName := range woc.succeededPods {
-				woc.controller.gcPods <- fmt.Sprintf("%s/%s", wf.ObjectMeta.Namespace, podName)
+				woc.controller.gcPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
 			}
 		case wfv1.PodGCOnPodCompletion:
 			for podName := range woc.completedPods {
-				woc.controller.gcPods <- fmt.Sprintf("%s/%s", wf.ObjectMeta.Namespace, podName)
+				woc.controller.gcPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
 			}
 		}
 	} else {
 		// label pods which will not be deleted
 		for podName := range woc.completedPods {
-			woc.controller.completedPods <- fmt.Sprintf("%s/%s", wf.ObjectMeta.Namespace, podName)
+			woc.controller.completedPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
 		}
 	}
 }
@@ -472,49 +471,49 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.Workflo
 // reapplyUpdate GETs the latest version of the workflow, re-applies the updates and
 // retries the UPDATE multiple times. For reasoning behind this technique, see:
 // https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#concurrency-control-and-consistency
-func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface) error {
+func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface) (*wfv1.Workflow, error) {
 	// First generate the patch
 	oldData, err := json.Marshal(woc.orig)
 	if err != nil {
-		return errors.InternalWrapError(err)
+		return nil, errors.InternalWrapError(err)
 	}
 	newData, err := json.Marshal(woc.wf)
 	if err != nil {
-		return errors.InternalWrapError(err)
+		return nil, errors.InternalWrapError(err)
 	}
 	patchBytes, err := jsonpatch.CreateMergePatch(oldData, newData)
 	if err != nil {
-		return errors.InternalWrapError(err)
+		return nil, errors.InternalWrapError(err)
 	}
 	// Next get latest version of the workflow, apply the patch and retyr the Update
 	attempt := 1
 	for {
 		currWf, err := wfClient.Get(woc.wf.ObjectMeta.Name, metav1.GetOptions{})
 		if !retry.IsRetryableKubeAPIError(err) {
-			return errors.InternalWrapError(err)
+			return nil, errors.InternalWrapError(err)
 		}
 		currWfBytes, err := json.Marshal(currWf)
 		if err != nil {
-			return errors.InternalWrapError(err)
+			return nil, errors.InternalWrapError(err)
 		}
 		newWfBytes, err := jsonpatch.MergePatch(currWfBytes, patchBytes)
 		if err != nil {
-			return errors.InternalWrapError(err)
+			return nil, errors.InternalWrapError(err)
 		}
 		var newWf wfv1.Workflow
 		err = json.Unmarshal(newWfBytes, &newWf)
 		if err != nil {
-			return errors.InternalWrapError(err)
+			return nil, errors.InternalWrapError(err)
 		}
-		_, err = wfClient.Update(&newWf)
+		wf, err := wfClient.Update(&newWf)
 		if err == nil {
 			woc.log.Infof("Update retry attempt %d successful", attempt)
-			return nil
+			return wf, nil
 		}
 		attempt++
 		woc.log.Warnf("Update retry attempt %d failed: %v", attempt, err)
 		if attempt > 5 {
-			return err
+			return nil, err
 		}
 	}
 }

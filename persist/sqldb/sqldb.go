@@ -3,6 +3,7 @@ package sqldb
 import (
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"upper.io/db.v3/lib/sqlbuilder"
 	"upper.io/db.v3/mysql"
@@ -27,17 +28,19 @@ func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persi
 		return nil, "", errors.InternalError("Persistence config is not found")
 	}
 
+	log.WithField("clusterName", persistConfig.GetClusterName()).Info("Creating DB session")
+
 	if persistConfig.PostgreSQL != nil {
-		return CreatePostGresDBSession(kubectlConfig, namespace, persistConfig.PostgreSQL, persistConfig.ConnectionPool)
+		return CreatePostGresDBSession(kubectlConfig, persistConfig.GetClusterName(), namespace, persistConfig.PostgreSQL, persistConfig.ConnectionPool)
 	} else if persistConfig.MySQL != nil {
-		return CreateMySQLDBSession(kubectlConfig, namespace, persistConfig.MySQL, persistConfig.ConnectionPool)
+		return CreateMySQLDBSession(kubectlConfig, persistConfig.GetClusterName(), namespace, persistConfig.MySQL, persistConfig.ConnectionPool)
 	}
 
 	return nil, "", fmt.Errorf("no databases are configured")
 }
 
 // CreatePostGresDBSession creates postgresDB session
-func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
+func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, clusterName, namespace string, cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
 
 	if cfg.TableName == "" {
 		return nil, "", errors.InternalError("tableName is empty")
@@ -75,7 +78,7 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 		session.SetMaxIdleConns(persistPool.MaxIdleConns)
 	}
 
-	err = migrate(migrateCfg{cfg.TableName}, session)
+	err = migrate(migrateCfg{clusterName, cfg.TableName}, session)
 	if err != nil {
 		return nil, "", err
 	}
@@ -85,7 +88,7 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 }
 
 // CreateMySQLDBSession creates Mysql DB session
-func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.MySQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
+func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, clusterName, namespace string, cfg *config.MySQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
 
 	if cfg.TableName == "" {
 		return nil, "", errors.InternalError("tableName is empty")
@@ -115,7 +118,7 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 		session.SetMaxIdleConns(persistPool.MaxIdleConns)
 	}
 
-	err = migrate(migrateCfg{cfg.TableName}, session)
+	err = migrate(migrateCfg{clusterName, cfg.TableName}, session)
 	if err != nil {
 		return nil, "", err
 	}
