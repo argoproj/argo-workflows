@@ -172,7 +172,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.podInformer.Run(ctx.Done())
 	go wfc.podLabeler(ctx.Done())
 	go wfc.podGarbageCollector(ctx.Done())
-	go wfc.workflowGarbageCollector(ctx.Done())
 	go wfc.periodicWorkflowGarbageCollector(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
@@ -237,22 +236,6 @@ func (wfc *WorkflowController) podGarbageCollector(stopCh <-chan struct{}) {
 				log.Errorf("Failed to delete pod %s/%s for gc: %+v", namespace, podName, err)
 			} else {
 				log.Infof("Delete pod %s/%s for gc successfully", namespace, podName)
-			}
-		}
-	}
-}
-
-func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) {
-	for {
-		select {
-		case <-stopCh:
-			return
-		case uid := <-wfc.gcWorkflows:
-			logCtx := log.WithField("uid", uid)
-			logCtx.Debug("Performing workflow GC")
-			err := wfc.offloadNodeStatusRepo.Delete(string(uid))
-			if err != nil {
-				logCtx.WithField("err", err).Error("GC failed")
 			}
 		}
 	}

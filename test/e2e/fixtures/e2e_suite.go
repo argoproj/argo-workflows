@@ -44,7 +44,7 @@ type E2ESuite struct {
 }
 
 func (s *E2ESuite) SetupSuite() {
-    var err error
+	var err error
 	s.RestConfig, err = kubeconfig.DefaultRestConfig()
 	if err != nil {
 		panic(err)
@@ -71,7 +71,6 @@ func (s *E2ESuite) TearDownSuite() {
 }
 
 func (s *E2ESuite) BeforeTest(_, _ string) {
-	s.SetEnv()
 	s.Diagnostics = &Diagnostics{}
 
 	// delete all workflows
