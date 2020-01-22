@@ -28,15 +28,16 @@ const (
 )
 
 type Controller struct {
-	wfclientset  wfclientset.Interface
-	wfInformer   cache.SharedIndexInformer
-	workqueue    workqueue.DelayingInterface
-	resyncPeriod time.Duration
-	clock        clock.Clock
+	wfclientset        wfclientset.Interface
+	wfInformer         cache.SharedIndexInformer
+	workqueue          workqueue.DelayingInterface
+	resyncPeriod       time.Duration
+	clock              clock.Clock
+	defaultTTLStrategy wfv1.TTLStrategy
 }
 
 // NewController returns a new workflow ttl controller
-func NewController(config *rest.Config, wfClientset wfclientset.Interface, namespace, instanceID string) *Controller {
+func NewController(config *rest.Config, wfClientset wfclientset.Interface, namespace, instanceID string, defaultTTLStrategy wfv1.TTLStrategy) *Controller {
 	filterCompletedWithTTL := func(options *metav1.ListOptions) {
 		// completed equals (true)
 		completedReq, err := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"true"})
@@ -51,11 +52,12 @@ func NewController(config *rest.Config, wfClientset wfclientset.Interface, names
 	wfInformer := util.NewWorkflowInformer(config, namespace, workflowTTLResyncPeriod, filterCompletedWithTTL)
 
 	controller := &Controller{
-		wfclientset:  wfClientset,
-		wfInformer:   wfInformer,
-		workqueue:    workqueue.NewNamedDelayingQueue("workflow-ttl"),
-		resyncPeriod: workflowTTLResyncPeriod,
-		clock:        clock.RealClock{},
+		wfclientset:        wfClientset,
+		wfInformer:         wfInformer,
+		workqueue:          workqueue.NewNamedDelayingQueue("workflow-ttl"),
+		resyncPeriod:       workflowTTLResyncPeriod,
+		clock:              clock.RealClock{},
+		defaultTTLStrategy: defaultTTLStrategy,
 	}
 
 	wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -141,7 +143,8 @@ func (c *Controller) enqueueWF(obj interface{}) {
 		return
 	}
 	now := c.clock.Now()
-	remaining, expiration := timeLeft(wf, &now)
+
+	remaining, expiration := timeLeft(wf, &now, &c.defaultTTLStrategy)
 	if remaining == nil || *remaining > c.resyncPeriod {
 		return
 	}
@@ -215,7 +218,7 @@ func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
 	}
 }
 
-func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time) {
+func timeLeft(wf *wfv1.Workflow, since *time.Time, defaultTTLStrategy *wfv1.TTLStrategy) (*time.Duration, *time.Time) {
 	if wf.DeletionTimestamp != nil || wf.Spec.TTLStrategy == nil || wf.Status.FinishedAt.IsZero() {
 		return nil, nil
 	}
