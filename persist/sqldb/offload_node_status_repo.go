@@ -78,12 +78,12 @@ func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (strin
 	logCtx.Debug("Offloading nodes")
 	_, err = wdc.session.Collection(wdc.tableName).Insert(record)
 	if err != nil {
-		// if we have a duplicate, then it must have the same name+namespace+offloadVersion, which MUST mean that we
+		// if we have a duplicate, then it must have the same clustername+uid+version, which MUST mean that we
 		// have already written this record
 		if !isDuplicateKeyError(err) {
 			return "", err
 		}
-		logCtx.Debug("Ignoring duplicate key error")
+		logCtx.WithField("err", err).Info("Ignoring duplicate key error")
 	}
 
 	logCtx.Info("Nodes offloaded, cleaning up old offloads")
