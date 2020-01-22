@@ -6,7 +6,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-var NullWorkflowArchive = &nullWorkflowArchive{}
+var NullWorkflowArchive WorkflowArchive = &nullWorkflowArchive{}
 
 type nullWorkflowArchive struct {
 }

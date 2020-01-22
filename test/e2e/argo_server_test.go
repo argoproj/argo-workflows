@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/e2e/fixtures"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -19,6 +17,9 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/test/e2e/fixtures"
 )
 
 const baseUrl = "http://localhost:2746"
@@ -320,7 +321,7 @@ func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
 		Status(200)
 }
 
-func (s *ArgoServerSuite) TestWorkflows() {
+func (s *ArgoServerSuite) TestWorkflowService() {
 
 	s.Run("Create", func(t *testing.T) {
 		s.e(t).POST("/api/v1/workflows/argo").
@@ -353,25 +354,39 @@ func (s *ArgoServerSuite) TestWorkflows() {
 	})
 
 	s.Run("List", func(t *testing.T) {
-		// make sure list options work correctly
 		s.Given().
-			Workflow("@smoke/basic.yaml")
+			WorkflowName("test").
+			When().
+			WaitForWorkflowToStart(20 * time.Second)
 
-		s.e(t).GET("/api/v1/workflows/argo").
+		j := s.e(t).GET("/api/v1/workflows/argo").
 			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
 			Expect().
 			Status(200).
-			JSON().
+			JSON()
+		j.
 			Path("$.items").
 			Array().
 			Length().
 			Equal(1)
+		// check we are loading offloaded node status
+		j.Path("$.items[0].status.offloadNodeStatusVersion").
+			NotNull()
+		j.Path("$.items[0].status.nodes").
+			NotNull()
 	})
 
 	s.Run("Get", func(t *testing.T) {
-		s.e(t).GET("/api/v1/workflows/argo/test").
+		j := s.e(t).GET("/api/v1/workflows/argo/test").
 			Expect().
-			Status(200)
+			Status(200).
+			JSON()
+		// check we are loading offloaded node status
+		j.
+			Path("$.status.offloadNodeStatusVersion").
+			NotNull()
+		j.Path("$.status.nodes").
+			NotNull()
 		s.e(t).GET("/api/v1/workflows/argo/not-found").
 			Expect().
 			Status(404)
@@ -430,7 +445,7 @@ func (s *ArgoServerSuite) TestWorkflows() {
 	})
 }
 
-func (s *ArgoServerSuite) TestCronWorkflows() {
+func (s *ArgoServerSuite) TestCronWorkflowService() {
 	s.Run("Create", func(t *testing.T) {
 		s.e(t).POST("/api/v1/cron-workflows/argo").
 			WithBytes([]byte(`{
@@ -533,7 +548,7 @@ func (s *ArgoServerSuite) TestCronWorkflows() {
 }
 
 // make sure we can download an artifact
-func (s *ArgoServerSuite) TestWorkflowArtifact() {
+func (s *ArgoServerSuite) TestArtifactServer() {
 	var uid types.UID
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -570,14 +585,13 @@ func (s *ArgoServerSuite) TestWorkflowArtifact() {
 }
 
 // do some basic testing on the stream methods
-func (s *ArgoServerSuite) TestWorkflowStream() {
+func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
-		SubmitWorkflow()
-
-	time.Sleep(2 * time.Second)
+		SubmitWorkflow().
+		WaitForWorkflowToStart(10 * time.Second)
 
 	// use the watch to make sure that the workflow has succeeded
 	s.Run("Watch", func(t *testing.T) {
@@ -653,7 +667,7 @@ func (s *ArgoServerSuite) TestWorkflowStream() {
 	})
 }
 
-func (s *ArgoServerSuite) TestArchivedWorkflow() {
+func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 	var uid types.UID
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -664,13 +678,13 @@ func (s *ArgoServerSuite) TestArchivedWorkflow() {
 		Expect(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
 		})
-	s.Given().
-		Workflow("@smoke/basic-2.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(15 * time.Second)
-
 	s.Run("List", func(t *testing.T) {
+		s.Given().
+			Workflow("@smoke/basic-2.yaml").
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(20 * time.Second)
+
 		s.e(t).GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "argo-e2e").
 			Expect().
@@ -720,7 +734,7 @@ func (s *ArgoServerSuite) TestArchivedWorkflow() {
 	})
 }
 
-func (s *ArgoServerSuite) TestWorkflowTemplates() {
+func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 
 	s.Run("Lint", func(t *testing.T) {
 		s.e(t).POST("/api/v1/workflow-templates/argo/lint").

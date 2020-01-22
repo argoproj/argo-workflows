@@ -14,6 +14,7 @@ import (
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/packer"
 )
 
 type When struct {
@@ -78,9 +79,9 @@ func (w *When) CreateCronWorkflow() *When {
 	return w
 }
 
-func (w *When) WaitForWorkflow(timeout time.Duration) *When {
+func (w *When) WaitForWorkflowCondition(condition func(wf *wfv1.Workflow) bool, timeout time.Duration) *When {
 	logCtx := log.WithFields(log.Fields{"test": w.t.Name(), "workflow": w.workflowName})
-	logCtx.Info("Waiting on workflow")
+	logCtx.Info("Waiting for workflow condition")
 	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", w.workflowName)).String()}
 	watch, err := w.client.Watch(opts)
 	if err != nil {
@@ -95,18 +96,43 @@ func (w *When) WaitForWorkflow(timeout time.Duration) *When {
 	for {
 		select {
 		case event := <-watch.ResultChan():
+			logCtx.WithField("type", event.Type).Info("Event")
 			wf, ok := event.Object.(*wfv1.Workflow)
 			if ok {
-				if !wf.Status.FinishedAt.IsZero() {
+				w.hydrateWorkflow(wf)
+				if condition(wf) {
 					return w
 				}
-			} else {
-				logCtx.WithField("event", event).Warn("Did not get workflow event")
 			}
 		case <-timeoutCh:
-			w.t.Fatalf("timeout after %v waiting for finish", timeout)
+			w.t.Fatalf("timeout after %v waiting for condition", timeout)
 		}
 	}
+}
+
+func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
+	err := packer.DecompressWorkflow(wf)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	if wf.Status.IsOffloadNodeStatus() {
+		offloadedNodes, err := w.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+		if err != nil {
+			w.t.Fatal(err)
+		}
+		wf.Status.Nodes = offloadedNodes
+	}
+}
+func (w *When) WaitForWorkflowToStart(timeout time.Duration) *When {
+	return w.WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+		return !wf.Status.StartedAt.IsZero()
+	}, timeout)
+}
+
+func (w *When) WaitForWorkflow(timeout time.Duration) *When {
+	return w.WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+		return !wf.Status.FinishedAt.IsZero()
+	}, timeout)
 }
 
 func (w *When) Wait(timeout time.Duration) *When {

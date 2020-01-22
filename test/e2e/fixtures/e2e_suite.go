@@ -3,8 +3,6 @@ package fixtures
 import (
 	"bufio"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -17,7 +15,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
-	"upper.io/db.v3/postgresql"
 
 	"github.com/argoproj/argo/cmd/argo/commands"
 	"github.com/argoproj/argo/persist/sqldb"
@@ -29,15 +26,10 @@ import (
 	"github.com/argoproj/argo/workflow/packer"
 )
 
-var kubeConfig = os.Getenv("KUBECONFIG")
-
 const Namespace = "argo"
 const label = "argo-e2e"
 
 func init() {
-	if kubeConfig == "" {
-		kubeConfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
-	}
 	_ = commands.NewCommand()
 }
 
@@ -45,19 +37,13 @@ type E2ESuite struct {
 	suite.Suite
 	Env
 	Diagnostics           *Diagnostics
+	Persistence           *Persistence
 	RestConfig            *rest.Config
 	wfClient              v1alpha1.WorkflowInterface
 	wfTemplateClient      v1alpha1.WorkflowTemplateInterface
 	cronClient            v1alpha1.CronWorkflowInterface
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	KubeClient            kubernetes.Interface
-}
-
-func (s *E2ESuite) SetupSuite() {
-	_, err := os.Stat(kubeConfig)
-	if os.IsNotExist(err) {
-		s.T().Skip("Skipping test: " + err.Error())
-	}
 }
 
 func (s *E2ESuite) BeforeTest(_, _ string) {
@@ -91,13 +77,14 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 		if err != nil {
 			panic(err)
 		}
-		wcConfig.Persistence.PostgreSQL.Host = "localhost"
+		persistence := wcConfig.Persistence
+		persistence.PostgreSQL.Host = "localhost"
 		// we assume that this is enabled for tests
-		session, tableName, err := sqldb.CreateDBSession(s.KubeClient, Namespace, wcConfig.Persistence)
+		session, tableName, err := sqldb.CreateDBSession(s.KubeClient, Namespace, persistence)
 		if err != nil {
 			panic(err)
 		}
-		s.offloadNodeStatusRepo = sqldb.NewOffloadNodeStatusRepo(tableName, session)
+		s.offloadNodeStatusRepo = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
 	}
 
 	// delete all workflows
@@ -166,20 +153,8 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 		}
 	}
 	// create database collection
-	db, err := postgresql.Open(postgresql.ConnectionURL{User: "postgres", Password: "password", Host: "localhost"})
-	if err != nil {
-		panic(err)
-	}
-	// delete everything offloaded
-	_, err = db.DeleteFrom("argo_workflows").Exec()
-	if err != nil {
-		panic(err)
-	}
-	_, err = db.DeleteFrom("argo_archived_workflows").Exec()
-	if err != nil {
-		panic(err)
-	}
-	_ = db.Close()
+	s.Persistence = newPersistence()
+	s.Persistence.DeleteEverything()
 }
 
 func (s *E2ESuite) GetServiceAccountToken() (string, error) {
@@ -217,7 +192,7 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 
 func (s *E2ESuite) printDiagnostics() {
 	s.Diagnostics.Print()
-	wfs, err := s.wfClient.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + Namespace})
+	wfs, err := s.wfClient.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + Namespace, LabelSelector: label})
 	if err != nil {
 		s.T().Fatal(err)
 	}
