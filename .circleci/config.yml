@@ -90,6 +90,9 @@ commands:
           command: make pf
           background: true
       - run:
+          name: Sleep 10s
+          command: sleep 10s
+      - run:
           name: Follow logs, to help diagnose failures
           command: make logs
           background: true
