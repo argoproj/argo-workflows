@@ -80,7 +80,7 @@ func (s *ArgoServerSuite) TestUnauthorized() {
 }
 
 func (s *ArgoServerSuite) TestPermission() {
-	nsName := "argo"
+	nsName := fixtures.Namespace
 	// Create good serviceaccount
 	goodSaName := "argotestgood"
 	goodSa := &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: goodSaName}}
@@ -176,7 +176,7 @@ func (s *ArgoServerSuite) TestPermission() {
     "metadata": {
       "name": "test-wf-good",
       "labels": {
-         "argo-e2e-permission": "true"
+         "argo-e2e": "true"
       }
     },
     "spec": {
@@ -202,7 +202,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	s.bearerToken = goodToken
 	s.Run("List workflows with good token", func(t *testing.T) {
 		s.e(t).GET("/api/v1/workflows/"+nsName).
-			WithQuery("listOptions.labelSelector", "argo-e2e-permission").
+			WithQuery("listOptions.labelSelector", "argo-e2e").
 			Expect().
 			Status(200).
 			JSON().
