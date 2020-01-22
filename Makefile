@@ -51,6 +51,7 @@ CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join 
 MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
+SWAGGER_FILES    := $(shell find cmd/server -name '*.swagger.json')
 
 .PHONY: build
 build: clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
@@ -347,6 +348,21 @@ clean:
 	[ "`docker images -q $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)
 	# Delete build files
 	rm -Rf dist ui/dist
+
+# sdks
+
+/Users/alex.e.c/go/bin/swagger:
+	brew install swagger
+
+api/argo-server/swagger.json: /Users/alex.e.c/go/bin/swagger $(SWAGGER_FILES)
+	mkdir -p api/argo-server
+	swagger mixin -c 412 cmd/server/primary.swagger.json $(SWAGGER_FILES) | sed 's/VERSION/$(VERSION)/'> api/argo-server/swagger.json
+
+/usr/local/bin/swagger-codegen:
+	brew install swagger-codegen
+
+sdks/argo-python-sdk/README.md: /usr/local/bin/swagger-codegen api/argo-server/swagger.json
+	swagger-codegen generate -i api/argo-server/swagger.json -l python -o sdks/argo-python-sdk --git-user-id argoproj-labs --git-repo-id argo-python-sdk
 
 # pre-push
 

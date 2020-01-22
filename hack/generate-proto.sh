@@ -61,7 +61,7 @@ go build -i -o dist/protoc-gen-grpc-gateway ./vendor/github.com/grpc-ecosystem/g
 go build -i -o dist/protoc-gen-swagger ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 #
 ## Generate server/<service>/(<service>.pb.go|<service>.pb.gw.go)
-PROTO_FILES=$(find $PROJECT_ROOT \( -name "*.proto" -and -path '*/server/*' -or -path '*/reposerver/*' -and -name "*.proto" \))
+PROTO_FILES=$(find $PROJECT_ROOT \( -name "*.proto" -and -path '*/server/*' \))
 for i in ${PROTO_FILES}; do
     # Path to the google API gateway annotations.proto will be different depending if we are
     # building natively (e.g. from workspace) vs. part of a docker build.
@@ -84,38 +84,4 @@ for i in ${PROTO_FILES}; do
         --swagger_out=logtostderr=true:. \
         $i
 done
-
-# collect_swagger gathers swagger files into a subdirectory
-collect_swagger() {
-    SWAGGER_ROOT="$1"
-    EXPECTED_COLLISIONS="$2"
-    SWAGGER_OUT="${PROJECT_ROOT}/assets/swagger.json"
-    PRIMARY_SWAGGER=`mktemp`
-    COMBINED_SWAGGER=`mktemp`
-
-    cat <<EOF > "${PRIMARY_SWAGGER}"
-{
-  "swagger": "2.0",
-  "info": {
-    "title": "Consolidate Services",
-    "description": "Description of all APIs",
-    "version": "version not set"
-  },
-  "paths": {}
-}
-EOF
-
-    /bin/rm -f "${SWAGGER_OUT}"
-
-    /usr/bin/find "${SWAGGER_ROOT}" -name '*.swagger.json' -exec /usr/local/bin/swagger mixin -c "${EXPECTED_COLLISIONS}" "${PRIMARY_SWAGGER}" '{}' \+ > "${COMBINED_SWAGGER}"
-    /usr/local/bin/jq -r 'del(.definitions[].properties[]? | select(."$ref"!=null and .description!=null).description) | del(.definitions[].properties[]? | select(."$ref"!=null and .title!=null).title)' "${COMBINED_SWAGGER}" > "${SWAGGER_OUT}"
-
-    /bin/rm "${PRIMARY_SWAGGER}" "${COMBINED_SWAGGER}"
-}
-
-# clean up generated swagger files (should come after collect_swagger)
-clean_swagger() {
-    SWAGGER_ROOT="$1"
-    /usr/bin/find "${SWAGGER_ROOT}" -name '*.swagger.json' -delete
-}
 
