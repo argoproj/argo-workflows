@@ -462,7 +462,7 @@
           "200": {
             "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/x-stream-definitions/workflowWorkflowWatchEvent"
+              "$ref": "#/definitions/workflowWorkflowWatchEvent"
             }
           }
         }
@@ -1274,7 +1274,7 @@
           "200": {
             "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/x-stream-definitions/workflowLogEntry"
+              "$ref": "#/definitions/workflowLogEntry"
             }
           }
         }

@@ -1,3 +1,6 @@
 [submodule "sdks/argo-python-sdk"]
 	path = sdks/argo-python-sdk
 	url = git@github.com:argoproj-labs/argo-python-sdk.git
+[submodule "sdks/argo-java-sdk"]
+	path = sdks/argo-java-sdk
+	url = git@github.com:argoproj-labs/argo-workflow-java-sdk.git

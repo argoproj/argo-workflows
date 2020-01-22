@@ -143,6 +143,7 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
 	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
 	log.Info("APIs")
+	log.Info("  Java:       http://github.com/argoproj-labs/argo-workflow-java-sdk")
 	log.Info("  Python:     http://github.com/argoproj-labs/argo-python-sdk")
 	log.Infof("Argo Server started successfully on address %s", address)
 	as.stopCh = make(chan struct{})
