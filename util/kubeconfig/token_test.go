@@ -4,35 +4,38 @@ import (
 	"os"
 	"testing"
 
+	"k8s.io/client-go/tools/clientcmd"
+
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_getDefaultTokenVersion(t *testing.T) {
-	t.Run("v2", func(t *testing.T) {
-		_ = os.Setenv("ARGO_TOKEN_VERSION", "v2")
-		defer func() { _ = os.Unsetenv("ARGO_TOKEN_VERSION") }()
-		_ = os.Setenv("ARGO_V2_TOKEN", "token")
-		defer func() { _ = os.Unsetenv("ARGO_V2_TOKEN") }()
 
-		assert.Equal(t, tokenVersion2, getDefaultTokenVersion())
-		token, err := GetBearerToken(nil)
-		if assert.NoError(t, err) {
-			assert.Equal(t, "v2:token", token)
-		}
+	t.Run("No token", func(t *testing.T) {
+		restConfig, err := clientcmd.DefaultClientConfig.ClientConfig()
+		os.Unsetenv("ARGO_TOKEN")
+		assert.NoError(t, err)
+		token, err := GetBearerToken(restConfig)
+		assert.NoError(t, err)
+		assert.Equal(t, restConfig.BearerToken, token)
 	})
-}
-
-func Test_getV2TokenBody(t *testing.T) {
-	t.Run("Undefined", func(t *testing.T) {
-		_, err := getV2TokenBody()
-		assert.Error(t, err)
+	t.Run("Env token", func(t *testing.T) {
+		restConfig, err := clientcmd.DefaultClientConfig.ClientConfig()
+		assert.NoError(t, err)
+		restConfig.BearerToken = "test12"
+		os.Setenv("ARGO_TOKEN", "test")
+		defer os.Unsetenv("ARGO_TOKEN")
+		token, err := GetBearerToken(restConfig)
+		assert.NoError(t, err)
+		assert.Equal(t, "test", token)
 	})
-	t.Run("Defined", func(t *testing.T) {
-		_ = os.Setenv("ARGO_V2_TOKEN", "token")
-		defer func() { _ = os.Unsetenv("ARGO_V2_TOKEN") }()
-		token, err := getV2TokenBody()
-		if assert.NoError(t, err) {
-			assert.Equal(t, "token", token)
-		}
+	t.Run("RestConfig token", func(t *testing.T) {
+		restConfig, err := clientcmd.DefaultClientConfig.ClientConfig()
+		os.Unsetenv("ARGO_TOKEN")
+		assert.NoError(t, err)
+		restConfig.BearerToken = "test"
+		token, err := GetBearerToken(restConfig)
+		assert.NoError(t, err)
+		assert.Equal(t, restConfig.BearerToken, token)
 	})
 }

@@ -28,7 +28,7 @@ endif
 # perform static compilation
 STATIC_BUILD          ?= true
 CI                    ?= false
-K3D                   ?= $(shell if [ "$(KUBECONFIG)" = "$(HOME)/.config/k3d/k3s-default/kubeconfig.yaml" ]; then echo true; else echo false; fi)
+K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 
 override LDFLAGS += \
   -X ${PACKAGE}.version=$(VERSION) \
@@ -308,7 +308,7 @@ test-e2e:
 .PHONY: smoke
 smoke:
 	# Run smoke tests
-	go test -timeout 45s -v -count 1 -p 1 -run SmokeSuite ./test/e2e
+	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
 
 .PHONY: test-api
 test-api:
@@ -329,7 +329,7 @@ clean:
 	[ "`docker images -q $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)
 	[ "`docker images -q $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)
 	# Delete build files
-	git clean -fxd -e .idea -e vendor -e ui/node_modules
+	rm -Rf dist ui/dist
 
 # pre-push
 
