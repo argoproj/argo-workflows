@@ -254,6 +254,7 @@ func timeLeft(wf *wfv1.Workflow, since *time.Time, defaultTTLStrategy *wfv1.TTLS
 		return &remaining, &expireAtUTC
 		// Continue here and add the next section
 	} else if wf.Status.Successful() && (wf.Spec.TTLStrategy.SecondsAfterSuccess != nil || defaultTTLStrategy.SecondsAfterSuccess != nil) {
+		log.Infof("HERE")
 		if wf.Spec.TTLStrategy.SecondsAfterSuccess != nil && defaultTTLStrategy.SecondsAfterSuccess != nil {
 			var wfValue int32 = *wf.Spec.TTLStrategy.SecondsAfterSuccess
 			var defultValue int32 = *defaultTTLStrategy.SecondsAfterSuccess
@@ -266,7 +267,7 @@ func timeLeft(wf *wfv1.Workflow, since *time.Time, defaultTTLStrategy *wfv1.TTLS
 		expireAtUTC := finishAtUTC.Add(time.Duration(duration) * time.Second)
 		remaining := expireAtUTC.Sub(sinceUTC)
 		return &remaining, &expireAtUTC
-	} else if wf.Status.Successful() && (wf.Spec.TTLStrategy.SecondsAfterCompletion != nil || defaultTTLStrategy.SecondsAfterCompletion != nil) {
+	} else if wf.Spec.TTLStrategy.SecondsAfterCompletion != nil || defaultTTLStrategy.SecondsAfterCompletion != nil {
 		if wf.Spec.TTLStrategy.SecondsAfterCompletion != nil && defaultTTLStrategy.SecondsAfterCompletion != nil {
 			var wfValue int32 = *wf.Spec.TTLStrategy.SecondsAfterCompletion
 			var defultValue int32 = *defaultTTLStrategy.SecondsAfterCompletion

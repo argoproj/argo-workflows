@@ -150,6 +150,7 @@ func TestEnqueueWF(t *testing.T) {
 	assert.NoError(t, err)
 	controller.enqueueWF(un)
 	assert.Equal(t, 1, controller.workqueue.Len())
+
 }
 
 func TestTTLStrategySucceded(t *testing.T) {
