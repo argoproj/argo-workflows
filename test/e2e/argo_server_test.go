@@ -254,9 +254,17 @@ func (s *ArgoServerSuite) TestPermission() {
 
 	// TODO: Test list archived wf with good token after archived wf APIs changes are finalized.
 
+	// Test delete workflow with bad token
+	s.bearerToken = badToken
+	s.Run("Delete workflow with bad token", func(t *testing.T) {
+		s.e(t).DELETE("/api/v1/workflows/" + nsName + "/test-wf-good").
+			Expect().
+			Status(403)
+	})
+
 	// Test delete workflow with good token
 	s.bearerToken = goodToken
-	s.Run("Delete workflow", func(t *testing.T) {
+	s.Run("Delete workflow with good token", func(t *testing.T) {
 		s.e(t).DELETE("/api/v1/workflows/" + nsName + "/test-wf-good").
 			Expect().
 			Status(200)
