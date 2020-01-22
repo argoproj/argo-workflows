@@ -1,151 +1,174 @@
 package sqldb
 
 import (
-	"context"
+	"encoding/json"
+	"fmt"
+	"hash/fnv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 
-	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
+type UUIDVersion struct {
+	UID, Version string
+}
+
 type OffloadNodeStatusRepo interface {
-	Save(wf *wfv1.Workflow) error
-	Get(name, namespace string) (*wfv1.Workflow, error)
-	List(namespace string) (wfv1.Workflows, error)
-	Delete(name, namespace string) error
+	Save(uid, namespace string, nodes wfv1.Nodes) (string, error)
+	Get(uid, version string) (wfv1.Nodes, error)
+	List(namespace string) (map[UUIDVersion]wfv1.Nodes, error)
+	ListOldUIDs(namespace string) ([]string, error)
+	Delete(uid string) error
 	IsEnabled() bool
 }
 
-func NewOffloadNodeStatusRepo(tableName string, session sqlbuilder.Database) OffloadNodeStatusRepo {
-	return &nodeOffloadRepo{tableName, session}
+func NewOffloadNodeStatusRepo(session sqlbuilder.Database, clusterName, tableName string) OffloadNodeStatusRepo {
+	return &nodeOffloadRepo{session: session, clusterName: clusterName, tableName: tableName}
+}
+
+type nodesRecord struct {
+	ClusterName string `db:"clustername"`
+	UID         string `db:"uid"`
+	Version     string `db:"version"`
+	Namespace   string `db:"namespace"`
+	Nodes       string `db:"nodes"`
 }
 
 type nodeOffloadRepo struct {
-	tableName string
-	session   sqlbuilder.Database
+	session     sqlbuilder.Database
+	clusterName string
+	tableName   string
 }
 
 func (wdc *nodeOffloadRepo) IsEnabled() bool {
 	return true
 }
 
-// Save will upsert the workflow
-func (wdc *nodeOffloadRepo) Save(wf *wfv1.Workflow) error {
-	log.WithFields(log.Fields{"name": wf.Name, "namespace": wf.Namespace}).Debug("Saving offloaded workflow")
-	wfdb, err := toRecord(wf)
+func nodeStatusVersion(s wfv1.Nodes) (string, string, error) {
+	marshalled, err := json.Marshal(s)
 	if err != nil {
-		return err
+		return "", "", err
 	}
 
-	err = wdc.update(wfdb)
-	if err != nil {
-		if errors.IsCode(CodeDBUpdateRowNotFound, err) {
-			return wdc.insert(wfdb)
-		} else {
-			log.Warn(err)
-			return errors.InternalErrorf("Error in inserting workflow in persistence. %v", err)
-		}
-	}
-
-	log.Info("Workflow update successfully into persistence")
-	return nil
+	h := fnv.New32()
+	_, _ = h.Write(marshalled)
+	return string(marshalled), fmt.Sprintf("fnv:%v", h.Sum32()), nil
 }
 
-func (wdc *nodeOffloadRepo) insert(wfDB *WorkflowRecord) error {
-	tx, err := wdc.session.NewTx(context.TODO())
+func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (string, error) {
+
+	marshalled, version, err := nodeStatusVersion(nodes)
 	if err != nil {
-		return errors.InternalErrorf("Error in creating transaction. %v", err)
+		return "", err
 	}
 
-	defer func() {
-		if tx != nil {
-			err := tx.Close()
-			if err != nil {
-				log.Warnf("Transaction failed to close")
-			}
+	record := &nodesRecord{
+		ClusterName: wdc.clusterName,
+		UID:         uid,
+		Version:     version,
+		Namespace:   namespace,
+		Nodes:       marshalled,
+	}
+
+	logCtx := log.WithFields(log.Fields{"uid": uid, "version": version})
+	logCtx.Debug("Offloading nodes")
+	_, err = wdc.session.Collection(wdc.tableName).Insert(record)
+	if err != nil {
+		// if we have a duplicate, then it must have the same name+namespace+offloadVersion, which MUST mean that we
+		// have already written this record
+		if !strings.Contains(err.Error(), "duplicate key") {
+			return "", err
 		}
-	}()
-
-	_, err = tx.Collection(wdc.tableName).Insert(wfDB)
-	if err != nil {
-		return errors.InternalErrorf("Error in inserting workflow in persistence. %v", err)
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		return errors.InternalErrorf("Error in Committing workflow insert in persistence. %v", err)
-	}
+	logCtx.Info("Nodes offloaded, cleaning up old offloads")
 
-	return nil
+	// This might fail, which kind of fine (maybe a bug).
+	// It might not delete all records, which is also fine, as we always key on resource version.
+	// We also want to keep enough around so that we can service watches.
+	_, err = wdc.session.
+		DeleteFrom(wdc.tableName).
+		Where(db.Cond{"clustername": wdc.clusterName}).
+		And(db.Cond{"uid": uid}).
+		And(db.Cond{"version <>": version}).
+		And(db.Cond{"updatedat + interval '5' minute <": "now()"}).
+		Exec()
+	if err != nil {
+		return "", err
+	}
+	return version, nil
 }
 
-func (wdc *nodeOffloadRepo) update(wfDB *WorkflowRecord) error {
-	tx, err := wdc.session.NewTx(context.TODO())
-	if err != nil {
-		return errors.InternalErrorf("Error in creating transaction. %v", err)
-	}
-
-	defer func() {
-		if tx != nil {
-			err := tx.Close()
-			if err != nil {
-				log.Warnf("Transaction failed to close")
-			}
-		}
-	}()
-
-	err = tx.Collection(wdc.tableName).UpdateReturning(wfDB)
-	if err != nil {
-		if strings.Contains(err.Error(), "upper: no more rows in this result set") {
-			return DBUpdateNoRowFoundError(err)
-		}
-		return errors.InternalErrorf("Error in updating workflow in persistence %v", err)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return errors.InternalErrorf("Error in Committing workflow update in persistence %v", err)
-	}
-
-	return nil
-}
-
-func (wdc *nodeOffloadRepo) Get(name, namespace string) (*wfv1.Workflow, error) {
-	log.WithFields(log.Fields{"name": name, "namespace": namespace}).Debug("Getting offloaded workflow")
-	wf := &WorkflowOnlyRecord{}
+func (wdc *nodeOffloadRepo) Get(uid, version string) (wfv1.Nodes, error) {
+	log.WithFields(log.Fields{"uid": uid, "version": version}).Debug("Getting offloaded nodes")
+	r := &nodesRecord{}
 	err := wdc.session.
-		Select("workflow").
-		From(wdc.tableName).
-		Where(db.Cond{"name": name}).
-		And(db.Cond{"namespace": namespace}).
-		One(wf)
+		SelectFrom(wdc.tableName).
+		Where(db.Cond{"clustername": wdc.clusterName}).
+		And(db.Cond{"uid": uid}).
+		And(db.Cond{"version": version}).
+		One(r)
+	if err != nil {
+		return nil, err
+	}
+	nodes := &wfv1.Nodes{}
+	err = json.Unmarshal([]byte(r.Nodes), nodes)
+	if err != nil {
+		return nil, err
+	}
+	return *nodes, nil
+}
+
+func (wdc *nodeOffloadRepo) List(namespace string) (map[UUIDVersion]wfv1.Nodes, error) {
+	log.WithFields(log.Fields{"namespace": namespace}).Debug("Listing offloaded nodes")
+	var records []nodesRecord
+	err := wdc.session.
+		SelectFrom(wdc.tableName).
+		Where(db.Cond{"clustername": wdc.clusterName}).
+		And(namespaceEqual(namespace)).
+		All(&records)
 	if err != nil {
 		return nil, err
 	}
 
-	return toWorkflow(wf)
+	res := make(map[UUIDVersion]wfv1.Nodes)
+	for _, r := range records {
+		nodes := &wfv1.Nodes{}
+		err = json.Unmarshal([]byte(r.Nodes), nodes)
+		if err != nil {
+			return nil, err
+		}
+		res[UUIDVersion{UID: r.UID, Version: r.Version}] = *nodes
+	}
+
+	return res, nil
 }
 
-func (wdc *nodeOffloadRepo) List(namespace string) (wfv1.Workflows, error) {
-	var wfDBs []WorkflowOnlyRecord
-	err := wdc.session.
-		Select("workflow").
-		From(tableName).
-		Where(namespaceEqual(namespace)).
-		OrderBy("-startedat").
-		All(&wfDBs)
+func (wdc *nodeOffloadRepo) ListOldUIDs(namespace string) ([]string, error) {
+	log.WithFields(log.Fields{"namespace": namespace}).Debug("Listing old offloaded nodes")
+	row, err := wdc.session.
+		Query("select distinct uid from "+wdc.tableName+" where clustername = ? and namespace = ? and updatedat + interval '5' minute < now()", wdc.clusterName, namespace)
 	if err != nil {
 		return nil, err
 	}
-
-	return toWorkflows(wfDBs)
+	var uids []string
+	err = sqlbuilder.NewIterator(row).All(&uids)
+	if err != nil {
+		return nil, err
+	}
+	return uids, nil
 }
 
-func (wdc *nodeOffloadRepo) Delete(name, namespace string) error {
-	log.WithFields(log.Fields{"name": name, "namespace": namespace}).Debug("Deleting offloaded workflow")
-	return wdc.session.Collection(wdc.tableName).Find(db.Cond{"name": name}).And(db.Cond{"namespace": namespace}).Delete()
+func (wdc *nodeOffloadRepo) Delete(uid string) error {
+	log.WithFields(log.Fields{"uid": uid}).Debug("Deleting offloaded nodes")
+	_, err := wdc.session.
+		DeleteFrom(wdc.tableName).
+		Where(db.Cond{"clustername": wdc.clusterName}).
+		And(db.Cond{"uid": uid}).
+		Exec()
+	return err
 }
