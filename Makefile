@@ -253,7 +253,7 @@ test/e2e/manifests/mysql.yaml: $(MANIFESTS) $(E2E_MANIFESTS) test/e2e/manifests/
 
 dist/mysql.yaml: test/e2e/manifests/mysql.yaml
 	# Create MySQL e2e manifests
-	cat test/e2e/manifests/mysql.yaml | sed 's/:latest/:$(IMAGE_TAG)/' > dist/mysql.yaml
+	cat test/e2e/manifests/mysql.yaml | sed 's/:latest/:$(IMAGE_TAG)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/mysql.yaml
 
 .PHONY: install
 install: dist/postgres.yaml dist/mysql.yaml
