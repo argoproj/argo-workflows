@@ -270,8 +270,8 @@ start: controller-image cli-image executor-image install
 	# Start development environment
 ifeq ($(CI),false)
 	make down
-	make up
 endif
+	make up
 	# Make the CLI
 	make cli
 	# Switch to "argo" ns.
