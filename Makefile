@@ -355,10 +355,13 @@ $(HOME)/go/bin/swagger:
 	brew install swagger
 
 api/argo-server/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES)
-	swagger mixin -c 412 cmd/server/primary.swagger.json $(SWAGGER_FILES) | sed 's/VERSION/$(VERSION)/' | sed 's/x-stream-definitions/definitions/' > api/argo-server/swagger.json
+	swagger mixin -c 412 cmd/server/primary.swagger.json $(SWAGGER_FILES) | sed 's/VERSION/$(VERSION)/' > api/argo-server/swagger.json
 
 /usr/local/bin/swagger-codegen:
 	brew install swagger-codegen
+
+.PHONY: sdks
+sdks: sdks/argo-python-sdk/README.md sdks/argo-java-sdk/README.md
 
 sdks/argo-python-sdk/README.md: /usr/local/bin/swagger-codegen api/argo-server/swagger.json
 	swagger-codegen generate -i api/argo-server/swagger.json -l python -o sdks/argo-python-sdk --git-user-id argoproj-labs --git-repo-id argo-python-sdk
