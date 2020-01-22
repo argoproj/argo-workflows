@@ -2,8 +2,6 @@ package e2e
 
 import (
 	"bufio"
-	"encoding/base64"
-	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -82,62 +80,49 @@ func (s *ArgoServerSuite) TestUnauthorized() {
 }
 
 func (s *ArgoServerSuite) TestPermission() {
-	s.T().SkipNow() // TODO
-	nsName := fmt.Sprintf("%s-%d", "test-rbac", time.Now().Unix())
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: nsName}}
-	s.Run("Create ns", func(t *testing.T) {
-		_, err := s.KubeClient.CoreV1().Namespaces().Create(ns)
+	nsName := "argo"
+	// Create good serviceaccount
+	goodSaName := "argotestgood"
+	goodSa := &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: goodSaName}}
+	s.Run("Create good service account", func(t *testing.T) {
+		_, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Create(goodSa)
 		assert.NoError(t, err)
 	})
 	defer func() {
-		// Clean up created namespace
-		_ = s.KubeClient.CoreV1().Namespaces().Delete(nsName, nil)
+		// Clean up created sa
+		_ = s.KubeClient.CoreV1().ServiceAccounts(nsName).Delete(goodSaName, nil)
 	}()
-	forbiddenNsName := fmt.Sprintf("%s-%s", nsName, "fb")
-	forbiddenNs := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: forbiddenNsName}}
-	s.Run("Create forbidden ns", func(t *testing.T) {
-		_, err := s.KubeClient.CoreV1().Namespaces().Create(forbiddenNs)
+
+	// Create bad serviceaccount
+	badSaName := "argotestbad"
+	badSa := &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: badSaName}}
+	s.Run("Create bad service account", func(t *testing.T) {
+		_, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Create(badSa)
 		assert.NoError(t, err)
 	})
 	defer func() {
-		_ = s.KubeClient.CoreV1().Namespaces().Delete(forbiddenNsName, nil)
+		_ = s.KubeClient.CoreV1().ServiceAccounts(nsName).Delete(badSaName, nil)
 	}()
-	// Create serviceaccount in good ns
-	saName := "argotest"
-	sa := &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: saName}}
-	s.Run("Create service account in good ns", func(t *testing.T) {
-		_, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Create(sa)
-		assert.NoError(t, err)
-	})
-	// Create serviceaccount in forbidden ns
-	forbiddenSaName := "argotest"
-	forbiddenSa := &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: forbiddenSaName}}
-	s.Run("Create service account in forbidden ns", func(t *testing.T) {
-		_, err := s.KubeClient.CoreV1().ServiceAccounts(forbiddenNsName).Create(forbiddenSa)
-		assert.NoError(t, err)
-	})
 
-	// Create RBAC Role in good ns
-	roleName := "argotest-role"
-	role := &rbacv1.Role{
-		ObjectMeta: metav1.ObjectMeta{Name: roleName},
-		Rules: []rbacv1.PolicyRule{
-			{
-				APIGroups: []string{"argoproj.io"},
-				Resources: []string{"workflows", "workflowtemplates", "cronworkflows", "workflows/finalizers", "workflowtemplates/finalizers", "cronworkflows/finalizers"},
-				Verbs:     []string{"create", "get", "list", "watch", "update", "patch", "delete"},
-			},
-		},
-	}
-	s.Run("Create Role", func(t *testing.T) {
-		_, err := s.KubeClient.RbacV1().Roles(nsName).Create(role)
+	// Create RBAC Role
+	var roleName string
+	s.Run("Load role yaml", func(t *testing.T) {
+		obj, err := fixtures.LoadObject("@testdata/argo-server-test-role.yaml")
+		assert.NoError(t, err)
+		role, _ := obj.(*rbacv1.Role)
+		roleName = role.Name
+		_, err = s.KubeClient.RbacV1().Roles(nsName).Create(role)
 		assert.NoError(t, err)
 	})
+	defer func() {
+		_ = s.KubeClient.RbacV1().Roles(nsName).Delete(roleName, nil)
+	}()
 
-	// Create RBAC RoleBinding in good ns
+	// Create RBAC RoleBinding
+	roleBindingName := "argotest-role-binding"
 	roleBinding := &rbacv1.RoleBinding{
-		ObjectMeta: metav1.ObjectMeta{Name: "argotest-role-binding"},
-		Subjects:   []rbacv1.Subject{{Kind: "ServiceAccount", Name: saName}},
+		ObjectMeta: metav1.ObjectMeta{Name: roleBindingName},
+		Subjects:   []rbacv1.Subject{{Kind: "ServiceAccount", Name: goodSaName}},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "Role",
@@ -148,45 +133,45 @@ func (s *ArgoServerSuite) TestPermission() {
 		_, err := s.KubeClient.RbacV1().RoleBindings(nsName).Create(roleBinding)
 		assert.NoError(t, err)
 	})
+	defer func() {
+		_ = s.KubeClient.RbacV1().RoleBindings(nsName).Delete(roleBindingName, nil)
+	}()
 
-	// Get token of serviceaccount in good ns
+	// Get token of good serviceaccount
 	var goodToken string
 	s.Run("Get good serviceaccount token", func(t *testing.T) {
-		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(saName, metav1.GetOptions{})
+		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(goodSaName, metav1.GetOptions{})
 		if assert.NoError(t, err) {
 			secretName := sAccount.Secrets[0].Name
 			secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(secretName, metav1.GetOptions{})
 			assert.NoError(t, err)
-			// Argo server API expects it to be encoded.
-			goodToken = base64.StdEncoding.EncodeToString(secret.Data["token"])
+			goodToken = "v1:" + string(secret.Data["token"])
 		}
 	})
 
-	var forbiddenToken string
-	s.Run("Get forbidden serviceaccount token", func(t *testing.T) {
-		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(forbiddenNsName).Get(forbiddenSaName, metav1.GetOptions{})
+	var badToken string
+	s.Run("Get bad serviceaccount token", func(t *testing.T) {
+		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(badSaName, metav1.GetOptions{})
 		assert.NoError(t, err)
 		secretName := sAccount.Secrets[0].Name
-		secret, err := s.KubeClient.CoreV1().Secrets(forbiddenNsName).Get(secretName, metav1.GetOptions{})
+		secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(secretName, metav1.GetOptions{})
 		assert.NoError(t, err)
-		// Argo server API expects it to be encoded.
-		forbiddenToken = base64.StdEncoding.EncodeToString(secret.Data["token"])
+		badToken = "v1:" + string(secret.Data["token"])
 	})
 
 	token := s.bearerToken
 	defer func() { s.bearerToken = token }()
 
-	// Test creating workflow in good ns
+	// Test creating workflow with good token
 	s.bearerToken = goodToken
-	s.Run("Create workflow in good ns", func(t *testing.T) {
-		s.bearerToken = goodToken
+	s.Run("Create workflow with good token", func(t *testing.T) {
 		s.e(t).POST("/api/v1/workflows/" + nsName).
 			WithBytes([]byte(`{
   "workflow": {
     "metadata": {
-      "name": "test",
+      "name": "test-wf-good",
       "labels": {
-         "argo-e2e": "true"
+         "argo-e2e-permission": "true"
       }
     },
     "spec": {
@@ -208,28 +193,28 @@ func (s *ArgoServerSuite) TestPermission() {
 			Status(200)
 	})
 
-	// Test list workflows in good ns
-	s.Run("List", func(t *testing.T) {
-		s.bearerToken = goodToken
+	// Test list workflows with good token
+	s.bearerToken = goodToken
+	s.Run("List workflows with good token", func(t *testing.T) {
 		s.e(t).GET("/api/v1/workflows/"+nsName).
-			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.labelSelector", "argo-e2e-permission").
 			Expect().
 			Status(200).
 			JSON().
 			Path("$.items").
 			Array().
 			Length().
-			Equal(1)
+			Gt(0)
 	})
 
-	// Test creating workflow in forbidden ns
-	s.Run("Create workflow in forbidden ns", func(t *testing.T) {
-		s.bearerToken = goodToken
-		s.e(t).POST("/api/v1/workflows/" + forbiddenNsName).
+	// Test creating workflow with bad token
+	s.bearerToken = badToken
+	s.Run("Create workflow with bad token", func(t *testing.T) {
+		s.e(t).POST("/api/v1/workflows/" + nsName).
 			WithBytes([]byte(`{
   "workflow": {
     "metadata": {
-      "name": "test",
+      "name": "test-wf-bad",
       "labels": {
          "argo-e2e": "true"
       }
@@ -254,13 +239,22 @@ func (s *ArgoServerSuite) TestPermission() {
 			Status(403)
 	})
 
-	// Test list workflows in good ns with forbidden ns token
-	s.bearerToken = forbiddenToken
-	s.Run("List", func(t *testing.T) {
-		s.bearerToken = forbiddenToken
+	// Test list workflows with bad token
+	s.bearerToken = badToken
+	s.Run("List workflows with bad token", func(t *testing.T) {
 		s.e(t).GET("/api/v1/workflows/" + nsName).
 			Expect().
 			Status(403)
+	})
+
+	// TODO: Test list archived wf with good token after archived wf APIs changes are finalized.
+
+	// Test delete workflow with good token
+	s.bearerToken = goodToken
+	s.Run("Delete workflow", func(t *testing.T) {
+		s.e(t).DELETE("/api/v1/workflows/" + nsName + "/test-wf-good").
+			Expect().
+			Status(200)
 	})
 }
 
