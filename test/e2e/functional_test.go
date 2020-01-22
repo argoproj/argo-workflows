@@ -125,7 +125,7 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		Workflow("@functional/success-event.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(30 * time.Second).
+		WaitForWorkflow(60 * time.Second).
 		Then().
 		ExpectAuditEvents(func(t *testing.T, events *apiv1.EventList) {
 			found := false
