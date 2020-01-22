@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/e2e/fixtures"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -19,6 +17,9 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/test/e2e/fixtures"
 )
 
 const baseUrl = "http://localhost:2746"
@@ -353,10 +354,10 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 	})
 
 	s.Run("List", func(t *testing.T) {
-    	s.Given().
-	    	WorkflowName("test").
-		    When().
-		    WaitForWorkflowToStart(20*time.Second)
+		s.Given().
+			WorkflowName("test").
+			When().
+			WaitForWorkflowToStart(20 * time.Second)
 
 		j := s.e(t).GET("/api/v1/workflows/argo").
 			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
