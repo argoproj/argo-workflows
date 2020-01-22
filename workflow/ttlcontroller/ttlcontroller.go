@@ -33,11 +33,11 @@ type Controller struct {
 	workqueue          workqueue.DelayingInterface
 	resyncPeriod       time.Duration
 	clock              clock.Clock
-	defaultTTLStrategy wfv1.TTLStrategy
+	defaultTTLStrategy *wfv1.TTLStrategy
 }
 
 // NewController returns a new workflow ttl controller
-func NewController(config *rest.Config, wfClientset wfclientset.Interface, namespace, instanceID string, defaultTTLStrategy wfv1.TTLStrategy) *Controller {
+func NewController(config *rest.Config, wfClientset wfclientset.Interface, namespace, instanceID string, defaultTTLStrategy *wfv1.TTLStrategy) *Controller {
 	filterCompletedWithTTL := func(options *metav1.ListOptions) {
 		// completed equals (true)
 		completedReq, err := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"true"})
@@ -144,7 +144,7 @@ func (c *Controller) enqueueWF(obj interface{}) {
 	}
 	now := c.clock.Now()
 
-	remaining, expiration := timeLeft(wf, &now, &c.defaultTTLStrategy)
+	remaining, expiration := timeLeft(wf, &now, c.defaultTTLStrategy)
 	if remaining == nil || *remaining > c.resyncPeriod {
 		return
 	}
@@ -229,7 +229,7 @@ func MinOf(vars ...int32) int32 {
 }
 
 func timeLeft(wf *wfv1.Workflow, since *time.Time, defaultTTLStrategy *wfv1.TTLStrategy) (*time.Duration, *time.Time) {
-	if wf.DeletionTimestamp != nil || wf.Spec.TTLStrategy == nil || wf.Status.FinishedAt.IsZero() {
+	if wf.DeletionTimestamp != nil || (wf.Spec.TTLStrategy == nil && defaultTTLStrategy == nil) || wf.Status.FinishedAt.IsZero() {
 		return nil, nil
 	}
 	sinceUTC := since.UTC()
@@ -239,48 +239,50 @@ func timeLeft(wf *wfv1.Workflow, since *time.Time, defaultTTLStrategy *wfv1.TTLS
 	}
 	// Here it starts
 	var duration int32
-	if wf.Status.Failed() && (wf.Spec.TTLStrategy.SecondsAfterFailure != nil || defaultTTLStrategy.SecondsAfterFailure != nil) {
-		if wf.Spec.TTLStrategy.SecondsAfterFailure != nil && defaultTTLStrategy.SecondsAfterFailure != nil {
+	if wf.Status.Failed() && ((wf.Spec.TTLStrategy != nil && defaultTTLStrategy.SecondsAfterFailure != nil) || defaultTTLStrategy.SecondsAfterFailure != nil) {
+		if wf.Spec.TTLStrategy != nil && wf.Spec.TTLStrategy.SecondsAfterFailure != nil && defaultTTLStrategy.SecondsAfterFailure != nil {
 			var wfValue int32 = *wf.Spec.TTLStrategy.SecondsAfterFailure
 			var defultValue int32 = *defaultTTLStrategy.SecondsAfterFailure
 			duration = MinOf(wfValue, defultValue)
-		} else if defaultTTLStrategy.SecondsAfterFailure != nil {
-			duration = *defaultTTLStrategy.SecondsAfterFailure
-		} else {
+		} else if wf.Spec.TTLStrategy != nil && wf.Spec.TTLStrategy.SecondsAfterFailure != nil {
 			duration = *wf.Spec.TTLStrategy.SecondsAfterFailure
+		} else {
+			duration = *defaultTTLStrategy.SecondsAfterFailure
 		}
 		expireAtUTC := finishAtUTC.Add(time.Duration(duration) * time.Second)
 		remaining := expireAtUTC.Sub(sinceUTC)
 		return &remaining, &expireAtUTC
 		// Continue here and add the next section
-	} else if wf.Status.Successful() && (wf.Spec.TTLStrategy.SecondsAfterSuccess != nil || defaultTTLStrategy.SecondsAfterSuccess != nil) {
-		log.Infof("HERE")
-		if wf.Spec.TTLStrategy.SecondsAfterSuccess != nil && defaultTTLStrategy.SecondsAfterSuccess != nil {
+	} else if wf.Status.Successful() && ((wf.Spec.TTLStrategy != nil && wf.Spec.TTLStrategy.SecondsAfterSuccess != nil) || defaultTTLStrategy.SecondsAfterSuccess != nil) {
+		if wf.Spec.TTLStrategy != nil && wf.Spec.TTLStrategy.SecondsAfterSuccess != nil && defaultTTLStrategy.SecondsAfterSuccess != nil {
 			var wfValue int32 = *wf.Spec.TTLStrategy.SecondsAfterSuccess
 			var defultValue int32 = *defaultTTLStrategy.SecondsAfterSuccess
 			duration = MinOf(wfValue, defultValue)
-		} else if defaultTTLStrategy.SecondsAfterSuccess != nil {
-			duration = *defaultTTLStrategy.SecondsAfterSuccess
-		} else {
+		} else if wf.Spec.TTLStrategy != nil && wf.Spec.TTLStrategy.SecondsAfterSuccess != nil {
 			duration = *wf.Spec.TTLStrategy.SecondsAfterSuccess
+		} else {
+			duration = *defaultTTLStrategy.SecondsAfterSuccess
 		}
 		expireAtUTC := finishAtUTC.Add(time.Duration(duration) * time.Second)
 		remaining := expireAtUTC.Sub(sinceUTC)
 		return &remaining, &expireAtUTC
-	} else if wf.Spec.TTLStrategy.SecondsAfterCompletion != nil || defaultTTLStrategy.SecondsAfterCompletion != nil {
-		if wf.Spec.TTLStrategy.SecondsAfterCompletion != nil && defaultTTLStrategy.SecondsAfterCompletion != nil {
+	} else if (wf.Spec.TTLStrategy != nil && wf.Spec.TTLStrategy.SecondsAfterCompletion != nil) || defaultTTLStrategy.SecondsAfterCompletion != nil {
+		if wf.Spec.TTLStrategy != nil && wf.Spec.TTLStrategy.SecondsAfterCompletion != nil && defaultTTLStrategy.SecondsAfterCompletion != nil {
 			var wfValue int32 = *wf.Spec.TTLStrategy.SecondsAfterCompletion
 			var defultValue int32 = *defaultTTLStrategy.SecondsAfterCompletion
 			duration = MinOf(wfValue, defultValue)
-		} else if defaultTTLStrategy.SecondsAfterCompletion != nil {
-			duration = *defaultTTLStrategy.SecondsAfterCompletion
-		} else {
+		} else if wf.Spec.TTLStrategy != nil && wf.Spec.TTLStrategy.SecondsAfterCompletion != nil {
 			duration = *wf.Spec.TTLStrategy.SecondsAfterCompletion
+		} else {
+			duration = *defaultTTLStrategy.SecondsAfterCompletion
 		}
 		expireAtUTC := finishAtUTC.Add(time.Duration(duration) * time.Second)
 		remaining := expireAtUTC.Sub(sinceUTC)
 		return &remaining, &expireAtUTC
 	} else {
+		log.Info("NOOOOOOO")
+		log.Info("NOOOOOOO")
+		log.Info("NOOOOOOO")
 		return nil, nil
 	}
 }

@@ -121,6 +121,22 @@ func newTTLController() *Controller {
 	}
 }
 
+func newTTLControllerDefaultTTL() *Controller {
+	clock := clock.NewFakeClock(time.Now())
+	var ten int32 = 10
+	return &Controller{
+		wfclientset: fakewfclientset.NewSimpleClientset(),
+		//wfInformer:   informer,
+		resyncPeriod: workflowTTLResyncPeriod,
+		clock:        clock,
+		workqueue:    workqueue.NewNamedDelayingQueue("workflow-ttl"),
+		defaultTTLStrategy: &wfv1.TTLStrategy{
+			SecondsAfterSuccess:    &ten,
+			SecondsAfterFailure:    &ten,
+			SecondsAfterCompletion: &ten},
+	}
+}
+
 func TestEnqueueWF(t *testing.T) {
 	var err error
 	var un *unstructured.Unstructured
@@ -345,4 +361,43 @@ func TestTTLlExpired(t *testing.T) {
 	wf6.Spec.TTLStrategy = &wfv1.TTLStrategy{SecondsAfterSuccess: &ten}
 	wf6.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
 	assert.Equal(t, true, controller.ttlExpired(wf6))
+}
+
+func TestTTLDefault(t *testing.T) {
+	controller := newTTLControllerDefaultTTL()
+	var ten int32 = 10
+	assert.Equal(t, ten, *controller.defaultTTLStrategy.SecondsAfterSuccess)
+	assert.Equal(t, ten, *controller.defaultTTLStrategy.SecondsAfterCompletion)
+	assert.Equal(t, ten, *controller.defaultTTLStrategy.SecondsAfterFailure)
+}
+
+func TestTTLExpiredDefault(t *testing.T) {
+	controller := newTTLControllerDefaultTTL()
+	//var ten int32 = 10
+
+	// Should be one second over
+	wfOne := test.LoadWorkflowFromBytes([]byte(failedWf))
+	wfOne.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
+	assert.Equal(t, true, wfOne.Status.Failed())
+	nowOne := controller.clock.Now()
+	remainingOne, _ := timeLeft(wfOne, &nowOne, controller.defaultTTLStrategy)
+	var output bool = false
+
+	if remainingOne != nil && *remainingOne < 0 {
+		output = true
+	}
+	assert.Equal(t, true, output)
+
+	// Should be one second to under
+	wfTwo := test.LoadWorkflowFromBytes([]byte(failedWf))
+	wfTwo.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-9 * time.Second)}
+	assert.Equal(t, true, wfTwo.Status.Failed())
+	nowTwo := controller.clock.Now()
+	remainingTwo, _ := timeLeft(wfTwo, &nowTwo, controller.defaultTTLStrategy)
+	output = false
+
+	if remainingTwo != nil && *remainingTwo < 0 {
+		output = true
+	}
+	assert.Equal(t, false, output)
 }
