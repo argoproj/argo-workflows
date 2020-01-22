@@ -492,17 +492,21 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		}
 	}
 	if tmpl.Resource != nil {
-		switch tmpl.Resource.Action {
-		case "get", "create", "apply", "delete", "replace", "patch":
-			// OK
-		default:
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.action must be one of: get, create, apply, delete, replace, patch", tmpl.Name)
+		if !placeholderGenerator.IsPlaceholder(tmpl.Resource.Action) {
+			switch tmpl.Resource.Action {
+			case "get", "create", "apply", "delete", "replace", "patch":
+				// OK
+			default:
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.action must be one of: get, create, apply, delete, replace, patch", tmpl.Name)
+			}
 		}
-		// Try to unmarshal the given manifest.
-		obj := unstructured.Unstructured{}
-		err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)
+		if !placeholderGenerator.IsPlaceholder(tmpl.Resource.Manifest) {
+			// Try to unmarshal the given manifest.
+			obj := unstructured.Unstructured{}
+			err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
+			if err != nil {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)
+			}
 		}
 	}
 	if tmpl.ActiveDeadlineSeconds != nil {

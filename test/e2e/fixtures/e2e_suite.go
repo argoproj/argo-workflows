@@ -261,5 +261,6 @@ func (s *E2ESuite) Given() *Given {
 		wfTemplateClient:      s.wfTemplateClient,
 		cronClient:            s.cronClient,
 		offloadNodeStatusRepo: s.Persistence.offloadNodeStatusRepo,
+		kubeClient:            s.KubeClient,
 	}
 }
