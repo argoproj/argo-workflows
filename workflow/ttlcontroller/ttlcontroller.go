@@ -218,6 +218,16 @@ func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
 	}
 }
 
+func MinOf(vars ...int32) int32 {
+	min := vars[0]
+	for _, i := range vars {
+		if min > i {
+			min = i
+		}
+	}
+	return min
+}
+
 func timeLeft(wf *wfv1.Workflow, since *time.Time, defaultTTLStrategy *wfv1.TTLStrategy) (*time.Duration, *time.Time) {
 	if wf.DeletionTimestamp != nil || wf.Spec.TTLStrategy == nil || wf.Status.FinishedAt.IsZero() {
 		return nil, nil
@@ -227,16 +237,46 @@ func timeLeft(wf *wfv1.Workflow, since *time.Time, defaultTTLStrategy *wfv1.TTLS
 	if finishAtUTC.After(sinceUTC) {
 		log.Infof("Warning: Found Workflow %s/%s finished in the future. This is likely due to time skew in the cluster. Workflow cleanup will be deferred.", wf.Namespace, wf.Name)
 	}
-	if wf.Status.Failed() && wf.Spec.TTLStrategy.SecondsAfterFailure != nil {
-		expireAtUTC := finishAtUTC.Add(time.Duration(*wf.Spec.TTLStrategy.SecondsAfterFailure) * time.Second)
+	// Here it starts
+	var duration int32
+	if wf.Status.Failed() && (wf.Spec.TTLStrategy.SecondsAfterFailure != nil || defaultTTLStrategy.SecondsAfterFailure != nil) {
+		if wf.Spec.TTLStrategy.SecondsAfterFailure != nil && defaultTTLStrategy.SecondsAfterFailure != nil {
+			var wfValue int32 = *wf.Spec.TTLStrategy.SecondsAfterFailure
+			var defultValue int32 = *defaultTTLStrategy.SecondsAfterFailure
+			duration = MinOf(wfValue, defultValue)
+		} else if defaultTTLStrategy.SecondsAfterFailure != nil {
+			duration = *defaultTTLStrategy.SecondsAfterFailure
+		} else {
+			duration = *wf.Spec.TTLStrategy.SecondsAfterFailure
+		}
+		expireAtUTC := finishAtUTC.Add(time.Duration(duration) * time.Second)
 		remaining := expireAtUTC.Sub(sinceUTC)
 		return &remaining, &expireAtUTC
-	} else if wf.Status.Successful() && wf.Spec.TTLStrategy.SecondsAfterSuccess != nil {
-		expireAtUTC := finishAtUTC.Add(time.Duration(*wf.Spec.TTLStrategy.SecondsAfterSuccess) * time.Second)
+		// Continue here and add the next section
+	} else if wf.Status.Successful() && (wf.Spec.TTLStrategy.SecondsAfterSuccess != nil || defaultTTLStrategy.SecondsAfterSuccess != nil) {
+		if wf.Spec.TTLStrategy.SecondsAfterSuccess != nil && defaultTTLStrategy.SecondsAfterSuccess != nil {
+			var wfValue int32 = *wf.Spec.TTLStrategy.SecondsAfterSuccess
+			var defultValue int32 = *defaultTTLStrategy.SecondsAfterSuccess
+			duration = MinOf(wfValue, defultValue)
+		} else if defaultTTLStrategy.SecondsAfterSuccess != nil {
+			duration = *defaultTTLStrategy.SecondsAfterSuccess
+		} else {
+			duration = *wf.Spec.TTLStrategy.SecondsAfterSuccess
+		}
+		expireAtUTC := finishAtUTC.Add(time.Duration(duration) * time.Second)
 		remaining := expireAtUTC.Sub(sinceUTC)
 		return &remaining, &expireAtUTC
-	} else if wf.Spec.TTLStrategy.SecondsAfterCompletion != nil {
-		expireAtUTC := finishAtUTC.Add(time.Duration(*wf.Spec.TTLStrategy.SecondsAfterCompletion) * time.Second)
+	} else if wf.Status.Successful() && (wf.Spec.TTLStrategy.SecondsAfterCompletion != nil || defaultTTLStrategy.SecondsAfterCompletion != nil) {
+		if wf.Spec.TTLStrategy.SecondsAfterCompletion != nil && defaultTTLStrategy.SecondsAfterCompletion != nil {
+			var wfValue int32 = *wf.Spec.TTLStrategy.SecondsAfterCompletion
+			var defultValue int32 = *defaultTTLStrategy.SecondsAfterCompletion
+			duration = MinOf(wfValue, defultValue)
+		} else if defaultTTLStrategy.SecondsAfterCompletion != nil {
+			duration = *defaultTTLStrategy.SecondsAfterCompletion
+		} else {
+			duration = *wf.Spec.TTLStrategy.SecondsAfterCompletion
+		}
+		expireAtUTC := finishAtUTC.Add(time.Duration(duration) * time.Second)
 		remaining := expireAtUTC.Sub(sinceUTC)
 		return &remaining, &expireAtUTC
 	} else {
