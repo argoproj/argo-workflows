@@ -17,7 +17,7 @@ func (s backfillClusterName) String() string {
 	return fmt.Sprintf("backfillClusterName{%s,%s}", s.clusterName, s.tableName)
 }
 
-func (s backfillClusterName) Apply(session sqlbuilder.Database) error {
+func (s backfillClusterName) apply(session sqlbuilder.Database) error {
 	log.WithField("clustername", s.clusterName).Info("Back-filling cluster name")
 	rs, err := session.
 		Select("uid").
