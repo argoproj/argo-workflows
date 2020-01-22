@@ -205,11 +205,11 @@ manifests/namespace-install.yaml: $(MANIFESTS)
 
 manifests/quick-start-mysql.yaml: $(MANIFESTS)
 	# Create MySQL quick-start manifests
-	kustomize build manifests/quick-start/mysql > manifests/quick-start-mysql.yaml
+	kustomize build manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
 
 manifests/quick-start-postgres.yaml: $(MANIFESTS)
 	# Create Postgres quick-start manifests
-	kustomize build manifests/quick-start/postgres > manifests/quick-start-postgres.yaml
+	kustomize build manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
 # lint/test/etc
 
@@ -233,7 +233,7 @@ endif
 
 test/e2e/manifests/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
 	# Create Postgres e2e manifests
-	kustomize build test/e2e/manifests/postgres > test/e2e/manifests/postgres.yaml
+	kustomize build test/e2e/manifests/postgres | ./hack/auto-gen-msg.sh > test/e2e/manifests/postgres.yaml
 
 dist/postgres.yaml: test/e2e/manifests/postgres.yaml
 	# Create Postgres e2e manifests
@@ -241,15 +241,15 @@ dist/postgres.yaml: test/e2e/manifests/postgres.yaml
 
 test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml: test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml
 test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml:
-	cp test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml
+	cat test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml | ./hack/auto-gen-msg.sh > test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml
 
 test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml: test/e2e/manifests/postgres/overlays/workflow-controller-deployment.yaml
 test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml:
-	cp test/e2e/manifests/postgres/overlays/workflow-controller-deployment.yaml test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml
+	cat test/e2e/manifests/postgres/overlays/workflow-controller-deployment.yaml | ./hack/auto-gen-msg.sh > test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml
 
 test/e2e/manifests/mysql.yaml: $(MANIFESTS) $(E2E_MANIFESTS) test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml
-	# Create Postgres e2e manifests
-	kustomize build test/e2e/manifests/mysql > test/e2e/manifests/mysql.yaml
+	# Create MySQL e2e manifests
+	kustomize build test/e2e/manifests/mysql | ./hack/auto-gen-msg.sh > test/e2e/manifests/mysql.yaml
 
 dist/mysql.yaml: test/e2e/manifests/mysql.yaml
 	# Create MySQL e2e manifests
