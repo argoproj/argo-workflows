@@ -195,7 +195,7 @@ verify-codegen:
 	diff ./dist/swagger.json ./api/openapi-spec/swagger.json
 
 .PHONY: manifests
-manifests: manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml
+manifests: manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml
 
 manifests/install.yaml: $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh

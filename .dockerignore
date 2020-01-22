@@ -5,6 +5,7 @@
 assets
 coverage.out
 dist
+sdks
 vendor
 ui/dist
 ui/node_modules
