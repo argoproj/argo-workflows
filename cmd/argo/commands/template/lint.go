@@ -131,7 +131,7 @@ func ServerSideLint(args []string, conn *grpc.ClientConn, strict bool) error {
 }
 
 func ServerLintValidation(ctx context.Context, client workflowtemplate.WorkflowTemplateServiceClient, wfTmpl wfv1.WorkflowTemplate, ns string) error {
-	wfTmplReq := workflowtemplate.WorkflowTemplateCreateRequest{
+	wfTmplReq := workflowtemplate.WorkflowTemplateLintRequest{
 		Namespace: ns,
 		Template:  &wfTmpl,
 	}
