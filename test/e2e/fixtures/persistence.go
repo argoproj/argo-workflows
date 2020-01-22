@@ -40,14 +40,6 @@ func newPersistence(kubeClient kubernetes.Interface) *Persistence {
 	return &Persistence{session, offloadNodeStatusRepo}
 }
 
-func (s *Persistence) OffloadedCount() int {
-	count, err := s.session.Collection("argo_workflows").Find().Count()
-	if err != nil {
-		panic(err)
-	}
-	return int(count)
-}
-
 func (s *Persistence) Close() {
 	err := s.session.Close()
 	if err != nil {

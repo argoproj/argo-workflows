@@ -68,7 +68,6 @@ type WorkflowController struct {
 	wfQueue               workqueue.RateLimitingInterface
 	podQueue              workqueue.RateLimitingInterface
 	completedPods         chan string
-	gcWorkflows           chan types.UID
 	gcPods                chan string // pods to be deleted depend on GC strategy
 	throttler             Throttler
 	session               sqlbuilder.Database
@@ -107,7 +106,6 @@ func NewWorkflowController(
 		containerRuntimeExecutor:   containerRuntimeExecutor,
 		wfQueue:                    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:                   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		gcWorkflows:                make(chan types.UID, 512),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 	}
@@ -445,7 +443,13 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 
 func (wfc *WorkflowController) tweakWorkflowlist(options *metav1.ListOptions) {
 	options.FieldSelector = fields.Everything().String()
+	// completed notin (true)
+	incompleteReq, err := labels.NewRequirement(common.LabelKeyCompleted, selection.NotIn, []string{"true"})
+	if err != nil {
+		panic(err)
+	}
 	labelSelector := labels.NewSelector().
+		Add(*incompleteReq).
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 	options.LabelSelector = labelSelector.String()
 }
@@ -496,17 +500,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 				// key function.
 				key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 				if err == nil {
-					un, ok := obj.(*unstructured.Unstructured)
-					if ok {
-						logCtx := log.WithField("uid", un.GetUID())
-						wf, err := util.FromUnstructured(un)
-						if err != nil {
-							logCtx.Error(err)
-						} else if wf.Status.IsOffloadNodeStatus() {
-							logCtx.Info("Queuing workflow for GC")
-							wfc.gcWorkflows <- un.GetUID()
-						}
-					}
 					wfc.wfQueue.Add(key)
 					wfc.throttler.Remove(key)
 				}
