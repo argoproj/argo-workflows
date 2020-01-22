@@ -100,7 +100,7 @@ func (w *When) WaitForWorkflowCondition(condition func(wf *wfv1.Workflow) bool, 
 		case event := <-watch.ResultChan():
 			wf, ok := event.Object.(*wfv1.Workflow)
 			if ok {
-    			logCtx.WithFields(log.Fields{"type": event.Type, "phase": wf.Status.Phase}).Info(wf.Status.Message)
+				logCtx.WithFields(log.Fields{"type": event.Type, "phase": wf.Status.Phase}).Info(wf.Status.Message)
 				w.hydrateWorkflow(wf)
 				if condition(wf) {
 					return w
