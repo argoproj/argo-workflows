@@ -137,6 +137,10 @@ func (s *ArgoServerSuite) TestPermission() {
 		_ = s.KubeClient.RbacV1().RoleBindings(nsName).Delete(roleBindingName, nil)
 	}()
 
+	// Sleep 2 seconds to wait for serviceaccount token created.
+	// The secret creation slowness is seen in k3d.
+	time.Sleep(2 * time.Second)
+
 	// Get token of good serviceaccount
 	var goodToken string
 	s.Run("Get good serviceaccount token", func(t *testing.T) {
@@ -149,6 +153,7 @@ func (s *ArgoServerSuite) TestPermission() {
 		}
 	})
 
+	// Get token of bad serviceaccount
 	var badToken string
 	s.Run("Get bad serviceaccount token", func(t *testing.T) {
 		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(badSaName, metav1.GetOptions{})
