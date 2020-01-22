@@ -135,6 +135,8 @@ data:
       # save completed workloads to the archived, even if disabled, you'll be able to
       # read from the archive
       archive: false
+      # Optional name of the cluster I'm running in. This must be unique for your cluster.
+      clusterName: default
       postgresql:
         host: localhost
         port: 5432

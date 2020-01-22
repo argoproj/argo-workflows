@@ -101,10 +101,19 @@ type PersistConfig struct {
 	NodeStatusOffload bool `json:"nodeStatusOffLoad,omitempty"`
 	// Archive workflows to persistence.
 	Archive        bool              `json:"archive,omitempty"`
+	ClusterName    string            `json:"clusterName,omitempty"`
 	ConnectionPool *ConnectionPool   `json:"connectionPool"`
 	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
 	MySQL          *MySQLConfig      `json:"mysql,omitempty"`
 }
+
+func (c PersistConfig) GetClusterName() string {
+	if c.ClusterName != "" {
+		return c.ClusterName
+	}
+	return "default"
+}
+
 type ConnectionPool struct {
 	MaxIdleConns int `json:"maxIdleConns"`
 	MaxOpenConns int `json:"maxOpenConns"`

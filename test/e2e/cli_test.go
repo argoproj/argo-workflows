@@ -64,8 +64,6 @@ func (s *CLISuite) TestRoot() {
 		assert.Contains(t, output, "ServiceAccount:")
 		assert.Contains(t, output, "Status:")
 		assert.Contains(t, output, "Created:")
-		assert.Contains(t, output, "Started:")
-		assert.Contains(t, output, "Duration:")
 	})
 }
 

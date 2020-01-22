@@ -15,9 +15,9 @@ import (
 	"github.com/argoproj/argo/workflow/packer"
 )
 
-func getMockDBCtx(expectedResullt interface{}, largeWfSupport bool) *mocks.OffloadNodeStatusRepo {
+func getMockDBCtx(expectedError error, largeWfSupport bool) *mocks.OffloadNodeStatusRepo {
 	mockDBRepo := &mocks.OffloadNodeStatusRepo{}
-	mockDBRepo.On("Save", mock.Anything).Return(expectedResullt)
+	mockDBRepo.On("Save", mock.Anything, mock.Anything, mock.Anything).Return("my-offloaded-version", expectedError)
 	mockDBRepo.On("IsEnabled").Return(largeWfSupport)
 	return mockDBRepo
 }
@@ -57,7 +57,7 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 	woc.operate()
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.False(t, wf.Status.OffloadNodeStatus)
+	assert.False(t, wf.Status.IsOffloadNodeStatus())
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	assert.NotEmpty(t, woc.wf.Status.Nodes)
 	assert.Empty(t, woc.wf.Status.CompressedNodes)
@@ -76,7 +76,7 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 	woc.operate()
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.False(t, wf.Status.OffloadNodeStatus)
+	assert.False(t, wf.Status.IsOffloadNodeStatus())
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	assert.NotEmpty(t, woc.wf.Status.Nodes)
 	assert.Empty(t, woc.wf.Status.CompressedNodes)
@@ -97,11 +97,11 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	// check the saved version has been offloaded
-	assert.True(t, wf.Status.OffloadNodeStatus)
+	assert.True(t, wf.Status.IsOffloadNodeStatus())
 	assert.Empty(t, wf.Status.Nodes)
 	assert.Empty(t, wf.Status.CompressedNodes)
 	// check the updated in-memory version is pre-offloaded state
-	assert.True(t, woc.wf.Status.OffloadNodeStatus)
+	assert.True(t, woc.wf.Status.IsOffloadNodeStatus())
 	assert.NotEmpty(t, woc.wf.Status.Nodes)
 	assert.Empty(t, woc.wf.Status.CompressedNodes)
 }
@@ -119,13 +119,13 @@ func TestPersistErrorWithLargeWfSupport(t *testing.T) {
 	woc.operate()
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	// check the saved version has not been offloaded
-	assert.True(t, wf.Status.OffloadNodeStatus)
+	assert.False(t, wf.Status.IsOffloadNodeStatus())
 	assert.NotEmpty(t, woc.wf.Status.Nodes)
 	assert.Empty(t, woc.wf.Status.CompressedNodes)
 	// check the updated in-memory version is pre-offloaded state
-	assert.False(t, woc.wf.Status.OffloadNodeStatus)
+	assert.False(t, woc.wf.Status.IsOffloadNodeStatus())
 	assert.NotEmpty(t, woc.wf.Status.Nodes)
 	assert.Empty(t, woc.wf.Status.CompressedNodes)
 }
