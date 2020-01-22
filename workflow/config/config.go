@@ -111,7 +111,7 @@ func (c PersistConfig) GetClusterName() string {
 	if c.ClusterName != "" {
 		return c.ClusterName
 	}
-	return "default-cluster"
+	return "default"
 }
 
 type ConnectionPool struct {

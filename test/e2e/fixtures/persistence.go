@@ -17,14 +17,6 @@ func newPersistence() *Persistence {
 	return &Persistence{session}
 }
 
-func (s *Persistence) OffloadedCount() int {
-	count, err := s.session.Collection("argo_workflows").Find().Count()
-	if err != nil {
-		panic(err)
-	}
-	return int(count)
-}
-
 func (s *Persistence) Close() error {
 	return s.session.Close()
 }
