@@ -1,4 +1,3 @@
-PACKAGE                := github.com/argoproj/argo
 
 BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
@@ -28,7 +27,8 @@ endif
 # perform static compilation
 STATIC_BUILD          ?= true
 CI                    ?= false
-K3D                   ?= $(shell if [ "$(KUBECONFIG)" = "$(HOME)/.config/k3d/k3s-default/kubeconfig.yaml" ]; then echo true; else echo false; fi)
+DB                    ?= postgres
+K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 
 override LDFLAGS += \
   -X ${PACKAGE}.version=$(VERSION) \
@@ -55,7 +55,7 @@ E2E_EXECUTOR     ?= pns
 .PHONY: build
 build: clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
 
-vendor: Gopkg.toml
+vendor: Gopkg.toml Gopkg.lock
 	# Get Go dependencies
 	rm -Rf .vendor-new
 	dep ensure -v
@@ -205,11 +205,11 @@ manifests/namespace-install.yaml: $(MANIFESTS)
 
 manifests/quick-start-mysql.yaml: $(MANIFESTS)
 	# Create MySQL quick-start manifests
-	kustomize build manifests/quick-start/mysql > manifests/quick-start-mysql.yaml
+	kustomize build manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
 
 manifests/quick-start-postgres.yaml: $(MANIFESTS)
 	# Create Postgres quick-start manifests
-	kustomize build manifests/quick-start/postgres > manifests/quick-start-postgres.yaml
+	kustomize build manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
 # lint/test/etc
 
@@ -233,28 +233,45 @@ endif
 
 test/e2e/manifests/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
 	# Create Postgres e2e manifests
-	kustomize build test/e2e/manifests/postgres > test/e2e/manifests/postgres.yaml
+	kustomize build test/e2e/manifests/postgres | ./hack/auto-gen-msg.sh > test/e2e/manifests/postgres.yaml
 
 dist/postgres.yaml: test/e2e/manifests/postgres.yaml
 	# Create Postgres e2e manifests
 	cat test/e2e/manifests/postgres.yaml | sed 's/:latest/:$(IMAGE_TAG)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/postgres.yaml
 
-.PHONY: install-postgres
-install-postgres: dist/postgres.yaml
-	# Install Postgres quick-start
-	kubectl get ns argo || kubectl create ns argo
-	kubectl -n argo apply -f dist/postgres.yaml
+test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml: test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml
+test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml:
+	cat test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml | ./hack/auto-gen-msg.sh > test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml
+
+test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml: test/e2e/manifests/postgres/overlays/workflow-controller-deployment.yaml
+test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml:
+	cat test/e2e/manifests/postgres/overlays/workflow-controller-deployment.yaml | ./hack/auto-gen-msg.sh > test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml
+
+test/e2e/manifests/mysql.yaml: $(MANIFESTS) $(E2E_MANIFESTS) test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml
+	# Create MySQL e2e manifests
+	kustomize build test/e2e/manifests/mysql | ./hack/auto-gen-msg.sh > test/e2e/manifests/mysql.yaml
+
+dist/mysql.yaml: test/e2e/manifests/mysql.yaml
+	# Create MySQL e2e manifests
+	cat test/e2e/manifests/mysql.yaml | sed 's/:latest/:$(IMAGE_TAG)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/mysql.yaml
 
 .PHONY: install
-install: install-postgres
+install: dist/postgres.yaml dist/mysql.yaml
+	# Install Postgres quick-start
+	kubectl get ns argo || kubectl create ns argo
+ifeq ($(DB),postgres)
+	kubectl -n argo apply -f dist/postgres.yaml
+else
+	kubectl -n argo apply -f dist/mysql.yaml
+endif
 
 .PHONY: start
 start: controller-image cli-image executor-image install
 	# Start development environment
 ifeq ($(CI),false)
 	make down
-	make up
 endif
+	make up
 	# Make the CLI
 	make cli
 	# Switch to "argo" ns.
@@ -290,7 +307,7 @@ pf-bg:
 .PHONY: logs
 logs:
 	# Tail logs
-	kubectl -n argo logs -f -l app --max-log-requests 10
+	kubectl -n argo logs -f -l app --max-log-requests 10 --tail 100
 
 .PHONY: postgres-cli
 postgres-cli:
@@ -308,7 +325,7 @@ test-e2e:
 .PHONY: smoke
 smoke:
 	# Run smoke tests
-	go test -timeout 45s -v -count 1 -p 1 -run SmokeSuite ./test/e2e
+	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
 
 .PHONY: test-api
 test-api:
@@ -329,7 +346,7 @@ clean:
 	[ "`docker images -q $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)
 	[ "`docker images -q $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)
 	# Delete build files
-	git clean -fxd -e .idea -e vendor -e ui/node_modules
+	rm -Rf dist ui/dist
 
 # pre-push
 

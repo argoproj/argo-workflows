@@ -19,3 +19,12 @@
 - op: add
   path: /spec/template/spec/containers/0/args/-
   value: pns
+- op: add
+  path: /spec/template/spec/containers/0/env
+  value:
+    - name: ALWAYS_OFFLOAD_NODE_STATUS
+      value: "true"
+    - name: WORKFLOW_GC_PERIOD
+      value: 30s
+    - name: UPPERIO_DB_DEBUG
+      value: "1"

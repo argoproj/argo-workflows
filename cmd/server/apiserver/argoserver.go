@@ -99,18 +99,19 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 		// TODO: this currently returns an error every time
 		log.Errorf("Error marshalling config map: %s", err)
 	}
-	var offloadRepo sqldb.OffloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
-	var wfArchive sqldb.WorkflowArchive = sqldb.NullWorkflowArchive
-	if configMap != nil && configMap.Persistence != nil {
-		session, tableName, err := sqldb.CreateDBSession(as.kubeClientset, as.namespace, configMap.Persistence)
+	var offloadRepo = sqldb.ExplosiveOffloadNodeStatusRepo
+	var wfArchive = sqldb.NullWorkflowArchive
+	persistence := configMap.Persistence
+	if configMap != nil && persistence != nil {
+		session, tableName, err := sqldb.CreateDBSession(as.kubeClientset, as.namespace, persistence)
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.WithField("nodeStatusOffload", configMap.Persistence.NodeStatusOffload).Info("Offload node status")
-		if configMap.Persistence.NodeStatusOffload {
-			offloadRepo = sqldb.NewOffloadNodeStatusRepo(tableName, session)
+		log.WithField("nodeStatusOffload", persistence.NodeStatusOffload).Info("Offload node status")
+		if persistence.NodeStatusOffload {
+			offloadRepo = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
 		}
-		wfArchive = sqldb.NewWorkflowArchive(session)
+		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName())
 	}
 	artifactServer := artifacts.NewArtifactServer(as.authenticator, offloadRepo, wfArchive)
 	grpcServer := as.newGRPCServer(offloadRepo, wfArchive)
