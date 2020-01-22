@@ -10,5 +10,5 @@ spec:
     - name: run-workflow
       container:
         image: docker/whalesay:latest
-        command: [cowsay, "🐙 Hello Argo!"]
+        command: [cowsay, "😀 Hello Argo!"]
         imagePullPolicy: IfNotPresent
