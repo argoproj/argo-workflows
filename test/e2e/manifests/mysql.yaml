@@ -277,16 +277,16 @@ data:
         maxOpenConns: 0
       nodeStatusOffLoad: true
       archive: true
-      postgresql:
-        host: postgres
-        port: 5432
-        database: postgres
+      mysql:
+        host: mysql
+        port: 3306
+        database: argo
         tableName: argo_workflows
         userNameSecret:
-          name: argo-postgres-config
+          name: argo-mysql-config
           key: username
         passwordSecret:
-          name: argo-postgres-config
+          name: argo-mysql-config
           key: password
 kind: ConfigMap
 metadata:
@@ -296,11 +296,11 @@ apiVersion: v1
 kind: Secret
 metadata:
   labels:
-    app: postgres
-  name: argo-postgres-config
+    app: mysql
+  name: argo-mysql-config
 stringData:
   password: password
-  username: postgres
+  username: mysql
 type: Opaque
 ---
 apiVersion: v1
@@ -343,15 +343,15 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app: postgres
-  name: postgres
+    app: mysql
+  name: mysql
 spec:
   ports:
-  - port: 5432
+  - port: 3306
     protocol: TCP
-    targetPort: 5432
+    targetPort: 3306
   selector:
-    app: postgres
+    app: mysql
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -370,7 +370,17 @@ spec:
       - args:
         - server
         - --namespaced
+        - --auth-mode
+        - client
+        - --loglevel
+        - debug
+        env:
+        - name: ARGO_TOKEN
+          value: password
+        - name: UPPERIO_DB_DEBUG
+          value: "1"
         image: argoproj/argocli:latest
+        imagePullPolicy: Never
         name: argo-server
         ports:
         - containerPort: 2746
@@ -387,23 +397,29 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: postgres
-  name: postgres
+    app: mysql
+  name: mysql
 spec:
   selector:
     matchLabels:
-      app: postgres
+      app: mysql
   template:
     metadata:
       labels:
-        app: postgres
-      name: postgres
+        app: mysql
+      name: mysql
     spec:
       containers:
       - env:
-        - name: POSTGRES_PASSWORD
+        - name: MYSQL_USER
+          value: mysql
+        - name: MYSQL_PASSWORD
           value: password
-        image: postgres:12-alpine
+        - name: MYSQL_DATABASE
+          value: argo
+        - name: MYSQL_RANDOM_ROOT_PASSWORD
+          value: "yes"
+        image: mysql:8
         name: main
         ports:
         - containerPort: 5432
@@ -428,9 +444,23 @@ spec:
         - --executor-image
         - argoproj/argoexec:latest
         - --namespaced
+        - --loglevel
+        - debug
+        - --executor-image-pull-policy
+        - Never
+        - --container-runtime-executor
+        - pns
         command:
         - workflow-controller
+        env:
+        - name: ALWAYS_OFFLOAD_NODE_STATUS
+          value: "true"
+        - name: WORKFLOW_GC_PERIOD
+          value: 30s
+        - name: UPPERIO_DB_DEBUG
+          value: "1"
         image: argoproj/workflow-controller:latest
+        imagePullPolicy: Never
         name: workflow-controller
       serviceAccountName: argo
 ---
