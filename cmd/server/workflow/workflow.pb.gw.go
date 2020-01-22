@@ -859,7 +859,7 @@ func local_request_WorkflowService_TerminateWorkflow_0(ctx context.Context, mars
 }
 
 func request_WorkflowService_LintWorkflow_0(ctx context.Context, marshaler runtime.Marshaler, client WorkflowServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq WorkflowCreateRequest
+	var protoReq WorkflowLintRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -894,7 +894,7 @@ func request_WorkflowService_LintWorkflow_0(ctx context.Context, marshaler runti
 }
 
 func local_request_WorkflowService_LintWorkflow_0(ctx context.Context, marshaler runtime.Marshaler, server WorkflowServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq WorkflowCreateRequest
+	var protoReq WorkflowLintRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
