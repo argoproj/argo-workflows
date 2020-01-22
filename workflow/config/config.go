@@ -64,6 +64,15 @@ type WorkflowControllerConfig struct {
 
 	// Config customized Docker Sock path
 	DockerSockPath string `json:"dockerSockPath,omitempty"`
+
+	DefaultTTLStrategy *DefaultTTLStrategy `json:"defaultTTLStrategy,omitempty"`
+}
+
+// DefaultTTLStrategy used for the ttlcontroller
+type DefaultTTLStrategy struct {
+	SecondsAfterCompletion *int32 `json:"secondsAfterCompletion,omitempty" protobuf:"bytes,1,opt,name=secondsAfterCompletion"`
+	SecondsAfterSuccess    *int32 `json:"secondsAfterSuccess,omitempty" protobuf:"bytes,2,opt,name=secondsAfterSuccess"`
+	SecondsAfterFailure    *int32 `json:"secondsAfterFailure,omitempty" protobuf:"bytes,3,opt,name=secondsAfterFailure"`
 }
 
 // KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,
