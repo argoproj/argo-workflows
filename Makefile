@@ -308,7 +308,7 @@ test-e2e:
 .PHONY: smoke
 smoke:
 	# Run smoke tests
-	go test -timeout 45s -v -count 1 -p 1 -run SmokeSuite ./test/e2e
+	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
 
 .PHONY: test-api
 test-api:
