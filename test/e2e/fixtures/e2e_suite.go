@@ -3,8 +3,7 @@ package fixtures
 import (
 	"bufio"
 	"fmt"
-	"os"
-	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -25,20 +24,16 @@ import (
 	"github.com/argoproj/argo/workflow/packer"
 )
 
-var kubeConfig = os.Getenv("KUBECONFIG")
-
 const Namespace = "argo"
 const label = "argo-e2e"
 
 func init() {
-	if kubeConfig == "" {
-		kubeConfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
-	}
 	_ = commands.NewCommand()
 }
 
 type E2ESuite struct {
 	suite.Suite
+	Env
 	Diagnostics      *Diagnostics
 	Persistence      *Persistence
 	RestConfig       *rest.Config
@@ -49,14 +44,16 @@ type E2ESuite struct {
 }
 
 func (s *E2ESuite) SetupSuite() {
-	_, err := os.Stat(kubeConfig)
-	if os.IsNotExist(err) {
-		s.T().Skip("Skipping test: " + err.Error())
-	}
+	var err error
 	s.RestConfig, err = kubeconfig.DefaultRestConfig()
 	if err != nil {
 		panic(err)
 	}
+	token, err := s.GetServiceAccountToken()
+	if err != nil {
+		panic(err)
+	}
+	s.SetEnv(token)
 	s.KubeClient, err = kubernetes.NewForConfig(s.RestConfig)
 	if err != nil {
 		panic(err)
@@ -70,6 +67,7 @@ func (s *E2ESuite) SetupSuite() {
 
 func (s *E2ESuite) TearDownSuite() {
 	s.Persistence.Close()
+	s.UnsetEnv()
 }
 
 func (s *E2ESuite) BeforeTest(_, _ string) {
@@ -143,6 +141,25 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	// create database collection
 	s.Persistence.DeleteEverything()
 }
+
+func (s *E2ESuite) GetServiceAccountToken() (string, error) {
+	// create the clientset
+	clientset, err := kubernetes.NewForConfig(s.RestConfig)
+	if err != nil {
+		return "", err
+	}
+	secretList, err := clientset.CoreV1().Secrets("argo").List(metav1.ListOptions{})
+	if err != nil {
+		return "", err
+	}
+	for _, sec := range secretList.Items {
+		if strings.HasPrefix(sec.Name, "argo-server-token") {
+			return string(sec.Data["token"]), nil
+		}
+	}
+	return "", nil
+}
+
 func (s *E2ESuite) Run(name string, f func(t *testing.T)) {
 	t := s.T()
 	if t.Failed() {

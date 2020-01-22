@@ -2,9 +2,10 @@ package e2e
 
 import (
 	"fmt"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/e2e/fixtures"
-	"github.com/argoproj/argo/workflow/common"
+	"strconv"
+	"testing"
+	"time"
+
 	"github.com/argoproj/pkg/humanize"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -13,9 +14,10 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
-	"strconv"
-	"testing"
-	"time"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/test/e2e/fixtures"
+	"github.com/argoproj/argo/workflow/common"
 )
 
 type CronSuite struct {
@@ -35,9 +37,9 @@ func (s *CronSuite) TestBasic() {
 }
 
 func (s *CronSuite) TestBasicTimezone() {
-	 // This test works by scheduling a CronWorkflow for the next minute, but using the local time of another timezone
-	 // then seeing if the Workflow was ran within the next minute. Since this test would be trivial if the selected
-	 // timezone was the same as the local timezone, a little-used timezone is used.
+	// This test works by scheduling a CronWorkflow for the next minute, but using the local time of another timezone
+	// then seeing if the Workflow was ran within the next minute. Since this test would be trivial if the selected
+	// timezone was the same as the local timezone, a little-used timezone is used.
 	testTimezone := "Pacific/Niue"
 	testLocation, err := time.LoadLocation(testTimezone)
 	if err != nil {

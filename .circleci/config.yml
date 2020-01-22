@@ -84,7 +84,7 @@ commands:
           background: true
       - run:
           name: Start Argo
-          command: mkdir dist && KUBECONFIG=~/.kube/config make start DB=$DB
+          command: mkdir dist && KUBECONFIG=~/.kube/config make start DB=$DB E2E_EXECUTOR=docker
       - run:
           name: Establish port forward
           command: make pf

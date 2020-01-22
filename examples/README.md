@@ -390,7 +390,7 @@ We now know enough about the basic components of a workflow spec to review its b
 
 To summarize, workflow specs are composed of a set of Argo templates where each template consists of an optional input section, an optional output section and either a container invocation or a list of steps where each step invokes another template.
 
-Note that the controller section of the workflow spec will accept the same options as the controller section of a pod spec, including but not limited to environment variables, secrets, and volume mounts. Similarly, for volume claims and volumes.
+Note that the container section of the workflow spec will accept the same options as the container section of a pod spec, including but not limited to environment variables, secrets, and volume mounts. Similarly, for volume claims and volumes.
 
 ## Secrets
 

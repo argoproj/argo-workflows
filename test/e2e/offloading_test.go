@@ -30,7 +30,7 @@ func (s *OffloadingSuite) TestOffloading() {
 		When().
 		DeleteWorkflow()
 
-	time.Sleep(3*time.Second)
+	time.Sleep(3 * time.Second)
 
 	assert.Equal(s.T(), 0, s.Persistence.OffloadedCount())
 }

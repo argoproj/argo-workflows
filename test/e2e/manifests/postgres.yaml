@@ -188,6 +188,8 @@ rules:
   - get
   - list
   - watch
+  - update
+  - patch
   - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -366,7 +368,7 @@ spec:
         - --loglevel
         - debug
         env:
-        - name: ARGO_V2_TOKEN
+        - name: ARGO_TOKEN
           value: password
         image: argoproj/argocli:latest
         imagePullPolicy: Never
@@ -431,6 +433,8 @@ spec:
         - debug
         - --executor-image-pull-policy
         - Never
+        - --container-runtime-executor
+        - pns
         command:
         - workflow-controller
         env:
