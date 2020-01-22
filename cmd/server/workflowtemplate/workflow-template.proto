@@ -44,7 +44,11 @@ message WorkflowTemplateDeleteRequest {
 }
 message WorkflowDeleteResponse {
 }
-
+message WorkflowTemplateLintRequest {
+    string namespace = 1;
+    github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate template = 2;
+    k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions createOptions = 3;
+}
 
 service WorkflowTemplateService {
     rpc CreateWorkflowTemplate (WorkflowTemplateCreateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
@@ -73,7 +77,7 @@ service WorkflowTemplateService {
         option (google.api.http).delete = "/api/v1/workflow-templates/{namespace}/{name}";
     }
 
-    rpc LintWorkflowTemplate (WorkflowTemplateCreateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
+    rpc LintWorkflowTemplate (WorkflowTemplateLintRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
         option (google.api.http) = {
 			post: "/api/v1/workflow-templates/{namespace}/lint"
 			body: "*"
