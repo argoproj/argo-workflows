@@ -8,6 +8,7 @@ import {services} from '../../shared/services';
 interface WorkflowSubmitProps {
     defaultWorkflow: models.Workflow;
     ctx: ContextApis
+    currentNamespace: string;
 }
 
 interface WorkflowSubmitState {
@@ -32,12 +33,11 @@ export class WorkflowSubmit extends React.Component<WorkflowSubmitProps, Workflo
                     initialValues={{wf: this.state.wf, wfString: this.state.wfString}}
                     onSubmit={(values, {setSubmitting}) => {
                         services.workflows
-                            .create(values.wf, values.wf.metadata.namespace)
+                            .create(values.wf, values.wf.metadata.namespace || this.props.currentNamespace)
                             .then(wf => this.props.ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`))
                             .then(_ => setSubmitting(false))
                             .catch(error => {
                                 this.setState({error});
-                                console.log(error);
                                 setSubmitting(false)
                             });
                     }}>
