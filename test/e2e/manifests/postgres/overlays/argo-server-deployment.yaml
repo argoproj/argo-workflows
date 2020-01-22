@@ -1,0 +1,20 @@
+- op: replace
+  path: /spec/template/spec/containers/0/imagePullPolicy
+  value: Never
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: --auth-mode
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: client
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: --loglevel
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: debug
+- op: add
+  path: /spec/template/spec/containers/0/env
+  value:
+    - name: ARGO_TOKEN
+      value: password

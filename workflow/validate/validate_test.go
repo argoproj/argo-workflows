@@ -1214,6 +1214,8 @@ spec:
         - false
         - string
         - 1.2
+        - os: "debian"
+          version: "9.0"
 
   - name: whalesay
     inputs:
@@ -1946,6 +1948,109 @@ spec:
 func TestTemplateResolutionWithPlaceholderWorkflow(t *testing.T) {
 	{
 		wf := unmarshalWf(templateResolutionWithPlaceholderWorkflow)
+		err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+		assert.NoError(t, err)
+	}
+}
+
+var allowPlaceholderInVariableTakenFromInputs = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: argo-datadog-agent-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: kube-state-metrics-deployment
+      value: |
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: kube-state-metrics
+          namespace: kube-system
+        spec:
+          selector:
+            matchLabels:
+              k8s-app: kube-state-metrics
+          replicas: 1
+          template:
+            metadata:
+              labels:
+                k8s-app: kube-state-metrics
+            spec:
+              serviceAccountName: kube-state-metrics
+              containers:
+              - name: kube-state-metrics
+                image: quay.io/coreos/kube-state-metrics:v1.3.1
+                ports:
+                - name: http-metrics
+                  containerPort: 8080
+                - name: telemetry
+                  containerPort: 8081
+                readinessProbe:
+                  httpGet:
+                    path: /healthz
+                    port: 8080
+                  initialDelaySeconds: 5
+                  timeoutSeconds: 5
+
+    - name: kube-state-metrics-service
+      value: |
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: kube-state-metrics
+          namespace: kube-system
+          labels:
+            k8s-app: kube-state-metrics
+          annotations:
+            prometheus.io/scrape: 'true'
+        spec:
+          ports:
+          - name: http-metrics
+            port: 8080
+            targetPort: http-metrics
+            protocol: TCP
+          - name: telemetry
+            port: 8081
+            targetPort: telemetry
+            protocol: TCP
+          selector:
+            k8s-app: kube-state-metrics
+
+  templates:
+  - name: manifest
+    inputs:
+      parameters:
+      - name: action
+      - name: manifest
+    resource:
+      action: "{{inputs.parameters.action}}"
+      manifest: "{{inputs.parameters.manifest}}"
+
+  - name: main
+    inputs:
+      parameters:
+      - name: kube-state-metrics-deployment
+      - name: kube-state-metrics-service
+    steps:
+    - - name: kube-state-metrics-setup
+        template: manifest
+        arguments:
+          parameters:
+          - name: action
+            value: "apply"
+          - name: manifest
+            value: "{{item}}"
+        withItems:
+        - "{{inputs.parameters.kube-state-metrics-deployment}}"
+        - "{{inputs.parameters.kube-state-metrics-service}}"
+`
+
+func TestAllowPlaceholderInVariableTakenFromInputs(t *testing.T) {
+	{
+		wf := unmarshalWf(allowPlaceholderInVariableTakenFromInputs)
 		err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
 		assert.NoError(t, err)
 	}

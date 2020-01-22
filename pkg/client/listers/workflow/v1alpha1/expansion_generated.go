@@ -2,6 +2,14 @@
 
 package v1alpha1
 
+// CronWorkflowListerExpansion allows custom methods to be added to
+// CronWorkflowLister.
+type CronWorkflowListerExpansion interface{}
+
+// CronWorkflowNamespaceListerExpansion allows custom methods to be added to
+// CronWorkflowNamespaceLister.
+type CronWorkflowNamespaceListerExpansion interface{}
+
 // WorkflowListerExpansion allows custom methods to be added to
 // WorkflowLister.
 type WorkflowListerExpansion interface{}

@@ -199,8 +199,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
-	var retryLimit int32
-	retryLimit = 2
+	retryLimit := int32(2)
 	retries.Limit = &retryLimit
 	retries.RetryPolicy = wfv1.RetryPolicyAlways
 	woc.wf.Status.Nodes[nodeID] = *node
@@ -240,7 +239,8 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	// Mark the parent node as running again and the lastChild as errored.
 	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
 	woc.markNodePhase(lastChild.Name, wfv1.NodeError)
-	woc.processNodeRetries(n, retries)
+	_, _, err = woc.processNodeRetries(n, retries)
+	assert.NoError(t, err)
 	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
@@ -271,8 +271,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	nodeID := woc.wf.NodeID(nodeName)
 	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
-	var retryLimit int32
-	retryLimit = 2
+	retryLimit := int32(2)
 	retries.Limit = &retryLimit
 	retries.RetryPolicy = wfv1.RetryPolicyOnFailure
 	woc.wf.Status.Nodes[nodeID] = *node
@@ -313,7 +312,8 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	// Parent node should also be errored because retry on error is disabled
 	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
 	woc.markNodePhase(lastChild.Name, wfv1.NodeError)
-	woc.processNodeRetries(n, retries)
+	_, _, err = woc.processNodeRetries(n, retries)
+	assert.NoError(t, err)
 	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, wfv1.NodeError, n.Phase)
 }
@@ -897,7 +897,7 @@ spec:
         arguments:
           parameters:
           - name: message
-            value: "{{item.os}} {{item.version}}"
+            value: "{{item.os}} {{item.version}} JSON({{item}})"
         withItems:
         - {os: debian, version: 9.1}
         - {os: debian, version: 9.1}
@@ -910,7 +910,7 @@ spec:
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
-      args: ["cowsay {{inputs.parameters.message}}"]
+      args: ["cowsay \"{{inputs.parameters.message}}\""]
 `
 
 func TestExpandWithItemsMap(t *testing.T) {
@@ -924,6 +924,7 @@ func TestExpandWithItemsMap(t *testing.T) {
 	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0].Steps[0])
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(newSteps))
+	assert.Equal(t, "debian 9.1 JSON({\"os\":\"debian\",\"version\":9.1})", *newSteps[0].Arguments.Parameters[0].Value)
 }
 
 var suspendTemplate = `
@@ -1934,6 +1935,61 @@ func TestWithParamAsJsonList(t *testing.T) {
 	assert.Equal(t, 4, len(pods.Items))
 }
 
+var stepsOnExit = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: steps-on-exit
+spec:
+  entrypoint: suspend
+  templates:
+  - name: suspend
+    steps:
+    - - name: leafA
+        onExit: exitContainer
+        template: whalesay
+    - - name: leafB
+        onExit: exitContainer
+        template: whalesay
+
+  - name: whalesay
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["hello world"]
+
+  - name: exitContainer
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["goodbye world"]
+`
+
+func TestStepsOnExit(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// Test list expansion
+	wf := unmarshalWF(stepsOnExit)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	woc.operate()
+
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	onExitNodeIsPresent := false
+	for _, node := range wf.Status.Nodes {
+		if strings.Contains(node.Name, "onExit") {
+			onExitNodeIsPresent = true
+			break
+		}
+	}
+	assert.True(t, onExitNodeIsPresent)
+}
+
 var testTemplateScopeWorkflowYaml = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -2049,4 +2105,113 @@ func findNodeByName(nodes map[string]wfv1.NodeStatus, name string) *wfv1.NodeSta
 		}
 	}
 	return nil
+}
+
+var invalidSpec = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: invalid-spec
+spec:
+  entrypoint: 123
+`
+
+func TestEventInvalidSpec(t *testing.T) {
+	// Test whether a WorkflowFailed event is emitted in case of invalid spec
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(invalidSpec)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	events, err := controller.kubeclientset.CoreV1().Events("").List(metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(events.Items))
+	runningEvent := events.Items[0]
+	assert.Equal(t, "WorkflowRunning", runningEvent.Reason)
+	invalidSpecEvent := events.Items[1]
+	assert.Equal(t, "WorkflowFailed", invalidSpecEvent.Reason)
+	assert.Equal(t, "invalid spec: template name '123' undefined", invalidSpecEvent.Message)
+}
+
+var timeout = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: timeout-template
+spec:
+  entrypoint: sleep
+  activeDeadlineSeconds: 1
+  templates:
+  - name: sleep
+    container:
+      image: alpine:latest
+      command: [sh, -c, sleep 10]
+`
+
+func TestEventTimeout(t *testing.T) {
+	// Test whether a WorkflowTimedOut event is emitted in case of timeout
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(timeout)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	makePodsRunning(t, controller.kubeclientset, wf.ObjectMeta.Namespace)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.NoError(t, err)
+	woc = newWorkflowOperationCtx(wf, controller)
+	time.Sleep(10 * time.Second)
+	woc.operate()
+	events, err := controller.kubeclientset.CoreV1().Events("").List(metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(events.Items))
+	runningEvent := events.Items[0]
+	assert.Equal(t, "WorkflowRunning", runningEvent.Reason)
+	timeoutEvent := events.Items[1]
+	assert.Equal(t, "WorkflowTimedOut", timeoutEvent.Reason)
+	assert.True(t, strings.HasPrefix(timeoutEvent.Message, "timeout-template error in entry template execution: Deadline exceeded"))
+}
+
+var failLoadArtifactRepoCm = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-repo-config-ref-
+spec:
+  entrypoint: whalesay
+  artifactRepositoryRef:
+    configMap: artifact-repository
+    key: config
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+    outputs:
+      artifacts:
+      - name: message
+        path: /tmp/hello_world.txt
+`
+
+func TestEventFailArtifactRepoCm(t *testing.T) {
+	// Test whether a WorkflowFailed event is emitted in case of failure in loading artifact repository config map
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(failLoadArtifactRepoCm)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	events, err := controller.kubeclientset.CoreV1().Events("").List(metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(events.Items))
+	runningEvent := events.Items[0]
+	assert.Equal(t, "WorkflowRunning", runningEvent.Reason)
+	failEvent := events.Items[1]
+	assert.Equal(t, "WorkflowFailed", failEvent.Reason)
+	assert.Equal(t, "Failed to load artifact repository configMap: configmaps \"artifact-repository\" not found", failEvent.Message)
 }

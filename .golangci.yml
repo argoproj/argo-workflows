@@ -1,0 +1,20 @@
+# https://github.com/golangci/golangci/wiki/Configuration
+run:
+  deadline: 2m
+  skip-dirs:
+    - pkg/client
+    - vendor
+    - ui
+  skip-files:
+    - cmd/server/static/files.go
+linters:
+  enable:
+    - goimports
+linters-settings:
+  goimports:
+    local-prefixes: github.com/argoproj/argo
+service:
+  golangci-lint-version: 1.21.x
+  project-path: github.com/argoproj/argo
+  prepare:
+    - make vendor cmd/server/static/files.go CI=true

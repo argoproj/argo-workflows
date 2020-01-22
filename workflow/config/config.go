@@ -1,9 +1,10 @@
 package config
 
 import (
+	apiv1 "k8s.io/api/core/v1"
+
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/metrics"
-	apiv1 "k8s.io/api/core/v1"
 )
 
 // WorkflowControllerConfig contain the configuration settings for the workflow controller
@@ -39,6 +40,7 @@ type WorkflowControllerConfig struct {
 	ArtifactRepository ArtifactRepository `json:"artifactRepository,omitempty"`
 
 	// Namespace is a label selector filter to limit the controller's watch to a specific namespace
+	// DEPRECATED: support will be remove in a future release
 	Namespace string `json:"namespace,omitempty"`
 
 	// InstanceID is a label selector to limit the controller's watch to a specific instance. It
@@ -96,11 +98,22 @@ func (a *ArtifactRepository) IsArchiveLogs() bool {
 }
 
 type PersistConfig struct {
-	NodeStatusOffload bool              `json:"nodeStatusOffLoad"`
-	ConnectionPool    *ConnectionPool   `json:"connectionPool"`
-	PostgreSQL        *PostgreSQLConfig `json:"postgresql,omitempty"`
-	MySQL             *MySQLConfig      `json:"mysql,omitempty"`
+	NodeStatusOffload bool `json:"nodeStatusOffLoad,omitempty"`
+	// Archive workflows to persistence.
+	Archive        bool              `json:"archive,omitempty"`
+	ClusterName    string            `json:"clusterName,omitempty"`
+	ConnectionPool *ConnectionPool   `json:"connectionPool"`
+	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
+	MySQL          *MySQLConfig      `json:"mysql,omitempty"`
 }
+
+func (c PersistConfig) GetClusterName() string {
+	if c.ClusterName != "" {
+		return c.ClusterName
+	}
+	return "default"
+}
+
 type ConnectionPool struct {
 	MaxIdleConns int `json:"maxIdleConns"`
 	MaxOpenConns int `json:"maxOpenConns"`

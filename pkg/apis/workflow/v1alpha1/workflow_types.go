@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -95,16 +96,45 @@ type Workflow struct {
 	Status            WorkflowStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
 }
 
+// Workflows is a sort interface which sorts running jobs earlier before considering FinishedAt
+type Workflows []Workflow
+
+func (w Workflows) Len() int      { return len(w) }
+func (w Workflows) Swap(i, j int) { w[i], w[j] = w[j], w[i] }
+func (w Workflows) Less(i, j int) bool {
+	iStart := w[i].ObjectMeta.CreationTimestamp
+	iFinish := w[i].Status.FinishedAt
+	jStart := w[j].ObjectMeta.CreationTimestamp
+	jFinish := w[j].Status.FinishedAt
+	if iFinish.IsZero() && jFinish.IsZero() {
+		return !iStart.Before(&jStart)
+	}
+	if iFinish.IsZero() && !jFinish.IsZero() {
+		return true
+	}
+	if !iFinish.IsZero() && jFinish.IsZero() {
+		return false
+	}
+	return jFinish.Before(&iFinish)
+}
+
 // WorkflowList is list of Workflow resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type WorkflowList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-	Items           []Workflow `json:"items" protobuf:"bytes,2,opt,name=items"`
+	Items           Workflows `json:"items" protobuf:"bytes,2,opt,name=items"`
 }
 
 var _ TemplateGetter = &Workflow{}
 var _ TemplateStorage = &Workflow{}
+
+// TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed
+type TTLStrategy struct {
+	SecondsAfterCompletion *int32 `json:"secondsAfterCompletion,omitempty" protobuf:"bytes,1,opt,name=secondsAfterCompletion"`
+	SecondsAfterSuccess    *int32 `json:"secondsAfterSuccess,omitempty" protobuf:"bytes,2,opt,name=secondsAfterSuccess"`
+	SecondsAfterFailure    *int32 `json:"secondsAfterFailure,omitempty" protobuf:"bytes,3,opt,name=secondsAfterFailure"`
+}
 
 // WorkflowSpec is the specification of a Workflow.
 type WorkflowSpec struct {
@@ -199,7 +229,15 @@ type WorkflowSpec struct {
 	// deleted after ttlSecondsAfterFinished expires. If this field is unset,
 	// ttlSecondsAfterFinished will not expire. If this field is set to zero,
 	// ttlSecondsAfterFinished expires immediately after the Workflow finishes.
+	// DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.
 	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished,omitempty" protobuf:"bytes,18,opt,name=ttlSecondsAfterFinished"`
+
+	// TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
+	// Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be
+	// deleted after the time to live expires. If this field is unset,
+	// the controller config map will hold the default values
+	// Update
+	TTLStrategy *TTLStrategy `json:"ttlStrategy,omitempty" protobuf:"bytes,30,opt,name=ttlStrategy"`
 
 	// Optional duration in seconds relative to the workflow start time which the workflow is
 	// allowed to run before the controller terminates the workflow. A value of zero is used to
@@ -230,8 +268,9 @@ type WorkflowSpec struct {
 
 	// SecurityContext holds pod-level security attributes and common container settings.
 	// Optional: Defaults to empty.  See type description for default values of each field.
-	// +optiona
+	// +optional
 	SecurityContext *apiv1.PodSecurityContext `json:"securityContext,omitempty" protobuf:"bytes,26,opt,name=securityContext"`
+
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,27,opt,name=podSpecPatch"`
@@ -379,7 +418,6 @@ type Template struct {
 	// SecurityContext holds pod-level security attributes and common container settings.
 	// Optional: Defaults to empty.  See type description for default values of each field.
 	// +optional
-
 	SecurityContext *apiv1.PodSecurityContext `json:"securityContext,omitempty" protobuf:"bytes,30,opt,name=securityContext"`
 
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
@@ -416,6 +454,17 @@ func (tmpl *Template) HasPodSpecPatch() bool {
 	return tmpl.PodSpecPatch != ""
 }
 
+type Artifacts []Artifact
+
+func (a Artifacts) GetArtifactByName(name string) *Artifact {
+	for _, art := range a {
+		if art.Name == name {
+			return &art
+		}
+	}
+	return nil
+}
+
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 type Inputs struct {
 	// Parameters are a list of parameters passed as inputs
@@ -426,7 +475,7 @@ type Inputs struct {
 	// Artifact are a list of artifacts passed as inputs
 	// +patchStrategy=merge
 	// +patchMergeKey=name
-	Artifacts []Artifact `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,opt,name=artifacts"`
+	Artifacts Artifacts `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,opt,name=artifacts"`
 }
 
 // Pod metdata
@@ -564,7 +613,7 @@ type Outputs struct {
 	// Artifacts holds the list of output artifacts produced by a step
 	// +patchStrategy=merge
 	// +patchMergeKey=name
-	Artifacts []Artifact `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
+	Artifacts Artifacts `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
 
 	// Result holds the result (stdout) of a script template
 	Result *string `json:"result,omitempty" protobuf:"bytes,3,opt,name=result"`
@@ -600,6 +649,11 @@ type WorkflowStep struct {
 	// ContinueOn makes argo to proceed with the following step even if this step fails.
 	// Errors and Failed states can be specified
 	ContinueOn *ContinueOn `json:"continueOn,omitempty" protobuf:"bytes,9,opt,name=continueOn"`
+
+	// OnExit is a template reference which is invoked at the end of the
+	// template, irrespective of the success, failure, or error of the
+	// primary template.
+	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 }
 
 var _ TemplateHolder = &WorkflowStep{}
@@ -678,7 +732,7 @@ type Arguments struct {
 	// Artifacts is the list of artifacts to pass to the template or workflow
 	// +patchStrategy=merge
 	// +patchMergeKey=name
-	Artifacts []Artifact `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
+	Artifacts Artifacts `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
 }
 
 var _ ArgumentsProvider = &Arguments{}
@@ -725,6 +779,10 @@ type WorkflowStatus struct {
 	// Nodes is a mapping between a node ID and the node's status.
 	Nodes Nodes `json:"nodes,omitempty" protobuf:"bytes,6,rep,name=nodes"`
 
+	// Whether on not node status has been offloaded to a database. If exists, then Nodes and CompressedNodes will be empty.
+	// This will actually be populated with a hash of the offloaded data.
+	OffloadNodeStatusVersion string `json:"offloadNodeStatusVersion,omitempty" protobuf:"bytes,10,rep,name=offloadNodeStatusVersion"`
+
 	// StoredTemplates is a mapping between a template ref and the node's status.
 	StoredTemplates map[string]Template `json:"storedTemplates,omitempty" protobuf:"bytes,9,rep,name=storedTemplates"`
 
@@ -734,6 +792,18 @@ type WorkflowStatus struct {
 
 	// Outputs captures output values and artifact locations produced by the workflow via global outputs
 	Outputs *Outputs `json:"outputs,omitempty" protobuf:"bytes,8,opt,name=outputs"`
+}
+
+func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
+	return ws.OffloadNodeStatusVersion != ""
+}
+
+func (ws *WorkflowStatus) GetOffloadNodeStatusVersion() string {
+	return ws.OffloadNodeStatusVersion
+}
+
+func (wf *Workflow) GetOffloadNodeStatusVersion() string {
+	return wf.Status.GetOffloadNodeStatusVersion()
 }
 
 type RetryPolicy string
@@ -849,7 +919,7 @@ func isCompletedPhase(phase NodePhase) bool {
 		phase == NodeSkipped
 }
 
-// Remove returns whether or not the workflow has completed execution
+// Completed returns whether or not the workflow has completed execution
 func (ws *WorkflowStatus) Completed() bool {
 	return isCompletedPhase(ws.Phase)
 }
@@ -857,6 +927,11 @@ func (ws *WorkflowStatus) Completed() bool {
 // Successful return whether or not the workflow has succeeded
 func (ws *WorkflowStatus) Successful() bool {
 	return ws.Phase == NodeSucceeded
+}
+
+// Failed return whether or not the workflow has failed
+func (ws *WorkflowStatus) Failed() bool {
+	return ws.Phase == NodeFailed
 }
 
 // Remove returns whether or not the node has completed execution
@@ -1195,6 +1270,11 @@ type DAGTask struct {
 	// ContinueOn makes argo to proceed with the following step even if this step fails.
 	// Errors and Failed states can be specified
 	ContinueOn *ContinueOn `json:"continueOn,omitempty" protobuf:"bytes,10,opt,name=continueOn"`
+
+	// OnExit is a template reference which is invoked at the end of the
+	// template, irrespective of the success, failure, or error of the
+	// primary template.
+	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 }
 
 var _ TemplateHolder = &DAGTask{}
@@ -1219,12 +1299,7 @@ type SuspendTemplate struct {
 
 // GetArtifactByName returns an input artifact by its name
 func (in *Inputs) GetArtifactByName(name string) *Artifact {
-	for _, art := range in.Artifacts {
-		if art.Name == name {
-			return &art
-		}
-	}
-	return nil
+	return in.Artifacts.GetArtifactByName(name)
 }
 
 // GetParameterByName returns an input parameter by its name
@@ -1262,14 +1337,13 @@ func (out *Outputs) HasOutputs() bool {
 	return false
 }
 
+func (out *Outputs) GetArtifactByName(name string) *Artifact {
+	return out.Artifacts.GetArtifactByName(name)
+}
+
 // GetArtifactByName retrieves an artifact by its name
 func (args *Arguments) GetArtifactByName(name string) *Artifact {
-	for _, art := range args.Artifacts {
-		if art.Name == name {
-			return &art
-		}
-	}
-	return nil
+	return args.Artifacts.GetArtifactByName(name)
 }
 
 // GetParameterByName retrieves a parameter by its name

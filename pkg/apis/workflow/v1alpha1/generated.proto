@@ -130,6 +130,61 @@ message ContinueOn {
   optional bool failed = 2;
 }
 
+// CronWorkflow is the definition of a scheduled workflow resource
+// +genclient
+// +genclient:noStatus
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message CronWorkflow {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional CronWorkflowSpec spec = 2;
+
+  optional CronWorkflowStatus status = 3;
+}
+
+// CronWorkflowList is list of CronWorkflow resources
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message CronWorkflowList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated CronWorkflow items = 2;
+}
+
+message CronWorkflowSpec {
+  // WorkflowSpec is the spec of the workflow to be run
+  optional WorkflowSpec workflowSpec = 1;
+
+  // Schedule is a schedule to run the Workflow in Cron format
+  optional string schedule = 2;
+
+  // ConcurrencyPolicy is the K8s-style concurrency policy that will be used
+  optional string concurrencyPolicy = 3;
+
+  // Suspend is a flag that will stop new CronWorkflows from running if set to true
+  optional bool suspend = 4;
+
+  // StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its
+  // original scheduled time if it is missed.
+  optional int64 startingDeadlineSeconds = 5;
+
+  // SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time
+  optional int32 successfulJobsHistoryLimit = 6;
+
+  // FailedJobsHistoryLimit is the number of successful jobs to be kept at a time
+  optional int32 failedJobsHistoryLimit = 7;
+
+  // Timezone is the timezone against which the cron schedule will be calculated, e.g. "Asia/Tokyo". Default is machine's local time.
+  optional string timezone = 8;
+}
+
+message CronWorkflowStatus {
+  // Active is a list of active workflows stemming from this CronWorkflow
+  repeated k8s.io.api.core.v1.ObjectReference active = 1;
+
+  // LastScheduleTime is the last time the CronWorkflow was scheduled
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastScheduledTime = 2;
+}
+
 // DAGTask represents a node in the graph during DAG execution
 message DAGTask {
   // Name is the name of the target
@@ -163,6 +218,11 @@ message DAGTask {
   // ContinueOn makes argo to proceed with the following step even if this step fails.
   // Errors and Failed states can be specified
   optional ContinueOn continueOn = 10;
+
+  // OnExit is a template reference which is invoked at the end of the
+  // template, irrespective of the success, failure, or error of the
+  // primary template.
+  optional string onExit = 11;
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -569,6 +629,15 @@ message SuspendTemplate {
   optional string duration = 1;
 }
 
+// TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed
+message TTLStrategy {
+  optional int32 secondsAfterCompletion = 1;
+
+  optional int32 secondsAfterSuccess = 2;
+
+  optional int32 secondsAfterFailure = 3;
+}
+
 // TarStrategy will tar and gzip the file or directory when saving
 message TarStrategy {
 }
@@ -692,6 +761,9 @@ message Template {
   // +patchMergeKey=ip
   repeated k8s.io.api.core.v1.HostAlias hostAliases = 29;
 
+  // SecurityContext holds pod-level security attributes and common container settings.
+  // Optional: Defaults to empty.  See type description for default values of each field.
+  // +optional
   optional k8s.io.api.core.v1.PodSecurityContext securityContext = 30;
 
   // PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
@@ -852,7 +924,15 @@ message WorkflowSpec {
   // deleted after ttlSecondsAfterFinished expires. If this field is unset,
   // ttlSecondsAfterFinished will not expire. If this field is set to zero,
   // ttlSecondsAfterFinished expires immediately after the Workflow finishes.
+  // DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.
   optional int32 ttlSecondsAfterFinished = 18;
+
+  // TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
+  // Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be
+  // deleted after the time to live expires. If this field is unset,
+  // the controller config map will hold the default values
+  // Update
+  optional TTLStrategy ttlStrategy = 30;
 
   // Optional duration in seconds relative to the workflow start time which the workflow is
   // allowed to run before the controller terminates the workflow. A value of zero is used to
@@ -883,7 +963,7 @@ message WorkflowSpec {
 
   // SecurityContext holds pod-level security attributes and common container settings.
   // Optional: Defaults to empty.  See type description for default values of each field.
-  // +optiona
+  // +optional
   optional k8s.io.api.core.v1.PodSecurityContext securityContext = 26;
 
   // PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
@@ -910,6 +990,10 @@ message WorkflowStatus {
 
   // Nodes is a mapping between a node ID and the node's status.
   map<string, NodeStatus> nodes = 6;
+
+  // Whether on not node status has been offloaded to a database. If exists, then Nodes and CompressedNodes will be empty.
+  // This will actually be populated with a hash of the offloaded data.
+  optional string offloadNodeStatusVersion = 10;
 
   // StoredTemplates is a mapping between a template ref and the node's status.
   map<string, Template> storedTemplates = 9;
@@ -952,6 +1036,11 @@ message WorkflowStep {
   // ContinueOn makes argo to proceed with the following step even if this step fails.
   // Errors and Failed states can be specified
   optional ContinueOn continueOn = 9;
+
+  // OnExit is a template reference which is invoked at the end of the
+  // template, irrespective of the success, failure, or error of the
+  // primary template.
+  optional string onExit = 11;
 }
 
 // WorkflowTemplate is the definition of a workflow template resource
@@ -978,6 +1067,6 @@ message WorkflowTemplateSpec {
   repeated Template templates = 1;
 
   // Arguments hold arguments to the template.
-  optional Arguments arguments = 2;
+  optional Arguments arguments = 3;
 }
 

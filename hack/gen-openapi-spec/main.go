@@ -7,9 +7,10 @@ import (
 	"os"
 	"strings"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/go-openapi/spec"
 	"k8s.io/kube-openapi/pkg/common"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 // Generate OpenAPI spec definitions for Workflow Resource

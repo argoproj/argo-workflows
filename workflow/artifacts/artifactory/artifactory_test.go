@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	art "github.com/argoproj/argo/workflow/artifacts/artifactory"
-	"github.com/stretchr/testify/assert"
 )
 
 const (

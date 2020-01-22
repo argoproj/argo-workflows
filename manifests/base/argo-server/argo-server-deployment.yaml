@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-server
+spec:
+  selector:
+    matchLabels:
+      app: argo-server
+  template:
+    metadata:
+      labels:
+        app: argo-server
+    spec:
+      serviceAccountName: argo-server
+      containers:
+        - name: argo-server
+          image: argoproj/argocli:latest
+          args: [server]
+          ports:
+            - containerPort: 2746
+          readinessProbe:
+            httpGet:
+              port: 2746
+              scheme: HTTP
+              path: /
+            initialDelaySeconds: 5
+            periodSeconds: 30
