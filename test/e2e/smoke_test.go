@@ -34,7 +34,7 @@ func (s *SmokeSuite) TestArtifactPassing() {
 		Workflow("@smoke/artifact-passing.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(25 * time.Second).
+		WaitForWorkflow(30 * time.Second).
 		Then().
 		Expect(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
