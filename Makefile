@@ -84,11 +84,11 @@ else
 endif
 	touch ui/dist/app
 
-$(GOPATH)/bin/staticfiles:
+staticfiles:
 	# Install the "staticfiles" tool
 	go get bou.ke/staticfiles
 
-cmd/server/static/files.go: ui/dist/app $(GOPATH)/bin/staticfiles
+cmd/server/static/files.go: ui/dist/app staticfiles
 	# Pack UI into a Go file.
 	staticfiles -o cmd/server/static/files.go ui/dist/app
 
