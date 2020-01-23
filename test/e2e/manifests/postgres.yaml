@@ -1,3 +1,4 @@
+# This is an auto-generated file. DO NOT EDIT
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
@@ -141,6 +142,12 @@ rules:
   - update
   - patch
   - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -370,6 +377,8 @@ spec:
         env:
         - name: ARGO_TOKEN
           value: password
+        - name: UPPERIO_DB_DEBUG
+          value: "1"
         image: argoproj/argocli:latest
         imagePullPolicy: Never
         name: argo-server
@@ -408,6 +417,16 @@ spec:
         name: main
         ports:
         - containerPort: 5432
+        readinessProbe:
+          exec:
+            command:
+            - psql
+            - -U
+            - postgres
+            - -c
+            - SELECT 1
+          initialDelaySeconds: 15
+          timeoutSeconds: 2
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -442,6 +461,8 @@ spec:
           value: "true"
         - name: WORKFLOW_GC_PERIOD
           value: 30s
+        - name: UPPERIO_DB_DEBUG
+          value: "1"
         image: argoproj/workflow-controller:latest
         imagePullPolicy: Never
         name: workflow-controller
@@ -464,7 +485,7 @@ spec:
       value: admin
     - name: MINIO_SECRET_KEY
       value: password
-    image: minio/minio
+    image: minio/minio:RELEASE.2019-12-17T23-16-33Z
     lifecycle:
       postStart:
         exec:

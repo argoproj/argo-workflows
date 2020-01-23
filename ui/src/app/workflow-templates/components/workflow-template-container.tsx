@@ -5,7 +5,7 @@ import {WorkflowTemplateList} from './workflow-template-list/workflow-template-l
 
 export const WorkflowTemplateContainer = (props: RouteComponentProps<any>) => (
     <Switch>
-        <Route exact={true} path={`${props.match.path}`} component={WorkflowTemplateList} />
+        <Route exact={true} path={`${props.match.path}/:namespace?`} component={WorkflowTemplateList} />
         <Route exact={true} path={`${props.match.path}/:namespace/:name`} component={WorkflowTemplateDetails} />
     </Switch>
 );

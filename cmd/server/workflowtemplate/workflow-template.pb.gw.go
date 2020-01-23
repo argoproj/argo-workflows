@@ -445,7 +445,7 @@ func local_request_WorkflowTemplateService_DeleteWorkflowTemplate_0(ctx context.
 }
 
 func request_WorkflowTemplateService_LintWorkflowTemplate_0(ctx context.Context, marshaler runtime.Marshaler, client WorkflowTemplateServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq WorkflowTemplateCreateRequest
+	var protoReq WorkflowTemplateLintRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -480,7 +480,7 @@ func request_WorkflowTemplateService_LintWorkflowTemplate_0(ctx context.Context,
 }
 
 func local_request_WorkflowTemplateService_LintWorkflowTemplate_0(ctx context.Context, marshaler runtime.Marshaler, server WorkflowTemplateServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq WorkflowTemplateCreateRequest
+	var protoReq WorkflowTemplateLintRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
