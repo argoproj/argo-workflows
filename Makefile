@@ -84,6 +84,7 @@ else
 endif
 	touch ui/dist/app
 
+.PHONY: staticfiles
 staticfiles:
 	# Install the "staticfiles" tool
 	go get bou.ke/staticfiles
