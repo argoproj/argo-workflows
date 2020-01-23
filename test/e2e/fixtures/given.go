@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"k8s.io/client-go/kubernetes"
-
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/persist/sqldb"
@@ -63,6 +62,12 @@ func (g *Given) Workflow(text string) *Given {
 			g.t.Fatal(err)
 		}
 	}
+	if g.wf.GetLabels() == nil {
+		g.wf.SetLabels(map[string]string{})
+	}
+	if g.wf.GetLabels()[label] == "" {
+		g.wf.GetLabels()[label] = "true"
+	}
 	return g
 }
 
@@ -104,7 +109,9 @@ func (g *Given) WorkflowTemplate(text string) *Given {
 		if wfTemplate.GetLabels() == nil {
 			wfTemplate.SetLabels(map[string]string{})
 		}
-		wfTemplate.GetLabels()[label] = "true"
+		if wfTemplate.GetLabels()[label] == "" {
+			wfTemplate.GetLabels()[label] = "true"
+		}
 		g.wfTemplates = append(g.wfTemplates, wfTemplate)
 	}
 	return g
@@ -143,7 +150,9 @@ func (g *Given) CronWorkflow(text string) *Given {
 		if g.cronWf.GetLabels() == nil {
 			g.cronWf.SetLabels(map[string]string{})
 		}
-		g.cronWf.GetLabels()[label] = "true"
+		if g.cronWf.GetLabels()[label] == "" {
+			g.cronWf.GetLabels()[label] = "true"
+		}
 	}
 	return g
 }
