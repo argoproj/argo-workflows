@@ -371,9 +371,8 @@ func TestTTLDefault(t *testing.T) {
 	assert.Equal(t, ten, *controller.defaultTTLStrategy.SecondsAfterFailure)
 }
 
-func TestTTLExpiredDefault(t *testing.T) {
+func TestTTLExpiredDefaultTimeLeft(t *testing.T) {
 	controller := newTTLControllerDefaultTTL()
-	//var ten int32 = 10
 
 	// Should be one second over
 	wfOne := test.LoadWorkflowFromBytes([]byte(failedWf))
@@ -400,5 +399,41 @@ func TestTTLExpiredDefault(t *testing.T) {
 		output = true
 	}
 	assert.Equal(t, false, output)
+
+}
+
+func TestTTLlExpiredDefault(t *testing.T) {
+	controller := newTTLControllerDefaultTTL()
+	var ten int32 = 10
+
+	wf := test.LoadWorkflowFromBytes([]byte(failedWf))
+	wf.Spec.TTLStrategy = &wfv1.TTLStrategy{SecondsAfterFailure: &ten}
+	wf.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
+	assert.Equal(t, true, wf.Status.Failed())
+	assert.Equal(t, true, controller.ttlExpired(wf))
+
+	wf1 := test.LoadWorkflowFromBytes([]byte(failedWf))
+	wf1.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-5 * time.Second)}
+	assert.Equal(t, false, controller.ttlExpired(wf1))
+
+	wf2 := test.LoadWorkflowFromBytes([]byte(failedWf))
+	wf2.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
+	assert.Equal(t, true, controller.ttlExpired(wf2))
+
+	wf3 := test.LoadWorkflowFromBytes([]byte(failedWf))
+	wf3.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-5 * time.Second)}
+	assert.Equal(t, false, controller.ttlExpired(wf3))
+
+	wf4 := test.LoadWorkflowFromBytes([]byte(failedWf))
+	wf4.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
+	assert.Equal(t, true, controller.ttlExpired(wf4))
+
+	wf5 := test.LoadWorkflowFromBytes([]byte(succeededWf))
+	wf5.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-5 * time.Second)}
+	assert.Equal(t, false, controller.ttlExpired(wf5))
+
+	wf6 := test.LoadWorkflowFromBytes([]byte(succeededWf))
+	wf6.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
+	assert.Equal(t, true, controller.ttlExpired(wf6))
 
 }
