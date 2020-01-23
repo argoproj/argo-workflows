@@ -7,7 +7,7 @@ import {services} from '../../shared/services';
 
 interface WorkflowSubmitProps {
     defaultWorkflow: models.Workflow;
-    ctx: ContextApis
+    ctx: ContextApis;
     currentNamespace: string;
 }
 
@@ -33,7 +33,7 @@ export class WorkflowSubmit extends React.Component<WorkflowSubmitProps, Workflo
                             .then(_ => setSubmitting(false))
                             .catch(error => {
                                 this.setState({error});
-                                setSubmitting(false)
+                                setSubmitting(false);
                             });
                     }}>
                     {(formikApi: any) => (
@@ -61,14 +61,14 @@ export class WorkflowSubmit extends React.Component<WorkflowSubmitProps, Workflo
                                             formikApi.setFieldValue('wf', jsYaml.load(e.currentTarget.value));
                                             this.setState({
                                                 error: undefined
-                                            })
+                                            });
                                         } catch (e) {
                                             this.setState({
                                                 error: {
-                                                    name: "Workflow is invalid",
-                                                    message: "Workflow is invalid",
+                                                    name: 'Workflow is invalid',
+                                                    message: 'Workflow is invalid'
                                                 }
-                                            })
+                                            });
                                         }
                                     }}
                                     onFocus={e => (e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px')}
