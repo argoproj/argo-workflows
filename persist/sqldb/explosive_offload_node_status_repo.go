@@ -3,10 +3,11 @@ package sqldb
 import (
 	"fmt"
 
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-var ExplosiveOffloadNodeStatusRepo = &explosiveOffloadNodeStatusRepo{}
+var ExplosiveOffloadNodeStatusRepo OffloadNodeStatusRepo = &explosiveOffloadNodeStatusRepo{}
+var notSupportedError = fmt.Errorf("offload node status is not supported")
 
 type explosiveOffloadNodeStatusRepo struct {
 }
@@ -15,18 +16,22 @@ func (n *explosiveOffloadNodeStatusRepo) IsEnabled() bool {
 	return false
 }
 
-func (n *explosiveOffloadNodeStatusRepo) Save(*v1alpha1.Workflow) error {
-	return fmt.Errorf("offload node status not supported")
+func (n *explosiveOffloadNodeStatusRepo) Save(string, string, wfv1.Nodes) (string, error) {
+	return "", notSupportedError
 }
 
-func (n *explosiveOffloadNodeStatusRepo) Get(string, string) (*v1alpha1.Workflow, error) {
-	return nil, fmt.Errorf("offload node status not supported")
+func (n *explosiveOffloadNodeStatusRepo) Get(string, string) (wfv1.Nodes, error) {
+	return nil, notSupportedError
 }
 
-func (n *explosiveOffloadNodeStatusRepo) List(string) (v1alpha1.Workflows, error) {
-	return nil, fmt.Errorf("offload node status not supported")
+func (n *explosiveOffloadNodeStatusRepo) List(string) (map[UUIDVersion]wfv1.Nodes, error) {
+	return nil, notSupportedError
 }
 
-func (n *explosiveOffloadNodeStatusRepo) Delete(string, string) error {
-	return fmt.Errorf("offload node status disabled")
+func (n *explosiveOffloadNodeStatusRepo) Delete(string) error {
+	return notSupportedError
+}
+
+func (n *explosiveOffloadNodeStatusRepo) ListOldUIDs(namespace string) ([]string, error) {
+	return nil, notSupportedError
 }

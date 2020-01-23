@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -52,6 +54,7 @@ type WorkflowController struct {
 
 	// cliExecutorImagePullPolicy is the executor imagePullPolicy as specified from the command line
 	cliExecutorImagePullPolicy string
+	containerRuntimeExecutor   string
 
 	// restConfig is used by controller to send a SIGUSR1 to the wait sidecar using remotecommand.NewSPDYExecutor().
 	restConfig    *rest.Config
@@ -88,6 +91,7 @@ func NewWorkflowController(
 	managedNamespace string,
 	executorImage,
 	executorImagePullPolicy,
+	containerRuntimeExecutor,
 	configMap string,
 ) *WorkflowController {
 	wfc := WorkflowController{
@@ -99,6 +103,7 @@ func NewWorkflowController(
 		managedNamespace:           managedNamespace,
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
+		containerRuntimeExecutor:   containerRuntimeExecutor,
 		wfQueue:                    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:                   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		completedPods:              make(chan string, 512),
@@ -165,6 +170,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.podInformer.Run(ctx.Done())
 	go wfc.podLabeler(ctx.Done())
 	go wfc.podGarbageCollector(ctx.Done())
+	go wfc.periodicWorkflowGarbageCollector(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	for _, informer := range []cache.SharedIndexInformer{wfc.wfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
@@ -233,6 +239,53 @@ func (wfc *WorkflowController) podGarbageCollector(stopCh <-chan struct{}) {
 	}
 }
 
+func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan struct{}) {
+	value, ok := os.LookupEnv("WORKFLOW_GC_PERIOD")
+	periodicity := 5 * time.Minute
+	if ok {
+		var err error
+		periodicity, err = time.ParseDuration(value)
+		if err != nil {
+			log.WithFields(log.Fields{"err": err, "value": value}).Fatal("Failed to parse WORKFLOW_GC_PERIOD")
+		}
+	}
+	log.Infof("Performing periodic GC every %v", periodicity)
+	ticker := time.NewTicker(periodicity)
+	for {
+		select {
+		case <-stopCh:
+			ticker.Stop()
+			return
+		case <-ticker.C:
+			if wfc.offloadNodeStatusRepo.IsEnabled() {
+				log.Info("Performing periodic workflow GC")
+				oldUIDs, err := wfc.offloadNodeStatusRepo.ListOldUIDs(wfc.GetManagedNamespace())
+				if err != nil {
+					log.WithField("err", err).Error("Failed to list offloaded nodes")
+				}
+				list, err := util.NewWorkflowLister(wfc.wfInformer).List()
+				if err != nil {
+					log.WithField("err", err).Error("Failed to list workflows")
+				}
+				wfs := make(map[types.UID]bool)
+				for _, wf := range list {
+					wfs[wf.UID] = true
+				}
+				log.WithFields(log.Fields{"len_wfs": len(wfs), "len_old_uids": len(oldUIDs)}).Info("Comparing live workflows with old UIDs")
+				for _, uid := range oldUIDs {
+					_, ok := wfs[types.UID(uid)]
+					if !ok {
+						err := wfc.offloadNodeStatusRepo.Delete(string(uid))
+						if err != nil {
+							log.WithField("err", err).Error("Failed to delete offloaded nodes")
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 func (wfc *WorkflowController) runWorker() {
 	for wfc.processNextItem() {
 	}
@@ -286,22 +339,26 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	// Loading running workflow from persistence storage if nodeStatusOffload enabled
-	if wf.Status.OffloadNodeStatus {
-		wfDB, err := wfc.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace)
-		if err != nil {
-			log.Warnf("DB get operation failed. %v", err)
-		}
-		wf.Status.Nodes = wfDB.Status.Nodes
-	}
-
 	woc := newWorkflowOperationCtx(wf, wfc)
+
+	// Loading running workflow from persistence storage if nodeStatusOffload enabled
+	if wf.Status.IsOffloadNodeStatus() {
+		nodes, err := wfc.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+		if err != nil {
+			woc.log.Errorf("getting offloaded nodes failed: %v", err)
+			woc.markWorkflowError(err, true)
+			woc.persistUpdates()
+			wfc.throttler.Remove(key)
+			return true
+		}
+		woc.wf.Status.Nodes = nodes
+	}
 
 	// Decompress the node if it is compressed
 	err = packer.DecompressWorkflow(woc.wf)
 	if err != nil {
-		woc.log.Warnf("workflow decompression failed: %v", err)
-		woc.markWorkflowFailed(fmt.Sprintf("workflow decompression failed: %s", err.Error()))
+		woc.log.Errorf("workflow decompression failed: %v", err)
+		woc.markWorkflowError(err, true)
 		woc.persistUpdates()
 		wfc.throttler.Remove(key)
 		return true
@@ -520,4 +577,11 @@ func (wfc *WorkflowController) GetManagedNamespace() string {
 		return wfc.managedNamespace
 	}
 	return wfc.Config.Namespace
+}
+
+func (wfc *WorkflowController) GetContainerRuntimeExecutor() string {
+	if wfc.containerRuntimeExecutor != "" {
+		return wfc.containerRuntimeExecutor
+	}
+	return wfc.Config.ContainerRuntimeExecutor
 }

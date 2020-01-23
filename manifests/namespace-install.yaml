@@ -142,6 +142,12 @@ rules:
   - update
   - patch
   - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -189,6 +195,8 @@ rules:
   - get
   - list
   - watch
+  - update
+  - patch
   - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -247,8 +255,6 @@ spec:
       containers:
       - args:
         - server
-        - --auth-mode
-        - client
         - --namespaced
         image: argoproj/argocli:latest
         name: argo-server

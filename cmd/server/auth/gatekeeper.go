@@ -85,14 +85,14 @@ func (s Gatekeeper) useHybridAuth() bool {
 	return s.authType == Hybrid
 }
 
-func (s Gatekeeper) useClientAuth(md metadata.MD) (bool, error) {
-	if s.authType == Client && len(md.Get("grpcgateway-authorization")) == 0 {
-		return false, status.Error(codes.Unauthenticated, "Auth Token is not found")
+func (s Gatekeeper) useClientAuth(md metadata.MD) bool {
+	if s.authType == Client {
+		return true
 	}
 	if s.useHybridAuth() && len(md.Get("grpcgateway-authorization")) > 0 {
-		return true, nil
+		return true
 	}
-	return true, nil
+	return false
 }
 func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, error) {
 
@@ -106,16 +106,16 @@ func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		}
 		return nil, nil, status.Error(codes.Unauthenticated, "unable to get metadata from incoming context")
 	}
-	useClientAuth, err := s.useClientAuth(md)
-	if err != nil {
-		return nil, nil, status.Errorf(codes.Unauthenticated, "auth token is not present in the request: %v", err)
-	}
-	if !useClientAuth {
+
+	if !s.useClientAuth(md) {
 		return s.wfClient, s.kubeClient, nil
 	}
 
+	token := ""
 	authorization := md.Get("grpcgateway-authorization")
-	token := strings.TrimPrefix(authorization[0], "Bearer ")
+	if len(authorization) > 0 {
+		token = strings.TrimPrefix(authorization[0], "Bearer ")
+	}
 
 	restConfig, err := kubeconfig.GetRestConfig(token)
 	if err != nil {

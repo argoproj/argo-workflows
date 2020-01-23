@@ -3,6 +3,7 @@ package sqldb
 import (
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"upper.io/db.v3/lib/sqlbuilder"
 	"upper.io/db.v3/mysql"
@@ -13,26 +14,19 @@ import (
 	"github.com/argoproj/argo/workflow/config"
 )
 
-const (
-	CodeDBUpdateRowNotFound = "ERR_DB_UPDATE_ROW_NOT_FOUND"
-)
-
-func DBUpdateNoRowFoundError(err error) error {
-	return errors.Wrap(err, CodeDBUpdateRowNotFound, err.Error())
-}
-
 // CreateDBSession creates the dB session
 func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persistConfig *config.PersistConfig) (sqlbuilder.Database, string, error) {
 	if persistConfig == nil {
 		return nil, "", errors.InternalError("Persistence config is not found")
 	}
 
+	log.Info("Creating DB session")
+
 	if persistConfig.PostgreSQL != nil {
 		return CreatePostGresDBSession(kubectlConfig, namespace, persistConfig.PostgreSQL, persistConfig.ConnectionPool)
 	} else if persistConfig.MySQL != nil {
 		return CreateMySQLDBSession(kubectlConfig, namespace, persistConfig.MySQL, persistConfig.ConnectionPool)
 	}
-
 	return nil, "", fmt.Errorf("no databases are configured")
 }
 
@@ -74,14 +68,7 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 		session.SetMaxOpenConns(persistPool.MaxOpenConns)
 		session.SetMaxIdleConns(persistPool.MaxIdleConns)
 	}
-
-	err = migrate(migrateCfg{cfg.TableName}, session)
-	if err != nil {
-		return nil, "", err
-	}
-
 	return session, cfg.TableName, nil
-
 }
 
 // CreateMySQLDBSession creates Mysql DB session
@@ -114,12 +101,14 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 		session.SetMaxOpenConns(persistPool.MaxOpenConns)
 		session.SetMaxIdleConns(persistPool.MaxIdleConns)
 	}
-
-	err = migrate(migrateCfg{cfg.TableName}, session)
+	// this is needed to make MySQL run in a Golang-compatible UTF-8 character set.
+	_, err = session.Exec("SET NAMES 'utf8mb4'")
 	if err != nil {
 		return nil, "", err
 	}
-
+	_, err = session.Exec("SET CHARACTER SET utf8mb4")
+	if err != nil {
+		return nil, "", err
+	}
 	return session, cfg.TableName, nil
-
 }

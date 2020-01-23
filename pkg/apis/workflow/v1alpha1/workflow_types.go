@@ -131,9 +131,9 @@ var _ TemplateStorage = &Workflow{}
 
 // TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed
 type TTLStrategy struct {
-	SecondsAfterCompleted *int32 `json:"secondsAfterCompleted,omitempty" protobuf:"bytes,1,opt,name=secondsAfterCompleted"`
-	SecondsAfterSuccess   *int32 `json:"secondsAfterSuccess,omitempty" protobuf:"bytes,2,opt,name=secondsAfterSuccess"`
-	SecondsAfterFailed    *int32 `json:"secondsAfterFailed,omitempty" protobuf:"bytes,3,opt,name=secondsAfterFailed"`
+	SecondsAfterCompletion *int32 `json:"secondsAfterCompletion,omitempty" protobuf:"bytes,1,opt,name=secondsAfterCompletion"`
+	SecondsAfterSuccess    *int32 `json:"secondsAfterSuccess,omitempty" protobuf:"bytes,2,opt,name=secondsAfterSuccess"`
+	SecondsAfterFailure    *int32 `json:"secondsAfterFailure,omitempty" protobuf:"bytes,3,opt,name=secondsAfterFailure"`
 }
 
 // WorkflowSpec is the specification of a Workflow.
@@ -229,7 +229,7 @@ type WorkflowSpec struct {
 	// deleted after ttlSecondsAfterFinished expires. If this field is unset,
 	// ttlSecondsAfterFinished will not expire. If this field is set to zero,
 	// ttlSecondsAfterFinished expires immediately after the Workflow finishes.
-	// DEPRECATED: Use TTLStrategy.SecondsAfterCompleted instead.
+	// DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.
 	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished,omitempty" protobuf:"bytes,18,opt,name=ttlSecondsAfterFinished"`
 
 	// TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
@@ -776,8 +776,9 @@ type WorkflowStatus struct {
 	// Nodes is a mapping between a node ID and the node's status.
 	Nodes Nodes `json:"nodes,omitempty" protobuf:"bytes,6,rep,name=nodes"`
 
-	// Whether on not node status has been offloaded to a database. If true, then Nodes and CompressedNodes will be empty.
-	OffloadNodeStatus bool `json:"offloadNodeStatus,omitempty" protobuf:"bytes,10,rep,name=offloadNodeStatus"`
+	// Whether on not node status has been offloaded to a database. If exists, then Nodes and CompressedNodes will be empty.
+	// This will actually be populated with a hash of the offloaded data.
+	OffloadNodeStatusVersion string `json:"offloadNodeStatusVersion,omitempty" protobuf:"bytes,10,rep,name=offloadNodeStatusVersion"`
 
 	// StoredTemplates is a mapping between a template ref and the node's status.
 	StoredTemplates map[string]Template `json:"storedTemplates,omitempty" protobuf:"bytes,9,rep,name=storedTemplates"`
@@ -788,6 +789,18 @@ type WorkflowStatus struct {
 
 	// Outputs captures output values and artifact locations produced by the workflow via global outputs
 	Outputs *Outputs `json:"outputs,omitempty" protobuf:"bytes,8,opt,name=outputs"`
+}
+
+func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
+	return ws.OffloadNodeStatusVersion != ""
+}
+
+func (ws *WorkflowStatus) GetOffloadNodeStatusVersion() string {
+	return ws.OffloadNodeStatusVersion
+}
+
+func (wf *Workflow) GetOffloadNodeStatusVersion() string {
+	return wf.Status.GetOffloadNodeStatusVersion()
 }
 
 type RetryPolicy string

@@ -5,7 +5,7 @@ import {Redirect, Route, RouteComponentProps, Router, Switch} from 'react-router
 
 import {Layout, NavigationManager, Notifications, NotificationsManager, Popup, PopupManager, PopupProps} from 'argo-ui';
 import {uiUrl} from './shared/base';
-import {AppContext, ContextApis, Provider} from './shared/context';
+import {ContextApis, Provider} from './shared/context';
 
 import archivedWorkflows from './archived-workflows';
 import cronWorkflows from './cron-workflows';
@@ -105,23 +105,7 @@ export class App extends React.Component<{}, {popupProps: PopupProps}> {
                 <Router history={history}>
                     <Switch>
                         <Redirect exact={true} path={uiUrl('')} to={workflowsUrl} />
-                        <Route
-                            path={timelineUrl}
-                            component={
-                                class ToWorkflows extends React.Component {
-                                    public static contextTypes = {router: PropTypes.object};
-
-                                    public render() {
-                                        return <div />;
-                                    }
-
-                                    public componentWillMount() {
-                                        const router = (this.context as AppContext).router;
-                                        router.history.push(router.route.location.pathname.replace(timelineUrl, workflowsUrl));
-                                    }
-                                }
-                            }
-                        />
+                        <Redirect from={timelineUrl} to={uiUrl('workflows')} />
                         <ErrorBoundary>
                             <Layout navItems={navItems}>
                                 <Notifications notifications={this.notificationsManager.notifications} />

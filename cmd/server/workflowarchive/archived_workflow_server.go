@@ -17,11 +17,11 @@ import (
 )
 
 type archivedWorkflowServer struct {
-	repo sqldb.WorkflowArchive
+	wfArchive sqldb.WorkflowArchive
 }
 
-func NewWorkflowArchiveServer(repo sqldb.WorkflowArchive) ArchivedWorkflowServiceServer {
-	return &archivedWorkflowServer{repo: repo}
+func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive) ArchivedWorkflowServiceServer {
+	return &archivedWorkflowServer{wfArchive: wfArchive}
 }
 
 func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req *ListArchivedWorkflowsRequest) (*wfv1.WorkflowList, error) {
@@ -52,7 +52,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	authorizer := auth.NewAuthorizer(ctx)
 	// keep trying until we have enough
 	for len(items) < limit {
-		moreItems, err := w.repo.ListWorkflows(namespace, limit, offset)
+		moreItems, err := w.wfArchive.ListWorkflows(namespace, limit, offset)
 		if err != nil {
 			return nil, err
 		}
@@ -79,14 +79,14 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 }
 
 func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *GetArchivedWorkflowRequest) (*wfv1.Workflow, error) {
-	wf, err := w.repo.GetWorkflow(req.Uid)
+	wf, err := w.wfArchive.GetWorkflow(req.Uid)
 	if err != nil {
 		return nil, err
 	}
 	if wf == nil {
 		return nil, status.Error(codes.NotFound, "not found")
 	}
-	allowed, err := auth.CanI(ctx, "get", "workflow", wf.Namespace, wf.Name)
+	allowed, err := auth.CanI(ctx, "get", "workflows", wf.Namespace, wf.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -101,14 +101,14 @@ func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req
 	if err != nil {
 		return nil, err
 	}
-	allowed, err := auth.CanI(ctx, "delete", "workflow", wf.Namespace, wf.Name)
+	allowed, err := auth.CanI(ctx, "delete", "workflows", wf.Namespace, wf.Name)
 	if err != nil {
 		return nil, err
 	}
 	if !allowed {
 		return nil, status.Error(codes.PermissionDenied, "permission denied")
 	}
-	err = w.repo.DeleteWorkflow(req.Uid)
+	err = w.wfArchive.DeleteWorkflow(req.Uid)
 	if err != nil {
 		return nil, err
 	}

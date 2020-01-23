@@ -30,11 +30,11 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     private subscription: Subscription;
 
     private get namespace() {
-        return this.queryParam('namespace') || '';
+        return this.props.match.params.namespace || '';
     }
 
     private set namespace(namespace: string) {
-        this.setQueryParams({namespace});
+        document.location.href = uiUrl('workflows/' + namespace);
     }
 
     private get phases() {
@@ -55,8 +55,14 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     public componentDidMount(): void {
-        services.workflows
-            .list(this.phases, this.namespace)
+        services.info
+            .get()
+            .then(info => {
+                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
+                    this.namespace = info.managedNamespace;
+                }
+                return services.workflows.list(this.phases, this.namespace);
+            })
             .then(list => list.items)
             .then(list => list || [])
             .then(workflows => this.setState({workflows}))
