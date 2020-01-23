@@ -317,7 +317,7 @@ The [FailFast](./dag-disable-failFast.yaml) flag default is `true`,  if set to `
 
 **Note:**
 You will need to configure an artifact repository to run this example.
-[Configuring an artifact repository here](configure-artifact-repository.md).
+[Configuring an artifact repository here](docs/configure-artifact-repository.md).
 
 When running workflows, it is very common to have steps that generate or consume artifacts. Often, the output artifacts of one step may be used as input artifacts to a subsequent step.
 
