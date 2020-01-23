@@ -14,10 +14,10 @@ import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {Query} from '../../../shared/components/query';
-import {YamlEditor} from '../../../shared/components/yaml/yaml-editor';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
+import {WorkflowSubmit} from '../workflow-submit';
 
 require('./workflows-list.scss');
 
@@ -138,17 +138,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         }}>
                         <div>{this.renderWorkflows(ctx)}</div>
                         <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
-                            <YamlEditor
-                                editing={true}
-                                title='Submit New Workflow'
-                                value={exampleWorkflow(this.namespace)}
-                                onSubmit={(value: Workflow) =>
-                                    services.workflows
-                                        .create(value, value.metadata.namespace)
-                                        .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`))
-                                        .catch(error => this.setState({error}))
-                                }
-                            />
+                            <WorkflowSubmit defaultWorkflow={exampleWorkflow(this.namespace)} currentNamespace={this.namespace} ctx={ctx} />
                         </SlidingPanel>
                     </Page>
                 )}
