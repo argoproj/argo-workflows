@@ -566,7 +566,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			Expect().
 			Status(200).
 			Body().
-			Contains("😀 Hello Argo!")
+			Contains(":) Hello Argo!")
 	})
 
 	s.Run("GetArtifactByUid", func(t *testing.T) {
@@ -579,7 +579,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 			Expect().
 			Status(200).
 			Body().
-			Contains("😀 Hello Argo!")
+			Contains(":) Hello Argo!")
 	})
 
 }
@@ -645,7 +645,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 				s := bufio.NewScanner(resp.Body)
 				for s.Scan() {
 					line := s.Text()
-					if strings.Contains(line, "😀 Hello Argo!") {
+					if strings.Contains(line, ":) Hello Argo!") {
 						break
 					}
 				}

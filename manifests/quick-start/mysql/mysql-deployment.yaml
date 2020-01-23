@@ -28,3 +28,8 @@ spec:
               value: "yes"
           ports:
             - containerPort: 5432
+          readinessProbe:
+            exec:
+              command: ["mysql", "-u", "mysql", "-ppassword", "argo", "-e", "SELECT 1"]
+            initialDelaySeconds: 15
+            timeoutSeconds: 2
