@@ -413,8 +413,8 @@ endif
 	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
 	# Push changes to Git
-	git push
-	git push $(VERSION)
+	git push upstream
+	git tag push $(VERSION)
 endif
 
 .PHONY: release
