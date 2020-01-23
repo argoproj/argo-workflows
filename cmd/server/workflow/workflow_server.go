@@ -260,7 +260,7 @@ func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *WorkflowTer
 	return wf, nil
 }
 
-func (s *workflowServer) LintWorkflow(ctx context.Context, req *WorkflowCreateRequest) (*v1alpha1.Workflow, error) {
+func (s *workflowServer) LintWorkflow(ctx context.Context, req *WorkflowLintRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))

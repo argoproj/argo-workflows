@@ -85,11 +85,12 @@ else
 endif
 	touch ui/dist/app
 
-$(GOPATH)/bin/staticfiles:
+.PHONY: staticfiles
+staticfiles:
 	# Install the "staticfiles" tool
 	go get bou.ke/staticfiles
 
-cmd/server/static/files.go: ui/dist/app $(GOPATH)/bin/staticfiles
+cmd/server/static/files.go: ui/dist/app staticfiles
 	# Pack UI into a Go file.
 	staticfiles -o cmd/server/static/files.go ui/dist/app
 
@@ -196,7 +197,7 @@ verify-codegen:
 	diff ./dist/swagger.json ./api/openapi-spec/swagger.json
 
 .PHONY: manifests
-manifests: manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml
+manifests: manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml
 
 manifests/install.yaml: $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh

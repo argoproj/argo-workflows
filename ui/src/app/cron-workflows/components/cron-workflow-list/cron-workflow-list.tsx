@@ -22,11 +22,11 @@ interface State {
 
 export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> {
     private get namespace() {
-        return this.queryParam('namespace') || '';
+        return this.props.match.params.namespace || '';
     }
 
-    private set namespace(namespace) {
-        this.setQueryParams({namespace});
+    private set namespace(namespace: string) {
+        document.location.href = uiUrl('cron-workflows/' + namespace);
     }
 
     private get sidePanel() {
@@ -42,8 +42,14 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
     }
 
     public componentDidMount(): void {
-        services.cronWorkflows
-            .list(this.namespace)
+        services.info
+            .get()
+            .then(info => {
+                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
+                    this.namespace = info.managedNamespace;
+                }
+                return services.cronWorkflows.list(this.namespace);
+            })
             .then(cronWorkflows => this.setState({cronWorkflows}))
             .catch(error => this.setState({error}));
     }
@@ -71,7 +77,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                             tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
                         }}>
                         <div className='row'>
-                            <div className='columns small-12 xxlarge-2'>{this.renderCronWorkflows()}</div>
+                            <div className='columns small-12'>{this.renderCronWorkflows()}</div>
                         </div>
                         <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
                             <YamlEditor

@@ -21,7 +21,6 @@ message WorkflowCreateRequest {
     bool serverDryRun = 4;
     k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions createOptions = 5;
 }
-
 message WorkflowGetRequest {
     string name = 1;
     string namespace = 2;
@@ -90,6 +89,11 @@ message LogEntry {
     string content = 1;
 }
 
+message WorkflowLintRequest {
+    string namespace = 1;
+    github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow workflow = 2;
+}
+
 service WorkflowService {
     rpc CreateWorkflow (WorkflowCreateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
@@ -149,7 +153,7 @@ service WorkflowService {
 		};
     }
 
-    rpc LintWorkflow (WorkflowCreateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+    rpc LintWorkflow (WorkflowLintRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
 			post: "/api/v1/workflows/{namespace}/lint"
 			body: "*"

@@ -129,7 +129,7 @@ func ServerSideLint(arg string, conn *grpc.ClientConn, strict bool) error {
 }
 
 func ServerLintValidation(ctx context.Context, client apiServer.WorkflowServiceClient, wf v1alpha1.Workflow, ns string) error {
-	wfReq := apiServer.WorkflowCreateRequest{
+	wfReq := apiServer.WorkflowLintRequest{
 		Namespace: ns,
 		Workflow:  &wf,
 	}

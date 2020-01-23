@@ -73,13 +73,25 @@ func (s *E2ESuite) TearDownSuite() {
 func (s *E2ESuite) BeforeTest(_, _ string) {
 	s.Diagnostics = &Diagnostics{}
 
+	// delete all cron workflows
+	cronList, err := s.cronClient.List(metav1.ListOptions{LabelSelector: label})
+	if err != nil {
+		panic(err)
+	}
+	for _, cronWf := range cronList.Items {
+		log.WithFields(log.Fields{"cronWorkflow": cronWf.Name}).Info("Deleting cron workflow")
+		err = s.cronClient.Delete(cronWf.Name, nil)
+		if err != nil {
+			panic(err)
+		}
+	}
 	// delete all workflows
 	list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: label})
 	if err != nil {
 		panic(err)
 	}
 	for _, wf := range list.Items {
-		logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": wf.Name})
+		logCtx := log.WithFields(log.Fields{"workflow": wf.Name})
 		logCtx.Infof("Deleting workflow")
 		err = s.wfClient.Delete(wf.Name, &metav1.DeleteOptions{})
 		if err != nil {
@@ -112,27 +124,13 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 			time.Sleep(3 * time.Second)
 		}
 	}
-	// delete all cron workflows
-	cronList, err := s.cronClient.List(metav1.ListOptions{LabelSelector: label})
-	if err != nil {
-		panic(err)
-	}
-	for _, cronWf := range cronList.Items {
-		logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "cron workflow": cronWf.Name})
-		logCtx.Infof("Deleting cron workflow")
-		err = s.cronClient.Delete(cronWf.Name, nil)
-		if err != nil {
-			panic(err)
-		}
-	}
 	// delete all workflow templates
 	wfTmpl, err := s.wfTemplateClient.List(metav1.ListOptions{LabelSelector: label})
 	if err != nil {
 		panic(err)
 	}
 	for _, wfTmpl := range wfTmpl.Items {
-		logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow template": wfTmpl.Name})
-		logCtx.Infof("Deleting workflow template")
+		log.WithField("template", wfTmpl.Name).Info("Deleting workflow template")
 		err = s.wfTemplateClient.Delete(wfTmpl.Name, nil)
 		if err != nil {
 			panic(err)
