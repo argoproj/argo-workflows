@@ -12,25 +12,20 @@ interface WorkflowSubmitProps {
 }
 
 interface WorkflowSubmitState {
-    wf: models.Workflow;
-    wfString: string;
     error?: Error;
 }
 
 export class WorkflowSubmit extends React.Component<WorkflowSubmitProps, WorkflowSubmitState> {
     constructor(props: WorkflowSubmitProps) {
         super(props);
-        this.state = {
-            wf: this.props.defaultWorkflow,
-            wfString: jsYaml.dump(this.props.defaultWorkflow)
-        };
+        this.state = {};
     }
 
     public render() {
         return (
             <div>
                 <Formik
-                    initialValues={{wf: this.state.wf, wfString: this.state.wfString}}
+                    initialValues={{wf: this.props.defaultWorkflow, wfString: jsYaml.dump(this.props.defaultWorkflow)}}
                     onSubmit={(values, {setSubmitting}) => {
                         services.workflows
                             .create(values.wf, values.wf.metadata.namespace || this.props.currentNamespace)
@@ -64,8 +59,16 @@ export class WorkflowSubmit extends React.Component<WorkflowSubmitProps, Workflo
                                         formikApi.handleBlur(e);
                                         try {
                                             formikApi.setFieldValue('wf', jsYaml.load(e.currentTarget.value));
+                                            this.setState({
+                                                error: undefined
+                                            })
                                         } catch (e) {
-                                            // Do nothing, validation when Workflow is submitted
+                                            this.setState({
+                                                error: {
+                                                    name: "Workflow is invalid",
+                                                    message: "Workflow is invalid",
+                                                }
+                                            })
                                         }
                                     }}
                                     onFocus={e => (e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px')}
