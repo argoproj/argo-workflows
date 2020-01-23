@@ -3,13 +3,14 @@
 1. Prepare release:
 
 ```
+make clean
 make prepare-release VERSION=v2.5.0
 ```
 
 2. Release:
 
 ```
-make release VERSION=$VERSION
+make release VERSION=v2.5.0
 ```
 
 3. If stable:
