@@ -198,17 +198,17 @@ verify-codegen:
 .PHONY: manifests
 manifests: manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml
 
-manifests/install.yaml: $(MANIFESTS)
+manifests/install.yaml: VERSION $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
-manifests/namespace-install.yaml: $(MANIFESTS)
+manifests/namespace-install.yaml: VERSION $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
-manifests/quick-start-mysql.yaml: $(MANIFESTS)
+manifests/quick-start-mysql.yaml: VERSION $(MANIFESTS)
 	# Create MySQL quick-start manifests
 	kustomize build manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
 
-manifests/quick-start-postgres.yaml: $(MANIFESTS)
+manifests/quick-start-postgres.yaml: VERSION $(MANIFESTS)
 	# Create Postgres quick-start manifests
 	kustomize build manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
@@ -392,7 +392,7 @@ ifeq ($(findstring release,$(GIT_BRANCH)),release)
 	# Check we have tagged the latest commit
 	@if [ -z "$(GIT_TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
 	# Check the tag is correct
-	@if [ "$(GIT_TAG)" != "$(VERSION)" ]; then echo 'git tag ($(GIT_TAG)) does not match VERSION (v$(VERSION))'; exit 1; fi
+	@if [ "$(GIT_TAG)" != "$(VERSION)" ]; then echo 'git tag ($(GIT_TAG)) does not match VERSION ($(VERSION))'; exit 1; fi
 endif
 
 .PHONY: publish
