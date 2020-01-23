@@ -60,9 +60,9 @@ commands:
           name: Pull some Docker images now, to save time later
           command: |
             docker pull golang:1.11.5
-            docker pull minio/minio
+            docker pull minio/minio:RELEASE.2019-12-17T23-16-33Z
             docker pull docker/whalesay:latest
-            docker pull bitnami/kubectl
+            docker pull bitnami/kubectl:1.15.3-ol-7-r165
           background: true
       - restore_go_cache
       - install_golang
