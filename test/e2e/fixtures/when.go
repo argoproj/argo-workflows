@@ -38,7 +38,7 @@ func (w *When) SubmitWorkflow() *When {
 	if w.wf == nil {
 		w.t.Fatal("No workflow to submit")
 	}
-	log.Info("Submitting workflow")
+	log.WithFields(log.Fields{"workflow": w.wf.Name}).Info("Submitting workflow")
 	wf, err := w.client.Create(w.wf)
 	if err != nil {
 		w.t.Fatal(err)
@@ -100,13 +100,13 @@ func (w *When) WaitForWorkflowCondition(condition func(wf *wfv1.Workflow) bool, 
 		case event := <-watch.ResultChan():
 			wf, ok := event.Object.(*wfv1.Workflow)
 			if ok {
-    			logCtx.WithFields(log.Fields{"type": event.Type, "phase": wf.Status.Phase}).Info(wf.Status.Message)
+				logCtx.WithFields(log.Fields{"type": event.Type, "phase": wf.Status.Phase}).Info(wf.Status.Message)
 				w.hydrateWorkflow(wf)
 				if condition(wf) {
 					return w
 				}
 			} else {
-			    logCtx.Error("not ok")
+				logCtx.Error("not ok")
 			}
 		case <-timeoutCh:
 			w.t.Fatalf("timeout after %v waiting for condition", timeout)
