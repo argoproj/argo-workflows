@@ -56,7 +56,7 @@ const wftStr2 = `
   "metadata": {
     "name": "workflow-template-whalesay-template2",
     "namespace": "default"
-    
+
   },
   "spec": {
     "templates": [

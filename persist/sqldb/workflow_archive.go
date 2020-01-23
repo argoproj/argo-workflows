@@ -47,15 +47,15 @@ func NewWorkflowArchive(session sqlbuilder.Database, clusterName string) Workflo
 }
 
 func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
-	log.WithField("uid", wf.UID).Debug("Archiving workflow")
-	err := r.DeleteWorkflow(string(wf.UID))
-	if err != nil {
-		return err
-	}
+	logCtx := log.WithField("uid", wf.UID)
+	log.Debug("Archiving workflow")
 	workflow, err := json.Marshal(wf)
 	if err != nil {
 		return err
 	}
+	// We assume that we're much more likely to be inserting rows that updating them, so we try and insert,
+	// and if that fails, then we update.
+	// There is no check for race condition here, last writer wins.
 	_, err = r.session.Collection(archiveTableName).
 		Insert(&archivedWorkflowRecord{
 			archivedWorkflowMetadata: archivedWorkflowMetadata{
@@ -69,7 +69,33 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 			},
 			Workflow: string(workflow),
 		})
-	return err
+	if err != nil {
+		if isDuplicateKeyError(err) {
+			res, err := r.session.
+				Update(archiveTableName).
+				Set("workflow", string(workflow)).
+				Set("phase", wf.Status.Phase).
+				Set("startedat", wf.Status.StartedAt.Time).
+				Set("finishedat", wf.Status.FinishedAt.Time).
+				Where(db.Cond{"clustername": r.clusterName}).
+				And(db.Cond{"uuid": wf.UID}).
+				Exec()
+			if err != nil {
+				return err
+			}
+			rowsAffected, err := res.RowsAffected()
+			if err != nil {
+				return err
+			}
+			if rowsAffected != 1 {
+				logCtx.WithField("rowsAffected", rowsAffected).Warn("Expected exactly one row affected")
+			}
+		} else {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (r *workflowArchive) ListWorkflows(namespace string, limit int, offset int) (wfv1.Workflows, error) {
