@@ -233,7 +233,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/workflowWorkflowCreateRequest"
+              "$ref": "#/definitions/workflowWorkflowLintRequest"
             }
           }
         ],
@@ -4463,6 +4463,17 @@
     },
     "workflowWorkflowDeleteResponse": {
       "type": "object"
+    },
+    "workflowWorkflowLintRequest": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "workflow": {
+          "$ref": "#/definitions/v1alpha1Workflow"
+        }
+      }
     },
     "workflowWorkflowResubmitRequest": {
       "type": "object",

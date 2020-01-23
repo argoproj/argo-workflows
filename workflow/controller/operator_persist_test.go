@@ -9,7 +9,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/packer"
@@ -52,7 +51,7 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
-	controller.offloadNodeStatusRepo = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(fmt.Errorf("not found")), false)
+	controller.offloadNodeStatusRepo = getMockDBCtx(fmt.Errorf("not found"), false)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
@@ -71,7 +70,7 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
-	controller.offloadNodeStatusRepo = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(errors.New("23324", "test")), false)
+	controller.offloadNodeStatusRepo = getMockDBCtx(errors.New("23324", "test"), false)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
@@ -114,7 +113,7 @@ func TestPersistErrorWithLargeWfSupport(t *testing.T) {
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
-	controller.offloadNodeStatusRepo = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(errors.New("23324", "test")), true)
+	controller.offloadNodeStatusRepo = getMockDBCtx(errors.New("23324", "test"), true)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})

@@ -75,7 +75,7 @@ func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, r
 	return &WorkflowDeleteResponse{}, nil
 }
 
-func (wts *WorkflowTemplateServer) LintWorkflowTemplate(ctx context.Context, req *WorkflowTemplateCreateRequest) (*v1alpha1.WorkflowTemplate, error) {
+func (wts *WorkflowTemplateServer) LintWorkflowTemplate(ctx context.Context, req *WorkflowTemplateLintRequest) (*v1alpha1.WorkflowTemplate, error) {
 	wfClient := auth.GetWfClient(ctx)
 
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))

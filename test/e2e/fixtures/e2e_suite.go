@@ -17,12 +17,10 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/argo/commands"
-	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/kubeconfig"
-	"github.com/argoproj/argo/workflow/config"
 	"github.com/argoproj/argo/workflow/packer"
 )
 
@@ -36,19 +34,16 @@ func init() {
 type E2ESuite struct {
 	suite.Suite
 	Env
-	Diagnostics           *Diagnostics
-	Persistence           *Persistence
-	RestConfig            *rest.Config
-	wfClient              v1alpha1.WorkflowInterface
-	wfTemplateClient      v1alpha1.WorkflowTemplateInterface
-	cronClient            v1alpha1.CronWorkflowInterface
-	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
-	KubeClient            kubernetes.Interface
+	Diagnostics      *Diagnostics
+	Persistence      *Persistence
+	RestConfig       *rest.Config
+	wfClient         v1alpha1.WorkflowInterface
+	wfTemplateClient v1alpha1.WorkflowTemplateInterface
+	cronClient       v1alpha1.CronWorkflowInterface
+	KubeClient       kubernetes.Interface
 }
 
-func (s *E2ESuite) BeforeTest(_, _ string) {
-
-	s.Diagnostics = &Diagnostics{}
+func (s *E2ESuite) SetupSuite() {
 	var err error
 	s.RestConfig, err = kubeconfig.DefaultRestConfig()
 	if err != nil {
@@ -67,25 +62,16 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	s.wfClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().Workflows(Namespace)
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
-	{
-		cm, err := s.KubeClient.CoreV1().ConfigMaps(Namespace).Get("workflow-controller-configmap", metav1.GetOptions{})
-		if err != nil {
-			panic(err)
-		}
-		wcConfig := &config.WorkflowControllerConfig{}
-		err = yaml.Unmarshal([]byte(cm.Data["config"]), wcConfig)
-		if err != nil {
-			panic(err)
-		}
-		persistence := wcConfig.Persistence
-		persistence.PostgreSQL.Host = "localhost"
-		// we assume that this is enabled for tests
-		session, tableName, err := sqldb.CreateDBSession(s.KubeClient, Namespace, persistence)
-		if err != nil {
-			panic(err)
-		}
-		s.offloadNodeStatusRepo = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
-	}
+	s.Persistence = newPersistence(s.KubeClient)
+}
+
+func (s *E2ESuite) TearDownSuite() {
+	s.Persistence.Close()
+	s.UnsetEnv()
+}
+
+func (s *E2ESuite) BeforeTest(_, _ string) {
+	s.Diagnostics = &Diagnostics{}
 
 	// delete all workflows
 	list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: label})
@@ -153,7 +139,6 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 		}
 	}
 	// create database collection
-	s.Persistence = newPersistence()
 	s.Persistence.DeleteEverything()
 }
 
@@ -187,7 +172,6 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 	if s.T().Failed() {
 		s.printDiagnostics()
 	}
-	s.UnsetEnv()
 }
 
 func (s *E2ESuite) printDiagnostics() {
@@ -276,7 +260,7 @@ func (s *E2ESuite) Given() *Given {
 		client:                s.wfClient,
 		wfTemplateClient:      s.wfTemplateClient,
 		cronClient:            s.cronClient,
-		offloadNodeStatusRepo: s.offloadNodeStatusRepo,
+		offloadNodeStatusRepo: s.Persistence.offloadNodeStatusRepo,
 		kubeClient:            s.KubeClient,
 	}
 }
