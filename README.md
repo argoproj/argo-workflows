@@ -10,20 +10,6 @@ kubectl create namespace argo
 kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/manifests/install.yaml
 ```
 
-## News
-
-KubeCon 2018 in Seattle was the biggest KubeCon yet with 8000 developers attending. We connected with many existing and new Argoproj users and contributions, and gave away a lot of Argo T-shirts at our booth sponsored by Intuit!
-
-We were also super excited to see KubeCon presentations about Argo by Argo developers, users and partners.
-* [CI/CD in Light Speed with K8s and Argo CD](https://www.youtube.com/watch?v=OdzH82VpMwI&feature=youtu.be)
-  * How Intuit uses Argo CD.
-* [Automating Research Workflows at BlackRock](https://www.youtube.com/watch?v=ZK510prml8o&t=0s&index=169&list=PLj6h78yzYM2PZf9eA7bhWnIh_mK1vyOfU)
-  * Why BlackRock created Argo Events and how they use it.
-* [Machine Learning as Code](https://www.youtube.com/watch?v=VXrGp5er1ZE&t=0s&index=135&list=PLj6h78yzYM2PZf9eA7bhWnIh_mK1vyOfU)
-  * How Kubeflow uses Argo Workflows as its core workflow engine and Argo CD to declaratively deploy ML pipelines and models.
-
-If you actively use Argo in your organization and your organization would be interested in participating in the Argo Community, please ask a representative to contact saradhi_sreegiriraju@intuit.com for additional information.
-
 ## What is Argoproj?
 
 Argoproj is a collection of tools for getting work done with Kubernetes.
@@ -31,6 +17,9 @@ Argoproj is a collection of tools for getting work done with Kubernetes.
 * [Argo CD](https://github.com/argoproj/argo-cd) - Declarative GitOps Continuous Delivery
 * [Argo Events](https://github.com/argoproj/argo-events) - Event-based Dependency Manager
 * [Argo Rollouts](https://github.com/argoproj/argo-rollouts) - Deployment CR with support for Canary and Blue Green deployment strategies
+
+Also argoproj-labs is a separate GitHub org that we setup for community contributions related to the Argoproj ecosystem. Repos in argoproj-labs are administered by the owners of each project. Please reach out to us on the Argo slack channel if you have a project that you would like to add to the org to make it easier to others in the Argo community to find, use, and contribute back.
+* https://github.com/argoproj-labs
 
 ## What is Argo Workflows?
 Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes. Argo Workflows is implemented as a Kubernetes CRD (Custom Resource Definition).
