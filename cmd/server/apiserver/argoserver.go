@@ -101,17 +101,19 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 	}
 	var offloadRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	var wfArchive = sqldb.NullWorkflowArchive
-	persistence := configMap.Persistence
-	if configMap != nil && persistence != nil {
-		session, tableName, err := sqldb.CreateDBSession(as.kubeClientset, as.namespace, persistence)
-		if err != nil {
-			log.Fatal(err)
+	if configMap != nil {
+		persistence := configMap.Persistence
+		if persistence != nil {
+			session, tableName, err := sqldb.CreateDBSession(as.kubeClientset, as.namespace, persistence)
+			if err != nil {
+				log.Fatal(err)
+			}
+			log.WithField("nodeStatusOffload", persistence.NodeStatusOffload).Info("Offload node status")
+			if persistence.NodeStatusOffload {
+				offloadRepo = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+			}
+			wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName())
 		}
-		log.WithField("nodeStatusOffload", persistence.NodeStatusOffload).Info("Offload node status")
-		if persistence.NodeStatusOffload {
-			offloadRepo = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
-		}
-		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName())
 	}
 	artifactServer := artifacts.NewArtifactServer(as.authenticator, offloadRepo, wfArchive)
 	grpcServer := as.newGRPCServer(offloadRepo, wfArchive)
