@@ -275,7 +275,7 @@ func (s *ArgoServerSuite) TestPermission() {
 
 	// Test get archived wf with good token
 	s.bearerToken = goodToken
-	s.Run("ListArchivedWFsGoodToken", func(t *testing.T) {
+	s.Run("GetArchivedWFsGoodToken", func(t *testing.T) {
 		s.e(t).GET("/api/v1/archived-workflows/"+uid).
 			WithQuery("listOptions.labelSelector", "argo-e2e").
 			Expect().
@@ -289,7 +289,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	// TODO: Uncomment following code after https://github.com/argoproj/argo/issues/2049 is resolved.
 
 	// s.bearerToken = badToken
-	// s.Run("ListArchivedWFsGoodToken", func(t *testing.T) {
+	// s.Run("ListArchivedWFsBadToken", func(t *testing.T) {
 	// 	s.e(t).GET("/api/v1/archived-workflows").
 	// 		WithQuery("listOptions.labelSelector", "argo-e2e").
 	// 		WithQuery("listOptions.fieldSelector", "metadata.namespace="+nsName).
