@@ -25,7 +25,7 @@ spec:
 
   - name: whalesay
     container:
-      image: docker/whalesay:latest
+      image: cowsay:v1
       command: [sh, -c]
       args: ["echo generating message in volume; cowsay hello world | tee /mnt/vol/hello_world.txt"]
       volumeMounts:

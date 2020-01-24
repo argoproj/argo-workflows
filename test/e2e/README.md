@@ -6,7 +6,7 @@
 Notes:
 
 * Everything runs in the `argo` namespace (including MinIO). 
-* For speed, please only use `docker/whalesay:latest`. 
+* For speed, please only use `cowsay:v1`. 
 * Test can take longer on CI. Adds 5s to timeout values.
 
 ## Debugging E2E Tests
