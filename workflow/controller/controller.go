@@ -138,7 +138,7 @@ func (wfc *WorkflowController) RunTTLController(ctx context.Context) {
 		wfc.wfclientset,
 		wfc.GetManagedNamespace(),
 		wfc.Config.InstanceID,
-		wfc.Config.DefaultTTLStrategy,
+		&wfc.Config.DefaultTTLStrategy,
 	)
 	err := ttlCtrl.Run(ctx.Done())
 	if err != nil {
