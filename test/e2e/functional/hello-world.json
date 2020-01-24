@@ -10,7 +10,7 @@
       {
         "name": "whalesay",
         "container": {
-          "image": "docker/whalesay:latest",
+          "image": "cowsay:v1",
           "command": [
             "cowsay"
           ],

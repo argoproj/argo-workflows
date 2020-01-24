@@ -56,11 +56,6 @@ commands:
           name: Install and start K3S v1.0.0
           command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.0 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
           background: true
-      - run:
-          name: Pull some Docker images now, to save time later
-          command: |
-            docker pull docker/whalesay:latest
-            docker pull bitnami/kubectl:1.15.3-ol-7-r165
       - restore_go_cache
       - install_golang
       - go_junit_report

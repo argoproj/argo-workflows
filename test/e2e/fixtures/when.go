@@ -81,9 +81,12 @@ func (w *When) CreateCronWorkflow() *When {
 	return w
 }
 
-func (w *When) WaitForWorkflowCondition(condition func(wf *wfv1.Workflow) bool, description string, timeout time.Duration) *When {
-	logCtx := log.WithFields(log.Fields{"workflow": w.workflowName, "description": description})
-	logCtx.Info("Waiting for workflow condition")
+func (w *When) WaitForWorkflowCondition(test func(wf *wfv1.Workflow) bool, condition string, timeout time.Duration) *When {
+
+	timeout = timeout + 30*time.Second
+
+	logCtx := log.WithFields(log.Fields{"workflow": w.workflowName, "condition": condition, "timeout": timeout})
+	logCtx.Info("Waiting for workflow test")
 	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", w.workflowName)).String()}
 	watch, err := w.client.Watch(opts)
 	if err != nil {
@@ -102,7 +105,7 @@ func (w *When) WaitForWorkflowCondition(condition func(wf *wfv1.Workflow) bool, 
 			if ok {
 				logCtx.WithFields(log.Fields{"type": event.Type, "phase": wf.Status.Phase}).Info(wf.Status.Message)
 				w.hydrateWorkflow(wf)
-				if condition(wf) {
+				if test(wf) {
 					logCtx.Infof("Condition met")
 					return w
 				}
@@ -110,7 +113,7 @@ func (w *When) WaitForWorkflowCondition(condition func(wf *wfv1.Workflow) bool, 
 				logCtx.Error("not ok")
 			}
 		case <-timeoutCh:
-			w.t.Fatalf("timeout after %v waiting for condition", timeout)
+			w.t.Fatalf("timeout after %v waiting for test %s", timeout, condition)
 		}
 	}
 }
