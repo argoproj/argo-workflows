@@ -257,7 +257,10 @@ func (s *ArgoServerSuite) TestPermission() {
 	})
 
 	// Simply wait 10 seconds for the wf to be completed
-	time.Sleep(10 * time.Second)
+	s.Given().
+		WorkflowName("test-wf-good").
+		When().
+		WaitForWorkflow(10 * time.Second)
 
 	// Test list archived WFs with good token
 	s.bearerToken = goodToken
