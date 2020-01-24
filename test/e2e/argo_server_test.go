@@ -256,62 +256,66 @@ func (s *ArgoServerSuite) TestPermission() {
 			Status(403)
 	})
 
-	// Simply wait 10 seconds for the wf to be completed
-	s.Given().
-		WorkflowName("test-wf-good").
-		When().
-		WaitForWorkflow(10 * time.Second)
+	if s.Persistence.IsEnabled() {
 
-	// Test list archived WFs with good token
-	s.bearerToken = goodToken
-	s.Run("ListArchivedWFsGoodToken", func(t *testing.T) {
-		s.e(t).GET("/api/v1/archived-workflows").
-			WithQuery("listOptions.labelSelector", "argo-e2e").
-			WithQuery("listOptions.fieldSelector", "metadata.namespace="+nsName).
-			Expect().
-			Status(200).
-			JSON().
-			Path("$.items").
-			Array().Length().Gt(0)
-	})
+		// Simply wait 10 seconds for the wf to be completed
+		s.Given().
+			WorkflowName("test-wf-good").
+			When().
+			WaitForWorkflow(10 * time.Second)
 
-	// Test get archived wf with good token
-	s.bearerToken = goodToken
-	s.Run("GetArchivedWFsGoodToken", func(t *testing.T) {
-		s.e(t).GET("/api/v1/archived-workflows/"+uid).
-			WithQuery("listOptions.labelSelector", "argo-e2e").
-			Expect().
-			Status(200).
-			JSON().
-			Path("$.metadata.name").
-			Equal("test-wf-good")
-	})
+		// Test list archived WFs with good token
+		s.bearerToken = goodToken
+		s.Run("ListArchivedWFsGoodToken", func(t *testing.T) {
+			s.e(t).GET("/api/v1/archived-workflows").
+				WithQuery("listOptions.labelSelector", "argo-e2e").
+				WithQuery("listOptions.fieldSelector", "metadata.namespace="+nsName).
+				Expect().
+				Status(200).
+				JSON().
+				Path("$.items").
+				Array().Length().Gt(0)
+		})
 
-	// Test list archived WFs with bad token
-	// TODO: Uncomment following code after https://github.com/argoproj/argo/issues/2049 is resolved.
+		// Test get archived wf with good token
+		s.bearerToken = goodToken
+		s.Run("GetArchivedWFsGoodToken", func(t *testing.T) {
+			s.e(t).GET("/api/v1/archived-workflows/"+uid).
+				WithQuery("listOptions.labelSelector", "argo-e2e").
+				Expect().
+				Status(200).
+				JSON().
+				Path("$.metadata.name").
+				Equal("test-wf-good")
+		})
 
-	// s.bearerToken = badToken
-	// s.Run("ListArchivedWFsBadToken", func(t *testing.T) {
-	// 	s.e(t).GET("/api/v1/archived-workflows").
-	// 		WithQuery("listOptions.labelSelector", "argo-e2e").
-	// 		WithQuery("listOptions.fieldSelector", "metadata.namespace="+nsName).
-	// 		Expect().
-	// 		Status(200).
-	// 		JSON().
-	// 		Path("$.items").
-	// 		Array().
-	// 		Length().
-	// 		Equal(0)
-	// })
+		// Test list archived WFs with bad token
+		// TODO: Uncomment following code after https://github.com/argoproj/argo/issues/2049 is resolved.
 
-	// Test get archived wf with bad token
-	s.bearerToken = badToken
-	s.Run("ListArchivedWFsBadToken", func(t *testing.T) {
-		s.e(t).GET("/api/v1/archived-workflows/"+uid).
-			WithQuery("listOptions.labelSelector", "argo-e2e").
-			Expect().
-			Status(403)
-	})
+		// s.bearerToken = badToken
+		// s.Run("ListArchivedWFsBadToken", func(t *testing.T) {
+		// 	s.e(t).GET("/api/v1/archived-workflows").
+		// 		WithQuery("listOptions.labelSelector", "argo-e2e").
+		// 		WithQuery("listOptions.fieldSelector", "metadata.namespace="+nsName).
+		// 		Expect().
+		// 		Status(200).
+		// 		JSON().
+		// 		Path("$.items").
+		// 		Array().
+		// 		Length().
+		// 		Equal(0)
+		// })
+
+		// Test get archived wf with bad token
+		s.bearerToken = badToken
+		s.Run("ListArchivedWFsBadToken", func(t *testing.T) {
+			s.e(t).GET("/api/v1/archived-workflows/"+uid).
+				WithQuery("listOptions.labelSelector", "argo-e2e").
+				Expect().
+				Status(403)
+		})
+
+	}
 
 	// Test delete workflow with bad token
 	s.bearerToken = badToken
