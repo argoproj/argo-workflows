@@ -10,24 +10,24 @@ export DOCKER_BUILDKIT = 1
 
 # docker image publishing options
 IMAGE_NAMESPACE       ?= argoproj
+
 ifeq ($(GIT_BRANCH),master)
-VERSION               := $(shell cat VERSION)
-IMAGE_TAG             := latest
-DEV_IMAGE             := true
+VERSION               := latest
 else
-ifeq ($(findstring release,$(GIT_BRANCH)),release)
 ifneq ($(GIT_TAG),)
-VERSION               ?= $(GIT_TAG)
+VERSION               := $(GIT_TAG)
 else
-VERSION               ?= $(GIT_BRANCH)
+VERSION               := $(subst /,-,$(GIT_BRANCH))
 endif
-IMAGE_TAG             := $(VERSION)
+endif
+
+# MANIFESTS_VERSION is the version to be used for files in manifests and should always be latests unles we are releasing
+ifeq ($(findstring release,$(GIT_BRANCH)),release)
+MANIFESTS_VERSION     := $(VERSION)
 DEV_IMAGE             := false
 else
-VERSION               := $(shell cat VERSION)
-IMAGE_TAG             := $(subst /,-,$(GIT_BRANCH))
+MANIFESTS_VERSION     := latest
 DEV_IMAGE             := true
-endif
 endif
 
 # perform static compilation
@@ -42,12 +42,11 @@ override LDFLAGS += \
   -X ${PACKAGE}.gitCommit=${GIT_COMMIT} \
   -X ${PACKAGE}.gitTreeState=${GIT_TREE_STATE}
 
-ifeq (${STATIC_BUILD}, true)
+ifeq ($(STATIC_BUILD), true)
 override LDFLAGS += -extldflags "-static"
 endif
 
-ifneq (${GIT_TAG},)
-VERSION = ${GIT_TAG}
+ifneq ($(GIT_TAG),)
 override LDFLAGS += -X ${PACKAGE}.gitTag=${GIT_TAG}
 endif
 
@@ -59,7 +58,11 @@ E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
 
 .PHONY: build
-build: clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
+build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
+
+.PHONY: status
+status:
+	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE)
 
 vendor: Gopkg.toml Gopkg.lock
 	# Get Go dependencies
@@ -123,14 +126,14 @@ dist/cli-image: dist/argo-linux-amd64
 	# Create CLI image
 ifeq ($(DEV_IMAGE),true)
 	cp dist/argo-linux-amd64 argo
-	docker build -t $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG) --target argocli -f Dockerfile.dev .
+	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli -f Dockerfile.dev .
 	rm -f argo
 else
-	docker build -t $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG) --target argocli .
+	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli .
 endif
 	touch dist/cli-image
 ifeq ($(K3D),true)
-	k3d import-images $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)
+	k3d import-images $(IMAGE_NAMESPACE)/argocli:$(VERSION)
 endif
 
 .PHONY: clis
@@ -148,15 +151,14 @@ dist/controller-image: dist/workflow-controller-linux-amd64
 	# Create controller image
 ifeq ($(DEV_IMAGE),true)
 	cp dist/workflow-controller-linux-amd64 workflow-controller
-	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG) --target workflow-controller -f Dockerfile.dev .
+	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller -f Dockerfile.dev .
 	rm -f workflow-controller
 else
-	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG) --target workflow-controller .
+	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller .
 endif
 	touch dist/controller-image
 ifeq ($(K3D),true)
-	# importing images into k3d
-	k3d import-images $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)
+	k3d import-images $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
 endif
 
 # argoexec
@@ -171,14 +173,14 @@ dist/executor-image: dist/argoexec-linux-amd64
 	# Create executor image
 ifeq ($(DEV_IMAGE),true)
 	cp dist/argoexec-linux-amd64 argoexec
-	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG) --target argoexec -f Dockerfile.dev .
+	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec -f Dockerfile.dev .
 	rm -f argoexec
 else
-	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG) --target argoexec .
+	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec .
 endif
 	touch dist/executor-image
 ifeq ($(K3D),true)
-	k3d import-images $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)
+	k3d import-images $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
 endif
 
 # generation
@@ -204,23 +206,23 @@ verify-codegen:
 manifests: manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml
 
 # we use a different file to ./VERSION to force updating manifests after a `make clean`
-dist/VERSION:
-	echo $(VERSION) > dist/VERSION
+dist/MANIFESTS_VERSION:
+	echo $(MANIFESTS_VERSION) > dist/MANIFESTS_VERSION
 
-manifests/install.yaml: dist/VERSION $(MANIFESTS)
-	env VERSION=$(VERSION) ./hack/update-manifests.sh
+manifests/install.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
+	kustomize build manifests/cluster-install | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/install.yaml
 
-manifests/namespace-install.yaml: dist/VERSION $(MANIFESTS)
-	env VERSION=$(VERSION) ./hack/update-manifests.sh
+manifests/namespace-install.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
+	kustomize build manifests/namespace-install | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
 
-manifests/quick-start-no-db.yaml: VERSION $(MANIFESTS)
-	env VERSION=$(VERSION) ./hack/update-manifests.sh
+manifests/quick-start-no-db.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
+	kustomize build manifests/quick-start/no-db | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-no-db.yaml
 
-manifests/quick-start-mysql.yaml: VERSION $(MANIFESTS)
-	env VERSION=$(VERSION) ./hack/update-manifests.sh
+manifests/quick-start-mysql.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
+	kustomize build manifests/quick-start/mysql | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
 
-manifests/quick-start-postgres.yaml: dist/VERSION $(MANIFESTS)
-	env VERSION=$(VERSION) ./hack/update-manifests.sh
+manifests/quick-start-postgres.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
+	kustomize build manifests/quick-start/postgres | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
 # lint/test/etc
 
@@ -248,7 +250,7 @@ test/e2e/manifests/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
 
 dist/postgres.yaml: test/e2e/manifests/postgres.yaml
 	# Create Postgres e2e manifests
-	cat test/e2e/manifests/postgres.yaml | sed 's/:latest/:$(IMAGE_TAG)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/postgres.yaml
+	cat test/e2e/manifests/postgres.yaml | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/postgres.yaml
 
 test/e2e/manifests/no-db/overlays/argo-server-deployment.yaml: test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml
 test/e2e/manifests/no-db/overlays/argo-server-deployment.yaml:
@@ -265,8 +267,7 @@ test/e2e/manifests/no-db.yaml: $(MANIFESTS) $(E2E_MANIFESTS) test/e2e/manifests/
 dist/no-db.yaml: test/e2e/manifests/no-db.yaml
 	# Create no DB e2e manifests
 	# We additionlly disable ALWAY_OFFLOAD_NODE_STATUS
-	cat test/e2e/manifests/no-db.yaml | sed 's/:latest/:$(IMAGE_TAG)/' | sed 's/pns/$(E2E_EXECUTOR)/' | sed 's/"true"/"false"/' > dist/no-db.yaml
-
+	cat test/e2e/manifests/no-db.yaml | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | sed 's/"true"/"false"/' > dist/no-db.yaml
 
 test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml: test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml
 test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml:
@@ -282,7 +283,7 @@ test/e2e/manifests/mysql.yaml: $(MANIFESTS) $(E2E_MANIFESTS) test/e2e/manifests/
 
 dist/mysql.yaml: test/e2e/manifests/mysql.yaml
 	# Create MySQL e2e manifests
-	cat test/e2e/manifests/mysql.yaml | sed 's/:latest/:$(IMAGE_TAG)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/mysql.yaml
+	cat test/e2e/manifests/mysql.yaml | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/mysql.yaml
 
 .PHONY: install
 install: dist/postgres.yaml dist/mysql.yaml dist/no-db.yaml
@@ -393,9 +394,9 @@ test-cli: test-images
 .PHONY: clean
 clean:
 	# Remove images
-	[ "`docker images -q $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)
-	[ "`docker images -q $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)
-	[ "`docker images -q $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)
+	[ "`docker images -q $(IMAGE_NAMESPACE)/argocli:$(VERSION)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argocli:$(VERSION)
+	[ "`docker images -q $(IMAGE_NAMESPACE)/argoexec:$(VERSION)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
+	[ "`docker images -q $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
 	# Delete build files
 	rm -Rf dist ui/dist
 
@@ -420,49 +421,24 @@ pre-push: must-be-clean pre-commit must-be-clean
 # release
 
 .PHONY: prepare-release
-prepare-release: pre-release
-	# Prepare release
-ifeq ($(VERSION),)
-	echo "unable to prepare release - VERSION undefined" >&2
-	exit 1
-endif
-ifeq ($(VERSION),latest)
-	# No release preparation needed for master branch
-else
-	# Update VERSION file
-	echo $(VERSION) | cut -c 1- > VERSION
-	make codegen manifests VERSION=$(VERSION)
+prepare-release: manifests codegen
 	# Commit if any changes
 	git diff --quiet || git commit -am "Update manifests to $(VERSION)"
-endif
+	git tag $(VERSION)
 
-.PHONY: pre-release
-pre-release: pre-push
+.PHONY: check-release
+check-release: pre-push
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
-	# Check we have tagged the latest commit
-	@if [ -z "$(GIT_TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
 	# Check the tag is correct
 	@if [ "$(GIT_TAG)" != "$(VERSION)" ]; then echo 'git tag ($(GIT_TAG)) does not match VERSION ($(VERSION))'; exit 1; fi
 endif
 
-.PHONY: publish
-publish:
-ifeq ($(VERSION),latest)
-ifneq ($(GIT_BRANCH),master)
-	echo "you cannot publish 'latest' unless you are on master" >&2
-	exit 1
-endif
-endif
-	# Publish release
+.PHONY: publish-release
+publish-release:
 	# Push images to Docker Hub
-	docker push $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)
-	docker push $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)
-	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)
-ifeq ($(findstring release,$(GIT_BRANCH)),release)
-	# Push changes to Git
-	git push $(GIT_REMOTE)
-	git tag push $(GIT_REMOTE) $(VERSION)
-endif
+	docker push $(IMAGE_NAMESPACE)/argocli:$(VERSION)
+	docker push $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
+	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
 
 .PHONY: release
-release: pre-release build publish
+release: status prepare-release check-release publish-release
