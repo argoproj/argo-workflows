@@ -25,38 +25,47 @@ func newPersistence(kubeClient kubernetes.Interface) *Persistence {
 	if err != nil {
 		panic(err)
 	}
-	if wcConfig == nil {
-		return nil
-	}
 	persistence := wcConfig.Persistence
-	if persistence.PostgreSQL != nil {
-		persistence.PostgreSQL.Host = "localhost"
+	if persistence != nil {
+		if persistence.PostgreSQL != nil {
+			persistence.PostgreSQL.Host = "localhost"
+		}
+		if persistence.MySQL != nil {
+			persistence.MySQL.Host = "localhost"
+		}
+		session, tableName, err := sqldb.CreateDBSession(kubeClient, Namespace, persistence)
+		if err != nil {
+			panic(err)
+		}
+		offloadNodeStatusRepo := sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+		return &Persistence{session, offloadNodeStatusRepo}
+	} else {
+		return &Persistence{offloadNodeStatusRepo: sqldb.ExplosiveOffloadNodeStatusRepo}
 	}
-	if persistence.MySQL != nil {
-		persistence.MySQL.Host = "localhost"
-	}
-	session, tableName, err := sqldb.CreateDBSession(kubeClient, Namespace, persistence)
-	if err != nil {
-		panic(err)
-	}
-	offloadNodeStatusRepo := sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
-	return &Persistence{session, offloadNodeStatusRepo}
+}
+
+func (s *Persistence) IsEnabled() bool {
+	return s.offloadNodeStatusRepo.IsEnabled()
 }
 
 func (s *Persistence) Close() {
-	err := s.session.Close()
-	if err != nil {
-		panic(err)
+	if s.IsEnabled() {
+		err := s.session.Close()
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
 func (s *Persistence) DeleteEverything() {
-	_, err := s.session.DeleteFrom("argo_workflows").Exec()
-	if err != nil {
-		panic(err)
-	}
-	_, err = s.session.DeleteFrom("argo_archived_workflows").Exec()
-	if err != nil {
-		panic(err)
+	if s.IsEnabled() {
+		_, err := s.session.DeleteFrom("argo_workflows").Exec()
+		if err != nil {
+			panic(err)
+		}
+		_, err = s.session.DeleteFrom("argo_archived_workflows").Exec()
+		if err != nil {
+			panic(err)
+		}
 	}
 }
