@@ -145,6 +145,9 @@ func (s *CLISuite) TestCron() {
 }
 
 func (s *CLISuite) TestArchive() {
+	if !s.Persistence.IsEnabled() {
+		s.T().SkipNow()
+	}
 	var uid types.UID
 	s.Given().
 		Workflow("@smoke/basic.yaml").

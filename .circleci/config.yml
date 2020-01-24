@@ -137,6 +137,14 @@ jobs:
       - store_artifacts:
           path: test-results
           destination: .
+  e2e-no-db:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    machine:
+      image: ubuntu-1604:201903-01
+    environment:
+      DB: no-db
+    steps:
+      - e2e
   e2e-postgres:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
