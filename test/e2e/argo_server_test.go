@@ -84,7 +84,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	// Create good serviceaccount
 	goodSaName := "argotestgood"
 	goodSa := &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: goodSaName}}
-	s.Run("Create good service account", func(t *testing.T) {
+	s.Run("CreateGoodSA", func(t *testing.T) {
 		_, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Create(goodSa)
 		assert.NoError(t, err)
 	})
@@ -96,7 +96,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	// Create bad serviceaccount
 	badSaName := "argotestbad"
 	badSa := &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: badSaName}}
-	s.Run("Create bad service account", func(t *testing.T) {
+	s.Run("CreateBadSA", func(t *testing.T) {
 		_, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Create(badSa)
 		assert.NoError(t, err)
 	})
@@ -106,7 +106,7 @@ func (s *ArgoServerSuite) TestPermission() {
 
 	// Create RBAC Role
 	var roleName string
-	s.Run("Load role yaml", func(t *testing.T) {
+	s.Run("LoadRoleYaml", func(t *testing.T) {
 		obj, err := fixtures.LoadObject("@testdata/argo-server-test-role.yaml")
 		assert.NoError(t, err)
 		role, _ := obj.(*rbacv1.Role)
@@ -129,7 +129,7 @@ func (s *ArgoServerSuite) TestPermission() {
 			Name:     roleName,
 		},
 	}
-	s.Run("Create RoleBinding", func(t *testing.T) {
+	s.Run("CreateRoleBinding", func(t *testing.T) {
 		_, err := s.KubeClient.RbacV1().RoleBindings(nsName).Create(roleBinding)
 		assert.NoError(t, err)
 	})
@@ -143,34 +143,36 @@ func (s *ArgoServerSuite) TestPermission() {
 
 	// Get token of good serviceaccount
 	var goodToken string
-	s.Run("Get good serviceaccount token", func(t *testing.T) {
+	s.GetServiceAccountToken()
+	s.Run("GetGoodSAToken", func(t *testing.T) {
 		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(goodSaName, metav1.GetOptions{})
 		if assert.NoError(t, err) {
 			secretName := sAccount.Secrets[0].Name
 			secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(secretName, metav1.GetOptions{})
 			assert.NoError(t, err)
-			goodToken = "v1:" + string(secret.Data["token"])
+			goodToken = string(secret.Data["token"])
 		}
 	})
 
 	// Get token of bad serviceaccount
 	var badToken string
-	s.Run("Get bad serviceaccount token", func(t *testing.T) {
+	s.Run("GetBadSAToken", func(t *testing.T) {
 		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(badSaName, metav1.GetOptions{})
 		assert.NoError(t, err)
 		secretName := sAccount.Secrets[0].Name
 		secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(secretName, metav1.GetOptions{})
 		assert.NoError(t, err)
-		badToken = "v1:" + string(secret.Data["token"])
+		badToken = string(secret.Data["token"])
 	})
 
 	token := s.bearerToken
 	defer func() { s.bearerToken = token }()
 
 	// Test creating workflow with good token
+	var uid string
 	s.bearerToken = goodToken
-	s.Run("Create workflow with good token", func(t *testing.T) {
-		s.e(t).POST("/api/v1/workflows/" + nsName).
+	s.Run("CreateWFGoodToken", func(t *testing.T) {
+		uid = s.e(t).POST("/api/v1/workflows/" + nsName).
 			WithBytes([]byte(`{
   "workflow": {
     "metadata": {
@@ -186,7 +188,7 @@ func (s *ArgoServerSuite) TestPermission() {
           "container": {
             "image": "cowsay:v1",
             "command": ["sh"],
-            "args": ["-c", "sleep 10"]
+            "args": ["-c", "sleep 1"]
           }
         }
       ],
@@ -195,12 +197,15 @@ func (s *ArgoServerSuite) TestPermission() {
   }
 }`)).
 			Expect().
-			Status(200)
+			Status(200).
+			JSON().
+			Path("$.metadata.uid").
+			Raw().(string)
 	})
 
 	// Test list workflows with good token
 	s.bearerToken = goodToken
-	s.Run("List workflows with good token", func(t *testing.T) {
+	s.Run("ListWFsGoodToken", func(t *testing.T) {
 		s.e(t).GET("/api/v1/workflows/"+nsName).
 			WithQuery("listOptions.labelSelector", "argo-e2e").
 			Expect().
@@ -214,7 +219,7 @@ func (s *ArgoServerSuite) TestPermission() {
 
 	// Test creating workflow with bad token
 	s.bearerToken = badToken
-	s.Run("Create workflow with bad token", func(t *testing.T) {
+	s.Run("CreateWFBadToken", func(t *testing.T) {
 		s.e(t).POST("/api/v1/workflows/" + nsName).
 			WithBytes([]byte(`{
   "workflow": {
@@ -232,7 +237,7 @@ func (s *ArgoServerSuite) TestPermission() {
             "image": "cowsay:v1",
             "imagePullPolicy": "IfNotPresent",
             "command": ["sh"],
-            "args": ["-c", "sleep 10"]
+            "args": ["-c", "sleep 1"]
           }
         }
       ],
@@ -246,17 +251,69 @@ func (s *ArgoServerSuite) TestPermission() {
 
 	// Test list workflows with bad token
 	s.bearerToken = badToken
-	s.Run("List workflows with bad token", func(t *testing.T) {
+	s.Run("ListWFsBadToken", func(t *testing.T) {
 		s.e(t).GET("/api/v1/workflows/" + nsName).
 			Expect().
 			Status(403)
 	})
 
-	// TODO: Test list archived wf with good token after archived wf APIs changes are finalized.
+	// Simply wait 10 seconds for the wf to be completed
+	time.Sleep(10 * time.Second)
+
+	// Test list archived WFs with good token
+	s.bearerToken = goodToken
+	s.Run("ListArchivedWFsGoodToken", func(t *testing.T) {
+		s.e(t).GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace="+nsName).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().Length().Gt(0)
+	})
+
+	// Test get archived wf with good token
+	s.bearerToken = goodToken
+	s.Run("ListArchivedWFsGoodToken", func(t *testing.T) {
+		s.e(t).GET("/api/v1/archived-workflows/"+uid).
+			WithQuery("listOptions.labelSelector", "argo-e2e").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.metadata.name").
+			Equal("test-wf-good")
+	})
+
+	// Test list archived WFs with bad token
+	// TODO: Uncomment following code after https://github.com/argoproj/argo/issues/2049 is resolved.
+
+	// s.bearerToken = badToken
+	// s.Run("ListArchivedWFsGoodToken", func(t *testing.T) {
+	// 	s.e(t).GET("/api/v1/archived-workflows").
+	// 		WithQuery("listOptions.labelSelector", "argo-e2e").
+	// 		WithQuery("listOptions.fieldSelector", "metadata.namespace="+nsName).
+	// 		Expect().
+	// 		Status(200).
+	// 		JSON().
+	// 		Path("$.items").
+	// 		Array().
+	// 		Length().
+	// 		Equal(0)
+	// })
+
+	// Test get archived wf with bad token
+	s.bearerToken = badToken
+	s.Run("ListArchivedWFsBadToken", func(t *testing.T) {
+		s.e(t).GET("/api/v1/archived-workflows/"+uid).
+			WithQuery("listOptions.labelSelector", "argo-e2e").
+			Expect().
+			Status(403)
+	})
 
 	// Test delete workflow with bad token
 	s.bearerToken = badToken
-	s.Run("Delete workflow with bad token", func(t *testing.T) {
+	s.Run("DeleteWFWithBadToken", func(t *testing.T) {
 		s.e(t).DELETE("/api/v1/workflows/" + nsName + "/test-wf-good").
 			Expect().
 			Status(403)
@@ -264,7 +321,7 @@ func (s *ArgoServerSuite) TestPermission() {
 
 	// Test delete workflow with good token
 	s.bearerToken = goodToken
-	s.Run("Delete workflow with good token", func(t *testing.T) {
+	s.Run("DeleteWFWithGoodToken", func(t *testing.T) {
 		s.e(t).DELETE("/api/v1/workflows/" + nsName + "/test-wf-good").
 			Expect().
 			Status(200)
