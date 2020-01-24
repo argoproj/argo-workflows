@@ -143,7 +143,6 @@ func (s *ArgoServerSuite) TestPermission() {
 
 	// Get token of good serviceaccount
 	var goodToken string
-	s.GetServiceAccountToken()
 	s.Run("GetGoodSAToken", func(t *testing.T) {
 		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(goodSaName, metav1.GetOptions{})
 		if assert.NoError(t, err) {
