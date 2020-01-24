@@ -19,7 +19,7 @@ func (s backfillNodes) String() string {
 	return fmt.Sprintf("backfillNodes{%s}", s.tableName)
 }
 
-func (s backfillNodes) Apply(session sqlbuilder.Database) error {
+func (s backfillNodes) apply(session sqlbuilder.Database) error {
 	log.Info("Backfill node status")
 	rs, err := session.SelectFrom(s.tableName).
 		Columns("workflow").

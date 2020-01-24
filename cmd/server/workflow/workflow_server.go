@@ -81,7 +81,7 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *WorkflowGetReques
 		return nil, err
 	}
 
-	if wf.Status.IsOffloadNodeStatus() {
+	if wf.Status.IsOffloadNodeStatus() && s.offloadNodeStatusRepo.IsEnabled() {
 		offloadedNodes, err := s.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
 		if err != nil {
 			return nil, err
@@ -107,13 +107,15 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *WorkflowListReq
 	if err != nil {
 		return nil, err
 	}
-	offloadedNodes, err := s.offloadNodeStatusRepo.List(req.Namespace)
-	if err != nil {
-		return nil, err
-	}
-	for i, wf := range wfList.Items {
-		if wf.Status.IsOffloadNodeStatus() {
-			wfList.Items[i].Status.Nodes = offloadedNodes[sqldb.UUIDVersion{UID: string(wf.UID), Version: wf.GetOffloadNodeStatusVersion()}]
+	if s.offloadNodeStatusRepo.IsEnabled() {
+		offloadedNodes, err := s.offloadNodeStatusRepo.List(req.Namespace)
+		if err != nil {
+			return nil, err
+		}
+		for i, wf := range wfList.Items {
+			if wf.Status.IsOffloadNodeStatus() {
+				wfList.Items[i].Status.Nodes = offloadedNodes[sqldb.UUIDVersion{UID: string(wf.UID), Version: wf.GetOffloadNodeStatusVersion()}]
+			}
 		}
 	}
 
@@ -152,7 +154,7 @@ func (s *workflowServer) WatchWorkflows(req *WatchWorkflowsRequest, ws WorkflowS
 		if err != nil {
 			return err
 		}
-		if wf.Status.IsOffloadNodeStatus() {
+		if wf.Status.IsOffloadNodeStatus() && s.offloadNodeStatusRepo.IsEnabled() {
 			offloadedNodes, err := s.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
 			if err != nil {
 				return err
@@ -260,7 +262,7 @@ func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *WorkflowTer
 	return wf, nil
 }
 
-func (s *workflowServer) LintWorkflow(ctx context.Context, req *WorkflowCreateRequest) (*v1alpha1.Workflow, error) {
+func (s *workflowServer) LintWorkflow(ctx context.Context, req *WorkflowLintRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))

@@ -9,6 +9,6 @@ spec:
   templates:
     - name: run-workflow
       container:
-        image: docker/whalesay:latest
-        command: [cowsay, "🐙 Hello Argo!"]
+        image: cowsay:v1
+        command: [cowsay, ":) Hello Argo!"]
         imagePullPolicy: IfNotPresent
