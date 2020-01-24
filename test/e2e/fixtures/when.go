@@ -82,11 +82,8 @@ func (w *When) CreateCronWorkflow() *When {
 }
 
 func (w *When) WaitForWorkflowCondition(test func(wf *wfv1.Workflow) bool, condition string, timeout time.Duration) *When {
-
-	timeout = timeout + 30*time.Second
-
 	logCtx := log.WithFields(log.Fields{"workflow": w.workflowName, "condition": condition, "timeout": timeout})
-	logCtx.Info("Waiting for workflow test")
+	logCtx.Info("Waiting for condition")
 	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", w.workflowName)).String()}
 	watch, err := w.client.Watch(opts)
 	if err != nil {
@@ -113,7 +110,7 @@ func (w *When) WaitForWorkflowCondition(test func(wf *wfv1.Workflow) bool, condi
 				logCtx.Error("not ok")
 			}
 		case <-timeoutCh:
-			w.t.Fatalf("timeout after %v waiting for test %s", timeout, condition)
+			w.t.Fatalf("timeout after %v waiting for condition %s", timeout, condition)
 		}
 	}
 }
