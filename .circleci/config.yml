@@ -56,14 +56,6 @@ commands:
           name: Install and start K3S v1.0.0
           command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.0 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
           background: true
-      - run:
-          name: Pull some Docker images now, to save time later
-          command: |
-            docker pull golang:1.11.5
-            docker pull minio/minio:RELEASE.2019-12-17T23-16-33Z
-            docker pull docker/whalesay:latest
-            docker pull bitnami/kubectl:1.15.3-ol-7-r165
-          background: true
       - restore_go_cache
       - install_golang
       - go_junit_report
@@ -79,16 +71,19 @@ commands:
           command: docker events
           background: true
       - run:
-          name: Watch Kubernetes events, to help diagnose failures
-          command: kubectl -n argo get events --watch
-          background: true
-      - run:
           name: Start Argo
           command: mkdir dist && KUBECONFIG=~/.kube/config make start DB=$DB E2E_EXECUTOR=docker
       - run:
           name: Establish port forward
           command: make pf
           background: true
+      - run:
+          name: Watch Kubernetes events, to help diagnose failures
+          command: kubectl -n argo get events --watch
+          background: true
+      - run:
+          name: Sleep for short while
+          command: sleep 10s
       - run:
           name: Follow logs, to help diagnose failures
           command: make logs
