@@ -16,6 +16,11 @@ IMAGE_TAG             := latest
 DEV_IMAGE             := true
 else
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
+ifneq ($(GIT_TAG),)
+VERSION               ?= $(GIT_TAG)
+else
+VERSION               ?= $(GIT_BRANCH)
+endif
 IMAGE_TAG             := $(VERSION)
 DEV_IMAGE             := false
 else
