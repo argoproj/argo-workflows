@@ -2,6 +2,7 @@
 BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_BRANCH             = $(shell git rev-parse --abbrev-ref=loose HEAD | sed 's/heads\///')
+GIT_REMOTE             ?= upstream
 GIT_TAG                = $(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
@@ -431,8 +432,8 @@ endif
 	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
 	# Push changes to Git
-	git push upstream
-	git tag push $(VERSION)
+	git push $(GIT_REMOTE)
+	git tag push $(GIT_REMOTE) $(VERSION)
 endif
 
 .PHONY: release
