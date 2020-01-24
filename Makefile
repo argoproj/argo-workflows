@@ -84,12 +84,11 @@ else
 endif
 	touch ui/dist/app
 
-.PHONY: staticfiles
-staticfiles:
+$(HOME)/go/bin/staticfiles:
 	# Install the "staticfiles" tool
 	go get bou.ke/staticfiles
 
-cmd/server/static/files.go: ui/dist/app staticfiles
+cmd/server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/app
 	# Pack UI into a Go file.
 	staticfiles -o cmd/server/static/files.go ui/dist/app
 
@@ -198,19 +197,23 @@ verify-codegen:
 .PHONY: manifests
 manifests: manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml
 
-manifests/install.yaml: $(MANIFESTS)
+# we use a different file to ./VERSION to force updating manifests after a `make clean`
+dist/IMAGE_TAG:
+	echo $(IMAGE_TAG) > dist/IMAGE_TAG
+
+manifests/install.yaml: dist/IMAGE_TAG $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
-manifests/namespace-install.yaml: $(MANIFESTS)
+manifests/namespace-install.yaml: dist/IMAGE_TAG $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
-manifests/quick-start-mysql.yaml: $(MANIFESTS)
+manifests/quick-start-mysql.yaml: dist/IMAGE_TAG $(MANIFESTS)
 	# Create MySQL quick-start manifests
-	kustomize build manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
+	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(IMAGE_TAG)/' | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
 
-manifests/quick-start-postgres.yaml: $(MANIFESTS)
+manifests/quick-start-postgres.yaml: dist/IMAGE_TAG $(MANIFESTS)
 	# Create Postgres quick-start manifests
-	kustomize build manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
+	kustomize build manifests/quick-start/postgres | sed 's/:latest/:$(IMAGE_TAG)/' | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
 # lint/test/etc
 
@@ -392,14 +395,14 @@ ifeq ($(findstring release,$(GIT_BRANCH)),release)
 	# Check we have tagged the latest commit
 	@if [ -z "$(GIT_TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
 	# Check the tag is correct
-	@if [ "$(GIT_TAG)" != "v$(VERSION)" ]; then echo 'git tag ($(GIT_TAG)) does not match VERSION (v$(VERSION))'; exit 1; fi
+	@if [ "$(GIT_TAG)" != "$(VERSION)" ]; then echo 'git tag ($(GIT_TAG)) does not match VERSION ($(VERSION))'; exit 1; fi
 endif
 
 .PHONY: publish
 publish:
 ifeq ($(VERSION),latest)
 ifneq ($(GIT_BRANCH),master)
-	echo "you cannot publish latest version unless you are on master" >&2
+	echo "you cannot publish 'latest' unless you are on master" >&2
 	exit 1
 endif
 endif
@@ -408,10 +411,10 @@ endif
 	docker push $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)
 	docker push $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)
 	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)
-ifeq ($(SNAPSHOT),false)
+ifeq ($(findstring release,$(GIT_BRANCH)),release)
 	# Push changes to Git
-	git push
-	git push $(VERSION)
+	git push upstream
+	git tag push $(VERSION)
 endif
 
 .PHONY: release
