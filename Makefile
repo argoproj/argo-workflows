@@ -199,19 +199,19 @@ verify-codegen:
 manifests: manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml
 
 # we use a different file to ./VERSION to force updating manifests after a `make clean`
-dist/IMAGE_TAG:
-	echo $(IMAGE_TAG) > dist/IMAGE_TAG
+dist/VERSION:
+	echo $(VERSION) > dist/VERSION
 
-manifests/install.yaml: dist/IMAGE_TAG $(MANIFESTS)
+manifests/install.yaml: dist/VERSION $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
-manifests/namespace-install.yaml: dist/IMAGE_TAG $(MANIFESTS)
+manifests/namespace-install.yaml: dist/VERSION $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
-manifests/quick-start-mysql.yaml: dist/IMAGE_TAG $(MANIFESTS)
+manifests/quick-start-mysql.yaml: dist/VERSION $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
-manifests/quick-start-postgres.yaml: dist/IMAGE_TAG $(MANIFESTS)
+manifests/quick-start-postgres.yaml: dist/VERSION $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
 # lint/test/etc
