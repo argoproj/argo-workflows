@@ -365,6 +365,7 @@ func getWorkflowServer() (WorkflowServiceServer, context.Context) {
 	_ = json.Unmarshal([]byte(wf4), &wfObj4)
 	_ = json.Unmarshal([]byte(wf5), &wfObj5)
 	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
+	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
 	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.UUIDVersion]v1alpha1.Nodes{}, nil)
 	server := NewWorkflowServer(offloadNodeStatusRepo)
 	kubeClientSet := fake.NewSimpleClientset()

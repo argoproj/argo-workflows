@@ -42,6 +42,9 @@ func (s *CLIWithServerSuite) TestToken() {
 }
 
 func (s *CLIWithServerSuite) TestArchive() {
+	if !s.Persistence.IsEnabled() {
+		s.T().SkipNow()
+	}
 	var uid types.UID
 	s.Given().
 		Workflow("@smoke/basic.yaml").

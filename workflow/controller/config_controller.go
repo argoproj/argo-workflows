@@ -55,7 +55,7 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 		}
 	}
 	wfc.session = nil
-	wfc.offloadNodeStatusRepo = nil
+	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = sqldb.NullWorkflowArchive
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
