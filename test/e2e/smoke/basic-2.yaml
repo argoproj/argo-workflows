@@ -9,5 +9,5 @@ spec:
   templates:
     - name: run-workflow
       container:
-        image: docker/whalesay:latest
+        image: cowsay:v1
         imagePullPolicy: IfNotPresent
