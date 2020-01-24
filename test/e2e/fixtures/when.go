@@ -81,8 +81,8 @@ func (w *When) CreateCronWorkflow() *When {
 	return w
 }
 
-func (w *When) WaitForWorkflowCondition(condition func(wf *wfv1.Workflow) bool, timeout time.Duration) *When {
-	logCtx := log.WithFields(log.Fields{"workflow": w.workflowName})
+func (w *When) WaitForWorkflowCondition(condition func(wf *wfv1.Workflow) bool, description string, timeout time.Duration) *When {
+	logCtx := log.WithFields(log.Fields{"workflow": w.workflowName, "description": description})
 	logCtx.Info("Waiting for workflow condition")
 	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", w.workflowName)).String()}
 	watch, err := w.client.Watch(opts)
@@ -103,6 +103,7 @@ func (w *When) WaitForWorkflowCondition(condition func(wf *wfv1.Workflow) bool, 
 				logCtx.WithFields(log.Fields{"type": event.Type, "phase": wf.Status.Phase}).Info(wf.Status.Message)
 				w.hydrateWorkflow(wf)
 				if condition(wf) {
+					logCtx.Infof("Condition met")
 					return w
 				}
 			} else {
@@ -130,13 +131,13 @@ func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
 func (w *When) WaitForWorkflowToStart(timeout time.Duration) *When {
 	return w.WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 		return !wf.Status.StartedAt.IsZero()
-	}, timeout)
+	}, "to start", timeout)
 }
 
 func (w *When) WaitForWorkflow(timeout time.Duration) *When {
 	return w.WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 		return !wf.Status.FinishedAt.IsZero()
-	}, timeout)
+	}, "to finish", timeout)
 }
 
 func (w *When) Wait(timeout time.Duration) *When {
