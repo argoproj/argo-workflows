@@ -53,12 +53,12 @@ spec:
 
   - name: whalesay
     container:
-      image: docker/whalesay:latest
+      image: cowsay:v1
       imagePullPolicy: IfNotPresent
 
   - name: whalesplosion
     container:
-      image: docker/whalesay:latest
+      image: cowsay:v1
       imagePullPolicy: IfNotPresent
       command: ["sh", "-c", "sleep 5 ; exit 1"]
 `).
