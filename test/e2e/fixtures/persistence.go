@@ -25,6 +25,9 @@ func newPersistence(kubeClient kubernetes.Interface) *Persistence {
 	if err != nil {
 		panic(err)
 	}
+	if wcConfig == nil {
+		return nil
+	}
 	persistence := wcConfig.Persistence
 	if persistence.PostgreSQL != nil {
 		persistence.PostgreSQL.Host = "localhost"
