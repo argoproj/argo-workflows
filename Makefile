@@ -329,17 +329,17 @@ test-e2e:
 .PHONY: smoke
 smoke:
 	# Run smoke tests
-	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
+	go test -timeout 2m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
 
 .PHONY: test-api
 test-api:
 	# Run API tests
-	go test -timeout 2m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
+	go test -timeout 3m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
 
 .PHONY: test-cli
 test-cli:
 	# Run CLI tests
-	go test -timeout 30s -v -count 1 -p 1 -run CliSuite ./test/e2e
+	go test -timeout 1m -v -count 1 -p 1 -run CliSuite ./test/e2e
 
 # clean
 
