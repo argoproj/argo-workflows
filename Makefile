@@ -2,6 +2,7 @@
 BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_BRANCH             = $(shell git rev-parse --abbrev-ref=loose HEAD | sed 's/heads\///')
+GIT_REMOTE             ?= upstream
 GIT_TAG                = $(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
@@ -84,12 +85,11 @@ else
 endif
 	touch ui/dist/app
 
-.PHONY: staticfiles
-staticfiles:
+$(HOME)/go/bin/staticfiles:
 	# Install the "staticfiles" tool
 	go get bou.ke/staticfiles
 
-cmd/server/static/files.go: ui/dist/app staticfiles
+cmd/server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/app
 	# Pack UI into a Go file.
 	staticfiles -o cmd/server/static/files.go ui/dist/app
 
@@ -198,19 +198,21 @@ verify-codegen:
 .PHONY: manifests
 manifests: manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml
 
-manifests/install.yaml: $(MANIFESTS)
+# we use a different file to ./VERSION to force updating manifests after a `make clean`
+dist/VERSION:
+	echo $(VERSION) > dist/VERSION
+
+manifests/install.yaml: dist/VERSION $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
-manifests/namespace-install.yaml: $(MANIFESTS)
+manifests/namespace-install.yaml: dist/VERSION $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
-manifests/quick-start-mysql.yaml: $(MANIFESTS)
-	# Create MySQL quick-start manifests
-	kustomize build manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
+manifests/quick-start-mysql.yaml: dist/VERSION $(MANIFESTS)
+	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
-manifests/quick-start-postgres.yaml: $(MANIFESTS)
-	# Create Postgres quick-start manifests
-	kustomize build manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
+manifests/quick-start-postgres.yaml: dist/VERSION $(MANIFESTS)
+	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
 # lint/test/etc
 
@@ -266,6 +268,24 @@ else
 	kubectl -n argo apply -f dist/mysql.yaml
 endif
 
+.PHONY: test-images
+test-images: dist/cowsay-v1 dist/bitnami-kubectl-1.15.3-ol-7-r165 dist/python-alpine3.6
+
+dist/cowsay-v1:
+	docker build -t cowsay:v1 test/e2e/images/cowsay
+ifeq ($(K3D),true)
+	k3d import-images cowsay:v1
+endif
+	touch dist/cowsay-v1
+
+dist/bitnami-kubectl-1.15.3-ol-7-r165:
+	docker pull bitnami/kubectl:1.15.3-ol-7-r165
+	touch dist/bitnami-kubectl-1.15.3-ol-7-r165
+
+dist/python-alpine3.6:
+	docker pull python:alpine3.6
+	touch dist/python-alpine3.6
+
 .PHONY: start
 start: controller-image cli-image executor-image install
 	# Start development environment
@@ -319,24 +339,24 @@ mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
 .PHONY: test-e2e
-test-e2e:
+test-e2e: test-images
 	# Run E2E tests
 	go test -timeout 20m -v -count 1 -p 1 ./test/e2e/...
 
 .PHONY: smoke
-smoke:
+smoke: test-images
 	# Run smoke tests
-	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
+	go test -timeout 2m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
 
 .PHONY: test-api
-test-api:
+test-api: test-images
 	# Run API tests
-	go test -timeout 2m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
+	go test -timeout 3m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
 
 .PHONY: test-cli
-test-cli:
+test-cli: test-images
 	# Run CLI tests
-	go test -timeout 30s -v -count 1 -p 1 -run CliSuite ./test/e2e
+	go test -timeout 1m -v -count 1 -p 1 -run CliSuite ./test/e2e
 
 # clean
 
@@ -392,14 +412,14 @@ ifeq ($(findstring release,$(GIT_BRANCH)),release)
 	# Check we have tagged the latest commit
 	@if [ -z "$(GIT_TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
 	# Check the tag is correct
-	@if [ "$(GIT_TAG)" != "v$(VERSION)" ]; then echo 'git tag ($(GIT_TAG)) does not match VERSION (v$(VERSION))'; exit 1; fi
+	@if [ "$(GIT_TAG)" != "$(VERSION)" ]; then echo 'git tag ($(GIT_TAG)) does not match VERSION ($(VERSION))'; exit 1; fi
 endif
 
 .PHONY: publish
 publish:
 ifeq ($(VERSION),latest)
 ifneq ($(GIT_BRANCH),master)
-	echo "you cannot publish latest version unless you are on master" >&2
+	echo "you cannot publish 'latest' unless you are on master" >&2
 	exit 1
 endif
 endif
@@ -408,10 +428,10 @@ endif
 	docker push $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)
 	docker push $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)
 	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)
-ifeq ($(SNAPSHOT),false)
+ifeq ($(findstring release,$(GIT_BRANCH)),release)
 	# Push changes to Git
-	git push
-	git push $(VERSION)
+	git push $(GIT_REMOTE)
+	git tag push $(GIT_REMOTE) $(VERSION)
 endif
 
 .PHONY: release
