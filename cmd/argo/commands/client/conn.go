@@ -13,7 +13,10 @@ import (
 	"github.com/argoproj/argo/util/kubeconfig"
 )
 
+// DEPRECATED should only be used by client/v1 package
 var ArgoServer string
+
+// DEPRECATED should only be used by client/v1 package
 var Config clientcmd.ClientConfig
 
 func AddKubectlFlagsToCmd(cmd *cobra.Command) {
@@ -31,6 +34,7 @@ func AddArgoServerFlagsToCmd(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVar(&ArgoServer, "argo-server", os.Getenv("ARGO_SERVER"), "API server `host:port`. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.")
 }
 
+// DEPRECATED should only be used by client/v1 package
 func GetClientConn() *grpc.ClientConn {
 	conn, err := grpc.Dial(ArgoServer, grpc.WithInsecure())
 	if err != nil {
@@ -39,15 +43,16 @@ func GetClientConn() *grpc.ClientConn {
 	return conn
 }
 
+// DEPRECATED should only be used by client/v1 package
 func GetContext() context.Context {
-	token := GetBearerToken()
+	token := GetToken()
 	if token == "" {
 		return context.Background()
 	}
-	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("grpcgateway-authorization", "Bearer "+GetBearerToken()))
+	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("grpcgateway-authorization", "Bearer "+token))
 }
 
-func GetBearerToken() string {
+func GetToken() string {
 	restConfig, err := Config.ClientConfig()
 	if err != nil {
 		log.Fatal(err)

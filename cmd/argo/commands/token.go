@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
+	v1 "github.com/argoproj/argo/cmd/argo/commands/client/v1"
 )
 
 func NewTokenCommand() *cobra.Command {
@@ -18,7 +19,11 @@ func NewTokenCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			fmt.Print(client.GetBearerToken())
+			client, err := v1.GetClient()
+			errors.CheckError(err)
+			token, err := client.GetToken()
+			errors.CheckError(err)
+			fmt.Print(token)
 		},
 	}
 }

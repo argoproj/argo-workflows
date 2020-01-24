@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
@@ -10,20 +9,17 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
 	argotime "github.com/argoproj/pkg/time"
 	"github.com/spf13/cobra"
-	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/server/workflow"
+	v1 "github.com/argoproj/argo/cmd/argo/commands/client/v1"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -47,27 +43,6 @@ func NewListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "list workflows",
 		Run: func(cmd *cobra.Command, args []string) {
-			var wfClient v1alpha1.WorkflowInterface
-			var wfApiClient workflow.WorkflowServiceClient
-			var ctx context.Context
-			var ns string
-
-			if client.ArgoServer == "" {
-				if listArgs.allNamespaces {
-					wfClient = InitWorkflowClient(apiv1.NamespaceAll)
-				} else {
-					wfClient = InitWorkflowClient()
-				}
-			} else {
-				conn := client.GetClientConn()
-				defer conn.Close()
-				if listArgs.allNamespaces {
-					ns = apiv1.NamespaceAll
-				} else {
-					ns, _, _ = client.Config.Namespace()
-				}
-				wfApiClient, ctx = GetWFApiServerGRPCClient(conn)
-			}
 
 			listOpts := metav1.ListOptions{}
 			labelSelector := labels.NewSelector()
@@ -89,29 +64,23 @@ func NewListCommand() *cobra.Command {
 			if listArgs.chunkSize != 0 {
 				listOpts.Limit = listArgs.chunkSize
 			}
-			var wfList *wfv1.WorkflowList
 
-			var err error
-			if client.ArgoServer == "" {
-				wfList, err = wfClient.List(listOpts)
-				if err != nil {
-					log.Fatal(err)
-				}
-			} else {
-				wfReq := workflow.WorkflowListRequest{
-					Namespace:   ns,
-					ListOptions: &listOpts,
-				}
-				wfList, err = wfApiClient.ListWorkflows(ctx, &wfReq)
-				if err != nil {
-					log.Fatal(err)
-				}
+			client, err := v1.GetClient()
+			errors.CheckError(err)
+
+			namespace, err := client.Namespace()
+			errors.CheckError(err)
+			if listArgs.allNamespaces {
+				namespace = ""
 			}
+
+			wfList, err := client.List(namespace, listOpts)
+			errors.CheckError(err)
 
 			tmpWorkFlows := wfList.Items
 			for wfList.ListMeta.Continue != "" {
 				listOpts.Continue = wfList.ListMeta.Continue
-				wfList, err = wfClient.List(listOpts)
+				wfList, err = client.List(namespace, listOpts)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -208,10 +177,6 @@ func countPendingRunningCompleted(wf *wfv1.Workflow) (int, int, int) {
 	pending := 0
 	running := 0
 	completed := 0
-	err := packer.DecompressWorkflow(wf)
-	if err != nil {
-		log.Fatal(err)
-	}
 	for _, node := range wf.Status.Nodes {
 		tmpl := wf.GetTemplateByName(node.TemplateName)
 		if tmpl == nil || !tmpl.IsPodType() {

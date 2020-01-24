@@ -8,15 +8,14 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/server/workflow"
+	v1 "github.com/argoproj/argo/cmd/argo/commands/client/v1"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/packer"
 )
 
 const onExitSuffix = "onExit"
@@ -32,38 +31,21 @@ func NewGetCommand() *cobra.Command {
 	)
 
 	var command = &cobra.Command{
-		Use:   "get WORKFLOW",
+		Use:   "get WORKFLOW...",
 		Short: "display details about a workflow",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			if client.ArgoServer != "" {
-				conn := client.GetClientConn()
-				defer conn.Close()
-				ns, _, _ := client.Config.Namespace()
-				client, ctx := GetWFApiServerGRPCClient(conn)
-				for _, arg := range args {
-					wfReq := workflow.WorkflowGetRequest{
-						Name:      arg,
-						Namespace: ns,
-					}
-					wf, err := client.GetWorkflow(ctx, &wfReq)
-					if err != nil {
-						log.Fatal(err)
-					}
-					outputWorkflow(wf, getArgs)
-				}
-			} else {
-				wfClient := InitWorkflowClient()
-				for _, arg := range args {
-					wf, err := wfClient.Get(arg, metav1.GetOptions{})
-					if err != nil {
-						log.Fatal(err)
-					}
-					outputWorkflow(wf, getArgs)
-				}
+			client, err := v1.GetClient()
+			errors.CheckError(err)
+			namespace, err := client.Namespace()
+			errors.CheckError(err)
+			for _, name := range args {
+				wf, err := client.Get(namespace, name)
+				errors.CheckError(err)
+				outputWorkflow(wf, getArgs)
 			}
 		},
 	}
@@ -75,10 +57,6 @@ func NewGetCommand() *cobra.Command {
 }
 
 func outputWorkflow(wf *wfv1.Workflow, getArgs getFlags) {
-	err := packer.DecompressWorkflow(wf)
-	if err != nil {
-		log.Fatal(err)
-	}
 	printWorkflow(wf, getArgs.output, getArgs.status)
 }
 
@@ -164,11 +142,11 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 	if printTree {
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 		fmt.Println()
-		// apply a dummy FgDefault format to align tabwriter with the rest of the columns
+		// apply a dummy FgDefault format to align tab writer with the rest of the columns
 		if getArgs.output == "wide" {
-			fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\n", ansiFormat("STEP", FgDefault))
+			_, _ = fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\n", ansiFormat("STEP", FgDefault))
 		} else {
-			fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tMESSAGE\n", ansiFormat("STEP", FgDefault))
+			_, _ = fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tMESSAGE\n", ansiFormat("STEP", FgDefault))
 		}
 
 		// Convert Nodes to Render Trees
@@ -183,7 +161,7 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 
 		onExitID := wf.NodeID(wf.ObjectMeta.Name + "." + onExitSuffix)
 		if onExitRoot, ok := roots[onExitID]; ok {
-			fmt.Fprintf(w, "\t\t\t\t\t\n")
+			_, _ = fmt.Fprintf(w, "\t\t\t\t\t\n")
 			onExitRoot.renderNodes(w, wf, 0, " ", " ", getArgs)
 		}
 		_ = w.Flush()
@@ -446,7 +424,7 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 }
 
 // Main method to print information of node in get
-func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, depth int, nodePrefix string, childPrefix string, getArgs getFlags) {
+func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, getArgs getFlags) {
 	if getArgs.status != "" && string(node.Phase) != getArgs.status {
 		return
 	}
@@ -467,9 +445,9 @@ func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, dep
 		msg := args[len(args)-1]
 		args[len(args)-1] = getArtifactsString(node)
 		args = append(args, msg)
-		fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\n", args...)
+		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\n", args...)
 	} else {
-		fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\n", args...)
+		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\n", args...)
 	}
 }
 
@@ -478,7 +456,7 @@ func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, dep
 func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, getArgs getFlags) {
 	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf))
 	if !filtered {
-		printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix, getArgs)
+		printNode(w, nodeInfo.getNodeStatus(wf), nodePrefix, getArgs)
 	}
 
 	for i, nInfo := range nodeInfo.boundaryContained {
@@ -491,7 +469,7 @@ func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow
 func (nodeInfo *nonBoundaryParentNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, getArgs getFlags) {
 	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf))
 	if !filtered {
-		printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix, getArgs)
+		printNode(w, nodeInfo.getNodeStatus(wf), nodePrefix, getArgs)
 	}
 
 	for i, nInfo := range nodeInfo.children {
@@ -501,10 +479,10 @@ func (nodeInfo *nonBoundaryParentNode) renderNodes(w *tabwriter.Writer, wf *wfv1
 }
 
 // executionNode
-func (nodeInfo *executionNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, getArgs getFlags) {
+func (nodeInfo *executionNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, _ int, nodePrefix string, _ string, getArgs getFlags) {
 	filtered, _ := filterNode(nodeInfo.getNodeStatus(wf))
 	if !filtered {
-		printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix, getArgs)
+		printNode(w, nodeInfo.getNodeStatus(wf), nodePrefix, getArgs)
 	}
 }
 
@@ -512,7 +490,7 @@ func getArtifactsString(node wfv1.NodeStatus) string {
 	if node.Outputs == nil {
 		return ""
 	}
-	artNames := []string{}
+	var artNames []string
 	for _, art := range node.Outputs.Artifacts {
 		artNames = append(artNames, art.Name)
 	}

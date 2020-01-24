@@ -2,12 +2,11 @@ package archive
 
 import (
 	"fmt"
-	"log"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/server/workflowarchive"
+	v1 "github.com/argoproj/argo/cmd/argo/commands/client/v1"
 )
 
 func NewDeleteCommand() *cobra.Command {
@@ -15,15 +14,10 @@ func NewDeleteCommand() *cobra.Command {
 		Use: "delete UID...",
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, uid := range args {
-				conn := client.GetClientConn()
-				ctx := client.GetContext()
-				client := workflowarchive.NewArchivedWorkflowServiceClient(conn)
-				_, err := client.DeleteArchivedWorkflow(ctx, &workflowarchive.DeleteArchivedWorkflowRequest{
-					Uid: uid,
-				})
-				if err != nil {
-					log.Fatal(err)
-				}
+				client, err := v1.GetClient()
+				errors.CheckError(err)
+				err = client.DeleteArchivedWorkflow(uid)
+				errors.CheckError(err)
 				fmt.Printf("Archived workflow '%s' deleted\n", uid)
 			}
 		},

@@ -1,26 +1,20 @@
 package commands
 
 import (
-	"context"
 	"log"
 	"os"
-	"strconv"
-
-	"github.com/spf13/cobra"
-	apimachineryversion "k8s.io/apimachinery/pkg/version"
 
 	"github.com/argoproj/pkg/errors"
 	argoJson "github.com/argoproj/pkg/json"
+	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	apiwf "github.com/argoproj/argo/cmd/server/workflow"
+	v1 "github.com/argoproj/argo/cmd/argo/commands/client/v1"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	apiUtil "github.com/argoproj/argo/util/api"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 )
 
-// cliSubmitOpts holds submition options specific to CLI submission (e.g. controlling output)
+// cliSubmitOpts holds submission options specific to CLI submission (e.g. controlling output)
 type cliSubmitOpts struct {
 	output   string // --output
 	wait     bool   // --wait
@@ -80,13 +74,12 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 	if cliOpts == nil {
 		cliOpts = &cliSubmitOpts{}
 	}
-	defaultWFClient := InitWorkflowClient()
-	var defaultNS string
 
-	defaultNS, _, err := client.Config.Namespace()
-	if err != nil {
-		log.Fatal(err)
-	}
+	client, err := v1.GetClient()
+	errors.CheckError(err)
+
+	defaultNS, err := client.Namespace()
+	errors.CheckError(err)
 
 	fileContents, err := util.ReadManifest(filePaths...)
 	if err != nil {
@@ -136,17 +129,6 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		if cliOpts.output == "" {
 			log.Fatalf("--server-dry-run should have an output option")
 		}
-		serverVersion, err := wfClientset.Discovery().ServerVersion()
-		if err != nil {
-			log.Fatalf("Unexpected error while getting the server's api version")
-		}
-		isCompatible, err := checkServerVersionForDryRun(serverVersion)
-		if err != nil {
-			log.Fatalf("Unexpected error while checking the server's api version compatibility with --server-dry-run")
-		}
-		if !isCompatible {
-			log.Fatalf("--server-dry-run is not available for server api versions older than v1.12")
-		}
 	}
 
 	if len(workflows) == 0 {
@@ -155,41 +137,16 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 	}
 
 	var workflowNames []string
-	var created *wfv1.Workflow
-	var apiGRPCClient apiwf.WorkflowServiceClient
-	var ctx context.Context
-	if client.ArgoServer != "" {
-		conn := client.GetClientConn()
-		defer conn.Close()
-		apiGRPCClient, ctx = GetWFApiServerGRPCClient(conn)
-		errors.CheckError(err)
-	}
 
 	for _, wf := range workflows {
 		if wf.Namespace == "" {
 			// This is here to avoid passing an empty namespace when using --server-dry-run
 			wf.Namespace = defaultNS
 		}
-		if client.ArgoServer != "" {
-			err = util.ApplySubmitOpts(&wf, submitOpts)
-			errors.CheckError(err)
-			created, err = apiUtil.SubmitWorkflowToAPIServer(apiGRPCClient, ctx, &wf, submitOpts.ServerDryRun)
-			errors.CheckError(err)
-		} else {
-			wf.Spec.Priority = cliOpts.priority
-			wfClient := defaultWFClient
-			if wf.Namespace != defaultNS {
-				wfClient = InitWorkflowClient(wf.Namespace)
-			} else {
-				// This is here to avoid passing an empty namespace when using --server-dry-run
-				namespace, _, err := client.Config.Namespace()
-				if err != nil {
-					log.Fatal(err)
-				}
-				wf.Namespace = namespace
-			}
-			created, err = util.SubmitWorkflow(wfClient, wfClientset, namespace, &wf, submitOpts)
-		}
+		err := util.ApplySubmitOpts(&wf, submitOpts)
+		errors.CheckError(err)
+		wf.Spec.Priority = cliOpts.priority
+		created, err := client.Submit(wf.Namespace, &wf, submitOpts.ServerDryRun)
 		if err != nil {
 			log.Fatalf("Failed to submit workflow: %v", err)
 		}
@@ -198,24 +155,6 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 	}
 
 	waitOrWatch(workflowNames, *cliOpts)
-}
-
-// Checks whether the server has support for the dry-run option
-func checkServerVersionForDryRun(serverVersion *apimachineryversion.Info) (bool, error) {
-	majorVersion, err := strconv.Atoi(serverVersion.Major)
-	if err != nil {
-		return false, err
-	}
-	minorVersion, err := strconv.Atoi(serverVersion.Minor)
-	if err != nil {
-		return false, err
-	}
-	if majorVersion < 1 {
-		return false, nil
-	} else if majorVersion == 1 && minorVersion < 12 {
-		return false, nil
-	}
-	return true, nil
 }
 
 // unmarshalWorkflows unmarshals the input bytes as either json or yaml
