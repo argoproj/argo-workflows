@@ -207,9 +207,17 @@ manifests/install.yaml: dist/IMAGE_TAG $(MANIFESTS)
 manifests/namespace-install.yaml: dist/IMAGE_TAG $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
+<<<<<<< HEAD
 manifests/quick-start-mysql.yaml: dist/IMAGE_TAG $(MANIFESTS)
 	# Create MySQL quick-start manifests
 	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(IMAGE_TAG)/' | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
+=======
+manifests/quick-start-no-db.yaml: dist/VERSION $(MANIFESTS)
+	env VERSION=$(VERSION) ./hack/update-manifests.sh
+
+manifests/quick-start-mysql.yaml: dist/VERSION $(MANIFESTS)
+	env VERSION=$(VERSION) ./hack/update-manifests.sh
+>>>>>>> b408e7cd... fix: nil pointer in GC (#2055)
 
 manifests/quick-start-postgres.yaml: dist/IMAGE_TAG $(MANIFESTS)
 	# Create Postgres quick-start manifests
@@ -243,6 +251,24 @@ dist/postgres.yaml: test/e2e/manifests/postgres.yaml
 	# Create Postgres e2e manifests
 	cat test/e2e/manifests/postgres.yaml | sed 's/:latest/:$(IMAGE_TAG)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/postgres.yaml
 
+test/e2e/manifests/no-db/overlays/argo-server-deployment.yaml: test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml
+test/e2e/manifests/no-db/overlays/argo-server-deployment.yaml:
+	cat test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml | ./hack/auto-gen-msg.sh > test/e2e/manifests/no-db/overlays/argo-server-deployment.yaml
+
+test/e2e/manifests/no-db/overlays/workflow-controller-deployment.yaml: test/e2e/manifests/postgres/overlays/workflow-controller-deployment.yaml
+test/e2e/manifests/no-db/overlays/workflow-controller-deployment.yaml:
+	cat test/e2e/manifests/postgres/overlays/workflow-controller-deployment.yaml | ./hack/auto-gen-msg.sh > test/e2e/manifests/no-db/overlays/workflow-controller-deployment.yaml
+
+test/e2e/manifests/no-db.yaml: $(MANIFESTS) $(E2E_MANIFESTS) test/e2e/manifests/no-db/overlays/argo-server-deployment.yaml test/e2e/manifests/no-db/overlays/workflow-controller-deployment.yaml
+	# Create no DB e2e manifests
+	kustomize build test/e2e/manifests/no-db | ./hack/auto-gen-msg.sh > test/e2e/manifests/no-db.yaml
+
+dist/no-db.yaml: test/e2e/manifests/no-db.yaml
+	# Create no DB e2e manifests
+	# We additionlly disable ALWAY_OFFLOAD_NODE_STATUS
+	cat test/e2e/manifests/no-db.yaml | sed 's/:latest/:$(IMAGE_TAG)/' | sed 's/pns/$(E2E_EXECUTOR)/' | sed 's/"true"/"false"/' > dist/no-db.yaml
+
+
 test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml: test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml
 test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml:
 	cat test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml | ./hack/auto-gen-msg.sh > test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml
@@ -260,13 +286,17 @@ dist/mysql.yaml: test/e2e/manifests/mysql.yaml
 	cat test/e2e/manifests/mysql.yaml | sed 's/:latest/:$(IMAGE_TAG)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/mysql.yaml
 
 .PHONY: install
-install: dist/postgres.yaml dist/mysql.yaml
+install: dist/postgres.yaml dist/mysql.yaml dist/no-db.yaml
 	# Install Postgres quick-start
 	kubectl get ns argo || kubectl create ns argo
 ifeq ($(DB),postgres)
 	kubectl -n argo apply -f dist/postgres.yaml
 else
+ifeq ($(DB),mysql)
 	kubectl -n argo apply -f dist/mysql.yaml
+else
+	kubectl -n argo apply -f dist/no-db.yaml
+endif
 endif
 
 .PHONY: start
