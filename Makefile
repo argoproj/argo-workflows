@@ -208,10 +208,10 @@ manifests/namespace-install.yaml: dist/IMAGE_TAG $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
 
-manifests/quick-start-no-db.yaml: dist/IMAGE_TAG  $(MANIFESTS)
+manifests/quick-start-no-db.yaml: VERSION $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
-manifests/quick-start-mysql.yaml: dist/IMAGE_TAG  $(MANIFESTS)
+manifests/quick-start-mysql.yaml: VERSION $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
 
