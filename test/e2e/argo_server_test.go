@@ -194,7 +194,7 @@ func (s *ArgoServerSuite) TestPermission() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "docker/whalesay:latest",
+            "image": "cowsay:v1",
             "command": ["sh"],
             "args": ["-c", "sleep 10"]
           }
@@ -239,7 +239,7 @@ func (s *ArgoServerSuite) TestPermission() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "docker/whalesay:latest",
+            "image": "cowsay:v1",
             "imagePullPolicy": "IfNotPresent",
             "command": ["sh"],
             "args": ["-c", "sleep 10"]
@@ -279,7 +279,7 @@ func (s *ArgoServerSuite) TestLintWorkflow() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "docker/whalesay:latest",
+            "image": "cowsay:v1",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -308,7 +308,7 @@ func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "docker/whalesay:latest",
+            "image": "cowsay:v1",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -338,7 +338,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "docker/whalesay:latest",
+            "image": "cowsay:v1",
             "imagePullPolicy": "IfNotPresent",
             "command": ["sh"],
             "args": ["-c", "sleep 10"]
@@ -468,7 +468,7 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
           {
             "name": "whalesay",
             "container": {
-              "image": "docker/whalesay:latest",
+              "image": "cowsay:v1",
               "imagePullPolicy": "IfNotPresent"
             }
           }
@@ -529,7 +529,7 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
           {
             "name": "whalesay",
             "container": {
-              "image": "docker/whalesay:latest",
+              "image": "cowsay:v1",
               "imagePullPolicy": "IfNotPresent"
             }
           }
@@ -762,7 +762,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
           "name": "run-workflow",
           "container": {
             "name": "",
-            "image": "docker/whalesay:latest",
+            "image": "cowsay:v1",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -791,7 +791,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
           "name": "run-workflow",
           "container": {
             "name": "",
-            "image": "docker/whalesay:latest",
+            "image": "cowsay:v1",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -852,7 +852,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
           "name": "run-workflow",
           "container": {
             "name": "",
-            "image": "docker/whalesay:dev",
+            "image": "cowsay:v2",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -865,7 +865,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 			Status(200).
 			JSON().
 			Path("$.spec.templates[0].container.image").
-			Equal("docker/whalesay:dev")
+			Equal("cowsay:v2")
 	})
 
 	s.Run("Delete", func(t *testing.T) {

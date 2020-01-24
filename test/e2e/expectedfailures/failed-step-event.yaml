@@ -10,5 +10,5 @@ spec:
   templates:
   - name: exit
     container:
-      image: docker/whalesay:latest
+      image: cowsay:v1
       command: [sh, -c, exit 1]

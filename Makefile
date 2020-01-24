@@ -2,6 +2,7 @@
 BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_BRANCH             = $(shell git rev-parse --abbrev-ref=loose HEAD | sed 's/heads\///')
+GIT_REMOTE             ?= upstream
 GIT_TAG                = $(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
@@ -198,15 +199,14 @@ verify-codegen:
 manifests: manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml
 
 # we use a different file to ./VERSION to force updating manifests after a `make clean`
-dist/IMAGE_TAG:
-	echo $(IMAGE_TAG) > dist/IMAGE_TAG
+dist/VERSION:
+	echo $(VERSION) > dist/VERSION
 
-manifests/install.yaml: dist/IMAGE_TAG $(MANIFESTS)
+manifests/install.yaml: dist/VERSION $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
-manifests/namespace-install.yaml: dist/IMAGE_TAG $(MANIFESTS)
+manifests/namespace-install.yaml: dist/VERSION $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
-
 
 manifests/quick-start-no-db.yaml: dist/VERSION $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
@@ -214,10 +214,8 @@ manifests/quick-start-no-db.yaml: dist/VERSION $(MANIFESTS)
 manifests/quick-start-mysql.yaml: dist/VERSION $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
-
-manifests/quick-start-postgres.yaml: dist/IMAGE_TAG $(MANIFESTS)
-	# Create Postgres quick-start manifests
-	kustomize build manifests/quick-start/postgres | sed 's/:latest/:$(IMAGE_TAG)/' | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
+manifests/quick-start-postgres.yaml: dist/VERSION $(MANIFESTS)
+	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
 # lint/test/etc
 
@@ -295,6 +293,24 @@ else
 endif
 endif
 
+.PHONY: test-images
+test-images: dist/cowsay-v1 dist/bitnami-kubectl-1.15.3-ol-7-r165 dist/python-alpine3.6
+
+dist/cowsay-v1:
+	docker build -t cowsay:v1 test/e2e/images/cowsay
+ifeq ($(K3D),true)
+	k3d import-images cowsay:v1
+endif
+	touch dist/cowsay-v1
+
+dist/bitnami-kubectl-1.15.3-ol-7-r165:
+	docker pull bitnami/kubectl:1.15.3-ol-7-r165
+	touch dist/bitnami-kubectl-1.15.3-ol-7-r165
+
+dist/python-alpine3.6:
+	docker pull python:alpine3.6
+	touch dist/python-alpine3.6
+
 .PHONY: start
 start: controller-image cli-image executor-image install
 	# Start development environment
@@ -348,24 +364,24 @@ mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
 .PHONY: test-e2e
-test-e2e:
+test-e2e: test-images
 	# Run E2E tests
 	go test -timeout 20m -v -count 1 -p 1 ./test/e2e/...
 
 .PHONY: smoke
-smoke:
+smoke: test-images
 	# Run smoke tests
-	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
+	go test -timeout 2m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
 
 .PHONY: test-api
-test-api:
+test-api: test-images
 	# Run API tests
-	go test -timeout 2m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
+	go test -timeout 3m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
 
 .PHONY: test-cli
-test-cli:
+test-cli: test-images
 	# Run CLI tests
-	go test -timeout 30s -v -count 1 -p 1 -run CliSuite ./test/e2e
+	go test -timeout 1m -v -count 1 -p 1 -run CliSuite ./test/e2e
 
 # clean
 
@@ -439,8 +455,8 @@ endif
 	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
 	# Push changes to Git
-	git push upstream
-	git tag push $(VERSION)
+	git push $(GIT_REMOTE)
+	git tag push $(GIT_REMOTE) $(VERSION)
 endif
 
 .PHONY: release
