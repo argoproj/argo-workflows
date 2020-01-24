@@ -209,12 +209,10 @@ manifests/namespace-install.yaml: dist/IMAGE_TAG $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
 manifests/quick-start-mysql.yaml: dist/IMAGE_TAG $(MANIFESTS)
-	# Create MySQL quick-start manifests
-	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(IMAGE_TAG)/' | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
+	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
 manifests/quick-start-postgres.yaml: dist/IMAGE_TAG $(MANIFESTS)
-	# Create Postgres quick-start manifests
-	kustomize build manifests/quick-start/postgres | sed 's/:latest/:$(IMAGE_TAG)/' | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
+	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
 # lint/test/etc
 
