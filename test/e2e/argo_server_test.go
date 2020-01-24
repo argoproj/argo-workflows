@@ -435,9 +435,11 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			Array().
 			Length().
 			Equal(1)
-		// check we are loading offloaded node status
-		j.Path("$.items[0].status.offloadNodeStatusVersion").
-			NotNull()
+		if s.Persistence.IsEnabled() {
+			// check we are loading offloaded node status
+			j.Path("$.items[0].status.offloadNodeStatusVersion").
+				NotNull()
+		}
 		j.Path("$.items[0].status.nodes").
 			NotNull()
 	})
@@ -447,10 +449,12 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			Expect().
 			Status(200).
 			JSON()
-		// check we are loading offloaded node status
-		j.
-			Path("$.status.offloadNodeStatusVersion").
-			NotNull()
+		if s.Persistence.IsEnabled() {
+			// check we are loading offloaded node status
+			j.
+				Path("$.status.offloadNodeStatusVersion").
+				NotNull()
+		}
 		j.Path("$.status.nodes").
 			NotNull()
 		s.e(t).GET("/api/v1/workflows/argo/not-found").
@@ -615,6 +619,9 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
 
 // make sure we can download an artifact
 func (s *ArgoServerSuite) TestArtifactServer() {
+	if !s.Persistence.IsEnabled() {
+		s.T().SkipNow()
+	}
 	var uid types.UID
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -734,6 +741,9 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 }
 
 func (s *ArgoServerSuite) TestArchivedWorkflowService() {
+	if !s.Persistence.IsEnabled() {
+		s.T().SkipNow()
+	}
 	var uid types.UID
 	s.Given().
 		Workflow("@smoke/basic.yaml").
