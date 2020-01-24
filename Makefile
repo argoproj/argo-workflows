@@ -207,17 +207,13 @@ manifests/install.yaml: dist/IMAGE_TAG $(MANIFESTS)
 manifests/namespace-install.yaml: dist/IMAGE_TAG $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
-<<<<<<< HEAD
-manifests/quick-start-mysql.yaml: dist/IMAGE_TAG $(MANIFESTS)
-	# Create MySQL quick-start manifests
-	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(IMAGE_TAG)/' | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
-=======
+
 manifests/quick-start-no-db.yaml: dist/VERSION $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
 manifests/quick-start-mysql.yaml: dist/VERSION $(MANIFESTS)
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
->>>>>>> b408e7cd... fix: nil pointer in GC (#2055)
+
 
 manifests/quick-start-postgres.yaml: dist/IMAGE_TAG $(MANIFESTS)
 	# Create Postgres quick-start manifests
