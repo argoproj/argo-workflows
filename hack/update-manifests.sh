@@ -21,5 +21,6 @@ kustomize build "${SRCROOT}/manifests/namespace-install" | ${SRCROOT}/hack/auto-
 sed -i.bak "s@- .*/argoexec:.*@- ${IMAGE_NAMESPACE}/argoexec:${VERSION}@" "${SRCROOT}/manifests/namespace-install.yaml"
 rm -f "${SRCROOT}/manifests/namespace-install.yaml.bak"
 
+kustomize build ${SRCROOT}/manifests/quick-start/no-db | sed "s/:latest/:$VERSION/" | ${SRCROOT}/hack/auto-gen-msg.sh > ${SRCROOT}/manifests/quick-start-no-db.yaml
 kustomize build ${SRCROOT}/manifests/quick-start/mysql | sed "s/:latest/:$VERSION/" | ${SRCROOT}/hack/auto-gen-msg.sh > ${SRCROOT}/manifests/quick-start-mysql.yaml
 kustomize build ${SRCROOT}/manifests/quick-start/postgres | sed "s/:latest/:$VERSION/" | ${SRCROOT}/hack/auto-gen-msg.sh > ${SRCROOT}/manifests/quick-start-postgres.yaml
