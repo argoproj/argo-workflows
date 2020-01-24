@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"net/http"
 	"strings"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -85,15 +86,34 @@ func (s Gatekeeper) useHybridAuth() bool {
 	return s.authType == Hybrid
 }
 
-func (s Gatekeeper) useClientAuth(md metadata.MD) bool {
+func (s Gatekeeper) useClientAuth(token string) bool {
 	if s.authType == Client {
 		return true
 	}
-	if s.useHybridAuth() && len(md.Get("grpcgateway-authorization")) > 0 {
+	if s.useHybridAuth() && token != "" {
 		return true
 	}
 	return false
 }
+
+func getToken(md metadata.MD) string {
+	// looks for the HTTP header `Authorization: Bearer ...`
+	for _, t := range md.Get("grpcgateway-authorization") {
+		return strings.TrimPrefix(t, "Bearer ")
+	}
+	// check the HTTP cookie
+	for _, t := range md.Get("grpcgateway-cookie") {
+		header := http.Header{}
+		header.Add("Cookie", t)
+		request := http.Request{Header: header}
+		token, err := request.Cookie("authorization")
+		if err == nil {
+			return strings.TrimPrefix(token.Value, "Bearer ")
+		}
+	}
+	return ""
+}
+
 func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, error) {
 
 	if s.useServerAuth() {
@@ -107,14 +127,10 @@ func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		return nil, nil, status.Error(codes.Unauthenticated, "unable to get metadata from incoming context")
 	}
 
-	if !s.useClientAuth(md) {
-		return s.wfClient, s.kubeClient, nil
-	}
+	token := getToken(md)
 
-	token := ""
-	authorization := md.Get("grpcgateway-authorization")
-	if len(authorization) > 0 {
-		token = strings.TrimPrefix(authorization[0], "Bearer ")
+	if !s.useClientAuth(token) {
+		return s.wfClient, s.kubeClient, nil
 	}
 
 	restConfig, err := kubeconfig.GetRestConfig(token)
