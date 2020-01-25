@@ -30,7 +30,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		t.SkipNow() // TODO
 		s := NewGatekeeper("client", wfClient, kubeClient, restConfig)
 		t.Run("AuthorizationHeader", func(t *testing.T) {
-			ctx, err := authAndHandle(s, metadata.NewIncomingContext(context.Background(), metadata.Pairs("grpcgateway-authorization", base64.StdEncoding.EncodeToString([]byte("anything")))))
+			ctx, err := authAndHandle(s, metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", base64.StdEncoding.EncodeToString([]byte("anything")))))
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, wfClient, GetWfClient(*ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(*ctx))
@@ -48,7 +48,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		t.SkipNow() // TODO
 		s := NewGatekeeper("hybrid", wfClient, kubeClient, restConfig)
 		t.Run("clientAuth", func(t *testing.T) {
-			ctx, err := authAndHandle(s, metadata.NewIncomingContext(context.Background(), metadata.Pairs("grpcgateway-authorization", base64.StdEncoding.EncodeToString([]byte("{anything}")))))
+			ctx, err := authAndHandle(s, metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", base64.StdEncoding.EncodeToString([]byte("{anything}")))))
 			if assert.NoError(t, err) {
 				assert.NotEqual(t, wfClient, GetWfClient(*ctx))
 				assert.NotEqual(t, kubeClient, GetKubeClient(*ctx))

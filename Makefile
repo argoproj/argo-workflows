@@ -339,6 +339,8 @@ up:
 	kubectl -n argo scale deployment/argo-server --replicas 1
 	# Wait for pods to be ready
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
+	# Token
+	kubectl -n argo get `kubectl -n argo get secret -o name | grep argo-server` -o jsonpath='{.data.token}' | base64 -D
 
 .PHONY: pf
 pf:

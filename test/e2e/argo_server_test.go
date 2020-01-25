@@ -80,6 +80,15 @@ func (s *ArgoServerSuite) TestUnauthorized() {
 		Expect().
 		Status(401)
 }
+func (s *ArgoServerSuite) TestCookieAuth() {
+	token := s.bearerToken
+	defer func() { s.bearerToken = token }()
+	s.bearerToken = ""
+	s.e(s.T()).GET("/api/v1/workflows/argo").
+		WithHeader("Cookie", "authorization="+token).
+		Expect().
+		Status(200)
+}
 
 func (s *ArgoServerSuite) TestPermission() {
 	s.T().SkipNow() // TODO
@@ -569,24 +578,32 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 
 	s.Run("GetArtifact", func(t *testing.T) {
 		s.e(t).GET("/artifacts/argo/basic/basic/main-logs").
-			WithQuery("Authorization", s.bearerToken).
+			Expect().
+			Status(200).
+			Body().
+			Contains(":) Hello Argo!")
+	})
+	s.Run("GetArtifactByUID", func(t *testing.T) {
+		s.e(t).DELETE("/api/v1/workflows/argo/basic").
+			Expect().
+			Status(200)
+
+		s.e(t).GET("/artifacts-by-uid/{uid}/basic/main-logs", uid).
 			Expect().
 			Status(200).
 			Body().
 			Contains(":) Hello Argo!")
 	})
 
-	s.Run("GetArtifactByUid", func(t *testing.T) {
-		s.e(t).DELETE("/api/v1/workflows/argo/basic").
+	// as the artifact server has some special code for cookies, we best test that too
+	s.Run("GetArtifactByUIDUsingCookie", func(t *testing.T) {
+		token := s.bearerToken
+		defer func() { s.bearerToken = token }()
+		s.bearerToken = ""
+		s.e(t).GET("/artifacts-by-uid/{uid}/basic/main-logs", uid).
+			WithHeader("Cookie", "authorization="+token).
 			Expect().
 			Status(200)
-
-		s.e(t).GET("/artifacts-by-uid/{uid}/basic/main-logs", uid).
-			WithQuery("Authorization", s.bearerToken).
-			Expect().
-			Status(200).
-			Body().
-			Contains(":) Hello Argo!")
 	})
 
 }

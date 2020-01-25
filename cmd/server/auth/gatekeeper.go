@@ -98,7 +98,7 @@ func (s Gatekeeper) useClientAuth(token string) bool {
 
 func getToken(md metadata.MD) string {
 	// looks for the HTTP header `Authorization: Bearer ...`
-	for _, t := range md.Get("grpcgateway-authorization") {
+	for _, t := range md.Get("authorization") {
 		return strings.TrimPrefix(t, "Bearer ")
 	}
 	// check the HTTP cookie
