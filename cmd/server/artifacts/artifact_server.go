@@ -91,9 +91,15 @@ func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request
 	a.ok(w, data)
 }
 func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
-	// TODO - we should not put the token in the URL - OSWAP obvs
-	authHeader := r.URL.Query().Get("Authorization")
-	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"grpcgateway-authorization": []string{authHeader}})
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		cookie, err := r.Cookie("authorization")
+		if err != nil {
+			return nil, err
+		}
+		token = cookie.Value
+	}
+	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"authorization": []string{token}})
 	return a.authN.Context(ctx)
 }
 

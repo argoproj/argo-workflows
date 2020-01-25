@@ -36,19 +36,19 @@ func Test_cronWorkflowServiceServer(t *testing.T) {
 		}
 	})
 	t.Run("GetCronWorkflow", func(t *testing.T) {
-		cronWf, err := server.GetCronWorkflow(ctx, &GetCronWorkflowRequest{Namespace: "my-ns", CronWorkflowName: "my-name"})
+		cronWf, err := server.GetCronWorkflow(ctx, &GetCronWorkflowRequest{Namespace: "my-ns", Name: "my-name"})
 		if assert.NoError(t, err) {
 			assert.NotNil(t, cronWf)
 		}
 	})
 	t.Run("UpdateCronWorkflow", func(t *testing.T) {
-		cronWf, err := server.UpdateCronWorkflow(ctx, &UpdateCronWorkflowRequest{Namespace: "my-ns", CronWorkflowName: "my-name", CronWorkflow: cronWf})
+		cronWf, err := server.UpdateCronWorkflow(ctx, &UpdateCronWorkflowRequest{Namespace: "my-ns", Name: "my-name", CronWorkflow: cronWf})
 		if assert.NoError(t, err) {
 			assert.NotNil(t, cronWf)
 		}
 	})
 	t.Run("DeleteCronWorkflow", func(t *testing.T) {
-		_, err := server.DeleteCronWorkflow(ctx, &DeleteCronWorkflowRequest{CronWorkflowName: "my-name", Namespace: "my-ns"})
+		_, err := server.DeleteCronWorkflow(ctx, &DeleteCronWorkflowRequest{Name: "my-name", Namespace: "my-ns"})
 		assert.NoError(t, err)
 	})
 }
