@@ -16,15 +16,16 @@ import (
 
 func NewListCommand() *cobra.Command {
 	var (
-		output    string
-		namespace string
+		output string
 	)
 	var command = &cobra.Command{
 		Use: "list",
 		Run: func(cmd *cobra.Command, args []string) {
-			argoClient, err := v1.GetClient()
+			client, err := v1.GetClient()
 			errors.CheckError(err)
-			resp, err := argoClient.ListArchivedWorkflows(namespace)
+			namespace, err := client.Namespace()
+			errors.CheckError(err)
+			resp, err := client.ListArchivedWorkflows(namespace)
 			errors.CheckError(err)
 			switch output {
 			case "json":
@@ -50,6 +51,5 @@ func NewListCommand() *cobra.Command {
 		},
 	}
 	command.Flags().StringVarP(&output, "output", "o", "wide", "Output format. One of: json|yaml|wide")
-	command.Flags().StringVarP(&namespace, "namespace", "n", "", "The namespace")
 	return command
 }

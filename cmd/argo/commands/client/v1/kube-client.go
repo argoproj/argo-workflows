@@ -11,7 +11,7 @@ import (
 	"github.com/argoproj/argo/workflow/packer"
 )
 
-var misuseError = fmt.Errorf("this doesn't make sense unless you are using argo server")
+var misuseError = fmt.Errorf("this doesn't make sense unless you are using argo server, perhaps something like `export ARGO_SERVER=localhost:2746` would help")
 
 type kubeClient struct {
 	versioned.Interface
