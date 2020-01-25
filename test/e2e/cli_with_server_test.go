@@ -23,11 +23,13 @@ func (s *CLIWithServerSuite) BeforeTest(suiteName, testName string) {
 	if err != nil {
 		panic(err)
 	}
+	_ = os.Setenv("ARGO_SERVER", "localhost:2746")
 	_ = os.Setenv("ARGO_TOKEN", token)
 }
 
 func (s *CLIWithServerSuite) AfterTest(suiteName, testName string) {
 	s.CLISuite.AfterTest(suiteName, testName)
+	_ = os.Unsetenv("ARGO_SERVER")
 	_ = os.Unsetenv("ARGO_TOKEN")
 }
 
