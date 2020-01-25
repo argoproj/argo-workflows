@@ -125,7 +125,7 @@
         ]
       }
     },
-    "/api/v1/cron-workflows/{namespace}/{cronWorkflowName}": {
+    "/api/v1/cron-workflows/{namespace}/{name}": {
       "get": {
         "operationId": "GetCronWorkflow",
         "responses": {
@@ -144,7 +144,7 @@
             "type": "string"
           },
           {
-            "name": "cronWorkflowName",
+            "name": "name",
             "in": "path",
             "required": true,
             "type": "string"
@@ -179,7 +179,7 @@
             "type": "string"
           },
           {
-            "name": "cronWorkflowName",
+            "name": "name",
             "in": "path",
             "required": true,
             "type": "string"
@@ -255,7 +255,7 @@
             "type": "string"
           },
           {
-            "name": "cronWorkflowName",
+            "name": "name",
             "in": "path",
             "required": true,
             "type": "string"
@@ -310,7 +310,7 @@
     "cronworkflowUpdateCronWorkflowRequest": {
       "type": "object",
       "properties": {
-        "cronWorkflowName": {
+        "name": {
           "type": "string"
         },
         "namespace": {
