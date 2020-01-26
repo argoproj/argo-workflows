@@ -49,7 +49,7 @@ func GetContext() context.Context {
 	if token == "" {
 		return context.Background()
 	}
-	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("grpcgateway-authorization", "Bearer "+token))
+	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token))
 }
 
 func GetToken() string {
