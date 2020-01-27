@@ -3,6 +3,7 @@ package workflow
 import (
 	"bufio"
 	"fmt"
+
 	"github.com/argoproj/argo/server/auth"
 
 	log "github.com/sirupsen/logrus"

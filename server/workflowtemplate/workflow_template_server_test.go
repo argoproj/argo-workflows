@@ -3,8 +3,9 @@ package workflowtemplate
 import (
 	"context"
 	"encoding/json"
-	"github.com/argoproj/argo/server/auth"
 	"testing"
+
+	"github.com/argoproj/argo/server/auth"
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes/fake"
@@ -133,7 +134,7 @@ func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
 	var wftReq WorkflowTemplateCreateRequest
 	err := json.Unmarshal([]byte(wftStr1), &wftReq)
 	assert.Nil(t, err)
-	wftRsp, err := CreateWorkflowTemplate(ctx, &wftReq)
+	wftRsp, err := server.CreateWorkflowTemplate(ctx, &wftReq)
 	if assert.NoError(t, err) {
 		assert.NotNil(t, wftRsp)
 	}
@@ -145,7 +146,7 @@ func TestWorkflowTemplateServer_GetWorkflowTemplate(t *testing.T) {
 		Name:      "workflow-template-whalesay-template2",
 		Namespace: "default",
 	}
-	wftRsp, err := GetWorkflowTemplate(ctx, &wftReq)
+	wftRsp, err := server.GetWorkflowTemplate(ctx, &wftReq)
 	if assert.NoError(t, err) {
 		assert.NotNil(t, wftRsp)
 		assert.Equal(t, "workflow-template-whalesay-template2", wftRsp.Name)
@@ -157,7 +158,7 @@ func TestWorkflowTemplateServer_ListWorkflowTemplates(t *testing.T) {
 	wftReq := WorkflowTemplateListRequest{
 		Namespace: "default",
 	}
-	wftRsp, err := ListWorkflowTemplates(ctx, &wftReq)
+	wftRsp, err := server.ListWorkflowTemplates(ctx, &wftReq)
 	if assert.NoError(t, err) {
 		assert.Len(t, wftRsp.Items, 2)
 	}
@@ -165,7 +166,7 @@ func TestWorkflowTemplateServer_ListWorkflowTemplates(t *testing.T) {
 	wftReq = WorkflowTemplateListRequest{
 		Namespace: "test",
 	}
-	wftRsp, err = ListWorkflowTemplates(ctx, &wftReq)
+	wftRsp, err = server.ListWorkflowTemplates(ctx, &wftReq)
 	if assert.NoError(t, err) {
 		assert.Empty(t, wftRsp.Items)
 	}
@@ -177,7 +178,7 @@ func TestWorkflowTemplateServer_DeleteWorkflowTemplate(t *testing.T) {
 		Namespace: "default",
 		Name:      "workflow-template-whalesay-template2",
 	}
-	_, err := DeleteWorkflowTemplate(ctx, &wftReq)
+	_, err := server.DeleteWorkflowTemplate(ctx, &wftReq)
 	assert.NoError(t, err)
 
 }
@@ -193,7 +194,7 @@ func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
 		Name:      "workflow-template-whalesay-template2",
 		Template:  &wftObj1,
 	}
-	wftRsp, err := UpdateWorkflowTemplate(ctx, &wftReq)
+	wftRsp, err := server.UpdateWorkflowTemplate(ctx, &wftReq)
 
 	if assert.NoError(t, err) {
 		assert.Equal(t, "alpine:latest", wftRsp.Spec.Templates[0].Container.Image)

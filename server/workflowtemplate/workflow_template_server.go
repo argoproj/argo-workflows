@@ -3,12 +3,12 @@ package workflowtemplate
 import (
 	"context"
 	"fmt"
-	"github.com/argoproj/argo/server/auth"
 	"sort"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/validate"
 )

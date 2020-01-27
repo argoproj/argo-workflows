@@ -2,11 +2,11 @@ package cronworkflow
 
 import (
 	"context"
-	"github.com/argoproj/argo/server/auth"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/server/auth"
 )
 
 type cronWorkflowServiceServer struct {

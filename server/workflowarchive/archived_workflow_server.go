@@ -3,7 +3,6 @@ package workflowarchive
 import (
 	"context"
 	"fmt"
-	"github.com/argoproj/argo/server/auth"
 	"sort"
 	"strconv"
 	"strings"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/server/auth"
 )
 
 type archivedWorkflowServer struct {

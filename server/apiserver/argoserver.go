@@ -2,6 +2,10 @@ package apiserver
 
 import (
 	"fmt"
+	"net"
+	"net/http"
+	"time"
+
 	"github.com/argoproj/argo/server/artifacts"
 	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/server/cronworkflow"
@@ -10,9 +14,6 @@ import (
 	"github.com/argoproj/argo/server/workflow"
 	"github.com/argoproj/argo/server/workflowarchive"
 	"github.com/argoproj/argo/server/workflowtemplate"
-	"net"
-	"net/http"
-	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"

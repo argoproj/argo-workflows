@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo/server/auth"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,6 +17,7 @@ import (
 	"github.com/argoproj/argo/persist/sqldb/mocks"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	v1alpha "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/server/auth"
 )
 
 const wf1 = `
@@ -392,11 +392,11 @@ func getWorkflow(ctx context.Context, server WorkflowServiceServer, namespace st
 		Namespace: namespace,
 	}
 
-	return GetWorkflow(ctx, &req)
+	return server.GetWorkflow(ctx, &req)
 }
 
 func getWorkflowList(ctx context.Context, server WorkflowServiceServer, namespace string) (*v1alpha1.WorkflowList, error) {
-	return ListWorkflows(ctx, &WorkflowListRequest{Namespace: namespace})
+	return server.ListWorkflows(ctx, &WorkflowListRequest{Namespace: namespace})
 
 }
 
@@ -406,7 +406,7 @@ func TestCreateWorkflow(t *testing.T) {
 	var req WorkflowCreateRequest
 	_ = json.Unmarshal([]byte(workflow), &req)
 
-	wf, err := CreateWorkflow(ctx, &req)
+	wf, err := server.CreateWorkflow(ctx, &req)
 
 	assert.NotNil(t, wf)
 	assert.Nil(t, err)
@@ -462,7 +462,7 @@ func TestDeleteWorkflow(t *testing.T) {
 		Namespace: wf.Namespace,
 	}
 
-	delRsp, err := DeleteWorkflow(ctx, &delReq)
+	delRsp, err := server.DeleteWorkflow(ctx, &delReq)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, delRsp)
@@ -482,7 +482,7 @@ func TestSuspendResumeWorkflow(t *testing.T) {
 		Name:      wf.Name,
 		Namespace: wf.Namespace,
 	}
-	wf, err = SuspendWorkflow(ctx, &susWfReq)
+	wf, err = server.SuspendWorkflow(ctx, &susWfReq)
 	assert.NotNil(t, wf)
 	assert.Equal(t, true, *wf.Spec.Suspend)
 	assert.Nil(t, err)
@@ -490,7 +490,7 @@ func TestSuspendResumeWorkflow(t *testing.T) {
 		Name:      wf.Name,
 		Namespace: wf.Namespace,
 	}
-	wf, err = ResumeWorkflow(ctx, &rsmWfReq)
+	wf, err = server.ResumeWorkflow(ctx, &rsmWfReq)
 
 	assert.NotNil(t, wf)
 	assert.Nil(t, wf.Spec.Suspend)
@@ -504,14 +504,14 @@ func TestSuspendResumeWorkflowWithNotFound(t *testing.T) {
 		Name:      "hello-world-9tql2-not",
 		Namespace: "workflows",
 	}
-	wf, err := SuspendWorkflow(ctx, &susWfReq)
+	wf, err := server.SuspendWorkflow(ctx, &susWfReq)
 	assert.Nil(t, wf)
 	assert.NotNil(t, err)
 	rsmWfReq := WorkflowResumeRequest{
 		Name:      "hello-world-9tql2-not",
 		Namespace: "workflows",
 	}
-	wf, err = ResumeWorkflow(ctx, &rsmWfReq)
+	wf, err = server.ResumeWorkflow(ctx, &rsmWfReq)
 	assert.Nil(t, wf)
 	assert.NotNil(t, err)
 }
@@ -525,7 +525,7 @@ func TestTerminateWorkflow(t *testing.T) {
 		Name:      wf.Name,
 		Namespace: wf.Namespace,
 	}
-	wf, err = TerminateWorkflow(ctx, &rsmWfReq)
+	wf, err = server.TerminateWorkflow(ctx, &rsmWfReq)
 	assert.NotNil(t, wf)
 	assert.Equal(t, int64(0), *wf.Spec.ActiveDeadlineSeconds)
 	assert.Nil(t, err)
@@ -534,7 +534,7 @@ func TestTerminateWorkflow(t *testing.T) {
 		Name:      "hello-world-9tql2-not",
 		Namespace: "workflows",
 	}
-	wf, err = TerminateWorkflow(ctx, &rsmWfReq)
+	wf, err = server.TerminateWorkflow(ctx, &rsmWfReq)
 	assert.Nil(t, wf)
 	assert.NotNil(t, err)
 }
@@ -544,7 +544,7 @@ func TestResubmitWorkflow(t *testing.T) {
 	server, ctx := getWorkflowServer()
 	wf, err := getWorkflow(ctx, server, "workflows", "hello-world-9tql2")
 	assert.Nil(t, err)
-	wf, err = ResubmitWorkflow(ctx, &WorkflowResubmitRequest{
+	wf, err = server.ResubmitWorkflow(ctx, &WorkflowResubmitRequest{
 		Name:      wf.Name,
 		Namespace: wf.Namespace,
 	})

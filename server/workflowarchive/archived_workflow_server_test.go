@@ -2,8 +2,9 @@ package workflowarchive
 
 import (
 	"context"
-	"github.com/argoproj/argo/server/auth"
 	"testing"
+
+	"github.com/argoproj/argo/server/auth"
 
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
@@ -65,17 +66,17 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClient), auth.KubeKey, kubeClient)
 	t.Run("ListArchivedWorkflows", func(t *testing.T) {
 		allowed = false
-		resp, err := ListArchivedWorkflows(ctx, &ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1}})
+		resp, err := w.ListArchivedWorkflows(ctx, &ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1}})
 		if assert.NoError(t, err) {
 			assert.Len(t, resp.Items, 0)
 		}
 		allowed = true
-		resp, err = ListArchivedWorkflows(ctx, &ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1}})
+		resp, err = w.ListArchivedWorkflows(ctx, &ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1}})
 		if assert.NoError(t, err) {
 			assert.Len(t, resp.Items, 1)
 			assert.Equal(t, "1", resp.Continue)
 		}
-		resp, err = ListArchivedWorkflows(ctx, &ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Continue: "1", Limit: 1}})
+		resp, err = w.ListArchivedWorkflows(ctx, &ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Continue: "1", Limit: 1}})
 		if assert.NoError(t, err) {
 			assert.Len(t, resp.Items, 0)
 			assert.Empty(t, resp.Continue)
@@ -83,21 +84,21 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	})
 	t.Run("GetArchivedWorkflow", func(t *testing.T) {
 		allowed = false
-		_, err := GetArchivedWorkflow(ctx, &GetArchivedWorkflowRequest{Uid: "my-uid"})
+		_, err := w.GetArchivedWorkflow(ctx, &GetArchivedWorkflowRequest{Uid: "my-uid"})
 		assert.Equal(t, err, status.Error(codes.PermissionDenied, "permission denied"))
 		allowed = true
-		_, err = GetArchivedWorkflow(ctx, &GetArchivedWorkflowRequest{})
+		_, err = w.GetArchivedWorkflow(ctx, &GetArchivedWorkflowRequest{})
 		assert.Equal(t, err, status.Error(codes.NotFound, "not found"))
-		wf, err := GetArchivedWorkflow(ctx, &GetArchivedWorkflowRequest{Uid: "my-uid"})
+		wf, err := w.GetArchivedWorkflow(ctx, &GetArchivedWorkflowRequest{Uid: "my-uid"})
 		assert.NoError(t, err)
 		assert.NotNil(t, wf)
 	})
 	t.Run("DeleteArchivedWorkflow", func(t *testing.T) {
 		allowed = false
-		_, err := DeleteArchivedWorkflow(ctx, &DeleteArchivedWorkflowRequest{Uid: "my-uid"})
+		_, err := w.DeleteArchivedWorkflow(ctx, &DeleteArchivedWorkflowRequest{Uid: "my-uid"})
 		assert.Equal(t, err, status.Error(codes.PermissionDenied, "permission denied"))
 		allowed = true
-		_, err = DeleteArchivedWorkflow(ctx, &DeleteArchivedWorkflowRequest{Uid: "my-uid"})
+		_, err = w.DeleteArchivedWorkflow(ctx, &DeleteArchivedWorkflowRequest{Uid: "my-uid"})
 		assert.NoError(t, err)
 	})
 }
