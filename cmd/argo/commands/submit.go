@@ -11,6 +11,9 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apimachineryversion "k8s.io/apimachinery/pkg/version"
 
+	"github.com/argoproj/pkg/errors"
+	argoJson "github.com/argoproj/pkg/json"
+
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/cmd/argo/commands/cron"
 	"github.com/argoproj/argo/cmd/argo/commands/template"
@@ -20,8 +23,6 @@ import (
 	apiUtil "github.com/argoproj/argo/util/api"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
-	"github.com/argoproj/pkg/errors"
-	argoJson "github.com/argoproj/pkg/json"
 )
 
 // cliSubmitOpts holds submition options specific to CLI submission (e.g. controlling output)
