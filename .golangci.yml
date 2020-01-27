@@ -6,7 +6,7 @@ run:
     - vendor
     - ui
   skip-files:
-    - cmd/server/static/files.go
+    - server/static/files.go
 linters:
   enable:
     - goimports
@@ -17,4 +17,4 @@ service:
   golangci-lint-version: 1.21.x
   project-path: github.com/argoproj/argo
   prepare:
-    - make vendor cmd/server/static/files.go CI=true
+    - make vendor server/static/files.go CI=true

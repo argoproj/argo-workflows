@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/server/workflowarchive"
+	"github.com/argoproj/argo/server/workflowarchive"
 )
 
 func NewGetCommand() *cobra.Command {

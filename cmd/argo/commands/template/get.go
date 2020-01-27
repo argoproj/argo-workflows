@@ -13,8 +13,8 @@ import (
 	"github.com/argoproj/pkg/humanize"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/server/workflowtemplate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/server/workflowtemplate"
 )
 
 func NewGetCommand() *cobra.Command {
