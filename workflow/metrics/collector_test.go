@@ -2,18 +2,22 @@ package metrics
 
 import (
 	"context"
-	"fmt"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/pkg/client/informers/externalversions"
-	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/dynamic/fake"
+
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/cache"
+
+	"github.com/argoproj/argo/pkg/apis/workflow"
+	"github.com/ghodss/yaml"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic/dynamicinformer"
 )
 
 const fakeWf = `apiVersion: argoproj.io/v1alpha1
@@ -99,36 +103,38 @@ argo_workflow_step_status_phase{name="hello-world-rs795",namespace="default",pha
 argo_workflow_step_status_phase{name="hello-world-rs795",namespace="default",phase="Succeeded",step_name="hello-world-rs795"} 1
 `
 
-func newFakeWorkflow(fakeWf string) *v1alpha1.Workflow {
-	var wf *v1alpha1.Workflow
-	err := yaml.Unmarshal([]byte(fakeWf), &wf)
+func newFakeWorkflow(fakeWf string) *unstructured.Unstructured {
+	var wf unstructured.Unstructured
+	err := yaml.Unmarshal([]byte(fakeWf), &wf.Object)
 	if err != nil {
 		panic(err)
 	}
-	return wf
+	return &wf
 }
 
-func newFakeInformer(ctx context.Context, fakeWf ...string) cache.SharedIndexInformer {
+func newFakeInformer(fakeWf ...string) cache.SharedIndexInformer {
 	var fakeWfs []runtime.Object
 	for _, name := range fakeWf {
 		fakeWfs = append(fakeWfs, newFakeWorkflow(name))
 	}
-	wfClientSet := fake.NewSimpleClientset(fakeWfs...)
-	factory := externalversions.NewSharedInformerFactoryWithOptions(wfClientSet, 0)
-	return factory.Argoproj().V1alpha1().Workflows().Informer()
+	wfClientSet := fake.NewSimpleDynamicClient(runtime.NewScheme(), fakeWfs...)
+
+	return dynamicinformer.NewDynamicSharedInformerFactory(wfClientSet, 0).ForResource(schema.GroupVersionResource{
+		Group:    workflow.Group,
+		Version:  "v1alpha1",
+		Resource: workflow.WorkflowPlural,
+	}).Informer()
 }
 
 func TestMetric(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	wfInformer := newFakeInformer(ctx, fakeWf)
+	wfInformer := newFakeInformer(fakeWf)
 	go wfInformer.Run(ctx.Done())
 	if !cache.WaitForCacheSync(ctx.Done(), wfInformer.HasSynced) {
 		log.Fatal("Timed out waiting for caches to sync")
 	}
-	fmt.Println(wfInformer.GetStore().List())
 	registry := NewWorkflowRegistry(wfInformer)
-	fmt.Println(registry)
 	server := NewServer(ctx, PrometheusConfig{
 		Enabled: true,
 		Path:    "/metrics",
@@ -141,5 +147,5 @@ func TestMetric(t *testing.T) {
 	server.Handler.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusOK, rr.Code)
 	body := rr.Body.String()
-	fmt.Println("SIMON", body)
+	assert.Equal(t, expectedResponse, body)
 }
