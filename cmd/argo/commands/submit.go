@@ -13,8 +13,8 @@ import (
 	argoJson "github.com/argoproj/pkg/json"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	apiwf "github.com/argoproj/argo/cmd/server/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	apiwf "github.com/argoproj/argo/server/workflow"
 	apiUtil "github.com/argoproj/argo/util/api"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
