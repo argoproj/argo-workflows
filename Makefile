@@ -413,16 +413,8 @@ clean:
 	echo 'make pre-push' > .git/hooks/pre-push
 	chmod +x .git/hooks/pre-push
 
-.PHONY: must-be-clean
-must-be-clean:
-	# Check everthing has been committed to Git
-	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then echo 'git tree state is $(GIT_TREE_STATE)' ; exit 1; fi
-
 .PHONY: pre-commit
 pre-commit: test lint codegen manifests start pf-bg smoke test-api test-cli
-
-.PHONY: pre-push
-pre-push: must-be-clean pre-commit must-be-clean
 
 # release
 
@@ -432,13 +424,6 @@ prepare-release: manifests codegen
 	git diff --quiet || git commit -am "Update manifests to $(VERSION)"
 	git tag -f $(VERSION)
 
-.PHONY: check-release
-check-release: pre-push
-ifeq ($(findstring release,$(GIT_BRANCH)),release)
-	# Check the tag is correct
-	@if [ "$(GIT_TAG)" != "$(VERSION)" ]; then echo 'git tag ($(GIT_TAG)) does not match VERSION ($(VERSION))'; exit 1; fi
-endif
-
 .PHONY: publish-release
 publish-release:
 	# Push images to Docker Hub
@@ -447,4 +432,4 @@ publish-release:
 	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
 
 .PHONY: release
-release: status prepare-release check-release publish-release
+release: status prepare-release build publish-release
