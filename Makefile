@@ -429,8 +429,7 @@ pre-push: must-be-clean pre-commit must-be-clean
 .PHONY: prepare-release
 prepare-release: manifests codegen
 	# Commit if any changes
-	git diff --quiet || git commit -am "Update manifests to $(VERSION)"
-	git tag $(VERSION)
+	git diff --quiet || git commit -am "Update manifests to $(VERSION)" && git tag $(VERSION)
 
 .PHONY: check-release
 check-release: pre-push
