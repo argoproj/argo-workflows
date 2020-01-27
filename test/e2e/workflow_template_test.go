@@ -23,6 +23,8 @@ func (w *WorkflowTemplateSuite) TestNestedWorkflowTemplate() {
 kind: Workflow
 metadata:
   generateName: workflow-template-nested-
+  labels:
+    argo-e2e: true
 spec:
   entrypoint: whalesay
   templates:

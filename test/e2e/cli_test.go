@@ -20,10 +20,6 @@ func (s *CLISuite) BeforeTest(suiteName, testName string) {
 	_ = os.Unsetenv("ARGO_TOKEN")
 }
 
-func (s *CLISuite) AfterTest(suiteName, testName string) {
-	s.E2ESuite.AfterTest(suiteName, testName)
-}
-
 func (s *CLISuite) TestCompletion() {
 	s.Given().RunCli([]string{"completion", "bash"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)

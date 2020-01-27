@@ -36,11 +36,6 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	if err != nil {
 		panic(err)
 	}
-
-}
-
-func (s *ArgoServerSuite) AfterTest(suiteName, testName string) {
-	s.E2ESuite.AfterTest(suiteName, testName)
 }
 
 func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
