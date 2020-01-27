@@ -23,11 +23,11 @@ interface State {
 
 export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, State> {
     private get namespace() {
-        return this.queryParam('namespace') || '';
+        return this.props.match.params.namespace || '';
     }
 
-    private set namespace(namespace) {
-        this.setQueryParams({namespace});
+    private set namespace(namespace: string) {
+        document.location.href = uiUrl('workflow-templates/' + namespace);
     }
 
     private get sidePanel() {
@@ -44,8 +44,14 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     public componentDidMount(): void {
-        services.workflowTemplate
-            .list(this.namespace)
+        services.info
+            .get()
+            .then(info => {
+                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
+                    this.namespace = info.managedNamespace;
+                }
+                return services.workflowTemplate.list(this.namespace);
+            })
             .then(templates => this.setState({templates}))
             .catch(error => this.setState({error}));
     }
@@ -81,7 +87,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                                 onSubmit={(value: WorkflowTemplate) => {
                                     return services.workflowTemplate
                                         .create(value, value.metadata.namespace)
-                                        .then(wf => ctx.navigation.goto(`/workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`))
+                                        .then(wf => (document.location.href = uiUrl(`workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`)))
                                         .catch(error => this.setState({error}));
                                 }}
                             />
@@ -107,7 +113,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
         }
         return (
             <div className='row'>
-                <div className='columns small-12 xxlarge-2'>
+                <div className='columns small-12'>
                     <div className='argo-table-list'>
                         <div className='row argo-table-list__head'>
                             <div className='columns small-1' />

@@ -29,11 +29,11 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     private get namespace() {
-        return this.queryParam('namespace') || '';
+        return this.props.match.params.namespace || '';
     }
 
     private set namespace(namespace: string) {
-        this.setQueryParams({namespace});
+        document.location.href = uiUrl('archived-workflows/' + namespace);
     }
 
     constructor(props: RouteComponentProps<any>, context: any) {
@@ -42,8 +42,14 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     public componentDidMount(): void {
-        services.archivedWorkflows
-            .list(this.namespace, this.continue)
+        services.info
+            .get()
+            .then(info => {
+                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
+                    this.namespace = info.managedNamespace;
+                }
+                return services.archivedWorkflows.list(this.namespace, this.continue);
+            })
             .then(list => {
                 this.setState({workflows: list.items || [], continue: list.metadata.continue || ''});
             })
@@ -71,7 +77,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                     ]
                 }}>
                 <div className='row'>
-                    <div className='columns small-12 xxlarge-2'>{this.renderWorkflows()}</div>
+                    <div className='columns small-12'>{this.renderWorkflows()}</div>
                 </div>
             </Page>
         );
@@ -100,7 +106,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                         <div className='columns small-3'>CREATED</div>
                     </div>
                     {this.state.workflows.map(w => (
-                        <Link className='row argo-table-list__row' key={`${w.metadata.uid}`} to={uiUrl(`archived-workflows/${w.metadata.uid}`)}>
+                        <Link className='row argo-table-list__row' key={`${w.metadata.uid}`} to={uiUrl(`archived-workflows/${w.metadata.namespace}/${w.metadata.uid}`)}>
                             <div className='columns small-1'>
                                 <i className={classNames('fa', Utils.statusIconClasses(w.status.phase))} />
                             </div>

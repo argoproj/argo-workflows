@@ -16,7 +16,7 @@
         "argo-ui": "https://github.com/argoproj/argo-ui.git",
         "classnames": "^2.2.5",
         "dagre": "^0.8.2",
-        "event-source-polyfill": "^1.0.11",
+        "formik": "^2.1.2",
         "history": "^4.7.2",
         "js-yaml": "^3.13.1",
         "json-merge-patch": "^0.2.3",

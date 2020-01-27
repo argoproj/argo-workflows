@@ -6,7 +6,7 @@
 Notes:
 
 * Everything runs in the `argo` namespace (including MinIO). 
-* For speed, please only use `docker/whalesay:latest`. 
+* For speed, please only use `cowsay:v1`. 
 * Test can take longer on CI. Adds 5s to timeout values.
 
 ## Debugging E2E Tests
@@ -65,7 +65,7 @@ kubectl -n argo scale deploy/argo-server --replicas 0
 
 Kill any port forwards on 2746.
 
-The run `cmd/server/main.go` using these arguments, which enable debug logging, and make sure you use locally build image:
+The run `server/main.go` using these arguments, which enable debug logging, and make sure you use locally build image:
 
 ```
 See dist/postgres.yaml
@@ -79,7 +79,7 @@ kubectl -n argo scale deploy/argo-server --replicas 0
 
 Kill any port forwards on 2746.
 
-The run `cmd/server/main.go` using these arguments, which enable debug logging, and make sure you use locally build image:
+The run `server/main.go` using these arguments, which enable debug logging, and make sure you use locally build image:
 
 ```
 See dist/postgres.yaml

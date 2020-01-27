@@ -1,3 +1,4 @@
+# This is an auto-generated file. DO NOT EDIT
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
@@ -141,6 +142,12 @@ rules:
   - update
   - patch
   - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -400,6 +407,16 @@ spec:
         name: main
         ports:
         - containerPort: 5432
+        readinessProbe:
+          exec:
+            command:
+            - psql
+            - -U
+            - postgres
+            - -c
+            - SELECT 1
+          initialDelaySeconds: 15
+          timeoutSeconds: 2
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -444,7 +461,7 @@ spec:
       value: admin
     - name: MINIO_SECRET_KEY
       value: password
-    image: minio/minio
+    image: minio/minio:RELEASE.2019-12-17T23-16-33Z
     lifecycle:
       postStart:
         exec:

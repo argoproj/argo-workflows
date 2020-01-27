@@ -11,8 +11,8 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	apiServer "github.com/argoproj/argo/cmd/server/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	apiServer "github.com/argoproj/argo/server/workflow"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/validate"
 )
@@ -129,7 +129,7 @@ func ServerSideLint(arg string, conn *grpc.ClientConn, strict bool) error {
 }
 
 func ServerLintValidation(ctx context.Context, client apiServer.WorkflowServiceClient, wf v1alpha1.Workflow, ns string) error {
-	wfReq := apiServer.WorkflowCreateRequest{
+	wfReq := apiServer.WorkflowLintRequest{
 		Namespace: ns,
 		Workflow:  &wf,
 	}

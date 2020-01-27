@@ -35,7 +35,7 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 	configStr, ok := cm.Data[common.WorkflowControllerConfigMapKey]
 	if !ok {
 		log.Warnf("ConfigMap '%s' does not have key '%s'", wfc.configMap, common.WorkflowControllerConfigMapKey)
-		return nil
+		configStr = ""
 	}
 	var config config.WorkflowControllerConfig
 	err := yaml.Unmarshal([]byte(configStr), &config)
@@ -55,7 +55,7 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 		}
 	}
 	wfc.session = nil
-	wfc.offloadNodeStatusRepo = nil
+	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	wfc.wfArchive = sqldb.NullWorkflowArchive
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
@@ -65,6 +65,11 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 			return err
 		}
 		log.Info("Persistence Session created successfully")
+		err = sqldb.NewMigrate(session, persistence.GetClusterName(), tableName).Exec(context.Background())
+		if err != nil {
+			return err
+		}
+
 		wfc.session = session
 		wfc.offloadNodeStatusRepo = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
 		if persistence.Archive {
