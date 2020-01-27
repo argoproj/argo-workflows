@@ -9,10 +9,10 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	wftmplApiServer "github.com/argoproj/argo/cmd/server/workflowtemplate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	wftmplApiServer "github.com/argoproj/argo/server/workflowtemplate"
 	"github.com/argoproj/argo/workflow/templateresolution"
 )
 
@@ -78,5 +78,5 @@ func (c LazyWorkflowTemplateGetter) Get(name string) (*wfv1.WorkflowTemplate, er
 var _ templateresolution.WorkflowTemplateNamespacedGetter = &LazyWorkflowTemplateGetter{}
 
 func GetWFtmplApiServerGRPCClient(conn *grpc.ClientConn) (wftmplApiServer.WorkflowTemplateServiceClient, context.Context) {
-	return wftmplApiServer.NewWorkflowTemplateServiceClient(conn), client.ContextWithAuthorization()
+	return wftmplApiServer.NewWorkflowTemplateServiceClient(conn), client.GetContext()
 }

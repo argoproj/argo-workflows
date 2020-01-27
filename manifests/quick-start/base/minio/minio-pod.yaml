@@ -7,7 +7,7 @@ metadata:
 spec:
   containers:
     - name: main
-      image: minio/minio
+      image: minio/minio:RELEASE.2019-12-17T23-16-33Z
       env:
         - name: MINIO_ACCESS_KEY
           value: admin

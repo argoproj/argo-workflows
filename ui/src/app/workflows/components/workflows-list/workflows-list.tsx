@@ -14,10 +14,10 @@ import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {Query} from '../../../shared/components/query';
-import {YamlEditor} from '../../../shared/components/yaml/yaml-editor';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
+import {WorkflowSubmit} from '../workflow-submit';
 
 require('./workflows-list.scss');
 
@@ -30,11 +30,11 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     private subscription: Subscription;
 
     private get namespace() {
-        return this.queryParam('namespace') || '';
+        return this.props.match.params.namespace || '';
     }
 
     private set namespace(namespace: string) {
-        this.setQueryParams({namespace});
+        document.location.href = uiUrl('workflows/' + namespace);
     }
 
     private get phases() {
@@ -55,8 +55,14 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     public componentDidMount(): void {
-        services.workflows
-            .list(this.phases, this.namespace)
+        services.info
+            .get()
+            .then(info => {
+                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
+                    this.namespace = info.managedNamespace;
+                }
+                return services.workflows.list(this.phases, this.namespace);
+            })
             .then(list => list.items)
             .then(list => list || [])
             .then(workflows => this.setState({workflows}))
@@ -65,6 +71,9 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                     .watch({namespace: this.namespace, phases: this.phases})
                     .map(workflowChange => {
                         const workflows = this.state.workflows;
+                        if (!workflowChange) {
+                            return {workflows, updated: false};
+                        }
                         const index = workflows.findIndex(item => item.metadata.name === workflowChange.object.metadata.name);
                         if (index > -1 && workflowChange.object.metadata.resourceVersion === workflows[index].metadata.resourceVersion) {
                             return {workflows, updated: false};
@@ -132,17 +141,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         }}>
                         <div>{this.renderWorkflows(ctx)}</div>
                         <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
-                            <YamlEditor
-                                editing={true}
-                                title='Submit New Workflow'
-                                value={exampleWorkflow(this.namespace)}
-                                onSubmit={(value: Workflow) =>
-                                    services.workflows
-                                        .create(value, value.metadata.namespace)
-                                        .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`))
-                                        .catch(error => this.setState({error}))
-                                }
-                            />
+                            <WorkflowSubmit defaultWorkflow={exampleWorkflow(this.namespace)} currentNamespace={this.namespace} ctx={ctx} />
                         </SlidingPanel>
                     </Page>
                 )}

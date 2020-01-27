@@ -6,7 +6,7 @@
 Notes:
 
 * Everything runs in the `argo` namespace (including MinIO). 
-* For speed, please only use `docker/whalesay:latest`. 
+* For speed, please only use `cowsay:v1`. 
 * Test can take longer on CI. Adds 5s to timeout values.
 
 ## Debugging E2E Tests
@@ -54,7 +54,7 @@ kubectl -n argo scale deploy/workflow-controller --replicas 0
 The run `cmd/workflow-controller/main.go` using these arguments, which enable debug logging, and make sure you use locally build image:
 
 ```
---loglevel debug --executor-image argoproj/argoexec:dev --executor-image-pull-policy Never
+--loglevel debug --executor-image argoproj/argoexec:your-branch --executor-image-pull-policy Never
 ```
 
 ### Running The Argo Server In Your IDE
@@ -65,10 +65,24 @@ kubectl -n argo scale deploy/argo-server --replicas 0
 
 Kill any port forwards on 2746.
 
-The run `cmd/server/main.go` using these arguments, which enable debug logging, and make sure you use locally build image:
+The run `server/main.go` using these arguments, which enable debug logging, and make sure you use locally build image:
 
 ```
-server --loglevel debug --auth-mode client
+See dist/postgres.yaml
+```
+
+### Running The Argo Server In Your IDE
+
+```
+kubectl -n argo scale deploy/argo-server --replicas 0
+```
+
+Kill any port forwards on 2746.
+
+The run `server/main.go` using these arguments, which enable debug logging, and make sure you use locally build image:
+
+```
+See dist/postgres.yaml
 ```
 
 

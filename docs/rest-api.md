@@ -16,10 +16,10 @@ curl -H "Authorization: Bearer $token" http://localhost:2746/api/v1/workflows/ar
 To view the API:
  
 1. Open [https://editor.swagger.io/](https://editor.swagger.io/)
-2. Coy and paste either:
-    1. ../cmd/server/workflow/workflow.swagger.json
-    2. ../cmd/server/workflowtemplate/workflow-template.swagger.json 
-    1. ../cmd/server/workflowarchive/archived-workflows.swagger.json
+2. Copy and paste either:
+    1. ../server/workflow/workflow.swagger.json
+    2. ../server/workflowtemplate/workflow-template.swagger.json 
+    1. ../server/workflowarchive/archived-workflows.swagger.json
 
 > v2.4 and before
 

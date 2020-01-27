@@ -2,9 +2,10 @@ package e2e
 
 import (
 	"fmt"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/e2e/fixtures"
-	"github.com/argoproj/argo/workflow/common"
+	"strconv"
+	"testing"
+	"time"
+
 	"github.com/argoproj/pkg/humanize"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -13,9 +14,10 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
-	"strconv"
-	"testing"
-	"time"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/test/e2e/fixtures"
+	"github.com/argoproj/argo/workflow/common"
 )
 
 type CronSuite struct {

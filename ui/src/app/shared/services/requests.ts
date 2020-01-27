@@ -14,11 +14,8 @@ enum ReadyState {
     DONE = 4
 }
 
-const getToken = () => localStorage.getItem('token');
-
 const auth = (req: SuperAgentRequest) => {
-    const token = getToken();
-    return (token !== null ? req.auth(token, {type: 'bearer'}) : req).on('error', handle);
+    return req.on('error', handle);
 };
 
 const handle = (err: any) => {
@@ -52,12 +49,7 @@ export default {
 
     loadEventSource(url: string, allowAutoRetry = false): Observable<string> {
         return Observable.create((observer: Observer<any>) => {
-            const token = getToken();
-            const headers: any = {};
-            if (token !== null) {
-                headers.Authorization = `Bearer ${getToken()}`;
-            }
-            const eventSource = new EventSourcePolyfill(url, {headers});
+            const eventSource = new EventSource(url);
             let opened = false;
             eventSource.onopen = (msg: any) => {
                 if (!opened) {

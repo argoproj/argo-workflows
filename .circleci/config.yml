@@ -47,6 +47,62 @@ commands:
             - go-v5-master-{{ .Environment.CIRCLE_JOB }}
             - go-v4-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
             - go-v4-master-{{ .Environment.CIRCLE_JOB }}
+  e2e:
+    steps:
+      - run:
+          name: Install Kustomize
+          command: cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
+      - run:
+          name: Install and start K3S v1.0.0
+          command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.0 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
+          background: true
+      - restore_go_cache
+      - install_golang
+      - go_junit_report
+      - checkout
+      - dep_ensure
+      - run:
+          name: Create KUBECONFIG
+          command: |
+            mkdir -p ~/.kube
+            cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
+      - run:
+          name: Watch Docker events, to help diagnose failures
+          command: docker events
+          background: true
+      - run:
+          name: Start Argo
+          command: mkdir dist && KUBECONFIG=~/.kube/config make start DB=$DB E2E_EXECUTOR=docker
+      - run:
+          name: Establish port forward
+          command: make pf
+          background: true
+      - run:
+          name: Watch Kubernetes events, to help diagnose failures
+          command: kubectl -n argo get events --watch
+          background: true
+      - run:
+          name: Sleep for short while
+          command: sleep 10s
+      - run:
+          name: Follow logs, to help diagnose failures
+          command: make logs
+          background: true
+      - run:
+          name: Run smoke tests
+          command: make smoke
+      - run:
+          name: Run tests
+          command: |
+            mkdir -p test-results
+            trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
+            make test-e2e 2>&1 | tee test-results/test.out
+      - save_go_cache
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+          destination: .
   go_junit_report:
     steps:
       - run:
@@ -81,70 +137,37 @@ jobs:
       - store_artifacts:
           path: test-results
           destination: .
-  e2e:
+  e2e-no-db:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    machine:
+      image: ubuntu-1604:201903-01
+    environment:
+      DB: no-db
+    steps:
+      - e2e
+  e2e-postgres:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    machine:
+      image: ubuntu-1604:201903-01
+    environment:
+      DB: postgres
+    steps:
+      - e2e
+  e2e-mysql:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    machine:
+      image: ubuntu-1604:201903-01
+    environment:
+      DB: mysql
+    steps:
+      - e2e
+  docker-build:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
       image: ubuntu-1604:201903-01
     steps:
-      - run:
-          name: Install Kustomize
-          command: cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
-      - run:
-          name: Install and start K3S v1.0.0
-          command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.0 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
-          background: true
-      - run:
-          name: Pull some Docker images now, to save time later
-          command: |
-            docker pull golang:1.11.5
-            docker pull minio/minio
-            docker pull docker/whalesay:latest
-            docker pull bitnami/kubectl
-          background: true
-      - restore_go_cache
-      - install_golang
-      - go_junit_report
       - checkout
-      - dep_ensure
-      - run:
-          name: Create KUBECONFIG
-          command: |
-            mkdir -p ~/.kube
-            cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
-      - run:
-          name: Watch Docker events, to help diagnose failures
-          command: docker events
-          background: true
-      - run:
-          name: Watch Kubernetes events, to help diagnose failures
-          command: kubectl -n argo get events --watch
-          background: true
-      - run:
-          name: Start Argo
-          command: mkdir dist && KUBECONFIG=~/.kube/config make start
-      - run:
-          name: Establish port forward
-          command: make pf
-          background: true
-      - run:
-          name: Follow logs, to help diagnose failures
-          command: make logs
-          background: true
-      - run:
-          name: Run smoke tests
-          command: make smoke
-      - run:
-          name: Run tests
-          command: |
-            mkdir -p test-results
-            trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
-            make test-e2e 2>&1 | tee test-results/test.out
-      - save_go_cache
-      - store_test_results:
-          path: test-results
-      - store_artifacts:
-          path: test-results
-          destination: .
+      - run: docker build .
   ui:
     docker:
       - image: node:11.15.0
@@ -177,4 +200,7 @@ workflows:
     jobs:
       - test
       - ui
-      - e2e
+      - e2e-no-db
+      - e2e-postgres
+      - e2e-mysql
+      - docker-build

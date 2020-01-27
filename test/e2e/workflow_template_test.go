@@ -1,13 +1,15 @@
 package e2e
 
 import (
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/e2e/fixtures"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/test/e2e/fixtures"
 )
 
 type WorkflowTemplateSuite struct {
@@ -35,7 +37,7 @@ spec:
 `).When().
 		CreateWorkflowTemplates().
 		SubmitWorkflow().
-		WaitForWorkflow(15 * time.Second).
+		WaitForWorkflow(30 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			assert.Equal(t, status.Phase, v1alpha1.NodeSucceeded)

@@ -7,20 +7,21 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/spf13/cobra"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachineryversion "k8s.io/apimachinery/pkg/version"
+
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/cmd/argo/commands/cron"
 	"github.com/argoproj/argo/cmd/argo/commands/template"
-	apiwf "github.com/argoproj/argo/cmd/server/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	apiwf "github.com/argoproj/argo/server/workflow"
 	apiUtil "github.com/argoproj/argo/util/api"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/pkg/errors"
 	argoJson "github.com/argoproj/pkg/json"
-	"github.com/spf13/cobra"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	apimachineryversion "k8s.io/apimachinery/pkg/version"
 )
 
 // cliSubmitOpts holds submition options specific to CLI submission (e.g. controlling output)

@@ -12,7 +12,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/server/workflowarchive"
+	"github.com/argoproj/argo/server/workflowarchive"
 )
 
 func NewListCommand() *cobra.Command {
@@ -24,7 +24,7 @@ func NewListCommand() *cobra.Command {
 		Use: "list",
 		Run: func(cmd *cobra.Command, args []string) {
 			conn := client.GetClientConn()
-			ctx := client.ContextWithAuthorization()
+			ctx := client.GetContext()
 			client := workflowarchive.NewArchivedWorkflowServiceClient(conn)
 			resp, err := client.ListArchivedWorkflows(ctx, &workflowarchive.ListArchivedWorkflowsRequest{
 				ListOptions: &metav1.ListOptions{FieldSelector: "metadata.namespace=" + namespace},

@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/server/workflowarchive"
+	"github.com/argoproj/argo/server/workflowarchive"
 )
 
 func NewGetCommand() *cobra.Command {
@@ -27,7 +27,7 @@ func NewGetCommand() *cobra.Command {
 			}
 			uid := args[0]
 			conn := client.GetClientConn()
-			ctx := client.ContextWithAuthorization()
+			ctx := client.GetContext()
 			client := workflowarchive.NewArchivedWorkflowServiceClient(conn)
 			wf, err := client.GetArchivedWorkflow(ctx, &workflowarchive.GetArchivedWorkflowRequest{
 				Uid: uid,

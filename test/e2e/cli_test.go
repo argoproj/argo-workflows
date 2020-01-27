@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -21,12 +20,11 @@ type CLISuite struct {
 
 func (s *CLISuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
-	_ = os.Setenv("ARGO_SERVER", "localhost:2746")
+
 }
 
 func (s *CLISuite) AfterTest(suiteName, testName string) {
 	s.E2ESuite.AfterTest(suiteName, testName)
-	_ = os.Unsetenv("ARGO_SERVER")
 }
 
 func (s *CLISuite) TestCompletion() {
@@ -39,7 +37,9 @@ func (s *CLISuite) TestCompletion() {
 func (s *CLISuite) TestToken() {
 	s.Given().RunCli([]string{"token"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
-		assert.NotEmpty(t, output)
+		token, err := s.GetServiceAccountToken()
+		assert.NoError(t, err)
+		assert.Equal(t, token, output)
 	})
 }
 
@@ -65,8 +65,6 @@ func (s *CLISuite) TestRoot() {
 		assert.Contains(t, output, "ServiceAccount:")
 		assert.Contains(t, output, "Status:")
 		assert.Contains(t, output, "Created:")
-		assert.Contains(t, output, "Started:")
-		assert.Contains(t, output, "Duration:")
 	})
 
 	var createdWorkflowName string
@@ -83,9 +81,9 @@ func (s *CLISuite) TestRoot() {
 			}
 			createdWorkflowName = res[1]
 		}).
-		WaitForWorkflowFromName(createdWorkflowName, 15*time.Second).
+		WaitForWorkflowName(createdWorkflowName, 15*time.Second).
 		Then().
-		ExpectWorkflowFromName(createdWorkflowName, func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflowName(createdWorkflowName, func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})
 
@@ -105,9 +103,9 @@ func (s *CLISuite) TestRoot() {
 			}
 			createdWorkflowName = res[1]
 		}).
-		WaitForWorkflowFromName(createdWorkflowName, 15*time.Second).
+		WaitForWorkflowName(createdWorkflowName, 15*time.Second).
 		Then().
-		ExpectWorkflowFromName(createdWorkflowName, func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflowName(createdWorkflowName, func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})
 }
@@ -190,6 +188,9 @@ func (s *CLISuite) TestCron() {
 }
 
 func (s *CLISuite) TestArchive() {
+	if !s.Persistence.IsEnabled() {
+		s.T().SkipNow()
+	}
 	var uid types.UID
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -199,20 +200,24 @@ func (s *CLISuite) TestArchive() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
-		}).RunCli([]string{"archive", "list"}, func(t *testing.T, output string, err error) {
-		assert.NoError(t, err)
-		assert.Contains(t, output, "NAMESPACE NAME")
-		assert.Contains(t, output, "argo basic")
-	})
-	s.Given().RunCli([]string{"archive", "get", string(uid)}, func(t *testing.T, output string, err error) {
-		assert.NoError(t, err)
-		assert.Contains(t, output, "Succeeded")
-	})
-	s.Given().RunCli([]string{"archive", "delete", string(uid)}, func(t *testing.T, output string, err error) {
-		assert.NoError(t, err)
-		assert.Contains(t, output, "Archived workflow")
-		assert.Contains(t, output, "deleted")
-	})
+		}).
+		RunCli([]string{"archive", "list"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "NAMESPACE NAME")
+				assert.Contains(t, output, "argo basic")
+			}
+		}).
+		RunCli([]string{"archive", "get", string(uid)}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Succeeded")
+			}
+		}).
+		RunCli([]string{"archive", "delete", string(uid)}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Archived workflow")
+				assert.Contains(t, output, "deleted")
+			}
+		})
 }
 
 func TestCliSuite(t *testing.T) {

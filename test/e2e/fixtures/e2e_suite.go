@@ -3,8 +3,7 @@ package fixtures
 import (
 	"bufio"
 	"fmt"
-	"os"
-	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -16,55 +15,45 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
-	"upper.io/db.v3/postgresql"
 
 	"github.com/argoproj/argo/cmd/argo/commands"
-	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/kubeconfig"
-	"github.com/argoproj/argo/workflow/config"
 	"github.com/argoproj/argo/workflow/packer"
 )
-
-var kubeConfig = os.Getenv("KUBECONFIG")
 
 const Namespace = "argo"
 const label = "argo-e2e"
 
 func init() {
-	if kubeConfig == "" {
-		kubeConfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
-	}
 	_ = commands.NewCommand()
 }
 
 type E2ESuite struct {
 	suite.Suite
-	Diagnostics           *Diagnostics
-	RestConfig            *rest.Config
-	wfClient              v1alpha1.WorkflowInterface
-	wfTemplateClient      v1alpha1.WorkflowTemplateInterface
-	cronClient            v1alpha1.CronWorkflowInterface
-	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
-	KubeClient            kubernetes.Interface
+	Env
+	Diagnostics      *Diagnostics
+	Persistence      *Persistence
+	RestConfig       *rest.Config
+	wfClient         v1alpha1.WorkflowInterface
+	wfTemplateClient v1alpha1.WorkflowTemplateInterface
+	cronClient       v1alpha1.CronWorkflowInterface
+	KubeClient       kubernetes.Interface
 }
 
 func (s *E2ESuite) SetupSuite() {
-	_, err := os.Stat(kubeConfig)
-	if os.IsNotExist(err) {
-		s.T().Skip("Skipping test: " + err.Error())
-	}
-}
-
-func (s *E2ESuite) BeforeTest(_, _ string) {
-	s.Diagnostics = &Diagnostics{}
 	var err error
 	s.RestConfig, err = kubeconfig.DefaultRestConfig()
 	if err != nil {
 		panic(err)
 	}
+	token, err := s.GetServiceAccountToken()
+	if err != nil {
+		panic(err)
+	}
+	s.SetEnv(token)
 	s.KubeClient, err = kubernetes.NewForConfig(s.RestConfig)
 	if err != nil {
 		panic(err)
@@ -73,32 +62,36 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	s.wfClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().Workflows(Namespace)
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
-	{
-		cm, err := s.KubeClient.CoreV1().ConfigMaps(Namespace).Get("workflow-controller-configmap", metav1.GetOptions{})
-		if err != nil {
-			panic(err)
-		}
-		wcConfig := &config.WorkflowControllerConfig{}
-		err = yaml.Unmarshal([]byte(cm.Data["config"]), wcConfig)
-		if err != nil {
-			panic(err)
-		}
-		wcConfig.Persistence.PostgreSQL.Host = "localhost"
-		// we assume that this is enabled for tests
-		session, tableName, err := sqldb.CreateDBSession(s.KubeClient, Namespace, wcConfig.Persistence)
-		if err != nil {
-			panic(err)
-		}
-		s.offloadNodeStatusRepo = sqldb.NewOffloadNodeStatusRepo(tableName, session)
-	}
+	s.Persistence = newPersistence(s.KubeClient)
+}
 
+func (s *E2ESuite) TearDownSuite() {
+	s.Persistence.Close()
+	s.UnsetEnv()
+}
+
+func (s *E2ESuite) BeforeTest(_, _ string) {
+	s.Diagnostics = &Diagnostics{}
+
+	// delete all cron workflows
+	cronList, err := s.cronClient.List(metav1.ListOptions{LabelSelector: label})
+	if err != nil {
+		panic(err)
+	}
+	for _, cronWf := range cronList.Items {
+		log.WithFields(log.Fields{"cronWorkflow": cronWf.Name}).Info("Deleting cron workflow")
+		err = s.cronClient.Delete(cronWf.Name, nil)
+		if err != nil {
+			panic(err)
+		}
+	}
 	// delete all workflows
 	list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: label})
 	if err != nil {
 		panic(err)
 	}
 	for _, wf := range list.Items {
-		logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": wf.Name})
+		logCtx := log.WithFields(log.Fields{"workflow": wf.Name})
 		logCtx.Infof("Deleting workflow")
 		err = s.wfClient.Delete(wf.Name, &metav1.DeleteOptions{})
 		if err != nil {
@@ -131,47 +124,38 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 			time.Sleep(3 * time.Second)
 		}
 	}
-	// delete all cron workflows
-	cronList, err := s.cronClient.List(metav1.ListOptions{LabelSelector: label})
-	if err != nil {
-		panic(err)
-	}
-	for _, cronWf := range cronList.Items {
-		logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "cron workflow": cronWf.Name})
-		logCtx.Infof("Deleting cron workflow")
-		err = s.cronClient.Delete(cronWf.Name, nil)
-		if err != nil {
-			panic(err)
-		}
-	}
 	// delete all workflow templates
 	wfTmpl, err := s.wfTemplateClient.List(metav1.ListOptions{LabelSelector: label})
 	if err != nil {
 		panic(err)
 	}
 	for _, wfTmpl := range wfTmpl.Items {
-		logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow template": wfTmpl.Name})
-		logCtx.Infof("Deleting workflow template")
+		log.WithField("template", wfTmpl.Name).Info("Deleting workflow template")
 		err = s.wfTemplateClient.Delete(wfTmpl.Name, nil)
 		if err != nil {
 			panic(err)
 		}
 	}
 	// create database collection
-	db, err := postgresql.Open(postgresql.ConnectionURL{User: "postgres", Password: "password", Host: "localhost"})
+	s.Persistence.DeleteEverything()
+}
+
+func (s *E2ESuite) GetServiceAccountToken() (string, error) {
+	// create the clientset
+	clientset, err := kubernetes.NewForConfig(s.RestConfig)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	// delete everything offloaded
-	_, err = db.DeleteFrom("argo_workflows").Exec()
+	secretList, err := clientset.CoreV1().Secrets("argo").List(metav1.ListOptions{})
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	_, err = db.DeleteFrom("argo_archived_workflows").Exec()
-	if err != nil {
-		panic(err)
+	for _, sec := range secretList.Items {
+		if strings.HasPrefix(sec.Name, "argo-server-token") {
+			return string(sec.Data["token"]), nil
+		}
 	}
-	_ = db.Close()
+	return "", nil
 }
 
 func (s *E2ESuite) Run(name string, f func(t *testing.T)) {
@@ -190,7 +174,7 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 
 func (s *E2ESuite) printDiagnostics() {
 	s.Diagnostics.Print()
-	wfs, err := s.wfClient.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + Namespace})
+	wfs, err := s.wfClient.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + Namespace, LabelSelector: label})
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -274,6 +258,7 @@ func (s *E2ESuite) Given() *Given {
 		client:                s.wfClient,
 		wfTemplateClient:      s.wfTemplateClient,
 		cronClient:            s.cronClient,
-		offloadNodeStatusRepo: s.offloadNodeStatusRepo,
+		offloadNodeStatusRepo: s.Persistence.offloadNodeStatusRepo,
+		kubeClient:            s.KubeClient,
 	}
 }
