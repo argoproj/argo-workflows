@@ -444,7 +444,7 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:v2.5.0-rc2
+        - argoproj/argoexec:release-2.5
         - --namespaced
         command:
         - workflow-controller
