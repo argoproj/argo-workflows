@@ -89,26 +89,26 @@ $(HOME)/go/bin/staticfiles:
 	# Install the "staticfiles" tool
 	go get bou.ke/staticfiles
 
-cmd/server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/app
+server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/app
 	# Pack UI into a Go file.
-	staticfiles -o cmd/server/static/files.go ui/dist/app
+	staticfiles -o server/static/files.go ui/dist/app
 
-dist/argo: vendor cmd/server/static/files.go $(CLI_PKGS)
+dist/argo: vendor server/static/files.go $(CLI_PKGS)
 	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
 
-dist/argo-linux-amd64: vendor cmd/server/static/files.go $(CLI_PKGS)
+dist/argo-linux-amd64: vendor server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-amd64 ./cmd/argo
 
-dist/argo-linux-ppc64le: vendor cmd/server/static/files.go $(CLI_PKGS)
+dist/argo-linux-ppc64le: vendor server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-ppc64le ./cmd/argo
 
-dist/argo-linux-s390x: vendor cmd/server/static/files.go $(CLI_PKGS)
+dist/argo-linux-s390x: vendor server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-s390x ./cmd/argo
 
-dist/argo-darwin-amd64: vendor cmd/server/static/files.go $(CLI_PKGS)
+dist/argo-darwin-amd64: vendor server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-darwin-amd64 ./cmd/argo
 
-dist/argo-windows-amd64: vendor cmd/server/static/files.go $(CLI_PKGS)
+dist/argo-windows-amd64: vendor server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-windows-amd64 ./cmd/argo
 
 .PHONY: cli-image
@@ -220,7 +220,7 @@ manifests/quick-start-postgres.yaml: dist/VERSION $(MANIFESTS)
 # lint/test/etc
 
 .PHONY: lint
-lint: cmd/server/static/files.go
+lint: server/static/files.go
 	# Lint Go files
 	golangci-lint run --fix --verbose
 ifeq ($(CI),false)
@@ -229,7 +229,7 @@ ifeq ($(CI),false)
 endif
 
 .PHONY: test
-test: cmd/server/static/files.go vendor
+test: server/static/files.go vendor
 	# Run unit tests
 ifeq ($(CI),false)
 	go test `go list ./... | grep -v 'test/e2e'`
