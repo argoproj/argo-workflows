@@ -72,7 +72,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                     .map(workflowChange => {
                         const workflows = this.state.workflows;
                         if (!workflowChange) {
-                            return {workflows,  updated: false};
+                            return {workflows, updated: false};
                         }
                         const index = workflows.findIndex(item => item.metadata.name === workflowChange.object.metadata.name);
                         if (index > -1 && workflowChange.object.metadata.resourceVersion === workflows[index].metadata.resourceVersion) {
