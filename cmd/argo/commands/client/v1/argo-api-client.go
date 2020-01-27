@@ -5,9 +5,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/server/workflow"
-	"github.com/argoproj/argo/cmd/server/workflowarchive"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/server/workflow"
+	"github.com/argoproj/argo/server/workflowarchive"
 )
 
 type argoAPIClient struct {
