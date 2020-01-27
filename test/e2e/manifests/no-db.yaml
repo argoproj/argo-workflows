@@ -337,7 +337,7 @@ spec:
           value: password
         - name: UPPERIO_DB_DEBUG
           value: "1"
-        image: argoproj/argocli:v2.5.0-rc2
+        image: argoproj/argocli:latest
         imagePullPolicy: Never
         name: argo-server
         ports:
@@ -386,7 +386,7 @@ spec:
           value: 30s
         - name: UPPERIO_DB_DEBUG
           value: "1"
-        image: argoproj/workflow-controller:v2.5.0-rc2
+        image: argoproj/workflow-controller:latest
         imagePullPolicy: Never
         name: workflow-controller
       serviceAccountName: argo

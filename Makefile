@@ -203,7 +203,7 @@ verify-codegen:
 	diff ./dist/swagger.json ./api/openapi-spec/swagger.json
 
 .PHONY: manifests
-manifests: manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml manifests/quick-start-no-db.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml test/e2e/manifests/no-db.yaml
+manifests: status manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml manifests/quick-start-no-db.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml test/e2e/manifests/no-db.yaml
 
 .PHONY: verify-manifests
 verify-manifests: manifests
@@ -322,7 +322,7 @@ dist/python-alpine3.6:
 	touch dist/python-alpine3.6
 
 .PHONY: start
-start: controller-image cli-image executor-image install
+start: status controller-image cli-image executor-image install
 	# Start development environment
 ifeq ($(CI),false)
 	make down
