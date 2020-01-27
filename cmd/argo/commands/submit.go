@@ -74,7 +74,7 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().Int32Var(&priority, "priority", 0, "workflow priority")
 	command.Flags().StringVarP(&submitOpts.ParameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
 	command.Flags().StringVarP(&submitOpts.Labels, "labels", "l", "", "Comma separated labels to apply to the workflow. Will override previous values.")
-	command.Flags().StringVar(&from, "from", "", "Submit from a WorkflowTempalte or CronWorkflow. E.g., --from=CronWorkflow/hello-world-cwf")
+	command.Flags().StringVar(&from, "from", "", "Submit from a WorkflowTemplate or CronWorkflow. E.g., --from=CronWorkflow/hello-world-cwf")
 	// Only complete files with appropriate extension.
 	err := command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})
 	if err != nil {
