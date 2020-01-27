@@ -65,7 +65,14 @@ func (s *CLIWithServerSuite) TestArchive() {
 		}).
 		RunCli([]string{"archive", "get", string(uid)}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				assert.Contains(t, output, "Succeeded")
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "ServiceAccount:")
+				assert.Contains(t, output, "Status:")
+				assert.Contains(t, output, "Created:")
+				assert.Contains(t, output, "Started:")
+				assert.Contains(t, output, "Finished:")
+				assert.Contains(t, output, "Duration:")
 			}
 		}).
 		RunCli([]string{"archive", "delete", string(uid)}, func(t *testing.T, output string, err error) {
