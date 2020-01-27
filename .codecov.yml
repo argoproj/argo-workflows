@@ -1,5 +1,5 @@
 ignore:
-  - "cmd/server/static/files.go"
+  - "server/static/files.go"
   - "pkg/client"
 coverage:
   status:

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/server/workflow"
+	"github.com/argoproj/argo/server/workflow"
 
 	argotime "github.com/argoproj/pkg/time"
 	"github.com/spf13/cobra"
