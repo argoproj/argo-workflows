@@ -194,12 +194,20 @@ codegen:
 	go run ./hack/gen-openapi-spec/main.go $(VERSION) > ./api/openapi-spec/swagger.json
 
 .PHONY: verify-codegen
-verify-codegen: codegen
+verify-codegen:
 	# Verify generated code
-	git diff --exit-code
+	./hack/verify-codegen.sh
+	./hack/update-openapigen.sh --verify-only
+	mkdir -p ./dist
+	go run ./hack/gen-openapi-spec/main.go $(VERSION) > ./dist/swagger.json
+	diff ./dist/swagger.json ./api/openapi-spec/swagger.json
 
 .PHONY: manifests
 manifests: manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml manifests/quick-start-no-db.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml test/e2e/manifests/no-db.yaml
+
+.PHONY: verify-manifests
+verify-manifests: manifests
+	git diff --exit-code
 
 # we use a different file to ./VERSION to force updating manifests after a `make clean`
 dist/MANIFESTS_VERSION:
