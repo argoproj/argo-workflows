@@ -2,12 +2,12 @@ package metrics
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/cache"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"

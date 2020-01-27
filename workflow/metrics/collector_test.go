@@ -2,22 +2,21 @@ package metrics
 
 import (
 	"context"
-	"k8s.io/client-go/dynamic/fake"
-
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic/dynamicinformer"
+	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/argoproj/argo/pkg/apis/workflow"
-	"github.com/ghodss/yaml"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic/dynamicinformer"
 )
 
 const fakeWf = `apiVersion: argoproj.io/v1alpha1
