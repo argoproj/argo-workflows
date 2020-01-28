@@ -74,13 +74,13 @@ func NewListCommand() *cobra.Command {
 				namespace = ""
 			}
 
-			wfList, err := client.List(namespace, listOpts)
+			wfList, err := client.ListWorkflows(namespace, listOpts)
 			errors.CheckError(err)
 
 			tmpWorkFlows := wfList.Items
 			for wfList.ListMeta.Continue != "" {
 				listOpts.Continue = wfList.ListMeta.Continue
-				wfList, err = client.List(namespace, listOpts)
+				wfList, err = client.ListWorkflows(namespace, listOpts)
 				if err != nil {
 					log.Fatal(err)
 				}

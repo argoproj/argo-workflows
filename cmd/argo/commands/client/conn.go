@@ -45,14 +45,14 @@ func GetClientConn() *grpc.ClientConn {
 
 // DEPRECATED should only be used by client/v1 package
 func GetContext() context.Context {
-	token := GetToken()
+	token := GetBearerToken()
 	if token == "" {
 		return context.Background()
 	}
 	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token))
 }
 
-func GetToken() string {
+func GetBearerToken() string {
 	restConfig, err := Config.ClientConfig()
 	if err != nil {
 		log.Fatal(err)

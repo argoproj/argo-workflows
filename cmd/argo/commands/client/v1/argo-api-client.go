@@ -10,8 +10,14 @@ import (
 	"github.com/argoproj/argo/server/workflowarchive"
 )
 
+// This client communicates with Argo using the Argo Server API.
+// This supports all features, but requires you to install the Argo Server.
 type argoAPIClient struct {
 	*grpc.ClientConn
+}
+
+func newArgoAPIClient() Interface {
+	return &argoAPIClient{client.GetClientConn()}
 }
 
 func (a *argoAPIClient) Namespace() (string, error) {
@@ -37,33 +43,31 @@ func (a *argoAPIClient) DeleteArchivedWorkflow(uid string) error {
 	})
 	return err
 }
-
-func newArgoAPIClient() Interface {
-	return &argoAPIClient{client.GetClientConn()}
-}
-
-func (a *argoAPIClient) Get(namespace, name string) (*wfv1.Workflow, error) {
+func (a *argoAPIClient) GetWorkflow(namespace, name string) (*wfv1.Workflow, error) {
 	return workflow.NewWorkflowServiceClient(a.ClientConn).GetWorkflow(client.GetContext(), &workflow.WorkflowGetRequest{
 		Name:      name,
 		Namespace: namespace,
 	})
 }
 
-func (a *argoAPIClient) List(namespace string, opts metav1.ListOptions) (*wfv1.WorkflowList, error) {
+func (a *argoAPIClient) ListWorkflows(namespace string, opts metav1.ListOptions) (*wfv1.WorkflowList, error) {
 	return workflow.NewWorkflowServiceClient(a.ClientConn).ListWorkflows(client.GetContext(), &workflow.WorkflowListRequest{
 		Namespace:   namespace,
 		ListOptions: &opts,
 	})
 }
 
-func (a *argoAPIClient) Submit(namespace string, wf *wfv1.Workflow, dryRun bool) (*wfv1.Workflow, error) {
+func (a *argoAPIClient) Submit(namespace string, wf *wfv1.Workflow, dryRun, serverDryRun bool) (*wfv1.Workflow, error) {
+	if dryRun {
+		return wf, nil
+	}
 	return workflow.NewWorkflowServiceClient(a.ClientConn).CreateWorkflow(client.GetContext(), &workflow.WorkflowCreateRequest{
 		Namespace:    namespace,
 		Workflow:     wf,
-		ServerDryRun: dryRun,
+		ServerDryRun: serverDryRun,
 	})
 }
 
-func (a *argoAPIClient) GetToken() (string, error) {
-	return client.GetToken(), nil
+func (a *argoAPIClient) Token() (string, error) {
+	return client.GetBearerToken(), nil
 }

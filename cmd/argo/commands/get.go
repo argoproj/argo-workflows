@@ -43,7 +43,7 @@ func NewGetCommand() *cobra.Command {
 			namespace, err := client.Namespace()
 			errors.CheckError(err)
 			for _, name := range args {
-				wf, err := client.Get(namespace, name)
+				wf, err := client.GetWorkflow(namespace, name)
 				errors.CheckError(err)
 				outputWorkflow(wf, getArgs)
 			}

@@ -146,7 +146,7 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		err := util.ApplySubmitOpts(&wf, submitOpts)
 		errors.CheckError(err)
 		wf.Spec.Priority = cliOpts.priority
-		created, err := client.Submit(wf.Namespace, &wf, submitOpts.ServerDryRun)
+		created, err := client.Submit(wf.Namespace, &wf, submitOpts.DryRun, submitOpts.ServerDryRun)
 		if err != nil {
 			log.Fatalf("Failed to submit workflow: %v", err)
 		}

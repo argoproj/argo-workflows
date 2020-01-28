@@ -21,7 +21,7 @@ func NewTokenCommand() *cobra.Command {
 			}
 			client, err := v1.GetClient()
 			errors.CheckError(err)
-			token, err := client.GetToken()
+			token, err := client.Token()
 			errors.CheckError(err)
 			fmt.Print(token)
 		},

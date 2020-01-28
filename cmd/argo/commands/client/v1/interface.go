@@ -8,10 +8,10 @@ import (
 )
 
 type Interface interface {
-	Submit(namespace string, wf *wfv1.Workflow, dryRun bool) (*wfv1.Workflow, error)
-	List(namespace string, opts v1.ListOptions) (*wfv1.WorkflowList, error)
-	Get(namespace, name string) (*wfv1.Workflow, error)
-	GetToken() (string, error)
+	Submit(namespace string, wf *wfv1.Workflow, dryRun, serverDryRun bool) (*wfv1.Workflow, error)
+	ListWorkflows(namespace string, opts v1.ListOptions) (*wfv1.WorkflowList, error)
+	GetWorkflow(namespace, name string) (*wfv1.Workflow, error)
+	Token() (string, error)
 	DeleteArchivedWorkflow(uid string) error
 	GetArchivedWorkflow(uid string) (*wfv1.Workflow, error)
 	ListArchivedWorkflows(namespace string) (*wfv1.WorkflowList, error)
@@ -22,6 +22,6 @@ func GetClient() (Interface, error) {
 	if client.ArgoServer != "" {
 		return newArgoAPIClient(), nil
 	} else {
-		return newKubeImpl()
+		return newKubeClient()
 	}
 }
