@@ -148,6 +148,27 @@ func (we *WorkflowExecutor) WaitResource(resourceNamespace string, resourceName 
 	return err
 }
 
+func checkIfResourceDeleted(resourceNamespace string, resourceName string) bool {
+	args := []string{"get", resourceName, "-o", "yaml"}
+	if resourceNamespace != "" {
+		args = append(args, "-n", resourceNamespace)
+	}
+	cmd := exec.Command("kubectl", args...)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if err != nil {
+		// Println(Sprint(err) + ": " + stderr.String())
+		// Println(err.Error())
+		if strings.Contains(stderr.String(), "NotFound") {
+			return true
+		}
+		log.Warnf("Got error %v when checking if the resource %s in namespace %s is deleted", err, resourceName, resourceNamespace)
+		return false
+	}
+	return false
+}
+
 // Function to do the kubectl get -w command and then waiting on json reading.
 func checkResourceState(resourceNamespace string, resourceName string, successReqs labels.Requirements, failReqs labels.Requirements) (bool, error) {
 
@@ -185,6 +206,10 @@ func checkResourceState(resourceNamespace string, resourceName string, successRe
 				log.Infof("readJSon failed for resource %s but cmd.Wait for kubectl get -w command did not error", resourceName)
 			}
 			return true, resultErr
+		}
+
+		if checkIfResourceDeleted(resourceName, resourceNamespace) {
+			return false, errors.Errorf(errors.CodeNotFound, "Resource %s in namespace %s has been deleted somehow.", resourceName, resourceNamespace)
 		}
 
 		log.Info(string(jsonBytes))
