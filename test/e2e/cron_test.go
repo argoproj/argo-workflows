@@ -180,7 +180,7 @@ func (s *CronSuite) TestFailedJobHistoryLimit() {
 
 func wfInformerListOptionsFunc(options *v1.ListOptions, cronWfName string) {
 	options.FieldSelector = fields.Everything().String()
-	isCronWorkflowChildReq, err := labels.NewRequirement(common.LabelCronWorkflow, selection.Equals, []string{cronWfName})
+	isCronWorkflowChildReq, err := labels.NewRequirement(common.LabelKeyCronWorkflow, selection.Equals, []string{cronWfName})
 	if err != nil {
 		panic(err)
 	}

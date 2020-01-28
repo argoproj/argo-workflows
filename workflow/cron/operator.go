@@ -188,7 +188,7 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit() {
 	var successfulWorkflows []v1alpha1.Workflow
 	var failedWorkflows []v1alpha1.Workflow
 	for _, wf := range wfList.Items {
-		if wf.Labels[common.LabelCronWorkflow] != woc.cronWf.Name {
+		if wf.Labels[common.LabelKeyCronWorkflow] != woc.cronWf.Name {
 			continue
 		}
 		if wf.Status.Completed() {
