@@ -78,10 +78,6 @@ type wfOperationCtx struct {
 	// workflowDeadline is the deadline which the workflow is expected to complete before we
 	// terminate the workflow.
 	workflowDeadline *time.Time
-
-	// tmplCtx is the context of template search.
-	tmplCtx *templateresolution.Context
-
 	// auditLogger is the argo audit logger
 	auditLogger *argo.AuditLogger
 }
@@ -121,7 +117,6 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		deadline:           time.Now().UTC().Add(maxOperationTime),
 		auditLogger:        argo.NewAuditLogger(wf.ObjectMeta.Namespace, wfc.kubeclientset, wf.ObjectMeta.Name),
 	}
-	woc.tmplCtx = templateresolution.NewContext(wfc.wftmplInformer.Lister().WorkflowTemplates(wf.Namespace), wf, &woc)
 
 	if woc.wf.Status.Nodes == nil {
 		woc.wf.Status.Nodes = make(map[string]wfv1.NodeStatus)
@@ -228,9 +223,12 @@ func (woc *wfOperationCtx) operate() {
 		return
 	}
 
+	// Create a starting template context.
+	tmplCtx := woc.createTemplateContext("")
+
 	var workflowStatus wfv1.NodePhase
 	var workflowMessage string
-	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.Template{Template: woc.wf.Spec.Entrypoint}, woc.tmplCtx, woc.wf.Spec.Arguments, "")
+	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.Template{Template: woc.wf.Spec.Entrypoint}, tmplCtx, woc.wf.Spec.Arguments, "")
 	if err != nil {
 		msg := fmt.Sprintf("%s error in entry template execution: %+v", woc.wf.Name, err)
 		// the error are handled in the callee so just log it.
@@ -266,7 +264,7 @@ func (woc *wfOperationCtx) operate() {
 		}
 		woc.log.Infof("Running OnExit handler: %s", woc.wf.Spec.OnExit)
 		onExitNodeName := woc.wf.ObjectMeta.Name + ".onExit"
-		onExitNode, err = woc.executeTemplate(onExitNodeName, &wfv1.Template{Template: woc.wf.Spec.OnExit}, woc.tmplCtx, woc.wf.Spec.Arguments, "")
+		onExitNode, err = woc.executeTemplate(onExitNodeName, &wfv1.Template{Template: woc.wf.Spec.OnExit}, tmplCtx, woc.wf.Spec.Arguments, "")
 		if err != nil {
 			// the error are handled in the callee so just log it.
 			woc.log.Errorf("%s error in exit template execution: %+v", woc.wf.Name, err)
@@ -1241,7 +1239,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	newTmplCtx, resolvedTmpl, err := tmplCtx.ResolveTemplate(orgTmpl)
 	if err != nil {
-		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, err), err
+		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, err), err
 	}
 
 	localParams := make(map[string]string)
@@ -1253,7 +1251,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	// Inputs has been processed with arguments already, so pass empty arguments.
 	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false)
 	if err != nil {
-		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, err), err
+		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, err), err
 	}
 
 	// Check if we exceeded template or workflow parallelism and immediately return if we did
@@ -1303,7 +1301,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		if processedTmpl.IsPodType() {
 			processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, map[string]string{common.LocalVarPodName: woc.wf.NodeID(nodeName)})
 			if err != nil {
-				return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, err), err
+				return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, err), err
 			}
 		}
 	}
@@ -1323,7 +1321,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		node, err = woc.executeSuspend(nodeName, templateScope, processedTmpl, orgTmpl, boundaryID)
 	default:
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
-		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, wfv1.NodeError, err.Error()), err
+		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeError, err.Error()), err
 	}
 	if err != nil {
 		node = woc.markNodeError(node.Name, err)
@@ -1427,14 +1425,12 @@ var stepsOrDagSeparator = regexp.MustCompile(`^(\[\d+\])?\.`)
 
 // initializeExecutableNode initializes a node and stores the template.
 func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wfv1.NodeType, templateScope string, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
-	node := woc.initializeNode(nodeName, nodeType, orgTmpl, boundaryID, phase)
+	node := woc.initializeNode(nodeName, nodeType, templateScope, orgTmpl, boundaryID, phase)
 
 	// Set the input values to the node.
 	if executeTmpl.Inputs.HasInputs() {
 		node.Inputs = executeTmpl.Inputs.DeepCopy()
 	}
-
-	node.TemplateScope = templateScope
 
 	// Update the node
 	woc.wf.Status.Nodes[node.ID] = *node
@@ -1444,14 +1440,14 @@ func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wf
 }
 
 // initializeNodeOrMarkError initializes an error node or mark a node if it already exists.
-func (woc *wfOperationCtx) initializeNodeOrMarkError(node *wfv1.NodeStatus, nodeName string, nodeType wfv1.NodeType, orgTmpl wfv1.TemplateHolder, boundaryID string, err error) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) initializeNodeOrMarkError(node *wfv1.NodeStatus, nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateHolder, boundaryID string, err error) *wfv1.NodeStatus {
 	if node != nil {
 		return woc.markNodeError(nodeName, err)
 	}
-	return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, wfv1.NodeError, err.Error())
+	return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeError, err.Error())
 }
 
-func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeType, orgTmpl wfv1.TemplateHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
 	woc.log.Debugf("Initializing node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
 
 	nodeID := woc.wf.NodeID(nodeName)
@@ -1479,6 +1475,8 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 	} else {
 		node.DisplayName = nodeName
 	}
+
+	node.TemplateScope = templateScope
 
 	if node.Completed() && node.FinishedAt.IsZero() {
 		node.FinishedAt = node.StartedAt
@@ -1552,7 +1550,8 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 			if !ok {
 				return errors.InternalError("boundaryNode not found")
 			}
-			_, boundaryTemplate, err := woc.tmplCtx.ResolveTemplate(&boundaryNode)
+			tmplCtx := woc.createTemplateContext(boundaryNode.TemplateScope)
+			_, boundaryTemplate, err := tmplCtx.ResolveTemplate(&boundaryNode)
 			if err != nil {
 				return err
 			}
@@ -1691,7 +1690,8 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 
 	includeScriptOutput := false
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
-		_, parentTemplate, err := woc.tmplCtx.ResolveTemplate(&boundaryNode)
+		tmplCtx := woc.createTemplateContext(boundaryNode.TemplateScope)
+		_, parentTemplate, err := tmplCtx.ResolveTemplate(&boundaryNode)
 		if err != nil {
 			return node, err
 		}
@@ -2133,11 +2133,20 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 	return nil
 }
 
-func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID string) (bool, *wfv1.NodeStatus, error) {
+// createTemplateContext creates a new template context.
+func (woc *wfOperationCtx) createTemplateContext(templateScope string) *templateresolution.Context {
+	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), woc.wf, woc)
+	if templateScope != "" {
+		ctx = ctx.WithLazyWorkflowTemplate(woc.wf.Namespace, templateScope)
+	}
+	return ctx
+}
+
+func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID string, tmplCtx *templateresolution.Context) (bool, *wfv1.NodeStatus, error) {
 	if templateRef != "" {
 		woc.log.Infof("Running OnExit handler: %s", templateRef)
 		onExitNodeName := parentName + ".onExit"
-		onExitNode, err := woc.executeTemplate(onExitNodeName, &wfv1.Template{Template: templateRef}, woc.tmplCtx, woc.wf.Spec.Arguments, boundaryID)
+		onExitNode, err := woc.executeTemplate(onExitNodeName, &wfv1.Template{Template: templateRef}, tmplCtx, woc.wf.Spec.Arguments, boundaryID)
 		return true, onExitNode, err
 	}
 	return false, nil, nil
