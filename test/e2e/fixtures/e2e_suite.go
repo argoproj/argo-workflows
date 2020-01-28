@@ -244,9 +244,9 @@ func (s *E2ESuite) printPodLogs(logCtx *log.Entry, namespace, pod, container str
 	fmt.Println("---")
 }
 
-func (s *E2ESuite) Given() *Given {
+func (s *E2ESuite) Given(t *testing.T) *Given {
 	return &Given{
-		t:                     s.T(),
+		t:                     t,
 		diagnostics:           s.Diagnostics,
 		client:                s.wfClient,
 		wfTemplateClient:      s.wfTemplateClient,

@@ -34,7 +34,7 @@ func (s *CLIWithServerSuite) AfterTest(suiteName, testName string) {
 }
 
 func (s *CLIWithServerSuite) TestToken() {
-	s.Given().
+	s.Given(s.T()).
 		RunCli([]string{"token"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			token, err := s.GetServiceAccountToken()
@@ -48,39 +48,48 @@ func (s *CLIWithServerSuite) TestArchive() {
 		s.T().SkipNow()
 	}
 	var uid types.UID
-	s.Given().
+	s.Given(s.T()).
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(30*time.Second).
+		WaitForWorkflow(30 * time.Second).
 		Then().
 		Expect(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
-		}).
-		RunCli([]string{"archive", "list"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "NAMESPACE NAME")
-				assert.Contains(t, output, "argo basic")
-			}
-		}).
-		RunCli([]string{"archive", "get", string(uid)}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "Name:")
-				assert.Contains(t, output, "Namespace:")
-				assert.Contains(t, output, "ServiceAccount:")
-				assert.Contains(t, output, "Status:")
-				assert.Contains(t, output, "Created:")
-				assert.Contains(t, output, "Started:")
-				assert.Contains(t, output, "Finished:")
-				assert.Contains(t, output, "Duration:")
-			}
-		}).
-		RunCli([]string{"archive", "delete", string(uid)}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "Archived workflow")
-				assert.Contains(t, output, "deleted")
-			}
 		})
+	s.Run("List", func(t *testing.T) {
+		s.Given(t).
+			RunCli([]string{"archive", "list"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "NAMESPACE NAME")
+					assert.Contains(t, output, "argo basic")
+				}
+			})
+	})
+	s.Run("Get", func(t *testing.T) {
+		s.Given(t).
+			RunCli([]string{"archive", "get", string(uid)}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "Name:")
+					assert.Contains(t, output, "Namespace:")
+					assert.Contains(t, output, "ServiceAccount:")
+					assert.Contains(t, output, "Status:")
+					assert.Contains(t, output, "Created:")
+					assert.Contains(t, output, "Started:")
+					assert.Contains(t, output, "Finished:")
+					assert.Contains(t, output, "Duration:")
+				}
+			})
+	})
+	s.Run("Delete", func(t *testing.T) {
+		s.Given(t).
+			RunCli([]string{"archive", "delete", string(uid)}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "Archived workflow")
+					assert.Contains(t, output, "deleted")
+				}
+			})
+	})
 }
 
 func TestCLIWithServerSuite(t *testing.T) {

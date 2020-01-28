@@ -25,7 +25,7 @@ type CronSuite struct {
 }
 
 func (s *CronSuite) TestBasic() {
-	s.Given().
+	s.Given(s.T()).
 		CronWorkflow("@testdata/basic.yaml").
 		When().
 		CreateCronWorkflow().
@@ -52,7 +52,7 @@ func (s *CronSuite) TestBasicTimezone() {
 		hour = (hour + 1) % 24
 	}
 	scheduleInTestTimezone := strconv.Itoa(min) + " " + strconv.Itoa(hour) + " * * *"
-	s.Given().
+	s.Given(s.T()).
 		CronWorkflow(fmt.Sprintf(`
 apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -83,7 +83,7 @@ spec:
 }
 
 func (s *CronSuite) TestSuspend() {
-	s.Given().
+	s.Given(s.T()).
 		CronWorkflow("@testdata/basic.yaml").
 		When().
 		CreateCronWorkflow().
@@ -97,7 +97,7 @@ func (s *CronSuite) TestSuspend() {
 }
 
 func (s *CronSuite) TestResume() {
-	s.Given().
+	s.Given(s.T()).
 		CronWorkflow("@testdata/basic.yaml").
 		When().
 		CreateCronWorkflow().
@@ -111,7 +111,7 @@ func (s *CronSuite) TestResume() {
 }
 
 func (s *CronSuite) TestBasicForbid() {
-	s.Given().
+	s.Given(s.T()).
 		CronWorkflow("@testdata/basic-forbid.yaml").
 		When().
 		CreateCronWorkflow().
@@ -124,7 +124,7 @@ func (s *CronSuite) TestBasicForbid() {
 }
 
 func (s *CronSuite) TestBasicAllow() {
-	s.Given().
+	s.Given(s.T()).
 		CronWorkflow("@testdata/basic-allow.yaml").
 		When().
 		CreateCronWorkflow().
@@ -136,7 +136,7 @@ func (s *CronSuite) TestBasicAllow() {
 }
 
 func (s *CronSuite) TestBasicReplace() {
-	s.Given().
+	s.Given(s.T()).
 		CronWorkflow("@testdata/basic-replace.yaml").
 		When().
 		CreateCronWorkflow().
@@ -151,7 +151,7 @@ func (s *CronSuite) TestBasicReplace() {
 func (s *CronSuite) TestSuccessfulJobHistoryLimit() {
 	var listOptions v1.ListOptions
 	wfInformerListOptionsFunc(&listOptions, "test-cron-wf-succeed-1")
-	s.Given().
+	s.Given(s.T()).
 		CronWorkflow("@testdata/always-succeed-1.yaml").
 		When().
 		CreateCronWorkflow().
@@ -166,7 +166,7 @@ func (s *CronSuite) TestSuccessfulJobHistoryLimit() {
 func (s *CronSuite) TestFailedJobHistoryLimit() {
 	var listOptions v1.ListOptions
 	wfInformerListOptionsFunc(&listOptions, "test-cron-wf-fail-1")
-	s.Given().
+	s.Given(s.T()).
 		CronWorkflow("@testdata/always-fail-1.yaml").
 		When().
 		CreateCronWorkflow().

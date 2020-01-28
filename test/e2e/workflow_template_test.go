@@ -17,7 +17,7 @@ type WorkflowTemplateSuite struct {
 }
 
 func (w *WorkflowTemplateSuite) TestNestedWorkflowTemplate() {
-	w.Given().WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
+	w.Given(w.T()).WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
 		WorkflowTemplate("@testdata/workflow-template-nested-template.yaml").
 		Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow

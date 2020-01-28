@@ -17,7 +17,8 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 
-	v1 "github.com/argoproj/argo/cmd/argo/commands/client/v1"
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
@@ -65,22 +66,26 @@ func NewListCommand() *cobra.Command {
 				listOpts.Limit = listArgs.chunkSize
 			}
 
-			client, err := v1.GetClient()
-			errors.CheckError(err)
-
-			namespace, err := client.Namespace()
-			errors.CheckError(err)
+			ctx, apiClient := client.NewAPIClient()
+			serviceClient := apiClient.NewWorkflowServiceClient()
+			namespace := client.Namespace()
 			if listArgs.allNamespaces {
 				namespace = ""
 			}
 
-			wfList, err := client.ListWorkflows(namespace, listOpts)
+			wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
+				Namespace:   namespace,
+				ListOptions: &listOpts,
+			})
 			errors.CheckError(err)
 
 			tmpWorkFlows := wfList.Items
 			for wfList.ListMeta.Continue != "" {
 				listOpts.Continue = wfList.ListMeta.Continue
-				wfList, err = client.ListWorkflows(namespace, listOpts)
+				wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
+					Namespace:   namespace,
+					ListOptions: &listOpts,
+				})
 				if err != nil {
 					log.Fatal(err)
 				}

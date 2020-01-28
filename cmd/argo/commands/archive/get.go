@@ -11,7 +11,8 @@ import (
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
-	v1 "github.com/argoproj/argo/cmd/argo/commands/client/v1"
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 )
 
 func NewGetCommand() *cobra.Command {
@@ -27,9 +28,10 @@ func NewGetCommand() *cobra.Command {
 			}
 			uid := args[0]
 
-			client, err := v1.GetClient()
+			ctx, apiClient := client.NewAPIClient()
+			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
 			errors.CheckError(err)
-			wf, err := client.GetArchivedWorkflow(uid)
+			wf, err := serviceClient.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: uid})
 			errors.CheckError(err)
 			switch output {
 			case "json":

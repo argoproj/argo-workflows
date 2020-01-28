@@ -35,12 +35,16 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
-	"github.com/argoproj/argo/pkg/apiclient"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	grpcutil "github.com/argoproj/argo/util/grpc"
 	"github.com/argoproj/argo/util/json"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/config"
+)
+
+const (
+	// MaxGRPCMessageSize contains max grpc message size
+	MaxGRPCMessageSize = 100 * 1024 * 1024
 )
 
 type argoServer struct {
@@ -161,8 +165,8 @@ func (as *argoServer) newGRPCServer(offloadNodeStatusRepo sqldb.OffloadNodeStatu
 		// Set both the send and receive the bytes limit to be 100MB
 		// The proper way to achieve high performance is to have pagination
 		// while we work toward that, we can have high limit first
-		grpc.MaxRecvMsgSize(apiclient.MaxGRPCMessageSize),
-		grpc.MaxSendMsgSize(apiclient.MaxGRPCMessageSize),
+		grpc.MaxRecvMsgSize(MaxGRPCMessageSize),
+		grpc.MaxSendMsgSize(MaxGRPCMessageSize),
 		grpc.ConnectionTimeout(300 * time.Second),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_logrus.UnaryServerInterceptor(serverLog),
@@ -201,7 +205,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		Handler: mux,
 	}
 	var dialOpts []grpc.DialOption
-	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(apiclient.MaxGRPCMessageSize)))
+	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxGRPCMessageSize)))
 	//dialOpts = append(dialOpts, grpc.WithUserAgent(fmt.Sprintf("%s/%s", common.ArgoCDUserAgentName, argocd.GetVersion().Version)))
 
 	dialOpts = append(dialOpts, grpc.WithInsecure())

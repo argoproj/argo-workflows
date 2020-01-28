@@ -7,8 +7,10 @@ import (
 	"github.com/argoproj/pkg/errors"
 	argoJson "github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	v1 "github.com/argoproj/argo/cmd/argo/commands/client/v1"
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
@@ -75,11 +77,9 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		cliOpts = &cliSubmitOpts{}
 	}
 
-	client, err := v1.GetClient()
-	errors.CheckError(err)
-
-	defaultNS, err := client.Namespace()
-	errors.CheckError(err)
+	ctx, apiClient := client.NewAPIClient()
+	serviceClient := apiClient.NewWorkflowServiceClient()
+	namespace := client.Namespace()
 
 	fileContents, err := util.ReadManifest(filePaths...)
 	if err != nil {
@@ -141,12 +141,22 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 	for _, wf := range workflows {
 		if wf.Namespace == "" {
 			// This is here to avoid passing an empty namespace when using --server-dry-run
-			wf.Namespace = defaultNS
+			wf.Namespace = namespace
 		}
 		err := util.ApplySubmitOpts(&wf, submitOpts)
 		errors.CheckError(err)
 		wf.Spec.Priority = cliOpts.priority
-		created, err := client.Submit(wf.Namespace, &wf, submitOpts.DryRun, submitOpts.ServerDryRun)
+		options := &metav1.CreateOptions{}
+		if submitOpts.DryRun {
+			options.DryRun = []string{"All"}
+		}
+		created, err := serviceClient.CreateWorkflow(ctx, &workflowpkg.WorkflowCreateRequest{
+			Namespace:     wf.Namespace,
+			Workflow:      &wf,
+			InstanceID:    submitOpts.InstanceID,
+			ServerDryRun:  submitOpts.ServerDryRun,
+			CreateOptions: options,
+		})
 		if err != nil {
 			log.Fatalf("Failed to submit workflow: %v", err)
 		}

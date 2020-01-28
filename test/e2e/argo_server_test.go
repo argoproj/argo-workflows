@@ -263,7 +263,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	if s.Persistence.IsEnabled() {
 
 		// Simply wait 10 seconds for the wf to be completed
-		s.Given().
+		s.Given(s.T()).
 			WorkflowName("test-wf-good").
 			When().
 			WaitForWorkflow(10 * time.Second)
@@ -428,7 +428,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 	})
 
 	s.Run("List", func(t *testing.T) {
-		s.Given().
+		s.Given(t).
 			WorkflowName("test").
 			When().
 			WaitForWorkflowToStart(20 * time.Second)
@@ -557,7 +557,7 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
 
 	s.Run("List", func(t *testing.T) {
 		// make sure list options work correctly
-		s.Given().
+		s.Given(t).
 			CronWorkflow("@testdata/basic.yaml")
 
 		s.e(t).GET("/api/v1/cron-workflows/argo").
@@ -631,7 +631,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		s.T().SkipNow()
 	}
 	var uid types.UID
-	s.Given().
+	s.Given(s.T()).
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
@@ -676,7 +676,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 // do some basic testing on the stream methods
 func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 
-	s.Given().
+	s.Given(s.T()).
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
@@ -761,7 +761,7 @@ func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 		s.T().SkipNow()
 	}
 	var uid types.UID
-	s.Given().
+	s.Given(s.T()).
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
@@ -771,7 +771,7 @@ func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 			uid = metadata.UID
 		})
 	s.Run("List", func(t *testing.T) {
-		s.Given().
+		s.Given(t).
 			Workflow("@smoke/basic-2.yaml").
 			When().
 			SubmitWorkflow().
@@ -889,7 +889,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 	s.Run("List", func(t *testing.T) {
 
 		// make sure list options work correctly
-		s.Given().
+		s.Given(t).
 			WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml")
 
 		s.e(t).GET("/api/v1/workflow-templates/argo").

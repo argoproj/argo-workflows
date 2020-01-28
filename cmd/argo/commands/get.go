@@ -14,7 +14,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
-	v1 "github.com/argoproj/argo/cmd/argo/commands/client/v1"
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -38,12 +39,14 @@ func NewGetCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			client, err := v1.GetClient()
-			errors.CheckError(err)
-			namespace, err := client.Namespace()
-			errors.CheckError(err)
+			ctx, apiClient := client.NewAPIClient()
+			serviceClient := apiClient.NewWorkflowServiceClient()
+			namespace := client.Namespace()
 			for _, name := range args {
-				wf, err := client.GetWorkflow(namespace, name)
+				wf, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
+					Name:      name,
+					Namespace: namespace,
+				})
 				errors.CheckError(err)
 				outputWorkflow(wf, getArgs)
 			}

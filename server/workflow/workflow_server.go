@@ -56,6 +56,10 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return nil, err
 	}
 
+	// if we are doing a normal dryRun, just return the workflow un-altered
+	if req.CreateOptions != nil && len(req.CreateOptions.DryRun) > 0 {
+		return req.Workflow, nil
+	}
 	if req.ServerDryRun {
 		return util.CreateServerDryRun(req.Workflow, wfClient)
 	}
