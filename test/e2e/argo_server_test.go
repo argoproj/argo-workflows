@@ -339,7 +339,7 @@ func (s *ArgoServerSuite) TestPermission() {
 				Expect().
 				Status(403)
 		})
-		// Test deleting archived wf with bad token
+		// Test deleting archived wf with good token
 		s.bearerToken = goodToken
 		s.Run("DeleteArchivedWFsGoodToken", func(t *testing.T) {
 			s.e(t).DELETE("/api/v1/archived-workflows/" + uid).
