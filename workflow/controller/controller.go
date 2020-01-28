@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"github.com/argoproj/argo/workflow/cron"
 	"os"
 	"strings"
 	"time"
@@ -143,6 +144,11 @@ func (wfc *WorkflowController) RunTTLController(ctx context.Context) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (wfc *WorkflowController) RunCronController(ctx context.Context) {
+	cronController  := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID)
+	cronController.Run(ctx)
 }
 
 // Run starts an Workflow resource controller
