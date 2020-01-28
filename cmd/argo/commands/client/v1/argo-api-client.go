@@ -6,8 +6,8 @@ import (
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/workflowarchive"
 )
 
 // This client communicates with Argo using the Argo Server API.
@@ -26,19 +26,19 @@ func (a *argoAPIClient) Namespace() (string, error) {
 }
 
 func (a *argoAPIClient) ListArchivedWorkflows(namespace string) (*wfv1.WorkflowList, error) {
-	return workflowarchive.NewArchivedWorkflowServiceClient(a.ClientConn).ListArchivedWorkflows(client.GetContext(), &workflowarchive.ListArchivedWorkflowsRequest{
+	return workflowarchivepkg.NewArchivedWorkflowServiceClient(a.ClientConn).ListArchivedWorkflows(client.GetContext(), &workflowarchivepkg.ListArchivedWorkflowsRequest{
 		ListOptions: &metav1.ListOptions{FieldSelector: "metadata.namespace=" + namespace},
 	})
 }
 
 func (a *argoAPIClient) GetArchivedWorkflow(uid string) (*wfv1.Workflow, error) {
-	return workflowarchive.NewArchivedWorkflowServiceClient(a.ClientConn).GetArchivedWorkflow(client.GetContext(), &workflowarchive.GetArchivedWorkflowRequest{
+	return workflowarchivepkg.NewArchivedWorkflowServiceClient(a.ClientConn).GetArchivedWorkflow(client.GetContext(), &workflowarchivepkg.GetArchivedWorkflowRequest{
 		Uid: uid,
 	})
 }
 
 func (a *argoAPIClient) DeleteArchivedWorkflow(uid string) error {
-	_, err := workflowarchive.NewArchivedWorkflowServiceClient(a.ClientConn).DeleteArchivedWorkflow(client.GetContext(), &workflowarchive.DeleteArchivedWorkflowRequest{
+	_, err := workflowarchivepkg.NewArchivedWorkflowServiceClient(a.ClientConn).DeleteArchivedWorkflow(client.GetContext(), &workflowarchivepkg.DeleteArchivedWorkflowRequest{
 		Uid: uid,
 	})
 	return err
