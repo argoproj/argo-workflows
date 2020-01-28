@@ -10,7 +10,7 @@ import (
 	"github.com/argoproj/pkg/errors"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/server/workflow"
+	"github.com/argoproj/argo/server/workflow"
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/util"
 )

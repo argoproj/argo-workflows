@@ -3,14 +3,22 @@ import * as React from 'react';
 
 require('./login.scss');
 
-const getToken = () => localStorage.getItem('token');
+const getToken = () => {
+    for (const cookie of document.cookie.split(';')) {
+        if (cookie.startsWith('authorization=')) {
+            return cookie.substring(14);
+        }
+    }
+    return null;
+};
+
 const maybeLoggedIn = () => !!getToken();
 const logout = () => {
-    localStorage.removeItem('token');
+    document.cookie = 'authorization=;';
     document.location.reload(true);
 };
 const login = (token: string) => {
-    localStorage.setItem('token', token);
+    document.cookie = 'authorization=' + token + ';';
     document.location.href = '/';
 };
 export const Login = () => (

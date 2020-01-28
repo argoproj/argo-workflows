@@ -35,7 +35,7 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 	configStr, ok := cm.Data[common.WorkflowControllerConfigMapKey]
 	if !ok {
 		log.Warnf("ConfigMap '%s' does not have key '%s'", wfc.configMap, common.WorkflowControllerConfigMapKey)
-		return nil
+		configStr = ""
 	}
 	var config config.WorkflowControllerConfig
 	err := yaml.Unmarshal([]byte(configStr), &config)

@@ -11,8 +11,8 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	apiServer "github.com/argoproj/argo/cmd/server/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	apiServer "github.com/argoproj/argo/server/workflow"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/validate"
 )
