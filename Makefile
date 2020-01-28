@@ -366,7 +366,7 @@ mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
 .PHONY: test-e2e
-test-e2e: test-images
+test-e2e: test-images cli
 	# Run E2E tests
 	go test -timeout 20m -v -count 1 -p 1 ./test/e2e/...
 
