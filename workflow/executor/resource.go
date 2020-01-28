@@ -158,8 +158,6 @@ func checkIfResourceDeleted(resourceNamespace string, resourceName string) bool 
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		// Println(Sprint(err) + ": " + stderr.String())
-		// Println(err.Error())
 		if strings.Contains(stderr.String(), "NotFound") {
 			return true
 		}
