@@ -1,3 +1,2 @@
 # See https://github.com/probot/stale
-exemptLabels:
-  - backlog
+onlyLabels: [question]
