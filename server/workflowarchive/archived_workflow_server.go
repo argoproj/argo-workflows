@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/persist/sqldb"
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
 )
@@ -57,7 +58,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 			return nil, err
 		}
 		for _, wf := range moreItems {
-			allowed, err := authorizer.CanI("get", "workflow", wf.Namespace, wf.Name)
+			allowed, err := authorizer.CanI("get", workflow.WorkflowPlural, wf.Namespace, wf.Name)
 			if err != nil {
 				return nil, err
 			}
@@ -86,7 +87,7 @@ func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *G
 	if wf == nil {
 		return nil, status.Error(codes.NotFound, "not found")
 	}
-	allowed, err := auth.CanI(ctx, "get", "workflows", wf.Namespace, wf.Name)
+	allowed, err := auth.CanI(ctx, "get", workflow.CronWorkflowPlural, wf.Namespace, wf.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +102,7 @@ func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req
 	if err != nil {
 		return nil, err
 	}
-	allowed, err := auth.CanI(ctx, "delete", "workflows", wf.Namespace, wf.Name)
+	allowed, err := auth.CanI(ctx, "delete", workflow.CronWorkflowPlural, wf.Namespace, wf.Name)
 	if err != nil {
 		return nil, err
 	}
