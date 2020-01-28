@@ -14,10 +14,10 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	"github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	wfApiServer "github.com/argoproj/argo/server/workflow"
 	"github.com/argoproj/argo/workflow/templateresolution"
 )
 
@@ -150,6 +150,6 @@ func (c LazyWorkflowTemplateGetter) Get(name string) (*wfv1.WorkflowTemplate, er
 var _ templateresolution.WorkflowTemplateNamespacedGetter = &LazyWorkflowTemplateGetter{}
 
 // DEPRECATED
-func GetWFApiServerGRPCClient(conn *grpc.ClientConn) (wfApiServer.WorkflowServiceClient, context.Context) {
-	return wfApiServer.NewWorkflowServiceClient(conn), client.GetContext()
+func GetWFApiServerGRPCClient(conn *grpc.ClientConn) (workflow.WorkflowServiceClient, context.Context) {
+	return workflow.NewWorkflowServiceClient(conn), client.GetContext()
 }

@@ -5,8 +5,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/workflow"
 	"github.com/argoproj/argo/server/workflowarchive"
 )
 
@@ -44,14 +44,14 @@ func (a *argoAPIClient) DeleteArchivedWorkflow(uid string) error {
 	return err
 }
 func (a *argoAPIClient) GetWorkflow(namespace, name string) (*wfv1.Workflow, error) {
-	return workflow.NewWorkflowServiceClient(a.ClientConn).GetWorkflow(client.GetContext(), &workflow.WorkflowGetRequest{
+	return workflowpkg.NewWorkflowServiceClient(a.ClientConn).GetWorkflow(client.GetContext(), &workflowpkg.WorkflowGetRequest{
 		Name:      name,
 		Namespace: namespace,
 	})
 }
 
 func (a *argoAPIClient) ListWorkflows(namespace string, opts metav1.ListOptions) (*wfv1.WorkflowList, error) {
-	return workflow.NewWorkflowServiceClient(a.ClientConn).ListWorkflows(client.GetContext(), &workflow.WorkflowListRequest{
+	return workflowpkg.NewWorkflowServiceClient(a.ClientConn).ListWorkflows(client.GetContext(), &workflowpkg.WorkflowListRequest{
 		Namespace:   namespace,
 		ListOptions: &opts,
 	})
@@ -61,7 +61,7 @@ func (a *argoAPIClient) Submit(namespace string, wf *wfv1.Workflow, dryRun, serv
 	if dryRun {
 		return wf, nil
 	}
-	return workflow.NewWorkflowServiceClient(a.ClientConn).CreateWorkflow(client.GetContext(), &workflow.WorkflowCreateRequest{
+	return workflowpkg.NewWorkflowServiceClient(a.ClientConn).CreateWorkflow(client.GetContext(), &workflowpkg.WorkflowCreateRequest{
 		Namespace:    namespace,
 		Workflow:     wf,
 		ServerDryRun: serverDryRun,
