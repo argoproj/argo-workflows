@@ -692,7 +692,9 @@ func ConvertToWorkflow(cronWf *wfv1.CronWorkflow) (*wfv1.Workflow, error) {
 
 	newObjectMeta.Labels = make(map[string]string)
 	newObjectMeta.Labels[LabelKeyCronWorkflow] = cronWf.Name
-	newObjectMeta.Labels[LabelKeyControllerInstanceID] = cronWf.GetLabels()[LabelKeyControllerInstanceID]
+	if instanceId, ok := cronWf.GetLabels()[LabelKeyControllerInstanceID]; ok {
+		newObjectMeta.Labels[LabelKeyControllerInstanceID] = instanceId
+	}
 
 	wf := &wfv1.Workflow{
 		TypeMeta:   newTypeMeta,
