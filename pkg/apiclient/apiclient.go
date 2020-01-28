@@ -18,6 +18,6 @@ func NewClient(argoServer, token string, clientConfig clientcmd.ClientConfig) (c
 	if argoServer != "" {
 		return newArgoServerClient(argoServer, token)
 	} else {
-		return newKubeClient(clientConfig)
+		return newClassicClient(clientConfig)
 	}
 }

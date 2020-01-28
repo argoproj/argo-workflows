@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/argoproj/pkg/cli"
@@ -14,6 +15,7 @@ import (
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/apiserver"
+	"github.com/argoproj/argo/util/help"
 )
 
 func NewServerCommand() *cobra.Command {
@@ -28,7 +30,9 @@ func NewServerCommand() *cobra.Command {
 
 	var command = cobra.Command{
 		Use:   "server",
-		Short: "Start the server",
+		Short: "Start the Argo Server",
+		Example: fmt.Sprintf(`
+See %s`, help.ArgoSever),
 		RunE: func(c *cobra.Command, args []string) error {
 			cli.SetLogLevel(logLevel)
 			stats.RegisterStackDumper()

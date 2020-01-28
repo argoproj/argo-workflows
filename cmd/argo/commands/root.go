@@ -1,9 +1,12 @@
 package commands
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/cron"
+	"github.com/argoproj/argo/util/help"
 
 	"github.com/argoproj/argo/cmd/argo/commands/archive"
 	"github.com/argoproj/argo/cmd/argo/commands/client"
@@ -21,6 +24,8 @@ func NewCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   CLIName,
 		Short: "argo is the command line interface to Argo",
+		Example: fmt.Sprintf(`
+If you're using the Argo Server (e.g. because you need large workflow support or workflow archive), please read %s.`, help.CLI),
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.HelpFunc()(cmd, args)
 		},
