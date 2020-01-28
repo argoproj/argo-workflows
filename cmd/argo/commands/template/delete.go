@@ -12,8 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/server/workflowtemplate"
-
+	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
 
@@ -58,7 +57,7 @@ func apiServerDeleteWorkflowTemplates(allWFs bool, wfTmplNames []string) {
 
 	var delWFTmplNames []string
 	if allWFs {
-		wftmplReq := workflowtemplate.WorkflowTemplateListRequest{
+		wftmplReq := workflowtemplatepkg.WorkflowTemplateListRequest{
 			Namespace: ns,
 		}
 		wftmplList, err := wftmplApiClient.ListWorkflowTemplates(ctx, &wftmplReq)
@@ -78,8 +77,8 @@ func apiServerDeleteWorkflowTemplates(allWFs bool, wfTmplNames []string) {
 
 }
 
-func apiServerDeleteWorkflowTemplate(client workflowtemplate.WorkflowTemplateServiceClient, ctx context.Context, ns, wftmplName string) {
-	wfReq := workflowtemplate.WorkflowTemplateDeleteRequest{
+func apiServerDeleteWorkflowTemplate(client workflowtemplatepkg.WorkflowTemplateServiceClient, ctx context.Context, ns, wftmplName string) {
+	wfReq := workflowtemplatepkg.WorkflowTemplateDeleteRequest{
 		Name:      wftmplName,
 		Namespace: ns,
 	}

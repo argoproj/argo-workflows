@@ -8,8 +8,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/workflowtemplate"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/util"
@@ -68,7 +68,7 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 		var created *wfv1.WorkflowTemplate
 		if client.ArgoServer != "" {
 			ns, _, _ := client.Config.Namespace()
-			wftmplReq := workflowtemplate.WorkflowTemplateCreateRequest{
+			wftmplReq := workflowtemplatepkg.WorkflowTemplateCreateRequest{
 				Namespace: ns,
 				Template:  &wftmpl,
 			}
