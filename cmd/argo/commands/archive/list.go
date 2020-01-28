@@ -24,7 +24,7 @@ func NewListCommand() *cobra.Command {
 		Use: "list",
 		Run: func(cmd *cobra.Command, args []string) {
 			conn := client.GetClientConn()
-			ctx := client.GetContext()
+			ctx := client.GetContext(cmd)
 			client := workflowarchive.NewArchivedWorkflowServiceClient(conn)
 			resp, err := client.ListArchivedWorkflows(ctx, &workflowarchive.ListArchivedWorkflowsRequest{
 				ListOptions: &metav1.ListOptions{FieldSelector: "metadata.namespace=" + namespace},

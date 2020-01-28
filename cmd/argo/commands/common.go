@@ -142,5 +142,5 @@ func (c LazyWorkflowTemplateGetter) Get(name string) (*wfv1.WorkflowTemplate, er
 var _ templateresolution.WorkflowTemplateNamespacedGetter = &LazyWorkflowTemplateGetter{}
 
 func GetWFApiServerGRPCClient(conn *grpc.ClientConn) (wfApiServer.WorkflowServiceClient, context.Context) {
-	return wfApiServer.NewWorkflowServiceClient(conn), client.GetContext()
+	return wfApiServer.NewWorkflowServiceClient(conn), client.GetContext(nil)
 }
