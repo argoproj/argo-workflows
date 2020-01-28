@@ -381,7 +381,7 @@ test-api: test-images
 	go test -timeout 3m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
 
 .PHONY: test-cli
-test-cli: test-images
+test-cli: test-images cli
 	# Run CLI tests
 	go test -timeout 1m -v -count 1 -p 1 -run CliSuite ./test/e2e
 	go test -timeout 1m -v -count 1 -p 1 -run CLIWithServerSuite ./test/e2e
