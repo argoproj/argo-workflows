@@ -2,7 +2,6 @@
 BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_BRANCH             = $(shell git rev-parse --abbrev-ref=loose HEAD | sed 's/heads\///')
-GIT_REMOTE             ?= upstream
 GIT_TAG                = $(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
@@ -11,15 +10,28 @@ export DOCKER_BUILDKIT = 1
 # docker image publishing options
 IMAGE_NAMESPACE       ?= argoproj
 
+# The rules for what version are, in order of precedence
+# 1. If anything passed at the command line (e.g. make release VERSION=...)
+# 2. If on master, it must be "latest".
+# 3. If on a release branch, the most recent tag that contain the major minor on that branch,
+# 4. Otherwise, the branch.
+#
+VERSION := $(subst /,-,$(GIT_BRANCH))
+
 ifeq ($(GIT_BRANCH),master)
-VERSION               := latest
-else
-ifneq ($(GIT_TAG),)
-VERSION               := $(GIT_TAG)
-else
-VERSION               := $(subst /,-,$(GIT_BRANCH))
+VERSION := latest
+endif
+
+ifneq ($(findstring release,$(GIT_BRANCH)),)
+# this will be something like "v2.5" or "v3.7"
+MAJOR_MINOR := v$(word 2,$(subst -, ,$(GIT_BRANCH)))
+# if GIT_TAG is on HEAD, then this will be the same
+GIT_LATEST_TAG := $(shell git describe --abbrev=0 --tags)
+ifneq ($(findstring $(MAJOR_MINOR),$(GIT_LATEST_TAG)),)
+VERSION := $(GIT_LATEST_TAG)
 endif
 endif
+
 
 # MANIFESTS_VERSION is the version to be used for files in manifests and should always be latests unles we are releasing
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
@@ -408,11 +420,6 @@ clean:
 
 # pre-push
 
-.git/hooks/pre-push: Makefile
-	# Create Git pre-push hook
-	echo 'make pre-push' > .git/hooks/pre-push
-	chmod +x .git/hooks/pre-push
-
 .PHONY: pre-commit
 pre-commit: test lint codegen manifests start pf-bg smoke test-api test-cli
 
@@ -422,7 +429,7 @@ pre-commit: test lint codegen manifests start pf-bg smoke test-api test-cli
 prepare-release: manifests codegen
 	# Commit if any changes
 	git diff --quiet || git commit -am "Update manifests to $(VERSION)"
-	git tag -f $(VERSION)
+	git tag $(VERSION)
 
 .PHONY: publish-release
 publish-release:
@@ -430,6 +437,5 @@ publish-release:
 	docker push $(IMAGE_NAMESPACE)/argocli:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
+	git push --follow-tags
 
-.PHONY: release
-release: status prepare-release build publish-release
