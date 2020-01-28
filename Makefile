@@ -344,11 +344,8 @@ up:
 	make env
 
 # this is a convenience to get the login token, you can use it as follows
-# 1. Print out the token:
-#   make env
-# 2. Set-up my environment:
 #   eval $(make env)
-#   argo list
+#   argo token
 
 .PHONY: env
 env:
