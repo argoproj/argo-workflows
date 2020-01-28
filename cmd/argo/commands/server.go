@@ -12,8 +12,8 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/server/apiserver"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/server/apiserver"
 )
 
 func NewServerCommand() *cobra.Command {

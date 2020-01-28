@@ -12,7 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/server/workflowtemplate"
+	"github.com/argoproj/argo/server/workflowtemplate"
 
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
