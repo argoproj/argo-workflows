@@ -265,7 +265,6 @@ func (s *ArgoServerSuite) TestPermission() {
 			Status(403)
 	})
 
-	// Simply wait 10 seconds for the wf to be completed
 	s.Given().
 		WorkflowName("test-wf-good").
 		When().
@@ -333,14 +332,14 @@ func (s *ArgoServerSuite) TestPermission() {
 				Status(403)
 		})
 
-		// Test get delete archived wf with bad token
+		// Test deleting archived wf with bad token
 		s.bearerToken = badToken
 		s.Run("DeleteArchivedWFsBadToken", func(t *testing.T) {
 			s.e(t).DELETE("/api/v1/archived-workflows/" + uid).
 				Expect().
 				Status(403)
 		})
-		// Test get delete archived wf with bad token
+		// Test deleting archived wf with bad token
 		s.bearerToken = goodToken
 		s.Run("DeleteArchivedWFsGoodToken", func(t *testing.T) {
 			s.e(t).DELETE("/api/v1/archived-workflows/" + uid).
