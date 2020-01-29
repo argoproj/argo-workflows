@@ -3,12 +3,13 @@ package metrics
 import (
 	"context"
 	"fmt"
-	"github.com/argoproj/argo/workflow/config"
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/argoproj/argo/workflow/config"
 )
 
 // RunServer starts a metrics server

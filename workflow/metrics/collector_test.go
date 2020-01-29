@@ -3,6 +3,8 @@ package metrics
 import (
 	"context"
 
+	"github.com/argoproj/argo/workflow/config"
+
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -135,7 +137,7 @@ func TestMetric(t *testing.T) {
 		log.Fatal("Timed out waiting for caches to sync")
 	}
 	registry := NewWorkflowRegistry(wfInformer, nil)
-	server := NewServer(ctx, PrometheusConfig{
+	server := NewServer(ctx, config.PrometheusConfig{
 		Enabled: true,
 		Path:    "/metrics",
 		Port:    "9090",
