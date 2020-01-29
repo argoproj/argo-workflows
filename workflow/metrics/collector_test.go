@@ -134,7 +134,7 @@ func TestMetric(t *testing.T) {
 	if !cache.WaitForCacheSync(ctx.Done(), wfInformer.HasSynced) {
 		log.Fatal("Timed out waiting for caches to sync")
 	}
-	registry := NewWorkflowRegistry(wfInformer)
+	registry := NewWorkflowRegistry(wfInformer, nil)
 	server := NewServer(ctx, PrometheusConfig{
 		Enabled: true,
 		Path:    "/metrics",

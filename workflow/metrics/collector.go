@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -78,14 +79,15 @@ func boolFloat64(b bool) float64 {
 
 // workflowCollector collects metrics about all workflows in the cluster
 type workflowCollector struct {
-	store util.WorkflowLister
+	store                         util.WorkflowLister
+	offloadNodeStatusRepoSupplier sqldb.OffloadNodeStatusRepoSupplier
 }
 
 // NewWorkflowRegistry creates a new prometheus registry that collects workflows
-func NewWorkflowRegistry(informer cache.SharedIndexInformer) *prometheus.Registry {
+func NewWorkflowRegistry(informer cache.SharedIndexInformer, offloadNodeStatusRepoSupplier sqldb.OffloadNodeStatusRepoSupplier) *prometheus.Registry {
 	workflowLister := util.NewWorkflowLister(informer)
 	registry := prometheus.NewRegistry()
-	registry.MustRegister(&workflowCollector{store: workflowLister})
+	registry.MustRegister(&workflowCollector{store: workflowLister, offloadNodeStatusRepoSupplier: offloadNodeStatusRepoSupplier})
 	return registry
 }
 
@@ -154,7 +156,19 @@ func (wc *workflowCollector) collectWorkflow(ch chan<- prometheus.Metric, wf wfv
 	}
 
 	// Collect Node metrics
-	for _, node := range wf.Status.Nodes {
+	nodes := wf.Status.Nodes
+	if wf.Status.IsOffloadNodeStatus() && wc.offloadNodeStatusRepoSupplier != nil {
+		offloadNodeStatusRepo := wc.offloadNodeStatusRepoSupplier.GetOffloadNodeStatusRepo()
+		if offloadNodeStatusRepo.IsEnabled() {
+			offloadedNodes, err := offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+			if err != nil {
+				log.Errorf("not able to get offloaded nodes")
+			}
+			nodes = offloadedNodes
+		}
+	}
+
+	for _, node := range nodes {
 		wc.collectWorkflowNode(ch, node, wf.Name, wf.Namespace)
 	}
 }

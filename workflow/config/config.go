@@ -4,7 +4,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/metrics"
 )
 
 // WorkflowControllerConfig contain the configuration settings for the workflow controller
@@ -52,9 +51,9 @@ type WorkflowControllerConfig struct {
 	// controller watches workflows and pods that *are not* labeled with an instance id.
 	InstanceID string `json:"instanceID,omitempty"`
 
-	MetricsConfig metrics.PrometheusConfig `json:"metricsConfig,omitempty"`
+	MetricsConfig PrometheusConfig `json:"metricsConfig,omitempty"`
 
-	TelemetryConfig metrics.PrometheusConfig `json:"telemetryConfig,omitempty"`
+	TelemetryConfig PrometheusConfig `json:"telemetryConfig,omitempty"`
 
 	// Parallelism limits the max total parallel workflows that can execute at the same time
 	Parallelism int `json:"parallelism,omitempty"`
@@ -136,6 +135,13 @@ type MySQLConfig struct {
 	Options        map[string]string       `json:"options"`
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret"`
 	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret"`
+}
+
+// PrometheusConfig defines a config for a metrics server
+type PrometheusConfig struct {
+	Enabled bool   `json:"enabled,omitempty"`
+	Path    string `json:"path,omitempty"`
+	Port    string `json:"port,omitempty"`
 }
 
 // S3ArtifactRepository defines the controller configuration for an S3 artifact repository

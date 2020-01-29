@@ -118,7 +118,7 @@ func (wfc *WorkflowController) MetricsServer(ctx context.Context) {
 	if wfc.Config.MetricsConfig.Enabled {
 		informer := util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowMetricsResyncPeriod, wfc.tweakWorkflowMetricslist)
 		go informer.Run(ctx.Done())
-		registry := metrics.NewWorkflowRegistry(informer)
+		registry := metrics.NewWorkflowRegistry(informer, wfc)
 		metrics.RunServer(ctx, wfc.Config.MetricsConfig, registry)
 	}
 }
@@ -584,4 +584,8 @@ func (wfc *WorkflowController) GetContainerRuntimeExecutor() string {
 		return wfc.containerRuntimeExecutor
 	}
 	return wfc.Config.ContainerRuntimeExecutor
+}
+
+func (wfc *WorkflowController) GetOffloadNodeStatusRepo() sqldb.OffloadNodeStatusRepo {
+	return wfc.offloadNodeStatusRepo
 }

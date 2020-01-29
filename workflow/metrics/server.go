@@ -3,6 +3,7 @@ package metrics
 import (
 	"context"
 	"fmt"
+	"github.com/argoproj/argo/workflow/config"
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -10,15 +11,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// PrometheusConfig defines a config for a metrics server
-type PrometheusConfig struct {
-	Enabled bool   `json:"enabled,omitempty"`
-	Path    string `json:"path,omitempty"`
-	Port    string `json:"port,omitempty"`
-}
-
 // RunServer starts a metrics server
-func RunServer(ctx context.Context, config PrometheusConfig, registry *prometheus.Registry) {
+func RunServer(ctx context.Context, config config.PrometheusConfig, registry *prometheus.Registry) {
 	mux := http.NewServeMux()
 	mux.Handle(config.Path, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	srv := &http.Server{Addr: fmt.Sprintf(":%s", config.Port), Handler: mux}
@@ -38,7 +32,7 @@ func RunServer(ctx context.Context, config PrometheusConfig, registry *prometheu
 }
 
 // Used for testing
-func NewServer(ctx context.Context, config PrometheusConfig, registry *prometheus.Registry) *http.Server {
+func NewServer(ctx context.Context, config config.PrometheusConfig, registry *prometheus.Registry) *http.Server {
 	mux := http.NewServeMux()
 	mux.Handle(config.Path, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	srv := &http.Server{Addr: fmt.Sprintf(":%s", config.Port), Handler: mux}
