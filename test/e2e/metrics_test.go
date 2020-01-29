@@ -81,7 +81,11 @@ spec:
           - name: script_result
             valueFrom:
               path: "/tmp/metric.txt"
-            emitMetric: true
+            emitMetric:
+              metricSuffix: "number_generated"
+              metricTags:
+                - name: "generator_id"
+                  value: "A"
       script:
         image: debian:9.4
         command: [bash]
@@ -102,7 +106,7 @@ spec:
 			Status(200).
 			Body().
 			Contains(`argo_workflow_status_phase{entrypoint="custom-metric-example",name="custom-metric",namespace="argo",phase="Succeeded"} 1`).
-			Contains(`argo_workflow_script_result{metric_name="script_result",name="custom-metric",namespace="argo",step_name="custom-metric[0].generate"} 2746`)
+			Contains(`argo_workflow_number_generated{generator_id="A",name="custom-metric",namespace="argo",step_name="custom-metric[0].generate"} 2746`)
 	})
 }
 
