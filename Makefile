@@ -416,18 +416,18 @@ sdks/argo-workflows-python-sdk/.gitignore:
 	 git submodule update --init sdks/argo-workflows-python-sdk
 
 sdks/argo-workflows-python-sdk/README.md: sdks/argo-workflows-python-sdk/.gitignore /usr/local/bin/swagger-codegen api/argo-server/swagger.json
-	cd sdks/argo-workflows-python-sdk && git pull origin master && git clean -fxd
+	cd sdks/argo-workflows-python-sdk && git checkout master && git pull origin master && git clean -fxd
 	swagger-codegen generate -i api/argo-server/swagger.json -l python -o sdks/argo-workflows-python-sdk --git-user-id argoproj-labs --git-repo-id argo-workflows-python-sdk
-	cd sdks/argo-workflows-python-sdk && git add . && git commit -m "Updated to $(VERSION)"
+	cd sdks/argo-workflows-python-sdk && git add . && git commit -m "Updated to $(VERSION)" && git push
 	git add sdks/argo-workflows-python-sdk && git commit -m "Updated Python SDK to $(VERSION)"
 
 sdks/argo-workflows-java-sdk/.gitignore:
 	 git submodule update --init sdks/argo-workflows-java-sdk
 
 sdks/argo-workflows-java-sdk/README.md: sdks/argo-workflows-java-sdk/.gitignore /usr/local/bin/swagger-codegen api/argo-server/swagger.json
-	cd sdks/argo-workflows-java-sdk && git pull origin master && git clean -fxd
+	cd sdks/argo-workflows-java-sdk && git checkout master && git pull origin master && git clean -fxd
 	swagger-codegen generate -i api/argo-server/swagger.json -l java -o sdks/argo-workflows-java-sdk --git-user-id argoproj-labs --git-repo-id argo-workflows--java-sdk
-	cd sdks/argo-workflows-java-sdk && git add . && git commit -m "Updated to $(VERSION)"
+	cd sdks/argo-workflows-java-sdk && git add . && git commit -m "Updated to $(VERSION)" && git push
 	git add sdks/argo-workflows-java-sdk && git commit -m "Updated Java SDK to $(VERSION)"
 
 # pre-push
