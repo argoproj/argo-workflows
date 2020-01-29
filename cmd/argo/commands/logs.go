@@ -62,7 +62,7 @@ func NewLogsCommand() *cobra.Command {
 				conn := client.GetClientConn()
 				defer conn.Close()
 				printer.ns, _, _ = client.Config.Namespace()
-				printer.apiClient, printer.ctx = GetWFApiServerGRPCClient(conn, cmd)
+				printer.apiClient, printer.ctx = GetWFApiServerGRPCClient(conn)
 				printer.apiServer = true
 
 			} else {

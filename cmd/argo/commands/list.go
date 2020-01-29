@@ -66,7 +66,7 @@ func NewListCommand() *cobra.Command {
 				} else {
 					ns, _, _ = client.Config.Namespace()
 				}
-				wfApiClient, ctx = GetWFApiServerGRPCClient(conn, cmd)
+				wfApiClient, ctx = GetWFApiServerGRPCClient(conn)
 			}
 
 			listOpts := metav1.ListOptions{}

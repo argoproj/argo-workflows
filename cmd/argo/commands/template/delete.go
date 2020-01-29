@@ -28,7 +28,7 @@ func NewDeleteCommand() *cobra.Command {
 		Short: "delete a workflow template",
 		Run: func(cmd *cobra.Command, args []string) {
 			if client.ArgoServer != "" {
-				apiServerDeleteWorkflowTemplates(cmd, all, args)
+				apiServerDeleteWorkflowTemplates(all, args)
 			} else {
 				wftmplClient := InitWorkflowTemplateClient()
 				if all {
@@ -50,11 +50,11 @@ func NewDeleteCommand() *cobra.Command {
 	return command
 }
 
-func apiServerDeleteWorkflowTemplates(cmd *cobra.Command, allWFs bool, wfTmplNames []string) {
+func apiServerDeleteWorkflowTemplates(allWFs bool, wfTmplNames []string) {
 	conn := client.GetClientConn()
 	defer conn.Close()
 	ns, _, _ := client.Config.Namespace()
-	wftmplApiClient, ctx := GetWFtmplApiServerGRPCClient(conn, cmd)
+	wftmplApiClient, ctx := GetWFtmplApiServerGRPCClient(conn)
 
 	var delWFTmplNames []string
 	if allWFs {

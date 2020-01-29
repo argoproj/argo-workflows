@@ -26,17 +26,17 @@ func NewWatchCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			watchWorkflow(cmd, args[0])
+			watchWorkflow(args[0])
 
 		},
 	}
 	return command
 }
 
-func apiServerWatchWorkflow(cmd *cobra.Command, wfName string) {
+func apiServerWatchWorkflow(wfName string) {
 	conn := client.GetClientConn()
 	defer conn.Close()
-	apiClient, ctx := GetWFApiServerGRPCClient(conn, cmd)
+	apiClient, ctx := GetWFApiServerGRPCClient(conn)
 	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", wfName))
 	wfReq := workflow.WatchWorkflowsRequest{
 		Namespace: namespace,
@@ -67,9 +67,9 @@ func apiServerWatchWorkflow(cmd *cobra.Command, wfName string) {
 	}
 }
 
-func watchWorkflow(cmd *cobra.Command, name string) {
+func watchWorkflow(name string) {
 	if client.ArgoServer != "" {
-		apiServerWatchWorkflow(cmd, name)
+		apiServerWatchWorkflow(name)
 	} else {
 		InitWorkflowClient()
 		k8sApiWatchWorkflow(name)

@@ -31,7 +31,7 @@ func NewWaitCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			WaitWorkflows(cmd, args, ignoreNotFound, false)
+			WaitWorkflows(args, ignoreNotFound, false)
 		},
 	}
 	command.Flags().BoolVar(&ignoreNotFound, "ignore-not-found", false, "Ignore the wait if the workflow is not found")
@@ -39,7 +39,7 @@ func NewWaitCommand() *cobra.Command {
 }
 
 // WaitWorkflows waits for the given workflowNames.
-func WaitWorkflows(cmd *cobra.Command, workflowNames []string, ignoreNotFound, quiet bool) {
+func WaitWorkflows(workflowNames []string, ignoreNotFound, quiet bool) {
 	var wg sync.WaitGroup
 	wfSuccessStatus := true
 	var apiClient workflow.WorkflowServiceClient
@@ -48,7 +48,7 @@ func WaitWorkflows(cmd *cobra.Command, workflowNames []string, ignoreNotFound, q
 	if client.ArgoServer != "" {
 		conn := client.GetClientConn()
 		defer conn.Close()
-		apiClient, ctx = GetWFApiServerGRPCClient(conn, cmd)
+		apiClient, ctx = GetWFApiServerGRPCClient(conn)
 	} else {
 		InitWorkflowClient()
 	}

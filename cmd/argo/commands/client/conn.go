@@ -42,7 +42,7 @@ func GetClientConn() *grpc.ClientConn {
 func GetContext(cmd *cobra.Command) context.Context {
 	token := ""
 	if cmd != nil {
-		tokenVal, err := cmd.Flags().GetString("token")
+		tokenVal, err := cmd.PersistentFlags().GetString("token")
 		if err != nil {
 			log.Fatal(err)
 		}
