@@ -148,8 +148,8 @@ func (we *WorkflowExecutor) WaitResource(resourceNamespace string, resourceName 
 	return err
 }
 
-func checkIfResourceDeleted(resourceNamespace string, resourceName string) bool {
-	args := []string{"get", resourceName, "-o", "yaml"}
+func checkIfResourceDeleted(resourceName string, resourceNamespace string) bool {
+	args := []string{"get", resourceName}
 	if resourceNamespace != "" {
 		args = append(args, "-n", resourceNamespace)
 	}
