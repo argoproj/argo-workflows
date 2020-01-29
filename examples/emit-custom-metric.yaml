@@ -3,9 +3,9 @@
 # Example output:
 # HELP argo_workflow_step_script_result Custom metric 'script_result' from Workflow 'custom-metric-tl6d8'
 # TYPE argo_workflow_step_script_result gauge
-# argo_workflow_script_result{name="custom-metric-tl6d8",namespace="default",step_name="custom-metric-tl6d8[0].generate(0:A)"} 65
-# argo_workflow_script_result{name="custom-metric-tl6d8",namespace="default",step_name="custom-metric-tl6d8[0].generate(1:B)"} 86
-# argo_workflow_script_result{name="custom-metric-tl6d8",namespace="default",step_name="custom-metric-tl6d8[0].generate(2:C)"} 80
+# argo_workflow_number_generated{generator_id="A",name="custom-metric-ll5p9",namespace="argo",step_name="custom-metric-ll5p9[0].generate(0:A)"} 54
+# argo_workflow_number_generated{generator_id="B",name="custom-metric-ll5p9",namespace="argo",step_name="custom-metric-ll5p9[0].generate(1:B)"} 54
+# argo_workflow_number_generated{generator_id="C",name="custom-metric-ll5p9",namespace="argo",step_name="custom-metric-ll5p9[0].generate(2:C)"} 4
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
