@@ -52,7 +52,7 @@ CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join 
 MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
-SWAGGER_FILES    := $(shell find cmd/server -name '*.swagger.json')
+SWAGGER_FILES    := $(shell find server -name '*.swagger.json')
 
 .PHONY: build
 build: clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
@@ -400,22 +400,29 @@ clean:
 # sdks
 
 $(HOME)/go/bin/swagger:
-	brew install swagger
+	brew tap go-swagger/go-swagger
+	brew install go-swagger
 
 api/argo-server/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES)
-	swagger mixin -c 412 cmd/server/primary.swagger.json $(SWAGGER_FILES) | sed 's/VERSION/$(VERSION)/' > api/argo-server/swagger.json
+	swagger mixin -c 412 server/primary.swagger.json $(SWAGGER_FILES) | sed 's/VERSION/$(VERSION)/' > api/argo-server/swagger.json
 
 /usr/local/bin/swagger-codegen:
 	brew install swagger-codegen
 
 .PHONY: sdks
-sdks: sdks/argo-python-sdk/README.md sdks/argo-java-sdk/README.md
+sdks: sdks/argo-workflows-python-sdk/README.md sdks/argo-workflows-java-sdk/README.md
 
-sdks/argo-python-sdk/README.md: /usr/local/bin/swagger-codegen api/argo-server/swagger.json
-	swagger-codegen generate -i api/argo-server/swagger.json -l python -o sdks/argo-python-sdk --git-user-id argoproj-labs --git-repo-id argo-python-sdk
+sdks/argo-workflows-python-sdk/.gitignore:
+	 git submodule update --init sdks/argo-workflows-python-sdk
 
-sdks/argo-java-sdk/README.md: /usr/local/bin/swagger-codegen api/argo-server/swagger.json
-	swagger-codegen generate -i api/argo-server/swagger.json -l java -o sdks/argo-java-sdk --git-user-id argoproj-labs --git-repo-id argo-workflow-java-sdk
+sdks/argo-workflows-python-sdk/README.md: sdks/argo-workflows-python-sdk/.gitignore /usr/local/bin/swagger-codegen api/argo-server/swagger.json
+	swagger-codegen generate -i api/argo-server/swagger.json -l python -o sdks/argo-workflows-python-sdk --git-user-id argoproj-labs --git-repo-id argo-workflows-python-sdk
+
+sdks/argo-workflows-java-sdk/.gitignore:
+	 git submodule update --init sdks/argo-workflows-java-sdk
+
+sdks/argo-workflows-java-sdk/README.md: sdks/argo-workflows-java-sdk/.gitignore /usr/local/bin/swagger-codegen api/argo-server/swagger.json
+	swagger-codegen generate -i api/argo-server/swagger.json -l java -o sdks/argo-workflows-java-sdk --git-user-id argoproj-labs --git-repo-id argo-workflows--java-sdk
 
 # pre-push
 

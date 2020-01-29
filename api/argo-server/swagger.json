@@ -234,7 +234,7 @@
         }
       }
     },
-    "/api/v1/cron-workflows/{namespace}/{cronWorkflowName}": {
+    "/api/v1/cron-workflows/{namespace}/{name}": {
       "get": {
         "tags": [
           "CronWorkflowService"
@@ -249,7 +249,7 @@
           },
           {
             "type": "string",
-            "name": "cronWorkflowName",
+            "name": "name",
             "in": "path",
             "required": true
           },
@@ -283,7 +283,7 @@
           },
           {
             "type": "string",
-            "name": "cronWorkflowName",
+            "name": "name",
             "in": "path",
             "required": true
           },
@@ -319,7 +319,7 @@
           },
           {
             "type": "string",
-            "name": "cronWorkflowName",
+            "name": "name",
             "in": "path",
             "required": true
           },
@@ -592,7 +592,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/workflowtemplateWorkflowTemplateCreateRequest"
+              "$ref": "#/definitions/workflowtemplateWorkflowTemplateLintRequest"
             }
           }
         ],
@@ -872,7 +872,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/workflowWorkflowCreateRequest"
+              "$ref": "#/definitions/workflowWorkflowLintRequest"
             }
           }
         ],
@@ -1319,7 +1319,7 @@
         "cronWorkflow": {
           "$ref": "#/definitions/v1alpha1CronWorkflow"
         },
-        "cronWorkflowName": {
+        "name": {
           "type": "string"
         },
         "namespace": {
@@ -5296,6 +5296,17 @@
     "workflowWorkflowDeleteResponse": {
       "type": "object"
     },
+    "workflowWorkflowLintRequest": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "workflow": {
+          "$ref": "#/definitions/v1alpha1Workflow"
+        }
+      }
+    },
     "workflowWorkflowResubmitRequest": {
       "type": "object",
       "properties": {
@@ -5375,6 +5386,20 @@
       "type": "object"
     },
     "workflowtemplateWorkflowTemplateCreateRequest": {
+      "type": "object",
+      "properties": {
+        "createOptions": {
+          "$ref": "#/definitions/v1CreateOptions"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "template": {
+          "$ref": "#/definitions/v1alpha1WorkflowTemplate"
+        }
+      }
+    },
+    "workflowtemplateWorkflowTemplateLintRequest": {
       "type": "object",
       "properties": {
         "createOptions": {
@@ -5494,6 +5519,32 @@
           "type": "string"
         }
       }
+    }
+  },
+  "x-stream-definitions": {
+    "workflowLogEntry": {
+      "properties": {
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        },
+        "result": {
+          "$ref": "#/definitions/workflowLogEntry"
+        }
+      },
+      "title": "Stream result of workflowLogEntry",
+      "type": "object"
+    },
+    "workflowWorkflowWatchEvent": {
+      "properties": {
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        },
+        "result": {
+          "$ref": "#/definitions/workflowWorkflowWatchEvent"
+        }
+      },
+      "title": "Stream result of workflowWorkflowWatchEvent",
+      "type": "object"
     }
   }
 }
