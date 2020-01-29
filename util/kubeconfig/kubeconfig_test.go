@@ -1,11 +1,12 @@
 package kubeconfig
 
 import (
-	"k8s.io/client-go/rest"
+
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/client-go/rest"
 )
 
 const username = "admin"
