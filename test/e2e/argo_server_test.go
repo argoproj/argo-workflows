@@ -83,7 +83,7 @@ func (s *ArgoServerSuite) TestCookieAuth() {
 	defer func() { s.bearerToken = token }()
 	s.bearerToken = ""
 	s.e(s.T()).GET("/api/v1/workflows/argo").
-		WithHeader("Cookie", "authorization="+token).
+		WithHeader("Cookie", "authorization=Bearer "+token).
 		Expect().
 		Status(200)
 }

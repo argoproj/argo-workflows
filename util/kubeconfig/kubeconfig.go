@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	Basic_Auth_Scheme  = "Basic "
-	Bearer_Auth_Scheme = "Bearer "
+	BasicAuthScheme  = "Basic"
+	BearerAuthScheme = "Bearer"
 )
 
 // get the default one from the filesystem
@@ -27,17 +27,17 @@ func DefaultRestConfig() (*restclient.Config, error) {
 }
 
 func IsBasicAuthScheme(token string) bool {
-	return strings.HasPrefix(token, Basic_Auth_Scheme)
+	return strings.HasPrefix(token, BasicAuthScheme)
 }
 
 func IsBearerAuthScheme(token string) bool {
-	return strings.HasPrefix(token, Bearer_Auth_Scheme)
+	return strings.HasPrefix(token, BearerAuthScheme)
 }
 
 func GetRestConfig(token string) (*restclient.Config, error) {
 
 	if IsBasicAuthScheme(token) {
-		token = strings.TrimPrefix(token, Basic_Auth_Scheme)
+		token = strings.TrimSpace(strings.TrimPrefix(token, BasicAuthScheme))
 		username, password, ok := decodeBasicAuthToken(token)
 		if !ok {
 			return nil, errors.New("Error parsing Basic Authentication")
@@ -45,7 +45,7 @@ func GetRestConfig(token string) (*restclient.Config, error) {
 		return GetBasicRestConfig(username, password)
 	}
 	if IsBearerAuthScheme(token) {
-		token = strings.Trim(strings.TrimPrefix(token, Bearer_Auth_Scheme), " ")
+		token = strings.TrimSpace(strings.TrimPrefix(token, BearerAuthScheme))
 		return GetBearerRestConfig(token)
 	}
 	return nil, errors.New("Unsupported authentication scheme")
@@ -87,11 +87,11 @@ func GetAuthString(in *restclient.Config) (string, error) {
 	//Checking Basic Auth
 	if in.Username != "" {
 		token, err := GetBasicAuthToken(in)
-		return Basic_Auth_Scheme + token, err
+		return BasicAuthScheme + token, err
 	}
 
 	token, err := GetBearerToken(in)
-	return Bearer_Auth_Scheme + token, err
+	return BearerAuthScheme + token, err
 }
 
 func GetBasicAuthToken(in *restclient.Config) (string, error) {
