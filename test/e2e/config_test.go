@@ -33,11 +33,11 @@ func (s *ConfigSuite) TestConfigMapChange() {
 	s.Given().
 		WorkflowName("test").
 		When().
-		WaitForWorkflow(30*time.Second).
+		WaitForWorkflow(30 * time.Second).
 		Then().
 		Expect(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-	})
+		})
 }
 
 func TestConfigSuite(t *testing.T) {
