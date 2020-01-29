@@ -87,11 +87,11 @@ func GetAuthString(in *restclient.Config) (string, error) {
 	//Checking Basic Auth
 	if in.Username != "" {
 		token, err := GetBasicAuthToken(in)
-		return BasicAuthScheme + token, err
+		return BasicAuthScheme + " " + token, err
 	}
 
 	token, err := GetBearerToken(in)
-	return BearerAuthScheme + token, err
+	return BearerAuthScheme + " " + token, err
 }
 
 func GetBasicAuthToken(in *restclient.Config) (string, error) {
