@@ -38,7 +38,7 @@ func (s *CLISuite) TestToken() {
 		assert.NoError(t, err)
 		token, err := s.GetServiceAccountToken()
 		assert.NoError(t, err)
-		assert.Equal(t, token, output)
+		assert.Equal(t, "Bearer "+token, output)
 	})
 }
 
