@@ -16,7 +16,7 @@ func NewDeleteCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			for _, uid := range args {
 				conn := client.GetClientConn()
-				ctx := client.GetContext(cmd)
+				ctx := client.GetContext()
 				client := workflowarchive.NewArchivedWorkflowServiceClient(conn)
 				_, err := client.DeleteArchivedWorkflow(ctx, &workflowarchive.DeleteArchivedWorkflowRequest{
 					Uid: uid,

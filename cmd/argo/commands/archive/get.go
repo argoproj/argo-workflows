@@ -27,7 +27,7 @@ func NewGetCommand() *cobra.Command {
 			}
 			uid := args[0]
 			conn := client.GetClientConn()
-			ctx := client.GetContext(cmd)
+			ctx := client.GetContext()
 			client := workflowarchive.NewArchivedWorkflowServiceClient(conn)
 			wf, err := client.GetArchivedWorkflow(ctx, &workflowarchive.GetArchivedWorkflowRequest{
 				Uid: uid,

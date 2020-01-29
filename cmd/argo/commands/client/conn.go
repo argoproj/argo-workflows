@@ -39,20 +39,10 @@ func GetClientConn() *grpc.ClientConn {
 	return conn
 }
 
-func GetContext(cmd *cobra.Command) context.Context {
-	token := ""
-	if cmd != nil {
-		tokenVal, err := cmd.PersistentFlags().GetString("token")
-		if err != nil {
-			log.Fatal(err)
-		}
-		token = tokenVal
-	}
+func GetContext() context.Context {
+	token := GetBearerToken()
 	if len(token) == 0 {
-		token = GetBearerToken()
-		if len(token) == 0 {
-			return context.Background()
-		}
+		return context.Background()
 	}
 	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token))
 }

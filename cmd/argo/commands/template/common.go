@@ -4,8 +4,6 @@ import (
 	"context"
 	"log"
 
-	"github.com/spf13/cobra"
-
 	"google.golang.org/grpc"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -80,5 +78,5 @@ func (c LazyWorkflowTemplateGetter) Get(name string) (*wfv1.WorkflowTemplate, er
 var _ templateresolution.WorkflowTemplateNamespacedGetter = &LazyWorkflowTemplateGetter{}
 
 func GetWFtmplApiServerGRPCClient(conn *grpc.ClientConn) (wftmplApiServer.WorkflowTemplateServiceClient, context.Context) {
-	return wftmplApiServer.NewWorkflowTemplateServiceClient(conn), client.GetContext(nil)
+	return wftmplApiServer.NewWorkflowTemplateServiceClient(conn), client.GetContext()
 }

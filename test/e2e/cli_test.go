@@ -44,8 +44,7 @@ func (s *CLISuite) TestToken() {
 
 func (s *CLISuite) TestTokenArg() {
 	s.Given().RunCli([]string{"list", "--token", "badtoken"}, func(t *testing.T, output string, err error) {
-		assert.NoError(t, err)
-		assert.Contains(t, output, "Unauthorized")
+		assert.Error(t, err)
 	})
 
 	var goodToken string
@@ -55,7 +54,7 @@ func (s *CLISuite) TestTokenArg() {
 		goodToken = token
 	})
 
-	s.Given().RunCli([]string{"list", "--token=", goodToken}, func(t *testing.T, output string, err error) {
+	s.Given().RunCli([]string{"list", "--token", goodToken}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
 		assert.Contains(t, output, "NAME")
 		assert.Contains(t, output, "STATUS")
