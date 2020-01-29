@@ -671,7 +671,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		defer func() { s.bearerToken = token }()
 		s.bearerToken = ""
 		s.e(t).GET("/artifacts-by-uid/{uid}/basic/main-logs", uid).
-			WithHeader("Cookie", "authorization="+token).
+			WithHeader("Cookie", "authorization=Bearer "+token).
 			Expect().
 			Status(200)
 	})
