@@ -2,10 +2,11 @@ package auth
 
 import (
 	"context"
-	"sort"
 
 	log "github.com/sirupsen/logrus"
 	authorizationv1 "k8s.io/api/authorization/v1"
+
+	"github.com/argoproj/argo/pkg/apis/workflow"
 )
 
 func CanI(ctx context.Context, verb, resource, namespace, name string) (bool, error) {
@@ -49,9 +50,9 @@ func (a Authorizer) CanI(verb, resource, namespace, name string) (bool, error) {
 	for _, rule := range a.status[namespace].ResourceRules {
 		if allowed(rule.Verbs, verb) &&
 			allowed(rule.Resources, resource) &&
-			allowed(rule.APIGroups, "argoproj.io") &&
+			allowed(rule.APIGroups, workflow.Group) &&
 			allowed(rule.ResourceNames, name) {
-			logCtx.WithField("allowed", true).Debug("CanI")
+			logCtx.WithFields(log.Fields{"rule": rule, "allowed": true}).Debug("CanI")
 			return true, nil
 		}
 	}
@@ -64,5 +65,14 @@ func NewAuthorizer(ctx context.Context) *Authorizer {
 }
 
 func allowed(values []string, value string) bool {
-	return len(values) == 0 || sort.SearchStrings(values, "*") >= 0 || sort.SearchStrings(values, value) >= 0
+	return len(values) == 0 || contains(values, "*") || contains(values, value)
+}
+
+func contains(values []string, value string) bool {
+	for _, s := range values {
+		if value == s {
+			return true
+		}
+	}
+	return false
 }
