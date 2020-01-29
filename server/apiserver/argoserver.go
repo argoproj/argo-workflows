@@ -6,15 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/argoproj/argo/server/artifacts"
-	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/server/cronworkflow"
-	"github.com/argoproj/argo/server/info"
-	"github.com/argoproj/argo/server/static"
-	"github.com/argoproj/argo/server/workflow"
-	"github.com/argoproj/argo/server/workflowarchive"
-	"github.com/argoproj/argo/server/workflowtemplate"
-
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -25,6 +16,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
@@ -33,6 +25,14 @@ import (
 	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/pkg/apiclient"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/server/artifacts"
+	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/server/cronworkflow"
+	"github.com/argoproj/argo/server/info"
+	"github.com/argoproj/argo/server/static"
+	"github.com/argoproj/argo/server/workflow"
+	"github.com/argoproj/argo/server/workflowarchive"
+	"github.com/argoproj/argo/server/workflowtemplate"
 	grpcutil "github.com/argoproj/argo/util/grpc"
 	"github.com/argoproj/argo/util/json"
 	"github.com/argoproj/argo/workflow/common"
@@ -49,11 +49,12 @@ type argoServer struct {
 }
 
 type ArgoServerOpts struct {
-	Namespace        string
-	KubeClientset    *kubernetes.Clientset
-	WfClientSet      *versioned.Clientset
-	RestConfig       *rest.Config
-	AuthMode         string
+	Namespace     string
+	KubeClientset *kubernetes.Clientset
+	WfClientSet   *versioned.Clientset
+	RestConfig    *rest.Config
+	AuthMode      string
+	// config map name
 	ConfigName       string
 	ManagedNamespace string
 }
@@ -95,26 +96,27 @@ func (ao ArgoServerOpts) ValidateOpts() error {
 
 func (as *argoServer) Run(ctx context.Context, port int) {
 
-	configMap, err := as.RsyncConfig(as.namespace, as.kubeClientset)
+	configMap, err := as.rsyncConfig()
 	if err != nil {
-		// TODO: this currently returns an error every time
-		log.Errorf("Error marshalling config map: %s", err)
+		log.Fatal(err)
+	}
+	err = as.restartOnConfigChange(ctx.Done())
+	if err != nil {
+		log.Fatal(err)
 	}
 	var offloadRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	var wfArchive = sqldb.NullWorkflowArchive
-	if configMap != nil {
-		persistence := configMap.Persistence
-		if persistence != nil {
-			session, tableName, err := sqldb.CreateDBSession(as.kubeClientset, as.namespace, persistence)
-			if err != nil {
-				log.Fatal(err)
-			}
-			log.WithField("nodeStatusOffload", persistence.NodeStatusOffload).Info("Offload node status")
-			if persistence.NodeStatusOffload {
-				offloadRepo = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
-			}
-			wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName())
+	persistence := configMap.Persistence
+	if persistence != nil {
+		session, tableName, err := sqldb.CreateDBSession(as.kubeClientset, as.namespace, persistence)
+		if err != nil {
+			log.Fatal(err)
 		}
+		log.WithField("nodeStatusOffload", persistence.NodeStatusOffload).Info("Offload node status")
+		if persistence.NodeStatusOffload {
+			offloadRepo = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+		}
+		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName())
 	}
 	artifactServer := artifacts.NewArtifactServer(as.authenticator, offloadRepo, wfArchive)
 	grpcServer := as.newGRPCServer(offloadRepo, wfArchive)
@@ -233,20 +235,49 @@ func mustRegisterGWHandler(register registerFunc, ctx context.Context, mux *runt
 }
 
 // ResyncConfig reloads the controller config from the configmap
-func (as *argoServer) RsyncConfig(namespace string, kubeClientSet *kubernetes.Clientset) (*config.WorkflowControllerConfig, error) {
-	cmClient := kubeClientSet.CoreV1().ConfigMaps(namespace)
-	cm, err := cmClient.Get("workflow-controller-configmap", metav1.GetOptions{})
+func (as *argoServer) rsyncConfig() (*config.WorkflowControllerConfig, error) {
+	cm, err := as.kubeClientset.CoreV1().ConfigMaps(as.namespace).
+		Get(as.configName, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	return as.UpdateConfig(cm)
+	return as.updateConfig(cm)
 }
 
-func (as *argoServer) UpdateConfig(cm *apiv1.ConfigMap) (*config.WorkflowControllerConfig, error) {
+// Unlike the controller, the server creates object based on the config map at init time, and will not pick-up on
+// changes unless we restart.
+// Instead of opting to re-write the server, instead we'll just listen for any old change and restart.
+func (as *argoServer) restartOnConfigChange(stopCh <-chan struct{}) error {
+	w, err := as.kubeClientset.CoreV1().ConfigMaps(as.namespace).
+		Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + as.configName})
+	if err != nil {
+		return err
+	}
+	go func() {
+		defer w.Stop()
+		for {
+			select {
+			// normal exit, e.g. due to user interupt
+			case <-stopCh:
+				return
+			case e := <-w.ResultChan():
+				if e.Type != watch.Added {
+					log.WithField("eventType", e.Type).Info("config map event, exiting gracefully")
+					as.stopCh<-struct{}{}
+					return
+				}
+			}
+		}
+	}()
+	return nil
+}
+
+func (as *argoServer) updateConfig(cm *apiv1.ConfigMap) (*config.WorkflowControllerConfig, error) {
 
 	configStr, ok := cm.Data[common.WorkflowControllerConfigMapKey]
 	if !ok {
-		return nil, errors.InternalErrorf("ConfigMap '%s' does not have key '%s'", as.configName, common.WorkflowControllerConfigMapKey)
+		log.Warnf("ConfigMap '%s' does not have key '%s'", as.configName, common.WorkflowControllerConfigMapKey)
+		configStr = ""
 	}
 	var config config.WorkflowControllerConfig
 	log.Infof("Config Map: %s", configStr)

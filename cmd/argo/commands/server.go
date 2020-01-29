@@ -69,6 +69,7 @@ func NewServerCommand() *cobra.Command {
 				RestConfig:       config,
 				AuthMode:         authMode,
 				ManagedNamespace: managedNamespace,
+				ConfigName:       configMap,
 			}
 			err = opts.ValidateOpts()
 			if err != nil {
