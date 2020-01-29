@@ -290,9 +290,7 @@
   digest = "1:d69d2ba23955582a64e367ff2b0808cdbd048458c178cea48f11ab8c40bd7aea"
   name = "github.com/gogo/protobuf"
   packages = [
-    "gogoproto",
     "proto",
-    "protoc-gen-gogo/descriptor",
     "sortkeys",
   ]
   pruneopts = ""
@@ -1633,7 +1631,6 @@
     "github.com/ghodss/yaml",
     "github.com/go-openapi/spec",
     "github.com/go-sql-driver/mysql",
-    "github.com/gogo/protobuf/gogoproto",
     "github.com/gogo/protobuf/proto",
     "github.com/gogo/protobuf/sortkeys",
     "github.com/golang/glog",
