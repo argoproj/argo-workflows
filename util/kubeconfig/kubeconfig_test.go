@@ -1,11 +1,11 @@
 package kubeconfig
 
 import (
+	"k8s.io/client-go/rest"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 const username = "admin"
@@ -14,14 +14,13 @@ const password = "admin"
 const bearerToken = "bearertoken"
 
 func Test_BasicAuthString(t *testing.T) {
-	restConfig, err := clientcmd.DefaultClientConfig.ClientConfig()
-	assert.NoError(t, err)
+	restConfig := rest.Config{}
 
 	restConfig.Username = username
 	restConfig.Password = password
 
 	t.Run("Basic Auth", func(t *testing.T) {
-		authString, err := GetAuthString(restConfig)
+		authString, err := GetAuthString(&restConfig)
 		assert.NoError(t, err)
 		outConfig, err := GetRestConfig(authString)
 		if assert.NoError(t, err) {
@@ -33,12 +32,11 @@ func Test_BasicAuthString(t *testing.T) {
 
 func Test_BearerAuthString(t *testing.T) {
 
-	restConfig, err := clientcmd.DefaultClientConfig.ClientConfig()
-	assert.NoError(t, err)
+	restConfig := rest.Config{}
 
 	t.Run("Bearer Auth", func(t *testing.T) {
 		os.Setenv("ARGO_TOKEN", bearerToken)
-		authString, err := GetAuthString(restConfig)
+		authString, err := GetAuthString(&restConfig)
 		assert.NoError(t, err)
 		outConfig, err := GetRestConfig(authString)
 		if assert.NoError(t, err) {
