@@ -4,6 +4,8 @@ import (
 	"context"
 	"log"
 
+	"github.com/spf13/cobra"
+
 	"google.golang.org/grpc"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -14,7 +16,6 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	wftmplApiServer "github.com/argoproj/argo/server/workflowtemplate"
 	"github.com/argoproj/argo/workflow/templateresolution"
-	"github.com/spf13/cobra"
 )
 
 // Global variables
