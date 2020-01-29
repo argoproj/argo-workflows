@@ -15,6 +15,9 @@ PATH="${PROJECT_ROOT}/dist:${PATH}"
 
 # protbuf tooling required to build .proto files from go annotations from k8s-like api types
 go build -i -o dist/go-to-protobuf ./vendor/k8s.io/code-generator/cmd/go-to-protobuf
+go build -i -o dist/protoc-gen-gogo ./vendor/k8s.io/code-generator/cmd/go-to-protobuf/protoc-gen-gogo
+
+cp dist/protoc-gen-gogo $GOPATH/bin
 
 # Generate pkg/apis/<group>/<apiversion>/(generated.proto,generated.pb.go)
 # NOTE: any dependencies of our types to the k8s.io apimachinery types should be added to the
@@ -44,6 +47,13 @@ go-to-protobuf \
 # 1. protoc-gen-go - official golang/protobuf
 go build -i -o dist/protoc-gen-go ./vendor/github.com/golang/protobuf/protoc-gen-go
 GOPROTOBINARY=go
+# 2. protoc-gen-gofast - fork of golang golang/protobuf. Faster code generation
+go build -i -o dist/protoc-gen-gofast ./vendor/github.com/gogo/protobuf/protoc-gen-gofast
+GOPROTOBINARY=gofast
+# 3. protoc-gen-gogofast - faster code generation and gogo extensions and flexibility in controlling
+# the generated go code (e.g. customizing field names, nullable fields)
+go build -i -o dist/protoc-gen-gogofast ./vendor/github.com/gogo/protobuf/protoc-gen-gogofast
+GOPROTOBINARY=gogofast
 #
 ## protoc-gen-grpc-gateway is used to build <service>.pb.gw.go files from from .proto files
 go build -i -o dist/protoc-gen-grpc-gateway ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
@@ -57,8 +67,10 @@ for i in ${PROTO_FILES}; do
     # building natively (e.g. from workspace) vs. part of a docker build.
     if [ -f /.dockerenv ]; then
         GOOGLE_PROTO_API_PATH=$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
+        GOGO_PROTOBUF_PATH=$GOPATH/src/github.com/gogo/protobuf
     else
         GOOGLE_PROTO_API_PATH=${PROJECT_ROOT}/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
+        GOGO_PROTOBUF_PATH=${PROJECT_ROOT}/vendor/github.com/gogo/protobuf
     fi
     protoc \
         -I${PROJECT_ROOT} \
@@ -66,6 +78,7 @@ for i in ${PROTO_FILES}; do
         -I./vendor \
         -I$GOPATH/src \
         -I${GOOGLE_PROTO_API_PATH} \
+        -I${GOGO_PROTOBUF_PATH} \
         --${GOPROTOBINARY}_out=plugins=grpc:$GOPATH/src \
         --grpc-gateway_out=logtostderr=true:$GOPATH/src \
         --swagger_out=logtostderr=true:. \
