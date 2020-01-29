@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -17,7 +18,7 @@ import (
 )
 
 var (
-	offloadError = fmt.Errorf("you cannot use the classic client because you have offload node states, see %s", help.CLI)
+	offloadNodeStatusNotSupportedWarning = fmt.Sprintf("offload node status is not supported, see %s", help.CLI)
 )
 
 type classicWorkflowServiceClient struct {
@@ -80,7 +81,7 @@ func (k *classicWorkflowServiceClient) GetWorkflow(_ context.Context, in *workfl
 		return nil, err
 	}
 	if wf.Status.IsOffloadNodeStatus() {
-		return nil, offloadError
+		log.Warn(offloadNodeStatusNotSupportedWarning)
 	}
 	return wf, nil
 }
@@ -96,7 +97,7 @@ func (k *classicWorkflowServiceClient) ListWorkflows(_ context.Context, in *work
 			return nil, err
 		}
 		if wf.Status.IsOffloadNodeStatus() {
-			return nil, offloadError
+			log.Warn(offloadNodeStatusNotSupportedWarning)
 		}
 	}
 	return list, nil
