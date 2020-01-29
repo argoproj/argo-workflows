@@ -43,7 +43,7 @@ func Test_BasicAuthString(t *testing.T) {
 		authString, err := GetAuthString(restConfig)
 		assert.NoError(t, err)
 		assert.True(t, IsBasicAuthScheme(authString))
-		token := strings.TrimPrefix(authString, BasicAuthScheme)
+		token := strings.TrimSpace(strings.TrimPrefix(authString, BasicAuthScheme))
 		uname, pwd, ok := decodeBasicAuthToken(token)
 		if assert.True(t, ok) {
 			assert.Equal(t, "admin", uname)
