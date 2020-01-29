@@ -14,6 +14,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	wftmplApiServer "github.com/argoproj/argo/server/workflowtemplate"
 	"github.com/argoproj/argo/workflow/templateresolution"
+	"github.com/spf13/cobra"
 )
 
 // Global variables
@@ -77,6 +78,6 @@ func (c LazyWorkflowTemplateGetter) Get(name string) (*wfv1.WorkflowTemplate, er
 
 var _ templateresolution.WorkflowTemplateNamespacedGetter = &LazyWorkflowTemplateGetter{}
 
-func GetWFtmplApiServerGRPCClient(conn *grpc.ClientConn) (wftmplApiServer.WorkflowTemplateServiceClient, context.Context) {
-	return wftmplApiServer.NewWorkflowTemplateServiceClient(conn), client.GetContext(nil)
+func GetWFtmplApiServerGRPCClient(conn *grpc.ClientConn, cmd *cobra.Command) (wftmplApiServer.WorkflowTemplateServiceClient, context.Context) {
+	return wftmplApiServer.NewWorkflowTemplateServiceClient(conn), client.GetContext(cmd)
 }

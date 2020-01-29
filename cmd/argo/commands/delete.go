@@ -36,7 +36,7 @@ func NewDeleteCommand() *cobra.Command {
 		Short: "delete a workflow and its associated pods",
 		Run: func(cmd *cobra.Command, args []string) {
 			if client.ArgoServer != "" {
-				apiServerDeleteWorkflows(all, older, completed, args)
+				apiServerDeleteWorkflows(cmd, all, older, completed, args)
 			} else {
 				wfClient = InitWorkflowClient()
 				if all {
@@ -68,11 +68,11 @@ func NewDeleteCommand() *cobra.Command {
 	return command
 }
 
-func apiServerDeleteWorkflows(allWFs bool, older string, completed bool, wfNames []string) {
+func apiServerDeleteWorkflows(cmd *cobra.Command, allWFs bool, older string, completed bool, wfNames []string) {
 	conn := client.GetClientConn()
 	defer conn.Close()
 	ns, _, _ := client.Config.Namespace()
-	wfApiClient, ctx := GetWFApiServerGRPCClient(conn)
+	wfApiClient, ctx := GetWFApiServerGRPCClient(conn, cmd)
 
 	var delWFNames []string
 	var err error

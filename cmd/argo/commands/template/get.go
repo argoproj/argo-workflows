@@ -36,7 +36,7 @@ func NewGetCommand() *cobra.Command {
 				conn := client.GetClientConn()
 				defer conn.Close()
 				ns, _, _ := client.Config.Namespace()
-				wftmplApiClient, ctx := GetWFtmplApiServerGRPCClient(conn)
+				wftmplApiClient, ctx := GetWFtmplApiServerGRPCClient(conn, cmd)
 				for _, arg := range args {
 					wfTempReq := workflowtemplate.WorkflowTemplateGetRequest{
 						Name:      arg,

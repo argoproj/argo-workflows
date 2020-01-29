@@ -38,7 +38,7 @@ func NewResubmitCommand() *cobra.Command {
 			if client.ArgoServer != "" {
 				conn := client.GetClientConn()
 				defer conn.Close()
-				apiGRPCClient, ctx := GetWFApiServerGRPCClient(conn)
+				apiGRPCClient, ctx := GetWFApiServerGRPCClient(conn, cmd)
 				errors.CheckError(err)
 				wfReq := workflow.WorkflowGetRequest{
 					Namespace: namespace,
@@ -61,7 +61,7 @@ func NewResubmitCommand() *cobra.Command {
 				errors.CheckError(err)
 			}
 			printWorkflow(created, cliSubmitOpts.output, DefaultStatus)
-			waitOrWatch([]string{created.Name}, cliSubmitOpts)
+			waitOrWatch(cmd, []string{created.Name}, cliSubmitOpts)
 		},
 	}
 

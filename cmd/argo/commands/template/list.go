@@ -43,7 +43,7 @@ func NewListCommand() *cobra.Command {
 					Namespace: ns,
 				}
 				conn := client.GetClientConn()
-				wftmplApiClient, ctx := GetWFtmplApiServerGRPCClient(conn)
+				wftmplApiClient, ctx := GetWFtmplApiServerGRPCClient(conn, cmd)
 				wftmplList, err = wftmplApiClient.ListWorkflowTemplates(ctx, &wftmplReq)
 				if err != nil {
 					log.Fatal(err)

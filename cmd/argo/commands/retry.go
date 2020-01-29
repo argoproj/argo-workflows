@@ -29,7 +29,7 @@ func NewRetryCommand() *cobra.Command {
 			}
 
 			if client.ArgoServer != "" {
-				apiServerWFRetry(args[0], cliSubmitOpts)
+				apiServerWFRetry(cmd, args[0], cliSubmitOpts)
 			} else {
 
 				kubeClient := InitKubeClient()
@@ -49,7 +49,7 @@ func NewRetryCommand() *cobra.Command {
 					log.Fatal(err)
 				}
 				printWorkflow(wf, cliSubmitOpts.output, DefaultStatus)
-				waitOrWatch([]string{wf.Name}, cliSubmitOpts)
+				waitOrWatch(cmd, []string{wf.Name}, cliSubmitOpts)
 			}
 		},
 	}
@@ -59,11 +59,11 @@ func NewRetryCommand() *cobra.Command {
 	return command
 }
 
-func apiServerWFRetry(wfName string, opts cliSubmitOpts) {
+func apiServerWFRetry(cmd *cobra.Command, wfName string, opts cliSubmitOpts) {
 	conn := client.GetClientConn()
 	defer conn.Close()
 	ns, _, _ := client.Config.Namespace()
-	wfApiClient, ctx := GetWFApiServerGRPCClient(conn)
+	wfApiClient, ctx := GetWFApiServerGRPCClient(conn, cmd)
 
 	wfReq := workflow.WorkflowRetryRequest{
 		Name:      wfName,
@@ -75,6 +75,6 @@ func apiServerWFRetry(wfName string, opts cliSubmitOpts) {
 		return
 	}
 	printWorkflow(wf, opts.output, DefaultStatus)
-	waitOrWatch([]string{wf.Name}, opts)
+	waitOrWatch(cmd, []string{wf.Name}, opts)
 
 }

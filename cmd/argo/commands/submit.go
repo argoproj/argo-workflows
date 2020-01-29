@@ -47,7 +47,7 @@ func NewSubmitCommand() *cobra.Command {
 				cliSubmitOpts.priority = &priority
 			}
 
-			SubmitWorkflows(args, &submitOpts, &cliSubmitOpts)
+			SubmitWorkflows(cmd, args, &submitOpts, &cliSubmitOpts)
 		},
 	}
 	command.Flags().StringVar(&submitOpts.Name, "name", "", "override metadata.name")
@@ -73,7 +73,7 @@ func NewSubmitCommand() *cobra.Command {
 	return command
 }
 
-func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
+func SubmitWorkflows(cmd *cobra.Command, filePaths []string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
 	if submitOpts == nil {
 		submitOpts = &util.SubmitOpts{}
 	}
@@ -161,7 +161,7 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 	if client.ArgoServer != "" {
 		conn := client.GetClientConn()
 		defer conn.Close()
-		apiGRPCClient, ctx = GetWFApiServerGRPCClient(conn)
+		apiGRPCClient, ctx = GetWFApiServerGRPCClient(conn, cmd)
 		errors.CheckError(err)
 	}
 
@@ -197,7 +197,7 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		workflowNames = append(workflowNames, created.Name)
 	}
 
-	waitOrWatch(workflowNames, *cliOpts)
+	waitOrWatch(cmd, workflowNames, *cliOpts)
 }
 
 // Checks whether the server has support for the dry-run option
@@ -237,10 +237,10 @@ func unmarshalWorkflows(wfBytes []byte, strict bool) []wfv1.Workflow {
 	return nil
 }
 
-func waitOrWatch(workflowNames []string, cliSubmitOpts cliSubmitOpts) {
+func waitOrWatch(cmd *cobra.Command, workflowNames []string, cliSubmitOpts cliSubmitOpts) {
 	if cliSubmitOpts.wait {
-		WaitWorkflows(workflowNames, false, !(cliSubmitOpts.output == "" || cliSubmitOpts.output == "wide"))
+		WaitWorkflows(cmd, workflowNames, false, !(cliSubmitOpts.output == "" || cliSubmitOpts.output == "wide"))
 	} else if cliSubmitOpts.watch {
-		watchWorkflow(workflowNames[0])
+		watchWorkflow(cmd, workflowNames[0])
 	}
 }

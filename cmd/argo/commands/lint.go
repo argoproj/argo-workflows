@@ -38,7 +38,7 @@ func NewLintCommand() *cobra.Command {
 			if client.ArgoServer != "" {
 				conn := client.GetClientConn()
 				defer conn.Close()
-				err = ServerSideLint(args[0], conn, strict)
+				err = ServerSideLint(cmd, args[0], conn, strict)
 				if err != nil {
 					return
 				}
@@ -81,9 +81,9 @@ func NewLintCommand() *cobra.Command {
 	return command
 }
 
-func ServerSideLint(arg string, conn *grpc.ClientConn, strict bool) error {
+func ServerSideLint(cmd *cobra.Command, arg string, conn *grpc.ClientConn, strict bool) error {
 	validateDir := cmdutil.MustIsDir(arg)
-	grpcClient, ctx := GetWFApiServerGRPCClient(conn)
+	grpcClient, ctx := GetWFApiServerGRPCClient(conn, cmd)
 	ns, _, _ := client.Config.Namespace()
 	var wfs []v1alpha1.Workflow
 	var err error
