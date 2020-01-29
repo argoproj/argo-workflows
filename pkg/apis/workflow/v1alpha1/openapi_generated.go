@@ -28,6 +28,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowStatus":    schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTask":               schema_pkg_apis_workflow_v1alpha1_DAGTask(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate":           schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.EmitMetric":            schema_pkg_apis_workflow_v1alpha1_EmitMetric(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig":        schema_pkg_apis_workflow_v1alpha1_ExecutorConfig(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact":           schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HDFSArtifact":          schema_pkg_apis_workflow_v1alpha1_HDFSArtifact(ref),
@@ -38,6 +39,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item":                  schema_pkg_apis_workflow_v1alpha1_Item(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ItemValue":             schema_pkg_apis_workflow_v1alpha1_ItemValue(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metadata":              schema_pkg_apis_workflow_v1alpha1_Metadata(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MetricTag":             schema_pkg_apis_workflow_v1alpha1_MetricTag(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeStatus":            schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NoneStrategy":          schema_pkg_apis_workflow_v1alpha1_NoneStrategy(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs":               schema_pkg_apis_workflow_v1alpha1_Outputs(ref),
@@ -799,6 +801,47 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref common.ReferenceCallback)
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_EmitMetric(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "EmitMetric are options to emit a custom Prometheus metric from this parameter",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"metricSuffix": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MetricSuffix is the suffix that the metric will take after \"argo_workflows_\"",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metricTags": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "MetricTags are the tags of the metric",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MetricTag"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MetricTag"},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_ExecutorConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -1306,6 +1349,34 @@ func schema_pkg_apis_workflow_v1alpha1_Metadata(ref common.ReferenceCallback) co
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_MetricTag(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "MetricTag is a Prometheus metric tag",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TagName is a Prometheus metric tag name",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"value": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TagValue is a Prometheus metric tag value",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"name"},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -1612,9 +1683,8 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 					},
 					"emitMetric": {
 						SchemaProps: spec.SchemaProps{
-							Description: "EmitMetric is a flag to determine whether to export the value as a Prometheus metric",
-							Type:        []string{"boolean"},
-							Format:      "",
+							Description: "EmitMetric are options to emit a custom Prometheus metric from this parameter",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.EmitMetric"),
 						},
 					},
 				},
@@ -1622,7 +1692,7 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ValueFrom"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.EmitMetric", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ValueFrom"},
 	}
 }
 

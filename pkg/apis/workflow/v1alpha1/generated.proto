@@ -244,6 +244,17 @@ message DAGTemplate {
   optional bool failFast = 3;
 }
 
+// EmitMetric are options to emit a custom Prometheus metric from this parameter
+message EmitMetric {
+  // MetricSuffix is the suffix that the metric will take after "argo_workflows_"
+  optional string metricSuffix = 1;
+
+  // MetricTags are the tags of the metric
+  // +patchStrategy=merge
+  // +patchMergeKey=name
+  repeated MetricTag metricTags = 2;
+}
+
 // ExecutorConfig holds configurations of an executor container.
 message ExecutorConfig {
   // ServiceAccountName specifies the service account name of the executor container.
@@ -391,6 +402,15 @@ message Metadata {
   map<string, string> labels = 2;
 }
 
+// MetricTag is a Prometheus metric tag
+message MetricTag {
+  // TagName is a Prometheus metric tag name
+  optional string name = 1;
+
+  // TagValue is a Prometheus metric tag value
+  optional string value = 2;
+}
+
 // NodeStatus contains status information about an individual node in the workflow
 message NodeStatus {
   // ID is a unique identifier of a node within the worklow
@@ -516,8 +536,8 @@ message Parameter {
   // '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
   optional string globalName = 5;
 
-  // EmitMetric is a flag to determine whether to export the value as a Prometheus metric
-  optional bool emitMetric = 6;
+  // EmitMetric are options to emit a custom Prometheus metric from this parameter
+  optional EmitMetric emitMetric = 6;
 }
 
 // PodGC describes how to delete completed pods as they complete

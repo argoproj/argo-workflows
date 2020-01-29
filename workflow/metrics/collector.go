@@ -15,55 +15,57 @@ import (
 	"github.com/argoproj/argo/workflow/util"
 )
 
+const metricPrefix = "argo_workflow_"
+
 var (
 	descWorkflowDefaultLabels                 = []string{"namespace", "name", "entrypoint"}
 	descWorkflowStepDefaultLabels             = []string{"namespace", "name", "step_name"}
 	descWorkflowNodeCustomMetricDefaultLabels = append(descWorkflowStepDefaultLabels, "metric_name")
 
 	descWorkflowInfo = prometheus.NewDesc(
-		"argo_workflow_info",
+		metricPrefix + "info",
 		"Information about workflow.",
 		append(descWorkflowDefaultLabels, "service_account_name", "templates"),
 		nil,
 	)
 	descWorkflowStartedAt = prometheus.NewDesc(
-		"argo_workflow_start_time",
+		metricPrefix + "start_time",
 		"Start time in unix timestamp for a workflow.",
 		descWorkflowDefaultLabels,
 		nil,
 	)
 	descWorkflowFinishedAt = prometheus.NewDesc(
-		"argo_workflow_completion_time",
+		metricPrefix + "completion_time",
 		"Completion time in unix timestamp for a workflow.",
 		descWorkflowDefaultLabels,
 		nil,
 	)
 	descWorkflowCreated = prometheus.NewDesc(
-		"argo_workflow_created_time",
+		metricPrefix + "created_time",
 		"Creation time in unix timestamp for a workflow.",
 		descWorkflowDefaultLabels,
 		nil,
 	)
 	descWorkflowStatusPhase = prometheus.NewDesc(
-		"argo_workflow_status_phase",
+		metricPrefix + "status_phase",
 		"The workflow current phase.",
 		append(descWorkflowDefaultLabels, "phase"),
 		nil,
 	)
 	descWorkflowNodeStartedAt = prometheus.NewDesc(
-		"argo_workflow_step_start_time",
+		metricPrefix + "step_start_time",
 		"Start time in unix timestamp for a workflow step.",
 		descWorkflowStepDefaultLabels,
 		nil,
 	)
 	descWorkflowNodeFinishedAt = prometheus.NewDesc(
-		"argo_workflow_step_completion_time",
+		metricPrefix + "step_completion_time",
 		"Completion time in unix timestamp for a workflow step.",
 		descWorkflowStepDefaultLabels,
 		nil,
 	)
 	descWorkflowNodeStatusPhase = prometheus.NewDesc(
-		"argo_workflow_step_status_phase",
+		metricPrefix + "step_status_phase",
 		"The workflow step current phase.",
 		append(descWorkflowStepDefaultLabels, "phase"),
 		nil,
@@ -199,11 +201,23 @@ func (wc *workflowCollector) collectWorkflowNode(ch chan<- prometheus.Metric, no
 
 	if node.Outputs != nil {
 		for _, param := range node.Outputs.Parameters {
-			if param.EmitMetric {
+			if param.EmitMetric != nil {
+				emitMetricOpts := param.EmitMetric
+
+				metricName := metricPrefix + emitMetricOpts.MetricSuffix
+				metricDescription := fmt.Sprintf("Custom metric '%s' from Workflow '%s'", param.Name, wfName)
+				metricLabelNames := descWorkflowStepDefaultLabels
+				var metricLabelValues []string
+
+				for _, metricTag := range emitMetricOpts.MetricTags {
+					metricLabelNames = append(metricLabelNames, metricTag.Name)
+					metricLabelValues = append(metricLabelValues, metricTag.Value)
+				}
+
 				metricDesc := prometheus.NewDesc(
-					"argo_workflow_"+param.Name,
-					fmt.Sprintf("Custom metric '%s' from Workflow '%s'", param.Name, wfName),
-					descWorkflowNodeCustomMetricDefaultLabels,
+					metricName,
+					metricDescription,
+					metricLabelNames,
 					nil,
 				)
 

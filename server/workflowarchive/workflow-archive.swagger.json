@@ -2770,6 +2770,23 @@
       },
       "title": "DAGTemplate is a template subtype for directed acyclic graph templates"
     },
+    "v1alpha1EmitMetric": {
+      "type": "object",
+      "properties": {
+        "metricSuffix": {
+          "type": "string",
+          "title": "MetricSuffix is the suffix that the metric will take after \"argo_workflows_\""
+        },
+        "metricTags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1alpha1MetricTag"
+          },
+          "title": "MetricTags are the tags of the metric\n+patchStrategy=merge\n+patchMergeKey=name"
+        }
+      },
+      "title": "EmitMetric are options to emit a custom Prometheus metric from this parameter"
+    },
     "v1alpha1ExecutorConfig": {
       "type": "object",
       "properties": {
@@ -3005,6 +3022,20 @@
       },
       "title": "Pod metdata"
     },
+    "v1alpha1MetricTag": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "TagName is a Prometheus metric tag name"
+        },
+        "value": {
+          "type": "string",
+          "title": "TagValue is a Prometheus metric tag value"
+        }
+      },
+      "title": "MetricTag is a Prometheus metric tag"
+    },
     "v1alpha1NoneStrategy": {
       "type": "object",
       "description": "NoneStrategy indicates to skip tar process and upload the files or directory tree as independent\nfiles. Note that if the artifact is a directory, the artifact driver must support the ability to\nsave/load the directory appropriately."
@@ -3068,9 +3099,8 @@
           "title": "GlobalName exports an output parameter to the global scope, making it available as\n'{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters"
         },
         "emitMetric": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "EmitMetric is a flag to determine whether to export the value as a Prometheus metric"
+          "$ref": "#/definitions/v1alpha1EmitMetric",
+          "title": "EmitMetric are options to emit a custom Prometheus metric from this parameter"
         }
       },
       "title": "Parameter indicate a passed string parameter to a service template with an optional default value"

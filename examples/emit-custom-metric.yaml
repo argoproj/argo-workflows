@@ -17,14 +17,26 @@ spec:
       steps:
         - - name: generate
             template: gen-random-int
+            arguments:
+              parameters:
+                - name: generator
+                  value: "{{item}}"
             withParam: '["A", "B", "C"]'
+
     - name: gen-random-int
+      inputs:
+        parameters:
+          - name: generator
       outputs:
         parameters:
           - name: script_result
             valueFrom:
               path: "/tmp/metric.txt"
-            emitMetric: true
+            emitMetric:
+              metricSuffix: "number_generated"
+              metricTags:
+                - name: "generator_id"
+                  value: "{{inputs.parameters.generator}}"
       script:
         image: debian:9.4
         command: [bash]

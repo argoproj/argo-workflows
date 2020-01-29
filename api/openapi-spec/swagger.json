@@ -415,6 +415,25 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.EmitMetric": {
+      "description": "EmitMetric are options to emit a custom Prometheus metric from this parameter",
+      "type": "object",
+      "properties": {
+        "metricSuffix": {
+          "description": "MetricSuffix is the suffix that the metric will take after \"argo_workflows_\"",
+          "type": "string"
+        },
+        "metricTags": {
+          "description": "MetricTags are the tags of the metric",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MetricTag"
+          },
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.ExecutorConfig": {
       "description": "ExecutorConfig holds configurations of an executor container.",
       "type": "object",
@@ -696,6 +715,23 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.MetricTag": {
+      "description": "MetricTag is a Prometheus metric tag",
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "description": "TagName is a Prometheus metric tag name",
+          "type": "string"
+        },
+        "value": {
+          "description": "TagValue is a Prometheus metric tag value",
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.NodeStatus": {
       "description": "NodeStatus contains status information about an individual node in the workflow",
       "type": "object",
@@ -852,8 +888,8 @@
           "type": "string"
         },
         "emitMetric": {
-          "description": "EmitMetric is a flag to determine whether to export the value as a Prometheus metric",
-          "type": "boolean"
+          "description": "EmitMetric are options to emit a custom Prometheus metric from this parameter",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EmitMetric"
         },
         "globalName": {
           "description": "GlobalName exports an output parameter to the global scope, making it available as '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters",

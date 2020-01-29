@@ -503,8 +503,8 @@ type Parameter struct {
 	// '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,5,opt,name=globalName"`
 
-	// EmitMetric is a flag to determine whether to export the value as a Prometheus metric
-	EmitMetric bool `json:"emitMetric,omitempty" protobuf:"varint,6,opt,name=emitMetric"`
+	// EmitMetric are options to emit a custom Prometheus metric from this parameter
+	EmitMetric *EmitMetric `json:"emitMetric,omitempty" protobuf:"bytes,6,opt,name=emitMetric"`
 }
 
 // ValueFrom describes a location in which to obtain the value to a parameter
@@ -521,6 +521,26 @@ type ValueFrom struct {
 	// Parameter reference to a step or dag task in which to retrieve an output parameter value from
 	// (e.g. '{{steps.mystep.outputs.myparam}}')
 	Parameter string `json:"parameter,omitempty" protobuf:"bytes,4,opt,name=parameter"`
+}
+
+// EmitMetric are options to emit a custom Prometheus metric from this parameter
+type EmitMetric struct {
+	// MetricSuffix is the suffix that the metric will take after "argo_workflows_"
+	MetricSuffix string `json:"metricSuffix,omitempty" protobuf:"bytes,1,opt,name=metricSuffix"`
+
+	// MetricTags are the tags of the metric
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	MetricTags []MetricTag `json:"metricTags,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,opt,name=metricTags"`
+}
+
+// MetricTag is a Prometheus metric tag
+type MetricTag struct {
+	// TagName is a Prometheus metric tag name
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+
+	// TagValue is a Prometheus metric tag value
+	Value string `json:"value,omitempty" protobuf:"bytes,2,opt,name=value"`
 }
 
 // Artifact indicates an artifact to place at a specified path
