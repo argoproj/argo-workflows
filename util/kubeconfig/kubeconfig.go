@@ -117,7 +117,6 @@ func GetBearerToken(in *restclient.Config) (string, error) {
 	if in == nil {
 		return "", errors.Errorf("RestClient can't be nil")
 	}
-  
 	if in.ExecProvider != nil {
 		tc, err := in.TransportConfig()
 		if err != nil {
