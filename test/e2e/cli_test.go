@@ -41,9 +41,9 @@ func (s *CLISuite) TestToken() {
 		if token == "" {
 			token, err = s.GetServiceAccountToken()
 			assert.NoError(t, err)
-			authString = "Bearer "+ token
-		}else {
-			authString = "Basic "+ token
+			authString = "Bearer " + token
+		} else {
+			authString = "Basic " + token
 		}
 		assert.Equal(t, authString, output)
 	})
