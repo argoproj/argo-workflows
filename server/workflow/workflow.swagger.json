@@ -19,7 +19,16 @@
           "200": {
             "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/x-stream-definitions/workflowWorkflowWatchEvent"
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/workflowWorkflowWatchEvent"
+                },
+                "error": {
+                  "$ref": "#/definitions/runtimeStreamError"
+                }
+              },
+              "title": "Stream result of workflowWorkflowWatchEvent"
             }
           }
         },
@@ -552,7 +561,16 @@
           "200": {
             "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/x-stream-definitions/workflowLogEntry"
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/workflowLogEntry"
+                },
+                "error": {
+                  "$ref": "#/definitions/runtimeStreamError"
+                }
+              },
+              "title": "Stream result of workflowLogEntry"
             }
           }
         },
@@ -4639,32 +4657,6 @@
         }
       },
       "title": "NodeStatus contains status information about an individual node in the workflow"
-    }
-  },
-  "x-stream-definitions": {
-    "workflowLogEntry": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "$ref": "#/definitions/workflowLogEntry"
-        },
-        "error": {
-          "$ref": "#/definitions/runtimeStreamError"
-        }
-      },
-      "title": "Stream result of workflowLogEntry"
-    },
-    "workflowWorkflowWatchEvent": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "$ref": "#/definitions/workflowWorkflowWatchEvent"
-        },
-        "error": {
-          "$ref": "#/definitions/runtimeStreamError"
-        }
-      },
-      "title": "Stream result of workflowWorkflowWatchEvent"
     }
   }
 }
