@@ -41,10 +41,10 @@ func GetClientConn() *grpc.ClientConn {
 
 func GetContext() context.Context {
 	token := GetBearerToken()
-	if token == "" {
+	if len(token) == 0 {
 		return context.Background()
 	}
-	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+GetBearerToken()))
+	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token))
 }
 
 func GetBearerToken() string {
