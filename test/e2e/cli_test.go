@@ -49,6 +49,9 @@ func (s *CLISuite) TestSubmitServerDryRun() {
 }
 
 func (s *CLISuite) TestTokenArg() {
+	if os.Getenv("CI") != "true" {
+		s.T().SkipNow()
+	}
 	s.Given().RunCli([]string{"list", "--user", "fake_token_user", "--token", "badtoken"}, func(t *testing.T, output string, err error) {
 		assert.Error(t, err)
 	})
