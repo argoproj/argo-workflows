@@ -106,6 +106,10 @@ func GetBasicAuthToken(in *restclient.Config) (string, error) {
 // convert the REST config into a bearer token
 func GetBearerToken(in *restclient.Config) (string, error) {
 
+	if len(in.BearerToken) > 0 {
+		return in.BearerToken, nil
+	}
+
 	if token := getEnvToken(); token != "" {
 		return token, nil
 	}
@@ -113,7 +117,7 @@ func GetBearerToken(in *restclient.Config) (string, error) {
 	if in == nil {
 		return "", errors.Errorf("RestClient can't be nil")
 	}
-
+  
 	if in.ExecProvider != nil {
 		tc, err := in.TransportConfig()
 		if err != nil {
@@ -166,7 +170,7 @@ func GetBearerToken(in *restclient.Config) (string, error) {
 			return strings.TrimPrefix(token, "Bearer "), nil
 		}
 	}
-	return in.BearerToken, nil
+	return "", errors.Errorf("Can not find a token")
 }
 
 // Get the Auth token from environment variable
