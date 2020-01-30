@@ -63,17 +63,17 @@ func Namespace() string {
 
 // DEPRECATED should only be used by client/v1 package
 func GetContext() context.Context {
-	return apiclient.NewContext(GetBearerToken())
+	return apiclient.NewContext(GetAuthToken())
 }
 
-func GetBearerToken() string {
+func GetAuthString() string {
 	restConfig, err := Config.ClientConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
-	token, err := kubeconfig.GetBearerToken(restConfig)
+	authString, err := kubeconfig.GetAuthString(restConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return token
+	return authString
 }

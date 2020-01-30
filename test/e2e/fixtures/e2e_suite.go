@@ -2,6 +2,7 @@ package fixtures
 
 import (
 	"bufio"
+	"encoding/base64"
 	"fmt"
 	"strings"
 	"testing"
@@ -131,6 +132,14 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	}
 	// create database collection
 	s.Persistence.DeleteEverything()
+}
+
+func (s *E2ESuite) GetBasicAuthToken() string {
+	if s.RestConfig.Username == "" {
+		return ""
+	}
+	auth := s.RestConfig.Username + ":" + s.RestConfig.Password
+	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
 
 func (s *E2ESuite) GetServiceAccountToken() (string, error) {
