@@ -2,13 +2,13 @@ package kubeconfig
 
 import (
 	"io/ioutil"
-	"k8s.io/client-go/tools/clientcmd"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 const bearerToken = "bearertoken"
@@ -40,6 +40,7 @@ func Test_BasicAuthString(t *testing.T) {
 	t.Run("Basic Auth", func(t *testing.T) {
 
 		restConfig, err := clientcmd.RESTConfigFromKubeConfig([]byte(config))
+		assert.NoError(t, err)
 		authString, err := GetAuthString(restConfig)
 		assert.NoError(t, err)
 		assert.True(t, IsBasicAuthScheme(authString))
@@ -50,8 +51,11 @@ func Test_BasicAuthString(t *testing.T) {
 			assert.Equal(t, "admin", pwd)
 		}
 		file, err := ioutil.TempFile("", "config.yaml")
-		file.WriteString(config)
-		file.Close()
+		assert.NoError(t, err)
+		_,err = file.WriteString(config)
+		assert.NoError(t, err)
+		err = file.Close()
+		assert.NoError(t, err)
 		os.Setenv("KUBECONFIG", file.Name())
 		config, err := GetRestConfig(authString)
 		if assert.NoError(t, err) {
@@ -68,8 +72,6 @@ func Test_BearerAuthString(t *testing.T) {
 
 	t.Run("Bearer Auth", func(t *testing.T) {
 		os.Setenv("ARGO_TOKEN", bearerToken)
-		//_, err := ioutil.TempDir("~",".kube")
-
 		authString, err := GetAuthString(&restConfig)
 		assert.NoError(t, err)
 		assert.True(t, IsBearerAuthScheme(authString))
