@@ -126,7 +126,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, &wfv1.Template{}, "", wfv1.NodeRunning)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
 	retryLimit := int32(2)
 	retries.Limit = &retryLimit
@@ -142,7 +142,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	// Add child nodes.
 	for i := 0; i < 2; i++ {
 		childNode := fmt.Sprintf("child-node-%d", i)
-		woc.initializeNode(childNode, wfv1.NodeTypePod, &wfv1.Template{}, "", wfv1.NodeRunning)
+		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 		woc.addChildNode(nodeName, childNode)
 	}
 
@@ -174,7 +174,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 
 	// Add a third node that has failed.
 	childNode := "child-node-3"
-	woc.initializeNode(childNode, wfv1.NodeTypePod, &wfv1.Template{}, "", wfv1.NodeFailed)
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeFailed)
 	woc.addChildNode(nodeName, childNode)
 	n = woc.getNodeByName(nodeName)
 	n, _, err = woc.processNodeRetries(n, retries)
@@ -197,7 +197,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, &wfv1.Template{}, "", wfv1.NodeRunning)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
 	retryLimit := int32(2)
 	retries.Limit = &retryLimit
@@ -214,7 +214,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	// Add child nodes.
 	for i := 0; i < 2; i++ {
 		childNode := fmt.Sprintf("child-node-%d", i)
-		woc.initializeNode(childNode, wfv1.NodeTypePod, &wfv1.Template{}, "", wfv1.NodeRunning)
+		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 		woc.addChildNode(nodeName, childNode)
 	}
 
@@ -246,7 +246,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 
 	// Add a third node that has errored.
 	childNode := "child-node-3"
-	woc.initializeNode(childNode, wfv1.NodeTypePod, &wfv1.Template{}, "", wfv1.NodeError)
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeError)
 	woc.addChildNode(nodeName, childNode)
 	n = woc.getNodeByName(nodeName)
 	n, _, err = woc.processNodeRetries(n, retries)
@@ -269,7 +269,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, &wfv1.Template{}, "", wfv1.NodeRunning)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
 	retryLimit := int32(2)
 	retries.Limit = &retryLimit
@@ -286,7 +286,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	// Add child nodes.
 	for i := 0; i < 2; i++ {
 		childNode := fmt.Sprintf("child-node-%d", i)
-		woc.initializeNode(childNode, wfv1.NodeTypePod, &wfv1.Template{}, "", wfv1.NodeRunning)
+		woc.initializeNode(childNode, wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 		woc.addChildNode(nodeName, childNode)
 	}
 
@@ -1988,123 +1988,6 @@ func TestStepsOnExit(t *testing.T) {
 		}
 	}
 	assert.True(t, onExitNodeIsPresent)
-}
-
-var testTemplateScopeWorkflowYaml = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: test-template-scope
-spec:
-  entrypoint: entry
-  templates:
-  - name: entry
-    templateRef:
-      name: test-template-scope-1
-      template: steps
-`
-
-var testTemplateScopeWorkflowTemplateYaml1 = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: test-template-scope-1
-spec:
-  templates:
-  - name: steps
-    steps:
-    - - name: hello
-        template: hello
-      - name: other-wftmpl
-        templateRef:
-          name: test-template-scope-2
-          template: steps
-  - name: hello
-    script:
-      image: python:alpine3.6
-      command: [python]
-      source: |
-        print("hello world")
-`
-
-var testTemplateScopeWorkflowTemplateYaml2 = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: test-template-scope-2
-spec:
-  templates:
-  - name: steps
-    steps:
-    - - name: hello
-        template: hello
-  - name: hello
-    script:
-      image: python:alpine3.6
-      command: [python]
-      source: |
-        print("hello world")
-`
-
-func TestTemplateScope(t *testing.T) {
-	controller := newController()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("")
-
-	wf := unmarshalWF(testTemplateScopeWorkflowYaml)
-	_, err := wfcset.Create(wf)
-	assert.NoError(t, err)
-	wftmpl := unmarshalWFTmpl(testTemplateScopeWorkflowTemplateYaml1)
-	_, err = wfctmplset.Create(wftmpl)
-	assert.NoError(t, err)
-	wftmpl = unmarshalWFTmpl(testTemplateScopeWorkflowTemplateYaml2)
-	_, err = wfctmplset.Create(wftmpl)
-	assert.NoError(t, err)
-
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-
-	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
-
-	node := findNodeByName(wf.Status.Nodes, "test-template-scope")
-	if assert.NotNil(t, node, "Node %s not found", "test-templte-scope") {
-		assert.Equal(t, "", node.TemplateScope)
-	}
-
-	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0]")
-	if assert.NotNil(t, node, "Node %s not found", "test-templte-scope[0]") {
-		assert.Equal(t, "", node.TemplateScope)
-	}
-
-	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].hello")
-	if assert.NotNil(t, node, "Node %s not found", "test-templte-scope[0].hello") {
-		assert.Equal(t, "test-template-scope-1", node.TemplateScope)
-	}
-
-	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].other-wftmpl")
-	if assert.NotNil(t, node, "Node %s not found", "test-template-scope[0].other-wftmpl") {
-		assert.Equal(t, "test-template-scope-1", node.TemplateScope)
-	}
-
-	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].other-wftmpl[0]")
-	if assert.NotNil(t, node, "Node %s not found", "test-template-scope[0].other-wftmpl[0]") {
-		assert.Equal(t, "", node.TemplateScope)
-	}
-
-	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].other-wftmpl[0].hello")
-	if assert.NotNil(t, node, "Node %s not found", "test-template-scope[0].other-wftmpl[0].hello") {
-		assert.Equal(t, "test-template-scope-2", node.TemplateScope)
-	}
-}
-
-func findNodeByName(nodes map[string]wfv1.NodeStatus, name string) *wfv1.NodeStatus {
-	for _, node := range nodes {
-		if node.Name == name {
-			return &node
-		}
-	}
-	return nil
 }
 
 var invalidSpec = `

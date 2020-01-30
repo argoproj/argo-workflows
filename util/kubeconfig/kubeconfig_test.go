@@ -52,7 +52,7 @@ func Test_BasicAuthString(t *testing.T) {
 		}
 		file, err := ioutil.TempFile("", "config.yaml")
 		assert.NoError(t, err)
-		_,err = file.WriteString(config)
+		_, err = file.WriteString(config)
 		assert.NoError(t, err)
 		err = file.Close()
 		assert.NoError(t, err)
