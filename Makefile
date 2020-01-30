@@ -58,7 +58,7 @@ E2E_EXECUTOR     ?= pns
 build: clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
 
 .PHONY: vendor
-vendor: Go.mod go.sum
+vendor: go.mod go.sum
 	go mod download
 
 # cli
