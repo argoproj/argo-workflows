@@ -44,7 +44,9 @@ func GetClientConn() *grpc.ClientConn {
 }
 
 func NewAPIClient() (context.Context, apiclient.Client) {
-	ctx, client, err := apiclient.NewClient(ArgoServer, GetBearerToken(), Config)
+	ctx, client, err := apiclient.NewClient(ArgoServer, func() string {
+		return GetBearerToken()
+	}, Config)
 	if err != nil {
 		log.Fatal(err)
 	}

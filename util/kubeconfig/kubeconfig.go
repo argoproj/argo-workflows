@@ -100,7 +100,7 @@ func GetBearerToken(in *restclient.Config) (string, error) {
 			return strings.TrimPrefix(token, "Bearer "), nil
 		}
 	}
-	return "", errors.Errorf("Can not find a token")
+	return "", errors.Errorf("could not find a token")
 }
 
 // Get the Auth token from environment variable

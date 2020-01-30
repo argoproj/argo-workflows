@@ -14,9 +14,9 @@ type Client interface {
 	NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient
 }
 
-func NewClient(argoServer, token string, clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
+func NewClient(argoServer string, tokenSupplier func() string, clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
 	if argoServer != "" {
-		return newArgoServerClient(argoServer, token)
+		return newArgoServerClient(argoServer, tokenSupplier())
 	} else {
 		return newClassicClient(clientConfig)
 	}
