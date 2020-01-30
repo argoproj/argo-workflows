@@ -1,6 +1,6 @@
 # CLI
 
-Most help topics are provide using built-in help
+Most help topics are provided using built-in help
 
 ```
 argo --help

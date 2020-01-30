@@ -4,7 +4,7 @@
 
 > v2.5 and after
 
-The Argo Server is a server that exposes an API and UI for workflows. You'll need to use this if you want to use [offload large workflows](offloading-large-workflows.md) or the [workflow archive](workflow-archive.md).
+The Argo Server is a server that exposes an API and UI for workflows. You'll need to use this if you want to [offload large workflows](offloading-large-workflows.md) or the [workflow archive](workflow-archive.md).
 
 You can run this in either "hosted" or "local" mode.
 
@@ -17,7 +17,7 @@ Use this mode if:
 * You want a drop-in replacement for the Argo UI.
 * If you need to prevent users from directly accessing the database.
 
-Hosted mode is provide  as part of the standard [manifests](../manifests), [specifically in argo-server-deployment.yaml](../manifests/base/argo-server/argo-server-deployment.yaml) .
+Hosted mode is provided as part of the standard [manifests](../manifests), [specifically in argo-server-deployment.yaml](../manifests/base/argo-server/argo-server-deployment.yaml) .
 
 ## Local Mode
 
