@@ -1799,6 +1799,10 @@
           "description": "Compressed and base64 decoded Nodes map",
           "type": "string"
         },
+        "estimatedCost": {
+          "type": "integer",
+          "format": "int64"
+        },
         "finishedAt": {
           "description": "Time at which this workflow completed",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"

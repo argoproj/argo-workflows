@@ -33,6 +33,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/argo"
+	"github.com/argoproj/argo/util/cost"
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/config"
@@ -242,6 +243,17 @@ func (woc *wfOperationCtx) operate() {
 
 		return
 	}
+
+	// add the estimated cost to the workflow
+	pods, err := woc.getAllWorkflowPods()
+	if err != nil {
+		woc.log.Error(err)
+		woc.markWorkflowError(err, true)
+		return
+	}
+	woc.wf.Status.EstimatedCost = cost.EstimatePodsCost(pods.Items, time.Now())
+	woc.log.WithField("estimatedCost", woc.wf.Status.EstimatedCost).Debug()
+
 	if node == nil || !node.Completed() {
 		// node can be nil if a workflow created immediately in a parallelism == 0 state
 		return

@@ -3709,6 +3709,11 @@
         "outputs": {
           "$ref": "#/definitions/v1alpha1Outputs",
           "title": "Outputs captures output values and artifact locations produced by the workflow via global outputs"
+        },
+        "estimatedCost": {
+          "type": "string",
+          "format": "int64",
+          "title": "TODO"
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"

@@ -126,6 +126,7 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 	if !wf.Status.StartedAt.IsZero() {
 		fmt.Printf(fmtStr, "Duration:", humanize.RelativeDuration(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time))
 	}
+	fmt.Printf(fmtStr, "Estimated Cost:", wf.Status.EstimatedCost)
 
 	if len(wf.Spec.Arguments.Parameters) > 0 {
 		fmt.Printf(fmtStr, "Parameters:", "")

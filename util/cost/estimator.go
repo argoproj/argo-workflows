@@ -27,7 +27,7 @@ type containerSummary struct {
 	v1.ContainerState
 }
 
-func (s containerSummary) Duration(now time.Time) time.Duration {
+func (s containerSummary) duration(now time.Time) time.Duration {
 	if s.Terminated != nil {
 		return s.Terminated.FinishedAt.Time.Sub(s.Terminated.StartedAt.Time)
 	} else if s.Running != nil {
@@ -35,6 +35,14 @@ func (s containerSummary) Duration(now time.Time) time.Duration {
 	} else {
 		return 0
 	}
+}
+
+func EstimatePodsCost(pods []v1.Pod, now time.Time) int64 {
+	totalCost := int64(0)
+	for _, pod := range pods {
+		totalCost += EstimateCost(&pod, now)
+	}
+	return totalCost
 }
 
 func EstimateCost(pod *v1.Pod, now time.Time) int64 {
@@ -53,7 +61,7 @@ func EstimateCost(pod *v1.Pod, now time.Time) int64 {
 				quantity = defaultQuantities[name]
 			}
 			value := quantity.Value()
-			duration := int64(summary.Duration(now).Minutes())
+			duration := int64(summary.duration(now).Seconds())
 			contribution := value * duration / costDenominator
 			log.WithFields(log.Fields{"name": name, "costDenominator": costDenominator, "value": value, "ok": ok,
 				"duration": duration, "contribution": contribution}).Info()

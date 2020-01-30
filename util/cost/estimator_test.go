@@ -41,7 +41,7 @@ func TestEstimateCost(t *testing.T) {
 					},
 				},
 			},
-		}, 4},
+		}, 252},
 		{"TerminatedContainerWithDefaults", &v1.Pod{
 			Spec: v1.PodSpec{Containers: []v1.Container{{Name: "main"}}},
 			Status: v1.PodStatus{
@@ -57,7 +57,7 @@ func TestEstimateCost(t *testing.T) {
 					},
 				},
 			},
-		}, 8},
+		}, 504},
 		{"TerminatedContainerWithCPURequest", &v1.Pod{
 			Spec: v1.PodSpec{Containers: []v1.Container{{Name: "main", Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
@@ -78,7 +78,7 @@ func TestEstimateCost(t *testing.T) {
 					},
 				},
 			},
-		}, 5},
+		}, 312},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
