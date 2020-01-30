@@ -4,8 +4,6 @@ go 1.13
 
 require (
 	cloud.google.com/go v0.51.0 // indirect
-	github.com/Azure/go-autorest/autorest v0.9.4 // indirect
-	github.com/Azure/go-autorest/autorest/adal v0.8.1 // indirect
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/argoproj/pkg v0.0.0-20200102163130-2dd1f3f6b4de
