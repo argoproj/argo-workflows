@@ -36,7 +36,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private set namespace(namespace: string) {
-        this.setState({namespace: namespace});
+        this.setState({namespace});
         history.pushState(null, '', uiUrl('workflows/' + namespace));
     }
 
@@ -114,7 +114,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
     public render() {
         if (this.state.loading) {
-            return <Loading/>;
+            return <Loading />;
         }
         if (this.state.error) {
             throw this.state.error;
