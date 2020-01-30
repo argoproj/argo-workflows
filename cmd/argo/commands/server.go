@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/argoproj/pkg/cli"
@@ -24,6 +25,7 @@ func NewServerCommand() *cobra.Command {
 		authMode         string
 		configMap        string
 		port             int
+		baseHRef         string
 		namespaced       bool   // --namespaced
 		managedNamespace string // --managed-namespace
 	)
@@ -64,9 +66,15 @@ See %s`, help.ArgoSever),
 				managedNamespace = namespace
 			}
 
-			log.WithFields(log.Fields{"namespace": namespace, "managedNamespace": managedNamespace}).Info()
+			log.WithFields(log.Fields{
+				"authMode":         authMode,
+				"namespace":        namespace,
+				"managedNamespace": managedNamespace,
+				"baseHRef":         baseHRef}).
+				Info()
 
 			opts := apiserver.ArgoServerOpts{
+				BaseHRef:         baseHRef,
 				Namespace:        namespace,
 				WfClientSet:      wflientset,
 				KubeClientset:    kubeConfig,
@@ -84,6 +92,11 @@ See %s`, help.ArgoSever),
 	}
 
 	command.Flags().IntVarP(&port, "port", "p", 2746, "Port to listen on")
+	baseHref, ok := os.LookupEnv("BASE_HREF")
+	if !ok {
+		baseHRef = "/"
+	}
+	command.Flags().StringVar(&baseHRef, "basehref", baseHref, "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
 	command.Flags().StringVar(&authMode, "auth-mode", "server", "API server authentication mode. One of: client|server|hybrid")
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
