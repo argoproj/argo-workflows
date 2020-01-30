@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -39,6 +40,28 @@ func (s *CLISuite) TestToken() {
 		token, err := s.GetServiceAccountToken()
 		assert.NoError(t, err)
 		assert.Equal(t, token, output)
+	})
+}
+
+func (s *CLISuite) TestTokenArg() {
+	if os.Getenv("CI") != "true" {
+		s.T().SkipNow()
+	}
+	s.Given().RunCli([]string{"list", "--user", "fake_token_user", "--token", "badtoken"}, func(t *testing.T, output string, err error) {
+		assert.Error(t, err)
+	})
+
+	var goodToken string
+	s.Run("GetSAToken", func(t *testing.T) {
+		token, err := s.GetServiceAccountToken()
+		assert.NoError(t, err)
+		goodToken = token
+	})
+
+	s.Given().RunCli([]string{"list", "--user", "fake_token_user", "--token", goodToken}, func(t *testing.T, output string, err error) {
+		assert.NoError(t, err)
+		assert.Contains(t, output, "NAME")
+		assert.Contains(t, output, "STATUS")
 	})
 }
 
