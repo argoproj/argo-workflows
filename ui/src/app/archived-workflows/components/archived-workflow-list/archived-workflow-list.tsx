@@ -15,6 +15,8 @@ import {Utils} from '../../../shared/utils';
 
 interface State {
     continue: string;
+    loading: boolean;
+    namespace: string;
     workflows?: Workflow[];
     error?: Error;
 }
@@ -29,16 +31,17 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     private get namespace() {
-        return this.props.match.params.namespace || '';
+        return this.state.namespace;
     }
 
     private set namespace(namespace: string) {
-        document.location.href = uiUrl('archived-workflows/' + namespace);
+        this.setState({namespace: namespace});
+        history.pushState(null, '', uiUrl('cron-workflows/' + namespace));
     }
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = {continue: ''};
+        this.state = {continue: '', loading: true, namespace: this.props.match.params.namespace || ''};
     }
 
     public componentDidMount(): void {
@@ -51,16 +54,18 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                 return services.archivedWorkflows.list(this.namespace, this.continue);
             })
             .then(list => {
-                this.setState({workflows: list.items || [], continue: list.metadata.continue || ''});
+                this.setState({workflows: list.items || [], continue: list.metadata.continue || '', loading: false});
             })
-            .catch(error => this.setState({error}));
+            .catch(error => this.setState({error, loading: false}));
     }
 
     public render() {
+        if (this.state.loading) {
+            return <Loading/>;
+        }
         if (this.state.error) {
             throw this.state.error;
         }
-
         return (
             <Page
                 title='Archived Workflows'
