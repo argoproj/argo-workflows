@@ -11,14 +11,17 @@ import (
 	context "context"
 	fmt "fmt"
 	v1alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	io "io"
 	v11 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	math "math"
+	math_bits "math/bits"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -50,16 +53,25 @@ func (*WorkflowCreateRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2af0e6384e310358, []int{0}
 }
 func (m *WorkflowCreateRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_WorkflowCreateRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *WorkflowCreateRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_WorkflowCreateRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_WorkflowCreateRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *WorkflowCreateRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowCreateRequest.Merge(m, src)
 }
 func (m *WorkflowCreateRequest) XXX_Size() int {
-	return xxx_messageInfo_WorkflowCreateRequest.Size(m)
+	return m.Size()
 }
 func (m *WorkflowCreateRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_WorkflowCreateRequest.DiscardUnknown(m)
@@ -118,16 +130,25 @@ func (*WorkflowGetRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2af0e6384e310358, []int{1}
 }
 func (m *WorkflowGetRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_WorkflowGetRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *WorkflowGetRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_WorkflowGetRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_WorkflowGetRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *WorkflowGetRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowGetRequest.Merge(m, src)
 }
 func (m *WorkflowGetRequest) XXX_Size() int {
-	return xxx_messageInfo_WorkflowGetRequest.Size(m)
+	return m.Size()
 }
 func (m *WorkflowGetRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_WorkflowGetRequest.DiscardUnknown(m)
@@ -171,16 +192,25 @@ func (*WorkflowListRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2af0e6384e310358, []int{2}
 }
 func (m *WorkflowListRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_WorkflowListRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *WorkflowListRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_WorkflowListRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_WorkflowListRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *WorkflowListRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowListRequest.Merge(m, src)
 }
 func (m *WorkflowListRequest) XXX_Size() int {
-	return xxx_messageInfo_WorkflowListRequest.Size(m)
+	return m.Size()
 }
 func (m *WorkflowListRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_WorkflowListRequest.DiscardUnknown(m)
@@ -218,16 +248,25 @@ func (*WorkflowResubmitRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2af0e6384e310358, []int{3}
 }
 func (m *WorkflowResubmitRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_WorkflowResubmitRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *WorkflowResubmitRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_WorkflowResubmitRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_WorkflowResubmitRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *WorkflowResubmitRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowResubmitRequest.Merge(m, src)
 }
 func (m *WorkflowResubmitRequest) XXX_Size() int {
-	return xxx_messageInfo_WorkflowResubmitRequest.Size(m)
+	return m.Size()
 }
 func (m *WorkflowResubmitRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_WorkflowResubmitRequest.DiscardUnknown(m)
@@ -271,16 +310,25 @@ func (*WorkflowRetryRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2af0e6384e310358, []int{4}
 }
 func (m *WorkflowRetryRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_WorkflowRetryRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *WorkflowRetryRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_WorkflowRetryRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_WorkflowRetryRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *WorkflowRetryRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowRetryRequest.Merge(m, src)
 }
 func (m *WorkflowRetryRequest) XXX_Size() int {
-	return xxx_messageInfo_WorkflowRetryRequest.Size(m)
+	return m.Size()
 }
 func (m *WorkflowRetryRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_WorkflowRetryRequest.DiscardUnknown(m)
@@ -317,16 +365,25 @@ func (*WorkflowResumeRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2af0e6384e310358, []int{5}
 }
 func (m *WorkflowResumeRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_WorkflowResumeRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *WorkflowResumeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_WorkflowResumeRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_WorkflowResumeRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *WorkflowResumeRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowResumeRequest.Merge(m, src)
 }
 func (m *WorkflowResumeRequest) XXX_Size() int {
-	return xxx_messageInfo_WorkflowResumeRequest.Size(m)
+	return m.Size()
 }
 func (m *WorkflowResumeRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_WorkflowResumeRequest.DiscardUnknown(m)
@@ -363,16 +420,25 @@ func (*WorkflowTerminateRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2af0e6384e310358, []int{6}
 }
 func (m *WorkflowTerminateRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_WorkflowTerminateRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *WorkflowTerminateRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_WorkflowTerminateRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_WorkflowTerminateRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *WorkflowTerminateRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowTerminateRequest.Merge(m, src)
 }
 func (m *WorkflowTerminateRequest) XXX_Size() int {
-	return xxx_messageInfo_WorkflowTerminateRequest.Size(m)
+	return m.Size()
 }
 func (m *WorkflowTerminateRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_WorkflowTerminateRequest.DiscardUnknown(m)
@@ -409,16 +475,25 @@ func (*WorkflowSuspendRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2af0e6384e310358, []int{7}
 }
 func (m *WorkflowSuspendRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_WorkflowSuspendRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *WorkflowSuspendRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_WorkflowSuspendRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_WorkflowSuspendRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *WorkflowSuspendRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowSuspendRequest.Merge(m, src)
 }
 func (m *WorkflowSuspendRequest) XXX_Size() int {
-	return xxx_messageInfo_WorkflowSuspendRequest.Size(m)
+	return m.Size()
 }
 func (m *WorkflowSuspendRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_WorkflowSuspendRequest.DiscardUnknown(m)
@@ -457,16 +532,25 @@ func (*WorkflowLogRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2af0e6384e310358, []int{8}
 }
 func (m *WorkflowLogRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_WorkflowLogRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *WorkflowLogRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_WorkflowLogRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_WorkflowLogRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *WorkflowLogRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowLogRequest.Merge(m, src)
 }
 func (m *WorkflowLogRequest) XXX_Size() int {
-	return xxx_messageInfo_WorkflowLogRequest.Size(m)
+	return m.Size()
 }
 func (m *WorkflowLogRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_WorkflowLogRequest.DiscardUnknown(m)
@@ -518,16 +602,25 @@ func (*WorkflowDeleteRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2af0e6384e310358, []int{9}
 }
 func (m *WorkflowDeleteRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_WorkflowDeleteRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *WorkflowDeleteRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_WorkflowDeleteRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_WorkflowDeleteRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *WorkflowDeleteRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowDeleteRequest.Merge(m, src)
 }
 func (m *WorkflowDeleteRequest) XXX_Size() int {
-	return xxx_messageInfo_WorkflowDeleteRequest.Size(m)
+	return m.Size()
 }
 func (m *WorkflowDeleteRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_WorkflowDeleteRequest.DiscardUnknown(m)
@@ -569,16 +662,25 @@ func (*WorkflowDeleteResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2af0e6384e310358, []int{10}
 }
 func (m *WorkflowDeleteResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_WorkflowDeleteResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *WorkflowDeleteResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_WorkflowDeleteResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_WorkflowDeleteResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *WorkflowDeleteResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowDeleteResponse.Merge(m, src)
 }
 func (m *WorkflowDeleteResponse) XXX_Size() int {
-	return xxx_messageInfo_WorkflowDeleteResponse.Size(m)
+	return m.Size()
 }
 func (m *WorkflowDeleteResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_WorkflowDeleteResponse.DiscardUnknown(m)
@@ -601,16 +703,25 @@ func (*WatchWorkflowsRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2af0e6384e310358, []int{11}
 }
 func (m *WatchWorkflowsRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_WatchWorkflowsRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *WatchWorkflowsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_WatchWorkflowsRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_WatchWorkflowsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *WatchWorkflowsRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WatchWorkflowsRequest.Merge(m, src)
 }
 func (m *WatchWorkflowsRequest) XXX_Size() int {
-	return xxx_messageInfo_WatchWorkflowsRequest.Size(m)
+	return m.Size()
 }
 func (m *WatchWorkflowsRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_WatchWorkflowsRequest.DiscardUnknown(m)
@@ -649,16 +760,25 @@ func (*WorkflowWatchEvent) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2af0e6384e310358, []int{12}
 }
 func (m *WorkflowWatchEvent) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_WorkflowWatchEvent.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *WorkflowWatchEvent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_WorkflowWatchEvent.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_WorkflowWatchEvent.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *WorkflowWatchEvent) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowWatchEvent.Merge(m, src)
 }
 func (m *WorkflowWatchEvent) XXX_Size() int {
-	return xxx_messageInfo_WorkflowWatchEvent.Size(m)
+	return m.Size()
 }
 func (m *WorkflowWatchEvent) XXX_DiscardUnknown() {
 	xxx_messageInfo_WorkflowWatchEvent.DiscardUnknown(m)
@@ -694,16 +814,25 @@ func (*LogEntry) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2af0e6384e310358, []int{13}
 }
 func (m *LogEntry) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_LogEntry.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *LogEntry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_LogEntry.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_LogEntry.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *LogEntry) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_LogEntry.Merge(m, src)
 }
 func (m *LogEntry) XXX_Size() int {
-	return xxx_messageInfo_LogEntry.Size(m)
+	return m.Size()
 }
 func (m *LogEntry) XXX_DiscardUnknown() {
 	xxx_messageInfo_LogEntry.DiscardUnknown(m)
@@ -733,16 +862,25 @@ func (*WorkflowLintRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_2af0e6384e310358, []int{14}
 }
 func (m *WorkflowLintRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_WorkflowLintRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *WorkflowLintRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_WorkflowLintRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_WorkflowLintRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *WorkflowLintRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_WorkflowLintRequest.Merge(m, src)
 }
 func (m *WorkflowLintRequest) XXX_Size() int {
-	return xxx_messageInfo_WorkflowLintRequest.Size(m)
+	return m.Size()
 }
 func (m *WorkflowLintRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_WorkflowLintRequest.DiscardUnknown(m)
@@ -785,72 +923,74 @@ func init() {
 func init() { proto.RegisterFile("server/workflow/workflow.proto", fileDescriptor_2af0e6384e310358) }
 
 var fileDescriptor_2af0e6384e310358 = []byte{
-	// 1030 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x97, 0x4d, 0x6f, 0xdc, 0xc4,
-	0x1b, 0xc0, 0x35, 0x69, 0xfe, 0xed, 0xf6, 0x49, 0xb3, 0xfd, 0x33, 0xbc, 0xad, 0xac, 0x34, 0x4d,
-	0x87, 0x16, 0x56, 0x69, 0x63, 0x67, 0x93, 0x02, 0xa5, 0x12, 0x87, 0x92, 0x54, 0xa1, 0x68, 0x05,
-	0x95, 0x0b, 0x42, 0xe5, 0xe6, 0x78, 0x07, 0xc7, 0xcd, 0x7a, 0xc6, 0xd8, 0xb3, 0x5b, 0x2d, 0x55,
-	0x40, 0x70, 0x42, 0x1c, 0xb8, 0x70, 0xa9, 0xe0, 0x08, 0x48, 0x48, 0x48, 0x20, 0x3e, 0x0b, 0x5f,
-	0x01, 0x89, 0xaf, 0x81, 0x66, 0xec, 0x19, 0xdb, 0xd9, 0xed, 0xca, 0xc4, 0x95, 0x7a, 0x1b, 0xcf,
-	0x78, 0x9e, 0xe7, 0xe7, 0xe7, 0xdd, 0xb0, 0x9a, 0xd2, 0x64, 0x4c, 0x13, 0xe7, 0x21, 0x4f, 0x0e,
-	0x3f, 0x1d, 0xf2, 0x87, 0x66, 0x61, 0xc7, 0x09, 0x17, 0x1c, 0xb7, 0xf4, 0xb3, 0xb5, 0x12, 0x70,
-	0x1e, 0x0c, 0xa9, 0xe3, 0xc5, 0xa1, 0xe3, 0x31, 0xc6, 0x85, 0x27, 0x42, 0xce, 0xd2, 0xec, 0x3d,
-	0xeb, 0xfa, 0xe1, 0x8d, 0xd4, 0x0e, 0xb9, 0x3c, 0x8d, 0x3c, 0xff, 0x20, 0x64, 0x34, 0x99, 0x38,
-	0xf1, 0x61, 0x20, 0x37, 0x52, 0x27, 0xa2, 0xc2, 0x73, 0xc6, 0x3d, 0x27, 0xa0, 0x8c, 0x26, 0x9e,
-	0xa0, 0x83, 0xfc, 0xd6, 0x4e, 0x10, 0x8a, 0x83, 0xd1, 0xbe, 0xed, 0xf3, 0xc8, 0xf1, 0x92, 0x80,
-	0xc7, 0x09, 0x7f, 0xa0, 0x16, 0xc5, 0x55, 0x03, 0x36, 0xee, 0x79, 0xc3, 0xf8, 0xc0, 0x9b, 0x16,
-	0x42, 0x0a, 0xd5, 0x8e, 0xcf, 0x13, 0x3a, 0x43, 0x11, 0xf9, 0x63, 0x01, 0x5e, 0xfc, 0x38, 0x97,
-	0xb4, 0x93, 0x50, 0x4f, 0x50, 0x97, 0x7e, 0x36, 0xa2, 0xa9, 0xc0, 0x2b, 0x70, 0x96, 0x79, 0x11,
-	0x4d, 0x63, 0xcf, 0xa7, 0x1d, 0xb4, 0x86, 0xba, 0x67, 0xdd, 0x62, 0x03, 0xdf, 0x07, 0x63, 0x80,
-	0xce, 0xc2, 0x1a, 0xea, 0x2e, 0x6d, 0xbd, 0x6d, 0x17, 0xcc, 0xb6, 0x66, 0x56, 0x0b, 0x3b, 0x3e,
-	0x0c, 0x6c, 0xc9, 0x6c, 0x1b, 0x1b, 0x6a, 0x66, 0x5b, 0xeb, 0x76, 0x8d, 0x38, 0xbc, 0x0a, 0x10,
-	0xb2, 0x54, 0x78, 0xcc, 0xa7, 0x77, 0x76, 0x3b, 0xa7, 0x94, 0xe6, 0xd2, 0x0e, 0x26, 0x70, 0x2e,
-	0xf3, 0xcd, 0x6e, 0x32, 0x71, 0x47, 0xac, 0xb3, 0xb8, 0x86, 0xba, 0x2d, 0xb7, 0xb2, 0x87, 0xef,
-	0xc3, 0xb2, 0xaf, 0xbe, 0xe6, 0x83, 0x58, 0x39, 0xa3, 0xf3, 0x3f, 0xc5, 0xb8, 0x6d, 0x67, 0x26,
-	0xb1, 0xcb, 0xde, 0x28, 0xf0, 0xa4, 0x37, 0xec, 0x71, 0xcf, 0xde, 0x29, 0x5f, 0x75, 0xab, 0x92,
-	0xc8, 0x63, 0x04, 0x58, 0x53, 0xef, 0x51, 0xa1, 0xcd, 0x85, 0x61, 0x51, 0x5a, 0x27, 0xb7, 0x94,
-	0x5a, 0x57, 0x4d, 0xb8, 0x70, 0xdc, 0x84, 0x77, 0x01, 0x02, 0x2a, 0x34, 0xe0, 0x29, 0x05, 0xb8,
-	0x59, 0x0f, 0x70, 0xcf, 0xdc, 0x73, 0x4b, 0x32, 0xc8, 0x37, 0x08, 0x9e, 0xd7, 0x68, 0xfd, 0x30,
-	0x15, 0xf5, 0x5c, 0x79, 0x0f, 0x96, 0x86, 0x61, 0x6a, 0x40, 0x32, 0x6f, 0xf6, 0xea, 0x81, 0xf4,
-	0x8b, 0x8b, 0x6e, 0x59, 0x0a, 0x09, 0xe0, 0x65, 0xe3, 0x5a, 0x9a, 0x8e, 0xf6, 0xa3, 0xb0, 0x81,
-	0xa5, 0x2c, 0x68, 0x45, 0x34, 0xe2, 0xe1, 0xe7, 0x74, 0xa0, 0xec, 0xd4, 0x72, 0xcd, 0x33, 0x79,
-	0x17, 0x5e, 0x28, 0x14, 0x89, 0x64, 0x72, 0x62, 0x2d, 0xe4, 0x4e, 0x91, 0x09, 0x12, 0x39, 0xa2,
-	0x27, 0x17, 0xd5, 0x87, 0x8e, 0x16, 0xf5, 0x21, 0x4d, 0xa2, 0x90, 0x95, 0xf2, 0xea, 0xbf, 0x4b,
-	0x7b, 0x0f, 0x5e, 0xd2, 0xd2, 0xee, 0x8d, 0xd2, 0x98, 0xb2, 0xc1, 0xc9, 0x65, 0xfd, 0x54, 0x8a,
-	0xde, 0x3e, 0x0f, 0x4e, 0xee, 0x93, 0x0e, 0x9c, 0x89, 0xf9, 0xe0, 0x7d, 0x79, 0x29, 0x4b, 0x51,
-	0xfd, 0x88, 0x6f, 0x01, 0x0c, 0x79, 0xa0, 0xc3, 0x69, 0x51, 0x85, 0xd3, 0xa5, 0x52, 0x38, 0xd9,
-	0xb2, 0x16, 0xc9, 0xe0, 0xb9, 0xcb, 0x07, 0x7d, 0xf3, 0xa2, 0x5b, 0xba, 0x44, 0x7e, 0x46, 0x85,
-	0x2f, 0x76, 0xe9, 0x90, 0x36, 0xb0, 0x9e, 0x2c, 0x05, 0x03, 0x25, 0xa2, 0x9a, 0x69, 0x35, 0x4b,
-	0xc1, 0x6e, 0xf9, 0xaa, 0x5b, 0x95, 0x44, 0x3a, 0x85, 0x63, 0x34, 0x65, 0x1a, 0x73, 0x96, 0x52,
-	0xf2, 0xad, 0xfc, 0x00, 0x4f, 0xf8, 0x07, 0xfa, 0x3c, 0x7d, 0x86, 0xb9, 0xf8, 0x65, 0xe1, 0x72,
-	0xc5, 0x74, 0x7b, 0x4c, 0x99, 0xb2, 0xa4, 0x98, 0xc4, 0xc6, 0x92, 0x72, 0x8d, 0x3f, 0x82, 0xd3,
-	0x7c, 0xff, 0x01, 0xf5, 0xc5, 0xd3, 0xa9, 0xe9, 0xb9, 0x30, 0x72, 0x19, 0x5a, 0x7d, 0x1e, 0xdc,
-	0x66, 0x22, 0x99, 0xc8, 0xb8, 0xf1, 0x39, 0x13, 0x94, 0x89, 0x5c, 0xb3, 0x7e, 0x24, 0xdf, 0x55,
-	0xaa, 0x17, 0x13, 0xcf, 0xba, 0x11, 0x6d, 0xfd, 0xd3, 0x86, 0xf3, 0x26, 0xf1, 0x68, 0x32, 0x0e,
-	0x7d, 0x8a, 0x7f, 0x40, 0xd0, 0xce, 0xda, 0x83, 0x3e, 0xc1, 0x17, 0x0b, 0x69, 0x33, 0x3b, 0xa9,
-	0xd5, 0x0c, 0x88, 0x74, 0xbf, 0xfe, 0xeb, 0xef, 0xef, 0x17, 0x08, 0xb9, 0xa0, 0x1a, 0xf9, 0xb8,
-	0x67, 0x3a, 0x7f, 0xea, 0x3c, 0x32, 0x76, 0x38, 0xba, 0x89, 0xd6, 0xf1, 0x63, 0x04, 0x4b, 0x7b,
-	0x54, 0x18, 0xb2, 0x95, 0x69, 0xb2, 0xa2, 0x63, 0x35, 0xc5, 0xba, 0xa6, 0xb0, 0x5e, 0xc5, 0x97,
-	0xe7, 0x62, 0x65, 0xeb, 0x23, 0x89, 0xb6, 0x2c, 0x03, 0xd4, 0xe4, 0x03, 0xbe, 0x30, 0x0d, 0x57,
-	0xea, 0x59, 0xd6, 0xad, 0x46, 0x74, 0x52, 0x12, 0xb9, 0xa2, 0x08, 0x2f, 0xe2, 0xf9, 0x86, 0xc3,
-	0x5f, 0x40, 0xbb, 0x9a, 0xaa, 0x15, 0x8f, 0xce, 0x4a, 0x62, 0x6b, 0x86, 0x61, 0x8b, 0xcc, 0x22,
-	0x57, 0x95, 0xde, 0x2b, 0xf8, 0x95, 0xe3, 0x7a, 0x37, 0xa8, 0x3c, 0xaf, 0x68, 0xdf, 0x44, 0xf8,
-	0x2b, 0x04, 0xed, 0xac, 0x7c, 0xcc, 0x0b, 0xa9, 0x4a, 0x19, 0xb4, 0xd6, 0x9e, 0xfc, 0x42, 0x5e,
-	0x81, 0x72, 0xf7, 0xac, 0xd7, 0x73, 0xcf, 0x2f, 0x08, 0x96, 0x55, 0xfb, 0x34, 0x08, 0xab, 0xd3,
-	0x1a, 0xca, 0xfd, 0xb5, 0x69, 0xf4, 0xbc, 0xae, 0xf0, 0x1c, 0x6b, 0xbd, 0x0e, 0x9e, 0x93, 0x48,
-	0xcd, 0x32, 0xc2, 0x7f, 0x47, 0xf0, 0x7f, 0x3d, 0x4f, 0x18, 0xd4, 0x4b, 0xb3, 0x50, 0x2b, 0x33,
-	0x47, 0x53, 0xda, 0x1b, 0x8a, 0x76, 0xcb, 0xda, 0xa8, 0x49, 0x9b, 0x29, 0x97, 0xc0, 0xbf, 0x22,
-	0x68, 0x67, 0xd3, 0xc4, 0x3c, 0xe7, 0x56, 0xe6, 0x8d, 0xa6, 0xb0, 0x6f, 0x28, 0xd8, 0x4d, 0xeb,
-	0x6a, 0x6d, 0xd8, 0x88, 0x4a, 0xd4, 0xdf, 0x10, 0x9c, 0xcf, 0xe7, 0x0b, 0xc3, 0x3a, 0x23, 0xce,
-	0xaa, 0x23, 0x48, 0x53, 0xd8, 0x37, 0x15, 0x6c, 0xcf, 0xba, 0x56, 0x0b, 0x36, 0xcd, 0x74, 0x4b,
-	0xda, 0x3f, 0x11, 0x3c, 0x67, 0x66, 0x2b, 0xc3, 0x4b, 0xa6, 0x79, 0x8f, 0x0f, 0x60, 0x4d, 0x89,
-	0xdf, 0x52, 0xc4, 0xdb, 0x96, 0x5d, 0x8b, 0x58, 0x68, 0xed, 0x92, 0xf9, 0x47, 0x04, 0xe7, 0x64,
-	0x67, 0x33, 0xb8, 0x33, 0x6b, 0x20, 0x7b, 0x5a, 0x51, 0xbb, 0xa1, 0x48, 0x5f, 0x23, 0x64, 0x3e,
-	0xe9, 0x30, 0x64, 0x2a, 0x54, 0x27, 0x70, 0x26, 0x9b, 0xc8, 0xd2, 0x59, 0x8d, 0xa3, 0x18, 0x16,
-	0x2d, 0x5c, 0x9c, 0xea, 0xb6, 0x4e, 0x6e, 0x2a, 0x5d, 0xd7, 0xf1, 0x56, 0x2d, 0xab, 0x3c, 0xca,
-	0x67, 0xc5, 0x23, 0x67, 0xc8, 0x83, 0x4d, 0xf4, 0xce, 0xfa, 0x27, 0xdd, 0x27, 0xfe, 0xf0, 0x1e,
-	0xfb, 0x0f, 0xdf, 0x3f, 0xad, 0x7e, 0x5c, 0xb7, 0xff, 0x0d, 0x00, 0x00, 0xff, 0xff, 0x16, 0x8e,
-	0x60, 0xc4, 0xa1, 0x0f, 0x00, 0x00,
+	// 1061 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x97, 0x4f, 0x6f, 0xdc, 0x44,
+	0x14, 0xc0, 0x35, 0x69, 0x69, 0xb7, 0x2f, 0xcd, 0x16, 0x86, 0x7f, 0x2b, 0x2b, 0xdd, 0xa6, 0x43,
+	0x0b, 0xab, 0xb4, 0xb1, 0xb3, 0x49, 0x29, 0xa5, 0x12, 0x87, 0x92, 0x54, 0xa1, 0x68, 0x05, 0x95,
+	0x0b, 0x42, 0xe5, 0xe6, 0xf5, 0x4e, 0x1d, 0x37, 0x6b, 0x8f, 0xb1, 0x67, 0xb7, 0x5a, 0xaa, 0x80,
+	0xe0, 0x84, 0x38, 0x70, 0xe1, 0x52, 0xc1, 0x11, 0x90, 0x90, 0x90, 0x40, 0x7c, 0x0b, 0x8e, 0x48,
+	0x7c, 0x01, 0x14, 0x21, 0xf1, 0x35, 0xd0, 0x8c, 0x3d, 0x63, 0x3b, 0xbb, 0x5d, 0x99, 0xb8, 0x52,
+	0x6f, 0x33, 0x1e, 0xcf, 0x7b, 0x3f, 0xbf, 0xff, 0x86, 0x76, 0x42, 0xe3, 0x31, 0x8d, 0xad, 0x07,
+	0x2c, 0xde, 0xbb, 0x37, 0x64, 0x0f, 0xf4, 0xc2, 0x8c, 0x62, 0xc6, 0x19, 0x6e, 0xa8, 0xbd, 0xb1,
+	0xe6, 0xf9, 0x7c, 0x77, 0xd4, 0x37, 0x5d, 0x16, 0x58, 0x1e, 0xf3, 0x98, 0x25, 0x5f, 0xe8, 0x8f,
+	0xee, 0xc9, 0x9d, 0xdc, 0xc8, 0x55, 0x7a, 0xd1, 0x58, 0xf6, 0x18, 0xf3, 0x86, 0xd4, 0x72, 0x22,
+	0xdf, 0x72, 0xc2, 0x90, 0x71, 0x87, 0xfb, 0x2c, 0x4c, 0xb2, 0xd3, 0x2b, 0x7b, 0xd7, 0x12, 0xd3,
+	0x67, 0xe2, 0x34, 0x70, 0xdc, 0x5d, 0x3f, 0xa4, 0xf1, 0xc4, 0x8a, 0xf6, 0x3c, 0xf1, 0x20, 0xb1,
+	0x02, 0xca, 0x1d, 0x6b, 0xdc, 0xb5, 0x3c, 0x1a, 0xd2, 0xd8, 0xe1, 0x74, 0x90, 0xdd, 0xda, 0x2a,
+	0x20, 0x38, 0xb1, 0x54, 0x7a, 0x5f, 0x2e, 0xf2, 0xab, 0xfa, 0x3b, 0xc6, 0x5d, 0x67, 0x18, 0xed,
+	0x3a, 0xd3, 0x42, 0x48, 0xae, 0xda, 0x72, 0x59, 0x4c, 0x67, 0x28, 0x22, 0xbf, 0x2d, 0xc0, 0x8b,
+	0x1f, 0x65, 0x92, 0xb6, 0x62, 0xea, 0x70, 0x6a, 0xd3, 0x4f, 0x46, 0x34, 0xe1, 0x78, 0x19, 0x4e,
+	0x85, 0x4e, 0x40, 0x93, 0xc8, 0x71, 0x69, 0x0b, 0xad, 0xa0, 0xce, 0x29, 0x3b, 0x7f, 0x80, 0xef,
+	0x82, 0xb6, 0x57, 0x6b, 0x61, 0x05, 0x75, 0x16, 0x37, 0xde, 0x32, 0x73, 0x66, 0x53, 0x31, 0xcb,
+	0x85, 0x19, 0xed, 0x79, 0xa6, 0x60, 0x36, 0xb5, 0xc9, 0x15, 0xb3, 0xa9, 0x74, 0xdb, 0x5a, 0x1c,
+	0x6e, 0x03, 0xf8, 0x61, 0xc2, 0x9d, 0xd0, 0xa5, 0xb7, 0xb6, 0x5b, 0xc7, 0xa4, 0xe6, 0xc2, 0x13,
+	0x4c, 0xe0, 0x74, 0xea, 0xca, 0xed, 0x78, 0x62, 0x8f, 0xc2, 0xd6, 0xf1, 0x15, 0xd4, 0x69, 0xd8,
+	0xa5, 0x67, 0xf8, 0x2e, 0x2c, 0xb9, 0xf2, 0x6b, 0xde, 0x8f, 0xa4, 0x33, 0x5a, 0xcf, 0x48, 0xc6,
+	0x4d, 0x33, 0x35, 0x89, 0x59, 0xf4, 0x46, 0x8e, 0x27, 0xbc, 0x61, 0x8e, 0xbb, 0xe6, 0x56, 0xf1,
+	0xaa, 0x5d, 0x96, 0x44, 0x1e, 0x21, 0xc0, 0x8a, 0x7a, 0x87, 0x72, 0x65, 0x2e, 0x0c, 0xc7, 0x85,
+	0x75, 0x32, 0x4b, 0xc9, 0x75, 0xd9, 0x84, 0x0b, 0x87, 0x4d, 0x78, 0x1b, 0xc0, 0xa3, 0x5c, 0x01,
+	0x1e, 0x93, 0x80, 0xeb, 0xd5, 0x00, 0x77, 0xf4, 0x3d, 0xbb, 0x20, 0x83, 0x7c, 0x85, 0xe0, 0x79,
+	0x85, 0xd6, 0xf3, 0x13, 0x5e, 0xcd, 0x95, 0x77, 0x60, 0x71, 0xe8, 0x27, 0x1a, 0x24, 0xf5, 0x66,
+	0xb7, 0x1a, 0x48, 0x2f, 0xbf, 0x68, 0x17, 0xa5, 0x10, 0x0f, 0x5e, 0xd6, 0xae, 0xa5, 0xc9, 0xa8,
+	0x1f, 0xf8, 0x35, 0x2c, 0x65, 0x40, 0x23, 0xa0, 0x01, 0xf3, 0x3f, 0xa5, 0x03, 0x69, 0xa7, 0x86,
+	0xad, 0xf7, 0xe4, 0x1d, 0x78, 0x21, 0x57, 0xc4, 0xe3, 0xc9, 0x91, 0xb5, 0x90, 0x5b, 0x79, 0x26,
+	0x08, 0xe4, 0x80, 0x1e, 0x5d, 0x54, 0x0f, 0x5a, 0x4a, 0xd4, 0x07, 0x34, 0x0e, 0xfc, 0xb0, 0x90,
+	0x57, 0xff, 0x5f, 0xda, 0xbb, 0xf0, 0x92, 0x92, 0x76, 0x67, 0x94, 0x44, 0x34, 0x1c, 0x1c, 0x5d,
+	0xd6, 0x0f, 0x85, 0xe8, 0xed, 0x31, 0xef, 0xe8, 0x3e, 0x69, 0xc1, 0xc9, 0x88, 0x0d, 0xde, 0x13,
+	0x97, 0xd2, 0x14, 0x55, 0x5b, 0x7c, 0x03, 0x60, 0xc8, 0x3c, 0x15, 0x4e, 0xc7, 0x65, 0x38, 0x9d,
+	0x2f, 0x84, 0x93, 0x29, 0x6a, 0x91, 0x08, 0x9e, 0xdb, 0x6c, 0xd0, 0xd3, 0x2f, 0xda, 0x85, 0x4b,
+	0xe4, 0x47, 0x94, 0xfb, 0x62, 0x9b, 0x0e, 0x69, 0x0d, 0xeb, 0x89, 0x52, 0x30, 0x90, 0x22, 0xca,
+	0x99, 0x56, 0xb1, 0x14, 0x6c, 0x17, 0xaf, 0xda, 0x65, 0x49, 0xa4, 0x95, 0x3b, 0x46, 0x51, 0x26,
+	0x11, 0x0b, 0x13, 0x4a, 0xbe, 0x16, 0x1f, 0xe0, 0x70, 0x77, 0x57, 0x9d, 0x27, 0x4f, 0x31, 0x17,
+	0x3f, 0xcf, 0x5d, 0x2e, 0x99, 0x6e, 0x8e, 0x69, 0x28, 0x2d, 0xc9, 0x27, 0x91, 0xb6, 0xa4, 0x58,
+	0xe3, 0x0f, 0xe1, 0x04, 0xeb, 0xdf, 0xa7, 0x2e, 0x7f, 0x32, 0x35, 0x3d, 0x13, 0x46, 0x2e, 0x40,
+	0xa3, 0xc7, 0xbc, 0x9b, 0x21, 0x8f, 0x27, 0x22, 0x6e, 0x5c, 0x16, 0x72, 0x1a, 0xf2, 0x4c, 0xb3,
+	0xda, 0x92, 0x6f, 0x4a, 0xd5, 0x2b, 0xe4, 0x4f, 0xbb, 0x11, 0x6d, 0xfc, 0xdb, 0x84, 0x33, 0x3a,
+	0xf1, 0x68, 0x3c, 0xf6, 0x5d, 0x8a, 0xbf, 0x43, 0xd0, 0x4c, 0xdb, 0x83, 0x3a, 0xc1, 0xe7, 0x72,
+	0x69, 0x33, 0x3b, 0xa9, 0x51, 0x0f, 0x88, 0x74, 0xbe, 0xfc, 0xeb, 0x9f, 0x6f, 0x17, 0x08, 0x39,
+	0x2b, 0x1b, 0xf9, 0xb8, 0xab, 0x3b, 0x7f, 0x62, 0x3d, 0xd4, 0x76, 0xd8, 0xbf, 0x8e, 0x56, 0xf1,
+	0x23, 0x04, 0x8b, 0x3b, 0x94, 0x6b, 0xb2, 0xe5, 0x69, 0xb2, 0xbc, 0x63, 0xd5, 0xc5, 0xba, 0x2c,
+	0xb1, 0x5e, 0xc5, 0x17, 0xe6, 0x62, 0xa5, 0xeb, 0x7d, 0x81, 0xb6, 0x24, 0x02, 0x54, 0xe7, 0x03,
+	0x3e, 0x3b, 0x0d, 0x57, 0xe8, 0x59, 0xc6, 0x8d, 0x5a, 0x74, 0x42, 0x12, 0xb9, 0x28, 0x09, 0xcf,
+	0xe1, 0xf9, 0x86, 0xc3, 0x9f, 0x41, 0xb3, 0x9c, 0xaa, 0x25, 0x8f, 0xce, 0x4a, 0x62, 0x63, 0x86,
+	0x61, 0xf3, 0xcc, 0x22, 0x97, 0xa4, 0xde, 0x8b, 0xf8, 0x95, 0xc3, 0x7a, 0xd7, 0xa8, 0x38, 0x2f,
+	0x69, 0x5f, 0x47, 0xf8, 0x0b, 0x04, 0xcd, 0xb4, 0x7c, 0xcc, 0x0b, 0xa9, 0x52, 0x19, 0x34, 0x56,
+	0x1e, 0xff, 0x42, 0x56, 0x81, 0x32, 0xf7, 0xac, 0x56, 0x73, 0xcf, 0x4f, 0x08, 0x96, 0x64, 0xfb,
+	0xd4, 0x08, 0xed, 0x69, 0x0d, 0xc5, 0xfe, 0x5a, 0x37, 0x7a, 0x5e, 0x97, 0x78, 0x96, 0xb1, 0x5a,
+	0x05, 0xcf, 0x8a, 0x85, 0x66, 0x11, 0xe1, 0xbf, 0x22, 0x78, 0x56, 0xcd, 0x13, 0x1a, 0xf5, 0xfc,
+	0x2c, 0xd4, 0xd2, 0xcc, 0x51, 0x97, 0xf6, 0x9a, 0xa4, 0xdd, 0x30, 0xd6, 0x2a, 0xd2, 0xa6, 0xca,
+	0x05, 0xf0, 0xcf, 0x08, 0x9a, 0xe9, 0x34, 0x31, 0xcf, 0xb9, 0xa5, 0x79, 0xa3, 0x2e, 0xec, 0x55,
+	0x09, 0xbb, 0x6e, 0x5c, 0xaa, 0x0c, 0x1b, 0x50, 0x81, 0xfa, 0x0b, 0x82, 0x33, 0xd9, 0x7c, 0xa1,
+	0x59, 0x67, 0xc4, 0x59, 0x79, 0x04, 0xa9, 0x0b, 0xfb, 0x86, 0x84, 0xed, 0x1a, 0x97, 0x2b, 0xc1,
+	0x26, 0xa9, 0x6e, 0x41, 0xfb, 0x3b, 0x82, 0xe7, 0xf4, 0x6c, 0xa5, 0x79, 0xc9, 0x34, 0xef, 0xe1,
+	0x01, 0xac, 0x2e, 0xf1, 0x9b, 0x92, 0x78, 0xd3, 0x30, 0x2b, 0x11, 0x73, 0xa5, 0x5d, 0x30, 0x7f,
+	0x8f, 0xe0, 0xb4, 0xe8, 0x6c, 0x1a, 0x77, 0x66, 0x0d, 0x0c, 0x9f, 0x54, 0xd4, 0xae, 0x49, 0xd2,
+	0xd7, 0x08, 0x99, 0x4f, 0x3a, 0xf4, 0x43, 0x19, 0xaa, 0x13, 0x38, 0x99, 0x4e, 0x64, 0xc9, 0xac,
+	0xc6, 0x91, 0x0f, 0x8b, 0x06, 0xce, 0x4f, 0x55, 0x5b, 0x27, 0xd7, 0xa5, 0xae, 0x2b, 0x78, 0xa3,
+	0x92, 0x55, 0x1e, 0x66, 0xb3, 0xe2, 0xbe, 0x35, 0x64, 0xde, 0x3a, 0x7a, 0xfb, 0xea, 0x1f, 0x07,
+	0x6d, 0xf4, 0xe7, 0x41, 0x1b, 0xfd, 0x7d, 0xd0, 0x46, 0x1f, 0x77, 0x1e, 0xfb, 0xf3, 0x7b, 0xe8,
+	0x17, 0xbe, 0x7f, 0x42, 0xfe, 0xc4, 0x6e, 0xfe, 0x17, 0x00, 0x00, 0xff, 0xff, 0xea, 0x00, 0x07,
+	0x45, 0xdc, 0x0f, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1383,3 +1523,3066 @@ var _WorkflowService_serviceDesc = grpc.ServiceDesc{
 	},
 	Metadata: "server/workflow/workflow.proto",
 }
+
+func (m *WorkflowCreateRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowCreateRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowCreateRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.CreateOptions != nil {
+		{
+			size, err := m.CreateOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWorkflow(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x2a
+	}
+	if m.ServerDryRun {
+		i--
+		if m.ServerDryRun {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.InstanceID) > 0 {
+		i -= len(m.InstanceID)
+		copy(dAtA[i:], m.InstanceID)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.InstanceID)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.Workflow != nil {
+		{
+			size, err := m.Workflow.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWorkflow(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorkflowGetRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowGetRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowGetRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.GetOptions != nil {
+		{
+			size, err := m.GetOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWorkflow(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorkflowListRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowListRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowListRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.ListOptions != nil {
+		{
+			size, err := m.ListOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWorkflow(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorkflowResubmitRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowResubmitRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowResubmitRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.Memoized {
+		i--
+		if m.Memoized {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorkflowRetryRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowRetryRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowRetryRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorkflowResumeRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowResumeRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowResumeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorkflowTerminateRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowTerminateRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowTerminateRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorkflowSuspendRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowSuspendRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowSuspendRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorkflowLogRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowLogRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowLogRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.LogOptions != nil {
+		{
+			size, err := m.LogOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWorkflow(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.PodName) > 0 {
+		i -= len(m.PodName)
+		copy(dAtA[i:], m.PodName)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.PodName)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorkflowDeleteRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowDeleteRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowDeleteRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.DeleteOptions != nil {
+		{
+			size, err := m.DeleteOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWorkflow(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorkflowDeleteResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowDeleteResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowDeleteResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WatchWorkflowsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WatchWorkflowsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WatchWorkflowsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.ListOptions != nil {
+		{
+			size, err := m.ListOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWorkflow(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorkflowWatchEvent) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowWatchEvent) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowWatchEvent) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.Object != nil {
+		{
+			size, err := m.Object.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWorkflow(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Type) > 0 {
+		i -= len(m.Type)
+		copy(dAtA[i:], m.Type)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Type)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *LogEntry) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *LogEntry) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *LogEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.Content) > 0 {
+		i -= len(m.Content)
+		copy(dAtA[i:], m.Content)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Content)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorkflowLintRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowLintRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowLintRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.Workflow != nil {
+		{
+			size, err := m.Workflow.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWorkflow(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func encodeVarintWorkflow(dAtA []byte, offset int, v uint64) int {
+	offset -= sovWorkflow(v)
+	base := offset
+	for v >= 1<<7 {
+		dAtA[offset] = uint8(v&0x7f | 0x80)
+		v >>= 7
+		offset++
+	}
+	dAtA[offset] = uint8(v)
+	return base
+}
+func (m *WorkflowCreateRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.Workflow != nil {
+		l = m.Workflow.Size()
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	l = len(m.InstanceID)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.ServerDryRun {
+		n += 2
+	}
+	if m.CreateOptions != nil {
+		l = m.CreateOptions.Size()
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WorkflowGetRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.GetOptions != nil {
+		l = m.GetOptions.Size()
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WorkflowListRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.ListOptions != nil {
+		l = m.ListOptions.Size()
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WorkflowResubmitRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.Memoized {
+		n += 2
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WorkflowRetryRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WorkflowResumeRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WorkflowTerminateRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WorkflowSuspendRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WorkflowLogRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	l = len(m.PodName)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.LogOptions != nil {
+		l = m.LogOptions.Size()
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WorkflowDeleteRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.DeleteOptions != nil {
+		l = m.DeleteOptions.Size()
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WorkflowDeleteResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WatchWorkflowsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.ListOptions != nil {
+		l = m.ListOptions.Size()
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WorkflowWatchEvent) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Type)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.Object != nil {
+		l = m.Object.Size()
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *LogEntry) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Content)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WorkflowLintRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.Workflow != nil {
+		l = m.Workflow.Size()
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func sovWorkflow(x uint64) (n int) {
+	return (math_bits.Len64(x|1) + 6) / 7
+}
+func sozWorkflow(x uint64) (n int) {
+	return sovWorkflow(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *WorkflowCreateRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowCreateRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowCreateRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Workflow", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Workflow == nil {
+				m.Workflow = &v1alpha1.Workflow{}
+			}
+			if err := m.Workflow.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InstanceID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.InstanceID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ServerDryRun", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.ServerDryRun = bool(v != 0)
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreateOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.CreateOptions == nil {
+				m.CreateOptions = &v1.CreateOptions{}
+			}
+			if err := m.CreateOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowGetRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowGetRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowGetRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GetOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.GetOptions == nil {
+				m.GetOptions = &v1.GetOptions{}
+			}
+			if err := m.GetOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowListRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowListRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowListRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ListOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ListOptions == nil {
+				m.ListOptions = &v1.ListOptions{}
+			}
+			if err := m.ListOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowResubmitRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowResubmitRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowResubmitRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Memoized", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Memoized = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowRetryRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowRetryRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowRetryRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowResumeRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowResumeRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowResumeRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowTerminateRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowTerminateRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowTerminateRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowSuspendRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowSuspendRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowSuspendRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowLogRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowLogRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowLogRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PodName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PodName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LogOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.LogOptions == nil {
+				m.LogOptions = &v11.PodLogOptions{}
+			}
+			if err := m.LogOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowDeleteRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowDeleteRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowDeleteRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DeleteOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DeleteOptions == nil {
+				m.DeleteOptions = &v1.DeleteOptions{}
+			}
+			if err := m.DeleteOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowDeleteResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowDeleteResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowDeleteResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WatchWorkflowsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WatchWorkflowsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WatchWorkflowsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ListOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ListOptions == nil {
+				m.ListOptions = &v1.ListOptions{}
+			}
+			if err := m.ListOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowWatchEvent) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowWatchEvent: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowWatchEvent: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Type = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Object", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Object == nil {
+				m.Object = &v1alpha1.Workflow{}
+			}
+			if err := m.Object.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *LogEntry) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LogEntry: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LogEntry: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Content", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Content = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowLintRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowLintRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowLintRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Workflow", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Workflow == nil {
+				m.Workflow = &v1alpha1.Workflow{}
+			}
+			if err := m.Workflow.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func skipWorkflow(dAtA []byte) (n int, err error) {
+	l := len(dAtA)
+	iNdEx := 0
+	depth := 0
+	for iNdEx < l {
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return 0, ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return 0, io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		wireType := int(wire & 0x7)
+		switch wireType {
+		case 0:
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				iNdEx++
+				if dAtA[iNdEx-1] < 0x80 {
+					break
+				}
+			}
+		case 1:
+			iNdEx += 8
+		case 2:
+			var length int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				length |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if length < 0 {
+				return 0, ErrInvalidLengthWorkflow
+			}
+			iNdEx += length
+		case 3:
+			depth++
+		case 4:
+			if depth == 0 {
+				return 0, ErrUnexpectedEndOfGroupWorkflow
+			}
+			depth--
+		case 5:
+			iNdEx += 4
+		default:
+			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
+		}
+		if iNdEx < 0 {
+			return 0, ErrInvalidLengthWorkflow
+		}
+		if depth == 0 {
+			return iNdEx, nil
+		}
+	}
+	return 0, io.ErrUnexpectedEOF
+}
+
+var (
+	ErrInvalidLengthWorkflow        = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowWorkflow          = fmt.Errorf("proto: integer overflow")
+	ErrUnexpectedEndOfGroupWorkflow = fmt.Errorf("proto: unexpected end of group")
+)

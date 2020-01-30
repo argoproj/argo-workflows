@@ -7,14 +7,17 @@ import (
 	context "context"
 	fmt "fmt"
 	v1alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	io "io"
 	_ "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	math "math"
+	math_bits "math/bits"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -44,16 +47,25 @@ func (*CreateCronWorkflowRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_02ecfb52b8f4ca0d, []int{0}
 }
 func (m *CreateCronWorkflowRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_CreateCronWorkflowRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *CreateCronWorkflowRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_CreateCronWorkflowRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_CreateCronWorkflowRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *CreateCronWorkflowRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_CreateCronWorkflowRequest.Merge(m, src)
 }
 func (m *CreateCronWorkflowRequest) XXX_Size() int {
-	return xxx_messageInfo_CreateCronWorkflowRequest.Size(m)
+	return m.Size()
 }
 func (m *CreateCronWorkflowRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_CreateCronWorkflowRequest.DiscardUnknown(m)
@@ -97,16 +109,25 @@ func (*ListCronWorkflowsRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_02ecfb52b8f4ca0d, []int{1}
 }
 func (m *ListCronWorkflowsRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ListCronWorkflowsRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *ListCronWorkflowsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ListCronWorkflowsRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_ListCronWorkflowsRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *ListCronWorkflowsRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_ListCronWorkflowsRequest.Merge(m, src)
 }
 func (m *ListCronWorkflowsRequest) XXX_Size() int {
-	return xxx_messageInfo_ListCronWorkflowsRequest.Size(m)
+	return m.Size()
 }
 func (m *ListCronWorkflowsRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_ListCronWorkflowsRequest.DiscardUnknown(m)
@@ -144,16 +165,25 @@ func (*GetCronWorkflowRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_02ecfb52b8f4ca0d, []int{2}
 }
 func (m *GetCronWorkflowRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_GetCronWorkflowRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *GetCronWorkflowRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_GetCronWorkflowRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_GetCronWorkflowRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *GetCronWorkflowRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_GetCronWorkflowRequest.Merge(m, src)
 }
 func (m *GetCronWorkflowRequest) XXX_Size() int {
-	return xxx_messageInfo_GetCronWorkflowRequest.Size(m)
+	return m.Size()
 }
 func (m *GetCronWorkflowRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_GetCronWorkflowRequest.DiscardUnknown(m)
@@ -198,16 +228,25 @@ func (*UpdateCronWorkflowRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_02ecfb52b8f4ca0d, []int{3}
 }
 func (m *UpdateCronWorkflowRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_UpdateCronWorkflowRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *UpdateCronWorkflowRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_UpdateCronWorkflowRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_UpdateCronWorkflowRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *UpdateCronWorkflowRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_UpdateCronWorkflowRequest.Merge(m, src)
 }
 func (m *UpdateCronWorkflowRequest) XXX_Size() int {
-	return xxx_messageInfo_UpdateCronWorkflowRequest.Size(m)
+	return m.Size()
 }
 func (m *UpdateCronWorkflowRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_UpdateCronWorkflowRequest.DiscardUnknown(m)
@@ -252,16 +291,25 @@ func (*DeleteCronWorkflowRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_02ecfb52b8f4ca0d, []int{4}
 }
 func (m *DeleteCronWorkflowRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_DeleteCronWorkflowRequest.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *DeleteCronWorkflowRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_DeleteCronWorkflowRequest.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_DeleteCronWorkflowRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *DeleteCronWorkflowRequest) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_DeleteCronWorkflowRequest.Merge(m, src)
 }
 func (m *DeleteCronWorkflowRequest) XXX_Size() int {
-	return xxx_messageInfo_DeleteCronWorkflowRequest.Size(m)
+	return m.Size()
 }
 func (m *DeleteCronWorkflowRequest) XXX_DiscardUnknown() {
 	xxx_messageInfo_DeleteCronWorkflowRequest.DiscardUnknown(m)
@@ -303,16 +351,25 @@ func (*CronWorkflowDeletedResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_02ecfb52b8f4ca0d, []int{5}
 }
 func (m *CronWorkflowDeletedResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_CronWorkflowDeletedResponse.Unmarshal(m, b)
+	return m.Unmarshal(b)
 }
 func (m *CronWorkflowDeletedResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_CronWorkflowDeletedResponse.Marshal(b, m, deterministic)
+	if deterministic {
+		return xxx_messageInfo_CronWorkflowDeletedResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
 }
 func (m *CronWorkflowDeletedResponse) XXX_Merge(src proto.Message) {
 	xxx_messageInfo_CronWorkflowDeletedResponse.Merge(m, src)
 }
 func (m *CronWorkflowDeletedResponse) XXX_Size() int {
-	return xxx_messageInfo_CronWorkflowDeletedResponse.Size(m)
+	return m.Size()
 }
 func (m *CronWorkflowDeletedResponse) XXX_DiscardUnknown() {
 	xxx_messageInfo_CronWorkflowDeletedResponse.DiscardUnknown(m)
@@ -334,45 +391,47 @@ func init() {
 }
 
 var fileDescriptor_02ecfb52b8f4ca0d = []byte{
-	// 607 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x96, 0x4f, 0x6f, 0xd3, 0x30,
-	0x18, 0xc6, 0xe5, 0x0e, 0x4d, 0x9a, 0xc7, 0x84, 0x30, 0x12, 0x6a, 0xc3, 0x90, 0x26, 0x6b, 0xa2,
-	0x5b, 0x61, 0x0e, 0xdd, 0x76, 0x40, 0xdc, 0xa0, 0x43, 0xbb, 0x4c, 0x02, 0x65, 0x42, 0x68, 0xdc,
-	0xbc, 0xf4, 0x25, 0x0d, 0x6d, 0xe3, 0x60, 0x7b, 0x99, 0x10, 0xda, 0x85, 0x3b, 0x27, 0x8e, 0xf0,
-	0x01, 0xb8, 0x00, 0x17, 0xc4, 0x17, 0xe1, 0x2b, 0xf0, 0x2d, 0x38, 0x80, 0xe2, 0x36, 0xcd, 0x9f,
-	0x36, 0x22, 0xb0, 0xee, 0xe6, 0xfc, 0x79, 0x9f, 0xf7, 0xe7, 0xa7, 0xef, 0xe3, 0x14, 0x37, 0x15,
-	0xc8, 0x08, 0xa4, 0xed, 0x4a, 0x11, 0x9c, 0x0a, 0xd9, 0x7f, 0x31, 0x10, 0xa7, 0xe6, 0x62, 0x2b,
-	0xb9, 0x62, 0xa1, 0x14, 0x5a, 0x90, 0xcb, 0xd9, 0x37, 0xac, 0x55, 0x4f, 0x08, 0x6f, 0x00, 0x36,
-	0x0f, 0x7d, 0x9b, 0x07, 0x81, 0xd0, 0x5c, 0xfb, 0x22, 0x50, 0xa3, 0x77, 0xad, 0xdd, 0xfe, 0x3d,
-	0xc5, 0x7c, 0x11, 0x3f, 0x1d, 0x72, 0xb7, 0xe7, 0x07, 0x20, 0x5f, 0xdb, 0x61, 0xdf, 0x8b, 0x6f,
-	0x28, 0x7b, 0x08, 0x9a, 0xdb, 0x51, 0xdb, 0xf6, 0x20, 0x00, 0xc9, 0x35, 0x74, 0xc7, 0x55, 0x1d,
-	0xcf, 0xd7, 0xbd, 0x93, 0x63, 0xe6, 0x8a, 0xa1, 0xcd, 0xa5, 0x27, 0x42, 0x29, 0x5e, 0x9a, 0x45,
-	0x5a, 0x3a, 0x21, 0x8c, 0xda, 0x7c, 0x10, 0xf6, 0xf8, 0xb4, 0x08, 0x4d, 0x5b, 0xdb, 0xae, 0x90,
-	0x30, 0xa3, 0x11, 0xfd, 0x85, 0x70, 0xa3, 0x23, 0x81, 0x6b, 0xe8, 0x48, 0x11, 0x3c, 0x1b, 0x6b,
-	0x3a, 0xf0, 0xea, 0x04, 0x94, 0x26, 0xab, 0x78, 0x29, 0xe0, 0x43, 0x50, 0x21, 0x77, 0xa1, 0x8e,
-	0xd6, 0xd0, 0xc6, 0x92, 0x93, 0xde, 0x20, 0x80, 0x8d, 0x11, 0x49, 0x51, 0xbd, 0xb6, 0x86, 0x36,
-	0x96, 0xb7, 0x1f, 0xb0, 0x94, 0x9d, 0x25, 0xec, 0x66, 0xc1, 0xc2, 0xbe, 0xc7, 0x62, 0x76, 0x36,
-	0xf1, 0x33, 0x61, 0x67, 0xb9, 0xee, 0x39, 0x59, 0x72, 0x84, 0x57, 0x5c, 0x43, 0xf8, 0x38, 0x34,
-	0xc6, 0xd6, 0x17, 0x4c, 0x9f, 0x1d, 0x36, 0xda, 0x1e, 0xcb, 0x3a, 0x9b, 0xb6, 0x88, 0x9d, 0x65,
-	0x51, 0x2c, 0x9c, 0x29, 0x75, 0xf2, 0x4a, 0xf4, 0x1d, 0xc2, 0xf5, 0x03, 0x5f, 0xe9, 0x6c, 0x77,
-	0x55, 0x6d, 0xf3, 0x87, 0x78, 0x79, 0xe0, 0x2b, 0x9d, 0x30, 0x8d, 0xf6, 0xde, 0xae, 0xc6, 0x74,
-	0x90, 0x16, 0x3a, 0x59, 0x15, 0xfa, 0x11, 0xe1, 0xeb, 0xfb, 0xa0, 0x67, 0xfd, 0x14, 0x04, 0x5f,
-	0x8a, 0x9b, 0x8f, 0x41, 0xcc, 0x3a, 0x4f, 0x58, 0x2b, 0x12, 0x3e, 0xc1, 0xd8, 0x03, 0x9d, 0x37,
-	0xed, 0x6e, 0x35, 0xc0, 0xfd, 0x49, 0x9d, 0x93, 0xd1, 0xa0, 0xdf, 0x10, 0x6e, 0x3c, 0x0d, 0xbb,
-	0x25, 0xc3, 0xf2, 0xef, 0x84, 0xc5, 0x01, 0x5a, 0xb8, 0x90, 0x01, 0xa2, 0x9f, 0x10, 0x6e, 0xec,
-	0xc1, 0x00, 0xe6, 0x85, 0x7d, 0x84, 0x57, 0xba, 0x46, 0xee, 0xbf, 0x06, 0x72, 0x2f, 0x5b, 0xea,
-	0xe4, 0x95, 0xe8, 0x4d, 0x7c, 0x23, 0xcb, 0x38, 0x7a, 0xb7, 0xeb, 0x80, 0x0a, 0x45, 0xa0, 0x60,
-	0xfb, 0xf7, 0x22, 0xbe, 0x96, 0x7d, 0x7e, 0x08, 0x32, 0xf2, 0x5d, 0x20, 0x5f, 0x11, 0x26, 0xd3,
-	0x29, 0x26, 0x4d, 0x96, 0x3d, 0xa8, 0x58, 0x69, 0xce, 0xad, 0xf3, 0x5b, 0x4e, 0xb7, 0xde, 0xfe,
-	0xf8, 0xf9, 0xbe, 0xd6, 0xa4, 0xd4, 0x1c, 0x37, 0x51, 0x3b, 0x7f, 0x70, 0x2a, 0xfb, 0xcd, 0xc4,
-	0xbf, 0xb3, 0xfb, 0xa8, 0x45, 0xbe, 0x20, 0x7c, 0x75, 0x2a, 0x79, 0xe4, 0x56, 0x1e, 0xb8, 0x2c,
-	0x9a, 0xd6, 0xa3, 0x73, 0xf3, 0xc6, 0xd2, 0xb4, 0x65, 0x98, 0xd7, 0x49, 0x05, 0x66, 0xf2, 0x19,
-	0xe1, 0x2b, 0x85, 0x68, 0x92, 0xf5, 0x3c, 0xee, 0xec, 0xe4, 0xce, 0xc3, 0xdc, 0xb6, 0x01, 0xbd,
-	0x4d, 0x36, 0xff, 0x0e, 0x3a, 0x5a, 0x9f, 0x91, 0xef, 0x08, 0x93, 0xe9, 0xac, 0x16, 0x47, 0xa2,
-	0x34, 0xcd, 0xf3, 0xa0, 0xde, 0x35, 0xd4, 0xcc, 0xaa, 0x4e, 0x1d, 0x4f, 0xc6, 0x07, 0x84, 0xc9,
-	0x74, 0x5a, 0x8b, 0xe0, 0xa5, 0x79, 0xb6, 0x36, 0x8b, 0x43, 0x5f, 0x1a, 0xa7, 0xc4, 0xd6, 0x56,
-	0x75, 0xc0, 0x87, 0xec, 0xf9, 0x9d, 0xd2, 0x4f, 0xf3, 0x8c, 0xbf, 0x0f, 0xc7, 0x8b, 0xe6, 0x33,
-	0xbb, 0xf3, 0x27, 0x00, 0x00, 0xff, 0xff, 0x5a, 0x6d, 0xbc, 0x28, 0x5c, 0x08, 0x00, 0x00,
+	// 640 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x96, 0xcd, 0x6e, 0xd3, 0x40,
+	0x10, 0xc7, 0xb5, 0x2d, 0xaa, 0xd4, 0x2d, 0x15, 0x62, 0x91, 0x50, 0x6a, 0x4a, 0x55, 0x59, 0x15,
+	0xfd, 0x80, 0xac, 0x49, 0xdb, 0x03, 0xea, 0x0d, 0x52, 0xd4, 0x4b, 0x25, 0x90, 0x2b, 0x84, 0xca,
+	0x6d, 0xe3, 0x4c, 0x1d, 0x93, 0xc4, 0x6b, 0x76, 0x37, 0xae, 0x10, 0xea, 0x85, 0x3b, 0x27, 0x8e,
+	0xf0, 0x00, 0x5c, 0x80, 0x0b, 0xe2, 0x19, 0x38, 0x22, 0xf1, 0x02, 0x28, 0xe2, 0x2d, 0x38, 0x80,
+	0xbc, 0x89, 0xe3, 0x8f, 0xc4, 0xc2, 0xd0, 0x70, 0x9b, 0xb5, 0x77, 0x66, 0x7e, 0xfb, 0xcf, 0xfc,
+	0xd7, 0xc1, 0xeb, 0x12, 0x44, 0x08, 0xc2, 0x72, 0x04, 0xf7, 0x4f, 0xb9, 0x68, 0x9f, 0x74, 0xf8,
+	0xa9, 0x5e, 0x54, 0xe3, 0x15, 0x0d, 0x04, 0x57, 0x9c, 0x5c, 0x4c, 0xef, 0x30, 0xaa, 0xae, 0xa7,
+	0x5a, 0xbd, 0x06, 0x75, 0x78, 0xd7, 0x72, 0xb9, 0xcb, 0x2d, 0xbd, 0xa9, 0xd1, 0x3b, 0xd1, 0x2b,
+	0xbd, 0xd0, 0xd1, 0x20, 0xd9, 0x58, 0x76, 0x39, 0x77, 0x3b, 0x60, 0xb1, 0xc0, 0xb3, 0x98, 0xef,
+	0x73, 0xc5, 0x94, 0xc7, 0x7d, 0x39, 0x7c, 0xbb, 0xdb, 0xbe, 0x23, 0xa9, 0xc7, 0xa3, 0xb7, 0x5d,
+	0xe6, 0xb4, 0x3c, 0x1f, 0xc4, 0x73, 0x2b, 0x68, 0xbb, 0xd1, 0x03, 0x69, 0x75, 0x41, 0x31, 0x2b,
+	0xac, 0x59, 0x2e, 0xf8, 0x20, 0x98, 0x82, 0xe6, 0x30, 0xab, 0x9e, 0x42, 0x60, 0x42, 0x37, 0x7d,
+	0xaa, 0x83, 0x24, 0x75, 0x74, 0xa0, 0xb0, 0xc6, 0x3a, 0x41, 0x8b, 0x8d, 0x17, 0x31, 0x93, 0xd6,
+	0x96, 0xc3, 0x05, 0x4c, 0x68, 0x64, 0xfe, 0x44, 0x78, 0xa9, 0x2e, 0x80, 0x29, 0xa8, 0x0b, 0xee,
+	0x3f, 0x1e, 0xd6, 0xb4, 0xe1, 0x59, 0x0f, 0xa4, 0x22, 0xcb, 0x78, 0xde, 0x67, 0x5d, 0x90, 0x01,
+	0x73, 0xa0, 0x82, 0x56, 0xd1, 0xc6, 0xbc, 0x9d, 0x3c, 0x20, 0x80, 0xb5, 0x6e, 0x71, 0x52, 0x65,
+	0x66, 0x15, 0x6d, 0x2c, 0x6c, 0xdf, 0xa5, 0x09, 0x3b, 0x8d, 0xd9, 0x75, 0x40, 0x83, 0xb6, 0x4b,
+	0x23, 0x76, 0x3a, 0x92, 0x3f, 0x66, 0xa7, 0x99, 0xee, 0x99, 0xb2, 0xe4, 0x18, 0x2f, 0x3a, 0x9a,
+	0xf0, 0x41, 0xa0, 0x85, 0xad, 0xcc, 0xea, 0x3e, 0x3b, 0x74, 0x70, 0x3c, 0x9a, 0x56, 0x36, 0x69,
+	0x11, 0x29, 0x4b, 0xc3, 0xa8, 0x70, 0x2a, 0xd5, 0xce, 0x56, 0x32, 0x5f, 0x21, 0x5c, 0x39, 0xf4,
+	0xa4, 0x4a, 0x77, 0x97, 0xe5, 0x0e, 0x7f, 0x84, 0x17, 0x3a, 0x9e, 0x54, 0x31, 0xd3, 0xe0, 0xec,
+	0xb5, 0x72, 0x4c, 0x87, 0x49, 0xa2, 0x9d, 0xae, 0x62, 0xbe, 0x45, 0xf8, 0xea, 0x01, 0xa8, 0x49,
+	0x3f, 0x05, 0xc1, 0x17, 0xa2, 0xe6, 0x43, 0x10, 0x1d, 0x67, 0x09, 0x67, 0xf2, 0x84, 0x0f, 0x31,
+	0x76, 0x41, 0x65, 0x45, 0xbb, 0x5d, 0x0e, 0xf0, 0x60, 0x94, 0x67, 0xa7, 0x6a, 0x98, 0x9f, 0x10,
+	0x5e, 0x7a, 0x14, 0x34, 0x0b, 0x86, 0xe5, 0xef, 0x09, 0xf3, 0x03, 0x34, 0xfb, 0x5f, 0x06, 0xc8,
+	0x7c, 0x87, 0xf0, 0xd2, 0x3e, 0x74, 0x60, 0x5a, 0xd8, 0xc7, 0x78, 0xb1, 0xa9, 0xcb, 0xfd, 0xd3,
+	0x40, 0xee, 0xa7, 0x53, 0xed, 0x6c, 0x25, 0xf3, 0x3a, 0xbe, 0x96, 0x66, 0x1c, 0xec, 0x6d, 0xda,
+	0x20, 0x03, 0xee, 0x4b, 0xd8, 0xfe, 0x35, 0x87, 0xaf, 0xa4, 0xdf, 0x1f, 0x81, 0x08, 0x3d, 0x07,
+	0xc8, 0x47, 0x84, 0xc9, 0xb8, 0x8b, 0xc9, 0x3a, 0x4d, 0xdf, 0x6b, 0xb4, 0xd0, 0xe7, 0xc6, 0xf9,
+	0x25, 0x37, 0xab, 0x2f, 0xbf, 0xfd, 0x78, 0x3d, 0xb3, 0x6e, 0x9a, 0xfa, 0xba, 0x09, 0x6b, 0xd9,
+	0x7b, 0x56, 0x5a, 0x2f, 0x46, 0xfa, 0x9d, 0xed, 0xa1, 0x2d, 0xf2, 0x01, 0xe1, 0xcb, 0x63, 0xce,
+	0x23, 0x37, 0xb2, 0xc0, 0x45, 0xd6, 0x34, 0xee, 0x9f, 0x9b, 0x37, 0x2a, 0x6d, 0x6e, 0x69, 0xe6,
+	0x35, 0x52, 0x82, 0x99, 0xbc, 0x47, 0xf8, 0x52, 0xce, 0x9a, 0x64, 0x2d, 0x8b, 0x3b, 0xd9, 0xb9,
+	0xd3, 0x10, 0xb7, 0xa6, 0x41, 0x6f, 0x92, 0xcd, 0x3f, 0x83, 0x0e, 0xe2, 0x33, 0xf2, 0x19, 0x61,
+	0x32, 0xee, 0xd5, 0xfc, 0x48, 0x14, 0xba, 0x79, 0x1a, 0xd4, 0xbb, 0x9a, 0x9a, 0x1a, 0xe5, 0xa9,
+	0xa3, 0xc9, 0x78, 0x83, 0x30, 0x19, 0x77, 0x6b, 0x1e, 0xbc, 0xd0, 0xcf, 0xc6, 0x66, 0x7e, 0xe8,
+	0x0b, 0xed, 0x14, 0xcb, 0xba, 0x55, 0x1e, 0xf0, 0xde, 0xde, 0x97, 0xfe, 0x0a, 0xfa, 0xda, 0x5f,
+	0x41, 0xdf, 0xfb, 0x2b, 0xe8, 0xc9, 0xad, 0xc2, 0xcf, 0xf4, 0x84, 0x7f, 0x1e, 0x8d, 0x39, 0xfd,
+	0xc9, 0xdd, 0xf9, 0x1d, 0x00, 0x00, 0xff, 0xff, 0x30, 0xf7, 0x14, 0x67, 0x97, 0x08, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -598,3 +657,1319 @@ var _CronWorkflowService_serviceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "server/cronworkflow/cron-workflow.proto",
 }
+
+func (m *CreateCronWorkflowRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CreateCronWorkflowRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CreateCronWorkflowRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.CreateOptions != nil {
+		{
+			size, err := m.CreateOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCronWorkflow(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.CronWorkflow != nil {
+		{
+			size, err := m.CronWorkflow.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCronWorkflow(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintCronWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ListCronWorkflowsRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ListCronWorkflowsRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ListCronWorkflowsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.ListOptions != nil {
+		{
+			size, err := m.ListOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCronWorkflow(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintCronWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetCronWorkflowRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetCronWorkflowRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetCronWorkflowRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.GetOptions != nil {
+		{
+			size, err := m.GetOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCronWorkflow(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintCronWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintCronWorkflow(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *UpdateCronWorkflowRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UpdateCronWorkflowRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UpdateCronWorkflowRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.CronWorkflow != nil {
+		{
+			size, err := m.CronWorkflow.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCronWorkflow(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintCronWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintCronWorkflow(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *DeleteCronWorkflowRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DeleteCronWorkflowRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DeleteCronWorkflowRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.DeleteOptions != nil {
+		{
+			size, err := m.DeleteOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCronWorkflow(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintCronWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintCronWorkflow(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *CronWorkflowDeletedResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CronWorkflowDeletedResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CronWorkflowDeletedResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return len(dAtA) - i, nil
+}
+
+func encodeVarintCronWorkflow(dAtA []byte, offset int, v uint64) int {
+	offset -= sovCronWorkflow(v)
+	base := offset
+	for v >= 1<<7 {
+		dAtA[offset] = uint8(v&0x7f | 0x80)
+		v >>= 7
+		offset++
+	}
+	dAtA[offset] = uint8(v)
+	return base
+}
+func (m *CreateCronWorkflowRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovCronWorkflow(uint64(l))
+	}
+	if m.CronWorkflow != nil {
+		l = m.CronWorkflow.Size()
+		n += 1 + l + sovCronWorkflow(uint64(l))
+	}
+	if m.CreateOptions != nil {
+		l = m.CreateOptions.Size()
+		n += 1 + l + sovCronWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *ListCronWorkflowsRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovCronWorkflow(uint64(l))
+	}
+	if m.ListOptions != nil {
+		l = m.ListOptions.Size()
+		n += 1 + l + sovCronWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetCronWorkflowRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovCronWorkflow(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovCronWorkflow(uint64(l))
+	}
+	if m.GetOptions != nil {
+		l = m.GetOptions.Size()
+		n += 1 + l + sovCronWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *UpdateCronWorkflowRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovCronWorkflow(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovCronWorkflow(uint64(l))
+	}
+	if m.CronWorkflow != nil {
+		l = m.CronWorkflow.Size()
+		n += 1 + l + sovCronWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *DeleteCronWorkflowRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovCronWorkflow(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovCronWorkflow(uint64(l))
+	}
+	if m.DeleteOptions != nil {
+		l = m.DeleteOptions.Size()
+		n += 1 + l + sovCronWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *CronWorkflowDeletedResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func sovCronWorkflow(x uint64) (n int) {
+	return (math_bits.Len64(x|1) + 6) / 7
+}
+func sozCronWorkflow(x uint64) (n int) {
+	return sovCronWorkflow(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *CreateCronWorkflowRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCronWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateCronWorkflowRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateCronWorkflowRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCronWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CronWorkflow", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCronWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.CronWorkflow == nil {
+				m.CronWorkflow = &v1alpha1.CronWorkflow{}
+			}
+			if err := m.CronWorkflow.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreateOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCronWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.CreateOptions == nil {
+				m.CreateOptions = &v1.CreateOptions{}
+			}
+			if err := m.CreateOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCronWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ListCronWorkflowsRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCronWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ListCronWorkflowsRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ListCronWorkflowsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCronWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ListOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCronWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ListOptions == nil {
+				m.ListOptions = &v1.ListOptions{}
+			}
+			if err := m.ListOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCronWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetCronWorkflowRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCronWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetCronWorkflowRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetCronWorkflowRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCronWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCronWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GetOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCronWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.GetOptions == nil {
+				m.GetOptions = &v1.GetOptions{}
+			}
+			if err := m.GetOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCronWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UpdateCronWorkflowRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCronWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UpdateCronWorkflowRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UpdateCronWorkflowRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCronWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCronWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CronWorkflow", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCronWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.CronWorkflow == nil {
+				m.CronWorkflow = &v1alpha1.CronWorkflow{}
+			}
+			if err := m.CronWorkflow.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCronWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeleteCronWorkflowRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCronWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeleteCronWorkflowRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeleteCronWorkflowRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCronWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCronWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DeleteOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCronWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DeleteOptions == nil {
+				m.DeleteOptions = &v1.DeleteOptions{}
+			}
+			if err := m.DeleteOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCronWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CronWorkflowDeletedResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCronWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CronWorkflowDeletedResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CronWorkflowDeletedResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCronWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCronWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func skipCronWorkflow(dAtA []byte) (n int, err error) {
+	l := len(dAtA)
+	iNdEx := 0
+	depth := 0
+	for iNdEx < l {
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return 0, ErrIntOverflowCronWorkflow
+			}
+			if iNdEx >= l {
+				return 0, io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		wireType := int(wire & 0x7)
+		switch wireType {
+		case 0:
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowCronWorkflow
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				iNdEx++
+				if dAtA[iNdEx-1] < 0x80 {
+					break
+				}
+			}
+		case 1:
+			iNdEx += 8
+		case 2:
+			var length int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowCronWorkflow
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				length |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if length < 0 {
+				return 0, ErrInvalidLengthCronWorkflow
+			}
+			iNdEx += length
+		case 3:
+			depth++
+		case 4:
+			if depth == 0 {
+				return 0, ErrUnexpectedEndOfGroupCronWorkflow
+			}
+			depth--
+		case 5:
+			iNdEx += 4
+		default:
+			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
+		}
+		if iNdEx < 0 {
+			return 0, ErrInvalidLengthCronWorkflow
+		}
+		if depth == 0 {
+			return iNdEx, nil
+		}
+	}
+	return 0, io.ErrUnexpectedEOF
+}
+
+var (
+	ErrInvalidLengthCronWorkflow        = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowCronWorkflow          = fmt.Errorf("proto: integer overflow")
+	ErrUnexpectedEndOfGroupCronWorkflow = fmt.Errorf("proto: unexpected end of group")
+)

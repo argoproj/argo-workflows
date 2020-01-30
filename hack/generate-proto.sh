@@ -12,7 +12,7 @@ go-to-protobuf \
 
 go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v1.12.1
 go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.12.1
-go get github.com/gogo/protobuf/protoc-gen-gogo@v1.3.1
+go get github.com/gogo/protobuf/protoc-gen-gogofast@v1.3.1
 
 for f in $(find server -name '*.proto'); do
     protoc \
@@ -20,7 +20,7 @@ for f in $(find server -name '*.proto'); do
         -I . \
         -I ${GOPATH}/src \
         -I ${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.12.1/third_party/googleapis \
-        --gogo_out=plugins=grpc:${GOPATH}/src \
+        --gogofast_out=plugins=grpc:${GOPATH}/src \
         --grpc-gateway_out=logtostderr=true:${GOPATH}/src \
         --swagger_out=logtostderr=true:. \
         $f
