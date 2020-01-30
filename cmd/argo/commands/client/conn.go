@@ -40,7 +40,6 @@ func GetClientConn() *grpc.ClientConn {
 }
 
 func GetContext() context.Context {
-  
 	authString := GetAuthString()
 	if authString == "" {
 		return context.Background()
