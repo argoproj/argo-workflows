@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "Argo",
-    "version": "v2.4.0"
+    "version": "v2.5.0"
   },
   "paths": {},
   "definitions": {
@@ -272,6 +272,7 @@
     "io.argoproj.workflow.v1alpha1.CronWorkflowSpec": {
       "type": "object",
       "required": [
+        "workflowSpec",
         "schedule"
       ],
       "properties": {
@@ -301,6 +302,10 @@
         "suspend": {
           "description": "Suspend is a flag that will stop new CronWorkflows from running if set to true",
           "type": "boolean"
+        },
+        "timezone": {
+          "description": "Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\". Default is machine's local time.",
+          "type": "string"
         },
         "workflowSpec": {
           "description": "WorkflowSpec is the spec of the workflow to be run",
@@ -349,6 +354,10 @@
         },
         "name": {
           "description": "Name is the name of the target",
+          "type": "string"
+        },
+        "onExit": {
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
           "type": "string"
         },
         "template": {
@@ -1196,11 +1205,11 @@
       "description": "TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed",
       "type": "object",
       "properties": {
-        "secondsAfterCompleted": {
+        "secondsAfterCompletion": {
           "type": "integer",
           "format": "int32"
         },
-        "secondsAfterFailed": {
+        "secondsAfterFailure": {
           "type": "integer",
           "format": "int32"
         },
@@ -1334,6 +1343,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ScriptTemplate"
         },
         "securityContext": {
+          "description": "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
           "$ref": "#/definitions/io.k8s.api.core.v1.PodSecurityContext"
         },
         "serviceAccountName": {
@@ -1757,7 +1767,7 @@
           "x-kubernetes-patch-strategy": "merge"
         },
         "ttlSecondsAfterFinished": {
-          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompleted instead.",
+          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.",
           "type": "integer",
           "format": "int32"
         },
@@ -1808,6 +1818,10 @@
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeStatus"
           }
         },
+        "offloadNodeStatusVersion": {
+          "description": "Whether on not node status has been offloaded to a database. If exists, then Nodes and CompressedNodes will be empty. This will actually be populated with a hash of the offloaded data.",
+          "type": "string"
+        },
         "outputs": {
           "description": "Outputs captures output values and artifact locations produced by the workflow via global outputs",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
@@ -1850,6 +1864,10 @@
         },
         "name": {
           "description": "Name of the step",
+          "type": "string"
+        },
+        "onExit": {
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
           "type": "string"
         },
         "template": {

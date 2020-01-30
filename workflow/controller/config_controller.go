@@ -12,11 +12,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/config"
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
+
+	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/persist/sqldb"
+	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/config"
 )
 
 // ResyncConfig reloads the controller config from the configmap
@@ -33,7 +35,7 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 	configStr, ok := cm.Data[common.WorkflowControllerConfigMapKey]
 	if !ok {
 		log.Warnf("ConfigMap '%s' does not have key '%s'", wfc.configMap, common.WorkflowControllerConfigMapKey)
-		return nil
+		configStr = ""
 	}
 	var config config.WorkflowControllerConfig
 	err := yaml.Unmarshal([]byte(configStr), &config)
@@ -46,18 +48,38 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 	}
 	wfc.Config = config
 
-	if wfc.Config.Persistence != nil {
-		log.Info("Persistence configuration enabled")
-		dbctx, err := wfc.createPersistenceContext()
+	if wfc.session != nil {
+		err := wfc.session.Close()
 		if err != nil {
-			log.Errorf("Error Creating Persistence context. %v", err)
+			return err
+		}
+	}
+	wfc.session = nil
+	wfc.offloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
+	wfc.wfArchive = sqldb.NullWorkflowArchive
+	persistence := wfc.Config.Persistence
+	if persistence != nil {
+		log.Info("Persistence configuration enabled")
+		session, tableName, err := sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, persistence)
+		if err != nil {
+			return err
+		}
+		log.Info("Persistence Session created successfully")
+		err = sqldb.NewMigrate(session, persistence.GetClusterName(), tableName).Exec(context.Background())
+		if err != nil {
+			return err
+		}
+
+		wfc.session = session
+		wfc.offloadNodeStatusRepo = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+		if persistence.Archive {
+			wfc.wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName())
+			log.Info("Workflow archiving is enabled")
 		} else {
-			log.Info("Persistence Session created successfully")
-			wfc.wfDBctx = dbctx
+			log.Info("Workflow archiving is disabled")
 		}
 	} else {
 		log.Info("Persistence configuration disabled")
-		wfc.wfDBctx = nil
 	}
 	wfc.throttler.SetParallelism(config.Parallelism)
 	return nil

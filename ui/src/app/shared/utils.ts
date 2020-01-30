@@ -1,6 +1,6 @@
 import {Observable} from 'rxjs';
 import * as models from '../../models';
-import {NODE_PHASE} from '../../models';
+import {NODE_PHASE, Template} from '../../models';
 
 export const Utils = {
     statusIconClasses(status: string): string {
@@ -42,7 +42,7 @@ export const Utils = {
         let tmpTemplate = {
             template: node.templateName,
             templateRef: node.templateRef
-        };
+        } as Template;
         let scope = node.templateScope;
         const referencedTemplates: models.Template[] = [];
         let resolvedTemplate: models.Template;
@@ -84,5 +84,41 @@ export const Utils = {
             resolvedTemplate = Object.assign({}, resolvedTemplate, tmpl);
         });
         return resolvedTemplate;
+    },
+
+    tryJsonParse(input: string) {
+        try {
+            return (input && JSON.parse(input)) || null;
+        } catch {
+            return null;
+        }
+    },
+
+    isNodeSuspended(node: models.NodeStatus): boolean {
+        return node.type === 'Suspend' && node.phase === 'Running';
+    },
+
+    isWorkflowSuspended(wf: models.Workflow): boolean {
+        if (wf === null || wf.spec === null) {
+            return false;
+        }
+        if (wf.spec.suspend !== undefined && wf.spec.suspend) {
+            return true;
+        }
+        if (wf.status && wf.status.nodes) {
+            for (const node of Object.values(wf.status.nodes)) {
+                if (node.type === 'Suspend' && node.phase === 'Running') {
+                    return true;
+                }
+            }
+        }
+        return false;
+    },
+
+    isWorkflowRunning(wf: models.Workflow): boolean {
+        if (wf === null || wf.spec === null) {
+            return false;
+        }
+        return wf.status.phase === 'Running';
     }
 };

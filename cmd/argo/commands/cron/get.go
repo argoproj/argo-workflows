@@ -7,11 +7,12 @@ import (
 	"os"
 	"strings"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 func NewGetCommand() *cobra.Command {
@@ -66,6 +67,9 @@ func printCronWorkflowTemplate(wf *wfv1.CronWorkflow, outFmt string) {
 	fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
 	fmt.Printf(fmtStr, "Schedule:", wf.Spec.Schedule)
 	fmt.Printf(fmtStr, "Suspended:", wf.Spec.Suspend)
+	if wf.Spec.Timezone != "" {
+		fmt.Printf(fmtStr, "Timezone:", wf.Spec.Timezone)
+	}
 	if wf.Spec.StartingDeadlineSeconds != nil {
 		fmt.Printf(fmtStr, "StartingDeadlineSeconds:", *wf.Spec.StartingDeadlineSeconds)
 	}

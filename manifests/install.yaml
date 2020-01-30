@@ -60,7 +60,7 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: argo-ui
+  name: argo-server
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -221,12 +221,32 @@ rules:
   - update
   - patch
   - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: argo-ui-cluster-role
+  name: argo-server-cluster-role
 rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - watch
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
 - apiGroups:
   - ""
   resources:
@@ -250,9 +270,13 @@ rules:
   - workflowtemplates
   - cronworkflows
   verbs:
+  - create
   - get
   - list
   - watch
+  - update
+  - patch
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -282,14 +306,14 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: argo-ui-binding
+  name: argo-server-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: argo-ui-cluster-role
+  name: argo-server-cluster-role
 subjects:
 - kind: ServiceAccount
-  name: argo-ui
+  name: argo-server
   namespace: argo
 ---
 apiVersion: v1
@@ -300,43 +324,42 @@ metadata:
 apiVersion: v1
 kind: Service
 metadata:
-  name: argo-ui
+  name: argo-server
 spec:
   ports:
-  - port: 80
-    targetPort: 8001
+  - port: 2746
+    targetPort: 2746
   selector:
-    app: argo-ui
+    app: argo-server
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: argo-ui
+  name: argo-server
 spec:
   selector:
     matchLabels:
-      app: argo-ui
+      app: argo-server
   template:
     metadata:
       labels:
-        app: argo-ui
+        app: argo-server
     spec:
       containers:
-      - env:
-        - name: ARGO_NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        - name: IN_CLUSTER
-          value: "true"
-        - name: ENABLE_WEB_CONSOLE
-          value: "false"
-        - name: BASE_HREF
-          value: /
-        image: argoproj/argoui:latest
-        name: argo-ui
-      serviceAccountName: argo-ui
+      - args:
+        - server
+        image: argoproj/argocli:latest
+        name: argo-server
+        ports:
+        - containerPort: 2746
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 2746
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 30
+      serviceAccountName: argo-server
 ---
 apiVersion: apps/v1
 kind: Deployment
