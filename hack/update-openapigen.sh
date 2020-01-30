@@ -1,6 +1,7 @@
 #!/bin/bash
 set -eux -o pipefail
 
+# @v0.0.0-20200121204235-bf4fb3bd569c
 go install k8s.io/kube-openapi/cmd/openapi-gen
 
 openapi-gen \
