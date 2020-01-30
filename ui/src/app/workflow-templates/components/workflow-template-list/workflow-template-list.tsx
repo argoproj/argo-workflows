@@ -17,17 +17,20 @@ import {services} from '../../../shared/services';
 require('./workflow-template-list.scss');
 
 interface State {
+    loading: boolean;
+    namespace: string;
     templates?: models.WorkflowTemplate[];
     error?: Error;
 }
 
 export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, State> {
     private get namespace() {
-        return this.props.match.params.namespace || '';
+        return this.state.namespace;
     }
 
     private set namespace(namespace: string) {
-        document.location.href = uiUrl('workflow-templates/' + namespace);
+        this.setState({namespace});
+        history.pushState(null, '', uiUrl('workflow-templates/' + namespace));
     }
 
     private get sidePanel() {
@@ -40,7 +43,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = {};
+        this.state = {loading: true, namespace: this.props.match.params.namespace || ''};
     }
 
     public componentDidMount(): void {
@@ -52,11 +55,14 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                 }
                 return services.workflowTemplate.list(this.namespace);
             })
-            .then(templates => this.setState({templates}))
-            .catch(error => this.setState({error}));
+            .then(templates => this.setState({templates, loading: false}))
+            .catch(error => this.setState({error, loading: false}));
     }
 
     public render() {
+        if (this.state.loading) {
+            return <Loading />;
+        }
         if (this.state.error) {
             throw this.state.error;
         }

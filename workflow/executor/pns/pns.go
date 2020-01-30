@@ -374,6 +374,10 @@ func parseContainerID(pid int) (string, error) {
 		if len(parts) > 1 {
 			if containerID := parts[len(parts)-1]; containerID != "" {
 				// need to check for empty string because the line may look like: 5:rdma:/
+
+				// for crio we need to get rid of "crio-" prefix and ".scope" suffix
+				// e.g. crio-7a92a067289f6197148912be1c15f20f0330c7f3c541473d3b9c4043ca137b42.scope
+				containerID := strings.TrimSuffix(strings.TrimPrefix(containerID, "crio-"), ".scope")
 				return containerID, nil
 			}
 		}
