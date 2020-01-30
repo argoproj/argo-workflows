@@ -40,6 +40,7 @@ import (
 )
 
 type argoServer struct {
+	baseHRef         string
 	namespace        string
 	managedNamespace string
 	kubeClientset    *kubernetes.Clientset
@@ -49,6 +50,7 @@ type argoServer struct {
 }
 
 type ArgoServerOpts struct {
+	BaseHRef         string
 	Namespace        string
 	KubeClientset    *kubernetes.Clientset
 	WfClientSet      *versioned.Clientset
@@ -60,6 +62,7 @@ type ArgoServerOpts struct {
 
 func NewArgoServer(opts ArgoServerOpts) *argoServer {
 	return &argoServer{
+		baseHRef:         opts.BaseHRef,
 		namespace:        opts.Namespace,
 		managedNamespace: opts.ManagedNamespace,
 		kubeClientset:    opts.KubeClientset,
@@ -218,7 +221,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.Handle("/api/", gwmux)
 	mux.HandleFunc("/artifacts/", artifactServer.GetArtifact)
 	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetArtifactByUID)
-	mux.HandleFunc("/", static.ServerFiles)
+	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef).ServerFiles)
 	return &httpServer
 }
 
