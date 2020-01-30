@@ -61,7 +61,7 @@ func (s *CLISuite) TestToken() {
 			authString = "Basic " + token
 		}
 		assert.Equal(t, authString, output)
-		})
+	})
 }
 
 func (s *CLISuite) TestTokenArg() {

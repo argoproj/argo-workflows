@@ -45,7 +45,7 @@ func GetClientConn() *grpc.ClientConn {
 
 func NewAPIClient() (context.Context, apiclient.Client) {
 	ctx, client, err := apiclient.NewClient(ArgoServer, func() string {
-		return GetBearerToken()
+		return GetAuthString()
 	}, Config)
 	if err != nil {
 		log.Fatal(err)
@@ -63,7 +63,7 @@ func Namespace() string {
 
 // DEPRECATED should only be used by client/v1 package
 func GetContext() context.Context {
-	return apiclient.NewContext(GetAuthToken())
+	return apiclient.NewContext(GetAuthString())
 }
 
 func GetAuthString() string {

@@ -14,12 +14,12 @@ type argoServerClient struct {
 	*grpc.ClientConn
 }
 
-func newArgoServerClient(argoServer, token string) (context.Context, Client, error) {
+func newArgoServerClient(argoServer, auth string) (context.Context, Client, error) {
 	conn, err := NewClientConn(argoServer)
 	if err != nil {
 		return nil, nil, err
 	}
-	return newContext(token), &argoServerClient{conn}, nil
+	return newContext(auth), &argoServerClient{conn}, nil
 }
 
 func (a *argoServerClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
@@ -39,13 +39,13 @@ func NewClientConn(argoServer string) (*grpc.ClientConn, error) {
 }
 
 // DEPRECATED
-func NewContext(token string) context.Context {
-	return newContext(token)
+func NewContext(auth string) context.Context {
+	return newContext(auth)
 }
 
-func newContext(token string) context.Context {
-	if token == "" {
+func newContext(auth string) context.Context {
+	if auth == "" {
 		return context.Background()
 	}
-	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token))
+	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", auth))
 }
