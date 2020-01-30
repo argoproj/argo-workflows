@@ -30,6 +30,7 @@ STATIC_BUILD          ?= true
 CI                    ?= false
 DB                    ?= postgres
 K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
+ARGO_TOKEN            = $(shell kubectl -n argo get secret -o name | grep argo-server | xargs kubectl -n argo get -o jsonpath='{.data.token}' | base64 --decode)
 
 override LDFLAGS += \
   -X ${PACKAGE}.version=$(VERSION) \
@@ -340,7 +341,16 @@ up:
 	# Wait for pods to be ready
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
 	# Token
-	kubectl -n argo get `kubectl -n argo get secret -o name | grep argo-server` -o jsonpath='{.data.token}' | base64 --decode
+	make env
+
+# this is a convenience to get the login token, you can use it as follows
+#   eval $(make env)
+#   argo token
+
+.PHONY: env
+env:
+	export ARGO_SERVER=localhost:2746
+	export ARGO_TOKEN=$(ARGO_TOKEN)
 
 .PHONY: pf
 pf:
