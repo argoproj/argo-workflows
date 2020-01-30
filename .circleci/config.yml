@@ -63,9 +63,13 @@ commands:
       - dep_ensure
       - run:
           name: Create KUBECONFIG
+          # Copy kubeconfig file, and add a fake user for "argo --token xxx" testing
           command: |
             mkdir -p ~/.kube
             cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
+            echo "- name: fake_token_user" >> ~/.kube/config
+            echo "  user:" >> ~/.kube/config
+            echo "    token: xxxxxx" >> ~/.kube/config
       - run:
           name: Watch Docker events, to help diagnose failures
           command: docker events
