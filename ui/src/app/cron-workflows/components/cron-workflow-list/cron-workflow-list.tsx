@@ -13,20 +13,24 @@ import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {exampleCronWorkflow} from '../../../shared/examples';
 import {services} from '../../../shared/services';
+
 require('./cron-workflow-list.scss');
 
 interface State {
+    loading: boolean;
+    namespace: string;
     cronWorkflows?: models.CronWorkflow[];
     error?: Error;
 }
 
 export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> {
     private get namespace() {
-        return this.props.match.params.namespace || '';
+        return this.state.namespace;
     }
 
     private set namespace(namespace: string) {
-        document.location.href = uiUrl('cron-workflows/' + namespace);
+        this.setState({namespace});
+        history.pushState(null, '', uiUrl('cron-workflows/' + namespace));
     }
 
     private get sidePanel() {
@@ -38,10 +42,10 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
     }
     constructor(props: any) {
         super(props);
-        this.state = {};
+        this.state = {loading: true, namespace: this.props.match.params.namespace || ''};
     }
 
-    public componentDidMount(): void {
+    public componentWillMount(): void {
         services.info
             .get()
             .then(info => {
@@ -50,11 +54,14 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                 }
                 return services.cronWorkflows.list(this.namespace);
             })
-            .then(cronWorkflows => this.setState({cronWorkflows}))
-            .catch(error => this.setState({error}));
+            .then(cronWorkflows => this.setState({cronWorkflows, loading: false}))
+            .catch(error => this.setState({error, loading: false}));
     }
 
     public render() {
+        if (this.state.loading) {
+            return <Loading />;
+        }
         if (this.state.error) {
             throw this.state.error;
         }
