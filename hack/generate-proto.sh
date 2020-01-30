@@ -20,6 +20,6 @@ for f in $(find server -name '*.proto'); do
         -I ${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.12.2/third_party/googleapis \
         --go_out=plugins=grpc:${GOPATH}/src \
         --grpc-gateway_out=logtostderr=true:${GOPATH}/src \
-        --swagger_out=logtostderr=true:${GOPATH}/src \
+        --swagger_out=logtostderr=true:. \
         $f
 done
