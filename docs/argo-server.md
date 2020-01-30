@@ -4,7 +4,7 @@
 
 > v2.5 and after
 
-The Argo Server is a server that exposes an API and UI for workflows. You'll need to use this if you want to use [offload large workflows](offloading-large-workflows.md) or the [workflow archive](workflow-archive.md).
+The Argo Server is a server that exposes an API and UI for workflows. You'll need to use this if you want to [offload large workflows](offloading-large-workflows.md) or the [workflow archive](workflow-archive.md).
 
 You can run this in either "hosted" or "local" mode.
 
