@@ -68,8 +68,8 @@ func (g *Given) Workflow(text string) *Given {
 }
 
 func (g *Given) checkLabels(m metav1.ObjectMeta) {
-	if m.GetLabels()[label] == "" {
-		g.t.Fatalf("%s%s does not have %s label", m.Name, m.GenerateName, label)
+	if m.GetLabels()[Label] == "" && m.GetLabels()[LabelCron] == "" {
+		g.t.Fatalf("%s%s does not have one of  {%s, %s} labels", m.Name, m.GenerateName, Label, LabelCron)
 	}
 }
 
