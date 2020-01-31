@@ -93,9 +93,6 @@ commands:
           command: make logs
           background: true
       - run:
-          name: Run smoke tests
-          command: make smoke
-      - run:
           name: Run tests
           command: |
             mkdir -p test-results

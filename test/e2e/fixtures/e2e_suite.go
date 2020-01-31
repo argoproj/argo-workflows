@@ -71,8 +71,6 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	s.Diagnostics = &Diagnostics{}
 
 	s.DeleteResources(Label)
-	// create database collection
-	s.Persistence.DeleteEverything()
 }
 
 func (s *E2ESuite) DeleteResources(label string) {
@@ -88,45 +86,87 @@ func (s *E2ESuite) DeleteResources(label string) {
 			panic(err)
 		}
 	}
-	// delete all workflows
-	list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: label})
-	if err != nil {
-		panic(err)
-	}
-	for _, wf := range list.Items {
-		logCtx := log.WithFields(log.Fields{"workflow": wf.Name})
-		logCtx.Infof("Deleting workflow")
-		err = s.wfClient.Delete(wf.Name, &metav1.DeleteOptions{})
+
+	// It is possible for a pod to become orphaned. This means that it's parent workflow
+	// (as set in the  "workflows.argoproj.io/workflow" label) does not exist.
+	// We need to delete orphans as well as test pods.
+	// Get a list of all workflows.
+	// if absent from this this it has been delete - so any associated pods are orphaned
+	// if in the list it is either a test wf or not
+	isTestWf := make(map[string]bool)
+	{
+		list, err := s.wfClient.List(metav1.ListOptions{})
 		if err != nil {
 			panic(err)
 		}
-		for {
-			_, err := s.wfClient.Get(wf.Name, metav1.GetOptions{})
-			if errors.IsNotFound(err) {
-				break
-			}
-			logCtx.Info("Waiting for workflow to be deleted")
-			time.Sleep(3 * time.Second)
-		}
-		// wait for workflow pods to be deleted
-		for {
-			// it seems "argo delete" can leave pods behind
-			options := metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow=" + wf.Name}
-			err := s.KubeClient.CoreV1().Pods(Namespace).DeleteCollection(nil, options)
+		for _, wf := range list.Items {
+			isTestWf[wf.Name] = false
+			err := s.Persistence.offloadNodeStatusRepo.Delete(string(wf.UID))
 			if err != nil {
 				panic(err)
 			}
-			pods, err := s.KubeClient.CoreV1().Pods(Namespace).List(options)
+			err = s.Persistence.workflowArchive.DeleteWorkflow(string(wf.UID))
 			if err != nil {
 				panic(err)
 			}
-			if len(pods.Items) == 0 {
-				break
-			}
-			logCtx.WithField("num", len(pods.Items)).Info("Waiting for workflow pods to go away")
-			time.Sleep(3 * time.Second)
 		}
 	}
+
+	// delete all workflows
+	{
+		list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: label})
+		if err != nil {
+			panic(err)
+		}
+		for _, wf := range list.Items {
+			logCtx := log.WithFields(log.Fields{"workflow": wf.Name})
+			logCtx.Infof("Deleting workflow")
+			err = s.wfClient.Delete(wf.Name, &metav1.DeleteOptions{})
+			if err != nil {
+				panic(err)
+			}
+			isTestWf[wf.Name] = true
+			for {
+				_, err := s.wfClient.Get(wf.Name, metav1.GetOptions{})
+				if errors.IsNotFound(err) {
+					break
+				}
+				logCtx.Info("Waiting for workflow to be deleted")
+				time.Sleep(1 * time.Second)
+			}
+		}
+	}
+
+	// delete workflow pods
+	{
+		podInterface := s.KubeClient.CoreV1().Pods(Namespace)
+		// it seems "argo delete" can leave pods behind
+		pods, err := podInterface.List(metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow"})
+		if err != nil {
+			panic(err)
+		}
+		for _, pod := range pods.Items {
+			workflow := pod.GetLabels()["workflows.argoproj.io/workflow"]
+			testPod, owned := isTestWf[workflow]
+			if testPod || !owned {
+				logCtx := log.WithFields(log.Fields{"workflow": workflow, "podName": pod.Name, "testPod": testPod, "owned": owned})
+				logCtx.Info("Deleting pod")
+				err := podInterface.Delete(pod.Name, nil)
+				if !errors.IsNotFound(err) {
+					panic(err)
+				}
+				for {
+					_, err := podInterface.Get(pod.Name, metav1.GetOptions{})
+					if errors.IsNotFound(err) {
+						break
+					}
+					logCtx.Info("Waiting for pod to be deleted")
+					time.Sleep(1 * time.Second)
+				}
+			}
+		}
+	}
+
 	// delete all workflow templates
 	wfTmpl, err := s.wfTemplateClient.List(metav1.ListOptions{LabelSelector: label})
 	if err != nil {
