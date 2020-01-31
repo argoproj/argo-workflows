@@ -118,6 +118,17 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 			time.Sleep(3 * time.Second)
 		}
 	}
+	{
+		wfs, err := s.wfClient.List(metav1.ListOptions{})
+		if err != nil {
+			panic(err)
+		}
+		pods, err := s.KubeClient.CoreV1().Pods(Namespace).List(metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow"})
+		if err != nil {
+			panic(err)
+		}
+		log.WithFields(log.Fields{"wfs": len(wfs.Items), "pods": len(pods.Items)}).Debug("TOD ALEX DIAGNOSTICS ")
+	}
 	// delete all workflow templates
 	wfTmpl, err := s.wfTemplateClient.List(metav1.ListOptions{LabelSelector: label})
 	if err != nil {
