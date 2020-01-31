@@ -2,9 +2,14 @@ package apiserver
 
 import (
 	"fmt"
+
 	"net"
 	"net/http"
+	"os/exec"
+	"runtime"
 	"time"
+
+	grpcrt "github.com/grpc-ecosystem/grpc-gateway/runtime"
 
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
@@ -21,7 +26,6 @@ import (
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	log "github.com/sirupsen/logrus"
 	"github.com/soheilhy/cmux"
 	"golang.org/x/net/context"
@@ -156,9 +160,29 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
 	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
 	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
-	log.Infof("Argo Server started successfully on address %s", address)
+	log.Infof("Argo Server started successfully on address http://locahost%s", address)
+	openbrowser("http://localhost" + address)
 	as.stopCh = make(chan struct{})
 	<-as.stopCh
+}
+
+func openbrowser(url string) {
+	var err error
+
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
+	if err != nil {
+		log.Warnf("Couldn't Open the browser.  %v", err)
+	}
+
 }
 
 func (as *argoServer) newGRPCServer(offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *grpc.Server {
@@ -219,8 +243,8 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	// golang/protobuf. Which does not support types such as time.Time. gogo/protobuf does support
 	// time.Time, but does not support custom UnmarshalJSON() and MarshalJSON() methods. Therefore
 	// we use our own Marshaler
-	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.JSONMarshaler))
-	gwmux := runtime.NewServeMux(gwMuxOpts)
+	gwMuxOpts := grpcrt.WithMarshalerOption(grpcrt.MIMEWildcard, new(json.JSONMarshaler))
+	gwmux := grpcrt.NewServeMux(gwMuxOpts)
 	mustRegisterGWHandler(info.RegisterInfoServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowpkg.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowtemplatepkg.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
@@ -233,10 +257,10 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	return &httpServer
 }
 
-type registerFunc func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) error
+type registerFunc func(ctx context.Context, mux *grpcrt.ServeMux, endpoint string, opts []grpc.DialOption) error
 
 // mustRegisterGWHandler is a convenience function to register a gateway handler
-func mustRegisterGWHandler(register registerFunc, ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) {
+func mustRegisterGWHandler(register registerFunc, ctx context.Context, mux *grpcrt.ServeMux, endpoint string, opts []grpc.DialOption) {
 	err := register(ctx, mux, endpoint, opts)
 	if err != nil {
 		panic(err)
