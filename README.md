@@ -114,6 +114,7 @@ Currently **officially** using Argo:
 1. [Threekit](https://www.threekit.com/)
 1. [Tiger Analytics](https://www.tigeranalytics.com/)
 1. [Wavefront](https://www.wavefront.com/)
+1. [Ant Financial](https://www.antfin.com/)
 
 ## Community Blogs and Presentations
 * [Argo Ansible role: Provisioning Argo Workflows on OpenShift](https://medium.com/@marekermk/provisioning-argo-on-openshift-with-ansible-and-kustomize-340a1fda8b50)
