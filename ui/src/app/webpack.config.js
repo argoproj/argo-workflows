@@ -56,7 +56,9 @@ const config = {
         }]),
     ],
     devServer: {
-        historyApiFallback: true,
+        historyApiFallback: {
+            disableDotRule: true
+        },
         proxy: {
             '/api': {
                 'target': isProd ? '' : 'http://localhost:2746',
