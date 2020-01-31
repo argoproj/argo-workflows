@@ -8,8 +8,10 @@ metadata:
   labels:
     argo-e2e: true
 spec:
+  podGC:
+    strategy: OnPodCompletion
   entrypoint: exit
   templates:
-  - name: exit
-    container:
-      image: cowsay:v1
+    - name: exit
+      container:
+        image: cowsay:v1

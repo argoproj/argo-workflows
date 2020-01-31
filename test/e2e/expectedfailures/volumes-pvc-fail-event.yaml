@@ -7,15 +7,17 @@ metadata:
   labels:
     argo-e2e: true
 spec:
+  podGC:
+    strategy: OnPodCompletion
   entrypoint: volumes-pvc-example
   volumeClaimTemplates:
-  - metadata:
-      name: workdir
-    spec:
-      accessModes: [ "InvalidAccessMode" ]
-      resources:
-        requests:
-          storage: 1Gi
+    - metadata:
+        name: workdir
+      spec:
+        accessModes: [ "InvalidAccessMode" ]
+        resources:
+          requests:
+            storage: 1Gi
 
   templates:
   - name: volumes-pvc-example

@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -22,6 +23,13 @@ import (
 
 type CronSuite struct {
 	fixtures.E2ESuite
+}
+
+func (s *CronSuite) SetupSuite() {
+	if os.Getenv("SKIP_CRON_SUITE") == "true" {
+		s.T().SkipNow()
+	}
+	s.E2ESuite.SetupSuite()
 }
 
 func (s *CronSuite) TestBasic() {
