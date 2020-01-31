@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/server/workflow"
+	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -26,7 +26,7 @@ func NewTerminateCommand() *cobra.Command {
 				conn := client.GetClientConn()
 				apiGRPCClient, ctx := GetWFApiServerGRPCClient(conn)
 				for _, wfName := range args {
-					wfUptReq := workflow.WorkflowTerminateRequest{
+					wfUptReq := workflowpkg.WorkflowTerminateRequest{
 						Name:      wfName,
 						Namespace: namespace,
 					}

@@ -36,11 +36,6 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	if err != nil {
 		panic(err)
 	}
-
-}
-
-func (s *ArgoServerSuite) AfterTest(suiteName, testName string) {
-	s.E2ESuite.AfterTest(suiteName, testName)
 }
 
 func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
@@ -265,87 +260,91 @@ func (s *ArgoServerSuite) TestPermission() {
 			Status(403)
 	})
 
-	s.Given().
-		WorkflowName("test-wf-good").
-		When().
-		WaitForWorkflow(30 * time.Second)
-
-	// Test delete workflow with bad token
-	s.bearerToken = badToken
-	s.Run("DeleteWFWithBadToken", func(t *testing.T) {
-		s.e(t).DELETE("/api/v1/workflows/" + nsName + "/test-wf-good").
-			Expect().
-			Status(403)
-	})
-
-	// Test delete workflow with good token
-	s.bearerToken = goodToken
-	s.Run("DeleteWFWithGoodToken", func(t *testing.T) {
-		s.e(t).DELETE("/api/v1/workflows/" + nsName + "/test-wf-good").
-			Expect().
-			Status(200)
-	})
-
-	// we've now deleted the workflow, but it is still in the archive, testing the archive
-	// after deleting the workflow makes sure that we are no dependant of the workflow for authorization
-
 	if s.Persistence.IsEnabled() {
-		// Test list archived WFs with good token
-		s.bearerToken = goodToken
-		s.Run("ListArchivedWFsGoodToken", func(t *testing.T) {
-			s.e(t).GET("/api/v1/archived-workflows").
-				WithQuery("listOptions.labelSelector", "argo-e2e").
-				WithQuery("listOptions.fieldSelector", "metadata.namespace="+nsName).
-				Expect().
-				Status(200).
-				JSON().
-				Path("$.items").
-				Array().Length().Gt(0)
-		})
 
+		// Simply wait 10 seconds for the wf to be completed
+		s.Given(s.T()).
+			WorkflowName("test-wf-good").
+			When().
+			WaitForWorkflow(30 * time.Second)
+
+		// Test delete workflow with bad token
 		s.bearerToken = badToken
-		s.Run("ListArchivedWFsBadToken", func(t *testing.T) {
-			s.e(t).GET("/api/v1/archived-workflows").
-				WithQuery("listOptions.labelSelector", "argo-e2e").
-				WithQuery("listOptions.fieldSelector", "metadata.namespace="+nsName).
-				Expect().
-				Status(200).
-				JSON().
-				Path("$.items").
-				Null()
-		})
-
-		// Test get archived wf with good token
-		s.bearerToken = goodToken
-		s.Run("GetArchivedWFsGoodToken", func(t *testing.T) {
-			s.e(t).GET("/api/v1/archived-workflows/"+uid).
-				WithQuery("listOptions.labelSelector", "argo-e2e").
-				Expect().
-				Status(200)
-		})
-
-		// Test get archived wf with bad token
-		s.bearerToken = badToken
-		s.Run("GetArchivedWFsBadToken", func(t *testing.T) {
-			s.e(t).GET("/api/v1/archived-workflows/" + uid).
+		s.Run("DeleteWFWithBadToken", func(t *testing.T) {
+			s.e(t).DELETE("/api/v1/workflows/" + nsName + "/test-wf-good").
 				Expect().
 				Status(403)
 		})
 
-		// Test deleting archived wf with bad token
-		s.bearerToken = badToken
-		s.Run("DeleteArchivedWFsBadToken", func(t *testing.T) {
-			s.e(t).DELETE("/api/v1/archived-workflows/" + uid).
-				Expect().
-				Status(403)
-		})
-		// Test deleting archived wf with good token
+		// Test delete workflow with good token
 		s.bearerToken = goodToken
-		s.Run("DeleteArchivedWFsGoodToken", func(t *testing.T) {
-			s.e(t).DELETE("/api/v1/archived-workflows/" + uid).
+		s.Run("DeleteWFWithGoodToken", func(t *testing.T) {
+			s.e(t).DELETE("/api/v1/workflows/" + nsName + "/test-wf-good").
 				Expect().
 				Status(200)
 		})
+
+		// we've now deleted the workflow, but it is still in the archive, testing the archive
+		// after deleting the workflow makes sure that we are no dependant of the workflow for authorization
+
+		if s.Persistence.IsEnabled() {
+			// Test list archived WFs with good token
+			s.bearerToken = goodToken
+			s.Run("ListArchivedWFsGoodToken", func(t *testing.T) {
+				s.e(t).GET("/api/v1/archived-workflows").
+					WithQuery("listOptions.labelSelector", "argo-e2e").
+					WithQuery("listOptions.fieldSelector", "metadata.namespace="+nsName).
+					Expect().
+					Status(200).
+					JSON().
+					Path("$.items").
+					Array().Length().Gt(0)
+			})
+
+			s.bearerToken = badToken
+			s.Run("ListArchivedWFsBadToken", func(t *testing.T) {
+				s.e(t).GET("/api/v1/archived-workflows").
+					WithQuery("listOptions.labelSelector", "argo-e2e").
+					WithQuery("listOptions.fieldSelector", "metadata.namespace="+nsName).
+					Expect().
+					Status(200).
+					JSON().
+					Path("$.items").
+					Null()
+			})
+
+			// Test get archived wf with good token
+			s.bearerToken = goodToken
+			s.Run("GetArchivedWFsGoodToken", func(t *testing.T) {
+				s.e(t).GET("/api/v1/archived-workflows/"+uid).
+					WithQuery("listOptions.labelSelector", "argo-e2e").
+					Expect().
+					Status(200)
+			})
+
+			// Test get archived wf with bad token
+			s.bearerToken = badToken
+			s.Run("GetArchivedWFsBadToken", func(t *testing.T) {
+				s.e(t).GET("/api/v1/archived-workflows/" + uid).
+					Expect().
+					Status(403)
+			})
+
+			// Test deleting archived wf with bad token
+			s.bearerToken = badToken
+			s.Run("DeleteArchivedWFsBadToken", func(t *testing.T) {
+				s.e(t).DELETE("/api/v1/archived-workflows/" + uid).
+					Expect().
+					Status(403)
+			})
+			// Test deleting archived wf with good token
+			s.bearerToken = goodToken
+			s.Run("DeleteArchivedWFsGoodToken", func(t *testing.T) {
+				s.e(t).DELETE("/api/v1/archived-workflows/" + uid).
+					Expect().
+					Status(200)
+			})
+		}
 	}
 }
 
@@ -439,7 +438,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 	})
 
 	s.Run("List", func(t *testing.T) {
-		s.Given().
+		s.Given(t).
 			WorkflowName("test").
 			When().
 			WaitForWorkflowToStart(20 * time.Second)
@@ -568,7 +567,7 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
 
 	s.Run("List", func(t *testing.T) {
 		// make sure list options work correctly
-		s.Given().
+		s.Given(t).
 			CronWorkflow("@testdata/basic.yaml")
 
 		s.e(t).GET("/api/v1/cron-workflows/argo").
@@ -642,7 +641,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		s.T().SkipNow()
 	}
 	var uid types.UID
-	s.Given().
+	s.Given(s.T()).
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
@@ -687,7 +686,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 // do some basic testing on the stream methods
 func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 
-	s.Given().
+	s.Given(s.T()).
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
@@ -772,7 +771,7 @@ func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 		s.T().SkipNow()
 	}
 	var uid types.UID
-	s.Given().
+	s.Given(s.T()).
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
@@ -782,7 +781,7 @@ func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 			uid = metadata.UID
 		})
 	s.Run("List", func(t *testing.T) {
-		s.Given().
+		s.Given(t).
 			Workflow("@smoke/basic-2.yaml").
 			When().
 			SubmitWorkflow().
@@ -900,7 +899,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 	s.Run("List", func(t *testing.T) {
 
 		// make sure list options work correctly
-		s.Given().
+		s.Given(t).
 			WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml")
 
 		s.e(t).GET("/api/v1/workflow-templates/argo").

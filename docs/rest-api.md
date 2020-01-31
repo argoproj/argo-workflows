@@ -1,5 +1,7 @@
 # REST API
 
+## Argo Server API
+
 ![alpha](assets/alpha.svg)
 
 > v2.5 and after
@@ -20,6 +22,10 @@ To view the API:
     1. ../server/workflow/workflow.swagger.json
     2. ../server/workflowtemplate/workflow-template.swagger.json 
     1. ../server/workflowarchive/archived-workflows.swagger.json
+
+## Classic API
+
+![ga](assets/ga.svg)
 
 > v2.4 and before
 
