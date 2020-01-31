@@ -7,12 +7,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/server/workflow"
-
 	argotime "github.com/argoproj/pkg/time"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 
 	"github.com/argoproj/argo/workflow/common"
 )
@@ -107,8 +107,8 @@ func apiServerDeleteWorkflows(allWFs bool, older string, completed bool, wfNames
 	}
 }
 
-func getWFList(client workflow.WorkflowServiceClient, ctx context.Context, ns string, opts *metav1.ListOptions, older *time.Time) ([]string, error) {
-	wfReq := workflow.WorkflowListRequest{
+func getWFList(client workflowpkg.WorkflowServiceClient, ctx context.Context, ns string, opts *metav1.ListOptions, older *time.Time) ([]string, error) {
+	wfReq := workflowpkg.WorkflowListRequest{
 		ListOptions: opts,
 		Namespace:   ns,
 	}
@@ -128,8 +128,8 @@ func getWFList(client workflow.WorkflowServiceClient, ctx context.Context, ns st
 	return wfNames, nil
 }
 
-func apiServerDeleteWorkflow(client workflow.WorkflowServiceClient, ctx context.Context, wfName, ns string) {
-	wfReq := workflow.WorkflowDeleteRequest{
+func apiServerDeleteWorkflow(client workflowpkg.WorkflowServiceClient, ctx context.Context, wfName, ns string) {
+	wfReq := workflowpkg.WorkflowDeleteRequest{
 		Name:      wfName,
 		Namespace: ns,
 	}

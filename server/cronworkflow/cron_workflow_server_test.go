@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	"github.com/argoproj/argo/server/auth"
 
 	"github.com/stretchr/testify/assert"
@@ -22,7 +23,7 @@ func Test_cronWorkflowServiceServer(t *testing.T) {
 	ctx := context.WithValue(context.TODO(), auth.WfKey, wfClientset)
 
 	t.Run("CreateCronWorkflow", func(t *testing.T) {
-		created, err := server.CreateCronWorkflow(ctx, &CreateCronWorkflowRequest{
+		created, err := server.CreateCronWorkflow(ctx, &cronworkflowpkg.CreateCronWorkflowRequest{
 			Namespace:    "my-ns",
 			CronWorkflow: cronWf,
 		})
@@ -31,25 +32,25 @@ func Test_cronWorkflowServiceServer(t *testing.T) {
 		}
 	})
 	t.Run("ListCronWorkflows", func(t *testing.T) {
-		cronWfs, err := server.ListCronWorkflows(ctx, &ListCronWorkflowsRequest{Namespace: "my-ns"})
+		cronWfs, err := server.ListCronWorkflows(ctx, &cronworkflowpkg.ListCronWorkflowsRequest{Namespace: "my-ns"})
 		if assert.NoError(t, err) {
 			assert.Len(t, cronWfs.Items, 1)
 		}
 	})
 	t.Run("GetCronWorkflow", func(t *testing.T) {
-		cronWf, err := server.GetCronWorkflow(ctx, &GetCronWorkflowRequest{Namespace: "my-ns", Name: "my-name"})
+		cronWf, err := server.GetCronWorkflow(ctx, &cronworkflowpkg.GetCronWorkflowRequest{Namespace: "my-ns", Name: "my-name"})
 		if assert.NoError(t, err) {
 			assert.NotNil(t, cronWf)
 		}
 	})
 	t.Run("UpdateCronWorkflow", func(t *testing.T) {
-		cronWf, err := server.UpdateCronWorkflow(ctx, &UpdateCronWorkflowRequest{Namespace: "my-ns", Name: "my-name", CronWorkflow: cronWf})
+		cronWf, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", Name: "my-name", CronWorkflow: cronWf})
 		if assert.NoError(t, err) {
 			assert.NotNil(t, cronWf)
 		}
 	})
 	t.Run("DeleteCronWorkflow", func(t *testing.T) {
-		_, err := server.DeleteCronWorkflow(ctx, &DeleteCronWorkflowRequest{Name: "my-name", Namespace: "my-ns"})
+		_, err := server.DeleteCronWorkflow(ctx, &cronworkflowpkg.DeleteCronWorkflowRequest{Name: "my-name", Namespace: "my-ns"})
 		assert.NoError(t, err)
 	})
 }
