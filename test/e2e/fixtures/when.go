@@ -171,10 +171,10 @@ func (w *When) Then() *Then {
 	}
 }
 
-func (w *When) Given() *Given{
+func (w *When) Given() *Given {
 	return &Given{
 		t:                     w.t,
-		diagnostics: w.diagnostics,
+		diagnostics:           w.diagnostics,
 		client:                w.client,
 		wfTemplateClient:      w.wfTemplateClient,
 		cronClient:            w.cronClient,
