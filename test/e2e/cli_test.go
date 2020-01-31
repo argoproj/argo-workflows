@@ -48,22 +48,6 @@ func (s *CLISuite) TestSubmitServerDryRun() {
 		})
 }
 
-func (s *CLISuite) TestToken() {
-	s.Given(s.T()).RunCli([]string{"token"}, func(t *testing.T, output string, err error) {
-		assert.NoError(t, err)
-		var authString, token string
-		token = s.GetBasicAuthToken()
-		if token == "" {
-			token, err = s.GetServiceAccountToken()
-			assert.NoError(t, err)
-			authString = "Bearer " + token
-		} else {
-			authString = "Basic " + token
-		}
-		assert.Equal(t, authString, output)
-	})
-}
-
 func (s *CLISuite) TestTokenArg() {
 	if os.Getenv("CI") != "true" {
 		s.T().SkipNow()
