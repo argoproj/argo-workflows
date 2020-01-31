@@ -204,7 +204,7 @@ codegen:
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
 	./hack/update-openapigen.sh
-	go run ./hack/gen-openapi-spec/main.go $(VERSION) > ./api/openapi-spec/swagger.json
+	go run ./hack/gen-openapi-spec/main.go $(MANIFESTS_VERSION) > ./api/openapi-spec/swagger.json
 
 .PHONY: verify-codegen
 verify-codegen:
@@ -212,7 +212,7 @@ verify-codegen:
 	./hack/verify-codegen.sh
 	./hack/update-openapigen.sh --verify-only
 	mkdir -p ./dist
-	go run ./hack/gen-openapi-spec/main.go $(VERSION) > ./dist/swagger.json
+	go run ./hack/gen-openapi-spec/main.go $(MANIFESTS_VERSION) > ./dist/swagger.json
 	diff ./dist/swagger.json ./api/openapi-spec/swagger.json
 
 .PHONY: manifests
