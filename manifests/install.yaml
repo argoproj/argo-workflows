@@ -348,6 +348,7 @@ spec:
       containers:
       - args:
         - server
+        - --disable-open-browser
         image: argoproj/argocli:latest
         name: argo-server
         ports:

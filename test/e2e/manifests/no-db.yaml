@@ -327,6 +327,7 @@ spec:
       containers:
       - args:
         - server
+        - --disable-open-browser
         - --namespaced
         - --auth-mode
         - client

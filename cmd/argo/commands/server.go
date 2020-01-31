@@ -21,13 +21,14 @@ import (
 
 func NewServerCommand() *cobra.Command {
 	var (
-		logLevel         string // --loglevel
-		authMode         string
-		configMap        string
-		port             int
-		baseHRef         string
-		namespaced       bool   // --namespaced
-		managedNamespace string // --managed-namespace
+		logLevel           string // --loglevel
+		authMode           string
+		configMap          string
+		port               int
+		baseHRef           string
+		namespaced         bool   // --namespaced
+		managedNamespace   string // --managed-namespace
+		disableOpenBrowser bool
 	)
 
 	var command = cobra.Command{
@@ -74,13 +75,14 @@ See %s`, help.ArgoSever),
 				Info()
 
 			opts := apiserver.ArgoServerOpts{
-				BaseHRef:         baseHRef,
-				Namespace:        namespace,
-				WfClientSet:      wflientset,
-				KubeClientset:    kubeConfig,
-				RestConfig:       config,
-				AuthMode:         authMode,
-				ManagedNamespace: managedNamespace,
+				BaseHRef:           baseHRef,
+				Namespace:          namespace,
+				WfClientSet:        wflientset,
+				KubeClientset:      kubeConfig,
+				RestConfig:         config,
+				AuthMode:           authMode,
+				ManagedNamespace:   managedNamespace,
+				DisableOpenBrowser: disableOpenBrowser,
 			}
 			err = opts.ValidateOpts()
 			if err != nil {
@@ -102,5 +104,6 @@ See %s`, help.ArgoSever),
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that watches, default to the installation namespace")
+	command.Flags().BoolVar(&disableOpenBrowser, "disable-open-browser", false, "disable automatic launching of the browser [Hosted mode]")
 	return &command
 }

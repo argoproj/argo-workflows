@@ -15,7 +15,7 @@ spec:
       containers:
         - name: argo-server
           image: argoproj/argocli:latest
-          args: [server]
+          args: ["server","--disable-open-browser"]
           ports:
             - containerPort: 2746
           readinessProbe:
