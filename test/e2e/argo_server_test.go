@@ -818,7 +818,7 @@ func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 			Path("$.items").
 			Array().
 			Length().
-2			Equal(2)
+			Equal(2)
 
 		j := s.e(t).GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "argo-e2e").
