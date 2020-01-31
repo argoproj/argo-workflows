@@ -101,13 +101,15 @@ func (s *E2ESuite) DeleteResources(label string) {
 		}
 		for _, wf := range list.Items {
 			isTestWf[wf.Name] = false
-			err := s.Persistence.offloadNodeStatusRepo.Delete(string(wf.UID))
-			if err != nil {
-				panic(err)
-			}
-			err = s.Persistence.workflowArchive.DeleteWorkflow(string(wf.UID))
-			if err != nil {
-				panic(err)
+			if s.Persistence.IsEnabled() {
+				err := s.Persistence.offloadNodeStatusRepo.Delete(string(wf.UID))
+				if err != nil {
+					panic(err)
+				}
+				err = s.Persistence.workflowArchive.DeleteWorkflow(string(wf.UID))
+				if err != nil {
+					panic(err)
+				}
 			}
 		}
 	}
