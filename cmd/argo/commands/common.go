@@ -147,6 +147,7 @@ func (c LazyWorkflowTemplateGetter) Get(name string) (*wfv1.WorkflowTemplate, er
 	return templateresolution.WrapWorkflowTemplateInterface(wftmplClient).Get(name)
 }
 
+// DEPRECATED
 var _ templateresolution.WorkflowTemplateNamespacedGetter = &LazyWorkflowTemplateGetter{}
 
 // DEPRECATED

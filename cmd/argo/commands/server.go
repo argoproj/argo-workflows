@@ -75,13 +75,14 @@ See %s`, help.ArgoSever),
 				Info()
 
 			opts := apiserver.ArgoServerOpts{
-				BaseHRef:           baseHRef,
-				Namespace:          namespace,
-				WfClientSet:        wflientset,
-				KubeClientset:      kubeConfig,
-				RestConfig:         config,
-				AuthMode:           authMode,
-				ManagedNamespace:   managedNamespace,
+				BaseHRef:         baseHRef,
+				Namespace:        namespace,
+				WfClientSet:      wflientset,
+				KubeClientset:    kubeConfig,
+				RestConfig:       config,
+				AuthMode:         authMode,
+				ManagedNamespace: managedNamespace,
+				ConfigName:       configMap,
 				DisableOpenBrowser: disableOpenBrowser,
 			}
 			err = opts.ValidateOpts()
