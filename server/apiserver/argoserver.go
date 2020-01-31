@@ -6,6 +6,10 @@ import (
 	"net/http"
 	"time"
 
+	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
+	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
+	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo/server/artifacts"
 	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/server/cronworkflow"
@@ -31,7 +35,6 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
-	"github.com/argoproj/argo/pkg/apiclient"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	grpcutil "github.com/argoproj/argo/util/grpc"
 	"github.com/argoproj/argo/util/json"
@@ -39,7 +42,13 @@ import (
 	"github.com/argoproj/argo/workflow/config"
 )
 
+const (
+	// MaxGRPCMessageSize contains max grpc message size
+	MaxGRPCMessageSize = 100 * 1024 * 1024
+)
+
 type argoServer struct {
+	baseHRef         string
 	namespace        string
 	managedNamespace string
 	kubeClientset    *kubernetes.Clientset
@@ -49,6 +58,7 @@ type argoServer struct {
 }
 
 type ArgoServerOpts struct {
+	BaseHRef         string
 	Namespace        string
 	KubeClientset    *kubernetes.Clientset
 	WfClientSet      *versioned.Clientset
@@ -60,6 +70,7 @@ type ArgoServerOpts struct {
 
 func NewArgoServer(opts ArgoServerOpts) *argoServer {
 	return &argoServer{
+		baseHRef:         opts.BaseHRef,
 		namespace:        opts.Namespace,
 		managedNamespace: opts.ManagedNamespace,
 		kubeClientset:    opts.KubeClientset,
@@ -157,8 +168,8 @@ func (as *argoServer) newGRPCServer(offloadNodeStatusRepo sqldb.OffloadNodeStatu
 		// Set both the send and receive the bytes limit to be 100MB
 		// The proper way to achieve high performance is to have pagination
 		// while we work toward that, we can have high limit first
-		grpc.MaxRecvMsgSize(apiclient.MaxGRPCMessageSize),
-		grpc.MaxSendMsgSize(apiclient.MaxGRPCMessageSize),
+		grpc.MaxRecvMsgSize(MaxGRPCMessageSize),
+		grpc.MaxSendMsgSize(MaxGRPCMessageSize),
 		grpc.ConnectionTimeout(300 * time.Second),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_logrus.UnaryServerInterceptor(serverLog),
@@ -177,10 +188,10 @@ func (as *argoServer) newGRPCServer(offloadNodeStatusRepo sqldb.OffloadNodeStatu
 	grpcServer := grpc.NewServer(sOpts...)
 
 	info.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace))
-	workflow.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(offloadNodeStatusRepo))
-	workflowtemplate.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer())
-	cronworkflow.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer())
-	workflowarchive.RegisterArchivedWorkflowServiceServer(grpcServer, workflowarchive.NewWorkflowArchiveServer(wfArchive))
+	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(offloadNodeStatusRepo))
+	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer())
+	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer())
+	workflowarchivepkg.RegisterArchivedWorkflowServiceServer(grpcServer, workflowarchive.NewWorkflowArchiveServer(wfArchive))
 
 	return grpcServer
 }
@@ -197,7 +208,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 		Handler: mux,
 	}
 	var dialOpts []grpc.DialOption
-	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(apiclient.MaxGRPCMessageSize)))
+	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxGRPCMessageSize)))
 	//dialOpts = append(dialOpts, grpc.WithUserAgent(fmt.Sprintf("%s/%s", common.ArgoCDUserAgentName, argocd.GetVersion().Version)))
 
 	dialOpts = append(dialOpts, grpc.WithInsecure())
@@ -211,14 +222,14 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.JSONMarshaler))
 	gwmux := runtime.NewServeMux(gwMuxOpts)
 	mustRegisterGWHandler(info.RegisterInfoServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
-	mustRegisterGWHandler(workflow.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
-	mustRegisterGWHandler(workflowtemplate.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
-	mustRegisterGWHandler(cronworkflow.RegisterCronWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
-	mustRegisterGWHandler(workflowarchive.RegisterArchivedWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(workflowpkg.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(workflowtemplatepkg.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(cronworkflowpkg.RegisterCronWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(workflowarchivepkg.RegisterArchivedWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mux.Handle("/api/", gwmux)
 	mux.HandleFunc("/artifacts/", artifactServer.GetArtifact)
 	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetArtifactByUID)
-	mux.HandleFunc("/", static.ServerFiles)
+	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef).ServerFiles)
 	return &httpServer
 }
 

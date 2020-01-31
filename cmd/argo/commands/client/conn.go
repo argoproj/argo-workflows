@@ -7,13 +7,16 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/argoproj/argo/pkg/apiclient"
 	"github.com/argoproj/argo/util/kubeconfig"
 )
 
+// DEPRECATED
 var ArgoServer string
+
+// DEPRECATED
 var Config clientcmd.ClientConfig
 
 func AddKubectlFlagsToCmd(cmd *cobra.Command) {
@@ -31,30 +34,46 @@ func AddArgoServerFlagsToCmd(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVar(&ArgoServer, "argo-server", os.Getenv("ARGO_SERVER"), "API server `host:port`. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.")
 }
 
+// DEPRECATED
 func GetClientConn() *grpc.ClientConn {
-	conn, err := grpc.Dial(ArgoServer, grpc.WithInsecure())
+	conn, err := apiclient.NewClientConn(ArgoServer)
 	if err != nil {
 		log.Fatal(err)
 	}
 	return conn
 }
 
-func GetContext() context.Context {
-	token := GetBearerToken()
-	if len(token) == 0 {
-		return context.Background()
+func NewAPIClient() (context.Context, apiclient.Client) {
+	ctx, client, err := apiclient.NewClient(ArgoServer, func() string {
+		return GetAuthString()
+	}, Config)
+	if err != nil {
+		log.Fatal(err)
 	}
-	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token))
+	return ctx, client
 }
 
-func GetBearerToken() string {
+func Namespace() string {
+	namespace, _, err := Config.Namespace()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return namespace
+}
+
+// DEPRECATED should only be used by client/v1 package
+func GetContext() context.Context {
+	return apiclient.NewContext(GetAuthString())
+}
+
+func GetAuthString() string {
 	restConfig, err := Config.ClientConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
-	token, err := kubeconfig.GetBearerToken(restConfig)
+	authString, err := kubeconfig.GetAuthString(restConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return token
+	return authString
 }

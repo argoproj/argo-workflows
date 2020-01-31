@@ -22,6 +22,8 @@ import {WorkflowSubmit} from '../workflow-submit';
 require('./workflows-list.scss');
 
 interface State {
+    loading: boolean;
+    namespace: string;
     workflows?: Workflow[];
     error?: Error;
 }
@@ -30,11 +32,12 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     private subscription: Subscription;
 
     private get namespace() {
-        return this.props.match.params.namespace || '';
+        return this.state.namespace;
     }
 
     private set namespace(namespace: string) {
-        document.location.href = uiUrl('workflows/' + namespace);
+        this.setState({namespace});
+        history.pushState(null, '', uiUrl('workflows/' + namespace));
     }
 
     private get phases() {
@@ -51,10 +54,10 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
     constructor(props: RouteComponentProps<State>, context: any) {
         super(props, context);
-        this.state = {};
+        this.state = {loading: true, namespace: this.props.match.params.namespace || ''};
     }
 
-    public componentDidMount(): void {
+    public componentWillMount(): void {
         services.info
             .get()
             .then(info => {
@@ -99,7 +102,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                     })
                     .subscribe(workflows => this.setState({workflows}));
             })
-            .catch(error => this.setState({error}));
+            .then(_ => this.setState({loading: false}))
+            .catch(error => this.setState({error, loading: false}));
     }
 
     public componentWillUnmount(): void {
@@ -109,6 +113,9 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     public render() {
+        if (this.state.loading) {
+            return <Loading />;
+        }
         if (this.state.error) {
             throw this.state.error;
         }

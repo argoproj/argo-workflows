@@ -32,6 +32,19 @@ DB                    ?= postgres
 K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 ARGO_TOKEN            = $(shell kubectl -n argo get secret -o name | grep argo-server | xargs kubectl -n argo get -o jsonpath='{.data.token}' | base64 --decode)
 
+# test flags
+export SKIP_CRON_SUITE=true
+# if we are on any branch with "master", "release", or "cron" in the name we should run cron tests
+ifneq ($(findstring cron,$(GIT_BRANCH)),)
+export SKIP_CRON_SUITE=false
+endif
+ifneq ($(findstring master,$(GIT_BRANCH)),)
+export SKIP_CRON_SUITE=false
+endif
+ifneq ($(findstring release,$(GIT_BRANCH)),)
+export SKIP_CRON_SUITE=false
+endif
+
 override LDFLAGS += \
   -X ${PACKAGE}.version=$(VERSION) \
   -X ${PACKAGE}.buildDate=${BUILD_DATE} \
@@ -377,7 +390,7 @@ mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
 .PHONY: test-e2e
-test-e2e: test-images
+test-e2e: test-images cli
 	# Run E2E tests
 	go test -timeout 20m -v -count 1 -p 1 ./test/e2e/...
 
@@ -392,9 +405,10 @@ test-api: test-images
 	go test -timeout 3m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
 
 .PHONY: test-cli
-test-cli: test-images
+test-cli: test-images cli
 	# Run CLI tests
-	go test -timeout 1m -v -count 1 -p 1 -run CliSuite ./test/e2e
+	go test -timeout 1m -v -count 1 -p 1 -run CLISuite ./test/e2e
+	go test -timeout 1m -v -count 1 -p 1 -run CLIWithServerSuite ./test/e2e
 
 # clean
 

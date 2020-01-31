@@ -11,6 +11,8 @@ spec:
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
   workflowSpec:
+    podGC:
+      strategy: OnPodCompletion
     entrypoint: whalesay
     templates:
       - name: whalesay
