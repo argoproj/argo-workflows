@@ -2,7 +2,11 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: workflow-template-hello-world-
+  labels:
+    argo-e2e: true
 spec:
+  podGC:
+    strategy: OnPodCompletion
   entrypoint: whalesay
   templates:
     - name: whalesay

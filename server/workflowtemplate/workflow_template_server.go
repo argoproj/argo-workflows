@@ -7,6 +7,7 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/workflow/templateresolution"
@@ -16,11 +17,11 @@ import (
 type WorkflowTemplateServer struct {
 }
 
-func NewWorkflowTemplateServer() WorkflowTemplateServiceServer {
+func NewWorkflowTemplateServer() workflowtemplatepkg.WorkflowTemplateServiceServer {
 	return &WorkflowTemplateServer{}
 }
 
-func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, req *WorkflowTemplateCreateRequest) (*v1alpha1.WorkflowTemplate, error) {
+func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateCreateRequest) (*v1alpha1.WorkflowTemplate, error) {
 	wfClient := auth.GetWfClient(ctx)
 	if req.Template == nil {
 		return nil, fmt.Errorf("workflow template was not found in the request body")
@@ -36,7 +37,7 @@ func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, r
 
 }
 
-func (wts *WorkflowTemplateServer) GetWorkflowTemplate(ctx context.Context, req *WorkflowTemplateGetRequest) (*v1alpha1.WorkflowTemplate, error) {
+func (wts *WorkflowTemplateServer) GetWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateGetRequest) (*v1alpha1.WorkflowTemplate, error) {
 	wfClient := auth.GetWfClient(ctx)
 
 	wfTmpl, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Get(req.Name, v1.GetOptions{})
@@ -48,7 +49,7 @@ func (wts *WorkflowTemplateServer) GetWorkflowTemplate(ctx context.Context, req 
 	return wfTmpl, err
 }
 
-func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, req *WorkflowTemplateListRequest) (*v1alpha1.WorkflowTemplateList, error) {
+func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateListRequest) (*v1alpha1.WorkflowTemplateList, error) {
 	wfClient := auth.GetWfClient(ctx)
 	options := v1.ListOptions{}
 	if req.ListOptions != nil {
@@ -64,7 +65,7 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, re
 	return wfList, nil
 }
 
-func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, req *WorkflowTemplateDeleteRequest) (*WorkflowDeleteResponse, error) {
+func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateDeleteRequest) (*workflowtemplatepkg.WorkflowDeleteResponse, error) {
 	wfClient := auth.GetWfClient(ctx)
 
 	err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Delete(req.Name, &v1.DeleteOptions{})
@@ -72,10 +73,10 @@ func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, r
 		return nil, err
 	}
 
-	return &WorkflowDeleteResponse{}, nil
+	return &workflowtemplatepkg.WorkflowDeleteResponse{}, nil
 }
 
-func (wts *WorkflowTemplateServer) LintWorkflowTemplate(ctx context.Context, req *WorkflowTemplateLintRequest) (*v1alpha1.WorkflowTemplate, error) {
+func (wts *WorkflowTemplateServer) LintWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateLintRequest) (*v1alpha1.WorkflowTemplate, error) {
 	wfClient := auth.GetWfClient(ctx)
 
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
@@ -88,7 +89,7 @@ func (wts *WorkflowTemplateServer) LintWorkflowTemplate(ctx context.Context, req
 	return req.Template, nil
 }
 
-func (wts *WorkflowTemplateServer) UpdateWorkflowTemplate(ctx context.Context, req *WorkflowTemplateUpdateRequest) (*v1alpha1.WorkflowTemplate, error) {
+func (wts *WorkflowTemplateServer) UpdateWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateUpdateRequest) (*v1alpha1.WorkflowTemplate, error) {
 	if req.Template == nil {
 		return nil, fmt.Errorf("WorkflowTemplate is not found in Request body")
 	}

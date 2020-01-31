@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/argoproj/pkg/cli"
@@ -14,6 +16,7 @@ import (
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/apiserver"
+	"github.com/argoproj/argo/util/help"
 )
 
 func NewServerCommand() *cobra.Command {
@@ -22,13 +25,16 @@ func NewServerCommand() *cobra.Command {
 		authMode         string
 		configMap        string
 		port             int
+		baseHRef         string
 		namespaced       bool   // --namespaced
 		managedNamespace string // --managed-namespace
 	)
 
 	var command = cobra.Command{
 		Use:   "server",
-		Short: "Start the server",
+		Short: "Start the Argo Server",
+		Example: fmt.Sprintf(`
+See %s`, help.ArgoSever),
 		RunE: func(c *cobra.Command, args []string) error {
 			cli.SetLogLevel(logLevel)
 			stats.RegisterStackDumper()
@@ -60,9 +66,15 @@ func NewServerCommand() *cobra.Command {
 				managedNamespace = namespace
 			}
 
-			log.WithFields(log.Fields{"namespace": namespace, "managedNamespace": managedNamespace}).Info()
+			log.WithFields(log.Fields{
+				"authMode":         authMode,
+				"namespace":        namespace,
+				"managedNamespace": managedNamespace,
+				"baseHRef":         baseHRef}).
+				Info()
 
 			opts := apiserver.ArgoServerOpts{
+				BaseHRef:         baseHRef,
 				Namespace:        namespace,
 				WfClientSet:      wflientset,
 				KubeClientset:    kubeConfig,
@@ -81,6 +93,11 @@ func NewServerCommand() *cobra.Command {
 	}
 
 	command.Flags().IntVarP(&port, "port", "p", 2746, "Port to listen on")
+	defaultBaseHRef := os.Getenv("BASE_HREF")
+	if defaultBaseHRef == "" {
+		defaultBaseHRef = "/"
+	}
+	command.Flags().StringVar(&baseHRef, "basehref", defaultBaseHRef, "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
 	command.Flags().StringVar(&authMode, "auth-mode", "server", "API server authentication mode. One of: client|server|hybrid")
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
