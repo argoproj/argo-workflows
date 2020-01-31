@@ -68,6 +68,29 @@ func (_m *ContainerRuntimeExecutor) GetOutputStream(containerID string, combined
 	return r0, r1
 }
 
+// GetExitCode provides a mock function with given fields: containerID
+func (_m *ContainerRuntimeExecutor) GetExitCode(containerID string) (int32, error) {
+	ret := _m.Called(containerID)
+
+	var r0 int32
+	if rf, ok := ret.Get(0).(func(string) int32); ok {
+		r0 = rf(containerID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(int32)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(containerID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Kill provides a mock function with given fields: containerIDs
 func (_m *ContainerRuntimeExecutor) Kill(containerIDs []string) error {
 	ret := _m.Called(containerIDs)

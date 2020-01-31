@@ -823,6 +823,11 @@
         "result": {
           "description": "Result holds the result (stdout) of a script template",
           "type": "string"
+        },
+        "exitCode": {
+          "description": "Exit code holds the exit code of a script template",
+          "type": "integer",
+          "format": "int32"
         }
       }
     },

@@ -680,6 +680,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 	}
 	if tmpl.Script != nil {
 		scope[fmt.Sprintf("%s.outputs.result", prefix)] = true
+		scope[fmt.Sprintf("%s.outputs.exitCode", prefix)] = true
 	}
 	for _, param := range tmpl.Outputs.Parameters {
 		scope[fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)] = true
@@ -701,6 +702,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 		switch tmpl.GetType() {
 		case wfv1.TemplateTypeScript:
 			scope[fmt.Sprintf("%s.outputs.result", prefix)] = true
+			scope[fmt.Sprintf("%s.outputs.exitCode", prefix)] = true
 		default:
 			scope[fmt.Sprintf("%s.outputs.parameters", prefix)] = true
 		}

@@ -184,6 +184,10 @@ export interface Outputs {
      * Result holds the result (stdout) of a script template
      */
     result?: string;
+    /**
+     * Holds the exit code of a script template
+     */
+    exitCode?: number;
 }
 
 /**

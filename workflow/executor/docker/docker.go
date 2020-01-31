@@ -5,8 +5,11 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"strconv"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -84,6 +87,37 @@ func (d *DockerExecutor) GetOutputStream(containerID string, combinedOutput bool
 		return nil, errors.InternalWrapError(err)
 	}
 	return reader, nil
+}
+
+func (d *DockerExecutor) GetExitCode(containerID string) (int32, error) {
+	cmd := exec.Command("docker", "inspect", containerID, "--format='{{.State.ExitCode}}'")
+	log.Info(cmd.Args)
+	reader, err := cmd.StdoutPipe()
+	if err != nil {
+		return -1, errors.InternalWrapError(err)
+	}
+	err = cmd.Start()
+	if err != nil {
+		return -1, errors.InternalWrapError(err)
+	}
+	defer func() { _ = reader.Close() }()
+	bytes, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return -1, errors.InternalWrapError(err)
+	}
+	out := string(bytes)
+
+	// Trims off a single newline for user convenience
+	outputLen := len(out)
+	if outputLen > 0 && out[outputLen-1] == '\n' {
+		out = out[0 : outputLen-1]
+	}
+	out = strings.Trim(out, `'`)
+	i, err := strconv.ParseInt(out, 10, 32)
+	if err != nil {
+		return -1, errors.InternalWrapError(err)
+	}
+	return int32(i), nil
 }
 
 func (d *DockerExecutor) WaitInit() error {

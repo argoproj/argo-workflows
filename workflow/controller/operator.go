@@ -1729,6 +1729,12 @@ func (woc *wfOperationCtx) addOutputsToScope(prefix string, outputs *wfv1.Output
 			scope.addParamToScope(key, *outputs.Result)
 		}
 	}
+	if prefix != "workflow" && outputs.ExitCode != nil {
+		key := fmt.Sprintf("%s.outputs.exitCode", prefix)
+		if scope != nil {
+			scope.addParamToScope(key, fmt.Sprint(*outputs.ExitCode))
+		}
+	}
 	for _, param := range outputs.Parameters {
 		key := fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)
 		if scope != nil {

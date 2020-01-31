@@ -41,6 +41,15 @@ func (k *K8sAPIExecutor) GetOutputStream(containerID string, combinedOutput bool
 	return k.client.getLogsAsStream(containerID)
 }
 
+func (k *K8sAPIExecutor) GetExitCode(containerID string) (int32, error) {
+	log.Infof("Getting exit code of %s", containerID)
+	_, status, err := k.client.GetContainerStatus(containerID)
+	if err != nil {
+		return -1, err
+	}
+	return status.LastTerminationState.Terminated.ExitCode, nil
+}
+
 func (k *K8sAPIExecutor) WaitInit() error {
 	return nil
 }

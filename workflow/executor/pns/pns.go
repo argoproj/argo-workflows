@@ -15,6 +15,7 @@ import (
 	gops "github.com/mitchellh/go-ps"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo/errors"
@@ -223,6 +224,20 @@ func (p *PNSExecutor) GetOutputStream(containerID string, combinedOutput bool) (
 		Follow:    true,
 	}
 	return p.clientset.CoreV1().Pods(p.namespace).GetLogs(p.podName, &opts).Stream()
+}
+
+func (p *PNSExecutor) GetExitCode(containerID string) (int32, error) {
+	opts := metav1.GetOptions{}
+	pod, err := p.clientset.CoreV1().Pods(p.namespace).Get(p.podName, opts)
+	if err != nil {
+		return -1, err
+	}
+	for _, containerStatus := range pod.Status.ContainerStatuses {
+		if containerStatus.ContainerID == containerID {
+			return containerStatus.LastTerminationState.Terminated.ExitCode, nil
+		}
+	}
+	return -1, fmt.Errorf("can not find container with id: %s", containerID)
 }
 
 // Kill a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period

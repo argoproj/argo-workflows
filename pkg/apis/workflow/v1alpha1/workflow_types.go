@@ -614,6 +614,9 @@ type Outputs struct {
 
 	// Result holds the result (stdout) of a script template
 	Result *string `json:"result,omitempty" protobuf:"bytes,3,opt,name=result"`
+
+	// Holds the exit code of a script template
+	ExitCode *int32 `json:"exitCode,omitempty" protobuf:"bytes,4,opt,name=exitCode"`
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step
@@ -1327,6 +1330,9 @@ func (in *Inputs) HasInputs() bool {
 // HasOutputs returns whether or not there are any outputs
 func (out *Outputs) HasOutputs() bool {
 	if out.Result != nil {
+		return true
+	}
+	if out.ExitCode != nil {
 		return true
 	}
 	if len(out.Artifacts) > 0 {
