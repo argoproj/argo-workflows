@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/skratchdot/open-golang/open"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -55,5 +56,12 @@ func WriteTeriminateMessage(message string) {
 	err := ioutil.WriteFile("/dev/termination-log", []byte(message), 0644)
 	if err != nil {
 		panic(err)
+	}
+}
+
+func OpenBrowser(url string) {
+	err := open.Run(url)
+	if err != nil {
+		log.Warnf("Unable to open the browser. %v", err)
 	}
 }

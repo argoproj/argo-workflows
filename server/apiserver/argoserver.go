@@ -10,7 +10,6 @@ import (
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	log "github.com/sirupsen/logrus"
-	"github.com/skratchdot/open-golang/open"
 	"github.com/soheilhy/cmux"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -37,6 +36,7 @@ import (
 	"github.com/argoproj/argo/server/workflow"
 	"github.com/argoproj/argo/server/workflowarchive"
 	"github.com/argoproj/argo/server/workflowtemplate"
+	"github.com/argoproj/argo/util"
 	grpcutil "github.com/argoproj/argo/util/grpc"
 	"github.com/argoproj/argo/util/json"
 	"github.com/argoproj/argo/workflow/common"
@@ -164,18 +164,12 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
 	log.Infof("Argo Server started successfully on address http://locahost%s", address)
 	if !as.disableOpenBrowser {
-		openBrowser("http://localhost" + address)
+		util.OpenBrowser("http://localhost" + address)
 	}
 	as.stopCh = make(chan struct{})
 	<-as.stopCh
 }
 
-func openBrowser(url string) {
-	err := open.Run(url)
-	if err != nil {
-		log.Warnf("Unable to open the browser. %v", err)
-	}
-}
 
 func (as *argoServer) newGRPCServer(offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
