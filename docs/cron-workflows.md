@@ -2,7 +2,7 @@
 
 ![alpha](assets/alpha.svg)
 
-Available on `v2.5.0`+
+> v2.5 and after
 
 ## Introduction
 
@@ -86,6 +86,10 @@ ConcurrencyPolicy:             Replace
 LastScheduledTime:             Mon Nov 18 10:21:00 -0800 (51 seconds ago)
 Active Workflows:              test-cron-wf-rt4nf
 ```
+
+### `kubectl`
+
+Using `kubectl apply -f` and `kubectl get cwf`
 
 ### GitOps via Argo CD
 
