@@ -40,21 +40,21 @@ func GetClientConn() *grpc.ClientConn {
 }
 
 func GetContext() context.Context {
-	token := GetBearerToken()
-	if len(token) == 0 {
+	authString := GetAuthString()
+	if authString == "" {
 		return context.Background()
 	}
-	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token))
+	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", authString))
 }
 
-func GetBearerToken() string {
+func GetAuthString() string {
 	restConfig, err := Config.ClientConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
-	token, err := kubeconfig.GetBearerToken(restConfig)
+	authString, err := kubeconfig.GetAuthString(restConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return token
+	return authString
 }
