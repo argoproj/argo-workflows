@@ -23,5 +23,5 @@ spec:
               port: 2746
               scheme: HTTP
               path: /
-            initialDelaySeconds: 5
-            periodSeconds: 30
+            initialDelaySeconds: 10
+            periodSeconds: 20

@@ -5,17 +5,21 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: failed-step-
+  labels:
+    argo-e2e: true
 spec:
+  podGC:
+    strategy: OnPodCompletion
   entrypoint: failed-step
   templates:
-  - name: failed-step
-    steps:
-    - - name: exit
-        template: exit
-        arguments:
-          parameters:
-          - name: code
-            value: "{{item}}"
+    - name: failed-step
+      steps:
+        - - name: exit
+            template: exit
+            arguments:
+              parameters:
+                - name: code
+                  value: "{{item}}"
         withItems:
         - 0
         - 1

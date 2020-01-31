@@ -34,7 +34,6 @@ func init() {
 
 type E2ESuite struct {
 	suite.Suite
-	Env
 	Diagnostics      *Diagnostics
 	Persistence      *Persistence
 	RestConfig       *rest.Config
@@ -50,11 +49,6 @@ func (s *E2ESuite) SetupSuite() {
 	if err != nil {
 		panic(err)
 	}
-	token, err := s.GetServiceAccountToken()
-	if err != nil {
-		panic(err)
-	}
-	s.SetEnv(token)
 	s.KubeClient, err = kubernetes.NewForConfig(s.RestConfig)
 	if err != nil {
 		panic(err)
@@ -68,7 +62,6 @@ func (s *E2ESuite) SetupSuite() {
 
 func (s *E2ESuite) TearDownSuite() {
 	s.Persistence.Close()
-	s.UnsetEnv()
 }
 
 func (s *E2ESuite) BeforeTest(_, _ string) {
@@ -260,9 +253,9 @@ func (s *E2ESuite) printPodLogs(logCtx *log.Entry, namespace, pod, container str
 	fmt.Println("---")
 }
 
-func (s *E2ESuite) Given() *Given {
+func (s *E2ESuite) Given(t *testing.T) *Given {
 	return &Given{
-		t:                     s.T(),
+		t:                     t,
 		diagnostics:           s.Diagnostics,
 		client:                s.wfClient,
 		wfTemplateClient:      s.wfTemplateClient,

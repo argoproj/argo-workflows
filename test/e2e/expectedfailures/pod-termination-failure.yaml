@@ -8,16 +8,18 @@ metadata:
   labels:
     argo-e2e: true
 spec:
+  podGC:
+    strategy: OnPodCompletion
   entrypoint: entry
   templates:
-  - name: entry
-    dag:
-      tasks:
-      - name: sleep
-        template: sleep-n-sec
-        arguments:
-          parameters:
-          - name: seconds
+    - name: entry
+      dag:
+        tasks:
+          - name: sleep
+            template: sleep-n-sec
+            arguments:
+              parameters:
+                - name: seconds
             value: 1200
       - name: check-running
         template: check-status
