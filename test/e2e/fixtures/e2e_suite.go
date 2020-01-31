@@ -26,7 +26,10 @@ import (
 )
 
 const Namespace = "argo"
-const label = "argo-e2e"
+const Label = "argo-e2e"
+
+// Cron tests run in parallel, so use a different label so they are not deleted when a new test runs
+const LabelCron = Label + "-cron"
 
 func init() {
 	_ = commands.NewCommand()
@@ -67,6 +70,12 @@ func (s *E2ESuite) TearDownSuite() {
 func (s *E2ESuite) BeforeTest(_, _ string) {
 	s.Diagnostics = &Diagnostics{}
 
+	s.DeleteResources(Label)
+	// create database collection
+	s.Persistence.DeleteEverything()
+}
+
+func (s *E2ESuite) DeleteResources(label string) {
 	// delete all cron workflows
 	cronList, err := s.cronClient.List(metav1.ListOptions{LabelSelector: label})
 	if err != nil {
@@ -130,8 +139,6 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 			panic(err)
 		}
 	}
-	// create database collection
-	s.Persistence.DeleteEverything()
 }
 
 func (s *E2ESuite) GetBasicAuthToken() string {
@@ -176,7 +183,7 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 
 func (s *E2ESuite) printDiagnostics() {
 	s.Diagnostics.Print()
-	wfs, err := s.wfClient.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + Namespace, LabelSelector: label})
+	wfs, err := s.wfClient.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + Namespace, LabelSelector: Label})
 	if err != nil {
 		s.T().Fatal(err)
 	}
