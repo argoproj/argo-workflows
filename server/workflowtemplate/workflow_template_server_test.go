@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo/server/auth"
 
 	"github.com/stretchr/testify/assert"
@@ -119,7 +120,7 @@ const wftStr3 = `
 }
 `
 
-func getWorkflowTemplateServer() (WorkflowTemplateServiceServer, context.Context) {
+func getWorkflowTemplateServer() (workflowtemplatepkg.WorkflowTemplateServiceServer, context.Context) {
 	var wftObj1, wftObj2 v1alpha1.WorkflowTemplate
 	_ = json.Unmarshal([]byte(wftStr2), &wftObj1)
 	_ = json.Unmarshal([]byte(wftStr3), &wftObj2)
@@ -131,7 +132,7 @@ func getWorkflowTemplateServer() (WorkflowTemplateServiceServer, context.Context
 
 func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
 	server, ctx := getWorkflowTemplateServer()
-	var wftReq WorkflowTemplateCreateRequest
+	var wftReq workflowtemplatepkg.WorkflowTemplateCreateRequest
 	err := json.Unmarshal([]byte(wftStr1), &wftReq)
 	assert.Nil(t, err)
 	wftRsp, err := server.CreateWorkflowTemplate(ctx, &wftReq)
@@ -142,7 +143,7 @@ func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
 
 func TestWorkflowTemplateServer_GetWorkflowTemplate(t *testing.T) {
 	server, ctx := getWorkflowTemplateServer()
-	wftReq := WorkflowTemplateGetRequest{
+	wftReq := workflowtemplatepkg.WorkflowTemplateGetRequest{
 		Name:      "workflow-template-whalesay-template2",
 		Namespace: "default",
 	}
@@ -155,7 +156,7 @@ func TestWorkflowTemplateServer_GetWorkflowTemplate(t *testing.T) {
 
 func TestWorkflowTemplateServer_ListWorkflowTemplates(t *testing.T) {
 	server, ctx := getWorkflowTemplateServer()
-	wftReq := WorkflowTemplateListRequest{
+	wftReq := workflowtemplatepkg.WorkflowTemplateListRequest{
 		Namespace: "default",
 	}
 	wftRsp, err := server.ListWorkflowTemplates(ctx, &wftReq)
@@ -163,7 +164,7 @@ func TestWorkflowTemplateServer_ListWorkflowTemplates(t *testing.T) {
 		assert.Len(t, wftRsp.Items, 2)
 	}
 
-	wftReq = WorkflowTemplateListRequest{
+	wftReq = workflowtemplatepkg.WorkflowTemplateListRequest{
 		Namespace: "test",
 	}
 	wftRsp, err = server.ListWorkflowTemplates(ctx, &wftReq)
@@ -174,7 +175,7 @@ func TestWorkflowTemplateServer_ListWorkflowTemplates(t *testing.T) {
 
 func TestWorkflowTemplateServer_DeleteWorkflowTemplate(t *testing.T) {
 	server, ctx := getWorkflowTemplateServer()
-	wftReq := WorkflowTemplateDeleteRequest{
+	wftReq := workflowtemplatepkg.WorkflowTemplateDeleteRequest{
 		Namespace: "default",
 		Name:      "workflow-template-whalesay-template2",
 	}
@@ -189,7 +190,7 @@ func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
 	err := json.Unmarshal([]byte(wftStr2), &wftObj1)
 	assert.Nil(t, err)
 	wftObj1.Spec.Templates[0].Container.Image = "alpine:latest"
-	wftReq := WorkflowTemplateUpdateRequest{
+	wftReq := workflowtemplatepkg.WorkflowTemplateUpdateRequest{
 		Namespace: "default",
 		Name:      "workflow-template-whalesay-template2",
 		Template:  &wftObj1,

@@ -9,8 +9,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/workflow"
 	apiUtil "github.com/argoproj/argo/util/api"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -40,7 +40,7 @@ func NewResubmitCommand() *cobra.Command {
 				defer conn.Close()
 				apiGRPCClient, ctx := GetWFApiServerGRPCClient(conn)
 				errors.CheckError(err)
-				wfReq := workflow.WorkflowGetRequest{
+				wfReq := workflowpkg.WorkflowGetRequest{
 					Namespace: namespace,
 					Name:      args[0],
 				}
