@@ -16,15 +16,23 @@ import (
 
 // Global variables
 var (
+	// DEPRECATED
 	restConfig   *rest.Config
+	// DEPRECATED
 	clientConfig clientcmd.ClientConfig
+	// DEPRECATED
 	clientset    *kubernetes.Clientset
+	// DEPRECATED
 	wfClientset  *versioned.Clientset
+	// DEPRECATED
 	cronWfClient v1alpha1.CronWorkflowInterface
+	// DEPRECATED
 	wftmplClient v1alpha1.WorkflowTemplateInterface
+	// DEPRECATED
 	namespace    string
 )
 
+// DEPRECATED
 func initKubeClient() *kubernetes.Clientset {
 	if clientset != nil {
 		return clientset
@@ -44,6 +52,7 @@ func initKubeClient() *kubernetes.Clientset {
 }
 
 // InitCronWorkflowClient creates a new client for the Kubernetes WorkflowTemplate CRD.
+// DEPRECATED
 func InitCronWorkflowClient(ns ...string) v1alpha1.CronWorkflowInterface {
 	if cronWfClient != nil {
 		return cronWfClient
@@ -66,9 +75,11 @@ func InitCronWorkflowClient(ns ...string) v1alpha1.CronWorkflowInterface {
 
 // LazyWorkflowTemplateGetter is a wrapper of v1alpha1.WorkflowTemplateInterface which
 // supports lazy initialization.
+// DEPRECATED
 type LazyWorkflowTemplateGetter struct{}
 
 // Get initializes it just before it's actually used and returns a retrieved workflow template.
+// DEPRECATED
 func (c LazyWorkflowTemplateGetter) Get(name string) (*wfv1.WorkflowTemplate, error) {
 	if wftmplClient == nil {
 		_ = InitCronWorkflowClient()
@@ -76,4 +87,5 @@ func (c LazyWorkflowTemplateGetter) Get(name string) (*wfv1.WorkflowTemplate, er
 	return templateresolution.WrapWorkflowTemplateInterface(wftmplClient).Get(name)
 }
 
+// DEPRECATED
 var _ templateresolution.WorkflowTemplateNamespacedGetter = &LazyWorkflowTemplateGetter{}
