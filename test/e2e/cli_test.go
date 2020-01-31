@@ -3,6 +3,7 @@ package e2e
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -105,12 +106,69 @@ func (s *CLISuite) TestRoot() {
 			}
 		})
 	})
-	s.Run("Delete", func(t *testing.T) {
-		s.Given(t).RunCli([]string{"delete", "basic"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "deleted")
-			}
-		})
+}
+
+func (s *CLISuite) TestWorkflowDelete() {
+	s.Run("DeleteByName", func(t *testing.T) {
+		s.Given(t).
+			Workflow("@smoke/basic.yaml").
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(15 * time.Second).
+			Given().
+			RunCli([]string{"delete", "basic"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "Workflow 'basic' deleted")
+				}
+			})
+	})
+	s.Run("DeleteAll", func(t *testing.T) {
+		s.Given(t).
+			Workflow("@smoke/basic.yaml").
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(15 * time.Second).
+			Given().
+			RunCli([]string{"delete", "--all", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "Workflow 'basic' deleted")
+				}
+			})
+	})
+	s.Run("DeleteCompleted", func(t *testing.T) {
+		s.Given(t).
+			Workflow("@smoke/basic.yaml").
+			When().
+			SubmitWorkflow().
+			Given().
+			RunCli([]string{"delete", "--completed", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					// nothing should be deleted yet
+					assert.NotContains(t, output, "deleted")
+				}
+			}).
+			When().
+			WaitForWorkflow(15 * time.Second).
+			Given().
+			RunCli([]string{"delete", "--completed", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "Workflow 'basic' deleted")
+				}
+			})
+	})
+	s.Run("DeleteOlder", func(t *testing.T) {
+		s.Given(t).
+			Workflow("@smoke/basic.yaml").
+			When().
+			SubmitWorkflow().
+			WaitForWorkflow(15 * time.Second).
+			Given().
+			RunCli([]string{"delete", "--older", "1d", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					// nothing over a day should be deleted
+					assert.NotContains(t, output, "deleted")
+				}
+			})
 	})
 }
 
