@@ -568,7 +568,30 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
 	s.Run("List", func(t *testing.T) {
 		// make sure list options work correctly
 		s.Given(t).
-			CronWorkflow("@testdata/basic.yaml")
+			CronWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-basic
+  labels:
+    argo-e2e: true
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: "Allow"
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 2
+  workflowSpec:
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: python:alpine3.6
+          imagePullPolicy: IfNotPresent
+          command: ["sh", -c]
+          args: ["echo hello"]
+`)
 
 		s.e(t).GET("/api/v1/cron-workflows/argo").
 			WithQuery("listOptions.labelSelector", "argo-e2e=subject").

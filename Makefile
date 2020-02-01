@@ -32,19 +32,6 @@ DB                    ?= postgres
 K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 ARGO_TOKEN            = $(shell kubectl -n argo get secret -o name | grep argo-server | xargs kubectl -n argo get -o jsonpath='{.data.token}' | base64 --decode)
 
-# test flags
-export SKIP_CRON_SUITE=true
-# if we are on any branch with "master", "release", or "cron" in the name we should run cron tests
-ifneq ($(findstring cron,$(GIT_BRANCH)),)
-export SKIP_CRON_SUITE=false
-endif
-ifneq ($(findstring master,$(GIT_BRANCH)),)
-export SKIP_CRON_SUITE=false
-endif
-ifneq ($(findstring release,$(GIT_BRANCH)),)
-export SKIP_CRON_SUITE=false
-endif
-
 override LDFLAGS += \
   -X ${PACKAGE}.version=$(VERSION) \
   -X ${PACKAGE}.buildDate=${BUILD_DATE} \

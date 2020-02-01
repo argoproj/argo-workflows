@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -26,15 +25,42 @@ type CronSuite struct {
 }
 
 func (s *CronSuite) SetupSuite() {
-	if os.Getenv("SKIP_CRON_SUITE") == "true" {
-		s.T().SkipNow()
-	}
 	s.E2ESuite.SetupSuite()
+	// Since tests run in parallel, delete all cron resources before the test suite is run
+	s.E2ESuite.DeleteResources(fixtures.LabelCron)
+}
+
+func (s *CronSuite) TearDownSuite() {
+	s.E2ESuite.DeleteResources(fixtures.LabelCron)
+	s.Persistence.Close()
 }
 
 func (s *CronSuite) TestBasic() {
+	s.T().Parallel()
 	s.Given(s.T()).
-		CronWorkflow("@testdata/basic.yaml").
+		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-basic
+  labels:
+    argo-e2e-cron: true
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: "Allow"
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 2
+  workflowSpec:
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: python:alpine3.6
+          imagePullPolicy: IfNotPresent
+          command: ["sh", -c]
+          args: ["echo hello"]`).
 		When().
 		CreateCronWorkflow().
 		Wait(1 * time.Minute).
@@ -45,6 +71,7 @@ func (s *CronSuite) TestBasic() {
 }
 
 func (s *CronSuite) TestBasicTimezone() {
+	s.T().Parallel()
 	// This test works by scheduling a CronWorkflow for the next minute, but using the local time of another timezone
 	// then seeing if the Workflow was ran within the next minute. Since this test would be trivial if the selected
 	// timezone was the same as the local timezone, a little-used timezone is used.
@@ -65,9 +92,9 @@ func (s *CronSuite) TestBasicTimezone() {
 apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
-  name: test-cron-wf-basic
+  name: test-cron-wf-basic-timezone
   labels:
-    argo-e2e: true
+    argo-e2e-cron: true
 spec:
   schedule: "%s"
   timezone: "%s"
@@ -91,36 +118,105 @@ spec:
 }
 
 func (s *CronSuite) TestSuspend() {
+	s.T().Parallel()
 	s.Given(s.T()).
-		CronWorkflow("@testdata/basic.yaml").
+		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-basic-suspend
+  labels:
+    argo-e2e-cron: true
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: "Allow"
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 2
+  workflowSpec:
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: python:alpine3.6
+          imagePullPolicy: IfNotPresent
+          command: ["sh", -c]
+          args: ["echo hello"]`).
 		When().
 		CreateCronWorkflow().
 		Then().
-		RunCli([]string{"cron", "suspend", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"cron", "suspend", "test-cron-wf-basic-suspend"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
-			assert.Contains(t, output, "CronWorkflow 'test-cron-wf-basic' suspended")
+			assert.Contains(t, output, "CronWorkflow 'test-cron-wf-basic-suspend' suspended")
 		}).ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 		assert.True(t, cronWf.Spec.Suspend)
 	})
 }
 
 func (s *CronSuite) TestResume() {
+	s.T().Parallel()
 	s.Given(s.T()).
-		CronWorkflow("@testdata/basic.yaml").
+		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-basic-resume
+  labels:
+    argo-e2e-cron: true
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: "Allow"
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 2
+  workflowSpec:
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: python:alpine3.6
+          imagePullPolicy: IfNotPresent
+          command: ["sh", -c]
+          args: ["echo hello"]`).
 		When().
 		CreateCronWorkflow().
 		Then().
-		RunCli([]string{"cron", "resume", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"cron", "resume", "test-cron-wf-basic-resume"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
-			assert.Contains(t, output, "CronWorkflow 'test-cron-wf-basic' resumed")
+			assert.Contains(t, output, "CronWorkflow 'test-cron-wf-basic-resume' resumed")
 		}).ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 		assert.False(t, cronWf.Spec.Suspend)
 	})
 }
 
 func (s *CronSuite) TestBasicForbid() {
+	s.T().Parallel()
 	s.Given(s.T()).
-		CronWorkflow("@testdata/basic-forbid.yaml").
+		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-basic-forbid
+  labels:
+    argo-e2e-cron: true
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: "Forbid"
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 2
+  workflowSpec:
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: python:alpine3.6
+          imagePullPolicy: IfNotPresent
+          command: ["sh", -c]
+          args: ["sleep 300"]`).
 		When().
 		CreateCronWorkflow().
 		Wait(2 * time.Minute).
@@ -132,8 +228,31 @@ func (s *CronSuite) TestBasicForbid() {
 }
 
 func (s *CronSuite) TestBasicAllow() {
+	s.T().Parallel()
 	s.Given(s.T()).
-		CronWorkflow("@testdata/basic-allow.yaml").
+		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-basic-allow
+  labels:
+    argo-e2e-cron: true
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: "Allow"
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 2
+  workflowSpec:
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: python:alpine3.6
+          imagePullPolicy: IfNotPresent
+          command: ["sh", -c]
+          args: ["sleep 300"]`).
 		When().
 		CreateCronWorkflow().
 		Wait(2 * time.Minute).
@@ -144,8 +263,31 @@ func (s *CronSuite) TestBasicAllow() {
 }
 
 func (s *CronSuite) TestBasicReplace() {
+	s.T().Parallel()
 	s.Given(s.T()).
-		CronWorkflow("@testdata/basic-replace.yaml").
+		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-basic-replace
+  labels:
+    argo-e2e-cron: true
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: "Replace"
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 2
+  workflowSpec:
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: python:alpine3.6
+          imagePullPolicy: IfNotPresent
+          command: ["sh", -c]
+          args: ["sleep 300"]`).
 		When().
 		CreateCronWorkflow().
 		Wait(2 * time.Minute).
@@ -157,10 +299,34 @@ func (s *CronSuite) TestBasicReplace() {
 }
 
 func (s *CronSuite) TestSuccessfulJobHistoryLimit() {
+	s.T().Parallel()
 	var listOptions v1.ListOptions
 	wfInformerListOptionsFunc(&listOptions, "test-cron-wf-succeed-1")
 	s.Given(s.T()).
-		CronWorkflow("@testdata/always-succeed-1.yaml").
+		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-succeed-1
+  labels:
+    argo-e2e-cron: true
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: "Forbid"
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  workflowSpec:
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: python:alpine3.6
+          imagePullPolicy: IfNotPresent
+          command: ["python", -c]
+          args: ["import random; import sys; exit_code = random.choice([0]); print('exiting with code {}'.format(exit_code)); sys.exit(exit_code)"]
+`).
 		When().
 		CreateCronWorkflow().
 		Wait(2*time.Minute).
@@ -172,10 +338,34 @@ func (s *CronSuite) TestSuccessfulJobHistoryLimit() {
 }
 
 func (s *CronSuite) TestFailedJobHistoryLimit() {
+	s.T().Parallel()
 	var listOptions v1.ListOptions
 	wfInformerListOptionsFunc(&listOptions, "test-cron-wf-fail-1")
 	s.Given(s.T()).
-		CronWorkflow("@testdata/always-fail-1.yaml").
+		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: test-cron-wf-fail-1
+  labels:
+    argo-e2e-cron: true
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: "Forbid"
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 1
+  workflowSpec:
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: python:alpine3.6
+          imagePullPolicy: IfNotPresent
+          command: ["python", -c]
+          args: ["import random; import sys; exit_code = random.choice([1]); print('exiting with code {}'.format(exit_code)); sys.exit(exit_code)"]
+`).
 		When().
 		CreateCronWorkflow().
 		Wait(2*time.Minute).

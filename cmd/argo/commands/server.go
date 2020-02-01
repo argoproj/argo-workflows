@@ -81,6 +81,7 @@ See %s`, help.ArgoSever),
 				RestConfig:       config,
 				AuthMode:         authMode,
 				ManagedNamespace: managedNamespace,
+				ConfigName:       configMap,
 			}
 			err = opts.ValidateOpts()
 			if err != nil {
