@@ -615,7 +615,7 @@ type Outputs struct {
 	// Result holds the result (stdout) of a script template
 	Result *string `json:"result,omitempty" protobuf:"bytes,3,opt,name=result"`
 
-	// Holds the exit code of a script template
+	// ExitCode holds the exit code of a script template
 	ExitCode *int32 `json:"exitCode,omitempty" protobuf:"bytes,4,opt,name=exitCode"`
 }
 

@@ -185,7 +185,7 @@ export interface Outputs {
      */
     result?: string;
     /**
-     * Holds the exit code of a script template
+     * ExitCode holds the exit code of a script template
      */
     exitCode?: number;
 }
