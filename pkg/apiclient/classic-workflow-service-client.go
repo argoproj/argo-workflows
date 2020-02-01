@@ -14,7 +14,9 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/util/help"
 	"github.com/argoproj/argo/workflow/packer"
+	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/argo/workflow/validate"
 )
 
 var (
@@ -103,11 +105,11 @@ func (k *classicWorkflowServiceClient) ListWorkflows(_ context.Context, in *work
 	return list, nil
 }
 
-func (k *classicWorkflowServiceClient) WatchWorkflows(ctx context.Context, in *workflowpkg.WatchWorkflowsRequest, opts ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsClient, error) {
+func (k *classicWorkflowServiceClient) WatchWorkflows(_ context.Context, _ *workflowpkg.WatchWorkflowsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsClient, error) {
 	panic("implement me")
 }
 
-func (k *classicWorkflowServiceClient) DeleteWorkflow(ctx context.Context, in *workflowpkg.WorkflowDeleteRequest, opts ...grpc.CallOption) (*workflowpkg.WorkflowDeleteResponse, error) {
+func (k *classicWorkflowServiceClient) DeleteWorkflow(_ context.Context, in *workflowpkg.WorkflowDeleteRequest, _ ...grpc.CallOption) (*workflowpkg.WorkflowDeleteResponse, error) {
 	err := k.ArgoprojV1alpha1().Workflows(in.Namespace).Delete(in.Name, in.DeleteOptions)
 	if err != nil {
 		return nil, err
@@ -115,30 +117,35 @@ func (k *classicWorkflowServiceClient) DeleteWorkflow(ctx context.Context, in *w
 	return &workflowpkg.WorkflowDeleteResponse{}, nil
 }
 
-func (k *classicWorkflowServiceClient) RetryWorkflow(ctx context.Context, in *workflowpkg.WorkflowRetryRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (k *classicWorkflowServiceClient) RetryWorkflow(_ context.Context, _ *workflowpkg.WorkflowRetryRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	panic("implement me")
 }
 
-func (k *classicWorkflowServiceClient) ResubmitWorkflow(ctx context.Context, in *workflowpkg.WorkflowResubmitRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (k *classicWorkflowServiceClient) ResubmitWorkflow(_ context.Context, _ *workflowpkg.WorkflowResubmitRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	panic("implement me")
 }
 
-func (k *classicWorkflowServiceClient) ResumeWorkflow(ctx context.Context, in *workflowpkg.WorkflowResumeRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (k *classicWorkflowServiceClient) ResumeWorkflow(_ context.Context, _ *workflowpkg.WorkflowResumeRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	panic("implement me")
 }
 
-func (k *classicWorkflowServiceClient) SuspendWorkflow(ctx context.Context, in *workflowpkg.WorkflowSuspendRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (k *classicWorkflowServiceClient) SuspendWorkflow(_ context.Context, _ *workflowpkg.WorkflowSuspendRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	panic("implement me")
 }
 
-func (k *classicWorkflowServiceClient) TerminateWorkflow(ctx context.Context, in *workflowpkg.WorkflowTerminateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (k *classicWorkflowServiceClient) TerminateWorkflow(_ context.Context, _ *workflowpkg.WorkflowTerminateRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	panic("implement me")
 }
 
-func (k *classicWorkflowServiceClient) LintWorkflow(ctx context.Context, in *workflowpkg.WorkflowLintRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
-	panic("implement me")
+func (k *classicWorkflowServiceClient) LintWorkflow(_ context.Context, in *workflowpkg.WorkflowLintRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+	templateGetter := templateresolution.WrapWorkflowTemplateInterface(k.Interface.ArgoprojV1alpha1().WorkflowTemplates(in.Namespace))
+	err := validate.ValidateWorkflow(templateGetter, in.Workflow, validate.ValidateOpts{Lint: true})
+	if err != nil {
+		return nil, err
+	}
+	return in.Workflow, nil
 }
 
-func (k *classicWorkflowServiceClient) PodLogs(ctx context.Context, in *workflowpkg.WorkflowLogRequest, opts ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
+func (k *classicWorkflowServiceClient) PodLogs(_ context.Context, _ *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
 	panic("implement me")
 }
