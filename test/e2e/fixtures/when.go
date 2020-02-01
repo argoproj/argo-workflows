@@ -170,3 +170,19 @@ func (w *When) Then() *Then {
 		kubeClient:            w.kubeClient,
 	}
 }
+
+func (w *When) Given() *Given {
+	return &Given{
+		t:                     w.t,
+		diagnostics:           w.diagnostics,
+		client:                w.client,
+		wfTemplateClient:      w.wfTemplateClient,
+		cronClient:            w.cronClient,
+		offloadNodeStatusRepo: w.offloadNodeStatusRepo,
+		wf:                    w.wf,
+		wfTemplates:           w.wfTemplates,
+		cronWf:                w.cronWf,
+		workflowName:          w.workflowName,
+		kubeClient:            w.kubeClient,
+	}
+}

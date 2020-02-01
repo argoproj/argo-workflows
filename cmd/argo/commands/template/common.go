@@ -19,15 +19,15 @@ import (
 // Global variables
 var (
 	// DEPRECATED
-	restConfig   *rest.Config
+	restConfig *rest.Config
 	// DEPRECATED
-	clientset    *kubernetes.Clientset
+	clientset *kubernetes.Clientset
 	// DEPRECATED
-	wfClientset  *versioned.Clientset
+	wfClientset *versioned.Clientset
 	// DEPRECATED
 	wftmplClient v1alpha1.WorkflowTemplateInterface
 	// DEPRECATED
-	namespace    string
+	namespace string
 )
 
 // DEPRECATED
