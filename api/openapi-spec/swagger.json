@@ -811,6 +811,11 @@
           "x-kubernetes-patch-merge-key": "name",
           "x-kubernetes-patch-strategy": "merge"
         },
+        "exitCode": {
+          "description": "ExitCode holds the exit code of a script template",
+          "type": "integer",
+          "format": "int32"
+        },
         "parameters": {
           "description": "Parameters holds the list of output parameters produced by a step",
           "type": "array",
@@ -823,11 +828,6 @@
         "result": {
           "description": "Result holds the result (stdout) of a script template",
           "type": "string"
-        },
-        "exitCode": {
-          "description": "Exit code holds the exit code of a script template",
-          "type": "integer",
-          "format": "int32"
         }
       }
     },

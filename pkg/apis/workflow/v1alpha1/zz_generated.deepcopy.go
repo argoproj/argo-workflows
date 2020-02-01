@@ -803,6 +803,11 @@ func (in *Outputs) DeepCopyInto(out *Outputs) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.ExitCode != nil {
+		in, out := &in.ExitCode, &out.ExitCode
+		*out = new(int32)
+		**out = **in
+	}
 	return
 }
 

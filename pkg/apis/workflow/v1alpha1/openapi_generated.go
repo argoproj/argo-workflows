@@ -1534,6 +1534,13 @@ func schema_pkg_apis_workflow_v1alpha1_Outputs(ref common.ReferenceCallback) com
 							Format:      "",
 						},
 					},
+					"exitCode": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ExitCode holds the exit code of a script template",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
 				},
 			},
 		},
