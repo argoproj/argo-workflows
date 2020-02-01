@@ -94,7 +94,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                                 onSubmit={(value: CronWorkflow) => {
                                     return services.cronWorkflows
                                         .create(value, value.metadata.namespace)
-                                        .then(res => ctx.navigation.goto(`/cron-workflows/${res.metadata.namespace}/${res.metadata.name}`))
+                                        .then(res => ctx.navigation.goto(uiUrl(`cron-workflows/${res.metadata.namespace}/${res.metadata.name}`)))
                                         .catch(error => this.setState({error}));
                                 }}
                             />

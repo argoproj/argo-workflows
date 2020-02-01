@@ -1,5 +1,6 @@
 import {Page} from 'argo-ui';
 import * as React from 'react';
+import {uiUrl} from '../../shared/base';
 
 require('./login.scss');
 
@@ -19,7 +20,7 @@ const logout = () => {
 };
 const login = (token: string) => {
     document.cookie = 'authorization=' + token + ';';
-    document.location.href = '/';
+    document.location.href = uiUrl('');
 };
 export const Login = () => (
     <Page title='Login' toolbar={{breadcrumbs: [{title: 'Login'}]}}>
