@@ -89,21 +89,21 @@ func (d *DockerExecutor) GetOutputStream(containerID string, combinedOutput bool
 	return reader, nil
 }
 
-func (d *DockerExecutor) GetExitCode(containerID string) (int32, error) {
+func (d *DockerExecutor) GetExitCode(containerID string) (int, error) {
 	cmd := exec.Command("docker", "inspect", containerID, "--format='{{.State.ExitCode}}'")
 	log.Info(cmd.Args)
 	reader, err := cmd.StdoutPipe()
 	if err != nil {
-		return -1, errors.InternalWrapError(err)
+		return 0, errors.InternalWrapError(err, "Could not pipe STDOUT")
 	}
 	err = cmd.Start()
 	if err != nil {
-		return -1, errors.InternalWrapError(err)
+		return 0, errors.InternalWrapError(err, "Could not start command")
 	}
 	defer func() { _ = reader.Close() }()
 	bytes, err := ioutil.ReadAll(reader)
 	if err != nil {
-		return -1, errors.InternalWrapError(err)
+		return 0, errors.InternalWrapError(err, "Could not read from STDOUT")
 	}
 	out := string(bytes)
 
@@ -113,11 +113,11 @@ func (d *DockerExecutor) GetExitCode(containerID string) (int32, error) {
 		out = out[0 : outputLen-1]
 	}
 	out = strings.Trim(out, `'`)
-	i, err := strconv.ParseInt(out, 10, 32)
+	i, err := strconv.Atoi(out)
 	if err != nil {
-		return -1, errors.InternalWrapError(err)
+		return 0, errors.InternalWrapError(err, "Could not parse exit code")
 	}
-	return int32(i), nil
+	return i, nil
 }
 
 func (d *DockerExecutor) WaitInit() error {

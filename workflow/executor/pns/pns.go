@@ -226,18 +226,18 @@ func (p *PNSExecutor) GetOutputStream(containerID string, combinedOutput bool) (
 	return p.clientset.CoreV1().Pods(p.namespace).GetLogs(p.podName, &opts).Stream()
 }
 
-func (p *PNSExecutor) GetExitCode(containerID string) (int32, error) {
+func (p *PNSExecutor) GetExitCode(containerID string) (int, error) {
 	opts := metav1.GetOptions{}
 	pod, err := p.clientset.CoreV1().Pods(p.namespace).Get(p.podName, opts)
 	if err != nil {
-		return -1, err
+		return 0, errors.InternalWrapError(err, "Could not get POD")
 	}
 	for _, containerStatus := range pod.Status.ContainerStatuses {
 		if containerStatus.ContainerID == containerID {
-			return containerStatus.LastTerminationState.Terminated.ExitCode, nil
+			return int(containerStatus.LastTerminationState.Terminated.ExitCode), nil
 		}
 	}
-	return -1, fmt.Errorf("can not find container with id: %s", containerID)
+	return 0, fmt.Errorf("could not find container with id: %s", containerID)
 }
 
 // Kill a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period

@@ -38,12 +38,12 @@ func (k *KubeletExecutor) GetOutputStream(containerID string, combinedOutput boo
 	return k.cli.GetLogStream(containerID)
 }
 
-func (k *KubeletExecutor) GetExitCode(containerID string) (int32, error) {
+func (k *KubeletExecutor) GetExitCode(containerID string) (int, error) {
 	_, status, err := k.cli.GetContainerStatus(containerID)
 	if err != nil {
-		return -1, err
+		return 0, errors.InternalWrapError(err, "Could not get container status")
 	}
-	return status.LastTerminationState.Terminated.ExitCode, nil
+	return int(status.LastTerminationState.Terminated.ExitCode), nil
 }
 
 func (k *KubeletExecutor) WaitInit() error {
