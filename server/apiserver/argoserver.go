@@ -58,7 +58,7 @@ type argoServer struct {
 }
 
 type ArgoServerOpts struct {
-	BaseHRef         string
+	BaseHRef      string
 	Namespace     string
 	KubeClientset *kubernetes.Clientset
 	WfClientSet   *versioned.Clientset
