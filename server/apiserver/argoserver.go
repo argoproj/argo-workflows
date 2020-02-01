@@ -170,7 +170,6 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 	<-as.stopCh
 }
 
-
 func (as *argoServer) newGRPCServer(offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
 
