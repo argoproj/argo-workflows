@@ -90,7 +90,7 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
                 });
             })
             .then(() => {
-                document.location.href = '/cron-workflows';
+                document.location.href = uiUrl('cron-workflows');
             });
     }
 }
