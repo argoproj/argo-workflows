@@ -2,6 +2,7 @@ import {Formik} from 'formik';
 import * as jsYaml from 'js-yaml';
 import * as React from 'react';
 import * as models from '../../../models';
+import {uiUrl} from '../../shared/base';
 import {ContextApis} from '../../shared/context';
 import {services} from '../../shared/services';
 
@@ -29,7 +30,7 @@ export class WorkflowSubmit extends React.Component<WorkflowSubmitProps, Workflo
                     onSubmit={(values, {setSubmitting}) => {
                         services.workflows
                             .create(values.wf, values.wf.metadata.namespace || this.props.currentNamespace)
-                            .then(wf => this.props.ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`))
+                            .then(wf => this.props.ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
                             .then(_ => setSubmitting(false))
                             .catch(error => {
                                 this.setState({error});
