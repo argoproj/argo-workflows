@@ -36,7 +36,6 @@ import (
 	"github.com/argoproj/argo/server/workflow"
 	"github.com/argoproj/argo/server/workflowarchive"
 	"github.com/argoproj/argo/server/workflowtemplate"
-	"github.com/argoproj/argo/util"
 	grpcutil "github.com/argoproj/argo/util/grpc"
 	"github.com/argoproj/argo/util/json"
 	"github.com/argoproj/argo/workflow/common"
@@ -45,18 +44,19 @@ import (
 
 const (
 	// MaxGRPCMessageSize contains max grpc message size
-	MaxGRPCMessageSize = 100 * 1024 * 1024
+	MaxGRPCMessageSize   = 100 * 1024 * 1024
+	// Default listening host
+	DefaultListeningHost = "127.0.0.1"
 )
 
 type argoServer struct {
-	baseHRef           string
-	namespace          string
-	managedNamespace   string
-	kubeClientset      *kubernetes.Clientset
-	authenticator      auth.Gatekeeper
-	configName         string
-	stopCh             chan struct{}
-	disableOpenBrowser bool
+	baseHRef         string
+	namespace        string
+	managedNamespace string
+	kubeClientset    *kubernetes.Clientset
+	authenticator    auth.Gatekeeper
+	configName       string
+	stopCh           chan struct{}
 }
 
 type ArgoServerOpts struct {
@@ -67,20 +67,18 @@ type ArgoServerOpts struct {
 	RestConfig    *rest.Config
 	AuthMode      string
 	// config map name
-	ConfigName         string
-	ManagedNamespace   string
-	DisableOpenBrowser bool
+	ConfigName       string
+	ManagedNamespace string
 }
 
 func NewArgoServer(opts ArgoServerOpts) *argoServer {
 	return &argoServer{
-		baseHRef:           opts.BaseHRef,
-		namespace:          opts.Namespace,
-		managedNamespace:   opts.ManagedNamespace,
-		kubeClientset:      opts.KubeClientset,
-		authenticator:      auth.NewGatekeeper(opts.AuthMode, opts.WfClientSet, opts.KubeClientset, opts.RestConfig),
-		configName:         opts.ConfigName,
-		disableOpenBrowser: opts.DisableOpenBrowser,
+		baseHRef:         opts.BaseHRef,
+		namespace:        opts.Namespace,
+		managedNamespace: opts.ManagedNamespace,
+		kubeClientset:    opts.KubeClientset,
+		authenticator:    auth.NewGatekeeper(opts.AuthMode, opts.WfClientSet, opts.KubeClientset, opts.RestConfig),
+		configName:       opts.ConfigName,
 	}
 }
 
@@ -109,7 +107,7 @@ func (ao ArgoServerOpts) ValidateOpts() error {
 	return nil
 }
 
-func (as *argoServer) Run(ctx context.Context, port int) {
+func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
 
 	configMap, err := as.rsyncConfig()
 	if err != nil {
@@ -140,7 +138,7 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 	// Start listener
 	var conn net.Listener
 	var listerErr error
-	address := fmt.Sprintf(":%d", port)
+	address := fmt.Sprintf("%s:%d", DefaultListeningHost, port)
 	err = wait.ExponentialBackoff(backoff, func() (bool, error) {
 		conn, listerErr = net.Listen("tcp", address)
 		if listerErr != nil {
@@ -162,14 +160,13 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
 	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
 	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
-	log.Infof("Argo Server started successfully on address http://locahost%s", address)
-	if !as.disableOpenBrowser {
-		util.OpenBrowser("http://localhost" + address)
-	}
+	log.Infof("Argo Server started successfully on address %s", conn.Addr().String())
+
+	browserOpenFunc("http://" + conn.Addr().String())
+
 	as.stopCh = make(chan struct{})
 	<-as.stopCh
 }
-
 
 func (as *argoServer) newGRPCServer(offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())

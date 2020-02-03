@@ -12,6 +12,7 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"github.com/skratchdot/open-golang/open"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
@@ -83,13 +84,21 @@ See %s`, help.ArgoSever),
 				AuthMode:         authMode,
 				ManagedNamespace: managedNamespace,
 				ConfigName:       configMap,
-				DisableOpenBrowser: disableOpenBrowser,
 			}
 			err = opts.ValidateOpts()
 			if err != nil {
 				return err
 			}
-			apiserver.NewArgoServer(opts).Run(ctx, port)
+			browserOpenFunc := func(url string) {}
+			if !disableOpenBrowser {
+				browserOpenFunc = func(url string) {
+					err := open.Run(url)
+					if err != nil {
+						log.Warnf("Unable to open the browser. %v", err)
+					}
+				}
+			}
+			apiserver.NewArgoServer(opts).Run(ctx, port, browserOpenFunc)
 			return nil
 		},
 	}
