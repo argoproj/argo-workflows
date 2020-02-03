@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 
 	"github.com/argoproj/argo/test/e2e/fixtures"
 )
@@ -240,7 +241,6 @@ func (s *CLISuite) TestTemplate() {
 		})
 	})
 }
-
 
 func (s *CLISuite) TestCron() {
 	s.Run("Create", func(t *testing.T) {
