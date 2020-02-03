@@ -45,8 +45,6 @@ import (
 const (
 	// MaxGRPCMessageSize contains max grpc message size
 	MaxGRPCMessageSize   = 100 * 1024 * 1024
-	// Default listening host
-	DefaultListeningHost = "127.0.0.1"
 )
 
 type argoServer struct {
@@ -138,7 +136,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	// Start listener
 	var conn net.Listener
 	var listerErr error
-	address := fmt.Sprintf("%s:%d", DefaultListeningHost, port)
+	address := fmt.Sprintf(":%d", port)
 	err = wait.ExponentialBackoff(backoff, func() (bool, error) {
 		conn, listerErr = net.Listen("tcp", address)
 		if listerErr != nil {
@@ -160,9 +158,9 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
 	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
 	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
-	log.Infof("Argo Server started successfully on address %s", conn.Addr().String())
+	log.Infof("Argo Server started successfully on address %s", address)
 
-	browserOpenFunc("http://" + conn.Addr().String())
+	browserOpenFunc("http://localhost" + address)
 
 	as.stopCh = make(chan struct{})
 	<-as.stopCh

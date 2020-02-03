@@ -92,6 +92,7 @@ See %s`, help.ArgoSever),
 			browserOpenFunc := func(url string) {}
 			if !disableOpenBrowser {
 				browserOpenFunc = func(url string) {
+					log.Infof("Argo UI is available at %s", url)
 					err := open.Run(url)
 					if err != nil {
 						log.Warnf("Unable to open the browser. %v", err)
