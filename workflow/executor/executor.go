@@ -123,6 +123,14 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 
 		log.Infof("Downloading artifact: %s", art.Name)
 
+		// By default, assume that tar.gz/gz files should be extracted
+		archiveStrategy := art.Archive
+		if archiveStrategy == nil {
+			archiveStrategy = &wfv1.ArchiveStrategy{
+				Tar: &wfv1.TarStrategy{},
+			}
+		}
+
 		if !art.HasLocation() {
 			if art.Optional {
 				log.Warnf("Ignoring optional artifact '%s' which was not supplied", art.Name)
@@ -161,7 +169,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 		if err != nil {
 			return err
 		}
-		if art.Archive.None == nil && isTarball(tempArtPath) {
+		if archiveStrategy.None == nil && isTarball(tempArtPath) {
 			err = untar(tempArtPath, artPath)
 			_ = os.Remove(tempArtPath)
 		} else {
