@@ -13,3 +13,8 @@ To enable this feature, configure a Postgres or MySQL database under `persistenc
 #### Why aren't my workflows appearing in the database? 
 
 Offloading is expensive and often unneccessary, so we only offload when we need to. You workflows aren't probably large enough.
+
+
+#### Error "Failed to submit workflow: etcdserver: request is too large."
+
+You must use the Argo CLI having exported `export ARGO_SERVER=...`.
