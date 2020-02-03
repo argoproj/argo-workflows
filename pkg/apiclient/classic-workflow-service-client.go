@@ -108,7 +108,11 @@ func (k *classicWorkflowServiceClient) WatchWorkflows(ctx context.Context, in *w
 }
 
 func (k *classicWorkflowServiceClient) DeleteWorkflow(ctx context.Context, in *workflowpkg.WorkflowDeleteRequest, opts ...grpc.CallOption) (*workflowpkg.WorkflowDeleteResponse, error) {
-	panic("implement me")
+	err := k.ArgoprojV1alpha1().Workflows(in.Namespace).Delete(in.Name, in.DeleteOptions)
+	if err != nil {
+		return nil, err
+	}
+	return &workflowpkg.WorkflowDeleteResponse{}, nil
 }
 
 func (k *classicWorkflowServiceClient) RetryWorkflow(ctx context.Context, in *workflowpkg.WorkflowRetryRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
