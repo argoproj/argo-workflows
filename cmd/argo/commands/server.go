@@ -12,7 +12,6 @@ import (
 	"golang.org/x/net/context"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"github.com/skratchdot/open-golang/open"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
