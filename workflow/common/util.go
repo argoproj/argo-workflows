@@ -701,24 +701,3 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) (*wfv1.Workflow, e
 	wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *metav1.NewControllerRef(cronWf, wfv1.SchemeGroupVersion.WithKind(workflow.CronWorkflowKind))))
 	return wf, nil
 }
-
-func ConvertWorkflowTemplateToWorkflow(wfTemplate *wfv1.WorkflowTemplate, entrypoint string) (*wfv1.Workflow, error) {
-	newTypeMeta := metav1.TypeMeta{
-		Kind:       workflow.WorkflowKind,
-		APIVersion: wfTemplate.TypeMeta.APIVersion,
-	}
-
-	newObjectMeta := metav1.ObjectMeta{}
-	newObjectMeta.GenerateName = wfTemplate.Name + "-"
-
-	wf := &wfv1.Workflow{
-		TypeMeta:   newTypeMeta,
-		ObjectMeta: newObjectMeta,
-		Spec: wfv1.WorkflowSpec{
-			Templates:  wfTemplate.Spec.Templates,
-			Entrypoint: entrypoint,
-			Arguments:  wfTemplate.Spec.Arguments,
-		},
-	}
-	return wf, nil
-}

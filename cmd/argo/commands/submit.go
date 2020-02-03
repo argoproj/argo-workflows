@@ -16,7 +16,6 @@ import (
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/cmd/argo/commands/cron"
-	"github.com/argoproj/argo/cmd/argo/commands/template"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -113,19 +112,6 @@ func SubmitWorkflowFromResource(resourceIdentifier string, submitOpts *util.Subm
 		workflowToSubmit, err = common.ConvertCronWorkflowToWorkflow(cwf)
 		if err != nil {
 			log.Fatalf("Unable to create Workflow from CronWorkflow '%s': %s", resIdSplit[1], err)
-		}
-	case workflow.WorkflowTemplateKind:
-		if submitOpts.Entrypoint == "" {
-			log.Fatalf("When submitting a Workflow from a WorkflowTemplate an entrypoint must be passed with --entrypoint")
-		}
-		wftmplIf := template.InitWorkflowTemplateClient()
-		wfTmpl, err := wftmplIf.Get(resIdSplit[1], v1.GetOptions{})
-		if err != nil {
-			log.Fatalf("Unable to get WorkflowTemplate '%s'", resIdSplit[1])
-		}
-		workflowToSubmit, err = common.ConvertWorkflowTemplateToWorkflow(wfTmpl, submitOpts.Entrypoint)
-		if err != nil {
-			log.Fatalf("Unable to create Workflow from WorkflowTemplate '%s': %s", resIdSplit[1], err)
 		}
 	default:
 		log.Fatalf("Resource Kind '%s' is not supported with --from", resIdSplit[0])
