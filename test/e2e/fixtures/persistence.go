@@ -13,6 +13,7 @@ import (
 type Persistence struct {
 	session               sqlbuilder.Database
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
+	workflowArchive       sqldb.WorkflowArchive
 }
 
 func newPersistence(kubeClient kubernetes.Interface) *Persistence {
@@ -38,9 +39,10 @@ func newPersistence(kubeClient kubernetes.Interface) *Persistence {
 			panic(err)
 		}
 		offloadNodeStatusRepo := sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
-		return &Persistence{session, offloadNodeStatusRepo}
+		workflowArchive := sqldb.NewWorkflowArchive(session, persistence.GetClusterName())
+		return &Persistence{session, offloadNodeStatusRepo, workflowArchive}
 	} else {
-		return &Persistence{offloadNodeStatusRepo: sqldb.ExplosiveOffloadNodeStatusRepo}
+		return &Persistence{offloadNodeStatusRepo: sqldb.ExplosiveOffloadNodeStatusRepo, workflowArchive: sqldb.NullWorkflowArchive}
 	}
 }
 
@@ -51,19 +53,6 @@ func (s *Persistence) IsEnabled() bool {
 func (s *Persistence) Close() {
 	if s.IsEnabled() {
 		err := s.session.Close()
-		if err != nil {
-			panic(err)
-		}
-	}
-}
-
-func (s *Persistence) DeleteEverything() {
-	if s.IsEnabled() {
-		_, err := s.session.DeleteFrom("argo_workflows").Exec()
-		if err != nil {
-			panic(err)
-		}
-		_, err = s.session.DeleteFrom("argo_archived_workflows").Exec()
 		if err != nil {
 			panic(err)
 		}

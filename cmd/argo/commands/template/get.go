@@ -13,8 +13,8 @@ import (
 	"github.com/argoproj/pkg/humanize"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/workflowtemplate"
 )
 
 func NewGetCommand() *cobra.Command {
@@ -38,7 +38,7 @@ func NewGetCommand() *cobra.Command {
 				ns, _, _ := client.Config.Namespace()
 				wftmplApiClient, ctx := GetWFtmplApiServerGRPCClient(conn)
 				for _, arg := range args {
-					wfTempReq := workflowtemplate.WorkflowTemplateGetRequest{
+					wfTempReq := workflowtemplatepkg.WorkflowTemplateGetRequest{
 						Name:      arg,
 						Namespace: ns,
 					}

@@ -10,7 +10,7 @@ import (
 	"github.com/argoproj/pkg/errors"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/server/workflow"
+	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -65,7 +65,7 @@ func apiServerWFRetry(wfName string, opts cliSubmitOpts) {
 	ns, _, _ := client.Config.Namespace()
 	wfApiClient, ctx := GetWFApiServerGRPCClient(conn)
 
-	wfReq := workflow.WorkflowRetryRequest{
+	wfReq := workflowpkg.WorkflowRetryRequest{
 		Name:      wfName,
 		Namespace: ns,
 	}

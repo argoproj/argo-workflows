@@ -5,6 +5,8 @@ metadata:
   labels:
     argo-e2e: true
 spec:
+  podGC:
+    strategy: OnPodCompletion
   entrypoint: workflow-ignore
   parallelism: 2
   templates:

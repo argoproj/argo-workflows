@@ -6,12 +6,13 @@ import (
 	"log"
 	"os"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/server/workflowarchive"
+	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 )
 
 func NewGetCommand() *cobra.Command {
@@ -26,15 +27,12 @@ func NewGetCommand() *cobra.Command {
 				os.Exit(1)
 			}
 			uid := args[0]
-			conn := client.GetClientConn()
-			ctx := client.GetContext()
-			client := workflowarchive.NewArchivedWorkflowServiceClient(conn)
-			wf, err := client.GetArchivedWorkflow(ctx, &workflowarchive.GetArchivedWorkflowRequest{
-				Uid: uid,
-			})
-			if err != nil {
-				log.Fatal(err)
-			}
+
+			ctx, apiClient := client.NewAPIClient()
+			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
+			errors.CheckError(err)
+			wf, err := serviceClient.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: uid})
+			errors.CheckError(err)
 			switch output {
 			case "json":
 				output, err := json.Marshal(wf)
