@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"os"
 	"time"
-
+	
+	"github.com/skratchdot/open-golang/open"
 	"github.com/argoproj/pkg/cli"
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
