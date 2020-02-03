@@ -65,7 +65,8 @@ type WorkflowControllerConfig struct {
 	// Config customized Docker Sock path
 	DockerSockPath string `json:"dockerSockPath,omitempty"`
 
-	DefaultTTLStrategy wfv1.TTLStrategy `json:"TTLStrategy,omitempty"`
+	// The default time to live strategy for workflows depending on exit status
+	DefaultTTLStrategy wfv1.TTLStrategy `json:"ttlStrategy,omitempty"`
 }
 
 // KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,
