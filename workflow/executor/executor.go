@@ -713,7 +713,9 @@ func (we *WorkflowExecutor) CaptureScriptExitCode() error {
 	if err != nil {
 		return err
 	}
-	we.Template.Outputs.ExitCode = &exitCode
+
+	code := int32(exitCode)
+	we.Template.Outputs.ExitCode = &code
 	return nil
 }
 
