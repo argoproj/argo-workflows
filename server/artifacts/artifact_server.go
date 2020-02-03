@@ -95,9 +95,12 @@ func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
 	if token == "" {
 		cookie, err := r.Cookie("authorization")
 		if err != nil {
-			return nil, err
+			if err != http.ErrNoCookie {
+				return nil, err
+			}
+		} else {
+			token = cookie.Value
 		}
-		token = cookie.Value
 	}
 	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"authorization": []string{token}})
 	return a.authN.Context(ctx)
