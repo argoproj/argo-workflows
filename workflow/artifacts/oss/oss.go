@@ -17,6 +17,10 @@ type OSSArtifactDriver struct {
 
 func (ossDriver *OSSArtifactDriver) newOSSClient() (aliyunoss.Client, error) {
 	client, err := aliyunoss.New(ossDriver.Endpoint, ossDriver.AccessKey, ossDriver.SecretKey)
+	if err != nil {
+		log.Warnf("Failed to create new OSS client: %v", err)
+		return nil, err
+	}
 	return *client, err
 }
 
