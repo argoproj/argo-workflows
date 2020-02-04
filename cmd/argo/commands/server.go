@@ -22,14 +22,14 @@ import (
 
 func NewServerCommand() *cobra.Command {
 	var (
-		logLevel           string // --loglevel
-		authMode           string
-		configMap          string
-		port               int
-		baseHRef           string
-		namespaced         bool   // --namespaced
-		managedNamespace   string // --managed-namespace
-		disableOpenBrowser bool
+		logLevel          string // --loglevel
+		authMode          string
+		configMap         string
+		port              int
+		baseHRef          string
+		namespaced        bool   // --namespaced
+		managedNamespace  string // --managed-namespace
+		enableOpenBrowser bool
 	)
 
 	var command = cobra.Command{
@@ -90,7 +90,7 @@ See %s`, help.ArgoSever),
 				return err
 			}
 			browserOpenFunc := func(url string) {}
-			if !disableOpenBrowser {
+			if enableOpenBrowser {
 				browserOpenFunc = func(url string) {
 					log.Infof("Argo UI is available at %s", url)
 					err := open.Run(url)
@@ -115,6 +115,6 @@ See %s`, help.ArgoSever),
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that watches, default to the installation namespace")
-	command.Flags().BoolVar(&disableOpenBrowser, "disable-open-browser", false, "disable automatic launching of the browser [Hosted mode]")
+	command.Flags().BoolVarP(&enableOpenBrowser, "enable-open-browser" ,"b",false, "enable automatic launching of the browser [local mode]")
 	return &command
 }
