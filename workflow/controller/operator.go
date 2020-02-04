@@ -286,7 +286,8 @@ func (woc *wfOperationCtx) operate() {
 			woc.log.Errorf("Error marshalling failed nodes list: %+v", err)
 			// No need to return here
 		}
-		woc.globalParams[common.GobalVarWorkflowFailedNodes] = string(failedNodeBytes)
+		// This strconv.Quote is necessary so that the escaped quotes are not removed during parameter substitution
+		woc.globalParams[common.GobalVarWorkflowFailedNodes] = strconv.Quote(string(failedNodeBytes))
 
 		woc.log.Infof("Running OnExit handler: %s", woc.wf.Spec.OnExit)
 		onExitNodeName := woc.wf.ObjectMeta.Name + ".onExit"
