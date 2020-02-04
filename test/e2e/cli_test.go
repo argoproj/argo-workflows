@@ -1,7 +1,9 @@
 package e2e
 
 import (
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -171,6 +173,50 @@ func (s *CLISuite) TestWorkflowDelete() {
 			})
 	})
 }
+func (s *CLISuite) TestWorkflowLint() {
+	s.Run("LintFile", func(t *testing.T) {
+		s.Given(t).RunCli([]string{"lint", "smoke/basic.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "smoke/basic.yaml is valid")
+			}
+		})
+	})
+	s.Run("LintFileWithTemplate", func(t *testing.T) {
+		s.Given(t).
+			WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
+			When().
+			CreateWorkflowTemplates().
+			Given().
+			RunCli([]string{"lint", "smoke/hello-world-workflow-tmpl.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "smoke/hello-world-workflow-tmpl.yaml is valid")
+				}
+			})
+	})
+	s.Run("LintDir", func(t *testing.T) {
+		tmp, err := ioutil.TempDir("", "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = os.RemoveAll(tmp) }()
+		// Read all content of src to data
+		data, err := ioutil.ReadFile("smoke/basic.yaml")
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Write data to dst
+		err = ioutil.WriteFile(filepath.Join(tmp, "my-workflow.yaml"), data, 0644)
+		if err != nil {
+			t.Fatal(err)
+		}
+		s.Given(t).
+			RunCli([]string{"lint", tmp}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "my-workflow.yaml is valid")
+				}
+			})
+	})
+}
 
 func (s *CLISuite) TestTemplate() {
 	s.Run("Lint", func(t *testing.T) {
@@ -179,7 +225,6 @@ func (s *CLISuite) TestTemplate() {
 				assert.Contains(t, output, "validated")
 			}
 		})
-
 	})
 	s.Run("Create", func(t *testing.T) {
 		s.Given(t).RunCli([]string{"template", "create", "smoke/workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
