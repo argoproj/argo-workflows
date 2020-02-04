@@ -15,13 +15,13 @@ type OSSArtifactDriver struct {
 	SecretKey string
 }
 
-func (ossDriver *OSSArtifactDriver) newOSSClient() (aliyunoss.Client, error) {
+func (ossDriver *OSSArtifactDriver) newOSSClient() (*aliyunoss.Client, error) {
 	client, err := aliyunoss.New(ossDriver.Endpoint, ossDriver.AccessKey, ossDriver.SecretKey)
 	if err != nil {
 		log.Warnf("Failed to create new OSS client: %v", err)
 		return nil, err
 	}
-	return *client, err
+	return client, err
 }
 
 // Downloads artifacts from OSS compliant storage, e.g., downloading an artifact into local path
