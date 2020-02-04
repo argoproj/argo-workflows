@@ -262,6 +262,32 @@ func (woc *wfOperationCtx) operate() {
 		} else {
 			woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 		}
+
+		var failedNodes []interface{}
+		for _, node := range woc.wf.Status.Nodes {
+			if node.Phase == wfv1.NodeFailed || node.Phase == wfv1.NodeError {
+				failedNodes = append(failedNodes, struct {
+					Name         string `json:"name"`
+					Message      string `json:"message"`
+					TemplateName string `json:"templateName"`
+					FinishedAt   string `json:"finishedAt"`
+					Phase        string `json:"phase"`
+				}{
+					Name:         node.DisplayName,
+					Message:      node.Message,
+					TemplateName: node.TemplateName,
+					FinishedAt:   node.FinishedAt.String(),
+					Phase:        string(node.Phase),
+				})
+			}
+		}
+		failedNodeBytes, err := json.Marshal(failedNodes)
+		if err != nil {
+			woc.log.Errorf("Error marshalling failed nodes list: %+v", err)
+			// No need to return here
+		}
+		woc.globalParams[common.GobalVarWorkflowFailedNodes] = string(failedNodeBytes)
+
 		woc.log.Infof("Running OnExit handler: %s", woc.wf.Spec.OnExit)
 		onExitNodeName := woc.wf.ObjectMeta.Name + ".onExit"
 		onExitNode, err = woc.executeTemplate(onExitNodeName, &wfv1.Template{Template: woc.wf.Spec.OnExit}, tmplCtx, woc.wf.Spec.Arguments, "")
