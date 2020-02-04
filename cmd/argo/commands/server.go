@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 	"time"
-	
-	"github.com/skratchdot/open-golang/open"
+
 	"github.com/argoproj/pkg/cli"
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
+	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 	"k8s.io/client-go/kubernetes"
@@ -115,6 +115,6 @@ See %s`, help.ArgoSever),
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that watches, default to the installation namespace")
-	command.Flags().BoolVarP(&enableOpenBrowser, "enable-open-browser" ,"b",false, "enable automatic launching of the browser [local mode]")
+	command.Flags().BoolVarP(&enableOpenBrowser, "enable-open-browser", "b", false, "enable automatic launching of the browser [local mode]")
 	return &command
 }

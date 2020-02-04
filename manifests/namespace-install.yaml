@@ -255,7 +255,6 @@ spec:
       containers:
       - args:
         - server
-        - --disable-open-browser
         - --namespaced
         image: argoproj/argocli:latest
         name: argo-server
