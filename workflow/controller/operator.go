@@ -263,10 +263,10 @@ func (woc *wfOperationCtx) operate() {
 			woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 		}
 
-		var failedNodes []interface{}
+		var failures []interface{}
 		for _, node := range woc.wf.Status.Nodes {
 			if node.Phase == wfv1.NodeFailed || node.Phase == wfv1.NodeError {
-				failedNodes = append(failedNodes, struct {
+				failures = append(failures, struct {
 					Name         string `json:"name"`
 					Message      string `json:"message"`
 					TemplateName string `json:"templateName"`
@@ -281,7 +281,7 @@ func (woc *wfOperationCtx) operate() {
 				})
 			}
 		}
-		failedNodeBytes, err := json.Marshal(failedNodes)
+		failedNodeBytes, err := json.Marshal(failures)
 		if err != nil {
 			woc.log.Errorf("Error marshalling failed nodes list: %+v", err)
 			// No need to return here

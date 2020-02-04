@@ -119,7 +119,7 @@ const (
 	// GlobalVarWorkflowPriority is the workflow variable referencing the workflow's priority field
 	GlobalVarWorkflowPriority = "workflow.priority"
 	// GobalVarWorkflowFailedNodes is a global workflow variable referencing the workflow's failed nodes
-	GobalVarWorkflowFailedNodes = "workflow.failedNodes"
+	GobalVarWorkflowFailedNodes = "workflow.failures"
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"
 
