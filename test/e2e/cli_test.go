@@ -98,6 +98,7 @@ func (s *CLISuite) TestLogs() {
 			Workflow("@smoke/basic.yaml").
 			When().
 			SubmitWorkflow().
+			// TODO we should not wait for condition
 			WaitForWorkflowCondition(func(wf *v1alpha1.Workflow) bool {
 				return wf.Status.Nodes.FindByDisplayName("basic") != nil
 			}, "pod running", 10*time.Second).

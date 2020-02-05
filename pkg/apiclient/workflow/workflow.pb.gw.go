@@ -929,7 +929,7 @@ func local_request_WorkflowService_LintWorkflow_0(ctx context.Context, marshaler
 }
 
 var (
-	filter_WorkflowService_PodLogs_0 = &utilities.DoubleArray{Encoding: map[string]int{"namespace": 0, "name": 1, "podName": 2}, Base: []int{1, 1, 2, 3, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 3, 4}}
+	filter_WorkflowService_PodLogs_0 = &utilities.DoubleArray{Encoding: map[string]int{"namespace": 0, "podName": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
 func request_WorkflowService_PodLogs_0(ctx context.Context, marshaler runtime.Marshaler, client WorkflowServiceClient, req *http.Request, pathParams map[string]string) (WorkflowService_PodLogsClient, runtime.ServerMetadata, error) {
@@ -952,17 +952,6 @@ func request_WorkflowService_PodLogs_0(ctx context.Context, marshaler runtime.Ma
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
-	}
-
-	val, ok = pathParams["name"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "name")
-	}
-
-	protoReq.Name, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "name", err)
 	}
 
 	val, ok = pathParams["podName"]
@@ -1522,7 +1511,7 @@ var (
 
 	pattern_WorkflowService_LintWorkflow_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "workflows", "namespace", "lint"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_WorkflowService_PodLogs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"api", "v1", "workflows", "namespace", "name", "podName", "log"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_WorkflowService_PodLogs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"api", "v1", "workflows", "namespace", "log", "podName"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
@@ -14,6 +15,7 @@ import (
 
 type classicClient struct {
 	versioned.Interface
+	kubeClient kubernetes.Interface
 }
 
 func newClassicClient(clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
@@ -25,11 +27,15 @@ func newClassicClient(clientConfig clientcmd.ClientConfig) (context.Context, Cli
 	if err != nil {
 		return nil, nil, err
 	}
-	return context.Background(), &classicClient{wfClient}, nil
+	kubeClient, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return nil, nil, err
+	}
+	return context.Background(), &classicClient{wfClient, kubeClient}, nil
 }
 
 func (a *classicClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
-	return &classicWorkflowServiceClient{a.Interface}
+	return &classicWorkflowServiceClient{a.Interface, a.kubeClient}
 }
 
 func (a *classicClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {
