@@ -1,138 +1,67 @@
 package commands
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/pkg/apiclient/workflow"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	cmdutil "github.com/argoproj/argo/util/cmd"
+	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/workflow/validate"
 )
 
 func NewLintCommand() *cobra.Command {
 	var (
-		strict     bool
-		serverHost string
+		strict bool
 	)
 	var command = &cobra.Command{
-		Use:   "lint (DIRECTORY | FILE1 FILE2 FILE3...)",
-		Short: "validate a file or directory of workflow manifests",
+		Use:   "lint FILE...",
+		Short: "validate files or directories of workflow manifests",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
+			ctx, apiClient := client.NewAPIClient()
+			serviceClient := apiClient.NewWorkflowServiceClient()
+			namespace := client.Namespace()
 
-			var err error
-			wftmplGetter := &LazyWorkflowTemplateGetter{}
-			validateDir := cmdutil.MustIsDir(args[0])
-
-			if client.ArgoServer != "" {
-				conn := client.GetClientConn()
-				defer conn.Close()
-				err = ServerSideLint(args[0], conn, strict)
+			lint := func(file string) error {
+				wfs, err := validate.ParseWfFromFile(file, strict)
 				if err != nil {
-					return
+					return err
 				}
-			} else {
-				if validateDir {
-					if len(args) > 1 {
-						fmt.Printf("Validation of a single directory supported")
-						os.Exit(1)
-					}
-					fmt.Printf("Verifying all workflow manifests in directory: %s\n", args[0])
-					err = validate.LintWorkflowDir(wftmplGetter, args[0], strict)
+				for _, wf := range wfs {
+					_, err := serviceClient.LintWorkflow(ctx, &workflowpkg.WorkflowLintRequest{Namespace: namespace, Workflow: &wf})
 					if err != nil {
-						return
-					}
-				} else {
-					yamlFiles := make([]string, 0)
-					for _, filePath := range args {
-						if cmdutil.MustIsDir(filePath) {
-							fmt.Printf("Validate against a list of files or a single directory, not both")
-							os.Exit(1)
-						}
-						yamlFiles = append(yamlFiles, filePath)
-					}
-					for _, yamlFile := range yamlFiles {
-						err = validate.LintWorkflowFile(wftmplGetter, yamlFile, strict)
-						if err != nil {
-							break
-						}
+						return err
 					}
 				}
+				fmt.Printf("%s is valid\n", file)
+				return nil
 			}
-			if err != nil {
-				log.Fatal(err)
+
+			for _, file := range args {
+				stat, err := os.Stat(file)
+				errors.CheckError(err)
+				if stat.IsDir() {
+					err := filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
+						fileExt := filepath.Ext(info.Name())
+						switch fileExt {
+						case ".yaml", ".yml", ".json":
+						default:
+							return nil
+						}
+						return lint(path)
+					})
+					errors.CheckError(err)
+				} else {
+					err := lint(file)
+					errors.CheckError(err)
+				}
 			}
 			fmt.Printf("Workflow manifests validated\n")
 		},
 	}
-	command.Flags().BoolVar(&strict, "strict", true, "perform strict workflow validatation")
-	command.Flags().StringVar(&serverHost, "server", "", "API Server host and port")
+	command.Flags().BoolVar(&strict, "strict", true, "perform strict workflow validation")
 	return command
-}
-
-func ServerSideLint(arg string, conn *grpc.ClientConn, strict bool) error {
-	validateDir := cmdutil.MustIsDir(arg)
-	grpcClient, ctx := GetWFApiServerGRPCClient(conn)
-	ns, _, _ := client.Config.Namespace()
-	var wfs []v1alpha1.Workflow
-	var err error
-
-	if validateDir {
-		walkFunc := func(path string, info os.FileInfo, err error) error {
-			if info == nil || info.IsDir() {
-				return nil
-			}
-			fileExt := filepath.Ext(info.Name())
-			switch fileExt {
-			case ".yaml", ".yml", ".json":
-			default:
-				return nil
-			}
-			wfs, err1 := validate.ParseWfFromFile(path, strict)
-			if err1 != nil {
-				return err1
-			}
-			for _, wf := range wfs {
-				err = ServerLintValidation(ctx, grpcClient, wf, ns)
-				if err != nil {
-					log.Errorf("Validation Error in %s :%v", path, err)
-				}
-			}
-			return err
-		}
-		return filepath.Walk(arg, walkFunc)
-	} else {
-		wfs, err = validate.ParseWfFromFile(arg, strict)
-	}
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	for _, wf := range wfs {
-		err = ServerLintValidation(ctx, grpcClient, wf, ns)
-		if err != nil {
-			log.Error(err)
-		}
-	}
-	return err
-}
-
-func ServerLintValidation(ctx context.Context, client workflow.WorkflowServiceClient, wf v1alpha1.Workflow, ns string) error {
-	wfReq := workflow.WorkflowLintRequest{
-		Namespace: ns,
-		Workflow:  &wf,
-	}
-	_, err := client.LintWorkflow(ctx, &wfReq)
-	return err
 }
