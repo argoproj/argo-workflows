@@ -2,54 +2,79 @@ package commands
 
 import (
 	"fmt"
-	"log"
-	"os"
 	"time"
 
+	"github.com/argoproj/pkg/errors"
 	argotime "github.com/argoproj/pkg/time"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/workflow/common"
 )
 
 var (
-	completedWorkflowListOption = metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=true", common.LabelKeyCompleted),
-	}
+	completedLabelSelector = fmt.Sprintf("%s=true", common.LabelKeyCompleted)
 )
 
 // NewDeleteCommand returns a new instance of an `argo delete` command
 func NewDeleteCommand() *cobra.Command {
 	var (
+		selector  string
 		all       bool
 		completed bool
 		older     string
 	)
 
 	var command = &cobra.Command{
-		Use:   "delete WORKFLOW",
-		Short: "delete a workflow and its associated pods",
+		Use: "delete WORKFLOW...",
 		Run: func(cmd *cobra.Command, args []string) {
-			wfClient = InitWorkflowClient()
-			if all {
-				deleteWorkflows(metav1.ListOptions{}, nil)
-			} else if older != "" {
-				olderTime, err := argotime.ParseSince(older)
-				if err != nil {
-					log.Fatal(err)
+			ctx, apiClient := client.NewAPIClient()
+			serviceClient := apiClient.NewWorkflowServiceClient()
+			namespace := client.Namespace()
+			var workflowsToDelete []metav1.ObjectMeta
+			for _, name := range args {
+				workflowsToDelete = append(workflowsToDelete, metav1.ObjectMeta{
+					Name:      name,
+					Namespace: namespace,
+				})
+			}
+			if all || completed || older != "" {
+				// all is effectively the default, completed takes precedence over all
+				if completed {
+					if selector != "" {
+						selector = selector + "," + completedLabelSelector
+					} else {
+						selector = completedLabelSelector
+					}
 				}
-				deleteWorkflows(completedWorkflowListOption, olderTime)
-			} else if completed {
-				deleteWorkflows(completedWorkflowListOption, nil)
-			} else {
-				if len(args) == 0 {
-					cmd.HelpFunc()(cmd, args)
-					os.Exit(1)
+				// you can mix older with either of these
+				var olderTime *time.Time
+				if older != "" {
+					var err error
+					olderTime, err = argotime.ParseSince(older)
+					errors.CheckError(err)
 				}
-				for _, wfName := range args {
-					deleteWorkflow(wfName)
+				list, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
+					Namespace:   namespace,
+					ListOptions: &metav1.ListOptions{LabelSelector: selector},
+				})
+				errors.CheckError(err)
+				for _, wf := range list.Items {
+					if olderTime != nil && (wf.Status.FinishedAt.IsZero() || wf.Status.FinishedAt.After(*olderTime)) {
+						continue
+					}
+					workflowsToDelete = append(workflowsToDelete, wf.ObjectMeta)
 				}
+			}
+			for _, md := range workflowsToDelete {
+				_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{
+					Name:      md.Name,
+					Namespace: md.Namespace,
+				})
+				errors.CheckError(err)
+				fmt.Printf("Workflow '%s' deleted\n", md.Name)
 			}
 		},
 	}
@@ -57,28 +82,6 @@ func NewDeleteCommand() *cobra.Command {
 	command.Flags().BoolVar(&all, "all", false, "Delete all workflows")
 	command.Flags().BoolVar(&completed, "completed", false, "Delete completed workflows")
 	command.Flags().StringVar(&older, "older", "", "Delete completed workflows older than the specified duration (e.g. 10m, 3h, 1d)")
+	command.Flags().StringVarP(&selector, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones")
 	return command
-}
-
-func deleteWorkflow(wfName string) {
-	err := wfClient.Delete(wfName, &metav1.DeleteOptions{})
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("Workflow '%s' deleted\n", wfName)
-}
-
-func deleteWorkflows(options metav1.ListOptions, older *time.Time) {
-	wfList, err := wfClient.List(options)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, wf := range wfList.Items {
-		if older != nil {
-			if wf.Status.FinishedAt.IsZero() || wf.Status.FinishedAt.After(*older) {
-				continue
-			}
-		}
-		deleteWorkflow(wf.ObjectMeta.Name)
-	}
 }

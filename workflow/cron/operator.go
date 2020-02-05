@@ -2,17 +2,19 @@ package cron
 
 import (
 	"fmt"
+	"sort"
+	"time"
+
+	"github.com/robfig/cron"
+	log "github.com/sirupsen/logrus"
+	v12 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	typed "github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
-	"github.com/prometheus/common/log"
-	"github.com/robfig/cron"
-	v12 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sort"
-	"time"
 )
 
 type cronWfOperationCtx struct {
@@ -24,13 +26,13 @@ type cronWfOperationCtx struct {
 	cronWfIf    typed.CronWorkflowInterface
 }
 
-func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface, cronWfIf typed.CronWorkflowInterface) (*cronWfOperationCtx, error) {
+func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface) (*cronWfOperationCtx, error) {
 	return &cronWfOperationCtx{
 		name:        cronWorkflow.ObjectMeta.Name,
 		cronWf:      cronWorkflow,
 		wfClientset: wfClientset,
 		wfClient:    wfClientset.ArgoprojV1alpha1().Workflows(cronWorkflow.Namespace),
-		cronWfIf:    cronWfIf,
+		cronWfIf:    wfClientset.ArgoprojV1alpha1().CronWorkflows(cronWorkflow.Namespace),
 	}, nil
 }
 

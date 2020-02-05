@@ -5,17 +5,21 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: sleeptest-
+  labels:
+    argo-e2e: true
 spec:
+  podGC:
+    strategy: OnPodCompletion
   entrypoint: entry
   templates:
-  - name: entry
-    dag:
-      tasks:
-      - name: sleep
-        template: sleep-n-sec
-        arguments:
-          parameters:
-          - name: seconds
+    - name: entry
+      dag:
+        tasks:
+          - name: sleep
+            template: sleep-n-sec
+            arguments:
+              parameters:
+                - name: seconds
             value: 1200
       - name: check-running
         template: check-status
@@ -37,7 +41,7 @@ spec:
       args: ["echo sleeping for {{inputs.parameters.seconds}} seconds; sleep {{inputs.parameters.seconds}}; echo done"]
   - name: check-status
     script:
-      image: bitnami/kubectl
+      image: bitnami/kubectl:1.15.3-ol-7-r165
       command: [bash]
       source: |
         host=`hostname`;
@@ -55,7 +59,7 @@ spec:
       parameters:
       - name: pod
     container:
-      image: bitnami/kubectl
+      image: bitnami/kubectl:1.15.3-ol-7-r165
       command: [bash, -c]
       args: ["kubectl delete po {{inputs.parameters.pod}}"]
 

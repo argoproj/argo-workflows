@@ -204,7 +204,7 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
-		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSteps, templateScope, tmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
 	}
 
 	defer func() {
@@ -233,8 +233,8 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	}
 
 	// kick off execution of each target task asynchronously
-	for _, taskNames := range targetTasks {
-		woc.executeDAGTask(dagCtx, taskNames)
+	for _, taskName := range targetTasks {
+		woc.executeDAGTask(dagCtx, taskName)
 	}
 
 	// check if we are still running any tasks in this dag and return early if we do
@@ -303,11 +303,18 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	dagCtx.visited[taskName] = true
 
 	node := dagCtx.GetTaskNode(taskName)
+	task := dagCtx.getTask(taskName)
 	if node != nil && node.Completed() {
+		// Run the node's onExit node, if any. Only leaf nodes will have their onExit nodes executed here. Nodes that
+		// have dependencies will have their onExit nodes executed below
+		hasOnExitNode, onExitNode, err := woc.runOnExitNode(task.Name, task.OnExit, dagCtx.boundaryID, dagCtx.tmplCtx)
+		if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+			// The onExit node is either not complete or has errored out, return.
+			return
+		}
 		return
 	}
 	// Check if our dependencies completed. If not, recurse our parents executing them if necessary
-	task := dagCtx.getTask(taskName)
 	dependenciesCompleted := true
 	dependenciesSuccessful := true
 	nodeName := dagCtx.taskNodeName(taskName)
@@ -315,7 +322,16 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		depNode := dagCtx.GetTaskNode(depName)
 		if depNode != nil {
 			if depNode.Completed() {
-				if !depNode.Successful() && !dagCtx.getTask(depName).ContinuesOn(depNode.Phase) {
+				depTask := dagCtx.getTask(depName)
+				// Run the node's onExit node, if any. Only nodes that have dependencies will have their onExit nodes
+				// executed here. Leaf nodes will have their onExit nodes executed above
+				hasOnExitNode, onExitNode, err := woc.runOnExitNode(depTask.Name, depTask.OnExit, dagCtx.boundaryID, dagCtx.tmplCtx)
+				if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+					// The onExit node is either not complete or has errored out, return.
+					return
+				}
+
+				if !depNode.Successful() && !depTask.ContinuesOn(depNode.Phase) {
 					dependenciesSuccessful = false
 				}
 				continue
@@ -367,10 +383,13 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		}
 	}
 
+	// The template scope of this dag.
+	dagTemplateScope := dagCtx.tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+
 	// First resolve/substitute params/artifacts from our dependencies
 	newTask, err := woc.resolveDependencyReferences(dagCtx, task)
 	if err != nil {
-		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
+		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
 		connectDependencies(nodeName)
 		return
 	}
@@ -379,7 +398,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	// expandedTasks will be a single element list of the same task
 	expandedTasks, err := woc.expandTask(*newTask)
 	if err != nil {
-		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
+		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
 		connectDependencies(nodeName)
 		return
 	}
@@ -390,7 +409,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	if len(task.WithItems) > 0 || task.WithParam != "" || task.WithSequence != nil {
 		if taskGroupNode == nil {
 			connectDependencies(nodeName)
-			taskGroupNode = woc.initializeNode(nodeName, wfv1.NodeTypeTaskGroup, task, dagCtx.boundaryID, wfv1.NodeRunning, "")
+			taskGroupNode = woc.initializeNode(nodeName, wfv1.NodeTypeTaskGroup, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeRunning, "")
 		}
 	}
 
@@ -405,12 +424,12 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			// Check the task's when clause to decide if it should execute
 			proceed, err := shouldExecute(t.When)
 			if err != nil {
-				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
+				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
 				continue
 			}
 			if !proceed {
 				skipReason := fmt.Sprintf("when '%s' evaluated false", t.When)
-				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, task, dagCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, skipReason)
 				continue
 			}
 		}

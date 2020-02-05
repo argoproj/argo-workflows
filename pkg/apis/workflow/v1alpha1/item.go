@@ -77,7 +77,7 @@ func (i *Item) String() string {
 }
 
 func (i Item) Format(s fmt.State, verb rune) {
-	fmt.Fprintf(s, i.String())
+	fmt.Fprintf(s, i.String()) //nolint
 }
 
 // MarshalJSON implements the json.Marshaller interface.
@@ -156,7 +156,7 @@ func (iv *ItemValue) String() string {
 }
 
 func (iv ItemValue) Format(s fmt.State, verb rune) {
-	fmt.Fprintf(s, iv.String())
+	fmt.Fprintf(s, iv.String()) //nolint
 }
 
 // MarshalJSON implements the json.Marshaller interface.

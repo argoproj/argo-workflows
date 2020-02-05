@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-nested-template
+  labels:
+    argo-e2e: true
+spec:
+  templates:
+    - name: whalesay-inner-template
+      templateRef:
+        name: workflow-template-whalesay-template
+        template: whalesay-template
+      inputs:
+        parameters:
+          - name: message
+    - name: whalesay-template
+      template: whalesay-inner-template
+      inputs:
+        parameters:
+          - name: message

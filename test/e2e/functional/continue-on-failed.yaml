@@ -2,7 +2,11 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: continue-on-fail
+  labels:
+    argo-e2e: true
 spec:
+  podGC:
+    strategy: OnPodCompletion
   entrypoint: workflow-ignore
   parallelism: 2
   templates:
@@ -26,9 +30,9 @@ spec:
 
     - name: whalesay
       container:
-        image: docker/whalesay:latest
+        image: cowsay:v1
 
     - name: whalesplosion
       container:
-        image: docker/whalesay:latest
+        image: cowsay:v1
         command: ["sh", "-c", "sleep 5 ; exit 1"]

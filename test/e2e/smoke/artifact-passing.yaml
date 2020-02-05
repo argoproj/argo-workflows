@@ -2,7 +2,11 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: artifact-passing
+  labels:
+    argo-e2e: true
 spec:
+  podGC:
+    strategy: OnPodCompletion
   entrypoint: artifact-example
   templates:
     - name: artifact-example
@@ -18,9 +22,10 @@ spec:
 
     - name: generate-message
       container:
-        image: docker/whalesay:latest
+        image: cowsay:v1
         command: [sh, -c]
         args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+        imagePullPolicy: IfNotPresent
       outputs:
         artifacts:
           - name: hello-art
@@ -32,6 +37,7 @@ spec:
           - name: message
             path: /tmp/message
       container:
-        image: docker/whalesay:latest
+        image: cowsay:v1
+        imagePullPolicy: IfNotPresent
         command: [sh, -c]
         args: ["cat /tmp/message"]
