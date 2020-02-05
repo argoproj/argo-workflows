@@ -57,6 +57,8 @@ const (
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
 	// LabelKeyPhase is a label applied to workflows to indicate the current phase of the workflow (for filtering purposes)
 	LabelKeyPhase = workflow.WorkflowFullName + "/phase"
+	// LabelPodGC determines how the controller should GC pods
+	LabelPodGC = workflow.WorkflowFullName + "/pod-gc"
 	// LabelCronWorkflow is a label applied to Workflows that are started by a CronWorkflow
 	LabelCronWorkflow = workflow.WorkflowFullName + "/cron-workflow"
 

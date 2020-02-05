@@ -63,10 +63,6 @@ type wfOperationCtx struct {
 	volumes []apiv1.Volume
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	artifactRepository *config.ArtifactRepository
-	// map of pods which need to be labeled with completed=true
-	completedPods map[string]bool
-	// map of pods which is identified as succeeded=true
-	succeededPods map[string]bool
 	// deadline is the dealine time in which this operation should relinquish
 	// its hold on the workflow so that an operation does not run for too long
 	// and starve other workqueue items. It also enables workflow progress to
@@ -80,6 +76,7 @@ type wfOperationCtx struct {
 	workflowDeadline *time.Time
 	// auditLogger is the argo audit logger
 	auditLogger *argo.AuditLogger
+	podGC       wfv1.PodGC
 }
 
 var _ wfv1.TemplateStorage = &wfOperationCtx{}
@@ -112,8 +109,6 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		globalParams:       make(map[string]string),
 		volumes:            wf.Spec.DeepCopy().Volumes,
 		artifactRepository: &wfc.Config.ArtifactRepository,
-		completedPods:      make(map[string]bool),
-		succeededPods:      make(map[string]bool),
 		deadline:           time.Now().UTC().Add(maxOperationTime),
 		auditLogger:        argo.NewAuditLogger(wf.ObjectMeta.Namespace, wfc.kubeclientset, wf.ObjectMeta.Name),
 	}
@@ -432,30 +427,6 @@ func (woc *wfOperationCtx) persistUpdates() {
 	// this sleep, the next worker to work on this workflow will very likely operate on a stale
 	// object and redo work.
 	time.Sleep(1 * time.Second)
-
-	// It is important that we *never* label pods as completed until we successfully updated the workflow
-	// Failing to do so means we can have inconsistent state.
-	// TODO: The completedPods will be labeled multiple times. I think it would be improved in the future.
-	// Send succeeded pods or completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
-	// Notice we do not need to label the pod if we will delete it later for GC. Otherwise, that may even result in
-	// errors if we label a pod that was deleted already.
-	if woc.wf.Spec.PodGC != nil {
-		switch woc.wf.Spec.PodGC.Strategy {
-		case wfv1.PodGCOnPodSuccess:
-			for podName := range woc.succeededPods {
-				woc.controller.gcPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
-			}
-		case wfv1.PodGCOnPodCompletion:
-			for podName := range woc.completedPods {
-				woc.controller.gcPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
-			}
-		}
-	} else {
-		// label pods which will not be deleted
-		for podName := range woc.completedPods {
-			woc.controller.completedPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
-		}
-	}
 }
 
 // persistWorkflowSizeLimitErr will fail a the workflow with an error when we hit the resource size limit
@@ -664,15 +635,11 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			}
 			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
 			if node.Completed() && !node.IsDaemoned() {
-				if tmpVal, tmpOk := pod.Labels[common.LabelKeyCompleted]; tmpOk {
-					if tmpVal == "true" {
+				if completede, ok := pod.Labels[common.LabelKeyCompleted]; ok {
+					if completede == "true" {
 						return
 					}
 				}
-				woc.completedPods[pod.ObjectMeta.Name] = true
-			}
-			if node.Successful() {
-				woc.succeededPods[pod.ObjectMeta.Name] = true
 			}
 		}
 	}
@@ -2150,4 +2117,8 @@ func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID str
 		return true, onExitNode, err
 	}
 	return false, nil, nil
+}
+
+func (woc *wfOperationCtx) GetPodGCLabelValue() wfv1.PodGCStrategy {
+	return woc.podGC.GetPodGCStrategy()
 }

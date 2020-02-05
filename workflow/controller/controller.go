@@ -9,7 +9,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
@@ -67,7 +67,6 @@ type WorkflowController struct {
 	podInformer           cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
 	podQueue              workqueue.RateLimitingInterface
-	completedPods         chan string
 	gcPods                chan string // pods to be deleted depend on GC strategy
 	throttler             Throttler
 	session               sqlbuilder.Database
@@ -106,7 +105,6 @@ func NewWorkflowController(
 		containerRuntimeExecutor:   containerRuntimeExecutor,
 		wfQueue:                    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:                   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 	}
 	wfc.throttler = NewThrottler(0, wfc.wfQueue)
@@ -168,7 +166,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
-	go wfc.podLabeler(ctx.Done())
 	go wfc.podGarbageCollector(ctx.Done())
 	go wfc.periodicWorkflowGarbageCollector(ctx.Done())
 
@@ -187,32 +184,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
 	}
 	<-ctx.Done()
-}
-
-// podLabeler will label all pods on the controllers completedPod channel as completed
-func (wfc *WorkflowController) podLabeler(stopCh <-chan struct{}) {
-	for {
-		select {
-		case <-stopCh:
-			return
-		case pod := <-wfc.completedPods:
-			parts := strings.Split(pod, "/")
-			if len(parts) != 2 {
-				log.Warnf("Unexpected item on completed pod channel: %s", pod)
-				continue
-			}
-			namespace := parts[0]
-			podName := parts[1]
-			err := common.AddPodLabel(wfc.kubeclientset, podName, namespace, common.LabelKeyCompleted, "true")
-			if err != nil {
-				if !apierr.IsNotFound(err) {
-					log.Errorf("Failed to label pod %s/%s completed: %+v", namespace, podName, err)
-				}
-			} else {
-				log.Infof("Labeled pod %s/%s completed", namespace, podName)
-			}
-		}
-	}
 }
 
 // podGarbageCollector will delete all pods on the controllers gcPods channel as completed
@@ -370,22 +341,17 @@ func (wfc *WorkflowController) processNextItem() bool {
 	woc.operate()
 	if woc.wf.Status.Completed() {
 		wfc.throttler.Remove(key)
-		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
-		var doPodGC bool
-		if woc.wf.Spec.PodGC != nil {
-			switch woc.wf.Spec.PodGC.Strategy {
-			case wfv1.PodGCOnWorkflowCompletion:
-				doPodGC = true
-			case wfv1.PodGCOnWorkflowSuccess:
-				if woc.wf.Status.Successful() {
-					doPodGC = true
-				}
+		strategy := woc.wf.Spec.PodGC.GetPodGCStrategy()
+		if strategy == wfv1.PodGCOnWorkflowCompletion || woc.wf.Status.Successful() && strategy == wfv1.PodGCOnWorkflowSuccess {
+			pods, err := woc.getAllWorkflowPods()
+			if err != nil {
+				woc.log.Errorf("pod listing failed: %v", err)
+				woc.markWorkflowError(err, true)
+				woc.persistUpdates()
+				return true
 			}
-		}
-		if doPodGC {
-			for podName := range woc.completedPods {
-				pod := fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
-				woc.controller.gcPods <- pod
+			for _, pod := range pods.Items {
+				woc.controller.gcPods <- fmt.Sprintf("%s/%s", pod.GetNamespace(), pod.GetName())
 			}
 		}
 	}
@@ -438,6 +404,24 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 		log.Warnf("watch returned pod unrelated to any workflow: %s", pod.ObjectMeta.Name)
 		return true
 	}
+
+	if pod.GetLabels()[common.LabelKeyCompleted] == "false" {
+		completed := pod.Status.Phase == corev1.PodSucceeded || pod.Status.Phase == corev1.PodFailed
+		if completed {
+			err := common.AddPodLabel(wfc.kubeclientset, pod.GetName(), pod.GetNamespace(), common.LabelKeyCompleted, "true")
+			if err != nil {
+				log.WithFields(log.Fields{"pod": pod.GetName(), "namespace": pod.GetNamespace(), "err": err}).Error("Failed to label pod complete")
+			}
+		}
+	}
+
+	if pod.GetLabels()[common.LabelKeyCompleted] == "true" {
+		strategy := wfv1.PodGCStrategy(pod.GetLabels()[common.LabelPodGC])
+		if strategy == wfv1.PodGCOnPodCompletion || strategy == wfv1.PodGCOnPodSuccess && pod.Status.Phase == corev1.PodSucceeded {
+			wfc.gcPods <- fmt.Sprintf("%s/%s", pod.GetNamespace(), pod.GetName())
+		}
+	}
+
 	// TODO: currently we reawaken the workflow on *any* pod updates.
 	// But this could be be much improved to become smarter by only
 	// requeue the workflow when there are changes that we care about.

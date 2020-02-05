@@ -57,10 +57,13 @@ type PodGCStrategy string
 
 // PodGCStrategy
 const (
+	// default too
+	PodGCOnPodNever           PodGCStrategy = ""
 	PodGCOnPodCompletion      PodGCStrategy = "OnPodCompletion"
 	PodGCOnPodSuccess         PodGCStrategy = "OnPodSuccess"
 	PodGCOnWorkflowCompletion PodGCStrategy = "OnWorkflowCompletion"
 	PodGCOnWorkflowSuccess    PodGCStrategy = "OnWorkflowSuccess"
+	PodGCOnPodDefault                       = PodGCOnPodNever
 )
 
 // TemplateGetter is an interface to get templates.
@@ -552,6 +555,13 @@ type Artifact struct {
 // PodGC describes how to delete completed pods as they complete
 type PodGC struct {
 	Strategy PodGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=PodGCStrategy"`
+}
+
+func (m *PodGC) GetPodGCStrategy() PodGCStrategy {
+	if m == nil {
+		return PodGCOnPodDefault
+	}
+	return m.Strategy
 }
 
 // ArchiveStrategy describes how to archive files/directory when saving artifacts
