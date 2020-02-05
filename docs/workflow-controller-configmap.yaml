@@ -132,8 +132,7 @@ data:
         maxOpenConns: 0
       #  if true node status is only saved to the persistence DB to avoid the 1MB limit in etcd
       nodeStatusOffLoad: false
-      # save completed workloads to the archived, even if disabled, you'll be able to
-      # read from the archive
+      # save completed workloads to the workflow archive
       archive: false
       # Optional name of the cluster I'm running in. This must be unique for your cluster.
       clusterName: default
