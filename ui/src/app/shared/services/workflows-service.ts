@@ -59,7 +59,7 @@ export class WorkflowsService {
             requests
                 .get(this.getArtifactDownloadUrl(workflow, nodeId, container + '-logs', archived))
                 .then(resp => {
-                    resp.text.split('\n').forEach(line => observer.next(JSON.stringify(line)));
+                    resp.text.split('\n').forEach(line => observer.next(line));
                 })
                 .catch(err => observer.error(err));
             // tslint:disable-next-line
@@ -67,10 +67,7 @@ export class WorkflowsService {
             };
         });
         return requests
-            .loadEventSource(
-                `api/v1/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/log` +
-                    `?logOptions.container=${container}&logOptions.tailLines=20&logOptions.follow=true`
-            )
+            .loadEventSource(`api/v1/workflows/${workflow.metadata.namespace}/log/${nodeId}` + `?logOptions.container=${container}&logOptions.tailLines=20&logOptions.follow=true`)
             .pipe(
                 map(line => JSON.parse(line).result.content),
                 catchError(() => logsFromArtifacts)

@@ -58,10 +58,9 @@ message WorkflowSuspendRequest {
 }
 
 message WorkflowLogRequest {
-    string name = 1;
-    string namespace = 2;
-    string podName = 3;
-    k8s.io.api.core.v1.PodLogOptions logOptions = 4;
+    string namespace = 1;
+    string podName = 2;
+    k8s.io.api.core.v1.PodLogOptions logOptions = 3;
 }
 
 message WorkflowDeleteRequest {
@@ -161,6 +160,6 @@ service WorkflowService {
     }
 
     rpc PodLogs (WorkflowLogRequest) returns (stream LogEntry) {
-        option (google.api.http).get = "/api/v1/workflows/{namespace}/{name}/{podName}/log";
+        option (google.api.http).get = "/api/v1/workflows/{namespace}/log/{podName}";
     }
 }
