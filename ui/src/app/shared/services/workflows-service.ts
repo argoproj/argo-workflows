@@ -14,15 +14,15 @@ export class WorkflowsService {
             .then(res => res.body as Workflow);
     }
 
-    public list(phases: string[], namespace: string) {
-        return requests.get(`api/v1/workflows/${namespace}?${this.queryParams({phases}).join('&')}`).then(res => res.body as WorkflowList);
+    public list(namespace: string, phases: string[], labels: string[]) {
+        return requests.get(`api/v1/workflows/${namespace}?${this.queryParams({phases, labels}).join('&')}`).then(res => res.body as WorkflowList);
     }
 
     public get(namespace: string, name: string) {
         return requests.get(`api/v1/workflows/${namespace}/${name}`).then(res => res.body as Workflow);
     }
 
-    public watch(filter: {namespace?: string; name?: string; phases?: Array<string>}): Observable<models.kubernetes.WatchEvent<Workflow>> {
+    public watch(filter: {namespace?: string; name?: string; phases?: Array<string>; labels?: Array<string>}): Observable<models.kubernetes.WatchEvent<Workflow>> {
         const url = `api/v1/workflow-events/${filter.namespace || ''}?${this.queryParams(filter).join('&')}`;
 
         return requests.loadEventSource(url, true).map(data => JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>);
@@ -63,8 +63,7 @@ export class WorkflowsService {
                 })
                 .catch(err => observer.error(err));
             // tslint:disable-next-line
-            return () => {
-            };
+            return () => {};
         });
         return requests
             .loadEventSource(
@@ -83,13 +82,23 @@ export class WorkflowsService {
             : `artifacts/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}?Authorization=${localStorage.getItem('token')}`;
     }
 
-    private queryParams(filter: {namespace?: string; name?: string; phases?: Array<string>}) {
+    private queryParams(filter: {namespace?: string; name?: string; phases?: Array<string>; labels?: Array<string>}) {
         const queryParams: string[] = [];
         if (filter.name) {
             queryParams.push(`listOptions.fieldSelector=metadata.name=${filter.name}`);
         }
+        var labelSelector = '';
         if (filter.phases && filter.phases.length > 0) {
-            queryParams.push(`listOptions.labelSelector=workflows.argoproj.io/phase in (${filter.phases.join(',')})`);
+            labelSelector = `workflows.argoproj.io/phase in (${filter.phases.join(',')})`;
+        }
+        if (filter.labels && filter.labels.length > 0) {
+            if (labelSelector.length > 0) {
+                labelSelector += ',';
+            }
+            labelSelector += filter.labels.join(',');
+        }
+        if (labelSelector.length > 0) {
+            queryParams.push(`listOptions.labelSelector=${labelSelector}`);
         }
         return queryParams;
     }
