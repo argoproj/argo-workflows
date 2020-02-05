@@ -108,7 +108,7 @@ func NewDriver(art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error
 		return &raw.RawArtifactDriver{}, nil
 	}
 
-	if art.OSS != nil{
+	if art.OSS != nil {
 		var accessKey string
 		var secretKey string
 
