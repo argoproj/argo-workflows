@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
 )
 
@@ -73,6 +74,39 @@ func (s *CLISuite) TestTokenArg() {
 			assert.Contains(t, output, "NAME")
 			assert.Contains(t, output, "STATUS")
 		})
+	})
+}
+
+func (s *CLISuite) TestLogs() {
+	s.Run("PodLogs", func(t *testing.T) {
+		s.Given(t).
+			Workflow("@smoke/basic.yaml").
+			When().
+			SubmitWorkflow().
+			WaitForWorkflowCondition(func(wf *v1alpha1.Workflow) bool {
+				return wf.Status.Nodes.FindByDisplayName("basic") != nil
+			}, "pod running", 10*time.Second).
+			Then().
+			RunCli([]string{"logs", "basic"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, ":) Hello Argo!")
+				}
+			})
+	})
+	s.Run("WorkflowLogs", func(t *testing.T) {
+		s.Given(t).
+			Workflow("@smoke/basic.yaml").
+			When().
+			SubmitWorkflow().
+			WaitForWorkflowCondition(func(wf *v1alpha1.Workflow) bool {
+				return wf.Status.Nodes.FindByDisplayName("basic") != nil
+			}, "pod running", 10*time.Second).
+			Then().
+			RunCli([]string{"logs", "-w", "basic"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, ":) Hello Argo!")
+				}
+			})
 	})
 }
 

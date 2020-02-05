@@ -1,13 +1,16 @@
 package apiclient
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"strconv"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -25,6 +28,7 @@ var (
 
 type classicWorkflowServiceClient struct {
 	versioned.Interface
+	kubeClient kubernetes.Interface
 }
 
 func (k *classicWorkflowServiceClient) CreateWorkflow(_ context.Context, in *workflowpkg.WorkflowCreateRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
@@ -146,6 +150,45 @@ func (k *classicWorkflowServiceClient) LintWorkflow(_ context.Context, in *workf
 	return in.Workflow, nil
 }
 
-func (k *classicWorkflowServiceClient) PodLogs(_ context.Context, _ *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
+type classicPodLogsClient struct {
+	*bufio.Scanner
+}
+
+func (c classicPodLogsClient) Recv() (*workflowpkg.LogEntry, error) {
+	if c.Scan() {
+		return &workflowpkg.LogEntry{Content: c.Text()}, nil
+	}
+	return nil, fmt.Errorf("no more data")
+}
+
+func (c classicPodLogsClient) Header() (metadata.MD, error) {
 	panic("implement me")
+}
+
+func (c classicPodLogsClient) Trailer() metadata.MD {
+	panic("implement me")
+}
+
+func (c classicPodLogsClient) CloseSend() error {
+	panic("implement me")
+}
+
+func (c classicPodLogsClient) Context() context.Context {
+	panic("implement me")
+}
+
+func (c classicPodLogsClient) SendMsg(m interface{}) error {
+	panic("implement me")
+}
+
+func (c classicPodLogsClient) RecvMsg(m interface{}) error {
+	panic("implement me")
+}
+
+func (k *classicWorkflowServiceClient) PodLogs(_ context.Context, in *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
+	stream, err := k.kubeClient.CoreV1().Pods(in.GetNamespace()).GetLogs(in.GetPodName(), in.LogOptions).Stream()
+	if err != nil {
+		return nil, err
+	}
+	return &classicPodLogsClient{bufio.NewScanner(stream)}, nil
 }
