@@ -267,20 +267,26 @@ func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan st
 					log.Info("Zero old records, nothing to do")
 					return
 				}
-				// we assume that this returns all records
-				list, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.GetManagedNamespace()).List(metav1.ListOptions{})
-				if err != nil {
-					log.WithField("err", err).Error("Failed to list workflows")
-					return
-				}
+				// get every lives workflow (1000s) into a map
 				liveOffloadNodeStatusVersions := make(map[types.UID]string)
-				for _, wf := range list.Items {
-					// this could be the empty string - as it is no longer offloaded
-					liveOffloadNodeStatusVersions[wf.UID] = wf.Status.OffloadNodeStatusVersion
+				for cont := ""; ; {
+					list, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.GetManagedNamespace()).List(metav1.ListOptions{Limit: 250, Continue: cont})
+					if err != nil {
+						log.WithField("err", err).Error("Failed to list workflows")
+						return
+					}
+					for _, wf := range list.Items {
+						// this could be the empty string - as it is no longer offloaded
+						liveOffloadNodeStatusVersions[wf.UID] = wf.Status.OffloadNodeStatusVersion
+					}
+					cont = list.Continue
+					if list.Continue == "" {
+						break
+					}
 				}
 				log.WithFields(log.Fields{"len_wfs": len(liveOffloadNodeStatusVersions), "len_old_records": len(oldRecords)}).Info("Deleting old UIDs that are not live")
 				for _, record := range oldRecords {
-					// this could be empty
+					// this could be empty string
 					nodeStatusVersion, ok := liveOffloadNodeStatusVersions[types.UID(record.UID)]
 					if !ok || nodeStatusVersion != record.Version {
 						err := wfc.offloadNodeStatusRepo.Delete(record.UID, record.Version)
