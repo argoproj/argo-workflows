@@ -259,27 +259,31 @@ func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan st
 		case <-ticker.C:
 			if wfc.offloadNodeStatusRepo.IsEnabled() {
 				log.Info("Performing periodic workflow GC")
-				oldUIDs, err := wfc.offloadNodeStatusRepo.ListOldUIDs(wfc.GetManagedNamespace())
+				oldRecords, err := wfc.offloadNodeStatusRepo.ListOldOffloads(wfc.GetManagedNamespace())
 				if err != nil {
-					log.WithField("err", err).Error("Failed to list offloaded nodes")
+					log.WithField("err", err).Error("Failed to list old offloaded nodes")
 				}
-				if len(oldUIDs) == 0 {
-					log.Info("Zero old UIDs, nothing to do")
+				if len(oldRecords) == 0 {
+					log.Info("Zero old records, nothing to do")
 					return
 				}
-				list, err := util.NewWorkflowLister(wfc.wfInformer).List()
+				// we assume that this returns all records
+				list, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.GetManagedNamespace()).List(metav1.ListOptions{})
 				if err != nil {
 					log.WithField("err", err).Error("Failed to list workflows")
+					return
 				}
-				wfs := make(map[types.UID]bool)
-				for _, wf := range list {
-					wfs[wf.UID] = true
+				liveOffloadNodeStatusVersions := make(map[types.UID]string)
+				for _, wf := range list.Items {
+					// this could be the empty string - as it is no longer offloaded
+					liveOffloadNodeStatusVersions[wf.UID] = wf.Status.OffloadNodeStatusVersion
 				}
-				log.WithFields(log.Fields{"len_wfs": len(wfs), "len_old_uids": len(oldUIDs)}).Info("Deleting old UIDs that are not live")
-				for _, uid := range oldUIDs {
-					_, ok := wfs[types.UID(uid)]
-					if !ok {
-						err := wfc.offloadNodeStatusRepo.Delete(uid)
+				log.WithFields(log.Fields{"len_wfs": len(liveOffloadNodeStatusVersions), "len_old_records": len(oldRecords)}).Info("Deleting old UIDs that are not live")
+				for _, record := range oldRecords {
+					// this could be empty
+					nodeStatusVersion, ok := liveOffloadNodeStatusVersions[types.UID(record.UID)]
+					if !ok || nodeStatusVersion != record.Version {
+						err := wfc.offloadNodeStatusRepo.Delete(record.UID, record.Version)
 						if err != nil {
 							log.WithField("err", err).Error("Failed to delete offloaded nodes")
 						}

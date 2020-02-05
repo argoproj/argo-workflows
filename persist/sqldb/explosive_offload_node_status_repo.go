@@ -28,10 +28,10 @@ func (n *explosiveOffloadNodeStatusRepo) List(string) (map[UUIDVersion]wfv1.Node
 	return nil, notSupportedError
 }
 
-func (n *explosiveOffloadNodeStatusRepo) Delete(string) error {
+func (n *explosiveOffloadNodeStatusRepo) Delete(string, string) error {
 	return notSupportedError
 }
 
-func (n *explosiveOffloadNodeStatusRepo) ListOldUIDs(namespace string) ([]string, error) {
+func (n *explosiveOffloadNodeStatusRepo) ListOldOffloads(string) ([]UUIDVersion, error) {
 	return nil, notSupportedError
 }
