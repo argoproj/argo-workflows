@@ -416,7 +416,7 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 	}
 
 	if pod.GetLabels()[common.LabelKeyCompleted] == "true" {
-		strategy := wfv1.PodGCStrategy(pod.GetLabels()[common.LabelPodGC])
+		strategy := wfv1.PodGCStrategy(pod.GetAnnotations()[common.AnnotationPodGC])
 		if strategy == wfv1.PodGCOnPodCompletion || strategy == wfv1.PodGCOnPodSuccess && pod.Status.Phase == corev1.PodSucceeded {
 			wfc.gcPods <- fmt.Sprintf("%s/%s", pod.GetNamespace(), pod.GetName())
 		}

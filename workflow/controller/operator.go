@@ -2119,6 +2119,6 @@ func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID str
 	return false, nil, nil
 }
 
-func (woc *wfOperationCtx) GetPodGCLabelValue() wfv1.PodGCStrategy {
+func (woc *wfOperationCtx) GetPodGC() wfv1.PodGCStrategy {
 	return woc.podGC.GetPodGCStrategy()
 }

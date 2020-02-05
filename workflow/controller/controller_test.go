@@ -58,7 +58,6 @@ func newController() *WorkflowController {
 		},
 		kubeclientset:  fake.NewSimpleClientset(),
 		wfclientset:    wfclientset,
-		completedPods:  make(chan string, 512),
 		wftmplInformer: wftmplInformer,
 		wfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		wfArchive:      sqldb.NullWorkflowArchive,
