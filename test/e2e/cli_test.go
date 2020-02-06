@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
 )
 
@@ -98,13 +98,13 @@ spec:
         imagePullPolicy: IfNotPresent`).
 			When().
 			SubmitWorkflow().
-			WaitForWorkflowCondition(func(wf *v1alpha1.Workflow) bool {
+			WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 				return wf.Status.Nodes.FindByDisplayName("my-wf") != nil
 			}, "pod running", 10*time.Second)
 	})
-	s.Run("PodLogs", func(t *testing.T) {
+	s.Run("FollowPodLogs", func(t *testing.T) {
 		s.Given(t).
-			RunCli([]string{"logs", "my-wf", "my-wf"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"logs", "my-wf", "my-wf", "--follow"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, ":) Hello Logs!")
 				}
@@ -142,15 +142,15 @@ spec:
 				}
 			})
 	})
-	s.Run("FinishedPod", func(t *testing.T) {
+	s.Run("CompletedWorkflow", func(t *testing.T) {
 		s.Given(t).
 			WorkflowName("my-wf").
 			When().
 			WaitForWorkflow(10*time.Second).
 			Then().
-			RunCli([]string{"logs", "my-wf", "--tail=0"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"logs", "my-wf", "my-wf", "--tail=10"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.NotContains(t, output, ":) Hello Logs!")
+					assert.Contains(t, output, ":) Hello Logs!")
 				}
 			})
 	})
