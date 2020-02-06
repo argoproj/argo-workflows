@@ -128,10 +128,8 @@ func GetBearerToken(in *restclient.Config) (string, error) {
 			return "", nil
 		}
 
-		err = auth.UpdateTransportConfig(tc)
-		if err != nil {
-			return "", nil
-		}
+		//This function will return error because of TLS Cert, This code is not making actual request. We can ignore it.
+		_ = auth.UpdateTransportConfig(tc)
 
 		rt, err := transport.New(tc)
 		if err != nil {

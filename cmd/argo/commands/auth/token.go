@@ -18,7 +18,7 @@ func NewTokenCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			fmt.Print(client.GetAuthString())
+			fmt.Println(client.GetAuthString())
 		},
 	}
 }
