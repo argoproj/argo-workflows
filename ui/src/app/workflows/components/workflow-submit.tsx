@@ -13,13 +13,14 @@ interface WorkflowSubmitProps {
 }
 
 interface WorkflowSubmitState {
-    error?: Error;
+    invalidWorkflow: boolean;
+    error?: any;
 }
 
 export class WorkflowSubmit extends React.Component<WorkflowSubmitProps, WorkflowSubmitState> {
     constructor(props: WorkflowSubmitProps) {
         super(props);
-        this.state = {};
+        this.state = {invalidWorkflow: false};
     }
 
     public render() {
@@ -41,12 +42,16 @@ export class WorkflowSubmit extends React.Component<WorkflowSubmitProps, Workflo
                         <form onSubmit={formikApi.handleSubmit}>
                             <div className='white-box editable-panel'>
                                 <h4>Submit New Workflow</h4>
-                                <button type='submit' className='argo-button argo-button--base' disabled={formikApi.isSubmitting}>
+                                <button type='submit' className='argo-button argo-button--base' disabled={formikApi.isSubmitting || this.state.invalidWorkflow}>
                                     Submit
                                 </button>
                                 {this.state.error && (
                                     <p>
-                                        <i className='fa fa-exclamation-triangle status-icon--failed' /> {this.state.error.message}
+                                        <i className='fa fa-exclamation-triangle status-icon--failed' />
+                                        {this.state.error.response &&
+                                            this.state.error.response.body &&
+                                            this.state.error.response.body.message
+                                        ? this.state.error.response.body.message : this.state.error.message}
                                     </p>
                                 )}
                                 <textarea
@@ -61,14 +66,17 @@ export class WorkflowSubmit extends React.Component<WorkflowSubmitProps, Workflo
                                         try {
                                             formikApi.setFieldValue('wf', jsYaml.load(e.currentTarget.value));
                                             this.setState({
-                                                error: undefined
+                                                error: undefined,
+                                                invalidWorkflow: false
                                             });
                                         } catch (e) {
+                                            console.log(e);
                                             this.setState({
                                                 error: {
                                                     name: 'Workflow is invalid',
-                                                    message: 'Workflow is invalid'
-                                                }
+                                                    message: 'Workflow is invalid' + (e.reason ? ': ' + e.reason : '')
+                                                },
+                                                invalidWorkflow: true
                                             });
                                         }
                                     }}
