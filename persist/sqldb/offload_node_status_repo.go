@@ -21,8 +21,8 @@ type OffloadNodeStatusRepo interface {
 	Save(uid, namespace string, nodes wfv1.Nodes) (string, error)
 	Get(uid, version string) (wfv1.Nodes, error)
 	List(namespace string) (map[UUIDVersion]wfv1.Nodes, error)
-	ListOldUIDs(namespace string) ([]string, error)
-	Delete(uid string) error
+	ListOldOffloads(namespace string) ([]UUIDVersion, error)
+	Delete(uid, version string) error
 	IsEnabled() bool
 }
 
@@ -166,32 +166,29 @@ func (wdc *nodeOffloadRepo) List(namespace string) (map[UUIDVersion]wfv1.Nodes, 
 	return res, nil
 }
 
-func (wdc *nodeOffloadRepo) ListOldUIDs(namespace string) ([]string, error) {
+func (wdc *nodeOffloadRepo) ListOldOffloads(namespace string) ([]UUIDVersion, error) {
 	log.WithFields(log.Fields{"namespace": namespace}).Debug("Listing old offloaded nodes")
-	row, err := wdc.session.
-		Query("select distinct uid from "+wdc.tableName+" where clustername = ? and namespace = ? and updatedat < current_timestamp - interval '5' minute", wdc.clusterName, namespace)
+	var records []UUIDVersion
+	err := wdc.session.
+		SelectFrom(wdc.tableName).
+		Where(db.Cond{"clustername": wdc.clusterName}).
+		And(namespaceEqual(namespace)).
+		And("updatedat < current_timestamp - interval '5' minute").
+		All(&records)
 	if err != nil {
 		return nil, err
 	}
-	var uids []string
-	for row.Next() {
-		uid := ""
-		err := row.Scan(&uid)
-		if err != nil {
-			return nil, err
-		}
-		uids = append(uids, uid)
-	}
-	return uids, nil
+	return records, nil
 }
 
-func (wdc *nodeOffloadRepo) Delete(uid string) error {
-	logCtx := log.WithFields(log.Fields{"uid": uid})
+func (wdc *nodeOffloadRepo) Delete(uid, version string) error {
+	logCtx := log.WithFields(log.Fields{"uid": uid, "version": version})
 	logCtx.Debug("Deleting offloaded nodes")
 	rs, err := wdc.session.
 		DeleteFrom(wdc.tableName).
 		Where(db.Cond{"clustername": wdc.clusterName}).
 		And(db.Cond{"uid": uid}).
+		And(db.Cond{"version": version}).
 		Exec()
 	if err != nil {
 		return err
