@@ -1,14 +1,13 @@
 package apiclient
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"strconv"
 
+	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/util/help"
+	"github.com/argoproj/argo/util/logs"
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/util"
@@ -31,10 +31,10 @@ type classicWorkflowServiceClient struct {
 	kubeClient kubernetes.Interface
 }
 
-func (k *classicWorkflowServiceClient) CreateWorkflow(_ context.Context, in *workflowpkg.WorkflowCreateRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
-	wf := in.Workflow
-	dryRun := len(in.CreateOptions.DryRun) > 0
-	serverDryRun := in.ServerDryRun
+func (k *classicWorkflowServiceClient) CreateWorkflow(_ context.Context, req *workflowpkg.WorkflowCreateRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+	wf := req.Workflow
+	dryRun := len(req.CreateOptions.DryRun) > 0
+	serverDryRun := req.ServerDryRun
 	if dryRun {
 		return wf, nil
 	}
@@ -49,7 +49,7 @@ func (k *classicWorkflowServiceClient) CreateWorkflow(_ context.Context, in *wor
 		// kind of gross code, but fine
 		return util.CreateServerDryRun(wf, k)
 	}
-	return k.ArgoprojV1alpha1().Workflows(in.Namespace).Create(wf)
+	return k.ArgoprojV1alpha1().Workflows(req.Namespace).Create(wf)
 }
 
 func (k *classicWorkflowServiceClient) checkServerVersionForDryRun() (bool, error) {
@@ -73,12 +73,12 @@ func (k *classicWorkflowServiceClient) checkServerVersionForDryRun() (bool, erro
 	return true, nil
 }
 
-func (k *classicWorkflowServiceClient) GetWorkflow(_ context.Context, in *workflowpkg.WorkflowGetRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (k *classicWorkflowServiceClient) GetWorkflow(_ context.Context, req *workflowpkg.WorkflowGetRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	options := metav1.GetOptions{}
-	if in.GetOptions != nil {
-		options = *in.GetOptions
+	if req.GetOptions != nil {
+		options = *req.GetOptions
 	}
-	wf, err := k.ArgoprojV1alpha1().Workflows(in.Namespace).Get(in.Name, options)
+	wf, err := k.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, options)
 	if err != nil {
 		return nil, err
 	}
@@ -92,8 +92,8 @@ func (k *classicWorkflowServiceClient) GetWorkflow(_ context.Context, in *workfl
 	return wf, nil
 }
 
-func (k *classicWorkflowServiceClient) ListWorkflows(_ context.Context, in *workflowpkg.WorkflowListRequest, _ ...grpc.CallOption) (*v1alpha1.WorkflowList, error) {
-	list, err := k.ArgoprojV1alpha1().Workflows(in.Namespace).List(*in.ListOptions)
+func (k *classicWorkflowServiceClient) ListWorkflows(_ context.Context, req *workflowpkg.WorkflowListRequest, _ ...grpc.CallOption) (*v1alpha1.WorkflowList, error) {
+	list, err := k.ArgoprojV1alpha1().Workflows(req.Namespace).List(*req.ListOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -141,54 +141,20 @@ func (k *classicWorkflowServiceClient) TerminateWorkflow(_ context.Context, _ *w
 	panic("implement me")
 }
 
-func (k *classicWorkflowServiceClient) LintWorkflow(_ context.Context, in *workflowpkg.WorkflowLintRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
-	templateGetter := templateresolution.WrapWorkflowTemplateInterface(k.Interface.ArgoprojV1alpha1().WorkflowTemplates(in.Namespace))
-	err := validate.ValidateWorkflow(templateGetter, in.Workflow, validate.ValidateOpts{Lint: true})
+func (k *classicWorkflowServiceClient) LintWorkflow(_ context.Context, req *workflowpkg.WorkflowLintRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+	templateGetter := templateresolution.WrapWorkflowTemplateInterface(k.Interface.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
+	err := validate.ValidateWorkflow(templateGetter, req.Workflow, validate.ValidateOpts{Lint: true})
 	if err != nil {
 		return nil, err
 	}
-	return in.Workflow, nil
+	return req.Workflow, nil
 }
 
-type classicPodLogsClient struct {
-	*bufio.Scanner
-}
-
-func (c classicPodLogsClient) Recv() (*workflowpkg.LogEntry, error) {
-	if c.Scan() {
-		return &workflowpkg.LogEntry{Content: c.Text()}, nil
-	}
-	return nil, fmt.Errorf("no more data")
-}
-
-func (c classicPodLogsClient) Header() (metadata.MD, error) {
-	panic("implement me")
-}
-
-func (c classicPodLogsClient) Trailer() metadata.MD {
-	panic("implement me")
-}
-
-func (c classicPodLogsClient) CloseSend() error {
-	panic("implement me")
-}
-
-func (c classicPodLogsClient) Context() context.Context {
-	panic("implement me")
-}
-
-func (c classicPodLogsClient) SendMsg(m interface{}) error {
-	panic("implement me")
-}
-
-func (c classicPodLogsClient) RecvMsg(m interface{}) error {
-	panic("implement me")
-}
-
-func (k *classicWorkflowServiceClient) PodLogs(_ context.Context, in *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
-	stream, err := k.kubeClient.CoreV1().Pods(in.GetNamespace()).GetLogs(in.GetPodName(), in.LogOptions).Stream()
-	if err != nil {
-		return nil, err
-	}
-	return &classicPodLogsClient{bufio.NewScanner(stream)}, nil
+func (k *classicWorkflowServiceClient) PodLogs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
+	c := newClassicPodLogs()
+	go func() {
+		err := logs.PodLogs(ctx, k.kubeClient, req, c)
+		errors.CheckError(err)
+	}()
+	return c, nil
 }

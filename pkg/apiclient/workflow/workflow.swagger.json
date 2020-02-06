@@ -4440,9 +4440,6 @@
         },
         "podName": {
           "type": "string"
-        },
-        "containerName": {
-          "type": "string"
         }
       }
     },
