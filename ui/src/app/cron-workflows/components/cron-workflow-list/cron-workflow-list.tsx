@@ -2,17 +2,16 @@ import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
-import {CronWorkflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {Timestamp} from '../../../shared/components/timestamp';
-import {YamlEditor} from '../../../shared/components/yaml/yaml-editor';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {exampleCronWorkflow} from '../../../shared/examples';
 import {services} from '../../../shared/services';
+import {ResourceSubmit} from "../../../shared/components/resource-submit";
 
 require('./cron-workflow-list.scss');
 
@@ -87,17 +86,14 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                             <div className='columns small-12'>{this.renderCronWorkflows()}</div>
                         </div>
                         <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
-                            <YamlEditor
-                                title='Create New Cron Workflow'
-                                editing={true}
-                                value={exampleCronWorkflow(this.namespace)}
-                                onSubmit={(value: CronWorkflow) => {
+                            <ResourceSubmit<models.CronWorkflow>
+                                resourceName={"Cron Workflow"}
+                                defaultResource={exampleCronWorkflow(this.namespace)}
+                                onSubmit={(cronWf) => {
                                     return services.cronWorkflows
-                                        .create(value, value.metadata.namespace)
+                                        .create(cronWf, cronWf.metadata.namespace)
                                         .then(res => ctx.navigation.goto(uiUrl(`cron-workflows/${res.metadata.namespace}/${res.metadata.name}`)))
-                                        .catch(error => this.setState({error}));
-                                }}
-                            />
+                                }}/>
                         </SlidingPanel>
                     </Page>
                 )}

@@ -17,7 +17,7 @@ import {Query} from '../../../shared/components/query';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
-import {WorkflowSubmit} from '../workflow-submit';
+import {ResourceSubmit} from '../../../shared/components/resource-submit';
 
 require('./workflows-list.scss');
 
@@ -113,7 +113,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
     public render() {
         if (this.state.loading) {
-            return <Loading />;
+            return <Loading/>;
         }
         if (this.state.error) {
             throw this.state.error;
@@ -143,11 +143,19 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     }
                                 ]
                             },
-                            tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
+                            tools: [<NamespaceFilter key='namespace-filter' value={this.namespace}
+                                                     onChange={namespace => (this.namespace = namespace)}/>]
                         }}>
                         <div>{this.renderWorkflows(ctx)}</div>
                         <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
-                            <WorkflowSubmit defaultWorkflow={exampleWorkflow(this.namespace)} currentNamespace={this.namespace} ctx={ctx} />
+                            <ResourceSubmit<models.Workflow>
+                                resourceName={"Workflow"}
+                                defaultResource={exampleWorkflow(this.namespace)}
+                                onSubmit={(wf) => {
+                                    return services.workflows
+                                        .create(wf, wf.metadata.namespace || this.namespace)
+                                        .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)));
+                                }}/>
                         </SlidingPanel>
                     </Page>
                 )}
@@ -157,7 +165,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
     private renderWorkflows(ctx: any) {
         if (!this.state.workflows) {
-            return <Loading />;
+            return <Loading/>;
         }
 
         if (this.state.workflows.length === 0) {
@@ -178,7 +186,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         {this.state.workflows.map(workflow => (
                             <div key={workflow.metadata.name}>
                                 <Link to={uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)}>
-                                    <WorkflowListItem workflow={workflow} archived={false} />
+                                    <WorkflowListItem workflow={workflow} archived={false}/>
                                 </Link>
                             </div>
                         ))}
@@ -193,7 +201,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             <Query>
                 {q => (
                     <div>
-                        <i className='fa fa-search' />
+                        <i className='fa fa-search'/>
                         {q.get('search') && (
                             <i
                                 className='fa fa-times'
@@ -218,7 +226,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                             )}
                             renderItem={item => (
                                 <React.Fragment>
-                                    <i className='icon argo-icon-workflow' /> {item.label}
+                                    <i className='icon argo-icon-workflow'/> {item.label}
                                 </React.Fragment>
                             )}
                             onSelect={val => {

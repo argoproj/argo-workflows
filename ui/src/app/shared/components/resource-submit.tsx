@@ -2,36 +2,31 @@ import {Formik} from 'formik';
 import * as jsYaml from 'js-yaml';
 import * as React from 'react';
 import * as models from '../../../models';
-import {uiUrl} from '../../shared/base';
-import {ContextApis} from '../../shared/context';
-import {services} from '../../shared/services';
 
-interface WorkflowSubmitProps {
-    defaultWorkflow: models.Workflow;
-    ctx: ContextApis;
-    currentNamespace: string;
+interface ResourceSubmitProps<T> {
+    defaultResource: T;
+    resourceName: string;
+    onSubmit: (value: T) => Promise<void>
 }
 
-interface WorkflowSubmitState {
-    invalidWorkflow: boolean;
+interface ResourceSubmitState {
+    invalid: boolean;
     error?: any;
 }
 
-export class WorkflowSubmit extends React.Component<WorkflowSubmitProps, WorkflowSubmitState> {
-    constructor(props: WorkflowSubmitProps) {
+export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, ResourceSubmitState> {
+    constructor(props: ResourceSubmitProps<T>) {
         super(props);
-        this.state = {invalidWorkflow: false};
+        this.state = {invalid: false};
     }
 
     public render() {
         return (
             <div>
                 <Formik
-                    initialValues={{wf: this.props.defaultWorkflow, wfString: jsYaml.dump(this.props.defaultWorkflow)}}
+                    initialValues={{resource: this.props.defaultResource, wfString: jsYaml.dump(this.props.defaultResource)}}
                     onSubmit={(values, {setSubmitting}) => {
-                        services.workflows
-                            .create(values.wf, values.wf.metadata.namespace || this.props.currentNamespace)
-                            .then(wf => this.props.ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
+                        this.props.onSubmit(values.resource)
                             .then(_ => setSubmitting(false))
                             .catch(error => {
                                 this.setState({error});
@@ -41,8 +36,8 @@ export class WorkflowSubmit extends React.Component<WorkflowSubmitProps, Workflo
                     {(formikApi: any) => (
                         <form onSubmit={formikApi.handleSubmit}>
                             <div className='white-box editable-panel'>
-                                <h4>Submit New Workflow</h4>
-                                <button type='submit' className='argo-button argo-button--base' disabled={formikApi.isSubmitting || this.state.invalidWorkflow}>
+                                <h4>Submit New {this.props.resourceName}</h4>
+                                <button type='submit' className='argo-button argo-button--base' disabled={formikApi.isSubmitting || this.state.invalid}>
                                     Submit
                                 </button>
                                 {this.state.error && (
@@ -64,19 +59,19 @@ export class WorkflowSubmit extends React.Component<WorkflowSubmitProps, Workflo
                                     onBlur={e => {
                                         formikApi.handleBlur(e);
                                         try {
-                                            formikApi.setFieldValue('wf', jsYaml.load(e.currentTarget.value));
+                                            formikApi.setFieldValue('resource', jsYaml.load(e.currentTarget.value));
                                             this.setState({
                                                 error: undefined,
-                                                invalidWorkflow: false
+                                                invalid: false
                                             });
                                         } catch (e) {
                                             console.log(e);
                                             this.setState({
                                                 error: {
-                                                    name: 'Workflow is invalid',
-                                                    message: 'Workflow is invalid' + (e.reason ? ': ' + e.reason : '')
+                                                    name: this.props.resourceName + ' is invalid',
+                                                    message: this.props.resourceName + ' is invalid' + (e.reason ? ': ' + e.reason : '')
                                                 },
-                                                invalidWorkflow: true
+                                                invalid: true
                                             });
                                         }
                                     }}
@@ -85,11 +80,12 @@ export class WorkflowSubmit extends React.Component<WorkflowSubmitProps, Workflo
                                 />
 
                                 {/* Workflow-level parameters*/}
-                                {formikApi.values.wf &&
-                                    formikApi.values.wf.spec &&
-                                    formikApi.values.wf.spec.arguments &&
-                                    formikApi.values.wf.spec.arguments.parameters &&
-                                    this.renderParameterFields('Workflow Parameters', 'wf.spec.arguments', formikApi.values.wf.spec.arguments.parameters, formikApi)}
+                                {this.props.resourceName === 'Workflow' &&
+                                    formikApi.values.resource &&
+                                    formikApi.values.resource.spec &&
+                                    formikApi.values.resource.spec.arguments &&
+                                    formikApi.values.resource.spec.arguments.parameters &&
+                                    this.renderParameterFields('Workflow Parameters', 'resource.spec.arguments', formikApi.values.resource.spec.arguments.parameters, formikApi)}
                             </div>
                         </form>
                     )}
@@ -118,7 +114,7 @@ export class WorkflowSubmit extends React.Component<WorkflowSubmitProps, Workflo
                                     onChange={formikApi.handleChange}
                                     onBlur={e => {
                                         formikApi.handleBlur(e);
-                                        formikApi.setFieldValue('wfString', jsYaml.dump(formikApi.values.wf));
+                                        formikApi.setFieldValue('wfString', jsYaml.dump(formikApi.values.resource));
                                     }}
                                 />
                             </div>
