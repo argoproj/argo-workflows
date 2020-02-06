@@ -59,10 +59,12 @@ func NewLogsCommand() *cobra.Command {
 			}
 
 			if since > 0 {
+				// TODO - need to test with since
 				logOptions.SinceSeconds = pointer.Int64Ptr(int64(since.Seconds()))
 			}
 
 			if sinceTime != "" {
+				// TODO - need to test with time
 				parsedTime, err := time.Parse(time.RFC3339, sinceTime)
 				errors.CheckError(err)
 				sinceTime := metav1.NewTime(parsedTime)
@@ -73,6 +75,7 @@ func NewLogsCommand() *cobra.Command {
 			// TODO - need to test with deleted pods
 
 			if tailLines >= 0 {
+				// TODO - need to test with zero lines
 				logOptions.TailLines = pointer.Int64Ptr(tailLines)
 			}
 
