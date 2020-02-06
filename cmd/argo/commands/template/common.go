@@ -9,22 +9,28 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	"github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	wftmplApiServer "github.com/argoproj/argo/server/workflowtemplate"
 	"github.com/argoproj/argo/workflow/templateresolution"
 )
 
 // Global variables
 var (
-	restConfig   *rest.Config
-	clientset    *kubernetes.Clientset
-	wfClientset  *versioned.Clientset
+	// DEPRECATED
+	restConfig *rest.Config
+	// DEPRECATED
+	clientset *kubernetes.Clientset
+	// DEPRECATED
+	wfClientset *versioned.Clientset
+	// DEPRECATED
 	wftmplClient v1alpha1.WorkflowTemplateInterface
-	namespace    string
+	// DEPRECATED
+	namespace string
 )
 
+// DEPRECATED
 func initKubeClient() *kubernetes.Clientset {
 	if clientset != nil {
 		return clientset
@@ -44,6 +50,7 @@ func initKubeClient() *kubernetes.Clientset {
 }
 
 // InitWorkflowTemplateClient creates a new client for the Kubernetes WorkflowTemplate CRD.
+// DEPRECATED
 func InitWorkflowTemplateClient(ns ...string) v1alpha1.WorkflowTemplateInterface {
 	if wftmplClient != nil {
 		return wftmplClient
@@ -65,9 +72,11 @@ func InitWorkflowTemplateClient(ns ...string) v1alpha1.WorkflowTemplateInterface
 
 // LazyWorkflowTemplateGetter is a wrapper of v1alpha1.WorkflowTemplateInterface which
 // supports lazy initialization.
+// DEPRECATED
 type LazyWorkflowTemplateGetter struct{}
 
 // Get initializes it just before it's actually used and returns a retrieved workflow template.
+// DEPRECATED
 func (c LazyWorkflowTemplateGetter) Get(name string) (*wfv1.WorkflowTemplate, error) {
 	if wftmplClient == nil {
 		_ = InitWorkflowTemplateClient()
@@ -75,8 +84,10 @@ func (c LazyWorkflowTemplateGetter) Get(name string) (*wfv1.WorkflowTemplate, er
 	return templateresolution.WrapWorkflowTemplateInterface(wftmplClient).Get(name)
 }
 
+// DEPRECATED
 var _ templateresolution.WorkflowTemplateNamespacedGetter = &LazyWorkflowTemplateGetter{}
 
-func GetWFtmplApiServerGRPCClient(conn *grpc.ClientConn) (wftmplApiServer.WorkflowTemplateServiceClient, context.Context) {
-	return wftmplApiServer.NewWorkflowTemplateServiceClient(conn), client.GetContext()
+// DEPRECATED
+func GetWFtmplApiServerGRPCClient(conn *grpc.ClientConn) (workflowtemplate.WorkflowTemplateServiceClient, context.Context) {
+	return workflowtemplate.NewWorkflowTemplateServiceClient(conn), client.GetContext()
 }

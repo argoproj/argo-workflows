@@ -80,7 +80,7 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
                         onSubmit={(value: Workflow) => {
                             services.workflows
                                 .create(value, value.metadata.namespace)
-                                .then(workflow => (document.location.href = `/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`))
+                                .then(workflow => (document.location.href = uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)))
                                 .catch(error => this.setState({error}));
                         }}
                     />
@@ -109,7 +109,7 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
                 });
             })
             .then(() => {
-                document.location.href = '/workflow-templates';
+                document.location.href = uiUrl('workflow-templates');
             });
     }
 

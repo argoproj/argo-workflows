@@ -12,6 +12,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/persist/sqldb"
+	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
 )
@@ -20,11 +22,11 @@ type archivedWorkflowServer struct {
 	wfArchive sqldb.WorkflowArchive
 }
 
-func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive) ArchivedWorkflowServiceServer {
+func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive) workflowarchivepkg.ArchivedWorkflowServiceServer {
 	return &archivedWorkflowServer{wfArchive: wfArchive}
 }
 
-func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req *ListArchivedWorkflowsRequest) (*wfv1.WorkflowList, error) {
+func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req *workflowarchivepkg.ListArchivedWorkflowsRequest) (*wfv1.WorkflowList, error) {
 	options := req.ListOptions
 	if options == nil {
 		options = &metav1.ListOptions{}
@@ -57,7 +59,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 			return nil, err
 		}
 		for _, wf := range moreItems {
-			allowed, err := authorizer.CanI("get", "workflow", wf.Namespace, wf.Name)
+			allowed, err := authorizer.CanI("get", workflow.WorkflowPlural, wf.Namespace, wf.Name)
 			if err != nil {
 				return nil, err
 			}
@@ -78,7 +80,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	return &wfv1.WorkflowList{ListMeta: meta, Items: items}, nil
 }
 
-func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *GetArchivedWorkflowRequest) (*wfv1.Workflow, error) {
+func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *workflowarchivepkg.GetArchivedWorkflowRequest) (*wfv1.Workflow, error) {
 	wf, err := w.wfArchive.GetWorkflow(req.Uid)
 	if err != nil {
 		return nil, err
@@ -86,7 +88,7 @@ func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *G
 	if wf == nil {
 		return nil, status.Error(codes.NotFound, "not found")
 	}
-	allowed, err := auth.CanI(ctx, "get", "workflows", wf.Namespace, wf.Name)
+	allowed, err := auth.CanI(ctx, "get", workflow.WorkflowPlural, wf.Namespace, wf.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -96,12 +98,12 @@ func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *G
 	return wf, err
 }
 
-func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req *DeleteArchivedWorkflowRequest) (*ArchivedWorkflowDeletedResponse, error) {
-	wf, err := w.GetArchivedWorkflow(ctx, &GetArchivedWorkflowRequest{Uid: req.Uid})
+func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req *workflowarchivepkg.DeleteArchivedWorkflowRequest) (*workflowarchivepkg.ArchivedWorkflowDeletedResponse, error) {
+	wf, err := w.GetArchivedWorkflow(ctx, &workflowarchivepkg.GetArchivedWorkflowRequest{Uid: req.Uid})
 	if err != nil {
 		return nil, err
 	}
-	allowed, err := auth.CanI(ctx, "delete", "workflows", wf.Namespace, wf.Name)
+	allowed, err := auth.CanI(ctx, "delete", workflow.WorkflowPlural, wf.Namespace, wf.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -112,5 +114,5 @@ func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req
 	if err != nil {
 		return nil, err
 	}
-	return &ArchivedWorkflowDeletedResponse{}, nil
+	return &workflowarchivepkg.ArchivedWorkflowDeletedResponse{}, nil
 }

@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"time"
@@ -72,13 +73,20 @@ func (d *DockerExecutor) CopyFile(containerID string, sourcePath string, destPat
 func (d *DockerExecutor) GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error) {
 	cmd := exec.Command("docker", "logs", containerID)
 	log.Info(cmd.Args)
-	if combinedOutput {
-		cmd.Stderr = cmd.Stdout
-	}
+
 	reader, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
+
+	if combinedOutput {
+		stderr, err := cmd.StderrPipe()
+		if err != nil {
+			return nil, errors.InternalWrapError(err)
+		}
+		reader = ioutil.NopCloser(io.MultiReader(reader, stderr))
+	}
+
 	err = cmd.Start()
 	if err != nil {
 		return nil, errors.InternalWrapError(err)

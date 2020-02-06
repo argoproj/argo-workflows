@@ -269,6 +269,10 @@ func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan st
 				if err != nil {
 					log.WithField("err", err).Error("Failed to list offloaded nodes")
 				}
+				if len(oldUIDs) == 0 {
+					log.Info("Zero old UIDs, nothing to do")
+					return
+				}
 				list, err := util.NewWorkflowLister(wfc.wfInformer).List()
 				if err != nil {
 					log.WithField("err", err).Error("Failed to list workflows")
@@ -277,11 +281,11 @@ func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan st
 				for _, wf := range list {
 					wfs[wf.UID] = true
 				}
-				log.WithFields(log.Fields{"len_wfs": len(wfs), "len_old_uids": len(oldUIDs)}).Info("Comparing live workflows with old UIDs")
+				log.WithFields(log.Fields{"len_wfs": len(wfs), "len_old_uids": len(oldUIDs)}).Info("Deleting old UIDs that are not live")
 				for _, uid := range oldUIDs {
 					_, ok := wfs[types.UID(uid)]
 					if !ok {
-						err := wfc.offloadNodeStatusRepo.Delete(string(uid))
+						err := wfc.offloadNodeStatusRepo.Delete(uid)
 						if err != nil {
 							log.WithField("err", err).Error("Failed to delete offloaded nodes")
 						}

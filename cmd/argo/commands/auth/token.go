@@ -1,4 +1,4 @@
-package commands
+package auth
 
 import (
 	"fmt"
@@ -12,13 +12,13 @@ import (
 func NewTokenCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "token",
-		Short: "Print the token",
+		Short: "Print the auth token",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) != 0 {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			fmt.Print(client.GetBearerToken())
+			fmt.Print(client.GetAuthString())
 		},
 	}
 }
