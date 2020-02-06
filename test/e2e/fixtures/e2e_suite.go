@@ -249,6 +249,13 @@ func (s *E2ESuite) printWorkflowDiagnostics(wf wfv1.Workflow) {
 	if err != nil {
 		s.T().Fatal(err)
 	}
+	if workflow.Status.IsOffloadNodeStatus() {
+		offloaded, err := s.Persistence.offloadNodeStatusRepo.Get(string(workflow.UID), workflow.Status.OffloadNodeStatusVersion)
+		if err != nil {
+			s.T().Fatal(err)
+		}
+		workflow.Status.Nodes = offloaded
+	}
 	for _, node := range workflow.Status.Nodes {
 		if node.Type != "Pod" {
 			continue
