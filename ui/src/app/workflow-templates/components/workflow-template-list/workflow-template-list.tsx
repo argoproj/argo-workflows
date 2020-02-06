@@ -2,13 +2,12 @@ import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
-import {WorkflowTemplate} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
+import {ResourceSubmit} from '../../../shared/components/resource-submit';
 import {Timestamp} from '../../../shared/components/timestamp';
-import {YamlEditor} from '../../../shared/components/yaml/yaml-editor';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {exampleWorkflowTemplate} from '../../../shared/examples';
@@ -86,15 +85,13 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                         }}>
                         {this.renderTemplates()}
                         <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
-                            <YamlEditor
-                                editing={true}
-                                title='Create New Workflow Template'
-                                value={exampleWorkflowTemplate(this.namespace || 'default')}
-                                onSubmit={(value: WorkflowTemplate) => {
+                            <ResourceSubmit<models.WorkflowTemplate>
+                                resourceName={'Workflow Template'}
+                                defaultResource={exampleWorkflowTemplate(this.namespace || 'default')}
+                                onSubmit={wfTmpl => {
                                     return services.workflowTemplate
-                                        .create(value, value.metadata.namespace)
-                                        .then(wf => (document.location.href = uiUrl(`workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`)))
-                                        .catch(error => this.setState({error}));
+                                        .create(wfTmpl, wfTmpl.metadata.namespace)
+                                        .then(wf => ctx.navigation.goto(uiUrl(`workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`)));
                                 }}
                             />
                         </SlidingPanel>
