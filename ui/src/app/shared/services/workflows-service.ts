@@ -67,7 +67,7 @@ export class WorkflowsService {
             };
         });
         return requests
-            .loadEventSource(`api/v1/workflows/${workflow.metadata.namespace}/log/${nodeId}` + `?logOptions.container=${container}&logOptions.tailLines=20&logOptions.follow=true`)
+            .loadEventSource(`api/v1/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}/log/${nodeId}` + `?logOptions.container=${container}&logOptions.tailLines=20&logOptions.follow=true`)
             .pipe(
                 map(line => JSON.parse(line).result.content),
                 catchError(() => logsFromArtifacts)

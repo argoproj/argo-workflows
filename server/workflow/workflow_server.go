@@ -281,6 +281,12 @@ func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.Work
 }
 
 func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflowpkg.WorkflowService_PodLogsServer) error {
+
+
+
+
+
+
 	kubeClient := auth.GetKubeClient(ws.Context())
 	stream, err := kubeClient.CoreV1().Pods(req.Namespace).GetLogs(req.PodName, req.LogOptions).Stream()
 	if err != nil {
