@@ -69,8 +69,14 @@ func (cc *Controller) Run(ctx context.Context) {
 	defer cc.cronWfQueue.ShutDown()
 	defer cc.wfQueue.ShutDown()
 	log.Infof("Starting CronWorkflow controller")
+	if cc.instanceId != "" {
+		log.Infof("...with InstanceID: %s", cc.instanceId)
+	}
 
-	cc.cronWfInformer = externalversions.NewSharedInformerFactoryWithOptions(cc.wfClientset, cronWorkflowResyncPeriod, externalversions.WithNamespace(cc.managedNamespace)).Argoproj().V1alpha1().CronWorkflows()
+	cc.cronWfInformer = externalversions.NewSharedInformerFactoryWithOptions(cc.wfClientset, cronWorkflowResyncPeriod, externalversions.WithNamespace(cc.managedNamespace),
+		externalversions.WithTweakListOptions(func(options *v1.ListOptions) {
+			cronWfInformerListOptionsFunc(options, cc.instanceId)
+		})).Argoproj().V1alpha1().CronWorkflows()
 	cc.addCronWorkflowInformerHandler()
 
 	cc.wfInformer = util.NewWorkflowInformer(cc.restConfig, cc.managedNamespace, cronWorkflowResyncPeriod, func(options *v1.ListOptions) {
@@ -272,6 +278,12 @@ func (cc *Controller) addWorkflowInformerHandler() {
 	)
 }
 
+func cronWfInformerListOptionsFunc(options *v1.ListOptions, instanceId string) {
+	options.FieldSelector = fields.Everything().String()
+	labelSelector := labels.NewSelector().Add(util.InstanceIDRequirement(instanceId))
+	options.LabelSelector = labelSelector.String()
+}
+
 func wfInformerListOptionsFunc(options *v1.ListOptions, instanceId string) {
 	options.FieldSelector = fields.Everything().String()
 	isCronWorkflowChildReq, err := labels.NewRequirement(common.LabelKeyCronWorkflow, selection.Exists, []string{})
@@ -279,8 +291,6 @@ func wfInformerListOptionsFunc(options *v1.ListOptions, instanceId string) {
 		panic(err)
 	}
 	labelSelector := labels.NewSelector().Add(*isCronWorkflowChildReq)
-	if instanceId != "" {
-		labelSelector = labelSelector.Add(util.InstanceIDRequirement(instanceId))
-	}
+	labelSelector = labelSelector.Add(util.InstanceIDRequirement(instanceId))
 	options.LabelSelector = labelSelector.String()
 }
