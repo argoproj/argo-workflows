@@ -150,7 +150,10 @@ func (s *E2ESuite) DeleteResources(label string) {
 		for _, pod := range pods.Items {
 			workflow := pod.GetLabels()["workflows.argoproj.io/workflow"]
 			testPod, owned := isTestWf[workflow]
-			if testPod || !owned {
+			if testPod {
+				if !owned {
+					s.T().Fatal("Orphaned pod - this should never happen")
+				}
 				logCtx := log.WithFields(log.Fields{"workflow": workflow, "podName": pod.Name, "testPod": testPod, "owned": owned})
 				logCtx.Info("Deleting pod")
 				err := podInterface.Delete(pod.Name, nil)
