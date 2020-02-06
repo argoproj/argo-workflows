@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/argoproj/argo/cmd/argo/commands/auth"
 	"github.com/argoproj/argo/cmd/argo/commands/cron"
 	"github.com/argoproj/argo/util/help"
 
@@ -43,7 +44,7 @@ If you're using the Argo Server (e.g. because you need large workflow support or
 	command.AddCommand(NewServerCommand())
 	command.AddCommand(NewSubmitCommand())
 	command.AddCommand(NewSuspendCommand())
-	command.AddCommand(NewTokenCommand())
+	command.AddCommand(auth.NewAuthCommand())
 	command.AddCommand(NewWatchCommand())
 	command.AddCommand(NewWatchCommand())
 	command.AddCommand(NewTerminateCommand())

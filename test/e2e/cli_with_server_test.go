@@ -33,8 +33,8 @@ func (s *CLIWithServerSuite) AfterTest(suiteName, testName string) {
 	_ = os.Unsetenv("ARGO_TOKEN")
 }
 
-func (s *CLISuite) TestToken() {
-	s.Given(s.T()).RunCli([]string{"token"}, func(t *testing.T, output string, err error) {
+func (s *CLISuite) TestAuthToken() {
+	s.Given(s.T()).RunCli([]string{"auth", "token"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
 		var authString, token string
 		token = s.GetBasicAuthToken()

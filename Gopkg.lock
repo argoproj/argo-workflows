@@ -687,6 +687,14 @@
   version = "v1.4.2"
 
 [[projects]]
+  branch = "master"
+  digest = "1:cf624c484f140dbeb3635c0410e9f444def176a9bcebde0facdef6be86a1dae4"
+  name = "github.com/skratchdot/open-golang"
+  packages = ["open"]
+  pruneopts = ""
+  revision = "eef8423979666925a58eb77f9db583e54320d5a4"
+
+[[projects]]
   digest = "1:022a4e2a8c327eb46a99088a51c0dda5d5be86928ace2afd72145dc1d746a323"
   name = "github.com/soheilhy/cmux"
   packages = ["."]
@@ -1650,6 +1658,7 @@
     "github.com/prometheus/client_golang/prometheus/promhttp",
     "github.com/robfig/cron",
     "github.com/sirupsen/logrus",
+    "github.com/skratchdot/open-golang/open",
     "github.com/soheilhy/cmux",
     "github.com/spf13/cobra",
     "github.com/stretchr/testify/assert",

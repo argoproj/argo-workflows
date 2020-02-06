@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "server/cronworkflow/cron-workflow.proto",
+    "title": "pkg/apiclient/cronworkflow/cron-workflow.proto",
     "version": "version not set"
   },
   "consumes": [
