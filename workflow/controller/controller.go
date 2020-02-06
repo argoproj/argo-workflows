@@ -33,6 +33,7 @@ import (
 	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/config"
+	"github.com/argoproj/argo/workflow/cron"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/ttlcontroller"
@@ -143,6 +144,11 @@ func (wfc *WorkflowController) RunTTLController(ctx context.Context) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (wfc *WorkflowController) RunCronController(ctx context.Context) {
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID)
+	cronController.Run(ctx)
 }
 
 // Run starts an Workflow resource controller
