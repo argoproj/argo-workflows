@@ -6,12 +6,12 @@ import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
+import {ResourceSubmit} from '../../../shared/components/resource-submit';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {exampleWorkflowTemplate} from '../../../shared/examples';
 import {services} from '../../../shared/services';
-import {ResourceSubmit} from "../../../shared/components/resource-submit";
 
 require('./workflow-template-list.scss');
 
@@ -86,13 +86,14 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                         {this.renderTemplates()}
                         <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
                             <ResourceSubmit<models.WorkflowTemplate>
-                                resourceName={"Workflow Template"}
+                                resourceName={'Workflow Template'}
                                 defaultResource={exampleWorkflowTemplate(this.namespace || 'default')}
-                                onSubmit={(wfTmpl) => {
+                                onSubmit={wfTmpl => {
                                     return services.workflowTemplate
                                         .create(wfTmpl, wfTmpl.metadata.namespace)
-                                        .then(wf => ctx.navigation.goto( uiUrl(`workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`)));
-                                }}/>
+                                        .then(wf => ctx.navigation.goto(uiUrl(`workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`)));
+                                }}
+                            />
                         </SlidingPanel>
                     </Page>
                 )}

@@ -6,7 +6,7 @@ import * as models from '../../../models';
 interface ResourceSubmitProps<T> {
     defaultResource: T;
     resourceName: string;
-    onSubmit: (value: T) => Promise<void>
+    onSubmit: (value: T) => Promise<void>;
 }
 
 interface ResourceSubmitState {
@@ -24,9 +24,10 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
         return (
             <div>
                 <Formik
-                    initialValues={{resource: this.props.defaultResource, wfString: jsYaml.dump(this.props.defaultResource)}}
+                    initialValues={{resource: this.props.defaultResource, resourceString: jsYaml.dump(this.props.defaultResource)}}
                     onSubmit={(values, {setSubmitting}) => {
-                        this.props.onSubmit(values.resource)
+                        this.props
+                            .onSubmit(values.resource)
                             .then(_ => setSubmitting(false))
                             .catch(error => {
                                 this.setState({error});
@@ -43,16 +44,15 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                 {this.state.error && (
                                     <p>
                                         <i className='fa fa-exclamation-triangle status-icon--failed' />
-                                        {this.state.error.response &&
-                                            this.state.error.response.body &&
-                                            this.state.error.response.body.message
-                                        ? this.state.error.response.body.message : this.state.error.message}
+                                        {this.state.error.response && this.state.error.response.body && this.state.error.response.body.message
+                                            ? this.state.error.response.body.message
+                                            : this.state.error.message}
                                     </p>
                                 )}
                                 <textarea
-                                    name={'wfString'}
+                                    name={'resourceString'}
                                     className='yaml'
-                                    value={formikApi.values.wfString}
+                                    value={formikApi.values.resourceString}
                                     onChange={e => {
                                         formikApi.handleChange(e);
                                     }}
@@ -65,7 +65,6 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                                 invalid: false
                                             });
                                         } catch (e) {
-                                            console.log(e);
                                             this.setState({
                                                 error: {
                                                     name: this.props.resourceName + ' is invalid',
@@ -114,7 +113,7 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                     onChange={formikApi.handleChange}
                                     onBlur={e => {
                                         formikApi.handleBlur(e);
-                                        formikApi.setFieldValue('wfString', jsYaml.dump(formikApi.values.resource));
+                                        formikApi.setFieldValue('resourceString', jsYaml.dump(formikApi.values.resource));
                                     }}
                                 />
                             </div>
