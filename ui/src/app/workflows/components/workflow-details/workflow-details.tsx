@@ -334,7 +334,8 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
     private async loadWorkflow(namespace: string, name: string) {
         try {
             this.ensureUnsubscribed();
-            this.changesSubscription = services.workflows.watch({name, namespace})
+            this.changesSubscription = services.workflows
+                .watch({name, namespace})
                 .map(changeEvent => changeEvent.object)
                 .catch((error, caught) => {
                     return caught;

@@ -269,20 +269,14 @@ func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan st
 				}
 				// get every lives workflow (1000s) into a map
 				liveOffloadNodeStatusVersions := make(map[types.UID]string)
-				for cont := ""; ; {
-					list, err := wfc.wfclientset.ArgoprojV1alpha1().Workflows(wfc.GetManagedNamespace()).List(metav1.ListOptions{Limit: 250, Continue: cont})
-					if err != nil {
-						log.WithField("err", err).Error("Failed to list workflows")
-						return
-					}
-					for _, wf := range list.Items {
-						// this could be the empty string - as it is no longer offloaded
-						liveOffloadNodeStatusVersions[wf.UID] = wf.Status.OffloadNodeStatusVersion
-					}
-					cont = list.Continue
-					if list.Continue == "" {
-						break
-					}
+				list, err := util.NewWorkflowLister(wfc.wfInformer).List()
+				if err != nil {
+					log.WithField("err", err).Error("Failed to list workflows")
+					return
+				}
+				for _, wf := range list {
+					// this could be the empty string - as it is no longer offloaded
+					liveOffloadNodeStatusVersions[wf.UID] = wf.Status.OffloadNodeStatusVersion
 				}
 				log.WithFields(log.Fields{"len_wfs": len(liveOffloadNodeStatusVersions), "len_old_records": len(oldRecords)}).Info("Deleting old UIDs that are not live")
 				for _, record := range oldRecords {
