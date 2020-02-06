@@ -201,6 +201,7 @@ func (m migrate) Exec(ctx context.Context) error {
 			ansiSQLChange(`alter table argo_archived_workflows alter column name set not null`),
 		),
 		// clustername(not null) | uid(not null) | | name (not null) | phase(not null) | namespace(not null) | workflow(not null) | startedat(not null)  | finishedat(not null)
+		ansiSQLChange(`create index ` + m.tableName + `_i2 on ` + m.tableName + ` (clustername,namespace,updatedat)`),
 	} {
 		err := m.applyChange(ctx, changeSchemaVersion, change)
 		if err != nil {
