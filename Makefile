@@ -205,6 +205,7 @@ codegen:
 	./hack/update-codegen.sh
 	./hack/update-openapigen.sh
 	go run ./hack/gen-openapi-spec/main.go $(MANIFESTS_VERSION) > ./api/openapi-spec/swagger.json
+	find . -path '*/mocks/*' -type f -not -path '*/vendor/*' -exec ./hack/update-mocks.sh {} ';'
 
 .PHONY: verify-codegen
 verify-codegen:

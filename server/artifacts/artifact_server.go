@@ -59,6 +59,7 @@ func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
 		a.serverInternalError(err, w)
 		return
 	}
+	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
 	a.ok(w, data)
 }
 func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request) {
@@ -88,6 +89,7 @@ func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request
 		a.serverInternalError(err, w)
 		return
 	}
+	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
 	a.ok(w, data)
 }
 func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
