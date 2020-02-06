@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"os"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -68,7 +69,10 @@ func NewWorkflowRegistry(informer cache.SharedIndexInformer) *prometheus.Registr
 // NewTelemetryRegistry creates a new prometheus registry that collects telemetry
 func NewTelemetryRegistry() *prometheus.Registry {
 	registry := prometheus.NewRegistry()
-	registry.MustRegister(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
+	registry.MustRegister(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{
+		PidFn:        func() (int, error) { return os.Getpid(), nil },
+		ReportErrors: true,
+	}))
 	registry.MustRegister(prometheus.NewGoCollector())
 	return registry
 }

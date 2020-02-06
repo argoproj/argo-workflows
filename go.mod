@@ -56,6 +56,7 @@ require (
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/sirupsen/logrus v1.4.2
+	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spf13/cobra v0.0.4-0.20181021141114-fe5e611709b0
