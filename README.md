@@ -71,6 +71,7 @@ Currently **officially** using Argo:
 1. [Admiralty](https://admiralty.io/)
 1. [Adobe](https://www.adobe.com/)
 1. [Alibaba Cloud](https://www.alibabacloud.com/about)
+1. [Ant Financial](https://www.antfin.com/)
 1. [BioBox Analytics](https://biobox.io)
 1. [BlackRock](https://www.blackrock.com/)
 1. [Canva](https://www.canva.com/)
@@ -87,9 +88,10 @@ Currently **officially** using Argo:
 1. [Equinor](https://www.equinor.com/)
 1. [Fairwinds](https://fairwinds.com/)
 1. [Gardener](https://gardener.cloud/)
-1. [Gladly](https://gladly.com/)
 1. [GitHub](https://github.com/)
+1. [Gladly](https://gladly.com/)
 1. [Google](https://www.google.com/intl/en/about/our-company/)
+1. [Greenhouse](https://greenhouse.io)
 1. [HOVER](https://hover.to)
 1. [IBM](https://ibm.com)
 1. [InsideBoard](https://www.insideboard.com)
@@ -114,7 +116,6 @@ Currently **officially** using Argo:
 1. [Threekit](https://www.threekit.com/)
 1. [Tiger Analytics](https://www.tigeranalytics.com/)
 1. [Wavefront](https://www.wavefront.com/)
-1. [Ant Financial](https://www.antfin.com/)
 
 ## Community Blogs and Presentations
 * [Argo Ansible role: Provisioning Argo Workflows on OpenShift](https://medium.com/@marekermk/provisioning-argo-on-openshift-with-ansible-and-kustomize-340a1fda8b50)
