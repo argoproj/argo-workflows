@@ -282,6 +282,12 @@ func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.Work
 
 func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflowpkg.WorkflowService_PodLogsServer) error {
 	ctx := ws.Context()
+	wfClient := auth.GetWfClient(ctx)
 	kubeClient := auth.GetKubeClient(ctx)
-	return logs.PodLogs(ctx, kubeClient, req, ws)
+	logger, err := logs.NewWorkflowLogger(ctx, wfClient, kubeClient, req, ws)
+	if err != nil {
+		return err
+	}
+	logger.Run(ctx)
+	return nil
 }

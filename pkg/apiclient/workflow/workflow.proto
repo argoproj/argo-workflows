@@ -162,6 +162,6 @@ service WorkflowService {
     }
 
     rpc PodLogs (WorkflowLogRequest) returns (stream LogEntry) {
-        option (google.api.http).get = "/api/v1/workflows/{namespace}/{name}/log/{podName}";
+        option (google.api.http).get = "/api/v1/workflows/{namespace}/{name}/{podName}/log";
     }
 }

@@ -3,9 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
-	"hash/fnv"
 	"log"
-	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -116,15 +114,13 @@ func InitWorkflowClient(ns ...string) v1alpha1.WorkflowInterface {
 	return wfClient
 }
 
-func ansiFormatCode(s string) int {
-	// color output on pod name
-	h := fnv.New32a()
-	_, err := h.Write([]byte(s))
-	if err != nil {
-		log.Fatal(err)
+func ansiColorCode(s string) int {
+	i := 0
+	for _, c := range s {
+		i += int(c)
 	}
 	colors := []int{FgRed, FgGreen, FgYellow, FgBlue, FgMagenta, FgCyan, FgWhite}
-	return colors[int(math.Mod(float64(h.Sum32()), float64(len(colors))))]
+	return colors[i%len(colors)]
 }
 
 // ansiFormat wraps ANSI escape codes to a string to format the string to a desired color.

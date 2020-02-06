@@ -78,34 +78,79 @@ func (s *CLISuite) TestTokenArg() {
 }
 
 func (s *CLISuite) TestLogs() {
-	s.Run("PodLogs", func(t *testing.T) {
+	// we use our own YAML as we do not want to use PodGC for this test
+
+	s.Run("SetUp", func(t *testing.T) {
 		s.Given(t).
-			Workflow("@smoke/basic.yaml").
+			Workflow(`apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: my-wf
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: my-template
+  templates:
+    - name: my-template
+      container:
+        image: cowsay:v1
+        command: [cowsay, ":) Hello Logs!"]
+        imagePullPolicy: IfNotPresent`).
 			When().
 			SubmitWorkflow().
 			WaitForWorkflowCondition(func(wf *v1alpha1.Workflow) bool {
-				return wf.Status.Nodes.FindByDisplayName("basic") != nil
-			}, "pod running", 10*time.Second).
-			Then().
-			RunCli([]string{"logs", "basic"}, func(t *testing.T, output string, err error) {
+				return wf.Status.Nodes.FindByDisplayName("my-wf") != nil
+			}, "pod running", 10*time.Second)
+	})
+	s.Run("PodLogs", func(t *testing.T) {
+		s.Given(t).
+			RunCli([]string{"logs", "my-wf", "my-wf"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.Contains(t, output, ":) Hello Argo!")
+					assert.Contains(t, output, ":) Hello Logs!")
 				}
 			})
 	})
-	s.Run("WorkflowLogs", func(t *testing.T) {
+	s.Run("ContainerLogs", func(t *testing.T) {
 		s.Given(t).
-			Workflow("@smoke/basic.yaml").
-			When().
-			SubmitWorkflow().
-			// TODO we should not wait for condition
-			WaitForWorkflowCondition(func(wf *v1alpha1.Workflow) bool {
-				return wf.Status.Nodes.FindByDisplayName("basic") != nil
-			}, "pod running", 10*time.Second).
-			Then().
-			RunCli([]string{"logs", "-w", "basic"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"logs", "my-wf", "my-wf", "-c", "wait"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.Contains(t, output, ":) Hello Argo!")
+					assert.Contains(t, output, "Executor")
+				}
+			})
+	})
+	s.Run("Since", func(t *testing.T) {
+		s.Given(t).
+			RunCli([]string{"logs", "my-wf", "--since=0s"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.NotContains(t, output, ":) Hello Logs!")
+				}
+			})
+	})
+	s.Run("SinceTime", func(t *testing.T) {
+		s.Given(t).
+			RunCli([]string{"logs", "my-wf", "--since-time=" + time.Now().Format(time.RFC3339)}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.NotContains(t, output, ":) Hello Logs!")
+				}
+			})
+	})
+	s.Run("TailLines", func(t *testing.T) {
+		s.Given(t).
+			RunCli([]string{"logs", "my-wf", "--tail=0"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.NotContains(t, output, ":) Hello Logs!")
+				}
+			})
+	})
+	s.Run("FinishedPod", func(t *testing.T) {
+		s.Given(t).
+			WorkflowName("my-wf").
+			When().
+			WaitForWorkflow(10*time.Second).
+			Then().
+			RunCli([]string{"logs", "my-wf", "--tail=0"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.NotContains(t, output, ":) Hello Logs!")
 				}
 			})
 	})

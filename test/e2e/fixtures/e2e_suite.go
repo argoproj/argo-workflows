@@ -211,9 +211,12 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 func (s *E2ESuite) Run(name string, f func(t *testing.T)) {
 	t := s.T()
 	if t.Failed() {
+		log.Warn("FAILED")
 		t.SkipNow()
 	}
-	t.Run(name, f)
+	s.Suite.Run(name, func() {
+		f(s.T())
+	})
 }
 
 func (s *E2ESuite) AfterTest(_, _ string) {

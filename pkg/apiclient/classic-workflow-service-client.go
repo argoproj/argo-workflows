@@ -151,10 +151,13 @@ func (k *classicWorkflowServiceClient) LintWorkflow(_ context.Context, req *work
 }
 
 func (k *classicWorkflowServiceClient) PodLogs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
-	c := newClassicPodLogs()
+	sender := newLogsIntermediary()
+	logger, err := logs.NewWorkflowLogger(ctx, k, k.kubeClient, req, sender)
+	errors.CheckError(err)
 	go func() {
-		err := logs.PodLogs(ctx, k.kubeClient, req, c)
-		errors.CheckError(err)
+		// this will send poison to the to the intermediary
+		defer func() { _ = sender.CloseSend() }()
+		logger.Run(ctx)
 	}()
-	return c, nil
+	return sender, nil
 }

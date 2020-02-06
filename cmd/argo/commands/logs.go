@@ -2,12 +2,13 @@ package commands
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"time"
 
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
@@ -17,11 +18,11 @@ import (
 
 func NewLogsCommand() *cobra.Command {
 	var (
-		since      time.Duration
-		sinceTime  string
-		tailLines  int64
-		logOptions v1.PodLogOptions
+		since     time.Duration
+		sinceTime string
+		tailLines int64
 	)
+	logOptions := &corev1.PodLogOptions{}
 	var command = &cobra.Command{
 		Use:   "logs POD|WORKFLOW",
 		Short: "view logs of a pod or workflow",
@@ -59,23 +60,17 @@ func NewLogsCommand() *cobra.Command {
 			}
 
 			if since > 0 {
-				// TODO - need to test with since
 				logOptions.SinceSeconds = pointer.Int64Ptr(int64(since.Seconds()))
 			}
 
 			if sinceTime != "" {
-				// TODO - need to test with time
 				parsedTime, err := time.Parse(time.RFC3339, sinceTime)
 				errors.CheckError(err)
 				sinceTime := metav1.NewTime(parsedTime)
 				logOptions.SinceTime = &sinceTime
 			}
 
-			// TODO - need to test with finished pod
-			// TODO - need to test with deleted pods
-
 			if tailLines >= 0 {
-				// TODO - need to test with zero lines
 				logOptions.TailLines = pointer.Int64Ptr(tailLines)
 			}
 
@@ -89,15 +84,18 @@ func NewLogsCommand() *cobra.Command {
 				Name:       workflow,
 				Namespace:  namespace,
 				PodName:    podName,
-				LogOptions: &logOptions,
+				LogOptions: logOptions,
 			})
 			errors.CheckError(err)
 
 			// loop on log lines
 			for {
 				event, err := stream.Recv()
+				if err == io.EOF {
+					return
+				}
 				errors.CheckError(err)
-				fmt.Println(ansiFormat(fmt.Sprintf("%s: %s", event.PodName, event.Content), ansiFormatCode(podName)))
+				fmt.Println(ansiFormat(fmt.Sprintf("%s: %s", event.PodName, event.Content), ansiColorCode(podName)))
 			}
 		},
 	}
