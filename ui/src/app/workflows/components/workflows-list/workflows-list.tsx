@@ -97,7 +97,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                     .filter(item => item.updated)
                     .map(item => item.workflows)
                     .catch((error, caught) => {
-                        this.setState({error});
                         return caught;
                     })
                     .subscribe(workflows => this.setState({workflows}));
