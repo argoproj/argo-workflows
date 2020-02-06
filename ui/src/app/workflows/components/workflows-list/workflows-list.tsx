@@ -14,10 +14,10 @@ import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {Query} from '../../../shared/components/query';
+import {ResourceSubmit} from '../../../shared/components/resource-submit';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
-import {WorkflowSubmit} from '../workflow-submit';
 
 require('./workflows-list.scss');
 
@@ -147,7 +147,15 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         }}>
                         <div>{this.renderWorkflows(ctx)}</div>
                         <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
-                            <WorkflowSubmit defaultWorkflow={exampleWorkflow(this.namespace)} currentNamespace={this.namespace} ctx={ctx} />
+                            <ResourceSubmit<models.Workflow>
+                                resourceName={'Workflow'}
+                                defaultResource={exampleWorkflow(this.namespace)}
+                                onSubmit={wfValue => {
+                                    return services.workflows
+                                        .create(wfValue, wfValue.metadata.namespace || this.namespace)
+                                        .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)));
+                                }}
+                            />
                         </SlidingPanel>
                     </Page>
                 )}
