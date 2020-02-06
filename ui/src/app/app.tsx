@@ -33,9 +33,7 @@ const routes: {
     [loginUrl]: {component: login.component}
 };
 
-const bases = document.getElementsByTagName('base');
-const base = bases.length > 0 ? bases[0].getAttribute('href') || '/' : '/';
-export const history = createBrowserHistory({basename: base});
+export const history = createBrowserHistory();
 
 const navItems = [
     {

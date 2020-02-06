@@ -25,7 +25,7 @@ export class WorkflowsService {
     public watch(filter: {namespace?: string; name?: string; phases?: Array<string>}): Observable<models.kubernetes.WatchEvent<Workflow>> {
         const url = `api/v1/workflow-events/${filter.namespace || ''}?${this.queryParams(filter).join('&')}`;
 
-        return requests.loadEventSource(url).map(data => JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>);
+        return requests.loadEventSource(url, true).map(data => JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>);
     }
 
     public retry(name: string, namespace: string) {
@@ -59,7 +59,7 @@ export class WorkflowsService {
             requests
                 .get(this.getArtifactDownloadUrl(workflow, nodeId, container + '-logs', archived))
                 .then(resp => {
-                    resp.text.split('\n').forEach(line => observer.next(line));
+                    resp.text.split('\n').forEach(line => observer.next(JSON.stringify(line)));
                 })
                 .catch(err => observer.error(err));
             // tslint:disable-next-line
@@ -79,8 +79,8 @@ export class WorkflowsService {
 
     public getArtifactDownloadUrl(workflow: Workflow, nodeId: string, artifactName: string, archived: boolean) {
         return archived
-            ? `/artifacts-by-uid/${workflow.metadata.uid}/${nodeId}/${encodeURIComponent(artifactName)}?Authorization=${localStorage.getItem('token')}`
-            : `/artifacts/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}?Authorization=${localStorage.getItem('token')}`;
+            ? `artifacts-by-uid/${workflow.metadata.uid}/${nodeId}/${encodeURIComponent(artifactName)}?Authorization=${localStorage.getItem('token')}`
+            : `artifacts/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}?Authorization=${localStorage.getItem('token')}`;
     }
 
     private queryParams(filter: {namespace?: string; name?: string; phases?: Array<string>}) {
