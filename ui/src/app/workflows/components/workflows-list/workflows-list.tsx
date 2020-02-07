@@ -177,7 +177,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
     private handleChanges(namespace: string, phases: string[], labels: string[]) {
         this.setState({namespace, phases, labels});
-        var params = new URLSearchParams();
+        const params = new URLSearchParams();
         phases.forEach(phase => {
             params.append('phase', phase);
         });
