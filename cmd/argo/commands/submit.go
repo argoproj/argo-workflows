@@ -122,12 +122,6 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *util.Subm
 }
 
 func submitWorkflows(workflows []wfv1.Workflow, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
-	if submitOpts == nil {
-		submitOpts = &util.SubmitOpts{}
-	}
-	if cliOpts == nil {
-		cliOpts = &cliSubmitOpts{}
-	}
 
 	ctx, apiClient := client.NewAPIClient()
 	serviceClient := apiClient.NewWorkflowServiceClient()
