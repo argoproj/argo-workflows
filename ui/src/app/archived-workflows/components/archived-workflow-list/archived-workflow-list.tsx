@@ -36,7 +36,8 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
 
     private set namespace(namespace: string) {
         this.setState({namespace});
-        history.pushState(null, '', uiUrl('cron-workflows/' + namespace));
+        history.pushState(null, '', uiUrl('archived-workflows/' + namespace));
+        this.fetchArchivedWorkflows();
     }
 
     constructor(props: RouteComponentProps<any>, context: any) {
@@ -44,19 +45,8 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         this.state = {continue: '', loading: true, namespace: this.props.match.params.namespace || ''};
     }
 
-    public componentDidMount(): void {
-        services.info
-            .get()
-            .then(info => {
-                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
-                    this.namespace = info.managedNamespace;
-                }
-                return services.archivedWorkflows.list(this.namespace, this.continue);
-            })
-            .then(list => {
-                this.setState({workflows: list.items || [], continue: list.metadata.continue || '', loading: false});
-            })
-            .catch(error => this.setState({error, loading: false}));
+    public componentWillMount(): void {
+        this.fetchArchivedWorkflows();
     }
 
     public render() {
@@ -86,6 +76,21 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                 </div>
             </Page>
         );
+    }
+
+    private fetchArchivedWorkflows(): void {
+        services.info
+            .get()
+            .then(info => {
+                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
+                    this.namespace = info.managedNamespace;
+                }
+                return services.archivedWorkflows.list(this.namespace, this.continue);
+            })
+            .then(list => {
+                this.setState({workflows: list.items || [], continue: list.metadata.continue || '', loading: false});
+            })
+            .catch(error => this.setState({error, loading: false}));
     }
     private renderWorkflows() {
         if (!this.state.workflows) {
