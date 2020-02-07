@@ -8,8 +8,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/argoproj/argo/workflow/cron"
-
 	"github.com/argoproj/pkg/cli"
 	kubecli "github.com/argoproj/pkg/kube/cli"
 	"github.com/argoproj/pkg/stats"
@@ -87,14 +85,12 @@ func NewRootCommand() *cobra.Command {
 			// TODO: following code will be updated in next major release to remove configmap
 			// setting for namespace installation mode.
 			if len(wfController.Config.Namespace) > 0 {
-				fmt.Fprintf(os.Stderr, "\n------------------------    WARNING    ------------------------\n")
-				fmt.Fprintf(os.Stderr, "Namespaced installation with configmap setting is deprecated, \n")
-				fmt.Fprintf(os.Stderr, "it will be removed in next major release. Instead please add \n")
-				fmt.Fprintf(os.Stderr, "\"--namespaced\" to workflow-controller start args.\n")
-				fmt.Fprintf(os.Stderr, "-----------------------------------------------------------------\n\n")
+				_, _ = fmt.Fprintf(os.Stderr, "\n------------------------    WARNING    ------------------------\n")
+				_, _ = fmt.Fprintf(os.Stderr, "Namespaced installation with configmap setting is deprecated, \n")
+				_, _ = fmt.Fprintf(os.Stderr, "it will be removed in next major release. Instead please add \n")
+				_, _ = fmt.Fprintf(os.Stderr, "\"--namespaced\" to workflow-controller start args.\n")
+				_, _ = fmt.Fprintf(os.Stderr, "-----------------------------------------------------------------\n\n")
 			}
-
-			cronController := cron.NewCronController(wfclientset, config, namespace, wfController.GetManagedNamespace())
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -102,7 +98,7 @@ func NewRootCommand() *cobra.Command {
 			go wfController.MetricsServer(ctx)
 			go wfController.TelemetryServer(ctx)
 			go wfController.RunTTLController(ctx)
-			go cronController.Run(ctx)
+			go wfController.RunCronController(ctx)
 
 			// Wait forever
 			select {}

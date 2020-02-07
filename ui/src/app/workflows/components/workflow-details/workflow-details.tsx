@@ -3,7 +3,7 @@ import * as classNames from 'classnames';
 import * as PropTypes from 'prop-types';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
-import {Observable, Subscription} from 'rxjs';
+import {Subscription} from 'rxjs';
 
 import * as models from '../../../../models';
 import {NodePhase} from '../../../../models';
@@ -334,12 +334,15 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
     private async loadWorkflow(namespace: string, name: string) {
         try {
             this.ensureUnsubscribed();
-            const workflowUpdates = Observable.from([await services.workflows.get(namespace, name)]).merge(
-                services.workflows.watch({name, namespace}).map(changeEvent => changeEvent.object)
-            );
-            this.changesSubscription = workflowUpdates.subscribe(workflow => {
-                this.setState({workflow});
-            });
+            this.changesSubscription = services.workflows
+                .watch({name, namespace})
+                .map(changeEvent => changeEvent.object)
+                .catch((error, caught) => {
+                    return caught;
+                })
+                .subscribe(workflow => {
+                    this.setState({workflow});
+                });
         } catch (e) {
             this.appContext.apis.notifications.show({
                 content: 'Unable to load workflow',

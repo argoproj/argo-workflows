@@ -2,19 +2,19 @@ import {NotificationType, Page} from 'argo-ui';
 import {SlidingPanel} from 'argo-ui/src/index';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
-import {Workflow, WorkflowTemplate} from '../../../../models';
+import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
-import {YamlEditor} from '../../../shared/components/yaml/yaml-editor';
+import {ResourceSubmit} from '../../../shared/components/resource-submit';
+import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
 import {WorkflowTemplateSummaryPanel} from '../workflow-template-summary-panel';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 interface State {
-    template?: WorkflowTemplate;
-    workflow?: Workflow;
+    template?: models.WorkflowTemplate;
     error?: Error;
 }
 
@@ -27,15 +27,25 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
         return this.props.match.params.name;
     }
 
+    private get sidePanel() {
+        return this.queryParam('sidePanel');
+    }
+
+    private set sidePanel(sidePanel) {
+        this.setQueryParams({sidePanel});
+    }
+
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
         this.state = {};
     }
 
-    public componentDidMount(): void {
+    public componentWillMount(): void {
         services.workflowTemplate
             .get(this.name, this.namespace)
-            .then(template => this.setState({template}))
+            .then(template => {
+                this.setState({template});
+            })
             .catch(error => this.setState({error}));
     }
 
@@ -44,48 +54,52 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
             throw this.state.error;
         }
         return (
-            <Page
-                title='Workflow Template Details'
-                toolbar={{
-                    actionMenu: {
-                        items: [
-                            {
-                                title: 'Submit',
-                                iconClassName: 'fa fa-plus',
-                                action: () => this.openSubmissionPanel()
+            <Consumer>
+                {ctx => (
+                    <Page
+                        title='Workflow Template Details'
+                        toolbar={{
+                            actionMenu: {
+                                items: [
+                                    {
+                                        title: 'Submit',
+                                        iconClassName: 'fa fa-plus',
+                                        action: () => (this.sidePanel = 'new')
+                                    },
+                                    {
+                                        title: 'Delete',
+                                        iconClassName: 'fa fa-trash',
+                                        action: () => this.deleteWorkflowTemplate()
+                                    }
+                                ]
                             },
-                            {
-                                title: 'Delete',
-                                iconClassName: 'fa fa-trash',
-                                action: () => this.deleteWorkflowTemplate()
-                            }
-                        ]
-                    },
-                    breadcrumbs: [
-                        {
-                            title: 'Workflow Template',
-                            path: uiUrl('workflow-templates')
-                        },
-                        {title: this.namespace + '/' + this.name}
-                    ]
-                }}>
-                <div className='argo-container'>
-                    <div className='workflow-details__content'>{this.renderWorkflowTemplate()}</div>
-                </div>
-                <SlidingPanel isShown={!!this.state.workflow} onClose={() => this.setState({workflow: null})}>
-                    <YamlEditor
-                        editing={true}
-                        title='Submit Workflow'
-                        value={this.state.workflow}
-                        onSubmit={(value: Workflow) => {
-                            services.workflows
-                                .create(value, value.metadata.namespace)
-                                .then(workflow => (document.location.href = uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)))
-                                .catch(error => this.setState({error}));
-                        }}
-                    />
-                </SlidingPanel>
-            </Page>
+                            breadcrumbs: [
+                                {
+                                    title: 'Workflow Template',
+                                    path: uiUrl('workflow-templates')
+                                },
+                                {title: this.namespace + '/' + this.name}
+                            ]
+                        }}>
+                        <div className='argo-container'>
+                            <div className='workflow-details__content'>{this.renderWorkflowTemplate()}</div>
+                        </div>
+                        {this.state.template && (
+                            <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
+                                <ResourceSubmit<models.Workflow>
+                                    resourceName={'Workflow'}
+                                    defaultResource={this.getWorkflow(this.state.template)}
+                                    onSubmit={wfValue => {
+                                        return services.workflows
+                                            .create(wfValue, wfValue.metadata.namespace)
+                                            .then(workflow => ctx.navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)));
+                                    }}
+                                />
+                            </SlidingPanel>
+                        )}
+                    </Page>
+                )}
+            </Consumer>
         );
     }
 
@@ -113,24 +127,22 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
             });
     }
 
-    private openSubmissionPanel() {
-        this.setState({
-            workflow: {
-                metadata: {
-                    generateName: this.state.template.metadata.name + '-',
-                    namespace: this.state.template.metadata.namespace
-                },
-                spec: {
-                    entrypoint: this.state.template.spec.templates[0].name,
-                    templates: this.state.template.spec.templates.map(t => ({
-                        name: t.name,
-                        templateRef: {
-                            name: this.state.template.metadata.name,
-                            template: t.name
-                        }
-                    }))
-                }
+    private getWorkflow(template: models.WorkflowTemplate): models.Workflow {
+        return {
+            metadata: {
+                generateName: template.metadata.name + '-',
+                namespace: template.metadata.namespace
+            },
+            spec: {
+                entrypoint: template.spec.templates[0].name,
+                templates: template.spec.templates.map(t => ({
+                    name: t.name,
+                    templateRef: {
+                        name: template.metadata.name,
+                        template: t.name
+                    }
+                }))
             }
-        });
+        };
     }
 }

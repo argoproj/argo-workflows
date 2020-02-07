@@ -101,7 +101,8 @@ func (s *E2ESuite) DeleteResources(label string) {
 		for _, wf := range list.Items {
 			isTestWf[wf.Name] = false
 			if s.Persistence.IsEnabled() {
-				err := s.Persistence.offloadNodeStatusRepo.Delete(string(wf.UID))
+				// TODO - may make tests flakey
+				err := s.Persistence.offloadNodeStatusRepo.Delete(string(wf.UID), wf.Status.OffloadNodeStatusVersion)
 				if err != nil {
 					panic(err)
 				}
