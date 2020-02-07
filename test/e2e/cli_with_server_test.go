@@ -35,7 +35,7 @@ func (s *CLIWithServerSuite) AfterTest(suiteName, testName string) {
 }
 
 func (s *CLISuite) TestAuthToken() {
-	s.Given(s.T()).RunCli([]string{"auth", "token"}, func(t *testing.T, output string, err error) {
+	s.Given().RunCli([]string{"auth", "token"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
 		var authString, token string
 		token = s.GetBasicAuthToken()
@@ -55,7 +55,7 @@ func (s *CLIWithServerSuite) TestArchive() {
 		s.T().SkipNow()
 	}
 	var uid types.UID
-	s.Given(s.T()).
+	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
@@ -64,8 +64,8 @@ func (s *CLIWithServerSuite) TestArchive() {
 		Expect(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
 		})
-	s.Run("List", func(t *testing.T) {
-		s.Given(t).
+	s.Run("List", func() {
+		s.Given().
 			RunCli([]string{"archive", "list"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, "NAMESPACE NAME")
@@ -73,8 +73,8 @@ func (s *CLIWithServerSuite) TestArchive() {
 				}
 			})
 	})
-	s.Run("Get", func(t *testing.T) {
-		s.Given(t).
+	s.Run("Get", func() {
+		s.Given().
 			RunCli([]string{"archive", "get", string(uid)}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, "Name:")
@@ -88,8 +88,8 @@ func (s *CLIWithServerSuite) TestArchive() {
 				}
 			})
 	})
-	s.Run("Delete", func(t *testing.T) {
-		s.Given(t).
+	s.Run("Delete", func() {
+		s.Given().
 			RunCli([]string{"archive", "delete", string(uid)}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, "Archived workflow")
