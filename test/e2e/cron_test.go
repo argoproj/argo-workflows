@@ -37,7 +37,7 @@ func (s *CronSuite) TearDownSuite() {
 
 func (s *CronSuite) TestBasic() {
 	s.T().Parallel()
-	s.Given(s.T()).
+	s.Given().
 		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
@@ -87,7 +87,7 @@ func (s *CronSuite) TestBasicTimezone() {
 		hour = (hour + 1) % 24
 	}
 	scheduleInTestTimezone := strconv.Itoa(min) + " " + strconv.Itoa(hour) + " * * *"
-	s.Given(s.T()).
+	s.Given().
 		CronWorkflow(fmt.Sprintf(`
 apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
@@ -119,7 +119,7 @@ spec:
 
 func (s *CronSuite) TestSuspend() {
 	s.T().Parallel()
-	s.Given(s.T()).
+	s.Given().
 		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
@@ -156,7 +156,7 @@ spec:
 
 func (s *CronSuite) TestResume() {
 	s.T().Parallel()
-	s.Given(s.T()).
+	s.Given().
 		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
@@ -193,7 +193,7 @@ spec:
 
 func (s *CronSuite) TestBasicForbid() {
 	s.T().Parallel()
-	s.Given(s.T()).
+	s.Given().
 		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
@@ -229,7 +229,7 @@ spec:
 
 func (s *CronSuite) TestBasicAllow() {
 	s.T().Parallel()
-	s.Given(s.T()).
+	s.Given().
 		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
@@ -264,7 +264,7 @@ spec:
 
 func (s *CronSuite) TestBasicReplace() {
 	s.T().Parallel()
-	s.Given(s.T()).
+	s.Given().
 		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
@@ -302,7 +302,7 @@ func (s *CronSuite) TestSuccessfulJobHistoryLimit() {
 	s.T().Parallel()
 	var listOptions v1.ListOptions
 	wfInformerListOptionsFunc(&listOptions, "test-cron-wf-succeed-1")
-	s.Given(s.T()).
+	s.Given().
 		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
@@ -341,7 +341,7 @@ func (s *CronSuite) TestFailedJobHistoryLimit() {
 	s.T().Parallel()
 	var listOptions v1.ListOptions
 	wfInformerListOptionsFunc(&listOptions, "test-cron-wf-fail-1")
-	s.Given(s.T()).
+	s.Given().
 		CronWorkflow(`apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
