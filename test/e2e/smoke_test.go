@@ -23,7 +23,7 @@ func (s *SmokeSuite) TestBasicWorkflow() {
 		SubmitWorkflow().
 		WaitForWorkflow(15 * time.Second).
 		Then().
-		Expect(func(t *testing.T, _ *metav1.ObjectMeta, wf *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, wf *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, wf.Phase)
 			assert.NotEmpty(t, wf.Nodes)
 		})
@@ -36,7 +36,7 @@ func (s *SmokeSuite) TestArtifactPassing() {
 		SubmitWorkflow().
 		WaitForWorkflow(30 * time.Second).
 		Then().
-		Expect(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})
 }
@@ -50,7 +50,7 @@ func (s *SmokeSuite) TestWorkflowTemplateBasic() {
 		SubmitWorkflow().
 		WaitForWorkflow(60 * time.Second).
 		Then().
-		Expect(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})
 }

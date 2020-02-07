@@ -25,12 +25,20 @@ type Then struct {
 	kubeClient            kubernetes.Interface
 }
 
-func (t *Then) Expect(block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
-	if t.workflowName == "" {
+func (t *Then) ExpectWorkflow(block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
+	return t.expectWorkflow(t.workflowName, block)
+}
+
+func (t *Then) ExpectWorkflowName(workflowName string, block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
+	return t.expectWorkflow(workflowName, block)
+}
+
+func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
+	if workflowName == "" {
 		t.t.Fatal("No workflow to test")
 	}
-	log.WithFields(log.Fields{"workflow": t.workflowName}).Info("Checking expectation")
-	wf, err := t.client.Get(t.workflowName, metav1.GetOptions{})
+	log.WithFields(log.Fields{"test": t.t.Name(), "workflow": workflowName}).Info("Checking expectation")
+	wf, err := t.client.Get(workflowName, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)
 	}
@@ -43,6 +51,7 @@ func (t *Then) Expect(block func(t *testing.T, metadata *metav1.ObjectMeta, stat
 	}
 	block(t.t, &wf.ObjectMeta, &wf.Status)
 	return t
+
 }
 
 func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *Then {

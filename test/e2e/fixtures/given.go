@@ -152,7 +152,7 @@ func (g *Given) CronWorkflow(text string) *Given {
 	return g
 }
 
-func (g *Given) RunCli(args []string, block func(*testing.T, string, error)) *Given {
+func (g *Given) RunCli(args []string, block func(t *testing.T, output string, err error)) *Given {
 	output, err := runCli(g.diagnostics, args)
 	block(g.t, output, err)
 	return g
