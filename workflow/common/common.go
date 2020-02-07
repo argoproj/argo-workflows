@@ -46,6 +46,8 @@ const (
 	// set by the controller and obeyed by the executor. For example, the controller will use this annotation to
 	// signal the executors of daemoned containers that it should terminate.
 	AnnotationKeyExecutionControl = workflow.WorkflowFullName + "/execution"
+	// AnnotationPodGC determines how the controller should GC pods
+	AnnotationPodGC = workflow.WorkflowFullName + "/pod-gc"
 
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
@@ -57,8 +59,8 @@ const (
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
 	// LabelKeyPhase is a label applied to workflows to indicate the current phase of the workflow (for filtering purposes)
 	LabelKeyPhase = workflow.WorkflowFullName + "/phase"
-	// AnnotationPodGC determines how the controller should GC pods
-	AnnotationPodGC = workflow.WorkflowFullName + "/pod-gc"
+	// LabelKeyCronWorkflow is a label applied to Workflows that are started by a CronWorkflow
+	LabelKeyCronWorkflow = workflow.WorkflowFullName + "/cron-workflow"
 	// LabelCronWorkflow is a label applied to Workflows that are started by a CronWorkflow
 	LabelCronWorkflow = workflow.WorkflowFullName + "/cron-workflow"
 
