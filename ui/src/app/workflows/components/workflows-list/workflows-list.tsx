@@ -29,8 +29,6 @@ interface State {
 }
 
 export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
-    private subscription: Subscription;
-
     private get namespace() {
         return this.state.namespace;
     }
@@ -38,6 +36,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     private set namespace(namespace: string) {
         this.setState({namespace});
         history.pushState(null, '', uiUrl('workflows/' + namespace));
+        this.fetchWorkflows();
     }
 
     private get phases() {
@@ -45,12 +44,18 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private set phases(phases: string[]) {
-        this.appendQueryParams(phases.map(phase => ({name: 'phase', value: phase})));
+        if (phases.length === 0) {
+            this.clearQueryParams();
+        } else {
+            this.appendQueryParams(phases.map(phase => ({name: 'phase', value: phase})));
+        }
+        this.fetchWorkflows();
     }
 
     private get wfInput() {
         return Utils.tryJsonParse(this.queryParam('new'));
     }
+    private subscription: Subscription;
 
     constructor(props: RouteComponentProps<State>, context: any) {
         super(props, context);
@@ -58,51 +63,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     public componentWillMount(): void {
-        services.info
-            .get()
-            .then(info => {
-                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
-                    this.namespace = info.managedNamespace;
-                }
-                return services.workflows.list(this.phases, this.namespace);
-            })
-            .then(list => list.items)
-            .then(list => list || [])
-            .then(workflows => this.setState({workflows}))
-            .then(() => {
-                this.subscription = services.workflows
-                    .watch({namespace: this.namespace, phases: this.phases})
-                    .map(workflowChange => {
-                        const workflows = this.state.workflows;
-                        if (!workflowChange) {
-                            return {workflows, updated: false};
-                        }
-                        const index = workflows.findIndex(item => item.metadata.name === workflowChange.object.metadata.name);
-                        if (index > -1 && workflowChange.object.metadata.resourceVersion === workflows[index].metadata.resourceVersion) {
-                            return {workflows, updated: false};
-                        }
-                        if (workflowChange.type === 'DELETED') {
-                            if (index > -1) {
-                                workflows.splice(index, 1);
-                            }
-                        } else {
-                            if (index > -1) {
-                                workflows[index] = workflowChange.object;
-                            } else {
-                                workflows.unshift(workflowChange.object);
-                            }
-                        }
-                        return {workflows, updated: true};
-                    })
-                    .filter(item => item.updated)
-                    .map(item => item.workflows)
-                    .catch((error, caught) => {
-                        return caught;
-                    })
-                    .subscribe(workflows => this.setState({workflows}));
-            })
-            .then(_ => this.setState({loading: false}))
-            .catch(error => this.setState({error, loading: false}));
+        this.fetchWorkflows();
     }
 
     public componentWillUnmount(): void {
@@ -161,6 +122,54 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                 )}
             </Consumer>
         );
+    }
+
+    private fetchWorkflows(): void {
+        services.info
+            .get()
+            .then(info => {
+                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
+                    this.namespace = info.managedNamespace;
+                }
+                return services.workflows.list(this.phases, this.namespace);
+            })
+            .then(list => list.items)
+            .then(list => list || [])
+            .then(workflows => this.setState({workflows}))
+            .then(() => {
+                this.subscription = services.workflows
+                    .watch({namespace: this.namespace, phases: this.phases})
+                    .map(workflowChange => {
+                        const workflows = this.state.workflows;
+                        if (!workflowChange) {
+                            return {workflows, updated: false};
+                        }
+                        const index = workflows.findIndex(item => item.metadata.name === workflowChange.object.metadata.name);
+                        if (index > -1 && workflowChange.object.metadata.resourceVersion === workflows[index].metadata.resourceVersion) {
+                            return {workflows, updated: false};
+                        }
+                        if (workflowChange.type === 'DELETED') {
+                            if (index > -1) {
+                                workflows.splice(index, 1);
+                            }
+                        } else {
+                            if (index > -1) {
+                                workflows[index] = workflowChange.object;
+                            } else {
+                                workflows.unshift(workflowChange.object);
+                            }
+                        }
+                        return {workflows, updated: true};
+                    })
+                    .filter(item => item.updated)
+                    .map(item => item.workflows)
+                    .catch((error, caught) => {
+                        return caught;
+                    })
+                    .subscribe(workflows => this.setState({workflows}));
+            })
+            .then(_ => this.setState({loading: false}))
+            .catch(error => this.setState({error, loading: false}));
     }
 
     private renderWorkflows(ctx: any) {
