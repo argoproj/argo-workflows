@@ -9,6 +9,7 @@ import (
 	"github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
+	"github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/util/help"
 )
@@ -35,6 +36,10 @@ func (a *classicClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceCl
 
 func (a *classicClient) NewCronWorkflowServiceClient() cronworkflow.CronWorkflowServiceClient {
 	return &classicCronWorkflowServiceClient{a.Interface}
+}
+
+func (a *classicClient) NewWorkflowTemplateServiceClient() workflowtemplate.WorkflowTemplateServiceClient {
+	return &classicWorkflowTemplateServiceClient{a.Interface}
 }
 
 func (a *classicClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {
