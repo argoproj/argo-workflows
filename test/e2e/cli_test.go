@@ -10,10 +10,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
 )
 
@@ -129,8 +128,8 @@ func (s *CLISuite) TestRoot() {
 		}).
 		WaitForWorkflowName(createdWorkflowName, 15*time.Second).
 		Then().
-		ExpectWorkflowName(createdWorkflowName, func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
+		ExpectWorkflowName(createdWorkflowName, func(t *testing.T, metadata *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})
 }
 
