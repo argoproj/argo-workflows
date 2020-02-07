@@ -46,22 +46,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     public componentWillMount(): void {
-        this.fetchArchivedWorkflows()
-    }
-
-    private fetchArchivedWorkflows(): void {
-        services.info
-            .get()
-            .then(info => {
-                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
-                    this.namespace = info.managedNamespace;
-                }
-                return services.archivedWorkflows.list(this.namespace, this.continue);
-            })
-            .then(list => {
-                this.setState({workflows: list.items || [], continue: list.metadata.continue || '', loading: false});
-            })
-            .catch(error => this.setState({error, loading: false}));
+        this.fetchArchivedWorkflows();
     }
 
     public render() {
@@ -91,6 +76,21 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                 </div>
             </Page>
         );
+    }
+
+    private fetchArchivedWorkflows(): void {
+        services.info
+            .get()
+            .then(info => {
+                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
+                    this.namespace = info.managedNamespace;
+                }
+                return services.archivedWorkflows.list(this.namespace, this.continue);
+            })
+            .then(list => {
+                this.setState({workflows: list.items || [], continue: list.metadata.continue || '', loading: false});
+            })
+            .catch(error => this.setState({error, loading: false}));
     }
     private renderWorkflows() {
         if (!this.state.workflows) {

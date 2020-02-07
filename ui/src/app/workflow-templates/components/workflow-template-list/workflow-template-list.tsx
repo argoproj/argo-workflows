@@ -47,20 +47,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     public componentWillMount(): void {
-        this.fetchWorkflowTemplates()
-    }
-
-    private fetchWorkflowTemplates(): void {
-        services.info
-            .get()
-            .then(info => {
-                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
-                    this.namespace = info.managedNamespace;
-                }
-                return services.workflowTemplate.list(this.namespace);
-            })
-            .then(templates => this.setState({templates, loading: false}))
-            .catch(error => this.setState({error, loading: false}));
+        this.fetchWorkflowTemplates();
     }
 
     public render() {
@@ -104,6 +91,19 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                 )}
             </Consumer>
         );
+    }
+
+    private fetchWorkflowTemplates(): void {
+        services.info
+            .get()
+            .then(info => {
+                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
+                    this.namespace = info.managedNamespace;
+                }
+                return services.workflowTemplate.list(this.namespace);
+            })
+            .then(templates => this.setState({templates, loading: false}))
+            .catch(error => this.setState({error, loading: false}));
     }
 
     private renderTemplates() {
