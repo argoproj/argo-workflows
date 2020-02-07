@@ -46,13 +46,13 @@ func NewSubmitCommand() *cobra.Command {
 			}
 
 			if from != "" {
-				SubmitWorkflowFromResource(from, &submitOpts, &cliSubmitOpts)
+				submitWorkflowFromResource(from, &submitOpts, &cliSubmitOpts)
 			} else {
 				if len(args) == 0 {
 					cmd.HelpFunc()(cmd, args)
 					os.Exit(1)
 				}
-				SubmitWorkflowsFromFile(args, &submitOpts, &cliSubmitOpts)
+				submitWorkflowsFromFile(args, &submitOpts, &cliSubmitOpts)
 			}
 		},
 	}
@@ -80,7 +80,7 @@ func NewSubmitCommand() *cobra.Command {
 	return command
 }
 
-func SubmitWorkflowsFromFile(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
+func submitWorkflowsFromFile(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
 	fileContents, err := util.ReadManifest(filePaths...)
 	if err != nil {
 		log.Fatal(err)
@@ -95,7 +95,7 @@ func SubmitWorkflowsFromFile(filePaths []string, submitOpts *util.SubmitOpts, cl
 	submitWorkflows(workflows, submitOpts, cliOpts)
 }
 
-func SubmitWorkflowFromResource(resourceIdentifier string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
+func submitWorkflowFromResource(resourceIdentifier string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
 
 	resIdSplit := strings.Split(resourceIdentifier, "/")
 	if len(resIdSplit) != 2 {
