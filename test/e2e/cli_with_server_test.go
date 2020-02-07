@@ -45,7 +45,7 @@ func (s *CLISuite) TestAuthToken() {
 		} else {
 			authString = "Basic " + token
 		}
-		assert.Equal(t, authString, output)
+		assert.Contains(t, output, authString)
 	})
 }
 
