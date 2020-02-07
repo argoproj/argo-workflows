@@ -116,7 +116,7 @@ func (s *CLISuite) TestRoot() {
 	s.Given(s.T()).CronWorkflow("@testdata/basic.yaml").
 		When().
 		CreateCronWorkflow().
-		RunCli([]string{"submit", "--from", "CronWorkflow/test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"submit", "--from", "cronwf/test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "Name:                test-cron-wf-basic-")
 			r := regexp.MustCompile(`Name:\s+?(test-cron-wf-basic-[a-z0-9]+)`)

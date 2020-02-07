@@ -9,14 +9,13 @@ import (
 	argoJson "github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/argo/commands/cron"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -38,20 +37,28 @@ func NewSubmitCommand() *cobra.Command {
 		from          string
 	)
 	var command = &cobra.Command{
-		Use:   "submit FILE1 FILE2...",
+		Use:   "submit [FILE... | --from `kind/name]",
 		Short: "submit a workflow",
+		Example: `# Submit multiple workflows from files:
+
+  argo submit my-wf.yaml
+
+# Submit a single workflow from an existing resource
+
+  argo submit --from cronwf/my-cron-wf
+`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if cmd.Flag("priority").Changed {
 				cliSubmitOpts.priority = &priority
 			}
 
 			if from != "" {
-				submitWorkflowFromResource(from, &submitOpts, &cliSubmitOpts)
-			} else {
-				if len(args) == 0 {
+				if len(args) != 0 {
 					cmd.HelpFunc()(cmd, args)
 					os.Exit(1)
 				}
+				submitWorkflowFromResource(from, &submitOpts, &cliSubmitOpts)
+			} else {
 				submitWorkflowsFromFile(args, &submitOpts, &cliSubmitOpts)
 			}
 		},
@@ -71,7 +78,7 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().Int32Var(&priority, "priority", 0, "workflow priority")
 	command.Flags().StringVarP(&submitOpts.ParameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
 	command.Flags().StringVarP(&submitOpts.Labels, "labels", "l", "", "Comma separated labels to apply to the workflow. Will override previous values.")
-	command.Flags().StringVar(&from, "from", "", "Submit from a WorkflowTemplate or CronWorkflow. E.g., --from=CronWorkflow/hello-world-cwf")
+	command.Flags().StringVar(&from, "from", "", "Submit from an existing `kind/name` E.g., --from=cronwf/hello-world-cwf")
 	// Only complete files with appropriate extension.
 	err := command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})
 	if err != nil {
@@ -82,9 +89,7 @@ func NewSubmitCommand() *cobra.Command {
 
 func submitWorkflowsFromFile(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
 	fileContents, err := util.ReadManifest(filePaths...)
-	if err != nil {
-		log.Fatal(err)
-	}
+	errors.CheckError(err)
 
 	var workflows []wfv1.Workflow
 	for _, body := range fileContents {
@@ -97,25 +102,33 @@ func submitWorkflowsFromFile(filePaths []string, submitOpts *util.SubmitOpts, cl
 
 func submitWorkflowFromResource(resourceIdentifier string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
 
-	resIdSplit := strings.Split(resourceIdentifier, "/")
-	if len(resIdSplit) != 2 {
-		log.Fatalf("resource identifier '%s' is malformed. Expected is KIND/NAME, e.g. CronWorkflow/hello-world-cwf", resourceIdentifier)
+	parts := strings.SplitN(resourceIdentifier, "/", 2)
+	if len(parts) != 2 {
+		log.Fatalf("resource identifier '%s' is malformed. Should be `kind/name`, e.g. cronwf/hello-world-cwf", resourceIdentifier)
 	}
+	kind := parts[0]
+	name := parts[1]
+
+	ctx, apiClient := client.NewAPIClient()
+	serviceClient := apiClient.NewCronWorkflowServiceClient()
+	namespace := client.Namespace()
 
 	var workflowToSubmit *wfv1.Workflow
-	switch resIdSplit[0] {
-	case workflow.CronWorkflowKind:
-		cwfIf := cron.InitCronWorkflowClient()
-		cwf, err := cwfIf.Get(resIdSplit[1], v1.GetOptions{})
+	switch kind {
+	case workflow.CronWorkflowKind, workflow.CronWorkflowSingular, workflow.CronWorkflowPlural, workflow.CronWorkflowShortName:
+		cronWf, err := serviceClient.GetCronWorkflow(ctx, &cronworkflow.GetCronWorkflowRequest{
+			Name:      name,
+			Namespace: namespace,
+		})
 		if err != nil {
-			log.Fatalf("Unable to get CronWorkflow '%s': %s", resIdSplit[1], err)
+			log.Fatalf("Unable to get CronWorkflow '%s': %s", name, err)
 		}
-		workflowToSubmit, err = common.ConvertCronWorkflowToWorkflow(cwf)
+		workflowToSubmit, err = common.ConvertCronWorkflowToWorkflow(cronWf)
 		if err != nil {
-			log.Fatalf("Unable to create Workflow from CronWorkflow '%s': %s", resIdSplit[1], err)
+			log.Fatalf("Unable to create Workflow from CronWorkflow '%s': %s", name, err)
 		}
 	default:
-		log.Fatalf("Resource Kind '%s' is not supported with --from", resIdSplit[0])
+		log.Fatalf("Resource kind '%s' is not supported with --from", kind)
 	}
 
 	submitWorkflows([]wfv1.Workflow{*workflowToSubmit}, submitOpts, cliOpts)
