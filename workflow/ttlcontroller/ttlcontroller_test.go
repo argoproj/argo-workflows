@@ -126,7 +126,6 @@ func newTTLControllerDefaultTTL() *Controller {
 	var ten int32 = 10
 	return &Controller{
 		wfclientset: fakewfclientset.NewSimpleClientset(),
-		//wfInformer:   informer,
 		resyncPeriod: workflowTTLResyncPeriod,
 		clock:        clock,
 		workqueue:    workqueue.NewNamedDelayingQueue("workflow-ttl"),
