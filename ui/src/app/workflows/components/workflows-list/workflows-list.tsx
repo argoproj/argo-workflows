@@ -14,10 +14,10 @@ import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {Query} from '../../../shared/components/query';
+import {ResourceSubmit} from '../../../shared/components/resource-submit';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
-import {WorkflowSubmit} from '../workflow-submit';
 
 require('./workflows-list.scss');
 
@@ -29,8 +29,6 @@ interface State {
 }
 
 export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
-    private subscription: Subscription;
-
     private get namespace() {
         return this.state.namespace;
     }
@@ -38,6 +36,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     private set namespace(namespace: string) {
         this.setState({namespace});
         history.pushState(null, '', uiUrl('workflows/' + namespace));
+        this.fetchWorkflows();
     }
 
     private get phases() {
@@ -45,12 +44,18 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private set phases(phases: string[]) {
-        this.appendQueryParams(phases.map(phase => ({name: 'phase', value: phase})));
+        if (phases.length === 0) {
+            this.clearQueryParams();
+        } else {
+            this.appendQueryParams(phases.map(phase => ({name: 'phase', value: phase})));
+        }
+        this.fetchWorkflows();
     }
 
     private get wfInput() {
         return Utils.tryJsonParse(this.queryParam('new'));
     }
+    private subscription: Subscription;
 
     constructor(props: RouteComponentProps<State>, context: any) {
         super(props, context);
@@ -58,6 +63,68 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     public componentWillMount(): void {
+        this.fetchWorkflows();
+    }
+
+    public componentWillUnmount(): void {
+        if (this.subscription) {
+            this.subscription.unsubscribe();
+        }
+    }
+
+    public render() {
+        if (this.state.loading) {
+            return <Loading />;
+        }
+        if (this.state.error) {
+            throw this.state.error;
+        }
+        const filter: TopBarFilter<string> = {
+            items: Object.keys(models.NODE_PHASE).map(phase => ({
+                value: (models.NODE_PHASE as any)[phase],
+                label: (models.NODE_PHASE as any)[phase]
+            })),
+            selectedValues: this.phases,
+            selectionChanged: phases => (this.phases = phases)
+        };
+        return (
+            <Consumer>
+                {ctx => (
+                    <Page
+                        title='Workflows'
+                        toolbar={{
+                            filter,
+                            breadcrumbs: [{title: 'Workflows', path: uiUrl('workflows')}],
+                            actionMenu: {
+                                items: [
+                                    {
+                                        title: 'Submit New Workflow',
+                                        iconClassName: 'fa fa-plus',
+                                        action: () => ctx.navigation.goto('.', {new: '{}'})
+                                    }
+                                ]
+                            },
+                            tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
+                        }}>
+                        <div>{this.renderWorkflows(ctx)}</div>
+                        <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
+                            <ResourceSubmit<models.Workflow>
+                                resourceName={'Workflow'}
+                                defaultResource={exampleWorkflow(this.namespace)}
+                                onSubmit={wfValue => {
+                                    return services.workflows
+                                        .create(wfValue, wfValue.metadata.namespace || this.namespace)
+                                        .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)));
+                                }}
+                            />
+                        </SlidingPanel>
+                    </Page>
+                )}
+            </Consumer>
+        );
+    }
+
+    private fetchWorkflows(): void {
         services.info
             .get()
             .then(info => {
@@ -103,56 +170,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             })
             .then(_ => this.setState({loading: false}))
             .catch(error => this.setState({error, loading: false}));
-    }
-
-    public componentWillUnmount(): void {
-        if (this.subscription) {
-            this.subscription.unsubscribe();
-        }
-    }
-
-    public render() {
-        if (this.state.loading) {
-            return <Loading />;
-        }
-        if (this.state.error) {
-            throw this.state.error;
-        }
-        const filter: TopBarFilter<string> = {
-            items: Object.keys(models.NODE_PHASE).map(phase => ({
-                value: (models.NODE_PHASE as any)[phase],
-                label: (models.NODE_PHASE as any)[phase]
-            })),
-            selectedValues: this.phases,
-            selectionChanged: phases => (this.phases = phases)
-        };
-        return (
-            <Consumer>
-                {ctx => (
-                    <Page
-                        title='Workflows'
-                        toolbar={{
-                            filter,
-                            breadcrumbs: [{title: 'Workflows', path: uiUrl('workflows')}],
-                            actionMenu: {
-                                items: [
-                                    {
-                                        title: 'Submit New Workflow',
-                                        iconClassName: 'fa fa-plus',
-                                        action: () => ctx.navigation.goto('.', {new: '{}'})
-                                    }
-                                ]
-                            },
-                            tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
-                        }}>
-                        <div>{this.renderWorkflows(ctx)}</div>
-                        <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
-                            <WorkflowSubmit defaultWorkflow={exampleWorkflow(this.namespace)} currentNamespace={this.namespace} ctx={ctx} />
-                        </SlidingPanel>
-                    </Page>
-                )}
-            </Consumer>
-        );
     }
 
     private renderWorkflows(ctx: any) {

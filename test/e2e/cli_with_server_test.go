@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -45,7 +46,7 @@ func (s *CLISuite) TestAuthToken() {
 		} else {
 			authString = "Basic " + token
 		}
-		assert.Contains(t, output, authString)
+		assert.Equal(t, authString, strings.TrimSpace(output))
 	})
 }
 
