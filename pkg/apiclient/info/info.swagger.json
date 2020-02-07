@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "server/info/info.proto",
+    "title": "pkg/apiclient/info/info.proto",
     "version": "version not set"
   },
   "consumes": [
