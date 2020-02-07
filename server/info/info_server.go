@@ -1,15 +1,19 @@
 package info
 
-import "context"
+import (
+	"context"
+
+	infopkg "github.com/argoproj/argo/pkg/apiclient/info"
+)
 
 type infoServer struct {
 	managedNamespace string
 }
 
-func (i *infoServer) GetInfo(context.Context, *GetInfoRequest) (*InfoResponse, error) {
-	return &InfoResponse{ManagedNamespace: i.managedNamespace}, nil
+func (i *infoServer) GetInfo(context.Context, *infopkg.GetInfoRequest) (*infopkg.InfoResponse, error) {
+	return &infopkg.InfoResponse{ManagedNamespace: i.managedNamespace}, nil
 }
 
-func NewInfoServer(managedNamespace string) InfoServiceServer {
+func NewInfoServer(managedNamespace string) infopkg.InfoServiceServer {
 	return &infoServer{managedNamespace}
 }
