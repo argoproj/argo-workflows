@@ -81,10 +81,10 @@ func (w *When) CreateCronWorkflow() *When {
 	return w
 }
 
-func (w *When) WaitForWorkflowCondition(test func(wf *wfv1.Workflow) bool, condition string, timeout time.Duration) *When {
-	logCtx := log.WithFields(log.Fields{"workflow": w.workflowName, "condition": condition, "timeout": timeout})
+func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow) bool, condition string, timeout time.Duration) *When {
+	logCtx := log.WithFields(log.Fields{"workflow": workflowName, "condition": condition, "timeout": timeout})
 	logCtx.Info("Waiting for condition")
-	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", w.workflowName)).String()}
+	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", workflowName)).String()}
 	watch, err := w.client.Watch(opts)
 	if err != nil {
 		w.t.Fatal(err)
@@ -129,13 +129,19 @@ func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
 	}
 }
 func (w *When) WaitForWorkflowToStart(timeout time.Duration) *When {
-	return w.WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+	return w.waitForWorkflow(w.workflowName, func(wf *wfv1.Workflow) bool {
 		return !wf.Status.StartedAt.IsZero()
 	}, "to start", timeout)
 }
 
 func (w *When) WaitForWorkflow(timeout time.Duration) *When {
-	return w.WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+	return w.waitForWorkflow(w.workflowName, func(wf *wfv1.Workflow) bool {
+		return !wf.Status.FinishedAt.IsZero()
+	}, "to finish", timeout)
+}
+
+func (w *When) WaitForWorkflowName(workflowName string, timeout time.Duration) *When {
+	return w.waitForWorkflow(workflowName, func(wf *wfv1.Workflow) bool {
 		return !wf.Status.FinishedAt.IsZero()
 	}, "to finish", timeout)
 }
@@ -154,6 +160,12 @@ func (w *When) DeleteWorkflow() *When {
 	if err != nil {
 		w.t.Fatal(err)
 	}
+	return w
+}
+
+func (w *When) RunCli(args []string, block func(t *testing.T, output string, err error)) *When {
+	output, err := runCli(w.diagnostics, args)
+	block(w.t, output, err)
 	return w
 }
 
