@@ -136,7 +136,7 @@ func (m migrate) Exec(ctx context.Context) error {
 			ansiSQLChange(`alter table argo_archived_workflows alter column finishedat set not null`),
 		),
 		ansiSQLChange(`alter table argo_archived_workflows add clustername varchar(64)`), // DNS entry can only be max 63 bytes
-		backfillClusterName{clusterName: m.clusterName, tableName: "argo_archived_workflows"},
+		ansiSQLChange(`update argo_archived_workflows set clustername = ` + m.clusterName + ` where clustername is null`),
 		ternary(dbType == "mysql",
 			ansiSQLChange(`alter table argo_archived_workflows modify column clustername varchar(64) not null`),
 			ansiSQLChange(`alter table argo_archived_workflows alter column clustername set not null`),
@@ -148,7 +148,7 @@ func (m migrate) Exec(ctx context.Context) error {
 		ansiSQLChange(`alter table argo_archived_workflows add primary key(clustername,uid)`),
 		ansiSQLChange(`create index argo_archived_workflows_i1 on argo_archived_workflows (clustername,namespace)`),
 		// argo_archived_workflows now looks like:
-		// clustername(not null) uid(not null) | phase(not null) | namespace(not null) | workflow(not null) | startedat(not null)  | finishedat(not null)
+		// clustername(not null) | uid(not null) | | name (null) | phase(not null) | namespace(not null) | workflow(not null) | startedat(not null)  | finishedat(not null)
 		// remove unused columns
 		ansiSQLChange(`alter table ` + m.tableName + ` drop column phase`),
 		ansiSQLChange(`alter table ` + m.tableName + ` drop column startedat`),
@@ -163,7 +163,7 @@ func (m migrate) Exec(ctx context.Context) error {
 			ansiSQLChange(`alter table `+m.tableName+` alter column namespace set not null`),
 		),
 		ansiSQLChange(`alter table ` + m.tableName + ` add column clustername varchar(64)`), // DNS cannot be longer than 64 bytes
-		backfillClusterName{m.clusterName, m.tableName},
+		ansiSQLChange(`update ` + m.tableName + ` set clustername = ` + m.clusterName + ` where clustername is null`),
 		ternary(dbType == "mysql",
 			ansiSQLChange(`alter table `+m.tableName+` modify column clustername varchar(64) not null`),
 			ansiSQLChange(`alter table `+m.tableName+` alter column clustername set not null`),
@@ -192,6 +192,16 @@ func (m migrate) Exec(ctx context.Context) error {
 		ansiSQLChange(`create index ` + m.tableName + `_i1 on ` + m.tableName + ` (clustername,namespace)`),
 		// argo_workflows now looks like:
 		//  clustername(not null) | uid(not null) | namespace(not null) | version(not null) | nodes(not null) | updatedat(not null)
+		ternary(dbType == "mysql",
+			ansiSQLChange(`alter table argo_archived_workflows modify column workflow json not null`),
+			ansiSQLChange(`alter table argo_archived_workflows alter column workflow type json using workflow::json`),
+		),
+		ternary(dbType == "mysql",
+			ansiSQLChange(`alter table argo_archived_workflows modify column name varchar(256) not null`),
+			ansiSQLChange(`alter table argo_archived_workflows alter column name set not null`),
+		),
+		// clustername(not null) | uid(not null) | | name (not null) | phase(not null) | namespace(not null) | workflow(not null) | startedat(not null)  | finishedat(not null)
+		ansiSQLChange(`create index ` + m.tableName + `_i2 on ` + m.tableName + ` (clustername,namespace,updatedat)`),
 	} {
 		err := m.applyChange(ctx, changeSchemaVersion, change)
 		if err != nil {

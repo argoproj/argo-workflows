@@ -19,9 +19,6 @@ func main() {
 		log.Fatal("Supply a version")
 	}
 	version := os.Args[1]
-	if !strings.HasPrefix(version, "v") {
-		version = "v" + version
-	}
 	oAPIDefs := wfv1.GetOpenAPIDefinitions(func(name string) spec.Ref {
 		return spec.MustCreateRef("#/definitions/" + common.EscapeJsonPointer(swaggify(name)))
 	})
