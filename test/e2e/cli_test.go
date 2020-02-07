@@ -113,24 +113,26 @@ func (s *CLISuite) TestRoot() {
 	})
 
 	var createdWorkflowName string
-	s.Given(s.T()).CronWorkflow("@testdata/basic.yaml").
-		When().
-		CreateCronWorkflow().
-		RunCli([]string{"submit", "--from", "cronwf/test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
-			assert.NoError(t, err)
-			assert.Contains(t, output, "Name:                test-cron-wf-basic-")
-			r := regexp.MustCompile(`Name:\s+?(test-cron-wf-basic-[a-z0-9]+)`)
-			res := r.FindStringSubmatch(output)
-			if len(res) != 2 {
-				assert.Fail(t, "Internal test error, please report a bug")
-			}
-			createdWorkflowName = res[1]
-		}).
-		WaitForWorkflowName(createdWorkflowName, 15*time.Second).
-		Then().
-		ExpectWorkflowName(createdWorkflowName, func(t *testing.T, metadata *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
+	s.Run("From", func() {
+		s.Given().CronWorkflow("@testdata/basic.yaml").
+			When().
+			CreateCronWorkflow().
+			RunCli([]string{"submit", "--from", "cronwf/test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
+				assert.NoError(t, err)
+				assert.Contains(t, output, "Name:                test-cron-wf-basic-")
+				r := regexp.MustCompile(`Name:\s+?(test-cron-wf-basic-[a-z0-9]+)`)
+				res := r.FindStringSubmatch(output)
+				if len(res) != 2 {
+					assert.Fail(t, "Internal test error, please report a bug")
+				}
+				createdWorkflowName = res[1]
+			}).
+			WaitForWorkflowName(createdWorkflowName, 15*time.Second).
+			Then().
+			ExpectWorkflowName(createdWorkflowName, func(t *testing.T, metadata *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
+				assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			})
+	})
 }
 
 func (s *CLISuite) TestWorkflowDelete() {
