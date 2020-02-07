@@ -5,26 +5,6 @@ commands:
       - run:
           name: Install Kustomize
           command: cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
-  dep_ensure:
-    steps:
-      - run:
-          name: Install Dep v0.5.3
-          command: DEP_RELEASE_TAG=v0.5.3 curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-      - restore_cache:
-          name: Restore vendor cache
-          keys:
-            - vendor-v6-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
-      - run:
-          name: Ensure dependencies
-          command: |
-            # dep ensure takes 5m, but is only needed if not cached
-            [[ -e vendor ]] || make vendor && touch vendor
-      - save_cache:
-          name: Save vendor cache
-          key: vendor-v6-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
-          paths:
-            - vendor
-          when: always
   install_golang:
     steps:
       - run:
@@ -63,7 +43,6 @@ commands:
       - install_golang
       - go_junit_report
       - checkout
-      - dep_ensure
       - run:
           name: Create KUBECONFIG
           # Copy kubeconfig file, and add a fake user for "argo --token xxx" testing
@@ -130,7 +109,6 @@ jobs:
       - install_golang
       - go_junit_report
       - checkout
-      - dep_ensure
       - run:
           name: Run tests
           command: |
