@@ -76,7 +76,6 @@ type wfOperationCtx struct {
 	workflowDeadline *time.Time
 	// auditLogger is the argo audit logger
 	auditLogger *argo.AuditLogger
-	podGC       wfv1.PodGC
 }
 
 var _ wfv1.TemplateStorage = &wfOperationCtx{}
@@ -2120,5 +2119,5 @@ func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID str
 }
 
 func (woc *wfOperationCtx) GetPodGCStrategy() wfv1.PodGCStrategy {
-	return woc.podGC.GetPodGCStrategy()
+	return woc.wf.Spec.PodGC.GetPodGCStrategy()
 }
