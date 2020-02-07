@@ -16,8 +16,8 @@ type WorkflowTemplateSuite struct {
 	fixtures.E2ESuite
 }
 
-func (w *WorkflowTemplateSuite) TestNestedWorkflowTemplate() {
-	w.Given(w.T()).WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
+func (s *WorkflowTemplateSuite) TestNestedWorkflowTemplate() {
+	s.Given().WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
 		WorkflowTemplate("@testdata/workflow-template-nested-template.yaml").
 		Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow

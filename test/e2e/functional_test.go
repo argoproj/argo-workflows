@@ -21,7 +21,7 @@ type FunctionalSuite struct {
 }
 
 func (s *FunctionalSuite) TestContinueOnFail() {
-	s.Given(s.T()).
+	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -82,7 +82,7 @@ func (s *FunctionalSuite) TestFastFailOnPodTermination() {
 	// TODO: Test fails due to using a service account with insufficient permissions, skipping for now
 	// pods is forbidden: User "system:serviceaccount:argo:default" cannot list resource "pods" in API group "" in the namespace "argo"
 	s.T().SkipNow()
-	s.Given(s.T()).
+	s.Given().
 		Workflow("@expectedfailures/pod-termination-failure.yaml").
 		When().
 		SubmitWorkflow().
@@ -99,7 +99,7 @@ func (s *FunctionalSuite) TestFastFailOnPodTermination() {
 
 func (s *FunctionalSuite) TestEventOnNodeFail() {
 	// Test whether an WorkflowFailed event (with appropriate message) is emitted in case of node failure
-	s.Given(s.T()).
+	s.Given().
 		Workflow("@expectedfailures/failed-step-event.yaml").
 		When().
 		SubmitWorkflow().
@@ -121,7 +121,7 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 
 func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 	// Test whether an WorkflowSuccess event is emitted in case of successfully completed workflow
-	s.Given(s.T()).
+	s.Given().
 		Workflow("@functional/success-event.yaml").
 		When().
 		SubmitWorkflow().
@@ -143,7 +143,7 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 
 func (s *FunctionalSuite) TestEventOnPVCFail() {
 	//  Test whether an WorkflowFailed event (with appropriate message) is emitted in case of error in creating the PVC
-	s.Given(s.T()).
+	s.Given().
 		Workflow("@expectedfailures/volumes-pvc-fail-event.yaml").
 		When().
 		SubmitWorkflow().

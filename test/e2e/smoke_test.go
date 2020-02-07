@@ -17,7 +17,7 @@ type SmokeSuite struct {
 }
 
 func (s *SmokeSuite) TestBasicWorkflow() {
-	s.Given(s.T()).
+	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
@@ -30,7 +30,7 @@ func (s *SmokeSuite) TestBasicWorkflow() {
 }
 
 func (s *SmokeSuite) TestArtifactPassing() {
-	s.Given(s.T()).
+	s.Given().
 		Workflow("@smoke/artifact-passing.yaml").
 		When().
 		SubmitWorkflow().
@@ -42,7 +42,7 @@ func (s *SmokeSuite) TestArtifactPassing() {
 }
 
 func (s *SmokeSuite) TestWorkflowTemplateBasic() {
-	s.Given(s.T()).
+	s.Given().
 		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
 		Workflow("@smoke/hello-world-workflow-tmpl.yaml").
 		When().
