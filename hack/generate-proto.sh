@@ -14,7 +14,7 @@ go-to-protobuf \
     --packages=github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
     --apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1
 
-for f in $(find server -name '*.proto'); do
+for f in $(find pkg -name '*.proto'); do
     protoc \
         -I /usr/local/include \
         -I . \
