@@ -11,7 +11,7 @@ import (
 
 	"github.com/robfig/cron"
 	"github.com/valyala/fasttemplate"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
@@ -101,7 +101,7 @@ func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNa
 	enrichContextWithMetadata(wftmpl.ObjectMeta, ctx)
 	return ValidateWorkflowSpec(wftmpl.Spec.WorkflowSpec, ctx, tmplCtx)
 }
-func enrichContextWithMetadata(meta v1.ObjectMeta, ctx *templateValidationCtx) {
+func enrichContextWithMetadata(meta metav1.ObjectMeta, ctx *templateValidationCtx) {
 	for k := range meta.Annotations {
 		ctx.globalParams["workflow.annotations."+k] = placeholderGenerator.NextPlaceholder()
 	}
