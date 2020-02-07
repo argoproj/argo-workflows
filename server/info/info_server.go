@@ -14,7 +14,6 @@ func (i *infoServer) GetInfo(context.Context, *infopkg.GetInfoRequest) (*infopkg
 	return &infopkg.InfoResponse{ManagedNamespace: i.managedNamespace}, nil
 }
 
-
 func NewInfoServer(managedNamespace string) infopkg.InfoServiceServer {
 	return &infoServer{managedNamespace}
 }
