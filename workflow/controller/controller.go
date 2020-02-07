@@ -8,7 +8,6 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -363,7 +362,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 				return true
 			}
 			for _, pod := range pods.Items {
-				woc.controller.gcPods <- fmt.Sprintf("%s/%s", pod.GetNamespace(), pod.GetName())
+				wfc.queuePodForGC(&pod)
 			}
 		}
 	}
@@ -373,6 +372,10 @@ func (wfc *WorkflowController) processNextItem() bool {
 	// See: https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go
 	//c.handleErr(err, key)
 	return true
+}
+
+func (wfc *WorkflowController) queuePodForGC(pod *corev1.Pod) {
+	wfc.gcPods <- fmt.Sprintf("%s/%s", pod.GetNamespace(), pod.GetName())
 }
 
 func (wfc *WorkflowController) podWorker() {
@@ -401,7 +404,7 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 		// we dequeued it.
 		return true
 	}
-	pod, ok := obj.(*apiv1.Pod)
+	pod, ok := obj.(*corev1.Pod)
 	if !ok {
 		log.Warnf("Key '%s' in index is not a pod", key)
 		return true
@@ -427,7 +430,7 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 	if pod.GetLabels()[common.LabelKeyCompleted] == "true" {
 		podGCStrategy := wfv1.PodGCStrategy(pod.GetAnnotations()[common.AnnotationKeyPodGC])
 		if podGCStrategy == wfv1.PodGCOnPodCompletion || podGCStrategy == wfv1.PodGCOnPodSuccess && pod.Status.Phase == corev1.PodSucceeded {
-			wfc.gcPods <- fmt.Sprintf("%s/%s", pod.GetNamespace(), pod.GetName())
+			wfc.queuePodForGC(pod)
 		}
 	}
 
@@ -537,7 +540,7 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 
 func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 	source := wfc.newWorkflowPodWatch()
-	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{})
+	informer := cache.NewSharedIndexInformer(source, &corev1.Pod{}, podResyncPeriod, cache.Indexers{})
 	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
