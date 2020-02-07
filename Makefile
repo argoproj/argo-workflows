@@ -411,10 +411,8 @@ test-cli: test-images cli
 
 .PHONY: clean
 clean:
-	# Remove images
-	[ "`docker images -q $(IMAGE_NAMESPACE)/argocli:$(VERSION)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argocli:$(VERSION)
-	[ "`docker images -q $(IMAGE_NAMESPACE)/argoexec:$(VERSION)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
-	[ "`docker images -q $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
+	# Delete pre-go 1.3 vendor
+	rm -Rf vendor
 	# Delete build files
 	rm -Rf dist ui/dist
 
