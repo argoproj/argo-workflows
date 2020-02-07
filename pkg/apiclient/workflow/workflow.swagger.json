@@ -3723,7 +3723,7 @@
         },
         "default": {
           "type": "string",
-          "title": "Default is the default value to use for an input parameter if a value was not supplied"
+          "title": "Default is the default value to use for an input parameter if a value was not supplied\nDEPRECATED - this field is never used"
         },
         "value": {
           "type": "string",
@@ -4185,7 +4185,7 @@
         },
         "entrypoint": {
           "type": "string",
-          "title": "Entrypoint is a template reference to the starting point of the workflow"
+          "description": "Entrypoint is a template reference to the starting point of the workflow. If omitted, defaults to the first template."
         },
         "arguments": {
           "$ref": "#/definitions/v1alpha1Arguments",

@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/robfig/cron"
-
 	"github.com/valyala/fasttemplate"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
@@ -90,22 +90,42 @@ var _ wfv1.ArgumentsProvider = &FakeArguments{}
 func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, wf *wfv1.Workflow, opts ValidateOpts) error {
 	ctx := newTemplateValidationCtx(wf, opts)
 	tmplCtx := templateresolution.NewContext(wftmplGetter, wf, wf)
+	enrichContextWithMetadata(wf.ObjectMeta, ctx)
+	return ValidateWorkflowSpec(wf.Spec, ctx, tmplCtx)
+}
 
-	err := validateWorkflowFieldNames(wf.Spec.Templates)
+// ValidateWorkflow accepts a workflow template and performs validation against it.
+func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, wftmpl *wfv1.WorkflowTemplate) error {
+	ctx := newTemplateValidationCtx(nil, ValidateOpts{})
+	tmplCtx := templateresolution.NewContext(wftmplGetter, wftmpl, nil)
+	enrichContextWithMetadata(wftmpl.ObjectMeta, ctx)
+	return ValidateWorkflowSpec(wftmpl.Spec.WorkflowSpec, ctx, tmplCtx)
+}
+func enrichContextWithMetadata(meta v1.ObjectMeta, ctx *templateValidationCtx) {
+	for k := range meta.Annotations {
+		ctx.globalParams["workflow.annotations."+k] = placeholderGenerator.NextPlaceholder()
+	}
+	for k := range meta.Labels {
+		ctx.globalParams["workflow.labels."+k] = placeholderGenerator.NextPlaceholder()
+	}
+}
+
+func ValidateWorkflowSpec(spec wfv1.WorkflowSpec, ctx *templateValidationCtx, tmplCtx *templateresolution.Context) error {
+	err := validateWorkflowFieldNames(spec.Templates)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
 	}
 	if ctx.Lint {
 		// if we are just linting we don't care if spec.arguments.parameters.XXX doesn't have an
 		// explicit value. workflows without a default value is a desired use case
-		err = validateArgumentsFieldNames("spec.arguments.", wf.Spec.Arguments)
+		err = validateArgumentsFieldNames("spec.arguments.parameters.", spec.Arguments)
 	} else {
-		err = validateArguments("spec.arguments.", wf.Spec.Arguments)
+		err = validateArguments("spec.arguments.parameters.", spec.Arguments)
 	}
 	if err != nil {
 		return err
 	}
-	for _, param := range wf.Spec.Arguments.Parameters {
+	for _, param := range spec.Arguments.Parameters {
 		if param.Name != "" {
 			if param.Value != nil {
 				ctx.globalParams["workflow.parameters."+param.Name] = *param.Value
@@ -114,59 +134,36 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 			}
 		}
 	}
-
-	for k := range wf.ObjectMeta.Annotations {
-		ctx.globalParams["workflow.annotations."+k] = placeholderGenerator.NextPlaceholder()
-	}
-	for k := range wf.ObjectMeta.Labels {
-		ctx.globalParams["workflow.labels."+k] = placeholderGenerator.NextPlaceholder()
+	if spec.Priority != nil {
+		ctx.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*spec.Priority))
 	}
 
-	if wf.Spec.Priority != nil {
-		ctx.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*wf.Spec.Priority))
-	}
-
-	if wf.Spec.Entrypoint == "" {
+	if spec.GetEntrypoint() == "" {
 		return errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
 	}
-	_, err = ctx.validateTemplateHolder(&wfv1.Template{Template: wf.Spec.Entrypoint}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
+	_, err = ctx.validateTemplateHolder(&wfv1.Template{Template: spec.GetEntrypoint()}, tmplCtx, &spec.Arguments, map[string]interface{}{})
 	if err != nil {
 		return err
 	}
-	if wf.Spec.OnExit != "" {
+	if spec.OnExit != "" {
 		// now when validating onExit, {{workflow.status}} is now available as a global
 		ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderGenerator.NextPlaceholder()
-		_, err = ctx.validateTemplateHolder(&wfv1.Template{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
+		_, err = ctx.validateTemplateHolder(&wfv1.Template{Template: spec.OnExit}, tmplCtx, &spec.Arguments, map[string]interface{}{})
 		if err != nil {
 			return err
 		}
 	}
 
-	if wf.Spec.PodGC != nil {
-		switch wf.Spec.PodGC.Strategy {
+	if spec.PodGC != nil {
+		switch spec.PodGC.Strategy {
 		case wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess:
 		default:
-			return errors.Errorf(errors.CodeBadRequest, "podGC.strategy unknown strategy '%s'", wf.Spec.PodGC.Strategy)
+			return errors.Errorf(errors.CodeBadRequest, "podGC.strategy unknown strategy '%s'", spec.PodGC.Strategy)
 		}
 	}
 
 	// Check if all templates can be resolved.
-	for _, template := range wf.Spec.Templates {
-		_, err := ctx.validateTemplateHolder(&wfv1.Template{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
-		}
-	}
-	return nil
-}
-
-// ValidateWorkflow accepts a workflow template and performs validation against it.
-func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, wftmpl *wfv1.WorkflowTemplate) error {
-	ctx := newTemplateValidationCtx(nil, ValidateOpts{})
-	tmplCtx := templateresolution.NewContext(wftmplGetter, wftmpl, nil)
-
-	// Check if all templates can be resolved.
-	for _, template := range wftmpl.Spec.Templates {
+	for _, template := range spec.Templates {
 		_, err := ctx.validateTemplateHolder(&wfv1.Template{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())

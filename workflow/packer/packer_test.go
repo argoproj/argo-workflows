@@ -55,6 +55,9 @@ func TestDecompressWorkflow(t *testing.T) {
 	})
 	t.Run("TooLargeToCompressWorkflow", func(t *testing.T) {
 		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Entrypoint: "main",
+			},
 			Status: wfv1.WorkflowStatus{
 				Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}, "bar": wfv1.NodeStatus{}, "baz": wfv1.NodeStatus{}, "qux": wfv1.NodeStatus{}},
 			},
