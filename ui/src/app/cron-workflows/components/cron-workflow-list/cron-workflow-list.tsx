@@ -30,6 +30,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
     private set namespace(namespace: string) {
         this.setState({namespace});
         history.pushState(null, '', uiUrl('cron-workflows/' + namespace));
+        this.fetchWorkflows();
     }
 
     private get sidePanel() {
@@ -45,6 +46,10 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
     }
 
     public componentWillMount(): void {
+        this.fetchWorkflows()
+    }
+
+    private fetchWorkflows(): void {
         services.info
             .get()
             .then(info => {

@@ -36,7 +36,8 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
 
     private set namespace(namespace: string) {
         this.setState({namespace});
-        history.pushState(null, '', uiUrl('cron-workflows/' + namespace));
+        history.pushState(null, '', uiUrl('archived-workflows/' + namespace));
+        this.fetchWorkflows();
     }
 
     constructor(props: RouteComponentProps<any>, context: any) {
@@ -44,7 +45,11 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         this.state = {continue: '', loading: true, namespace: this.props.match.params.namespace || ''};
     }
 
-    public componentDidMount(): void {
+    public componentWillMount(): void {
+        this.fetchWorkflows()
+    }
+
+    private fetchWorkflows(): void {
         services.info
             .get()
             .then(info => {

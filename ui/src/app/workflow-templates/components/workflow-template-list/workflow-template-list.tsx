@@ -30,6 +30,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
     private set namespace(namespace: string) {
         this.setState({namespace});
         history.pushState(null, '', uiUrl('workflow-templates/' + namespace));
+        this.fetchWorkflows();
     }
 
     private get sidePanel() {
@@ -45,7 +46,11 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
         this.state = {loading: true, namespace: this.props.match.params.namespace || ''};
     }
 
-    public componentDidMount(): void {
+    public componentWillMount(): void {
+        this.fetchWorkflows()
+    }
+
+    private fetchWorkflows(): void {
         services.info
             .get()
             .then(info => {

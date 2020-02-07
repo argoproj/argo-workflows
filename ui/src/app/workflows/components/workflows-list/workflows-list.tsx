@@ -38,6 +38,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     private set namespace(namespace: string) {
         this.setState({namespace});
         history.pushState(null, '', uiUrl('workflows/' + namespace));
+        this.fetchWorkflows();
     }
 
     private get phases() {
@@ -58,6 +59,10 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     public componentWillMount(): void {
+        this.fetchWorkflows()
+    }
+
+    private fetchWorkflows(): void {
         services.info
             .get()
             .then(info => {
