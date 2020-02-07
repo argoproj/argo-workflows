@@ -5,6 +5,20 @@ commands:
       - run:
           name: Install Kustomize
           command: cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
+  restore_go_mod:
+    steps:
+      - restore_cache:
+          name: Restore go mod cache
+          keys:
+            -  go-mod-v1-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
+  save_go_mod:
+    steps:
+      - save_cache:
+          name: Save go mod cache
+          key:  go-mod-v1-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
+          paths:
+            - /home/circleci/.go_workspace/go/pkg/mod
+          when: always
   install_golang:
     steps:
       - run:
@@ -30,8 +44,6 @@ commands:
           keys:
             - go-v5-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
             - go-v5-master-{{ .Environment.CIRCLE_JOB }}
-            - go-v4-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
-            - go-v4-master-{{ .Environment.CIRCLE_JOB }}
   e2e:
     steps:
       - install_kustomize
@@ -43,6 +55,7 @@ commands:
       - install_golang
       - go_junit_report
       - checkout
+      - restore_go_mod
       - run:
           name: Create KUBECONFIG
           # Copy kubeconfig file, and add a fake user for "argo --token xxx" testing
@@ -87,6 +100,7 @@ commands:
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
             make test-e2e 2>&1 | tee test-results/test.out
+      - save_go_mod
       - save_go_cache
       - store_test_results:
           path: test-results
@@ -109,6 +123,7 @@ jobs:
       - install_golang
       - go_junit_report
       - checkout
+      - restore_go_mod
       - run:
           name: Run tests
           command: |
@@ -116,6 +131,7 @@ jobs:
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
             make test 2>&1 | tee test-results/test.out
       - save_go_cache
+      - save_go_mod
       - run:
           name: Uploading code coverage
           command: bash <(curl -s https://codecov.io/bash) -f coverage.out
