@@ -120,7 +120,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			},
 			Annotations: map[string]string{
 				common.AnnotationKeyNodeName: nodeName,
-				common.AnnotationPodGC:       string(woc.GetPodGC()),
+				common.AnnotationKeyPodGC:    string(woc.GetPodGCStrategy()),
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),

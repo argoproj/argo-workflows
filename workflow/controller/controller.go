@@ -349,10 +349,12 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 	woc.operate()
+
 	if woc.wf.Status.Completed() {
 		wfc.throttler.Remove(key)
-		strategy := woc.wf.Spec.PodGC.GetPodGCStrategy()
-		if strategy == wfv1.PodGCOnWorkflowCompletion || woc.wf.Status.Successful() && strategy == wfv1.PodGCOnWorkflowSuccess {
+		// we need to put any pods onto the GC queue
+		podGCStrategy := woc.wf.Spec.PodGC.GetPodGCStrategy()
+		if podGCStrategy == wfv1.PodGCOnWorkflowCompletion || woc.wf.Status.Successful() && podGCStrategy == wfv1.PodGCOnWorkflowSuccess {
 			pods, err := woc.getAllWorkflowPods()
 			if err != nil {
 				woc.log.Errorf("pod listing failed: %v", err)
@@ -415,19 +417,16 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 		return true
 	}
 
-	if pod.GetLabels()[common.LabelKeyCompleted] == "false" {
-		completed := pod.Status.Phase == corev1.PodSucceeded || pod.Status.Phase == corev1.PodFailed
-		if completed {
-			err := common.AddPodLabel(wfc.kubeclientset, pod.GetName(), pod.GetNamespace(), common.LabelKeyCompleted, "true")
-			if err != nil {
-				log.WithFields(log.Fields{"pod": pod.GetName(), "namespace": pod.GetNamespace(), "err": err}).Error("Failed to label pod complete")
-			}
+	if pod.GetLabels()[common.LabelKeyCompleted] == "false" && pod.Status.Phase == corev1.PodSucceeded || pod.Status.Phase == corev1.PodFailed {
+		err := common.AddPodLabel(wfc.kubeclientset, pod.GetName(), pod.GetNamespace(), common.LabelKeyCompleted, "true")
+		if err != nil {
+			log.WithFields(log.Fields{"pod": pod.GetName(), "namespace": pod.GetNamespace(), "err": err}).Error("Failed to label pod complete")
 		}
 	}
 
 	if pod.GetLabels()[common.LabelKeyCompleted] == "true" {
-		strategy := wfv1.PodGCStrategy(pod.GetAnnotations()[common.AnnotationPodGC])
-		if strategy == wfv1.PodGCOnPodCompletion || strategy == wfv1.PodGCOnPodSuccess && pod.Status.Phase == corev1.PodSucceeded {
+		podGCStrategy := wfv1.PodGCStrategy(pod.GetAnnotations()[common.AnnotationKeyPodGC])
+		if podGCStrategy == wfv1.PodGCOnPodCompletion || podGCStrategy == wfv1.PodGCOnPodSuccess && pod.Status.Phase == corev1.PodSucceeded {
 			wfc.gcPods <- fmt.Sprintf("%s/%s", pod.GetNamespace(), pod.GetName())
 		}
 	}

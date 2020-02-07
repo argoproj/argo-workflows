@@ -57,13 +57,12 @@ type PodGCStrategy string
 
 // PodGCStrategy
 const (
-	// default too
-	PodGCOnPodNever           PodGCStrategy = ""
+	// default is to be deleted when the workflow is deleted (assuming that is how your Kubernetes deletion policy is set-up)
+	PodGCDefault              PodGCStrategy = ""
 	PodGCOnPodCompletion      PodGCStrategy = "OnPodCompletion"
 	PodGCOnPodSuccess         PodGCStrategy = "OnPodSuccess"
 	PodGCOnWorkflowCompletion PodGCStrategy = "OnWorkflowCompletion"
 	PodGCOnWorkflowSuccess    PodGCStrategy = "OnWorkflowSuccess"
-	PodGCOnPodDefault                       = PodGCOnPodNever
 )
 
 // TemplateGetter is an interface to get templates.
@@ -559,7 +558,7 @@ type PodGC struct {
 
 func (m *PodGC) GetPodGCStrategy() PodGCStrategy {
 	if m == nil {
-		return PodGCOnPodDefault
+		return PodGCDefault
 	}
 	return m.Strategy
 }

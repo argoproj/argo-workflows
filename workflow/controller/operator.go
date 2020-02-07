@@ -635,8 +635,8 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			}
 			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
 			if node.Completed() && !node.IsDaemoned() {
-				if completede, ok := pod.Labels[common.LabelKeyCompleted]; ok {
-					if completede == "true" {
+				if completed, ok := pod.Labels[common.LabelKeyCompleted]; ok {
+					if completed == "true" {
 						return
 					}
 				}
@@ -2119,6 +2119,6 @@ func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID str
 	return false, nil, nil
 }
 
-func (woc *wfOperationCtx) GetPodGC() wfv1.PodGCStrategy {
+func (woc *wfOperationCtx) GetPodGCStrategy() wfv1.PodGCStrategy {
 	return woc.podGC.GetPodGCStrategy()
 }
