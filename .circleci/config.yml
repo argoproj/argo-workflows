@@ -117,7 +117,9 @@ jobs:
             make test 2>&1 | tee test-results/test.out
       - run:
           name: Verify code generation
-          command: make verify-codegen verify-manifests
+          command: |
+            make codegen manifests
+            git diff --exit-code
       - save_go_cache
       - run:
           name: Uploading code coverage
