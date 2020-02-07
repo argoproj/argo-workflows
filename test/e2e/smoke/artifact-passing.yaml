@@ -5,8 +5,6 @@ metadata:
   labels:
     argo-e2e: true
 spec:
-  podGC:
-    strategy: OnPodCompletion
   entrypoint: artifact-example
   templates:
     - name: artifact-example
