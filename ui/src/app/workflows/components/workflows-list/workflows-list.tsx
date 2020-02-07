@@ -100,13 +100,16 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         }}>
                         <div className='row'>
                             <div className='columns small-12 xxlarge-2'>
-                                <WorkflowFilters
-                                    workflows={this.state.workflows}
-                                    namespace={this.namespace}
-                                    phases={this.phases}
-                                    labels={this.labels}
-                                    onChange={(namespace, phases, labels) => this.handleChanges(namespace, phases, labels)}
-                                />
+                                <div>{this.renderQuery(ctx)}</div>
+                                <div>
+                                    <WorkflowFilters
+                                        workflows={this.state.workflows}
+                                        namespace={this.namespace}
+                                        phases={this.phases}
+                                        labels={this.labels}
+                                        onChange={(namespace, phases, labels) => this.handleChanges(namespace, phases, labels)}
+                                    />
+                                </div>
                             </div>
                             <div className='columns small-12 xxlarge-10'>{this.renderWorkflows(ctx)}</div>
                         </div>
@@ -207,9 +210,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
         return (
             <>
-                <div className='row'>
-                    <div className='columns small-12 xxlarge-12'>{this.renderQuery(ctx)}</div>
-                </div>
                 <div className='row'>
                     <div className='columns small-12 xxlarge-12'>
                         {this.state.workflows.map(workflow => (
