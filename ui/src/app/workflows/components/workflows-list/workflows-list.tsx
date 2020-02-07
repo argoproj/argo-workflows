@@ -47,6 +47,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
     private set phases(phases: string[]) {
         this.appendQueryParams(phases.map(phase => ({name: 'phase', value: phase})));
+        this.fetchWorkflows();
     }
 
     private get wfInput() {
