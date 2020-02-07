@@ -44,7 +44,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private set phases(phases: string[]) {
-        console.log(phases);
         if (phases.length === 0) {
             this.clearQueryParams();
         } else {

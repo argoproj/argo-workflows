@@ -36,7 +36,7 @@ export class BasePage<P extends RouteComponentProps<any>, S> extends React.Compo
     }
 
     public clearQueryParams() {
-        this.appContext.router.history.push(this.props.match.url)
+        this.appContext.router.history.push(this.props.match.url);
     }
 
     // this allows us to set-multiple parameters at once
