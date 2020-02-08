@@ -23,20 +23,12 @@ export class NamespaceFilter extends React.Component<Props, State> {
         };
     }
 
-    private get namespace() {
-        return this.state.namespace;
-    }
-
-    private set namespace(namespace: string) {
-        this.setState({namespace});
-    }
-
     public componentDidMount(): void {
         services.info
             .get()
             .then(info => {
                 if (info.managedNamespace) {
-                    const namespaceChanged = info.managedNamespace !== this.namespace;
+                    const namespaceChanged = info.managedNamespace !== this.state.namespace;
                     this.setState({editable: false, namespace: info.managedNamespace});
                     if (namespaceChanged) {
                         this.props.onChange(info.managedNamespace);
@@ -53,15 +45,15 @@ export class NamespaceFilter extends React.Component<Props, State> {
             return <ErrorPanel error={this.state.error} />;
         }
         if (!this.state.editable) {
-            return <>{this.namespace}</>;
+            return <>{this.state.namespace}</>;
         }
         return (
             <InputFilter
-                value={this.namespace}
+                value={this.state.namespace}
                 placeholder='Namespace'
                 name='ns'
                 onChange={ns => {
-                    this.namespace = ns;
+                    this.setState({namespace: ns});
                     this.props.onChange(ns);
                 }}
             />

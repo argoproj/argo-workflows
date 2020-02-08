@@ -3,15 +3,14 @@ import {Checkbox} from 'argo-ui';
 
 require('./checkbox-filter.scss');
 
-export class CheckboxFilter extends React.Component<
-    {
-        items: {name: string; count: number}[];
-        type: string;
-        selected: string[];
-        onChange: (selected: string[]) => void;
-    },
-    {}
-> {
+interface Props {
+    items: {name: string; count: number}[];
+    type: string;
+    selected: string[];
+    onChange: (selected: string[]) => void;
+}
+
+export class CheckboxFilter extends React.Component<Props> {
     constructor(props: any) {
         super(props);
     }

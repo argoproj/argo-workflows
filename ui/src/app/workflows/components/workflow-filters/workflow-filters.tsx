@@ -6,104 +6,61 @@ import * as models from '../../../../models';
 
 require('./workflow-filters.scss');
 
-function getLabelsSuggestions(labels: Map<string, Set<string>>) {
-    const suggestions = new Array<string>();
-    Array.from(labels.entries()).forEach(([label, values]) => {
-        values.forEach(val => suggestions.push(`${label}=${val}`));
-    });
-    return suggestions;
-}
-
 interface WorkflowFilterProps {
     workflows: models.Workflow[];
     namespace: string;
-    phases: string[];
-    labels: string[];
-    onChange: (namespace: string, phases: string[], labels: string[]) => void;
+    selectedPhases: string[];
+    selectedLabels: string[];
+    onChange: (namespace: string, selectedPhases: string[], labels: string[]) => void;
 }
 
-interface WorkflowFilterState {
-    namespace: string;
-    phases: string[];
-    labels: string[];
-    error?: Error;
-}
-
-export class WorkflowFilters extends React.Component<WorkflowFilterProps, WorkflowFilterState> {
-    constructor(props: Readonly<WorkflowFilterProps>) {
-        super(props);
-        this.state = {
-            namespace: props.namespace,
-            phases: props.phases,
-            labels: props.labels
-        };
-    }
-
-    private set namespace(namespace: string) {
-        this.setState({namespace});
-    }
-
-    private get namespace() {
-        return this.state.namespace;
-    }
-
-    private set phases(phases: string[]) {
-        this.setState({phases});
-    }
-
-    private get phases() {
-        return this.state.phases;
-    }
-
-    private set labels(labels: string[]) {
-        this.setState({labels});
-    }
-
-    private get labels() {
-        return this.state.labels;
-    }
-
-    render() {
-        const {workflows, onChange} = this.props;
+export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
+    private getPhaseItems(workflows: models.Workflow[]) {
         const phasesMap = new Map<string, number>();
         Object.values(models.NODE_PHASE).forEach(value => phasesMap.set(value, 0));
         workflows.filter(wf => wf.status.phase).forEach(wf => phasesMap.set(wf.status.phase, (phasesMap.get(wf.status.phase) || 0) + 1));
+        const results = new Array<{name: string; count: number}>();
+        phasesMap.forEach((val, key) => {
+            results.push({name: key, count: val});
+        });
+        return results;
+    }
 
-        const labelsMap = new Map<string, Set<string>>();
-        workflows
-            .filter(wf => wf.metadata && wf.metadata.labels)
-            .forEach(wf =>
-                Object.keys(wf.metadata.labels).forEach(label => {
-                    let values = labelsMap.get(label);
-                    if (!values) {
-                        values = new Set<string>();
-                        labelsMap.set(label, values);
-                    }
-                    values.add(wf.metadata.labels[label]);
-                })
-            );
+    private getLabelSuggestions(workflows: models.Workflow[]) {
+        const suggestions = new Array<string>();
+        workflows.forEach(wf => {
+            Object.keys(wf.metadata.labels).forEach(label => {
+                const value = wf.metadata.labels[label];
+                const suggestedLabel = `${label}=${value}`;
+                if (!suggestions.some(v => v == suggestedLabel)) {
+                    suggestions.push(`${label}=${value}`);
+                }
+            });
+        });
+        return suggestions.sort((a, b) => a.localeCompare(b));
+    }
+
+    public render() {
         return (
             <div className='wf-filters-container'>
                 <div className='columns small-12 medium-3 xxlarge-12'>
                     <div className='row'>
                         <p className='wf-filters-container__title'>Namespace</p>
                         <NamespaceFilter
-                            value={this.namespace}
+                            value={this.props.namespace}
                             onChange={ns => {
-                                this.namespace = ns;
-                                onChange(ns, this.state.phases, this.state.labels);
+                                this.props.onChange(ns, this.props.selectedPhases, this.props.selectedLabels);
                             }}
                         />
                     </div>
                     <div className='row'>
                         <p className='wf-filters-container__title'>Phases</p>
                         <CheckboxFilter
-                            selected={this.phases}
+                            selected={this.props.selectedPhases}
                             onChange={selected => {
-                                this.phases = selected;
-                                onChange(this.namespace, selected, this.labels);
+                                this.props.onChange(this.props.namespace, selected, this.props.selectedLabels);
                             }}
-                            items={Array.from(phasesMap.keys()).map(phase => ({name: phase, count: phasesMap.get(phase) || 0}))}
+                            items={this.getPhaseItems(this.props.workflows)}
                             type='phase'
                         />
                     </div>
@@ -111,11 +68,10 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, Workfl
                         <p className='wf-filters-container__title'>Labels</p>
                         <TagsInput
                             placeholder=''
-                            autocomplete={getLabelsSuggestions(labelsMap)}
-                            tags={this.labels}
+                            autocomplete={this.getLabelSuggestions(this.props.workflows)}
+                            tags={this.props.selectedLabels}
                             onChange={tags => {
-                                this.labels = tags;
-                                onChange(this.namespace, this.phases, tags);
+                                this.props.onChange(this.props.namespace, this.props.selectedPhases, tags);
                             }}
                         />
                     </div>

@@ -25,8 +25,8 @@ require('./workflows-list.scss');
 interface State {
     loading: boolean;
     namespace: string;
-    phases: string[];
-    labels: string[];
+    selectedPhases: string[];
+    selectedLabels: string[];
     workflows?: Workflow[];
     error?: Error;
 }
@@ -40,12 +40,12 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.setState({namespace});
     }
 
-    private get phases() {
-        return this.state.phases;
+    private get selectedPhases() {
+        return this.state.selectedPhases;
     }
 
-    private get labels() {
-        return this.state.labels;
+    private get selectedLabels() {
+        return this.state.selectedLabels;
     }
 
     private get wfInput() {
@@ -58,8 +58,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.state = {
             loading: true,
             namespace: this.props.match.params.namespace || '',
-            phases: this.queryParams('phase'),
-            labels: this.queryParams('label')
+            selectedPhases: this.queryParams('phase'),
+            selectedLabels: this.queryParams('label')
         };
     }
 
@@ -105,9 +105,9 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     <WorkflowFilters
                                         workflows={this.state.workflows}
                                         namespace={this.namespace}
-                                        phases={this.phases}
-                                        labels={this.labels}
-                                        onChange={(namespace, phases, labels) => this.handleChanges(namespace, phases, labels)}
+                                        selectedPhases={this.selectedPhases}
+                                        selectedLabels={this.selectedLabels}
+                                        onChange={(namespace, selectedPhases, selectedLabels) => this.changeFilters(namespace, selectedPhases, selectedLabels)}
                                     />
                                 </div>
                             </div>
@@ -137,14 +137,14 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                 if (info.managedNamespace && info.managedNamespace !== this.namespace) {
                     this.namespace = info.managedNamespace;
                 }
-                return services.workflows.list(this.namespace, this.phases, this.labels);
+                return services.workflows.list(this.namespace, this.selectedPhases, this.selectedLabels);
             })
             .then(list => list.items)
             .then(list => list || [])
             .then(workflows => this.setState({workflows}))
             .then(() => {
                 this.subscription = services.workflows
-                    .watch({namespace: this.namespace, phases: this.phases, labels: this.labels})
+                    .watch({namespace: this.namespace, phases: this.selectedPhases, labels: this.selectedLabels})
                     .map(workflowChange => {
                         const workflows = this.state.workflows;
                         if (!workflowChange) {
@@ -178,17 +178,17 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             .catch(error => this.setState({error, loading: false}));
     }
 
-    private handleChanges(namespace: string, phases: string[], labels: string[]) {
-        this.setState({namespace, phases, labels});
+    private changeFilters(namespace: string, selectedPhases: string[], selectedLabels: string[]) {
+        this.setState({namespace, selectedPhases, selectedLabels});
         const params = new URLSearchParams();
-        phases.forEach(phase => {
+        selectedPhases.forEach(phase => {
             params.append('phase', phase);
         });
-        labels.forEach(label => {
+        selectedLabels.forEach(label => {
             params.append('label', label);
         });
-        var url = 'workflows/' + namespace;
-        if (phases.length > 0 || labels.length > 0) {
+        let url = 'workflows/' + namespace;
+        if (selectedPhases.length > 0 || selectedLabels.length > 0) {
             url += '?' + params.toString();
         }
         history.pushState(null, '', uiUrl(url));
