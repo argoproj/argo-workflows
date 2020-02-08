@@ -30,7 +30,7 @@ export const Login = () => (
                 configured.
             </p>
             <p>
-                Get your token using <code>argo token</code> and paste in this box.
+                Get your token using <code>argo auth token</code> and paste in this box.
             </p>
             <textarea id='token' cols={100} rows={20} defaultValue={getToken()} />
             <div>
