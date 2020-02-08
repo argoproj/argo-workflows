@@ -83,10 +83,10 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, Workfl
                 })
             );
         return (
-            <div className='wf__filters-container'>
+            <div className='wf-filters-container'>
                 <div className='columns small-12 medium-3 xxlarge-12'>
                     <div className='row'>
-                        <p className='wf__filters-container-title'>Namespace</p>
+                        <p className='wf-filters-container__title'>Namespace</p>
                         <NamespaceFilter
                             value={this.namespace}
                             onChange={ns => {
@@ -96,7 +96,7 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, Workfl
                         />
                     </div>
                     <div className='row'>
-                        <p className='wf__filters-container-title'>Phases</p>
+                        <p className='wf-filters-container__title'>Phases</p>
                         <CheckboxFilter
                             selected={this.phases}
                             onChange={selected => {
@@ -108,7 +108,7 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, Workfl
                         />
                     </div>
                     <div className='row'>
-                        <p className='wf__filters-container-title'>Labels</p>
+                        <p className='wf-filters-container__title'>Labels</p>
                         <TagsInput
                             placeholder=''
                             autocomplete={getLabelsSuggestions(labelsMap)}

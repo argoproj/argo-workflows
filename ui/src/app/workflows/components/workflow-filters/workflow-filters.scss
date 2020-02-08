@@ -1,6 +1,6 @@
 @import 'node_modules/argo-ui/src/styles/config';
 
-.wf__filters-container {
+.wf-filters-container {
     overflow: hidden;
     position: relative;
     border-radius: 5px;
@@ -10,14 +10,14 @@
     background-color: white;
 }
 
-.wf__filters-container p {
+.wf-filters-container p {
     margin: 0;
     margin-top: 1em;
     color: #6d7f8b;
     text-transform: uppercase;
 }
 
-.wf__filters-container-title {
+.wf-filters-container__title {
     position: relative;
     width: 100%;
     max-width: 100%;

@@ -1,17 +1,16 @@
 import * as React from 'react';
 import {Autocomplete} from '../../../../node_modules/argo-ui';
-import {ErrorPanel} from './error-panel';
 
 interface InputProps {
     value: string;
-    placeholder: string;
-    type: string;
+    placeholder?: string;
+    name: string;
     onChange: (input: string) => void;
 }
 
 interface InputState {
-    input: string;
-    localInputs: string[];
+    value: string;
+    localCache: string[];
     error?: Error;
 }
 
@@ -19,46 +18,43 @@ export class InputFilter extends React.Component<InputProps, InputState> {
     constructor(props: Readonly<InputProps>) {
         super(props);
         this.state = {
-            input: props.value,
-            localInputs: (localStorage.getItem(this.props.type + '_inputs') || '').split(',').filter(input => input !== '')
+            value: props.value,
+            localCache: (localStorage.getItem(this.props.name + '_inputs') || '').split(',').filter(value => value !== '')
         };
     }
 
-    private set input(input: string) {
+    private set value(value: string) {
         this.setState(state => {
-            const localInputs = state.localInputs;
-            if (!state.localInputs.includes(input)) {
-                localInputs.unshift(input);
+            const localCache = state.localCache;
+            if (!state.localCache.includes(value)) {
+                localCache.unshift(value);
             }
-            while (localInputs.length > 5) {
-                localInputs.pop();
+            while (localCache.length > 5) {
+                localCache.pop();
             }
-            localStorage.setItem(this.props.type + '_inputs', localInputs.join(','));
-            return {input, localInputs};
+            localStorage.setItem(this.props.name + '_inputs', localCache.join(','));
+            return {value, localCache};
         });
     }
 
     public render() {
-        if (this.state.error) {
-            return <ErrorPanel error={this.state.error} />;
-        }
         return (
             <>
                 <Autocomplete
-                    items={this.state.localInputs}
-                    value={this.state.input}
-                    onChange={(e, input) => this.setState({input})}
-                    onSelect={input => {
-                        this.setState({input});
-                        this.props.onChange(input);
+                    items={this.state.localCache}
+                    value={this.state.value}
+                    onChange={(e, value) => this.setState({value})}
+                    onSelect={value => {
+                        this.setState({value});
+                        this.props.onChange(value);
                     }}
                     renderInput={inputProps => (
                         <input
                             {...inputProps}
                             onKeyUp={event => {
                                 if (event.keyCode === 13) {
-                                    this.input = event.currentTarget.value;
-                                    this.props.onChange(this.state.input);
+                                    this.value = event.currentTarget.value;
+                                    this.props.onChange(this.state.value);
                                 }
                             }}
                             className='argo-field'
@@ -68,7 +64,7 @@ export class InputFilter extends React.Component<InputProps, InputState> {
                 />
                 <a
                     onClick={() => {
-                        this.setState({input: ''});
+                        this.setState({value: ''});
                         this.props.onChange('');
                     }}>
                     <i className='fa fa-times-circle' />

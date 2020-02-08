@@ -59,7 +59,7 @@ export class NamespaceFilter extends React.Component<Props, State> {
             <InputFilter
                 value={this.namespace}
                 placeholder='Namespace'
-                type='ns'
+                name='ns'
                 onChange={ns => {
                     this.namespace = ns;
                     this.props.onChange(ns);

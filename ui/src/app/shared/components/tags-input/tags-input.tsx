@@ -6,7 +6,7 @@ import {Autocomplete, AutocompleteApi, AutocompleteOption} from 'argo-ui';
 export interface TagsInputProps {
     tags: string[];
     autocomplete?: (AutocompleteOption | string)[];
-    onChange?: (tags: string[]) => any;
+    onChange?: (tags: string[]) => void;
     placeholder?: string;
 }
 

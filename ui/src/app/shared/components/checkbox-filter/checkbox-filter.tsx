@@ -8,7 +8,7 @@ export class CheckboxFilter extends React.Component<
         items: {name: string; count: number}[];
         type: string;
         selected: string[];
-        onChange: (selected: string[]) => any;
+        onChange: (selected: string[]) => void;
     },
     {}
 > {
@@ -20,11 +20,11 @@ export class CheckboxFilter extends React.Component<
         const unavailableSelected = this.props.selected.filter(selected => !this.props.items.some(item => item.name === selected));
         const items = this.props.items.concat(unavailableSelected.map(selected => ({name: selected, count: 0})));
         return (
-            <ul className='checkbox__filter'>
+            <ul className='checkbox-filter'>
                 {items.map(item => (
                     <li key={item.name}>
                         <React.Fragment>
-                            <div className='checkbox__filter-label'>
+                            <div className='checkbox-filter__label'>
                                 <Checkbox
                                     checked={this.props.selected.indexOf(item.name) > -1}
                                     id={`filter-${this.props.type}-${item.name}`}
