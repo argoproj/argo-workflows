@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"strings"
-	"testing"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -102,7 +101,8 @@ func (s *E2ESuite) DeleteResources(label string) {
 		for _, wf := range list.Items {
 			isTestWf[wf.Name] = false
 			if s.Persistence.IsEnabled() {
-				err := s.Persistence.offloadNodeStatusRepo.Delete(string(wf.UID))
+				// TODO - may make tests flakey
+				err := s.Persistence.offloadNodeStatusRepo.Delete(string(wf.UID), wf.Status.OffloadNodeStatusVersion)
 				if err != nil {
 					panic(err)
 				}
@@ -209,14 +209,6 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 	return "", nil
 }
 
-func (s *E2ESuite) Run(name string, f func(t *testing.T)) {
-	t := s.T()
-	if t.Failed() {
-		t.SkipNow()
-	}
-	t.Run(name, f)
-}
-
 func (s *E2ESuite) AfterTest(_, _ string) {
 	if s.T().Failed() {
 		s.printDiagnostics()
@@ -302,9 +294,9 @@ func (s *E2ESuite) printPodLogs(logCtx *log.Entry, namespace, pod, container str
 	fmt.Println("---")
 }
 
-func (s *E2ESuite) Given(t *testing.T) *Given {
+func (s *E2ESuite) Given() *Given {
 	return &Given{
-		t:                     t,
+		t:                     s.T(),
 		diagnostics:           s.Diagnostics,
 		client:                s.wfClient,
 		wfTemplateClient:      s.wfTemplateClient,

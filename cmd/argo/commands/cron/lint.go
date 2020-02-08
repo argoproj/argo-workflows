@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
 	cmdutil "github.com/argoproj/argo/util/cmd"
@@ -23,12 +23,6 @@ func NewLintCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-
-			namespace, _, err := clientConfig.Namespace()
-			if err != nil {
-				log.Fatal(err)
-			}
-
 			wftmplGetter := &LazyWorkflowTemplateGetter{}
 			validateDir := cmdutil.MustIsDir(args[0])
 			if validateDir {
@@ -37,7 +31,8 @@ func NewLintCommand() *cobra.Command {
 					os.Exit(1)
 				}
 				fmt.Printf("Verifying all cron workflow manifests in directory: %s\n", args[0])
-				err = validate.LintCronWorkflowDir(wftmplGetter, namespace, args[0], strict)
+				err := validate.LintCronWorkflowDir(wftmplGetter, args[0], strict)
+				errors.CheckError(err)
 			} else {
 				yamlFiles := make([]string, 0)
 				for _, filePath := range args {
@@ -48,14 +43,9 @@ func NewLintCommand() *cobra.Command {
 					yamlFiles = append(yamlFiles, filePath)
 				}
 				for _, yamlFile := range yamlFiles {
-					err = validate.LintCronWorkflowFile(wftmplGetter, namespace, yamlFile, strict)
-					if err != nil {
-						break
-					}
+					err := validate.LintCronWorkflowFile(wftmplGetter, yamlFile, strict)
+					errors.CheckError(err)
 				}
-			}
-			if err != nil {
-				log.Fatal(err)
 			}
 			fmt.Printf("CronWorkflow manifests validated\n")
 		},

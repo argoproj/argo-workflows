@@ -8,6 +8,7 @@ import (
 	"github.com/argoproj/pkg/cli"
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
+	"github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 	"k8s.io/client-go/kubernetes"
@@ -21,13 +22,14 @@ import (
 
 func NewServerCommand() *cobra.Command {
 	var (
-		logLevel         string // --loglevel
-		authMode         string
-		configMap        string
-		port             int
-		baseHRef         string
-		namespaced       bool   // --namespaced
-		managedNamespace string // --managed-namespace
+		logLevel          string // --loglevel
+		authMode          string
+		configMap         string
+		port              int
+		baseHRef          string
+		namespaced        bool   // --namespaced
+		managedNamespace  string // --managed-namespace
+		enableOpenBrowser bool
 	)
 
 	var command = cobra.Command{
@@ -87,7 +89,17 @@ See %s`, help.ArgoSever),
 			if err != nil {
 				return err
 			}
-			apiserver.NewArgoServer(opts).Run(ctx, port)
+			browserOpenFunc := func(url string) {}
+			if enableOpenBrowser {
+				browserOpenFunc = func(url string) {
+					log.Infof("Argo UI is available at %s", url)
+					err := open.Run(url)
+					if err != nil {
+						log.Warnf("Unable to open the browser. %v", err)
+					}
+				}
+			}
+			apiserver.NewArgoServer(opts).Run(ctx, port, browserOpenFunc)
 			return nil
 		},
 	}
@@ -103,5 +115,6 @@ See %s`, help.ArgoSever),
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that watches, default to the installation namespace")
+	command.Flags().BoolVarP(&enableOpenBrowser, "browser", "b", false, "enable automatic launching of the browser [local mode]")
 	return &command
 }
