@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {InputFilter} from './input-filter';
 import {services} from '../services';
 import {ErrorPanel} from './error-panel';
+import {InputFilter} from './input-filter';
 
 interface Props {
     value: string;

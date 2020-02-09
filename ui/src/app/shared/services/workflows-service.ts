@@ -87,7 +87,7 @@ export class WorkflowsService {
         if (filter.name) {
             queryParams.push(`listOptions.fieldSelector=metadata.name=${filter.name}`);
         }
-        var labelSelector = '';
+        let labelSelector = '';
         if (filter.phases && filter.phases.length > 0) {
             labelSelector = `workflows.argoproj.io/phase in (${filter.phases.join(',')})`;
         }
