@@ -6,6 +6,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
+	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 )
@@ -24,6 +25,10 @@ func newArgoServerClient(argoServer, auth string) (context.Context, Client, erro
 
 func (a *argoServerClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
 	return workflowpkg.NewWorkflowServiceClient(a.ClientConn)
+}
+
+func (a *argoServerClient) NewCronWorkflowServiceClient() cronworkflowpkg.CronWorkflowServiceClient {
+	return cronworkflowpkg.NewCronWorkflowServiceClient(a.ClientConn)
 }
 
 func (a *argoServerClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {
