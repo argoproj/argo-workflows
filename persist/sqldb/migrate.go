@@ -211,7 +211,7 @@ func (m migrate) Exec(ctx context.Context) error {
     primary key (clustername, uid, name),
  	FOREIGN KEY (clustername, uid) REFERENCES argo_archived_workflows(clustername, uid) ON DELETE CASCADE
 )`),
-} {
+	} {
 		err := m.applyChange(ctx, changeSchemaVersion, change)
 		if err != nil {
 			return err

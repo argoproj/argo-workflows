@@ -7,6 +7,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -32,7 +33,7 @@ type archivedWorkflowRecord struct {
 }
 type WorkflowArchive interface {
 	ArchiveWorkflow(wf *wfv1.Workflow) error
-	ListWorkflows(namespace string, limit, offset int) (wfv1.Workflows, error)
+	ListWorkflows(namespace string, labelRequirements labels.Requirements, limit, offset int) (wfv1.Workflows, error)
 	GetWorkflow(uid string) (*wfv1.Workflow, error)
 	DeleteWorkflow(uid string) error
 }
@@ -98,13 +99,14 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 	return nil
 }
 
-func (r *workflowArchive) ListWorkflows(namespace string, limit int, offset int) (wfv1.Workflows, error) {
+func (r *workflowArchive) ListWorkflows(namespace string, labelRequirements labels.Requirements, limit int, offset int) (wfv1.Workflows, error) {
 	var archivedWfs []archivedWorkflowMetadata
 	err := r.session.
 		Select("name", "namespace", "uid", "phase", "startedat", "finishedat").
 		From(archiveTableName).
 		Where(db.Cond{"clustername": r.clusterName}).
 		And(namespaceEqual(namespace)).
+		And(labelsClause(labelRequirements)).
 		OrderBy("-startedat").
 		Limit(limit).
 		Offset(offset).
