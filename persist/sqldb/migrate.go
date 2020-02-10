@@ -202,7 +202,16 @@ func (m migrate) Exec(ctx context.Context) error {
 		),
 		// clustername(not null) | uid(not null) | | name (not null) | phase(not null) | namespace(not null) | workflow(not null) | startedat(not null)  | finishedat(not null)
 		ansiSQLChange(`create index ` + m.tableName + `_i2 on ` + m.tableName + ` (clustername,namespace,updatedat)`),
-	} {
+		// the key has an optional prefix(253 chars) + '/' + name(63 chars)
+		ansiSQLChange(`create table if not exists argo_archived_workflows_labels (
+	clustername varchar(64) not null,
+	uid varchar(128) not null,
+    name varchar(317) not null,
+    value varchar(63) not null,
+    primary key (clustername, uid, name),
+ 	FOREIGN KEY (clustername, uid) REFERENCES argo_archived_workflows(clustername, uid) ON DELETE CASCADE
+)`),
+} {
 		err := m.applyChange(ctx, changeSchemaVersion, change)
 		if err != nil {
 			return err
