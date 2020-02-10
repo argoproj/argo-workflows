@@ -67,15 +67,17 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
 
     private getLabelSuggestions(workflows: models.Workflow[]) {
         const suggestions = new Array<string>();
-        workflows.forEach(wf => {
-            Object.keys(wf.metadata.labels).forEach(label => {
-                const value = wf.metadata.labels[label];
-                const suggestedLabel = `${label}=${value}`;
-                if (!suggestions.some(v => v === suggestedLabel)) {
-                    suggestions.push(`${label}=${value}`);
-                }
+        workflows
+            .filter(wf => wf.metadata.labels)
+            .forEach(wf => {
+                Object.keys(wf.metadata.labels).forEach(label => {
+                    const value = wf.metadata.labels[label];
+                    const suggestedLabel = `${label}=${value}`;
+                    if (!suggestions.some(v => v === suggestedLabel)) {
+                        suggestions.push(`${label}=${value}`);
+                    }
+                });
             });
-        });
         return suggestions.sort((a, b) => a.localeCompare(b));
     }
 }

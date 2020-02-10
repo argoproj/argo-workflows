@@ -32,22 +32,6 @@ interface State {
 }
 
 export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
-    private get namespace() {
-        return this.state.namespace;
-    }
-
-    private set namespace(namespace: string) {
-        this.setState({namespace});
-    }
-
-    private get selectedPhases() {
-        return this.state.selectedPhases;
-    }
-
-    private get selectedLabels() {
-        return this.state.selectedLabels;
-    }
-
     private get wfInput() {
         return Utils.tryJsonParse(this.queryParam('new'));
     }
@@ -104,9 +88,9 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 <div>
                                     <WorkflowFilters
                                         workflows={this.state.workflows}
-                                        namespace={this.namespace}
-                                        selectedPhases={this.selectedPhases}
-                                        selectedLabels={this.selectedLabels}
+                                        namespace={this.state.namespace}
+                                        selectedPhases={this.state.selectedPhases}
+                                        selectedLabels={this.state.selectedLabels}
                                         onChange={(namespace, selectedPhases, selectedLabels) => this.changeFilters(namespace, selectedPhases, selectedLabels)}
                                     />
                                 </div>
@@ -116,10 +100,10 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
                             <ResourceSubmit<models.Workflow>
                                 resourceName={'Workflow'}
-                                defaultResource={exampleWorkflow(this.namespace)}
+                                defaultResource={exampleWorkflow(this.state.namespace)}
                                 onSubmit={wfValue => {
                                     return services.workflows
-                                        .create(wfValue, wfValue.metadata.namespace || this.namespace)
+                                        .create(wfValue, wfValue.metadata.namespace || this.state.namespace)
                                         .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)));
                                 }}
                             />
@@ -134,17 +118,17 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         services.info
             .get()
             .then(info => {
-                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
-                    this.namespace = info.managedNamespace;
+                if (info.managedNamespace && info.managedNamespace !== this.state.namespace) {
+                    this.setState({namespace: info.managedNamespace});
                 }
-                return services.workflows.list(this.namespace, this.selectedPhases, this.selectedLabels);
+                return services.workflows.list(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels);
             })
             .then(list => list.items)
             .then(list => list || [])
             .then(workflows => this.setState({workflows}))
             .then(() => {
                 this.subscription = services.workflows
-                    .watch({namespace: this.namespace, phases: this.selectedPhases, labels: this.selectedLabels})
+                    .watch({namespace: this.state.namespace, phases: this.state.selectedPhases, labels: this.state.selectedLabels})
                     .map(workflowChange => {
                         const workflows = this.state.workflows;
                         if (!workflowChange) {

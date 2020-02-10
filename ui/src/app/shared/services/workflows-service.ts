@@ -87,19 +87,24 @@ export class WorkflowsService {
         if (filter.name) {
             queryParams.push(`listOptions.fieldSelector=metadata.name=${filter.name}`);
         }
-        let labelSelector = '';
-        if (filter.phases && filter.phases.length > 0) {
-            labelSelector = `workflows.argoproj.io/phase in (${filter.phases.join(',')})`;
-        }
-        if (filter.labels && filter.labels.length > 0) {
-            if (labelSelector.length > 0) {
-                labelSelector += ',';
-            }
-            labelSelector += filter.labels.join(',');
-        }
+        const labelSelector = this.labelSelectorParams(filter.phases, filter.labels);
         if (labelSelector.length > 0) {
             queryParams.push(`listOptions.labelSelector=${labelSelector}`);
         }
         return queryParams;
+    }
+
+    private labelSelectorParams(phases?: Array<string>, labels?: Array<string>) {
+        let labelSelector = '';
+        if (phases && phases.length > 0) {
+            labelSelector = `workflows.argoproj.io/phase in (${phases.join(',')})`;
+        }
+        if (labels && labels.length > 0) {
+            if (labelSelector.length > 0) {
+                labelSelector += ',';
+            }
+            labelSelector += labels.join(',');
+        }
+        return labelSelector;
     }
 }
