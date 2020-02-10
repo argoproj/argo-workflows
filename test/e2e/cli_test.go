@@ -82,8 +82,8 @@ func (s *CLISuite) TestTokenArg() {
 func (s *CLISuite) TestLogs() {
 	// we use our own YAML as we do not want to use PodGC for this test
 
-	s.Run("SetUp", func(t *testing.T) {
-		s.Given(t).
+	s.Run("SetUp", func() {
+		s.Given().
 			Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -104,48 +104,48 @@ spec:
 				return wf.Status.Nodes.FindByDisplayName("my-wf") != nil
 			}, "pod running", 10*time.Second)
 	})
-	s.Run("FollowPodLogs", func(t *testing.T) {
-		s.Given(t).
+	s.Run("FollowPodLogs", func() {
+		s.Given().
 			RunCli([]string{"logs", "my-wf", "my-wf", "--follow"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, ":) Hello Logs!")
 				}
 			})
 	})
-	s.Run("ContainerLogs", func(t *testing.T) {
-		s.Given(t).
+	s.Run("ContainerLogs", func() {
+		s.Given().
 			RunCli([]string{"logs", "my-wf", "my-wf", "-c", "wait"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, "Executor")
 				}
 			})
 	})
-	s.Run("Since", func(t *testing.T) {
-		s.Given(t).
+	s.Run("Since", func() {
+		s.Given().
 			RunCli([]string{"logs", "my-wf", "--since=0s"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.NotContains(t, output, ":) Hello Logs!")
 				}
 			})
 	})
-	s.Run("SinceTime", func(t *testing.T) {
-		s.Given(t).
+	s.Run("SinceTime", func() {
+		s.Given().
 			RunCli([]string{"logs", "my-wf", "--since-time=" + time.Now().Format(time.RFC3339)}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.NotContains(t, output, ":) Hello Logs!")
 				}
 			})
 	})
-	s.Run("TailLines", func(t *testing.T) {
-		s.Given(t).
+	s.Run("TailLines", func() {
+		s.Given().
 			RunCli([]string{"logs", "my-wf", "--tail=0"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.NotContains(t, output, ":) Hello Logs!")
 				}
 			})
 	})
-	s.Run("CompletedWorkflow", func(t *testing.T) {
-		s.Given(t).
+	s.Run("CompletedWorkflow", func() {
+		s.Given().
 			WorkflowName("my-wf").
 			When().
 			WaitForWorkflow(10*time.Second).
