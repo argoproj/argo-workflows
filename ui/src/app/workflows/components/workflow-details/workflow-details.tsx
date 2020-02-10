@@ -51,7 +51,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
         this.state = {workflow: null};
     }
 
-    public componentWillMount() {
+    public componentDidMount() {
         this.loadWorkflow(this.props.match.params.namespace, this.props.match.params.name);
     }
 
