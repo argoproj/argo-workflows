@@ -7,6 +7,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
@@ -36,6 +37,10 @@ func newClassicClient(clientConfig clientcmd.ClientConfig) (context.Context, Cli
 
 func (a *classicClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
 	return &classicWorkflowServiceClient{a.Interface, a.kubeClient}
+}
+
+func (a *classicClient) NewCronWorkflowServiceClient() cronworkflow.CronWorkflowServiceClient {
+	return &classicCronWorkflowServiceClient{a.Interface}
 }
 
 func (a *classicClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {

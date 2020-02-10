@@ -5,6 +5,7 @@ import {Subscription} from 'rxjs';
 import {Autocomplete, Page, SlidingPanel, TopBarFilter} from 'argo-ui';
 import * as models from '../../../../models';
 import {Workflow} from '../../../../models';
+import {compareWorkflows} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
@@ -49,7 +50,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         } else {
             this.appendQueryParams(phases.map(phase => ({name: 'phase', value: phase})));
         }
-        this.fetchWorkflows();
     }
 
     private get wfInput() {
@@ -62,7 +62,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.state = {loading: true, namespace: this.props.match.params.namespace || ''};
     }
 
-    public componentWillMount(): void {
+    public componentDidMount(): void {
         this.fetchWorkflows();
     }
 
@@ -125,6 +125,9 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private fetchWorkflows(): void {
+        if (this.subscription) {
+            this.subscription.unsubscribe();
+        }
         services.info
             .get()
             .then(info => {
@@ -184,6 +187,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                 </ZeroState>
             );
         }
+        this.state.workflows.sort(compareWorkflows);
 
         return (
             <>

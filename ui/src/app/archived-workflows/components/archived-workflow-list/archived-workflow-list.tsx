@@ -45,7 +45,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         this.state = {continue: '', loading: true, namespace: this.props.match.params.namespace || ''};
     }
 
-    public componentWillMount(): void {
+    public componentDidMount(): void {
         this.fetchArchivedWorkflows();
     }
 
