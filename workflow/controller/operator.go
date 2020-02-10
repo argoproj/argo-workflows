@@ -272,12 +272,14 @@ func (woc *wfOperationCtx) operate() {
 					TemplateName string `json:"templateName"`
 					FinishedAt   string `json:"finishedAt"`
 					Phase        string `json:"phase"`
+					PodName      string `json:"podName"`
 				}{
 					Name:         node.DisplayName,
 					Message:      node.Message,
 					TemplateName: node.TemplateName,
 					FinishedAt:   node.FinishedAt.String(),
 					Phase:        string(node.Phase),
+					PodName:      node.ID,
 				})
 			}
 		}
