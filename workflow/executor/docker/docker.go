@@ -106,27 +106,22 @@ func (d *DockerExecutor) Wait(containerID string) error {
 // killContainers kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
 func (d *DockerExecutor) Kill(containerIDs []string) error {
 	killArgs := append([]string{"kill", "--signal", "TERM"}, containerIDs...)
-	err := common.RunCommand("docker", killArgs...)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
+	// docker kill will return with an error if a container has terminated already, which is not an error in this case.
+	// We therefore ignore any error. docker wait that follows will re-raise any other error with the container.
+	_ := common.RunCommand("docker", killArgs...)
 	waitArgs := append([]string{"wait"}, containerIDs...)
 	waitCmd := exec.Command("docker", waitArgs...)
 	log.Info(waitCmd.Args)
 	if err := waitCmd.Start(); err != nil {
 		return errors.InternalWrapError(err)
 	}
-	// waitCmd.Wait() might return error "signal: killed" when we SIGKILL the process
-	// We ignore errors in this case
-	//ignoreWaitError := false
 	timer := time.AfterFunc(execcommon.KillGracePeriod*time.Second, func() {
 		log.Infof("Timed out (%ds) for containers to terminate gracefully. Killing forcefully", execcommon.KillGracePeriod)
 		forceKillArgs := append([]string{"kill", "--signal", "KILL"}, containerIDs...)
 		forceKillCmd := exec.Command("docker", forceKillArgs...)
 		log.Info(forceKillCmd.Args)
+		// same as kill case above, we ignore any error
 		_ = forceKillCmd.Run()
-		//ignoreWaitError = true
-		//_ = waitCmd.Process.Kill()
 	})
 	err = waitCmd.Wait()
 	_ = timer.Stop()
