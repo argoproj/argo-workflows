@@ -187,7 +187,7 @@ func getArtifactRepositoryRef(wfc *WorkflowController, configMapName string, key
 		if err != nil {
 			return nil, err
 		}
-    }
+	}
 	var config config.ArtifactRepository
 	err = yaml.Unmarshal([]byte(configStr), &config)
 	if err != nil {
