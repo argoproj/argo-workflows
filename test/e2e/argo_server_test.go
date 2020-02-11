@@ -820,6 +820,14 @@ func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 			Null()
 
 		s.e(s.T()).GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.labelSelector", "argo-e2e,!argo-e2e").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Null()
+
+		s.e(s.T()).GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "argo-e2e").
 			Expect().
 			Status(200).
