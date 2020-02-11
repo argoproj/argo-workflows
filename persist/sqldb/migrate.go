@@ -209,7 +209,7 @@ func (m migrate) Exec(ctx context.Context) error {
     name varchar(317) not null,
     value varchar(63) not null,
     primary key (clustername, uid, name),
- 	FOREIGN KEY (clustername, uid) REFERENCES argo_archived_workflows(clustername, uid) ON DELETE CASCADE
+ 	foreign key (clustername, uid) references argo_archived_workflows(clustername, uid) on delete cascade
 )`),
 	} {
 		err := m.applyChange(ctx, changeSchemaVersion, change)

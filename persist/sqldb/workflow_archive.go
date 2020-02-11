@@ -101,12 +101,16 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 
 func (r *workflowArchive) ListWorkflows(namespace string, labelRequirements labels.Requirements, limit int, offset int) (wfv1.Workflows, error) {
 	var archivedWfs []archivedWorkflowMetadata
-	err := r.session.
+	clause, err := labelsClause(labelRequirements)
+	if err != nil {
+		return nil, err
+	}
+	err = r.session.
 		Select("name", "namespace", "uid", "phase", "startedat", "finishedat").
 		From(archiveTableName).
 		Where(db.Cond{"clustername": r.clusterName}).
 		And(namespaceEqual(namespace)).
-		And(labelsClause(labelRequirements)).
+		And(clause).
 		OrderBy("-startedat").
 		Limit(limit).
 		Offset(offset).

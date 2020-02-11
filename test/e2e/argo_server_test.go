@@ -810,6 +810,15 @@ func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 			SubmitWorkflow().
 			WaitForWorkflow(20 * time.Second)
 
+		// expect zero results for a label that does not exist
+		s.e(s.T()).GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.labelSelector", "foo=bar").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Null()
+
 		s.e(s.T()).GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "argo-e2e").
 			Expect().
