@@ -13,8 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/server/workflow"
-
+	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -42,7 +41,7 @@ func NewWaitCommand() *cobra.Command {
 func WaitWorkflows(workflowNames []string, ignoreNotFound, quiet bool) {
 	var wg sync.WaitGroup
 	wfSuccessStatus := true
-	var apiClient workflow.WorkflowServiceClient
+	var apiClient workflowpkg.WorkflowServiceClient
 	var ctx context.Context
 	ns, _, _ := client.Config.Namespace()
 	if client.ArgoServer != "" {
@@ -78,9 +77,9 @@ func WaitWorkflows(workflowNames []string, ignoreNotFound, quiet bool) {
 	}
 }
 
-func apiServerWaitOnOne(client workflow.WorkflowServiceClient, ctx context.Context, wfName string, namespace string, ignoreNotFound, quiet bool) bool {
+func apiServerWaitOnOne(client workflowpkg.WorkflowServiceClient, ctx context.Context, wfName string, namespace string, ignoreNotFound, quiet bool) bool {
 	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", wfName))
-	wfReq := workflow.WatchWorkflowsRequest{
+	wfReq := workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{
 			FieldSelector: fieldSelector.String(),

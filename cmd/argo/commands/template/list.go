@@ -12,9 +12,9 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/workflowtemplate"
 )
 
 type listFlags struct {
@@ -39,7 +39,7 @@ func NewListCommand() *cobra.Command {
 			var wftmplList *wfv1.WorkflowTemplateList
 			var err error
 			if client.ArgoServer != "" {
-				wftmplReq := workflowtemplate.WorkflowTemplateListRequest{
+				wftmplReq := workflowtemplatepkg.WorkflowTemplateListRequest{
 					Namespace: ns,
 				}
 				conn := client.GetClientConn()

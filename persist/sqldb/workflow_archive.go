@@ -78,7 +78,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 				Set("startedat", wf.Status.StartedAt.Time).
 				Set("finishedat", wf.Status.FinishedAt.Time).
 				Where(db.Cond{"clustername": r.clusterName}).
-				And(db.Cond{"uuid": wf.UID}).
+				And(db.Cond{"uid": wf.UID}).
 				Exec()
 			if err != nil {
 				return err

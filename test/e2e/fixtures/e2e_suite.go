@@ -2,9 +2,9 @@ package fixtures
 
 import (
 	"bufio"
+	"encoding/base64"
 	"fmt"
 	"strings"
-	"testing"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -17,7 +17,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/argo/commands"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/kubeconfig"
@@ -25,7 +24,10 @@ import (
 )
 
 const Namespace = "argo"
-const label = "argo-e2e"
+const Label = "argo-e2e"
+
+// Cron tests run in parallel, so use a different label so they are not deleted when a new test runs
+const LabelCron = Label + "-cron"
 
 func init() {
 	_ = commands.NewCommand()
@@ -33,7 +35,6 @@ func init() {
 
 type E2ESuite struct {
 	suite.Suite
-	Env
 	Diagnostics      *Diagnostics
 	Persistence      *Persistence
 	RestConfig       *rest.Config
@@ -49,11 +50,6 @@ func (s *E2ESuite) SetupSuite() {
 	if err != nil {
 		panic(err)
 	}
-	token, err := s.GetServiceAccountToken()
-	if err != nil {
-		panic(err)
-	}
-	s.SetEnv(token)
 	s.KubeClient, err = kubernetes.NewForConfig(s.RestConfig)
 	if err != nil {
 		panic(err)
@@ -67,12 +63,15 @@ func (s *E2ESuite) SetupSuite() {
 
 func (s *E2ESuite) TearDownSuite() {
 	s.Persistence.Close()
-	s.UnsetEnv()
 }
 
 func (s *E2ESuite) BeforeTest(_, _ string) {
 	s.Diagnostics = &Diagnostics{}
 
+	s.DeleteResources(Label)
+}
+
+func (s *E2ESuite) DeleteResources(label string) {
 	// delete all cron workflows
 	cronList, err := s.cronClient.List(metav1.ListOptions{LabelSelector: label})
 	if err != nil {
@@ -85,45 +84,90 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 			panic(err)
 		}
 	}
-	// delete all workflows
-	list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: label})
-	if err != nil {
-		panic(err)
-	}
-	for _, wf := range list.Items {
-		logCtx := log.WithFields(log.Fields{"workflow": wf.Name})
-		logCtx.Infof("Deleting workflow")
-		err = s.wfClient.Delete(wf.Name, &metav1.DeleteOptions{})
+
+	// It is possible for a pod to become orphaned. This means that it's parent workflow
+	// (as set in the  "workflows.argoproj.io/workflow" label) does not exist.
+	// We need to delete orphans as well as test pods.
+	// Get a list of all workflows.
+	// if absent from this this it has been delete - so any associated pods are orphaned
+	// if in the list it is either a test wf or not
+	isTestWf := make(map[string]bool)
+	{
+		list, err := s.wfClient.List(metav1.ListOptions{})
 		if err != nil {
 			panic(err)
 		}
-		for {
-			_, err := s.wfClient.Get(wf.Name, metav1.GetOptions{})
-			if errors.IsNotFound(err) {
-				break
+		for _, wf := range list.Items {
+			isTestWf[wf.Name] = false
+			if s.Persistence.IsEnabled() && wf.Status.IsOffloadNodeStatus() {
+				// TODO - may make tests flakey
+				err := s.Persistence.offloadNodeStatusRepo.Delete(string(wf.UID), wf.Status.OffloadNodeStatusVersion)
+				if err != nil {
+					panic(err)
+				}
+				err = s.Persistence.workflowArchive.DeleteWorkflow(string(wf.UID))
+				if err != nil {
+					panic(err)
+				}
 			}
-			logCtx.Info("Waiting for workflow to be deleted")
-			time.Sleep(3 * time.Second)
-		}
-		// wait for workflow pods to be deleted
-		for {
-			// it seems "argo delete" can leave pods behind
-			options := metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow=" + wf.Name}
-			err := s.KubeClient.CoreV1().Pods(Namespace).DeleteCollection(nil, options)
-			if err != nil {
-				panic(err)
-			}
-			pods, err := s.KubeClient.CoreV1().Pods(Namespace).List(options)
-			if err != nil {
-				panic(err)
-			}
-			if len(pods.Items) == 0 {
-				break
-			}
-			logCtx.WithField("num", len(pods.Items)).Info("Waiting for workflow pods to go away")
-			time.Sleep(3 * time.Second)
 		}
 	}
+
+	// delete all workflows
+	{
+		list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: label})
+		if err != nil {
+			panic(err)
+		}
+		for _, wf := range list.Items {
+			logCtx := log.WithFields(log.Fields{"workflow": wf.Name})
+			logCtx.Infof("Deleting workflow")
+			err = s.wfClient.Delete(wf.Name, &metav1.DeleteOptions{})
+			if err != nil {
+				panic(err)
+			}
+			isTestWf[wf.Name] = true
+			for {
+				_, err := s.wfClient.Get(wf.Name, metav1.GetOptions{})
+				if errors.IsNotFound(err) {
+					break
+				}
+				logCtx.Info("Waiting for workflow to be deleted")
+				time.Sleep(1 * time.Second)
+			}
+		}
+	}
+
+	// delete workflow pods
+	{
+		podInterface := s.KubeClient.CoreV1().Pods(Namespace)
+		// it seems "argo delete" can leave pods behind
+		pods, err := podInterface.List(metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow"})
+		if err != nil {
+			panic(err)
+		}
+		for _, pod := range pods.Items {
+			workflow := pod.GetLabels()["workflows.argoproj.io/workflow"]
+			testPod, owned := isTestWf[workflow]
+			if testPod || !owned {
+				logCtx := log.WithFields(log.Fields{"workflow": workflow, "podName": pod.Name, "testPod": testPod, "owned": owned})
+				logCtx.Info("Deleting pod")
+				err := podInterface.Delete(pod.Name, nil)
+				if !errors.IsNotFound(err) {
+					panic(err)
+				}
+				for {
+					_, err := podInterface.Get(pod.Name, metav1.GetOptions{})
+					if errors.IsNotFound(err) {
+						break
+					}
+					logCtx.Info("Waiting for pod to be deleted")
+					time.Sleep(1 * time.Second)
+				}
+			}
+		}
+	}
+
 	// delete all workflow templates
 	wfTmpl, err := s.wfTemplateClient.List(metav1.ListOptions{LabelSelector: label})
 	if err != nil {
@@ -136,8 +180,14 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 			panic(err)
 		}
 	}
-	// create database collection
-	s.Persistence.DeleteEverything()
+}
+
+func (s *E2ESuite) GetBasicAuthToken() string {
+	if s.RestConfig.Username == "" {
+		return ""
+	}
+	auth := s.RestConfig.Username + ":" + s.RestConfig.Password
+	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
 
 func (s *E2ESuite) GetServiceAccountToken() (string, error) {
@@ -158,14 +208,6 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 	return "", nil
 }
 
-func (s *E2ESuite) Run(name string, f func(t *testing.T)) {
-	t := s.T()
-	if t.Failed() {
-		t.SkipNow()
-	}
-	t.Run(name, f)
-}
-
 func (s *E2ESuite) AfterTest(_, _ string) {
 	if s.T().Failed() {
 		s.printDiagnostics()
@@ -174,36 +216,43 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 
 func (s *E2ESuite) printDiagnostics() {
 	s.Diagnostics.Print()
-	wfs, err := s.wfClient.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + Namespace, LabelSelector: label})
+	wfs, err := s.wfClient.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + Namespace, LabelSelector: Label})
 	if err != nil {
 		s.T().Fatal(err)
 	}
 	for _, wf := range wfs.Items {
-		s.printWorkflowDiagnostics(wf)
+		s.printWorkflowDiagnostics(wf.GetName())
 	}
 }
 
-func (s *E2ESuite) printWorkflowDiagnostics(wf wfv1.Workflow) {
-	logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": wf.Name})
+func (s *E2ESuite) printWorkflowDiagnostics(name string) {
+	logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": name})
+	// print logs
+	wf, err := s.wfClient.Get(name, metav1.GetOptions{})
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	err = packer.DecompressWorkflow(wf)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	if wf.Status.IsOffloadNodeStatus() {
+		offloaded, err := s.Persistence.offloadNodeStatusRepo.Get(string(wf.UID), wf.Status.OffloadNodeStatusVersion)
+		if err != nil {
+			s.T().Fatal(err)
+		}
+		wf.Status.Nodes = offloaded
+	}
 	logCtx.Info("Workflow metadata:")
 	printJSON(wf.ObjectMeta)
 	logCtx.Info("Workflow status:")
 	printJSON(wf.Status)
-	// print logs
-	workflow, err := s.wfClient.Get(wf.Name, metav1.GetOptions{})
-	if err != nil {
-		s.T().Fatal(err)
-	}
-	err = packer.DecompressWorkflow(workflow)
-	if err != nil {
-		s.T().Fatal(err)
-	}
-	for _, node := range workflow.Status.Nodes {
+	for _, node := range wf.Status.Nodes {
 		if node.Type != "Pod" {
 			continue
 		}
 		logCtx := logCtx.WithFields(log.Fields{"node": node.DisplayName})
-		s.printPodDiagnostics(logCtx, workflow.Namespace, node.ID)
+		s.printPodDiagnostics(logCtx, wf.Namespace, node.ID)
 	}
 }
 

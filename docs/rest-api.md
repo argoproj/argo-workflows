@@ -1,5 +1,7 @@
 # REST API
 
+## Argo Server API
+
 ![alpha](assets/alpha.svg)
 
 > v2.5 and after
@@ -17,6 +19,10 @@ To view the API:
  
 1. Open [https://editor.swagger.io/](https://editor.swagger.io/)
 2. Copy and paste ../api/argo-server/swagger.json
+
+## Classic API
+
+![ga](assets/ga.svg)
 
 > v2.4 and before
 

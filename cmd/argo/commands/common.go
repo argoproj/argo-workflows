@@ -14,26 +14,30 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	"github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	wfApiServer "github.com/argoproj/argo/server/workflow"
 	"github.com/argoproj/argo/workflow/templateresolution"
 )
 
 // Global variables
 var (
-	restConfig       *rest.Config
-	clientset        *kubernetes.Clientset
-	wfClientset      *versioned.Clientset
-	wfClient         v1alpha1.WorkflowInterface
+	// DEPRECATED
+	restConfig *rest.Config
+	// DEPRECATED
+	clientset *kubernetes.Clientset
+	// DEPRECATED
+	wfClientset *versioned.Clientset
+	// DEPRECATED
+	wfClient v1alpha1.WorkflowInterface
+	// DEPRECATED
 	wftmplClient     v1alpha1.WorkflowTemplateInterface
 	jobStatusIconMap map[wfv1.NodePhase]string
 	noColor          bool
-	namespace        string
+	// DEPRECATED
+	namespace string
 )
-
-const ARGO_SERVER_ENV = "ARGO_SERVER"
 
 func init() {
 	cobra.OnInitialize(initializeSession)
@@ -69,6 +73,7 @@ func initializeSession() {
 	}
 }
 
+// DEPRECATED
 func InitKubeClient() *kubernetes.Clientset {
 	if clientset != nil {
 		return clientset
@@ -88,6 +93,7 @@ func InitKubeClient() *kubernetes.Clientset {
 }
 
 // InitWorkflowClient creates a new client for the Kubernetes Workflow CRD.
+// DEPRECATED
 func InitWorkflowClient(ns ...string) v1alpha1.WorkflowInterface {
 	if wfClient != nil && (len(ns) == 0 || ns[0] == namespace) {
 		return wfClient
@@ -129,9 +135,11 @@ func ansiFormat(s string, codes ...int) string {
 
 // LazyWorkflowTemplateGetter is a wrapper of v1alpha1.WorkflowTemplateInterface which
 // supports lazy initialization.
+// DEPRECATED
 type LazyWorkflowTemplateGetter struct{}
 
 // Get initializes it just before it's actually used and returns a retrieved workflow template.
+// DEPRECATED
 func (c LazyWorkflowTemplateGetter) Get(name string) (*wfv1.WorkflowTemplate, error) {
 	if wftmplClient == nil {
 		_ = InitWorkflowClient()
@@ -139,8 +147,10 @@ func (c LazyWorkflowTemplateGetter) Get(name string) (*wfv1.WorkflowTemplate, er
 	return templateresolution.WrapWorkflowTemplateInterface(wftmplClient).Get(name)
 }
 
+// DEPRECATED
 var _ templateresolution.WorkflowTemplateNamespacedGetter = &LazyWorkflowTemplateGetter{}
 
-func GetWFApiServerGRPCClient(conn *grpc.ClientConn) (wfApiServer.WorkflowServiceClient, context.Context) {
-	return wfApiServer.NewWorkflowServiceClient(conn), client.GetContext()
+// DEPRECATED
+func GetWFApiServerGRPCClient(conn *grpc.ClientConn) (workflow.WorkflowServiceClient, context.Context) {
+	return workflow.NewWorkflowServiceClient(conn), client.GetContext()
 }

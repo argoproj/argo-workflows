@@ -15,38 +15,6 @@ import (
 )
 
 // LintWorkflowDir validates all workflow manifests in a directory. Ignores non-workflow manifests
-func LintWorkflowDir(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, dirPath string, strict bool) error {
-	walkFunc := func(path string, info os.FileInfo, err error) error {
-		if info == nil || info.IsDir() {
-			return nil
-		}
-		fileExt := filepath.Ext(info.Name())
-		switch fileExt {
-		case ".yaml", ".yml", ".json":
-		default:
-			return nil
-		}
-		return LintWorkflowFile(wftmplGetter, path, strict)
-	}
-	return filepath.Walk(dirPath, walkFunc)
-}
-
-// LintWorkflowFile lints a json file, or multiple workflow manifest in a single yaml file. Ignores
-// non-workflow manifests
-func LintWorkflowFile(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, filePath string, strict bool) error {
-
-	workflows, err := ParseWfFromFile(filePath, strict)
-	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "%s failed to parse: %v", filePath, err)
-	}
-	for _, wf := range workflows {
-		err = ValidateWorkflow(wftmplGetter, &wf, ValidateOpts{Lint: true})
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "%s: %s", filePath, err.Error())
-		}
-	}
-	return nil
-}
 
 func ParseWfFromFile(filePath string, strict bool) ([]wfv1.Workflow, error) {
 	body, err := ioutil.ReadFile(filePath)
@@ -167,7 +135,7 @@ func LintWorkflowTemplateFile(wftmplGetter templateresolution.WorkflowTemplateNa
 }
 
 // LintCronWorkflowDir validates all cron workflow manifests in a directory. Ignores non-workflow template manifests
-func LintCronWorkflowDir(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, namespace, dirPath string, strict bool) error {
+func LintCronWorkflowDir(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, dirPath string, strict bool) error {
 	walkFunc := func(path string, info os.FileInfo, err error) error {
 		if info == nil || info.IsDir() {
 			return nil
@@ -178,14 +146,14 @@ func LintCronWorkflowDir(wftmplGetter templateresolution.WorkflowTemplateNamespa
 		default:
 			return nil
 		}
-		return LintCronWorkflowFile(wftmplGetter, namespace, path, strict)
+		return LintCronWorkflowFile(wftmplGetter, path, strict)
 	}
 	return filepath.Walk(dirPath, walkFunc)
 }
 
 // LintCronWorkflowFile lints a json file, or multiple cron workflow manifest in a single yaml file. Ignores
 // non-cron workflow manifests
-func LintCronWorkflowFile(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, namespace, filePath string, strict bool) error {
+func LintCronWorkflowFile(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, filePath string, strict bool) error {
 	body, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "Can't read from file: %s, err: %v", filePath, err)

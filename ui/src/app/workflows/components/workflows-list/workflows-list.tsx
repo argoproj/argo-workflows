@@ -2,9 +2,10 @@ import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import {Subscription} from 'rxjs';
 
-import {Autocomplete, Page, SlidingPanel, TopBarFilter} from 'argo-ui';
+import {Autocomplete, Page, SlidingPanel} from 'argo-ui';
 import * as models from '../../../../models';
 import {Workflow} from '../../../../models';
+import {compareWorkflows} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
@@ -12,63 +13,126 @@ import {services} from '../../../shared/services';
 import {WorkflowListItem} from '..';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
-import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {Query} from '../../../shared/components/query';
+import {ResourceSubmit} from '../../../shared/components/resource-submit';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
-import {WorkflowSubmit} from '../workflow-submit';
+
+import {WorkflowFilters} from '../workflow-filters/workflow-filters';
 
 require('./workflows-list.scss');
 
 interface State {
+    loading: boolean;
+    namespace: string;
+    selectedPhases: string[];
+    selectedLabels: string[];
     workflows?: Workflow[];
     error?: Error;
 }
 
 export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
-    private subscription: Subscription;
-
-    private get namespace() {
-        return this.props.match.params.namespace || '';
-    }
-
-    private set namespace(namespace: string) {
-        document.location.href = uiUrl('workflows/' + namespace);
-    }
-
-    private get phases() {
-        return this.queryParams('phase');
-    }
-
-    private set phases(phases: string[]) {
-        this.appendQueryParams(phases.map(phase => ({name: 'phase', value: phase})));
-    }
-
     private get wfInput() {
         return Utils.tryJsonParse(this.queryParam('new'));
     }
+    private subscription: Subscription;
 
     constructor(props: RouteComponentProps<State>, context: any) {
         super(props, context);
-        this.state = {};
+        this.state = {
+            loading: true,
+            namespace: this.props.match.params.namespace || '',
+            selectedPhases: this.queryParams('phase'),
+            selectedLabels: this.queryParams('label')
+        };
     }
 
     public componentDidMount(): void {
+        this.fetchWorkflows();
+    }
+
+    public componentWillUnmount(): void {
+        if (this.subscription) {
+            this.subscription.unsubscribe();
+        }
+    }
+
+    public render() {
+        if (this.state.loading) {
+            return <Loading />;
+        }
+        if (this.state.error) {
+            throw this.state.error;
+        }
+        return (
+            <Consumer>
+                {ctx => (
+                    <Page
+                        title='Workflows'
+                        toolbar={{
+                            breadcrumbs: [{title: 'Workflows', path: uiUrl('workflows')}],
+                            actionMenu: {
+                                items: [
+                                    {
+                                        title: 'Submit New Workflow',
+                                        iconClassName: 'fa fa-plus',
+                                        action: () => ctx.navigation.goto('.', {new: '{}'})
+                                    }
+                                ]
+                            },
+                            tools: []
+                        }}>
+                        <div className='row'>
+                            <div className='columns small-2'>
+                                <div>{this.renderQuery(ctx)}</div>
+                                <div>
+                                    <WorkflowFilters
+                                        workflows={this.state.workflows}
+                                        namespace={this.state.namespace}
+                                        selectedPhases={this.state.selectedPhases}
+                                        selectedLabels={this.state.selectedLabels}
+                                        onChange={(namespace, selectedPhases, selectedLabels) => this.changeFilters(namespace, selectedPhases, selectedLabels)}
+                                    />
+                                </div>
+                            </div>
+                            <div className='columns small-10'>{this.renderWorkflows(ctx)}</div>
+                        </div>
+                        <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
+                            <ResourceSubmit<models.Workflow>
+                                resourceName={'Workflow'}
+                                defaultResource={exampleWorkflow(this.state.namespace)}
+                                onSubmit={wfValue => {
+                                    return services.workflows
+                                        .create(wfValue, wfValue.metadata.namespace || this.state.namespace)
+                                        .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)));
+                                }}
+                            />
+                        </SlidingPanel>
+                    </Page>
+                )}
+            </Consumer>
+        );
+    }
+
+    private fetchWorkflows(): void {
+        if (this.subscription) {
+            this.subscription.unsubscribe();
+        }
         services.info
             .get()
             .then(info => {
-                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
-                    this.namespace = info.managedNamespace;
+                if (info.managedNamespace && info.managedNamespace !== this.state.namespace) {
+                    this.setState({namespace: info.managedNamespace});
                 }
-                return services.workflows.list(this.phases, this.namespace);
+                return services.workflows.list(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels);
             })
             .then(list => list.items)
             .then(list => list || [])
             .then(workflows => this.setState({workflows}))
             .then(() => {
                 this.subscription = services.workflows
-                    .watch({namespace: this.namespace, phases: this.phases})
+                    .watch({namespace: this.state.namespace, phases: this.state.selectedPhases, labels: this.state.selectedLabels})
                     .map(workflowChange => {
                         const workflows = this.state.workflows;
                         if (!workflowChange) {
@@ -94,59 +158,29 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                     .filter(item => item.updated)
                     .map(item => item.workflows)
                     .catch((error, caught) => {
-                        this.setState({error});
                         return caught;
                     })
                     .subscribe(workflows => this.setState({workflows}));
             })
-            .catch(error => this.setState({error}));
+            .then(_ => this.setState({loading: false}))
+            .catch(error => this.setState({error, loading: false}));
     }
 
-    public componentWillUnmount(): void {
-        if (this.subscription) {
-            this.subscription.unsubscribe();
+    private changeFilters(namespace: string, selectedPhases: string[], selectedLabels: string[]) {
+        this.setState({namespace, selectedPhases, selectedLabels});
+        const params = new URLSearchParams();
+        selectedPhases.forEach(phase => {
+            params.append('phase', phase);
+        });
+        selectedLabels.forEach(label => {
+            params.append('label', label);
+        });
+        let url = 'workflows/' + namespace;
+        if (selectedPhases.length > 0 || selectedLabels.length > 0) {
+            url += '?' + params.toString();
         }
-    }
-
-    public render() {
-        if (this.state.error) {
-            throw this.state.error;
-        }
-        const filter: TopBarFilter<string> = {
-            items: Object.keys(models.NODE_PHASE).map(phase => ({
-                value: (models.NODE_PHASE as any)[phase],
-                label: (models.NODE_PHASE as any)[phase]
-            })),
-            selectedValues: this.phases,
-            selectionChanged: phases => (this.phases = phases)
-        };
-        return (
-            <Consumer>
-                {ctx => (
-                    <Page
-                        title='Workflows'
-                        toolbar={{
-                            filter,
-                            breadcrumbs: [{title: 'Workflows', path: uiUrl('workflows')}],
-                            actionMenu: {
-                                items: [
-                                    {
-                                        title: 'Submit New Workflow',
-                                        iconClassName: 'fa fa-plus',
-                                        action: () => ctx.navigation.goto('.', {new: '{}'})
-                                    }
-                                ]
-                            },
-                            tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
-                        }}>
-                        <div>{this.renderWorkflows(ctx)}</div>
-                        <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
-                            <WorkflowSubmit defaultWorkflow={exampleWorkflow(this.namespace)} currentNamespace={this.namespace} ctx={ctx} />
-                        </SlidingPanel>
-                    </Page>
-                )}
-            </Consumer>
-        );
+        history.pushState(null, '', uiUrl(url));
+        this.fetchWorkflows();
     }
 
     private renderWorkflows(ctx: any) {
@@ -161,12 +195,10 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                 </ZeroState>
             );
         }
+        this.state.workflows.sort(compareWorkflows);
 
         return (
             <>
-                <div className='row'>
-                    <div className='columns small-12 xxlarge-12'>{this.renderQuery(ctx)}</div>
-                </div>
                 <div className='row'>
                     <div className='columns small-12 xxlarge-12'>
                         {this.state.workflows.map(workflow => (

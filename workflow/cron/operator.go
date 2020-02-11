@@ -47,7 +47,7 @@ func (woc *cronWfOperationCtx) Run() {
 		return
 	}
 
-	wf, err := common.ConvertToWorkflow(woc.cronWf)
+	wf, err := common.ConvertCronWorkflowToWorkflow(woc.cronWf)
 	if err != nil {
 		log.Errorf("Unable to create Workflow for CronWorkflow %s", woc.name)
 		return
@@ -178,7 +178,7 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit() {
 	log.Infof("Enforcing history limit for '%s'", woc.cronWf.Name)
 
 	listOptions := &v1.ListOptions{}
-	wfInformerListOptionsFunc(listOptions)
+	wfInformerListOptionsFunc(listOptions, woc.cronWf.Labels[common.LabelKeyControllerInstanceID])
 	wfList, err := woc.wfClient.List(*listOptions)
 	if err != nil {
 		log.Errorf("Unable to enforce history limit for CronWorkflow '%s': %s", woc.cronWf.Name, err)
@@ -188,7 +188,7 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit() {
 	var successfulWorkflows []v1alpha1.Workflow
 	var failedWorkflows []v1alpha1.Workflow
 	for _, wf := range wfList.Items {
-		if wf.Labels[common.LabelCronWorkflow] != woc.cronWf.Name {
+		if wf.Labels[common.LabelKeyCronWorkflow] != woc.cronWf.Name {
 			continue
 		}
 		if wf.Status.Completed() {
