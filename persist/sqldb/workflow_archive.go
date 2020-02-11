@@ -1,6 +1,7 @@
 package sqldb
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"time"
@@ -16,6 +17,7 @@ import (
 )
 
 const archiveTableName = "argo_archived_workflows"
+const archiveLabelsTableName = archiveTableName + "_labels"
 
 type archivedWorkflowMetadata struct {
 	ClusterName string         `db:"clustername"`
@@ -31,6 +33,15 @@ type archivedWorkflowRecord struct {
 	archivedWorkflowMetadata
 	Workflow string `db:"workflow"`
 }
+
+type archivedWorkflowLabelRecord struct {
+	ClusterName string `db:"clustername"`
+	Uid         string `db:"uid"`
+	// Why is this called "name" not "key"? Key is an SQL reserved word.
+	Key   string `db:"name"`
+	Value string `db:"value"`
+}
+
 type WorkflowArchive interface {
 	ArchiveWorkflow(wf *wfv1.Workflow) error
 	ListWorkflows(namespace string, labelRequirements labels.Requirements, limit, offset int) (wfv1.Workflows, error)
@@ -54,49 +65,78 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 	if err != nil {
 		return err
 	}
-	// We assume that we're much more likely to be inserting rows that updating them, so we try and insert,
-	// and if that fails, then we update.
-	// There is no check for race condition here, last writer wins.
-	_, err = r.session.Collection(archiveTableName).
-		Insert(&archivedWorkflowRecord{
-			archivedWorkflowMetadata: archivedWorkflowMetadata{
-				ClusterName: r.clusterName,
-				UID:         string(wf.UID),
-				Name:        wf.Name,
-				Namespace:   wf.Namespace,
-				Phase:       wf.Status.Phase,
-				StartedAt:   wf.Status.StartedAt.Time,
-				FinishedAt:  wf.Status.FinishedAt.Time,
-			},
-			Workflow: string(workflow),
-		})
-	if err != nil {
-		if isDuplicateKeyError(err) {
-			res, err := r.session.
-				Update(archiveTableName).
-				Set("workflow", string(workflow)).
-				Set("phase", wf.Status.Phase).
-				Set("startedat", wf.Status.StartedAt.Time).
-				Set("finishedat", wf.Status.FinishedAt.Time).
-				Where(db.Cond{"clustername": r.clusterName}).
-				And(db.Cond{"uid": wf.UID}).
-				Exec()
-			if err != nil {
+	return r.session.Tx(context.Background(), func(sess sqlbuilder.Tx) error {
+		// We assume that we're much more likely to be inserting rows that updating them, so we try and insert,
+		// and if that fails, then we update.
+		// There is no check for race condition here, last writer wins.
+		_, err = sess.Collection(archiveTableName).
+			Insert(&archivedWorkflowRecord{
+				archivedWorkflowMetadata: archivedWorkflowMetadata{
+					ClusterName: r.clusterName,
+					UID:         string(wf.UID),
+					Name:        wf.Name,
+					Namespace:   wf.Namespace,
+					Phase:       wf.Status.Phase,
+					StartedAt:   wf.Status.StartedAt.Time,
+					FinishedAt:  wf.Status.FinishedAt.Time,
+				},
+				Workflow: string(workflow),
+			})
+		if err != nil {
+			if isDuplicateKeyError(err) {
+				res, err := sess.
+					Update(archiveTableName).
+					Set("workflow", string(workflow)).
+					Set("phase", wf.Status.Phase).
+					Set("startedat", wf.Status.StartedAt.Time).
+					Set("finishedat", wf.Status.FinishedAt.Time).
+					Where(db.Cond{"clustername": r.clusterName}).
+					And(db.Cond{"uid": wf.UID}).
+					Exec()
+				if err != nil {
+					return err
+				}
+				rowsAffected, err := res.RowsAffected()
+				if err != nil {
+					return err
+				}
+				if rowsAffected != 1 {
+					logCtx.WithField("rowsAffected", rowsAffected).Warn("Expected exactly one row affected")
+				}
+			} else {
 				return err
 			}
-			rowsAffected, err := res.RowsAffected()
-			if err != nil {
-				return err
-			}
-			if rowsAffected != 1 {
-				logCtx.WithField("rowsAffected", rowsAffected).Warn("Expected exactly one row affected")
-			}
-		} else {
-			return err
 		}
-	}
 
-	return nil
+		// insert the labels 
+		for key, value := range wf.ObjectMeta.Labels {
+			_, err := sess.Collection(archiveLabelsTableName).
+				Insert(archivedWorkflowLabelRecord{
+					ClusterName: r.clusterName,
+					Uid:         string(wf.UID),
+					Key:         key,
+					Value:       value,
+				})
+			if err != nil {
+				if isDuplicateKeyError(err) {
+					_, err = sess.
+						Update(archiveLabelsTableName).
+						Set("value", value).
+						Where(db.Cond{"clustername": r.clusterName}).
+						And(db.Cond{"uid": wf.UID}).
+						And(db.Cond{"name": key}).
+						Exec()
+					if err != nil {
+						return err
+					}
+				} else {
+					return err
+				}
+			}
+
+		}
+		return nil
+	})
 }
 
 func (r *workflowArchive) ListWorkflows(namespace string, labelRequirements labels.Requirements, limit int, offset int) (wfv1.Workflows, error) {

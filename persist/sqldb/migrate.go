@@ -202,7 +202,8 @@ func (m migrate) Exec(ctx context.Context) error {
 		),
 		// clustername(not null) | uid(not null) | | name (not null) | phase(not null) | namespace(not null) | workflow(not null) | startedat(not null)  | finishedat(not null)
 		ansiSQLChange(`create index ` + m.tableName + `_i2 on ` + m.tableName + ` (clustername,namespace,updatedat)`),
-		// the key has an optional prefix(253 chars) + '/' + name(63 chars)
+		// The key has an optional prefix(253 chars) + '/' + name(63 chars)
+		// Why is the key called "name" not "key"? Key is an SQL reserved word.
 		ansiSQLChange(`create table if not exists argo_archived_workflows_labels (
 	clustername varchar(64) not null,
 	uid varchar(128) not null,
