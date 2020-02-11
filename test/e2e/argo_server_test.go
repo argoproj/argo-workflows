@@ -819,6 +819,7 @@ func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 			Path("$.items").
 			Null()
 
+		// test we can combine two label selectors
 		s.e(s.T()).GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "argo-e2e,!argo-e2e").
 			Expect().

@@ -202,6 +202,10 @@ func (m migrate) Exec(ctx context.Context) error {
 		),
 		// clustername(not null) | uid(not null) | | name (not null) | phase(not null) | namespace(not null) | workflow(not null) | startedat(not null)  | finishedat(not null)
 		ansiSQLChange(`create index ` + m.tableName + `_i2 on ` + m.tableName + ` (clustername,namespace,updatedat)`),
+		// The argo_archived_workflows_labels is really provided as a way to create queries on labels that are fast because they
+		// use indexes. When displaying, it might be better to look at the `workflow` column.
+		// We could have added a `labels` column to argo_archived_workflows, but then we would have had to do free-text
+		// queries on it which would be slow due to having to table scan.
 		// The key has an optional prefix(253 chars) + '/' + name(63 chars)
 		// Why is the key called "name" not "key"? Key is an SQL reserved word.
 		ansiSQLChange(`create table if not exists argo_archived_workflows_labels (

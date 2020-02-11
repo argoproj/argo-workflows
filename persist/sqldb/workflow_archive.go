@@ -108,7 +108,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 			}
 		}
 
-		// insert the labels 
+		// insert the labels
 		for key, value := range wf.ObjectMeta.Labels {
 			_, err := sess.Collection(archiveLabelsTableName).
 				Insert(archivedWorkflowLabelRecord{

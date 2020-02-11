@@ -2,6 +2,7 @@ package sqldb
 
 import (
 	"fmt"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
@@ -31,6 +32,8 @@ func requirementToCondition(r labels.Requirement) (db.Compound, error) {
 		return db.Raw(fmt.Sprintf("exists (select 1 from argo_archived_workflows_labels where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s' and value = '%s')", r.Key(), r.Values().List()[0])), nil
 	case selection.Exists:
 		return db.Raw(fmt.Sprintf("exists (select 1 from argo_archived_workflows_labels where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s')", r.Key())), nil
+	case selection.In:
+		return db.Raw(fmt.Sprintf("exists (select 1 from argo_archived_workflows_labels where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s' and key in ('%s'))", r.Key(), strings.Join(r.Values().List(), "', '"))), nil
 	}
 	return nil, fmt.Errorf("operation %v is not supported", r.Operator())
 }
