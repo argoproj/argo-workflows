@@ -373,7 +373,7 @@ up:
 .PHONY: env
 env:
 	export ARGO_SERVER=localhost:2746
-	export ARGO_TOKEN="Bearer $(ARGO_TOKEN)"
+	export ARGO_TOKEN=$(ARGO_TOKEN)
 
 .PHONY: pf
 pf:
