@@ -1,6 +1,0 @@
-run:
-  tests: false
-  deadline: 30m
-  skip-files:
-    - "pkg/client"
-    - "vendor/"

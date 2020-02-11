@@ -57,8 +57,8 @@ const (
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
 	// LabelKeyPhase is a label applied to workflows to indicate the current phase of the workflow (for filtering purposes)
 	LabelKeyPhase = workflow.WorkflowFullName + "/phase"
-	// LabelCronWorkflow is a label applied to Workflows that are started by a CronWorkflow
-	LabelCronWorkflow = workflow.WorkflowFullName + "/cron-workflow"
+	// LabelKeyCronWorkflow is a label applied to Workflows that are started by a CronWorkflow
+	LabelKeyCronWorkflow = workflow.WorkflowFullName + "/cron-workflow"
 
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)
@@ -89,6 +89,8 @@ const (
 	EnvVarKubeletPort = "ARGO_KUBELET_PORT"
 	// EnvVarKubeletInsecure is used to disable the TLS verification
 	EnvVarKubeletInsecure = "ARGO_KUBELET_INSECURE"
+	// EnvVarArgoTrace is used enable tracing statements in Argo components
+	EnvVarArgoTrace = "ARGO_TRACE"
 
 	// ContainerRuntimeExecutorDocker to use docker as container runtime executor
 	ContainerRuntimeExecutorDocker = "docker"
@@ -137,11 +139,4 @@ type ExecutionControl struct {
 	Deadline *time.Time `json:"deadline,omitempty"`
 	// IncludeScriptOutput is containing flag to include script output
 	IncludeScriptOutput bool `json:"includeScriptOutput,omitempty"`
-}
-
-type ResourceInterface interface {
-	GetNamespace() string
-	GetSecrets(namespace, name, key string) ([]byte, error)
-	GetSecretFromVolMount(name, key string) ([]byte, error)
-	GetConfigMapKey(namespace, name, key string) (string, error)
 }

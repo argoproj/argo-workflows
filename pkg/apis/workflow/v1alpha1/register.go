@@ -10,7 +10,8 @@ import (
 
 // SchemeGroupVersion is group version used to register these objects
 var (
-	SchemeGroupVersion = schema.GroupVersion{Group: workflow.Group, Version: "v1alpha1"}
+	SchemeGroupVersion             = schema.GroupVersion{Group: workflow.Group, Version: "v1alpha1"}
+	WorkflowSchemaGroupVersionKind = schema.GroupVersionKind{Group: workflow.Group, Version: "v1alpha1", Kind: workflow.WorkflowKind}
 )
 
 // Kind takes an unqualified kind and returns back a Group qualified GroupKind

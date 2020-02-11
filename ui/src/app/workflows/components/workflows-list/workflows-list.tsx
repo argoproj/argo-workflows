@@ -1,93 +1,264 @@
-import {AppContext, DataLoader, MockupList, Page, TopBarFilter} from 'argo-ui';
-import * as PropTypes from 'prop-types';
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
-import {Observable} from 'rxjs';
+import {Subscription} from 'rxjs';
 
+import {Autocomplete, Page, SlidingPanel} from 'argo-ui';
 import * as models from '../../../../models';
+import {Workflow} from '../../../../models';
+import {compareWorkflows} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
+import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
 
-import {WorkflowListItem} from '../workflow-list-item/workflow-list-item';
+import {WorkflowListItem} from '..';
+import {BasePage} from '../../../shared/components/base-page';
+import {Loading} from '../../../shared/components/loading';
+import {Query} from '../../../shared/components/query';
+import {ResourceSubmit} from '../../../shared/components/resource-submit';
+import {ZeroState} from '../../../shared/components/zero-state';
+import {exampleWorkflow} from '../../../shared/examples';
+import {Utils} from '../../../shared/utils';
 
-export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
-    public static contextTypes = {
-        router: PropTypes.object,
-        apis: PropTypes.object
-    };
+import {WorkflowFilters} from '../workflow-filters/workflow-filters';
 
-    private get phases() {
-        return new URLSearchParams(this.props.location.search).getAll('phase');
+require('./workflows-list.scss');
+
+interface State {
+    loading: boolean;
+    namespace: string;
+    selectedPhases: string[];
+    selectedLabels: string[];
+    workflows?: Workflow[];
+    error?: Error;
+}
+
+export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
+    private get wfInput() {
+        return Utils.tryJsonParse(this.queryParam('new'));
+    }
+    private subscription: Subscription;
+
+    constructor(props: RouteComponentProps<State>, context: any) {
+        super(props, context);
+        this.state = {
+            loading: true,
+            namespace: this.props.match.params.namespace || '',
+            selectedPhases: this.queryParams('phase'),
+            selectedLabels: this.queryParams('label')
+        };
+    }
+
+    public componentDidMount(): void {
+        this.fetchWorkflows();
+    }
+
+    public componentWillUnmount(): void {
+        if (this.subscription) {
+            this.subscription.unsubscribe();
+        }
     }
 
     public render() {
-        const filter: TopBarFilter<string> = {
-            items: Object.keys(models.NODE_PHASE).map(phase => ({
-                value: (models.NODE_PHASE as any)[phase],
-                label: (models.NODE_PHASE as any)[phase]
-            })),
-            selectedValues: this.phases,
-            selectionChanged: phases => {
-                const query = phases.length > 0 ? '?' + phases.map(phase => `phase=${phase}`).join('&') : '';
-                this.appContext.router.history.push(uiUrl(`workflows${query}`));
-            }
-        };
+        if (this.state.loading) {
+            return <Loading />;
+        }
+        if (this.state.error) {
+            throw this.state.error;
+        }
         return (
-            <Page title='Workflows' toolbar={{filter, breadcrumbs: [{title: 'Workflows', path: uiUrl('workflows')}]}}>
-                <div className='argo-container'>
-                    <div className='stream'>
-                        <DataLoader
-                            input={this.phases}
-                            load={phases => {
-                                return Observable.fromPromise(services.workflows.list(phases)).flatMap(workflows =>
-                                    Observable.merge(
-                                        Observable.from([workflows]),
-                                        services.workflows
-                                            .watch(phases)
-                                            .map(workflowChange => {
-                                                const index = workflows.findIndex(item => item.metadata.name === workflowChange.object.metadata.name);
-                                                if (index > -1 && workflowChange.object.metadata.resourceVersion === workflows[index].metadata.resourceVersion) {
-                                                    return {workflows, updated: false};
-                                                }
-                                                switch (workflowChange.type) {
-                                                    case 'DELETED':
-                                                        if (index > -1) {
-                                                            workflows.splice(index, 1);
-                                                        }
-                                                        break;
-                                                    default:
-                                                        if (index > -1) {
-                                                            workflows[index] = workflowChange.object;
-                                                        } else {
-                                                            workflows.unshift(workflowChange.object);
-                                                        }
-                                                        break;
-                                                }
-                                                return {workflows, updated: true};
-                                            })
-                                            .filter(item => item.updated)
-                                            .map(item => item.workflows)
-                                    )
-                                );
-                            }}
-                            loadingRenderer={() => <MockupList height={150} marginTop={30} />}>
-                            {(workflows: models.Workflow[]) =>
-                                workflows.map(workflow => (
-                                    <div key={workflow.metadata.name}>
-                                        <Link to={uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)}>
-                                            <WorkflowListItem workflow={workflow} />
-                                        </Link>
-                                    </div>
-                                ))
-                            }
-                        </DataLoader>
-                    </div>
-                </div>
-            </Page>
+            <Consumer>
+                {ctx => (
+                    <Page
+                        title='Workflows'
+                        toolbar={{
+                            breadcrumbs: [{title: 'Workflows', path: uiUrl('workflows')}],
+                            actionMenu: {
+                                items: [
+                                    {
+                                        title: 'Submit New Workflow',
+                                        iconClassName: 'fa fa-plus',
+                                        action: () => ctx.navigation.goto('.', {new: '{}'})
+                                    }
+                                ]
+                            },
+                            tools: []
+                        }}>
+                        <div className='row'>
+                            <div className='columns small-2'>
+                                <div>{this.renderQuery(ctx)}</div>
+                                <div>
+                                    <WorkflowFilters
+                                        workflows={this.state.workflows}
+                                        namespace={this.state.namespace}
+                                        selectedPhases={this.state.selectedPhases}
+                                        selectedLabels={this.state.selectedLabels}
+                                        onChange={(namespace, selectedPhases, selectedLabels) => this.changeFilters(namespace, selectedPhases, selectedLabels)}
+                                    />
+                                </div>
+                            </div>
+                            <div className='columns small-10'>{this.renderWorkflows(ctx)}</div>
+                        </div>
+                        <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
+                            <ResourceSubmit<models.Workflow>
+                                resourceName={'Workflow'}
+                                defaultResource={exampleWorkflow(this.state.namespace)}
+                                onSubmit={wfValue => {
+                                    return services.workflows
+                                        .create(wfValue, wfValue.metadata.namespace || this.state.namespace)
+                                        .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)));
+                                }}
+                            />
+                        </SlidingPanel>
+                    </Page>
+                )}
+            </Consumer>
         );
     }
 
-    private get appContext(): AppContext {
-        return this.context as AppContext;
+    private fetchWorkflows(): void {
+        if (this.subscription) {
+            this.subscription.unsubscribe();
+        }
+        services.info
+            .get()
+            .then(info => {
+                if (info.managedNamespace && info.managedNamespace !== this.state.namespace) {
+                    this.setState({namespace: info.managedNamespace});
+                }
+                return services.workflows.list(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels);
+            })
+            .then(list => list.items)
+            .then(list => list || [])
+            .then(workflows => this.setState({workflows}))
+            .then(() => {
+                this.subscription = services.workflows
+                    .watch({namespace: this.state.namespace, phases: this.state.selectedPhases, labels: this.state.selectedLabels})
+                    .map(workflowChange => {
+                        const workflows = this.state.workflows;
+                        if (!workflowChange) {
+                            return {workflows, updated: false};
+                        }
+                        const index = workflows.findIndex(item => item.metadata.name === workflowChange.object.metadata.name);
+                        if (index > -1 && workflowChange.object.metadata.resourceVersion === workflows[index].metadata.resourceVersion) {
+                            return {workflows, updated: false};
+                        }
+                        if (workflowChange.type === 'DELETED') {
+                            if (index > -1) {
+                                workflows.splice(index, 1);
+                            }
+                        } else {
+                            if (index > -1) {
+                                workflows[index] = workflowChange.object;
+                            } else {
+                                workflows.unshift(workflowChange.object);
+                            }
+                        }
+                        return {workflows, updated: true};
+                    })
+                    .filter(item => item.updated)
+                    .map(item => item.workflows)
+                    .catch((error, caught) => {
+                        return caught;
+                    })
+                    .subscribe(workflows => this.setState({workflows}));
+            })
+            .then(_ => this.setState({loading: false}))
+            .catch(error => this.setState({error, loading: false}));
+    }
+
+    private changeFilters(namespace: string, selectedPhases: string[], selectedLabels: string[]) {
+        this.setState({namespace, selectedPhases, selectedLabels});
+        const params = new URLSearchParams();
+        selectedPhases.forEach(phase => {
+            params.append('phase', phase);
+        });
+        selectedLabels.forEach(label => {
+            params.append('label', label);
+        });
+        let url = 'workflows/' + namespace;
+        if (selectedPhases.length > 0 || selectedLabels.length > 0) {
+            url += '?' + params.toString();
+        }
+        history.pushState(null, '', uiUrl(url));
+        this.fetchWorkflows();
+    }
+
+    private renderWorkflows(ctx: any) {
+        if (!this.state.workflows) {
+            return <Loading />;
+        }
+
+        if (this.state.workflows.length === 0) {
+            return (
+                <ZeroState title='No workflows'>
+                    <p>To create a new workflow, use the button above.</p>
+                </ZeroState>
+            );
+        }
+        this.state.workflows.sort(compareWorkflows);
+
+        return (
+            <>
+                <div className='row'>
+                    <div className='columns small-12 xxlarge-12'>
+                        {this.state.workflows.map(workflow => (
+                            <div key={workflow.metadata.name}>
+                                <Link to={uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)}>
+                                    <WorkflowListItem workflow={workflow} archived={false} />
+                                </Link>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </>
+        );
+    }
+
+    private renderQuery(ctx: any) {
+        return (
+            <Query>
+                {q => (
+                    <div>
+                        <i className='fa fa-search' />
+                        {q.get('search') && (
+                            <i
+                                className='fa fa-times'
+                                onClick={() => {
+                                    ctx.navigation.goto('.', {search: null}, {replace: true});
+                                }}
+                            />
+                        )}
+                        <Autocomplete
+                            filterSuggestions={true}
+                            renderInput={inputProps => (
+                                <input
+                                    {...inputProps}
+                                    onFocus={e => {
+                                        e.target.select();
+                                        if (inputProps.onFocus) {
+                                            inputProps.onFocus(e);
+                                        }
+                                    }}
+                                    className='argo-field'
+                                />
+                            )}
+                            renderItem={item => (
+                                <React.Fragment>
+                                    <i className='icon argo-icon-workflow' /> {item.label}
+                                </React.Fragment>
+                            )}
+                            onSelect={val => {
+                                ctx.navigation.goto(`./${val}`);
+                            }}
+                            onChange={e => {
+                                ctx.navigation.goto('.', {search: e.target.value}, {replace: true});
+                            }}
+                            value={q.get('search') || ''}
+                            items={this.state.workflows.map(wf => wf.metadata.namespace + '/' + wf.metadata.name)}
+                        />
+                    </div>
+                )}
+            </Query>
+        );
     }
 }

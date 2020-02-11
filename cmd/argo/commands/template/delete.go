@@ -1,13 +1,18 @@
 package template
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 
+	"github.com/argoproj/pkg/errors"
+
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
 
@@ -21,16 +26,20 @@ func NewDeleteCommand() *cobra.Command {
 		Use:   "delete WORKFLOW_TEMPLATE",
 		Short: "delete a workflow template",
 		Run: func(cmd *cobra.Command, args []string) {
-			wftmplClient := InitWorkflowTemplateClient()
-			if all {
-				deleteWorkflowTemplates(wftmplClient, metav1.ListOptions{})
+			if client.ArgoServer != "" {
+				apiServerDeleteWorkflowTemplates(all, args)
 			} else {
-				if len(args) == 0 {
-					cmd.HelpFunc()(cmd, args)
-					os.Exit(1)
-				}
-				for _, wftmplName := range args {
-					deleteWorkflowTemplate(wftmplClient, wftmplName)
+				wftmplClient := InitWorkflowTemplateClient()
+				if all {
+					deleteWorkflowTemplates(wftmplClient, metav1.ListOptions{})
+				} else {
+					if len(args) == 0 {
+						cmd.HelpFunc()(cmd, args)
+						os.Exit(1)
+					}
+					for _, wftmplName := range args {
+						deleteWorkflowTemplate(wftmplClient, wftmplName)
+					}
 				}
 			}
 		},
@@ -38,6 +47,46 @@ func NewDeleteCommand() *cobra.Command {
 
 	command.Flags().BoolVar(&all, "all", false, "Delete all workflow templates")
 	return command
+}
+
+func apiServerDeleteWorkflowTemplates(allWFs bool, wfTmplNames []string) {
+	conn := client.GetClientConn()
+	defer conn.Close()
+	ns, _, _ := client.Config.Namespace()
+	wftmplApiClient, ctx := GetWFtmplApiServerGRPCClient(conn)
+
+	var delWFTmplNames []string
+	if allWFs {
+		wftmplReq := workflowtemplatepkg.WorkflowTemplateListRequest{
+			Namespace: ns,
+		}
+		wftmplList, err := wftmplApiClient.ListWorkflowTemplates(ctx, &wftmplReq)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, wfTmpl := range wftmplList.Items {
+			delWFTmplNames = append(delWFTmplNames, wfTmpl.Name)
+		}
+
+	} else {
+		delWFTmplNames = wfTmplNames
+	}
+	for _, wfTmplNames := range delWFTmplNames {
+		apiServerDeleteWorkflowTemplate(wftmplApiClient, ctx, ns, wfTmplNames)
+	}
+
+}
+
+func apiServerDeleteWorkflowTemplate(client workflowtemplatepkg.WorkflowTemplateServiceClient, ctx context.Context, ns, wftmplName string) {
+	wfReq := workflowtemplatepkg.WorkflowTemplateDeleteRequest{
+		Name:      wftmplName,
+		Namespace: ns,
+	}
+	_, err := client.DeleteWorkflowTemplate(ctx, &wfReq)
+	if err != nil {
+		errors.CheckError(err)
+	}
+	fmt.Printf("WorkflowTemplate '%s' deleted\n", wftmplName)
 }
 
 func deleteWorkflowTemplate(wftmplClient v1alpha1.WorkflowTemplateInterface, wftmplName string) {

@@ -11,6 +11,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
@@ -28,18 +30,40 @@ func NewListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "list workflow templates",
 		Run: func(cmd *cobra.Command, args []string) {
-			var wftmplClient v1alpha1.WorkflowTemplateInterface
+			var ns string
 			if listArgs.allNamespaces {
-				wftmplClient = InitWorkflowTemplateClient(apiv1.NamespaceAll)
+				ns = apiv1.NamespaceAll
 			} else {
-				wftmplClient = InitWorkflowTemplateClient()
+				ns, _, _ = client.Config.Namespace()
 			}
-			listOpts := metav1.ListOptions{}
-			labelSelector := labels.NewSelector()
-			listOpts.LabelSelector = labelSelector.String()
-			wftmplList, err := wftmplClient.List(listOpts)
-			if err != nil {
-				log.Fatal(err)
+			var wftmplList *wfv1.WorkflowTemplateList
+			var err error
+			if client.ArgoServer != "" {
+				wftmplReq := workflowtemplatepkg.WorkflowTemplateListRequest{
+					Namespace: ns,
+				}
+				conn := client.GetClientConn()
+				wftmplApiClient, ctx := GetWFtmplApiServerGRPCClient(conn)
+				wftmplList, err = wftmplApiClient.ListWorkflowTemplates(ctx, &wftmplReq)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+			} else {
+
+				var wftmplClient v1alpha1.WorkflowTemplateInterface
+				if listArgs.allNamespaces {
+					wftmplClient = InitWorkflowTemplateClient(apiv1.NamespaceAll)
+				} else {
+					wftmplClient = InitWorkflowTemplateClient()
+				}
+				listOpts := metav1.ListOptions{}
+				labelSelector := labels.NewSelector()
+				listOpts.LabelSelector = labelSelector.String()
+				wftmplList, err = wftmplClient.List(listOpts)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 
 			switch listArgs.output {
@@ -52,6 +76,7 @@ func NewListCommand() *cobra.Command {
 			default:
 				log.Fatalf("Unknown output mode: %s", listArgs.output)
 			}
+
 		},
 	}
 	command.Flags().BoolVar(&listArgs.allNamespaces, "all-namespaces", false, "Show workflows from all namespaces")

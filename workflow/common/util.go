@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo/pkg/apis/workflow"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
@@ -26,6 +25,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
 )
@@ -678,25 +678,4 @@ func GetTemplateHolderString(tmplHolder wfv1.TemplateHolder) string {
 	} else {
 		return fmt.Sprintf("%T (%s)", tmplHolder, tmplName)
 	}
-}
-
-func ConvertToWorkflow(cronWf *wfv1.CronWorkflow) (*wfv1.Workflow, error) {
-	newTypeMeta := metav1.TypeMeta{
-		Kind:       workflow.WorkflowKind,
-		APIVersion: cronWf.TypeMeta.APIVersion,
-	}
-
-	newObjectMeta := metav1.ObjectMeta{}
-	newObjectMeta.GenerateName = cronWf.Name + "-"
-
-	newObjectMeta.Labels = make(map[string]string)
-	newObjectMeta.Labels[LabelCronWorkflow] = cronWf.Name
-
-	wf := &wfv1.Workflow{
-		TypeMeta:   newTypeMeta,
-		ObjectMeta: newObjectMeta,
-		Spec:       cronWf.Spec.WorkflowSpec,
-	}
-	wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *metav1.NewControllerRef(cronWf, wfv1.SchemeGroupVersion.WithKind(workflow.CronWorkflowKind))))
-	return wf, nil
 }

@@ -1,13 +1,18 @@
 package commands
 
 import (
-	"github.com/argoproj/argo/cmd/argo/commands/cron"
-	"os"
+	"fmt"
 
+	"github.com/spf13/cobra"
+
+	"github.com/argoproj/argo/cmd/argo/commands/auth"
+	"github.com/argoproj/argo/cmd/argo/commands/cron"
+	"github.com/argoproj/argo/util/help"
+
+	"github.com/argoproj/argo/cmd/argo/commands/archive"
+	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/cmd/argo/commands/template"
 	"github.com/argoproj/argo/util/cmd"
-	"github.com/spf13/cobra"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -20,6 +25,8 @@ func NewCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   CLIName,
 		Short: "argo is the command line interface to Argo",
+		Example: fmt.Sprintf(`
+If you're using the Argo Server (e.g. because you need large workflow support or workflow archive), please read %s.`, help.CLI),
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.HelpFunc()(cmd, args)
 		},
@@ -34,26 +41,18 @@ func NewCommand() *cobra.Command {
 	command.AddCommand(NewResubmitCommand())
 	command.AddCommand(NewResumeCommand())
 	command.AddCommand(NewRetryCommand())
+	command.AddCommand(NewServerCommand())
 	command.AddCommand(NewSubmitCommand())
 	command.AddCommand(NewSuspendCommand())
-	command.AddCommand(NewWaitCommand())
+	command.AddCommand(auth.NewAuthCommand())
+	command.AddCommand(NewWatchCommand())
 	command.AddCommand(NewWatchCommand())
 	command.AddCommand(NewTerminateCommand())
+	command.AddCommand(archive.NewArchiveCommand())
 	command.AddCommand(cmd.NewVersionCmd(CLIName))
 	command.AddCommand(template.NewTemplateCommand())
 	command.AddCommand(cron.NewCronWorkflowCommand())
-
-	addKubectlFlagsToCmd(command)
+	client.AddKubectlFlagsToCmd(command)
+	client.AddArgoServerFlagsToCmd(command)
 	return command
-}
-
-func addKubectlFlagsToCmd(cmd *cobra.Command) {
-	// The "usual" clientcmd/kubectl flags
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-	overrides := clientcmd.ConfigOverrides{}
-	kflags := clientcmd.RecommendedConfigOverrideFlags("")
-	cmd.PersistentFlags().StringVar(&loadingRules.ExplicitPath, "kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
-	clientcmd.BindOverrideFlags(&overrides, cmd.PersistentFlags(), kflags)
-	clientConfig = clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
 }

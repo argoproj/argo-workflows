@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/argoproj/argo/workflow/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	"github.com/argoproj/argo/workflow/common"
 )
 
 func NewResourceCommand() *cobra.Command {

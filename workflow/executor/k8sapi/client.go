@@ -7,13 +7,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/workflow/common"
-	execcommon "github.com/argoproj/argo/workflow/executor/common"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
+
+	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/workflow/common"
+	execcommon "github.com/argoproj/argo/workflow/executor/common"
 )
 
 type k8sAPIClient struct {
@@ -84,7 +85,7 @@ func (c *k8sAPIClient) waitForTermination(containerID string, timeout time.Durat
 
 func (c *k8sAPIClient) KillContainer(pod *corev1.Pod, container *corev1.ContainerStatus, sig syscall.Signal) error {
 	command := []string{"/bin/sh", "-c", fmt.Sprintf("kill -%d 1", sig)}
-	exec, err := common.ExecPodContainer(c.config, c.namespace, c.podName, container.Name, false, false, command...)
+	exec, err := common.ExecPodContainer(c.config, c.namespace, c.podName, container.Name, false, true, command...)
 	if err != nil {
 		return err
 	}

@@ -21,6 +21,8 @@ func NewCronWorkflowCommand() *cobra.Command {
 	command.AddCommand(NewCreateCommand())
 	command.AddCommand(NewDeleteCommand())
 	command.AddCommand(NewLintCommand())
+	command.AddCommand(NewSuspendCommand())
+	command.AddCommand(NewResumeCommand())
 
 	addKubectlFlagsToCmd(command)
 	return command

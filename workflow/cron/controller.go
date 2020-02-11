@@ -2,12 +2,8 @@ package cron
 
 import (
 	"context"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/pkg/client/informers/externalversions"
-	extv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/util"
+	"time"
+
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,20 +15,28 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"time"
+
+	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/pkg/client/informers/externalversions"
+	extv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 // Controller is a controller for cron workflows
 type Controller struct {
-	namespace      string
-	cron           *cron.Cron
-	nameEntryIDMap map[string]cron.EntryID
-	wfClientset    versioned.Interface
-	wfInformer     cache.SharedIndexInformer
-	wfQueue        workqueue.RateLimitingInterface
-	cronWfInformer extv1alpha1.CronWorkflowInformer
-	cronWfQueue    workqueue.RateLimitingInterface
-	restConfig     *rest.Config
+	namespace        string
+	managedNamespace string
+	instanceId       string
+	cron             *cron.Cron
+	nameEntryIDMap   map[string]cron.EntryID
+	wfClientset      versioned.Interface
+	wfInformer       cache.SharedIndexInformer
+	wfQueue          workqueue.RateLimitingInterface
+	cronWfInformer   extv1alpha1.CronWorkflowInformer
+	cronWfQueue      workqueue.RateLimitingInterface
+	restConfig       *rest.Config
 }
 
 const (
@@ -45,15 +49,19 @@ func NewCronController(
 	wfclientset versioned.Interface,
 	restConfig *rest.Config,
 	namespace string,
+	managedNamespace string,
+	instanceId string,
 ) *Controller {
 	return &Controller{
-		wfClientset:    wfclientset,
-		namespace:      namespace,
-		cron:           cron.New(),
-		restConfig:     restConfig,
-		nameEntryIDMap: make(map[string]cron.EntryID),
-		wfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		cronWfQueue:    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfClientset:      wfclientset,
+		namespace:        namespace,
+		managedNamespace: managedNamespace,
+		instanceId:       instanceId,
+		cron:             cron.New(),
+		restConfig:       restConfig,
+		nameEntryIDMap:   make(map[string]cron.EntryID),
+		wfQueue:          workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		cronWfQueue:      workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 	}
 }
 
@@ -61,11 +69,19 @@ func (cc *Controller) Run(ctx context.Context) {
 	defer cc.cronWfQueue.ShutDown()
 	defer cc.wfQueue.ShutDown()
 	log.Infof("Starting CronWorkflow controller")
+	if cc.instanceId != "" {
+		log.Infof("...with InstanceID: %s", cc.instanceId)
+	}
 
-	cc.cronWfInformer = cc.newCronWorkflowInformer()
+	cc.cronWfInformer = externalversions.NewSharedInformerFactoryWithOptions(cc.wfClientset, cronWorkflowResyncPeriod, externalversions.WithNamespace(cc.managedNamespace),
+		externalversions.WithTweakListOptions(func(options *v1.ListOptions) {
+			cronWfInformerListOptionsFunc(options, cc.instanceId)
+		})).Argoproj().V1alpha1().CronWorkflows()
 	cc.addCronWorkflowInformerHandler()
 
-	cc.wfInformer = util.NewWorkflowInformer(cc.restConfig, "", cronWorkflowResyncPeriod, wfInformerListOptionsFunc)
+	cc.wfInformer = util.NewWorkflowInformer(cc.restConfig, cc.managedNamespace, cronWorkflowResyncPeriod, func(options *v1.ListOptions) {
+		wfInformerListOptionsFunc(options, cc.instanceId)
+	})
 	cc.addWorkflowInformerHandler()
 
 	cc.cron.Start()
@@ -118,8 +134,7 @@ func (cc *Controller) processNextCronItem() bool {
 		return true
 	}
 
-	cronWfIf := cc.wfClientset.ArgoprojV1alpha1().CronWorkflows(cronWf.Namespace)
-	cronWorkflowOperationCtx, err := newCronWfOperationCtx(cronWf, cc.wfClientset, cronWfIf)
+	cronWorkflowOperationCtx, err := newCronWfOperationCtx(cronWf, cc.wfClientset)
 	if err != nil {
 		log.Error(err)
 		return true
@@ -137,7 +152,12 @@ func (cc *Controller) processNextCronItem() bool {
 		delete(cc.nameEntryIDMap, key.(string))
 	}
 
-	entryId, err := cc.cron.AddJob(cronWf.Spec.Schedule, cronWorkflowOperationCtx)
+	cronSchedule := cronWf.Spec.Schedule
+	if cronWf.Spec.Timezone != "" {
+		cronSchedule = "CRON_TZ=" + cronWf.Spec.Timezone + " " + cronSchedule
+	}
+
+	entryId, err := cc.cron.AddJob(cronSchedule, cronWorkflowOperationCtx)
 	if err != nil {
 		log.Errorf("could not schedule CronWorkflow: %s", err)
 		return true
@@ -210,11 +230,6 @@ func (cc *Controller) processNextWorkflowItem() bool {
 	return true
 }
 
-func (cc *Controller) newCronWorkflowInformer() extv1alpha1.CronWorkflowInformer {
-	informerFactory := externalversions.NewSharedInformerFactory(cc.wfClientset, cronWorkflowResyncPeriod)
-	return informerFactory.Argoproj().V1alpha1().CronWorkflows()
-}
-
 func (cc *Controller) addCronWorkflowInformerHandler() {
 	cc.cronWfInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
@@ -263,12 +278,19 @@ func (cc *Controller) addWorkflowInformerHandler() {
 	)
 }
 
-func wfInformerListOptionsFunc(options *v1.ListOptions) {
+func cronWfInformerListOptionsFunc(options *v1.ListOptions, instanceId string) {
 	options.FieldSelector = fields.Everything().String()
-	isCronWorkflowChildReq, err := labels.NewRequirement(common.LabelCronWorkflow, selection.Exists, []string{})
+	labelSelector := labels.NewSelector().Add(util.InstanceIDRequirement(instanceId))
+	options.LabelSelector = labelSelector.String()
+}
+
+func wfInformerListOptionsFunc(options *v1.ListOptions, instanceId string) {
+	options.FieldSelector = fields.Everything().String()
+	isCronWorkflowChildReq, err := labels.NewRequirement(common.LabelKeyCronWorkflow, selection.Exists, []string{})
 	if err != nil {
 		panic(err)
 	}
 	labelSelector := labels.NewSelector().Add(*isCronWorkflowChildReq)
+	labelSelector = labelSelector.Add(util.InstanceIDRequirement(instanceId))
 	options.LabelSelector = labelSelector.String()
 }

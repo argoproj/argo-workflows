@@ -7,9 +7,10 @@ import (
 	"os"
 	"strings"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/go-openapi/spec"
 	"k8s.io/kube-openapi/pkg/common"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 // Generate OpenAPI spec definitions for Workflow Resource
@@ -18,9 +19,6 @@ func main() {
 		log.Fatal("Supply a version")
 	}
 	version := os.Args[1]
-	if !strings.HasPrefix(version, "v") {
-		version = "v" + version
-	}
 	oAPIDefs := wfv1.GetOpenAPIDefinitions(func(name string) spec.Ref {
 		return spec.MustCreateRef("#/definitions/" + common.EscapeJsonPointer(swaggify(name)))
 	})

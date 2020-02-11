@@ -599,8 +599,15 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 							Format:      "int32",
 						},
 					},
+					"timezone": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\". Default is machine's local time.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
-				Required: []string{"schedule"},
+				Required: []string{"workflowSpec", "schedule"},
 			},
 		},
 		Dependencies: []string{
@@ -725,6 +732,13 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 						SchemaProps: spec.SchemaProps{
 							Description: "ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn"),
+						},
+					},
+					"onExit": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
@@ -2181,7 +2195,7 @@ func schema_pkg_apis_workflow_v1alpha1_TTLStrategy(ref common.ReferenceCallback)
 				Description: "TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"secondsAfterCompleted": {
+					"secondsAfterCompletion": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"integer"},
 							Format: "int32",
@@ -2193,7 +2207,7 @@ func schema_pkg_apis_workflow_v1alpha1_TTLStrategy(ref common.ReferenceCallback)
 							Format: "int32",
 						},
 					},
-					"secondsAfterFailed": {
+					"secondsAfterFailure": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"integer"},
 							Format: "int32",
@@ -2502,7 +2516,8 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"securityContext": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.PodSecurityContext"),
+							Description: "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
+							Ref:         ref("k8s.io/api/core/v1.PodSecurityContext"),
 						},
 					},
 					"podSpecPatch": {
@@ -3137,7 +3152,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"ttlSecondsAfterFinished": {
 						SchemaProps: spec.SchemaProps{
-							Description: "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompleted instead.",
+							Description: "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},
@@ -3283,6 +3298,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 							},
 						},
 					},
+					"offloadNodeStatusVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Whether on not node status has been offloaded to a database. If exists, then Nodes and CompressedNodes will be empty. This will actually be populated with a hash of the offloaded data.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"storedTemplates": {
 						SchemaProps: spec.SchemaProps{
 							Description: "StoredTemplates is a mapping between a template ref and the node's status.",
@@ -3394,6 +3416,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 						SchemaProps: spec.SchemaProps{
 							Description: "ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn"),
+						},
+					},
+					"onExit": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},

@@ -6,11 +6,12 @@ import (
 	"strings"
 
 	"github.com/Knetic/govaluate"
+	"github.com/valyala/fasttemplate"
+
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/templateresolution"
-	"github.com/valyala/fasttemplate"
 )
 
 // stepsContext holds context information about this context's steps
@@ -37,6 +38,9 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 		}
 	}()
 
+	// The template scope of this step.
+	stepTemplateScope := tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+
 	stepsCtx := stepsContext{
 		boundaryID: node.ID,
 		scope: &wfScope{
@@ -50,7 +54,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 	for i, stepGroup := range tmpl.Steps {
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
 		if woc.getNodeByName(sgNodeName) == nil {
-			_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, tmpl, stepsCtx.boundaryID, wfv1.NodeRunning)
+			_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, stepTemplateScope, tmpl, stepsCtx.boundaryID, wfv1.NodeRunning)
 		} else {
 			_ = woc.markNodePhase(sgNodeName, wfv1.NodeRunning)
 		}
@@ -109,7 +113,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 				}
 				if len(childNodes) > 0 {
 					// Expanded child nodes should be created from the same template.
-					_, tmpl, err := woc.tmplCtx.ResolveTemplate(&childNodes[0])
+					_, tmpl, err := stepsCtx.tmplCtx.ResolveTemplate(&childNodes[0])
 					if err != nil {
 						return node, err
 					}
@@ -136,7 +140,6 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 		node.Outputs = outputs
 		woc.wf.Status.Nodes[node.ID] = *node
 	}
-
 	_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 	return node, nil
 }
@@ -192,6 +195,9 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	// Maps nodes to their steps
 	nodeSteps := make(map[string]wfv1.WorkflowStep)
 
+	// The template scope of this step group.
+	stepTemplateScope := stepsCtx.tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+
 	// Kick off all parallel steps in the group
 	for _, step := range stepGroup {
 		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
@@ -199,7 +205,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		// Check the step's when clause to decide if it should execute
 		proceed, err := shouldExecute(step.When)
 		if err != nil {
-			woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, &step, stepsCtx.boundaryID, wfv1.NodeError, err.Error())
+			woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeError, err.Error())
 			woc.addChildNode(sgNodeName, childNodeName)
 			woc.markNodeError(childNodeName, err)
 			return woc.markNodeError(sgNodeName, err)
@@ -208,7 +214,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			if woc.getNodeByName(childNodeName) == nil {
 				skipReason := fmt.Sprintf("when '%s' evaluated false", step.When)
 				woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
-				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
 				woc.addChildNode(sgNodeName, childNodeName)
 			}
 			continue
@@ -234,11 +240,24 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 
 	node = woc.getNodeByName(sgNodeName)
 	// Return if not all children completed
+	completed := true
 	for _, childNodeID := range node.Children {
-		if !woc.wf.Status.Nodes[childNodeID].Completed() {
-			return node
+		childNode := woc.wf.Status.Nodes[childNodeID]
+		step := nodeSteps[childNode.Name]
+		if !childNode.Completed() {
+			completed = false
+		} else {
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(step.Name, step.OnExit, stepsCtx.boundaryID, stepsCtx.tmplCtx)
+			if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+				// The onExit node is either not complete or has errored out, return.
+				completed = false
+			}
 		}
 	}
+	if !completed {
+		return node
+	}
+
 	// All children completed. Determine step group status as a whole
 	for _, childNodeID := range node.Children {
 		childNode := woc.wf.Status.Nodes[childNodeID]
