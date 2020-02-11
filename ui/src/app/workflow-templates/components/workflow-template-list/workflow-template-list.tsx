@@ -46,7 +46,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
         this.state = {loading: true, namespace: this.props.match.params.namespace || ''};
     }
 
-    public componentWillMount(): void {
+    public componentDidMount(): void {
         this.fetchWorkflowTemplates();
     }
 

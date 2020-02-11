@@ -1,7 +1,7 @@
 import * as React from 'react';
-import {Autocomplete} from '../../../../node_modules/argo-ui';
 import {services} from '../services';
 import {ErrorPanel} from './error-panel';
+import {InputFilter} from './input-filter';
 
 interface Props {
     value: string;
@@ -11,7 +11,6 @@ interface Props {
 interface State {
     editable: boolean;
     namespace: string;
-    namespaces: string[];
     error?: Error;
 }
 
@@ -20,27 +19,8 @@ export class NamespaceFilter extends React.Component<Props, State> {
         super(props);
         this.state = {
             editable: false,
-            namespace: props.value,
-            namespaces: (localStorage.getItem('namespaces') || '').split(',').filter(ns => ns !== '')
+            namespace: props.value
         };
-    }
-
-    private get namespace() {
-        return this.state.namespace;
-    }
-
-    private set namespace(namespace: string) {
-        this.setState(state => {
-            const namespaces = state.namespaces;
-            if (!state.namespaces.includes(namespace)) {
-                namespaces.unshift(namespace);
-            }
-            while (namespaces.length > 5) {
-                namespaces.pop();
-            }
-            localStorage.setItem('namespaces', namespaces.join(','));
-            return {namespace, namespaces};
-        });
     }
 
     public componentDidMount(): void {
@@ -48,7 +28,7 @@ export class NamespaceFilter extends React.Component<Props, State> {
             .get()
             .then(info => {
                 if (info.managedNamespace) {
-                    const namespaceChanged = info.managedNamespace !== this.namespace;
+                    const namespaceChanged = info.managedNamespace !== this.state.namespace;
                     this.setState({editable: false, namespace: info.managedNamespace});
                     if (namespaceChanged) {
                         this.props.onChange(info.managedNamespace);
@@ -68,37 +48,15 @@ export class NamespaceFilter extends React.Component<Props, State> {
             return <>{this.state.namespace}</>;
         }
         return (
-            <>
-                <small>Namespace</small>{' '}
-                <Autocomplete
-                    items={this.state.namespaces}
-                    value={this.state.namespace}
-                    onChange={(e, namespace) => this.setState({namespace})}
-                    onSelect={namespace => {
-                        this.setState({namespace});
-                        this.props.onChange(namespace);
-                    }}
-                    renderInput={inputProps => (
-                        <input
-                            {...inputProps}
-                            onKeyUp={event => {
-                                if (event.keyCode === 13) {
-                                    this.namespace = event.currentTarget.value;
-                                    this.props.onChange(this.state.namespace);
-                                }
-                            }}
-                            className='argo-field'
-                        />
-                    )}
-                />
-                <a
-                    onClick={() => {
-                        this.setState({namespace: ''});
-                        this.props.onChange('');
-                    }}>
-                    <i className='fa fa-times-circle' />
-                </a>
-            </>
+            <InputFilter
+                value={this.state.namespace}
+                placeholder='Namespace'
+                name='ns'
+                onChange={ns => {
+                    this.setState({namespace: ns});
+                    this.props.onChange(ns);
+                }}
+            />
         );
     }
 }

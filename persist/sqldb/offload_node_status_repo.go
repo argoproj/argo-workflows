@@ -14,7 +14,8 @@ import (
 )
 
 type UUIDVersion struct {
-	UID, Version string
+	UID     string `db:"uid"`
+	Version string `db:"version"`
 }
 
 type OffloadNodeStatusRepo interface {
@@ -32,10 +33,9 @@ func NewOffloadNodeStatusRepo(session sqlbuilder.Database, clusterName, tableNam
 
 type nodesRecord struct {
 	ClusterName string `db:"clustername"`
-	UID         string `db:"uid"`
-	Version     string `db:"version"`
-	Namespace   string `db:"namespace"`
-	Nodes       string `db:"nodes"`
+	UUIDVersion
+	Namespace string `db:"namespace"`
+	Nodes     string `db:"nodes"`
 }
 
 type nodeOffloadRepo struct {
@@ -68,10 +68,12 @@ func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (strin
 
 	record := &nodesRecord{
 		ClusterName: wdc.clusterName,
-		UID:         uid,
-		Version:     version,
-		Namespace:   namespace,
-		Nodes:       marshalled,
+		UUIDVersion: UUIDVersion{
+			UID:     uid,
+			Version: version,
+		},
+		Namespace: namespace,
+		Nodes:     marshalled,
 	}
 
 	logCtx := log.WithFields(log.Fields{"uid": uid, "version": version})
@@ -145,7 +147,8 @@ func (wdc *nodeOffloadRepo) List(namespace string) (map[UUIDVersion]wfv1.Nodes, 
 	log.WithFields(log.Fields{"namespace": namespace}).Debug("Listing offloaded nodes")
 	var records []nodesRecord
 	err := wdc.session.
-		SelectFrom(wdc.tableName).
+		Select("uid", "version", "nodes").
+		From(wdc.tableName).
 		Where(db.Cond{"clustername": wdc.clusterName}).
 		And(namespaceEqual(namespace)).
 		All(&records)
@@ -170,7 +173,8 @@ func (wdc *nodeOffloadRepo) ListOldOffloads(namespace string) ([]UUIDVersion, er
 	log.WithFields(log.Fields{"namespace": namespace}).Debug("Listing old offloaded nodes")
 	var records []UUIDVersion
 	err := wdc.session.
-		SelectFrom(wdc.tableName).
+		Select("uid", "version").
+		From(wdc.tableName).
 		Where(db.Cond{"clustername": wdc.clusterName}).
 		And(namespaceEqual(namespace)).
 		And("updatedat < current_timestamp - interval '5' minute").
@@ -182,6 +186,12 @@ func (wdc *nodeOffloadRepo) ListOldOffloads(namespace string) ([]UUIDVersion, er
 }
 
 func (wdc *nodeOffloadRepo) Delete(uid, version string) error {
+	if uid == "" {
+		return fmt.Errorf("invalid uid")
+	}
+	if version == "" {
+		return fmt.Errorf("invalid version")
+	}
 	logCtx := log.WithFields(log.Fields{"uid": uid, "version": version})
 	logCtx.Debug("Deleting offloaded nodes")
 	rs, err := wdc.session.
