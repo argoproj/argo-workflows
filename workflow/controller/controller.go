@@ -268,18 +268,18 @@ func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan st
 				oldRecords, err := wfc.offloadNodeStatusRepo.ListOldOffloads(wfc.GetManagedNamespace())
 				if err != nil {
 					log.WithField("err", err).Error("Failed to list old offloaded nodes")
-					return
+					continue
 				}
 				if len(oldRecords) == 0 {
 					log.Info("Zero old records, nothing to do")
-					return
+					continue
 				}
 				// get every lives workflow (1000s) into a map
 				liveOffloadNodeStatusVersions := make(map[types.UID]string)
 				list, err := util.NewWorkflowLister(wfc.wfInformer).List()
 				if err != nil {
 					log.WithField("err", err).Error("Failed to list workflows")
-					return
+					continue
 				}
 				for _, wf := range list {
 					// this could be the empty string - as it is no longer offloaded
