@@ -23,20 +23,6 @@ export class InputFilter extends React.Component<InputProps, InputState> {
         };
     }
 
-    private setValueAndCache(value: string) {
-        this.setState(state => {
-            const localCache = state.localCache;
-            if (!state.localCache.includes(value)) {
-                localCache.unshift(value);
-            }
-            while (localCache.length > 5) {
-                localCache.pop();
-            }
-            localStorage.setItem(this.props.name + '_inputs', localCache.join(','));
-            return {value, localCache};
-        });
-    }
-
     public render() {
         return (
             <>
@@ -71,5 +57,19 @@ export class InputFilter extends React.Component<InputProps, InputState> {
                 </a>
             </>
         );
+    }
+
+    private setValueAndCache(value: string) {
+        this.setState(state => {
+            const localCache = state.localCache;
+            if (!state.localCache.includes(value)) {
+                localCache.unshift(value);
+            }
+            while (localCache.length > 5) {
+                localCache.pop();
+            }
+            localStorage.setItem(this.props.name + '_inputs', localCache.join(','));
+            return {value, localCache};
+        });
     }
 }
