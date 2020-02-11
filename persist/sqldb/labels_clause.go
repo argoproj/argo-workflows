@@ -2,6 +2,7 @@ package sqldb
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/labels"
@@ -39,7 +40,17 @@ func requirementToCondition(r labels.Requirement) (db.Compound, error) {
 	case selection.Exists:
 		return db.Raw(fmt.Sprintf("exists (select 1 from argo_archived_workflows_labels where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s')", r.Key())), nil
 	case selection.GreaterThan:
-		return db.Raw(fmt.Sprintf("exists (select 1 from argo_archived_workflows_labels where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s' and cast(value as int) > %s)", r.Key(), r.Values().List()[0])), nil
+		i, err := strconv.Atoi(r.Values().List()[0])
+		if err != nil {
+			return nil, err
+		}
+		return db.Raw(fmt.Sprintf("exists (select 1 from argo_archived_workflows_labels where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s' and cast(value as int) > %d)", r.Key(), i)), nil
+	case selection.LessThan:
+		i, err := strconv.Atoi(r.Values().List()[0])
+		if err != nil {
+			return nil, err
+		}
+		return db.Raw(fmt.Sprintf("exists (select 1 from argo_archived_workflows_labels where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s' and cast(value as int) < %d)", r.Key(), i)), nil
 	}
 	return nil, fmt.Errorf("operation %v is not supported", r.Operator())
 }
