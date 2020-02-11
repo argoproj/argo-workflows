@@ -84,7 +84,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                             tools: []
                         }}>
                         <div className='row'>
-                            <div className='columns small-12 xxlarge-2'>
+                            <div className='columns small-2'>
                                 <div>{this.renderQuery(ctx)}</div>
                                 <div>
                                     <WorkflowFilters
@@ -96,7 +96,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     />
                                 </div>
                             </div>
-                            <div className='columns small-12 xxlarge-10'>{this.renderWorkflows(ctx)}</div>
+                            <div className='columns small-10'>{this.renderWorkflows(ctx)}</div>
                         </div>
                         <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
                             <ResourceSubmit<models.Workflow>

@@ -13,7 +13,7 @@ export interface TagsInputProps {
 require('./tags-input.scss');
 
 export class TagsInput extends React.Component<TagsInputProps, {tags: string[]; input: string; focused: boolean}> {
-    private inputEl: HTMLInputElement;
+    private inputElement: HTMLInputElement;
     private autocompleteApi: AutocompleteApi;
 
     constructor(props: TagsInputProps) {
@@ -25,7 +25,7 @@ export class TagsInput extends React.Component<TagsInputProps, {tags: string[]; 
         return (
             <div
                 className={classNames('tags-input argo-field', {'tags-input--focused': this.state.focused || !!this.state.input})}
-                onClick={() => this.inputEl && this.inputEl.focus()}>
+                onClick={() => this.inputElement && this.inputElement.focus()}>
                 {this.state.tags.map((tag, i) => (
                     <span className='tags-input__tag' key={tag}>
                         {tag}{' '}
@@ -58,7 +58,7 @@ export class TagsInput extends React.Component<TagsInputProps, {tags: string[]; 
                             {...props}
                             placeholder={this.props.placeholder}
                             ref={inputEl => {
-                                this.inputEl = inputEl;
+                                this.inputElement = inputEl;
                                 if (props.ref) {
                                     (props.ref as any)(inputEl);
                                 }

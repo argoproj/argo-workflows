@@ -23,7 +23,7 @@ export class InputFilter extends React.Component<InputProps, InputState> {
         };
     }
 
-    private set value(value: string) {
+    private setValueAndCache(value: string) {
         this.setState(state => {
             const localCache = state.localCache;
             if (!state.localCache.includes(value)) {
@@ -53,7 +53,7 @@ export class InputFilter extends React.Component<InputProps, InputState> {
                             {...inputProps}
                             onKeyUp={event => {
                                 if (event.keyCode === 13) {
-                                    this.value = event.currentTarget.value;
+                                    this.setValueAndCache(event.currentTarget.value);
                                     this.props.onChange(this.state.value);
                                 }
                             }}
