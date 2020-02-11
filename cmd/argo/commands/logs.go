@@ -27,9 +27,9 @@ import (
 	"github.com/argoproj/pkg/errors"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	workflowv1 "github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	apiv1 "github.com/argoproj/argo/server/workflow"
 	"github.com/argoproj/argo/workflow/packer"
 )
 
@@ -113,7 +113,7 @@ type logPrinter struct {
 	tail         *int64
 	timestamps   bool
 	kubeClient   kubernetes.Interface
-	apiClient    apiv1.WorkflowServiceClient
+	apiClient    workflowpkg.WorkflowServiceClient
 	ctx          context.Context
 	ns           string
 	apiServer    bool
@@ -124,7 +124,7 @@ func (p *logPrinter) PrintWorkflowLogs(workflow string) error {
 	var wf *v1alpha1.Workflow
 	var err error
 	if p.apiServer {
-		wfReq := apiv1.WorkflowGetRequest{
+		wfReq := workflowpkg.WorkflowGetRequest{
 			Name:      workflow,
 			Namespace: p.ns,
 		}
@@ -256,7 +256,7 @@ func (p *logPrinter) printLiveWorkflowLogs(workflowName string, wfClient workflo
 	go func() {
 		defer close(logs)
 		if p.apiServer {
-			wfReq := apiv1.WatchWorkflowsRequest{
+			wfReq := workflowpkg.WatchWorkflowsRequest{
 				Namespace: namespace,
 				ListOptions: &metav1.ListOptions{
 					FieldSelector: fieldSelector.String(),
@@ -387,7 +387,7 @@ func (p *logPrinter) getPodLogs(
 	}
 	var err error
 	if p.apiServer {
-		wfLogReq := apiv1.WorkflowLogRequest{
+		wfLogReq := workflowpkg.WorkflowLogRequest{
 			Name:      "*",
 			Namespace: p.ns,
 			PodName:   podName,
@@ -400,7 +400,7 @@ func (p *logPrinter) getPodLogs(
 				TailLines:    p.tail,
 			},
 		}
-		var logStream apiv1.WorkflowService_PodLogsClient
+		var logStream workflowpkg.WorkflowService_PodLogsClient
 		var err error
 		for {
 			logStream, err = p.apiClient.PodLogs(ctx, &wfLogReq)

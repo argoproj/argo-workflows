@@ -3,7 +3,7 @@ import * as classNames from 'classnames';
 import * as PropTypes from 'prop-types';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
-import {Observable, Subscription} from 'rxjs';
+import {Subscription} from 'rxjs';
 
 import * as models from '../../../../models';
 import {NodePhase} from '../../../../models';
@@ -51,7 +51,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
         this.state = {workflow: null};
     }
 
-    public componentWillMount() {
+    public componentDidMount() {
         this.loadWorkflow(this.props.match.params.namespace, this.props.match.params.name);
     }
 
@@ -196,7 +196,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
         }
         services.workflows
             .delete(this.props.match.params.name, this.props.match.params.namespace)
-            .then(wfDeleteRes => ctx.navigation.goto(`/workflows/`))
+            .then(wfDeleteRes => ctx.navigation.goto(uiUrl(`workflows/`)))
             .catch(error => {
                 this.appContext.apis.notifications.show({
                     content: 'Unable to delete workflow',
@@ -211,7 +211,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
         }
         services.workflows
             .terminate(this.props.match.params.name, this.props.match.params.namespace)
-            .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`))
+            .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
             .catch(error => {
                 this.appContext.apis.notifications.show({
                     content: 'Unable to terminate workflow',
@@ -223,7 +223,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
     private resumeWorkflow(ctx: ContextApis) {
         services.workflows
             .resume(this.props.match.params.name, this.props.match.params.namespace)
-            .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`))
+            .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
             .catch(error => {
                 this.appContext.apis.notifications.show({
                     content: 'Unable to resume workflow',
@@ -235,7 +235,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
     private suspendWorkflow(ctx: ContextApis) {
         services.workflows
             .suspend(this.props.match.params.name, this.props.match.params.namespace)
-            .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`))
+            .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
             .catch(error => {
                 this.appContext.apis.notifications.show({
                     content: 'Unable to suspend workflow',
@@ -250,7 +250,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
         }
         services.workflows
             .resubmit(this.props.match.params.name, this.props.match.params.namespace)
-            .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`))
+            .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
             .catch(error => {
                 this.appContext.apis.notifications.show({
                     content: 'Unable to resubmit workflow',
@@ -262,7 +262,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
     private retryWorkflow(ctx: ContextApis) {
         services.workflows
             .retry(this.props.match.params.name, this.props.match.params.namespace)
-            .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`))
+            .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
             .catch(error => {
                 this.appContext.apis.notifications.show({
                     content: 'Unable to retry workflow',
@@ -334,12 +334,15 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
     private async loadWorkflow(namespace: string, name: string) {
         try {
             this.ensureUnsubscribed();
-            const workflowUpdates = Observable.from([await services.workflows.get(namespace, name)]).merge(
-                services.workflows.watch({name, namespace}).map(changeEvent => changeEvent.object)
-            );
-            this.changesSubscription = workflowUpdates.subscribe(workflow => {
-                this.setState({workflow});
-            });
+            this.changesSubscription = services.workflows
+                .watch({name, namespace})
+                .map(changeEvent => changeEvent.object)
+                .catch((error, caught) => {
+                    return caught;
+                })
+                .subscribe(workflow => {
+                    this.setState({workflow});
+                });
         } catch (e) {
             this.appContext.apis.notifications.show({
                 content: 'Unable to load workflow',

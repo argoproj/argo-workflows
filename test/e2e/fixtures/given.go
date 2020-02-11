@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
 
@@ -62,13 +63,14 @@ func (g *Given) Workflow(text string) *Given {
 			g.t.Fatal(err)
 		}
 	}
-	if g.wf.GetLabels() == nil {
-		g.wf.SetLabels(map[string]string{})
-	}
-	if g.wf.GetLabels()[label] == "" {
-		g.wf.GetLabels()[label] = "true"
-	}
+	g.checkLabels(g.wf.ObjectMeta)
 	return g
+}
+
+func (g *Given) checkLabels(m metav1.ObjectMeta) {
+	if m.GetLabels()[Label] == "" && m.GetLabels()[LabelCron] == "" {
+		g.t.Fatalf("%s%s does not have one of  {%s, %s} labels", m.Name, m.GenerateName, Label, LabelCron)
+	}
 }
 
 func (g *Given) WorkflowName(name string) *Given {
@@ -106,12 +108,7 @@ func (g *Given) WorkflowTemplate(text string) *Given {
 		if err != nil {
 			g.t.Fatal(err)
 		}
-		if wfTemplate.GetLabels() == nil {
-			wfTemplate.SetLabels(map[string]string{})
-		}
-		if wfTemplate.GetLabels()[label] == "" {
-			wfTemplate.GetLabels()[label] = "true"
-		}
+		g.checkLabels(wfTemplate.ObjectMeta)
 		g.wfTemplates = append(g.wfTemplates, wfTemplate)
 	}
 	return g
@@ -150,14 +147,12 @@ func (g *Given) CronWorkflow(text string) *Given {
 		if g.cronWf.GetLabels() == nil {
 			g.cronWf.SetLabels(map[string]string{})
 		}
-		if g.cronWf.GetLabels()[label] == "" {
-			g.cronWf.GetLabels()[label] = "true"
-		}
+		g.checkLabels(g.cronWf.ObjectMeta)
 	}
 	return g
 }
 
-func (g *Given) RunCli(args []string, block func(*testing.T, string, error)) *Given {
+func (g *Given) RunCli(args []string, block func(t *testing.T, output string, err error)) *Given {
 	output, err := runCli(g.diagnostics, args)
 	block(g.t, output, err)
 	return g

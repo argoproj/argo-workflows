@@ -2,31 +2,35 @@ import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
-import {CronWorkflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
+import {ResourceSubmit} from '../../../shared/components/resource-submit';
 import {Timestamp} from '../../../shared/components/timestamp';
-import {YamlEditor} from '../../../shared/components/yaml/yaml-editor';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {exampleCronWorkflow} from '../../../shared/examples';
 import {services} from '../../../shared/services';
+
 require('./cron-workflow-list.scss');
 
 interface State {
+    loading: boolean;
+    namespace: string;
     cronWorkflows?: models.CronWorkflow[];
     error?: Error;
 }
 
 export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> {
     private get namespace() {
-        return this.props.match.params.namespace || '';
+        return this.state.namespace;
     }
 
     private set namespace(namespace: string) {
-        document.location.href = uiUrl('cron-workflows/' + namespace);
+        this.setState({namespace});
+        history.pushState(null, '', uiUrl('cron-workflows/' + namespace));
+        this.fetchCronWorkflows();
     }
 
     private get sidePanel() {
@@ -38,23 +42,17 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
     }
     constructor(props: any) {
         super(props);
-        this.state = {};
+        this.state = {loading: true, namespace: this.props.match.params.namespace || ''};
     }
 
     public componentDidMount(): void {
-        services.info
-            .get()
-            .then(info => {
-                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
-                    this.namespace = info.managedNamespace;
-                }
-                return services.cronWorkflows.list(this.namespace);
-            })
-            .then(cronWorkflows => this.setState({cronWorkflows}))
-            .catch(error => this.setState({error}));
+        this.fetchCronWorkflows();
     }
 
     public render() {
+        if (this.state.loading) {
+            return <Loading />;
+        }
         if (this.state.error) {
             throw this.state.error;
         }
@@ -80,15 +78,13 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                             <div className='columns small-12'>{this.renderCronWorkflows()}</div>
                         </div>
                         <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
-                            <YamlEditor
-                                title='Create New Cron Workflow'
-                                editing={true}
-                                value={exampleCronWorkflow(this.namespace)}
-                                onSubmit={(value: CronWorkflow) => {
+                            <ResourceSubmit<models.CronWorkflow>
+                                resourceName={'Cron Workflow'}
+                                defaultResource={exampleCronWorkflow(this.namespace)}
+                                onSubmit={cronWf => {
                                     return services.cronWorkflows
-                                        .create(value, value.metadata.namespace)
-                                        .then(res => ctx.navigation.goto(`/cron-workflows/${res.metadata.namespace}/${res.metadata.name}`))
-                                        .catch(error => this.setState({error}));
+                                        .create(cronWf, cronWf.metadata.namespace)
+                                        .then(res => ctx.navigation.goto(uiUrl(`cron-workflows/${res.metadata.namespace}/${res.metadata.name}`)));
                                 }}
                             />
                         </SlidingPanel>
@@ -96,6 +92,19 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                 )}
             </Consumer>
         );
+    }
+
+    private fetchCronWorkflows(): void {
+        services.info
+            .get()
+            .then(info => {
+                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
+                    this.namespace = info.managedNamespace;
+                }
+                return services.cronWorkflows.list(this.namespace);
+            })
+            .then(cronWorkflows => this.setState({cronWorkflows, loading: false}))
+            .catch(error => this.setState({error, loading: false}));
     }
 
     private renderCronWorkflows() {

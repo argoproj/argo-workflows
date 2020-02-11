@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"net/http"
-	"strings"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"google.golang.org/grpc"
@@ -96,10 +95,10 @@ func (s Gatekeeper) useClientAuth(token string) bool {
 	return false
 }
 
-func getToken(md metadata.MD) string {
+func getAuthHeader(md metadata.MD) string {
 	// looks for the HTTP header `Authorization: Bearer ...`
 	for _, t := range md.Get("authorization") {
-		return strings.TrimPrefix(t, "Bearer ")
+		return t
 	}
 	// check the HTTP cookie
 	for _, t := range md.Get("grpcgateway-cookie") {
@@ -108,7 +107,7 @@ func getToken(md metadata.MD) string {
 		request := http.Request{Header: header}
 		token, err := request.Cookie("authorization")
 		if err == nil {
-			return strings.TrimPrefix(token.Value, "Bearer ")
+			return token.Value
 		}
 	}
 	return ""
@@ -127,13 +126,14 @@ func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		return nil, nil, status.Error(codes.Unauthenticated, "unable to get metadata from incoming context")
 	}
 
-	token := getToken(md)
+	authString := getAuthHeader(md)
 
-	if !s.useClientAuth(token) {
+	if !s.useClientAuth(authString) {
 		return s.wfClient, s.kubeClient, nil
 	}
 
-	restConfig, err := kubeconfig.GetRestConfig(token)
+	restConfig, err := kubeconfig.GetRestConfig(authString)
+
 	if err != nil {
 		return nil, nil, status.Errorf(codes.Unauthenticated, "failed to create REST config: %v", err)
 	}

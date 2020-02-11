@@ -5,13 +5,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/server/workflow"
-
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/packer"
@@ -38,7 +38,7 @@ func apiServerWatchWorkflow(wfName string) {
 	defer conn.Close()
 	apiClient, ctx := GetWFApiServerGRPCClient(conn)
 	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", wfName))
-	wfReq := workflow.WatchWorkflowsRequest{
+	wfReq := workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{
 			FieldSelector: fieldSelector.String(),

@@ -15,6 +15,8 @@ import {Utils} from '../../../shared/utils';
 
 interface State {
     continue: string;
+    loading: boolean;
+    namespace: string;
     workflows?: Workflow[];
     error?: Error;
 }
@@ -29,38 +31,31 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     private get namespace() {
-        return this.props.match.params.namespace || '';
+        return this.state.namespace;
     }
 
     private set namespace(namespace: string) {
-        document.location.href = uiUrl('archived-workflows/' + namespace);
+        this.setState({namespace});
+        history.pushState(null, '', uiUrl('archived-workflows/' + namespace));
+        this.fetchArchivedWorkflows();
     }
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = {continue: ''};
+        this.state = {continue: '', loading: true, namespace: this.props.match.params.namespace || ''};
     }
 
     public componentDidMount(): void {
-        services.info
-            .get()
-            .then(info => {
-                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
-                    this.namespace = info.managedNamespace;
-                }
-                return services.archivedWorkflows.list(this.namespace, this.continue);
-            })
-            .then(list => {
-                this.setState({workflows: list.items || [], continue: list.metadata.continue || ''});
-            })
-            .catch(error => this.setState({error}));
+        this.fetchArchivedWorkflows();
     }
 
     public render() {
+        if (this.state.loading) {
+            return <Loading />;
+        }
         if (this.state.error) {
             throw this.state.error;
         }
-
         return (
             <Page
                 title='Archived Workflows'
@@ -81,6 +76,21 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                 </div>
             </Page>
         );
+    }
+
+    private fetchArchivedWorkflows(): void {
+        services.info
+            .get()
+            .then(info => {
+                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
+                    this.namespace = info.managedNamespace;
+                }
+                return services.archivedWorkflows.list(this.namespace, this.continue);
+            })
+            .then(list => {
+                this.setState({workflows: list.items || [], continue: list.metadata.continue || '', loading: false});
+            })
+            .catch(error => this.setState({error, loading: false}));
     }
     private renderWorkflows() {
         if (!this.state.workflows) {

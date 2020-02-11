@@ -1,5 +1,6 @@
 import {Page} from 'argo-ui';
 import * as React from 'react';
+import {uiUrl} from '../../shared/base';
 
 require('./login.scss');
 
@@ -19,7 +20,7 @@ const logout = () => {
 };
 const login = (token: string) => {
     document.cookie = 'authorization=' + token + ';';
-    document.location.href = '/';
+    document.location.href = uiUrl('');
 };
 export const Login = () => (
     <Page title='Login' toolbar={{breadcrumbs: [{title: 'Login'}]}}>
@@ -29,7 +30,7 @@ export const Login = () => (
                 configured.
             </p>
             <p>
-                Get your token using <code>argo token</code> and paste in this box.
+                Get your token using <code>argo auth token</code> and paste in this box.
             </p>
             <textarea id='token' cols={100} rows={20} defaultValue={getToken()} />
             <div>
