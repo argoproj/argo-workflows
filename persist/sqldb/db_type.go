@@ -1,19 +1,36 @@
 package sqldb
 
 import (
+	"database/sql"
 	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/go-sql-driver/mysql"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	"upper.io/db.v3"
 )
 
-func labelsClause(requirements labels.Requirements) (db.Compound, error) {
+type dbType string
+
+const (
+	MySQL    dbType = "mysql"
+	Postgres dbType = "postgres"
+)
+
+func dbTypeFor(session db.Database) dbType {
+	switch session.Driver().(*sql.DB).Driver().(type) {
+	case *mysql.MySQLDriver:
+		return MySQL
+	}
+	return Postgres
+}
+
+func (t dbType) labelsClause(requirements labels.Requirements) (db.Compound, error) {
 	var conds []db.Compound
 	for _, r := range requirements {
-		cond, err := requirementToCondition(r)
+		cond, err := t.requirementToCondition(r)
 		if err != nil {
 			return nil, err
 		}
@@ -22,10 +39,11 @@ func labelsClause(requirements labels.Requirements) (db.Compound, error) {
 	return db.And(conds...), nil
 }
 
-func requirementToCondition(r labels.Requirement) (db.Compound, error) {
+func (t dbType) requirementToCondition(r labels.Requirement) (db.Compound, error) {
 	// Should we "sanitize our inputs"? No.
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 	// Valid label values must be 63 characters or less and must be empty or begin and end with an alphanumeric character ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between.
+	// https://kb.objectrocket.com/postgresql/casting-in-postgresql-570#string+to+integer+casting
 	switch r.Operator() {
 	case selection.DoesNotExist:
 		return db.Raw(fmt.Sprintf("not exists (select 1 from argo_archived_workflows_labels where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s')", r.Key())), nil
@@ -44,13 +62,20 @@ func requirementToCondition(r labels.Requirement) (db.Compound, error) {
 		if err != nil {
 			return nil, err
 		}
-		return db.Raw(fmt.Sprintf("exists (select 1 from argo_archived_workflows_labels where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s' and cast(value as int) > %d)", r.Key(), i)), nil
+		return db.Raw(fmt.Sprintf("exists (select 1 from argo_archived_workflows_labels where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s' and cast(value as %s) > %d)", r.Key(), t.intType(), i)), nil
 	case selection.LessThan:
 		i, err := strconv.Atoi(r.Values().List()[0])
 		if err != nil {
 			return nil, err
 		}
-		return db.Raw(fmt.Sprintf("exists (select 1 from argo_archived_workflows_labels where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s' and cast(value as int) < %d)", r.Key(), i)), nil
+		return db.Raw(fmt.Sprintf("exists (select 1 from argo_archived_workflows_labels where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s' and cast(value as %s) < %d)", r.Key(), t.intType(), i)), nil
 	}
 	return nil, fmt.Errorf("operation %v is not supported", r.Operator())
+}
+
+func (t dbType) intType() string {
+	if t == MySQL {
+		return "signed"
+	}
+	return "int"
 }

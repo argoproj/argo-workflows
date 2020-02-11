@@ -52,10 +52,11 @@ type WorkflowArchive interface {
 type workflowArchive struct {
 	session     sqlbuilder.Database
 	clusterName string
+	dbType      dbType
 }
 
 func NewWorkflowArchive(session sqlbuilder.Database, clusterName string) WorkflowArchive {
-	return &workflowArchive{session: session, clusterName: clusterName}
+	return &workflowArchive{session: session, clusterName: clusterName, dbType: dbTypeFor(session)}
 }
 
 func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
@@ -141,7 +142,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 
 func (r *workflowArchive) ListWorkflows(namespace string, labelRequirements labels.Requirements, limit int, offset int) (wfv1.Workflows, error) {
 	var archivedWfs []archivedWorkflowMetadata
-	clause, err := labelsClause(labelRequirements)
+	clause, err := r.dbType.labelsClause(labelRequirements)
 	if err != nil {
 		return nil, err
 	}
