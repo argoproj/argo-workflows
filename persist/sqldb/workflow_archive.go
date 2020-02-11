@@ -59,8 +59,8 @@ func NewWorkflowArchive(session sqlbuilder.Database, clusterName string) Workflo
 }
 
 func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
-	logCtx := log.WithField("uid", wf.UID)
-	log.Debug("Archiving workflow")
+	logCtx := log.WithFields(log.Fields{"uid": wf.UID, "labels": wf.GetLabels()})
+	logCtx.Debug("Archiving workflow")
 	workflow, err := json.Marshal(wf)
 	if err != nil {
 		return err
@@ -109,9 +109,9 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 		}
 
 		// insert the labels
-		for key, value := range wf.ObjectMeta.Labels {
+		for key, value := range wf.GetLabels() {
 			_, err := sess.Collection(archiveLabelsTableName).
-				Insert(archivedWorkflowLabelRecord{
+				Insert(&archivedWorkflowLabelRecord{
 					ClusterName: r.clusterName,
 					Uid:         string(wf.UID),
 					Key:         key,
