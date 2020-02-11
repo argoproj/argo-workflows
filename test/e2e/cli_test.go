@@ -80,24 +80,9 @@ func (s *CLISuite) TestTokenArg() {
 }
 
 func (s *CLISuite) TestLogs() {
-	// we use our own YAML as we do not want to use PodGC for this test
-
 	s.Run("SetUp", func() {
 		s.Given().
-			Workflow(`apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: my-wf
-  labels:
-    argo-e2e: true
-spec:
-  entrypoint: my-template
-  templates:
-    - name: my-template
-      container:
-        image: cowsay:v1
-        command: [cowsay, ":) Hello Logs!"]
-        imagePullPolicy: IfNotPresent`).
+			Workflow(`@smoke/basic.yaml`).
 			When().
 			SubmitWorkflow().
 			WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
