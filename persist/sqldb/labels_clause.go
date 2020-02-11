@@ -26,7 +26,9 @@ func requirementToCondition(r labels.Requirement) (db.Compound, error) {
 	// Valid label values must be 63 characters or less and must be empty or begin and end with an alphanumeric character ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between.
 	switch r.Operator() {
 	case selection.Equals, selection.DoubleEquals:
-		return db.Raw(fmt.Sprintf("exists (select 1 from argo_archived_workflows_labels where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s' and value = '%s'", r.Key(), r.Values().List()[0])), nil
+		return db.Raw(fmt.Sprintf("exists (select 1 from argo_archived_workflows_labels where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s' and value = '%s')", r.Key(), r.Values().List()[0])), nil
+	case selection.Exists:
+		return db.Raw(fmt.Sprintf("exists (select 1 from argo_archived_workflows_labels where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s')", r.Key())), nil
 	}
-	return nil, fmt.Errorf("not supported")
+	return nil, fmt.Errorf("operation %v is not supported", r.Operator())
 }
