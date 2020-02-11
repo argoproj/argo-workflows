@@ -268,6 +268,7 @@ func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan st
 				oldRecords, err := wfc.offloadNodeStatusRepo.ListOldOffloads(wfc.GetManagedNamespace())
 				if err != nil {
 					log.WithField("err", err).Error("Failed to list old offloaded nodes")
+					return
 				}
 				if len(oldRecords) == 0 {
 					log.Info("Zero old records, nothing to do")
