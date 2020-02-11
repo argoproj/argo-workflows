@@ -36,6 +36,8 @@ func requirementToCondition(r labels.Requirement) (db.Compound, error) {
 		return db.Raw(fmt.Sprintf("exists (select 1 from argo_archived_workflows_labels where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s' and value in ('%s'))", r.Key(), strings.Join(r.Values().List(), "', '"))), nil
 	case selection.NotEquals:
 		return db.Raw(fmt.Sprintf("not exists (select 1 from argo_archived_workflows_labels where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s' and value = '%s')", r.Key(), r.Values().List()[0])), nil
+	case selection.NotIn:
+		return db.Raw(fmt.Sprintf("not exists (select 1 from argo_archived_workflows_labels where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s' and value in ('%s'))", r.Key(), strings.Join(r.Values().List(), "', '"))), nil
 	}
 	return nil, fmt.Errorf("operation %v is not supported", r.Operator())
 }
