@@ -4606,6 +4606,14 @@
           "$ref": "#/definitions/v1Time",
           "title": "Time at which this node completed"
         },
+        "usage": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          },
+          "description": "Usage is an estimate of resource usage. This is populated when the nodes completes."
+        },
         "podIP": {
           "type": "string",
           "title": "PodIP captures the IP of the pod for daemoned steps"

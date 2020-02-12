@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"strings"
+	"time"
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -829,6 +831,32 @@ type RetryStrategy struct {
 	Backoff *Backoff `json:"backoff,omitempty" protobuf:"bytes,3,opt,name=backoff,casttype=Backoff"`
 }
 
+// this represents a usage summary by resource (e.g. "memory", "cpu")
+type Usage map[apiv1.ResourceName]time.Duration
+
+func (u Usage) Add(o Usage) Usage {
+	usage := Usage{}
+	for name, duration := range u {
+		usage[name] = duration
+	}
+	for name, duration := range o {
+		usage[name] = usage[name] + duration
+	}
+	return usage
+}
+
+func (u Usage) String() string {
+	var parts []string
+	for name, duration := range u {
+		parts = append(parts, fmt.Sprintf("%s:%v", name, duration))
+	}
+	return strings.Join(parts, ",")
+}
+
+func (u Usage) IsZero() bool {
+	return len(u) == 0
+}
+
 // NodeStatus contains status information about an individual node in the workflow
 type NodeStatus struct {
 	// ID is a unique identifier of a node within the worklow
@@ -879,6 +907,9 @@ type NodeStatus struct {
 	// Time at which this node completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,11,opt,name=finishedAt"`
 
+	// Usage is an estimate of resource usage. This is populated when the nodes completes.
+	Usage Usage `json:"usage,omitempty" protobuf:"bytes,21,opt,name=usage"`
+
 	// PodIP captures the IP of the pod for daemoned steps
 	PodIP string `json:"podIP,omitempty" protobuf:"bytes,12,opt,name=podIP"`
 
@@ -907,6 +938,14 @@ type NodeStatus struct {
 	// a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
 	// a template, will be a superset of the outbound nodes of its last children.
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
+}
+
+func (n Nodes) GetUsage() Usage {
+	usage := Usage{}
+	for _, status := range n {
+		usage = usage.Add(status.Usage)
+	}
+	return usage
 }
 
 //func (n NodeStatus) String() string {

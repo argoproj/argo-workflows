@@ -107,6 +107,9 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 	if !wf.Status.StartedAt.IsZero() {
 		fmt.Printf(fmtStr, "Duration:", humanize.RelativeDuration(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time))
 	}
+	if !wf.Status.Nodes.GetUsage().IsZero() {
+		fmt.Printf(fmtStr, "Usage:", wf.Status.Nodes.GetUsage())
+	}
 
 	if len(wf.Spec.Arguments.Parameters) > 0 {
 		fmt.Printf(fmtStr, "Parameters:", "")
@@ -147,9 +150,9 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 		fmt.Println()
 		// apply a dummy FgDefault format to align tab writer with the rest of the columns
 		if getArgs.output == "wide" {
-			_, _ = fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\n", ansiFormat("STEP", FgDefault))
+			_, _ = fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\tUSAGE\n", ansiFormat("STEP", FgDefault))
 		} else {
-			_, _ = fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tMESSAGE\n", ansiFormat("STEP", FgDefault))
+			_, _ = fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tMESSAGE\tUSAGE\n", ansiFormat("STEP", FgDefault))
 		}
 
 		// Convert Nodes to Render Trees
@@ -447,10 +450,11 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, get
 	if getArgs.output == "wide" {
 		msg := args[len(args)-1]
 		args[len(args)-1] = getArtifactsString(node)
-		args = append(args, msg)
-		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\n", args...)
+		args = append(args, msg, node.Usage)
+		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\n", args...)
 	} else {
-		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\n", args...)
+		args = append(args, node.Usage)
+		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\n", args...)
 	}
 }
 
