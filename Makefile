@@ -426,37 +426,15 @@ $(HOME)/go/bin/swagger:
 api/argo-server/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES)
 	swagger mixin -c 412 pkg/apiclient/primary.swagger.json $(SWAGGER_FILES) | sed 's/VERSION/$(VERSION)/' > api/argo-server/swagger.json
 
-# sdks
-
 dist/swagger-codegen.jar:
 	curl -L -o dist/swagger-codegen.jar https://repo1.maven.org/maven2/io/swagger/codegen/v3/swagger-codegen-cli/3.0.16/swagger-codegen-cli-3.0.16.jar
 
 .PHONY: sdks
-sdks: sdks/argo-workflows-python-sdk/README.md sdks/argo-workflows-java-sdk/README.md
+sdks: dist/argo-workflows-java-sdk dist/argo-workflows-python-sdk
 
-dist/argo-workflows-python-sdk:
-	 git submodule update --init sdks/argo-workflows-python-sdk
-	 touch dist/argo-workflows-python-sdk
-
-sdks/argo-workflows-python-sdk/README.md: dist/argo-workflows-python-sdk dist/swagger-codegen.jar api/argo-server/swagger.json
-	cd sdks/argo-workflows-python-sdk && git checkout master && git pull origin master && git clean -fxd
-	java -jar dist/swagger-codegen.jar generate -i api/argo-server/swagger.json -l python -DhideGenerationTimestamp=true -o sdks/argo-workflows-python-sdk --git-user-id argoproj-labs --git-repo-id argo-workflows-python-sdk
-ifeq ($(CI),false)
-	cd sdks/argo-workflows-python-sdk && git add . && git diff --quiet || git commit -m "Updated to $(VERSION)" && git push
-	git reset && git add sdks/argo-workflows-python-sdk && git commit -m "Updated Python SDK to $(VERSION)"
-endif
-
-dist/argo-workflows-java-sdk:
-	 git submodule update --init sdks/argo-workflows-java-sdk
-	 touch dist/argo-workflows-java-sdk
-
-sdks/argo-workflows-java-sdk/README.md: dist/argo-workflows-java-sdk dist/swagger-codegen.jar api/argo-server/swagger.json
-	cd sdks/argo-workflows-java-sdk && git checkout master && git pull origin master && git clean -fxd
-	java -jar dist/swagger-codegen.jar generate -i api/argo-server/swagger.json -l java -DhideGenerationTimestamp=true -o sdks/argo-workflows-java-sdk --git-user-id argoproj-labs --git-repo-id argo-workflows--java-sdk
-ifeq ($(CI),false)
-	cd sdks/argo-workflows-java-sdk && git add . && git diff --quiet || git commit -m "Updated to $(VERSION)" && git push
-	git reset && git add sdks/argo-workflows-java-sdk && git commit -m "Updated Java SDK to $(VERSION)"
-endif
+dist/argo-workflows-%-sdk: dist/swagger-codegen.jar api/argo-server/swagger.json
+	./hack/update-sdk.sh $* $(GIT_BRANCH) $(VERSION)
+	touch dist/argo-workflows-$*-sdk
 
 # pre-push
 
