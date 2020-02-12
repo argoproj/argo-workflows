@@ -43,13 +43,16 @@ func TestEstimatePodUsage(t *testing.T) {
 				},
 			},
 		}, wfv1.Usage{
-			corev1.ResourceCPU:    2 * time.Minute,
-			corev1.ResourceMemory: 1 * time.Minute,
+			corev1.ResourceCPU:    wfv1.NewResourceUsage(2 * time.Minute),
+			corev1.ResourceMemory: wfv1.NewResourceUsage(5 * time.Second),
 		}},
 		{"TerminatedContainerWithCPURequest", &corev1.Pod{
 			Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "main", Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceCPU: resource.MustParse("2000m"),
+				},
+				Limits: corev1.ResourceList{
+					corev1.ResourceName("nvidia.com/gpu"): resource.MustParse("1"),
 				},
 			}}}},
 			Status: corev1.PodStatus{
@@ -59,7 +62,7 @@ func TestEstimatePodUsage(t *testing.T) {
 						State: corev1.ContainerState{
 							Running: &corev1.ContainerStateRunning{
 								StartedAt: metav1.Time{
-									Time: zero.Add(-2 * time.Minute),
+									Time: zero.Add(-3 * time.Minute),
 								},
 							},
 						},
@@ -67,8 +70,9 @@ func TestEstimatePodUsage(t *testing.T) {
 				},
 			},
 		}, wfv1.Usage{
-			corev1.ResourceCPU:    4 * time.Minute,
-			corev1.ResourceMemory: 2 * time.Minute,
+			corev1.ResourceCPU:                    wfv1.NewResourceUsage(6 * time.Minute),
+			corev1.ResourceMemory:                 wfv1.NewResourceUsage(0 * time.Second),
+			corev1.ResourceName("nvidia.com/gpu"): wfv1.NewResourceUsage(3 * time.Minute),
 		}},
 	}
 	for _, tt := range tests {

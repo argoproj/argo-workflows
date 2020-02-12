@@ -5,6 +5,7 @@ import * as React from 'react';
 
 import * as models from '../../../../models';
 import {Timestamp} from '../../../shared/components/timestamp';
+import {formatResourceUsage} from '../../../shared/duration';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 
@@ -69,7 +70,17 @@ export const WorkflowNodeSummary = (props: Props) => {
         },
         {
             title: 'USAGE',
-            value: props.node.usage && Object.entries(props.node.usage).map(([key, value]) => key+":"+value).join(",")
+            value: (
+                <>
+                    {props.node.usage &&
+                        Object.entries(props.node.usage)
+                            .map(([resource, usage]) => formatResourceUsage(usage) + '*' + resource)
+                            .join(',')}{' '}
+                    <a href='https://github.com/argoproj/argo/blob/master/docs/usage.md'>
+                        <i className='fa fa-info-circle' />
+                    </a>
+                </>
+            )
         }
     ];
     const template = Utils.getResolvedTemplates(props.workflow, props.node);

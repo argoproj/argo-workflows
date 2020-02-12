@@ -9,11 +9,6 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-var defaultResourceList = map[corev1.ResourceName]resource.Quantity{
-	corev1.ResourceCPU:    resource.MustParse("1000m"),
-	corev1.ResourceMemory: resource.MustParse("1Gi"),
-}
-
 type containerSummary struct {
 	corev1.ResourceList
 	corev1.ContainerState
@@ -29,38 +24,43 @@ func (s containerSummary) duration(now time.Time) time.Duration {
 	}
 }
 
-func scale(r corev1.ResourceName) int64 {
-	value := scaleValue(r)
-	return (&value).Value()
-}
-func scaleValue(r corev1.ResourceName) resource.Quantity {
-	switch r {
-	case corev1.ResourceCPU:
-		return resource.MustParse("1000m")
-	default:
-		return resource.MustParse("1Gi")
+func resourceDenominator(r corev1.ResourceName) *resource.Quantity {
+	q, ok := map[corev1.ResourceName]resource.Quantity{
+		corev1.ResourceCPU:              resource.MustParse("1000m"),
+		corev1.ResourceMemory:           resource.MustParse("1Gi"),
+		corev1.ResourceStorage:          resource.MustParse("10Gi"),
+		corev1.ResourceEphemeralStorage: resource.MustParse("10Gi"),
+	}[r]
+	if !ok {
+		q = resource.MustParse("1")
 	}
+	return &q
 }
 
 func EstimatePodUsage(pod *corev1.Pod, now time.Time) wfv1.Usage {
-	// merge requests and duration into a single list
 	summaries := map[string]containerSummary{}
 	for _, c := range append(pod.Spec.InitContainers, pod.Spec.Containers...) {
-		summaries[c.Name] = containerSummary{ResourceList: defaultResourceList}
-		for name, quantity := range c.Resources.Requests {
-			summaries[c.Name].ResourceList[name] = quantity
+		summaries[c.Name] = containerSummary{ResourceList: map[corev1.ResourceName]resource.Quantity{
+			// https://medium.com/@betz.mark/understanding-resource-limits-in-kubernetes-cpu-time-9eff74d3161b
+			corev1.ResourceCPU: resource.MustParse("100m"),
+			// https://medium.com/@betz.mark/understanding-resource-limits-in-kubernetes-memory-6b41e9a955f9
+			corev1.ResourceMemory: resource.MustParse("100Mi"),
+		}}
+		for n, q := range c.Resources.Limits {
+			summaries[c.Name].ResourceList[n] = q
+		}
+		for n, q := range c.Resources.Requests {
+			summaries[c.Name].ResourceList[n] = q
 		}
 	}
 	for _, c := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
 		summaries[c.Name] = containerSummary{ResourceList: summaries[c.Name].ResourceList, ContainerState: c.State}
 	}
-	// then add them all up
 	usage := wfv1.Usage{}
-	for _, summary := range summaries {
-		duration := summary.duration(now)
-		for resourceName, list := range summary.ResourceList {
-			usage = usage.Add(wfv1.Usage{resourceName: time.Duration(list.Value()/scale(resourceName)) * duration})
-
+	for _, s := range summaries {
+		duration := s.duration(now)
+		for r, q := range s.ResourceList {
+			usage = usage.Add(wfv1.Usage{r: wfv1.NewResourceUsage(time.Duration(q.Value() * duration.Nanoseconds() / resourceDenominator(r).Value()))})
 		}
 	}
 	return usage

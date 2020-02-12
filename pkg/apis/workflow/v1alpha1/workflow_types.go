@@ -831,20 +831,38 @@ type RetryStrategy struct {
 	Backoff *Backoff `json:"backoff,omitempty" protobuf:"bytes,3,opt,name=backoff,casttype=Backoff"`
 }
 
+// amount of resource * time in seconds, e.g.
+// CPU 1000m * 1m = 1m
+// memory 1Gi * 2m = 2Gi
+// this is represented as duration in seconds, so can be converted to and from duration (with loss of precision below seconds)
+type ResourceUsage int64
+
+func NewResourceUsage(d time.Duration) ResourceUsage {
+	return ResourceUsage(d.Seconds())
+}
+
+func (s ResourceUsage) Duration() time.Duration {
+	return time.Duration(s) * time.Second
+}
+
+func (s ResourceUsage) String() string {
+	return s.Duration().String()
+}
+
 // this represents a usage summary by resource (e.g. "memory", "cpu")
-type Usage map[apiv1.ResourceName]time.Duration
+type Usage map[apiv1.ResourceName]ResourceUsage
 
 func (u Usage) Add(o Usage) Usage {
-	for name, duration := range o {
-		u[name] = u[name] + duration
+	for r, d := range o {
+		u[r] = u[r] + d
 	}
 	return u
 }
 
 func (u Usage) String() string {
 	var parts []string
-	for name, duration := range u {
-		parts = append(parts, fmt.Sprintf("%s:%v", name, duration))
+	for r, d := range u {
+		parts = append(parts, fmt.Sprintf("%v*%s", d, r))
 	}
 	return strings.Join(parts, ",")
 }
