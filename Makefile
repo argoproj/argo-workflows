@@ -426,14 +426,14 @@ $(HOME)/go/bin/swagger:
 api/argo-server/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES)
 	swagger mixin -c 412 pkg/apiclient/primary.swagger.json $(SWAGGER_FILES) | sed 's/VERSION/$(VERSION)/' > api/argo-server/swagger.json
 
-dist/swagger-codegen.jar:
-	curl -L -o dist/swagger-codegen.jar https://repo1.maven.org/maven2/io/swagger/codegen/v3/swagger-codegen-cli/3.0.16/swagger-codegen-cli-3.0.16.jar
+dist/openapi-generator-cli.jar:
+	curl -L -o dist/openapi-generator-cli.jar https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/4.2.3/openapi-generator-cli-4.2.3.jar
 
 .PHONY: sdks
 sdks: dist/argo-workflows-java-sdk dist/argo-workflows-python-sdk
 
-dist/argo-workflows-%-sdk: dist/swagger-codegen.jar api/argo-server/swagger.json
-	./hack/update-sdk.sh $* $(GIT_BRANCH) $(VERSION)
+dist/argo-workflows-%-sdk: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/argo-server/swagger.json
+	./hack/update-sdk.sh $* $(GIT_BRANCH) $(MANIFESTS_VERSION)
 	touch dist/argo-workflows-$*-sdk
 
 # pre-push

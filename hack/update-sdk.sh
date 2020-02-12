@@ -10,26 +10,39 @@ git_repo=argo-workflows-${lang}-sdk
 path=sdks/${git_repo}
 
 # init submodule
-git submodule update --init ${path}
+git submodule update --init -f ${path}
 
 # reset to latest on branch
 cd ${path}
 git fetch ${git_remote}
 git checkout ${git_branch} && git reset --hard ${git_remote}/${git_branch} || git checkout -b ${git_branch} && git push -u ${git_remote} ${git_branch}
 git clean -fxd
+rm -Rf *
 cd -
 
 # generate code
-java -jar dist/swagger-codegen.jar generate -i api/argo-server/swagger.json -l ${lang} -DhideGenerationTimestamp=true -o ${path} --git-user-id argoproj-labs --git-repo-id ${git_repo}
+java -jar dist/openapi-generator-cli.jar generate \
+    -i api/argo-server/swagger.json \
+    -g ${lang} \
+    -p hideGenerationTimestamp=true \
+    -o ${path} \
+    --invoker-package io.argoproj.argo.client \
+    --api-package io.argoproj.argo.client.api \
+    --model-package io.argoproj.argo.client.model \
+    --group-id argoproj-labs \
+    --artifact-id ${git_repo} \
+    --artifact-version ${version} \
+    --git-user-id argoproj-labs \
+    --git-repo-id ${git_repo}
 
 # commit, tag and push the changes
 cd ${path}
 
-git add .
-git diff --quiet || git commit -m "Updated to ${version}"
+git diff --quiet || ( git add . && git commit -m "Updated to ${version}" )
 
-if [[ ${version} != ${git_branch} ]]; then
-    git tag ${version}
+# tag, but only for v* versions
+if [[ ${version} == v* ]]; then
+    git tag -f ${version}
 fi
 
-git push -u ${git_remote} ${git_branch} --follow-tags
+git push --follow-tags
