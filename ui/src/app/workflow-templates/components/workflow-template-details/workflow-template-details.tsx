@@ -40,7 +40,7 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
         this.state = {};
     }
 
-    public componentWillMount(): void {
+    public componentDidMount(): void {
         services.workflowTemplate
             .get(this.name, this.namespace)
             .then(template => {

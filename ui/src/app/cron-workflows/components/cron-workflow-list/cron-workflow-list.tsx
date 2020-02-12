@@ -45,7 +45,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
         this.state = {loading: true, namespace: this.props.match.params.namespace || ''};
     }
 
-    public componentWillMount(): void {
+    public componentDidMount(): void {
         this.fetchCronWorkflows();
     }
 
