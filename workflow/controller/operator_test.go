@@ -1990,6 +1990,44 @@ func TestStepsOnExit(t *testing.T) {
 	assert.True(t, onExitNodeIsPresent)
 }
 
+var onExitFailures =`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: exit-handlers
+spec:
+  entrypoint: intentional-fail
+  onExit: exit-handler
+  templates:
+  - name: intentional-fail
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo intentional failure; exit 1"]
+  - name: exit-handler
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}}. Failed steps {{workflow.failures}}"]
+`
+
+func TestStepsOnExitFailures(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// Test list expansion
+	wf := unmarshalWF(onExitFailures)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	woc.operate()
+
+	fmt.Println(woc.globalParams)
+	assert.Contains(t, woc.globalParams[common.GlobalVarWorkflowFailures], `[{\"displayName\":\"exit-handlers\",\"message\":\"Unexpected pod phase for exit-handlers: \",\"templateName\":\"intentional-fail\",\"phase\":\"Error\",\"podName\":\"exit-handlers\"`)
+}
+
 var invalidSpec = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

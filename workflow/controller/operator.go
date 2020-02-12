@@ -95,6 +95,16 @@ var (
 // for before requeuing the workflow onto the workqueue.
 const maxOperationTime = 10 * time.Second
 
+// failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
+type failedNodeStatus struct {
+	DisplayName  string      `json:"displayName"`
+	Message      string      `json:"message"`
+	TemplateName string      `json:"templateName"`
+	Phase        string      `json:"phase"`
+	PodName      string      `json:"podName"`
+	FinishedAt   metav1.Time `json:"finishedAt"`
+}
+
 // newWorkflowOperationCtx creates and initializes a new wfOperationCtx object.
 func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOperationCtx {
 	// NEVER modify objects from the store. It's a read-only, local cache.
@@ -263,24 +273,18 @@ func (woc *wfOperationCtx) operate() {
 			woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 		}
 
-		var failures []interface{}
+		var failures []failedNodeStatus
 		for _, node := range woc.wf.Status.Nodes {
 			if node.Phase == wfv1.NodeFailed || node.Phase == wfv1.NodeError {
-				failures = append(failures, struct {
-					Name         string `json:"name"`
-					Message      string `json:"message"`
-					TemplateName string `json:"templateName"`
-					FinishedAt   string `json:"finishedAt"`
-					Phase        string `json:"phase"`
-					PodName      string `json:"podName"`
-				}{
-					Name:         node.DisplayName,
-					Message:      node.Message,
-					TemplateName: node.TemplateName,
-					FinishedAt:   node.FinishedAt.String(),
-					Phase:        string(node.Phase),
-					PodName:      node.ID,
-				})
+				failures = append(failures,
+					failedNodeStatus{
+						DisplayName:  node.DisplayName,
+						Message:      node.Message,
+						TemplateName: node.TemplateName,
+						Phase:        string(node.Phase),
+						PodName:      node.ID,
+						FinishedAt:   node.FinishedAt,
+					})
 			}
 		}
 		failedNodeBytes, err := json.Marshal(failures)
@@ -289,7 +293,7 @@ func (woc *wfOperationCtx) operate() {
 			// No need to return here
 		}
 		// This strconv.Quote is necessary so that the escaped quotes are not removed during parameter substitution
-		woc.globalParams[common.GobalVarWorkflowFailedNodes] = strconv.Quote(string(failedNodeBytes))
+		woc.globalParams[common.GlobalVarWorkflowFailures] = strconv.Quote(string(failedNodeBytes))
 
 		woc.log.Infof("Running OnExit handler: %s", woc.wf.Spec.OnExit)
 		onExitNodeName := woc.wf.ObjectMeta.Name + ".onExit"
