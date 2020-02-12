@@ -1990,7 +1990,7 @@ func TestStepsOnExit(t *testing.T) {
 	assert.True(t, onExitNodeIsPresent)
 }
 
-var onExitFailures =`
+var onExitFailures = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
