@@ -118,6 +118,8 @@ const (
 	GlobalVarWorkflowCreationTimestamp = "workflow.creationTimestamp"
 	// GlobalVarWorkflowPriority is the workflow variable referencing the workflow's priority field
 	GlobalVarWorkflowPriority = "workflow.priority"
+	// GlobalVarWorkflowFailures is a global variable of a JSON map referencing the workflow's failed nodes
+	GlobalVarWorkflowFailures = "workflow.failures"
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"
 

@@ -167,6 +167,7 @@ func ValidateWorkflowSpec(spec wfv1.WorkflowSpec, ctx *templateValidationCtx, tm
 	if spec.OnExit != "" {
 		// now when validating onExit, {{workflow.status}} is now available as a global
 		ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderGenerator.NextPlaceholder()
+		ctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
 		_, err = ctx.validateTemplateHolder(&wfv1.Template{Template: spec.OnExit}, tmplCtx, &spec.Arguments, map[string]interface{}{})
 		if err != nil {
 			return err
