@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/robfig/cron"
+	cron "github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
