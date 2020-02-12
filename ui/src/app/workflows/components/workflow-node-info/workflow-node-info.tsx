@@ -66,6 +66,10 @@ export const WorkflowNodeSummary = (props: Props) => {
                     {now => <Duration durationMs={nodeDuration(props.node, now)} />}
                 </Ticker>
             )
+        },
+        {
+            title: 'USAGE',
+            value: props.node.usage && Object.entries(props.node.usage).map(([key, value]) => key+":"+value).join(",")
         }
     ];
     const template = Utils.getResolvedTemplates(props.workflow, props.node);

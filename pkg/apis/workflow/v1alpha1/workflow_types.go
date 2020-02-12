@@ -835,14 +835,10 @@ type RetryStrategy struct {
 type Usage map[apiv1.ResourceName]time.Duration
 
 func (u Usage) Add(o Usage) Usage {
-	usage := Usage{}
-	for name, duration := range u {
-		usage[name] = duration
-	}
 	for name, duration := range o {
-		usage[name] = usage[name] + duration
+		u[name] = u[name] + duration
 	}
-	return usage
+	return u
 }
 
 func (u Usage) String() string {

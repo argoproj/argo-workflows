@@ -557,7 +557,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 			}
 			if time.Now().After(firstChildNode.FinishedAt.Add(maxDuration)) {
 				woc.log.Infoln("Max duration limit exceeded. Failing...")
-				return woc.markNodePhase(node.Name, lastChildNode.Phase), true, nil
+				return woc.markNodePhase(node.Name, lastChildNode.Phase, "Max duration limit exceeded"), true, nil
 			}
 		}
 
@@ -615,17 +615,17 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 
 	if (lastChildNode.Phase == wfv1.NodeFailed && !retryOnFailed) || (lastChildNode.Phase == wfv1.NodeError && !retryOnError) {
 		woc.log.Infof("Node not set to be retried after status: %s", lastChildNode.Phase)
-		return woc.markNodePhase(node.Name, lastChildNode.Phase), true, nil
+		return woc.markNodePhase(node.Name, lastChildNode.Phase, lastChildNode.Message), true, nil
 	}
 
 	if !lastChildNode.CanRetry() {
 		woc.log.Infof("Node cannot be retried. Marking it failed")
-		return woc.markNodePhase(node.Name, lastChildNode.Phase), true, nil
+		return woc.markNodePhase(node.Name, lastChildNode.Phase, lastChildNode.Message), true, nil
 	}
 
 	if retryStrategy.Limit != nil && int32(len(node.Children)) > *retryStrategy.Limit {
 		woc.log.Infoln("No more retries left. Failing...")
-		return woc.markNodePhase(node.Name, lastChildNode.Phase), true, nil
+		return woc.markNodePhase(node.Name, lastChildNode.Phase, "No more retries left"), true, nil
 	}
 
 	woc.log.Infof("%d child nodes of %s failed. Trying again...", len(node.Children), node.Name)
@@ -911,10 +911,9 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 		if node.FinishedAt.IsZero() {
 			// If we get here, the container is daemoned so the
 			// finishedAt might not have been set.
-			now := time.Now()
-			node.FinishedAt = metav1.Time{Time: now.UTC()}
-			node.Usage = usage.EstimatePodUsage(pod, now)
+			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 		}
+		node.Usage = usage.EstimatePodUsage(pod, time.Now())
 	}
 	if updated {
 		return node
