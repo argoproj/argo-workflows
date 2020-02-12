@@ -42,7 +42,6 @@ spec:
         continueOn:
           failed: true
     - - name: C
-        dependencies: [A, B]
         template: whalesay
 
   - name: boom
