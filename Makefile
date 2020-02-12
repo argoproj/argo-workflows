@@ -63,9 +63,9 @@ ifneq ($(GIT_TAG),)
 override LDFLAGS += -X ${PACKAGE}.gitTag=${GIT_TAG}
 endif
 
-ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
-CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
-CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
+ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | cut -c 26-)
+CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo' | cut -c 26-)
+CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | cut -c 26-)
 MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
@@ -77,10 +77,9 @@ build: status clis executor-image controller-image manifests/install.yaml manife
 status:
 	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE)
 
-vendor: Gopkg.toml Gopkg.lock
-	# Get Go dependencies
-	rm -Rf .vendor-new
-	dep ensure -v
+.PHONY: vendor
+vendor: go.mod go.sum
+	go mod download
 
 # cli
 
@@ -207,21 +206,8 @@ codegen:
 	go run ./hack/gen-openapi-spec/main.go $(MANIFESTS_VERSION) > ./api/openapi-spec/swagger.json
 	find . -path '*/mocks/*' -type f -not -path '*/vendor/*' -exec ./hack/update-mocks.sh {} ';'
 
-.PHONY: verify-codegen
-verify-codegen:
-	# Verify generated code
-	./hack/verify-codegen.sh
-	./hack/update-openapigen.sh --verify-only
-	mkdir -p ./dist
-	go run ./hack/gen-openapi-spec/main.go $(MANIFESTS_VERSION) > ./dist/swagger.json
-	diff ./dist/swagger.json ./api/openapi-spec/swagger.json
-
 .PHONY: manifests
 manifests: status manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml manifests/quick-start-no-db.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml test/e2e/manifests/no-db.yaml
-
-.PHONY: verify-manifests
-verify-manifests: manifests
-	git diff --exit-code
 
 # we use a different file to ./VERSION to force updating manifests after a `make clean`
 dist/MANIFESTS_VERSION:
@@ -246,6 +232,8 @@ manifests/quick-start-postgres.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
 
 .PHONY: lint
 lint: server/static/files.go
+	# Tidy Go modules
+	go mod tidy
 	# Lint Go files
 	golangci-lint run --fix --verbose
 ifeq ($(CI),false)
@@ -423,10 +411,8 @@ test-cli: test-images cli
 
 .PHONY: clean
 clean:
-	# Remove images
-	[ "`docker images -q $(IMAGE_NAMESPACE)/argocli:$(VERSION)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argocli:$(VERSION)
-	[ "`docker images -q $(IMAGE_NAMESPACE)/argoexec:$(VERSION)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
-	[ "`docker images -q $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
+	# Delete pre-go 1.3 vendor
+	rm -Rf vendor
 	# Delete build files
 	rm -Rf dist ui/dist
 
