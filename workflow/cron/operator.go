@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/robfig/cron"
+	cron "github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 	v12 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"

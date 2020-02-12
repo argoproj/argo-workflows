@@ -178,10 +178,15 @@ func ReadConfigMapValue(clientset kubernetes.Interface, namespace string, name s
 	return value, nil
 }
 
-func getArtifactRepositoryRef(wfc *WorkflowController, configMapName string, key string) (*config.ArtifactRepository, error) {
-	configStr, err := ReadConfigMapValue(wfc.kubeclientset, wfc.namespace, configMapName, key)
+func getArtifactRepositoryRef(wfc *WorkflowController, configMapName string, key string, namespace string) (*config.ArtifactRepository, error) {
+	// Getting the ConfigMap from the workflow's namespace
+	configStr, err := ReadConfigMapValue(wfc.kubeclientset, namespace, configMapName, key)
 	if err != nil {
-		return nil, err
+		// Falling back to getting the ConfigMap from the controller's namespace
+		configStr, err = ReadConfigMapValue(wfc.kubeclientset, wfc.namespace, configMapName, key)
+		if err != nil {
+			return nil, err
+		}
 	}
 	var config config.ArtifactRepository
 	err = yaml.Unmarshal([]byte(configStr), &config)
