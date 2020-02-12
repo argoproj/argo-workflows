@@ -228,7 +228,7 @@ func (woc *wfOperationCtx) operate() {
 
 	var workflowStatus wfv1.NodePhase
 	var workflowMessage string
-	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.Template{Template: woc.wf.Spec.GetEntrypoint()}, tmplCtx, woc.wf.Spec.Arguments, "")
+	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.Template{Template: woc.wf.Spec.Entrypoint}, tmplCtx, woc.wf.Spec.Arguments, "")
 	if err != nil {
 		msg := fmt.Sprintf("%s error in entry template execution: %+v", woc.wf.Name, err)
 		// the error are handled in the callee so just log it.

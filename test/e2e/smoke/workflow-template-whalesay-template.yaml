@@ -5,6 +5,11 @@ metadata:
   labels:
     argo-e2e: true
 spec:
+  entryPoint: whalesay-template
+  arguments:
+    parameters:
+      - name: message
+        value: hello world
   templates:
     - name: whalesay-template
       inputs:
@@ -14,3 +19,4 @@ spec:
         image: cowsay:v1
         command: [cowsay]
         args: ["{{inputs.parameters.message}}"]
+        imagePullPolicy: IfNotPresent

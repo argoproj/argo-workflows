@@ -3729,7 +3729,7 @@
         },
         "entrypoint": {
           "type": "string",
-          "description": "Entrypoint is a template reference to the starting point of the workflow. If omitted, defaults to the first template."
+          "description": "Entrypoint is a template reference to the starting point of the workflow."
         },
         "arguments": {
           "$ref": "#/definitions/v1alpha1Arguments",

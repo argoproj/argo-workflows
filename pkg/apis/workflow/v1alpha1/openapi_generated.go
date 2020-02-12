@@ -2975,7 +2975,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"entrypoint": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Entrypoint is a template reference to the starting point of the workflow. If omitted, defaults to the first template.",
+							Description: "Entrypoint is a template reference to the starting point of the workflow.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -3548,7 +3548,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 					},
 					"entrypoint": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Entrypoint is a template reference to the starting point of the workflow. If omitted, defaults to the first template.",
+							Description: "Entrypoint is a template reference to the starting point of the workflow.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

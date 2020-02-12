@@ -143,7 +143,7 @@ type WorkflowSpec struct {
 	// +patchMergeKey=name
 	Templates []Template `json:"templates" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,1,opt,name=templates"`
 
-	// Entrypoint is a template reference to the starting point of the workflow. If omitted, defaults to the first template.
+	// Entrypoint is a template reference to the starting point of the workflow.
 	Entrypoint string `json:"entrypoint,omitempty" protobuf:"bytes,2,opt,name=entrypoint"`
 
 	// Arguments contain the parameters and artifacts sent to the workflow entrypoint
@@ -274,19 +274,6 @@ type WorkflowSpec struct {
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,27,opt,name=podSpecPatch"`
-}
-
-func (s *WorkflowSpec) GetEntrypoint() string {
-	if s == nil {
-		return ""
-	}
-	if s.Entrypoint != "" {
-		return s.Entrypoint
-	}
-	if len(s.Templates) > 0 {
-		return s.Templates[0].Name
-	}
-	return ""
 }
 
 type ParallelSteps struct {

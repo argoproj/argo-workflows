@@ -96,7 +96,7 @@ func (wc *workflowCollector) Collect(ch chan<- prometheus.Metric) {
 
 func (wc *workflowCollector) collectWorkflow(ch chan<- prometheus.Metric, wf wfv1.Workflow) {
 	addConstMetric := func(desc *prometheus.Desc, t prometheus.ValueType, v float64, lv ...string) {
-		lv = append([]string{wf.Namespace, wf.Name, wf.Spec.GetEntrypoint()}, lv...)
+		lv = append([]string{wf.Namespace, wf.Name, wf.Spec.Entrypoint}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, t, v, lv...)
 	}
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {

@@ -836,7 +836,7 @@ message WorkflowSpec {
   // +patchMergeKey=name
   repeated Template templates = 1;
 
-  // Entrypoint is a template reference to the starting point of the workflow. If omitted, defaults to the first template.
+  // Entrypoint is a template reference to the starting point of the workflow.
   optional string entrypoint = 2;
 
   // Arguments contain the parameters and artifacts sent to the workflow entrypoint

@@ -29,6 +29,12 @@ type classicWorkflowServiceClient struct {
 
 func (k *classicWorkflowServiceClient) CreateWorkflow(_ context.Context, in *workflowpkg.WorkflowCreateRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	wf := in.Workflow
+	//Validate the Workflow before creating
+	templateGetter := templateresolution.WrapWorkflowTemplateInterface(k.Interface.ArgoprojV1alpha1().WorkflowTemplates(in.Namespace))
+	err := validate.ValidateWorkflow(templateGetter, in.Workflow, validate.ValidateOpts{Lint: true})
+	if err != nil {
+		return nil, err
+	}
 	dryRun := len(in.CreateOptions.DryRun) > 0
 	serverDryRun := in.ServerDryRun
 	if dryRun {
