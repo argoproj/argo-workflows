@@ -59,7 +59,7 @@ export class WorkflowsService {
             requests
                 .get(this.getArtifactDownloadUrl(workflow, nodeId, container + '-logs', archived))
                 .then(resp => {
-                    resp.text.split('\n').forEach(line => observer.next(JSON.stringify(line)));
+                    resp.text.split('\n').forEach(line => observer.next(line));
                 })
                 .catch(err => observer.error(err));
             // tslint:disable-next-line

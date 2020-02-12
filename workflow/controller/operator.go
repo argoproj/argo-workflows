@@ -194,7 +194,7 @@ func (woc *wfOperationCtx) operate() {
 
 	if woc.wf.Spec.ArtifactRepositoryRef != nil {
 		repoReference := woc.wf.Spec.ArtifactRepositoryRef
-		repo, err := getArtifactRepositoryRef(woc.controller, repoReference.ConfigMap, repoReference.Key)
+		repo, err := getArtifactRepositoryRef(woc.controller, repoReference.ConfigMap, repoReference.Key, woc.wf.ObjectMeta.Namespace)
 		if err == nil {
 			woc.artifactRepository = repo
 		} else {
