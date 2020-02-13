@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"os"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"upper.io/db.v3"
@@ -27,8 +29,19 @@ type OffloadNodeStatusRepo interface {
 	IsEnabled() bool
 }
 
-func NewOffloadNodeStatusRepo(session sqlbuilder.Database, clusterName, tableName string) OffloadNodeStatusRepo {
-	return &nodeOffloadRepo{session: session, clusterName: clusterName, tableName: tableName}
+func NewOffloadNodeStatusRepo(session sqlbuilder.Database, clusterName, tableName string) (OffloadNodeStatusRepo, error) {
+	// this environment variable allows you to make Argo Workflows delete offloaded data more or less aggressively,
+	// useful for testing
+	text, ok := os.LookupEnv("OFFLOAD_NODE_STATUS_TTL")
+	if !ok {
+		text = "5m"
+	}
+	ttl, err := time.ParseDuration(text)
+	if err != nil {
+		return nil, err
+	}
+	log.WithField("ttl", ttl).Info("Node status offloading config")
+	return &nodeOffloadRepo{session: session, clusterName: clusterName, tableName: tableName, ttl: ttl}, nil
 }
 
 type nodesRecord struct {
@@ -42,6 +55,8 @@ type nodeOffloadRepo struct {
 	session     sqlbuilder.Database
 	clusterName string
 	tableName   string
+	// time to live - at what ttl an offload becomes old
+	ttl time.Duration
 }
 
 func (wdc *nodeOffloadRepo) IsEnabled() bool {
@@ -88,7 +103,7 @@ func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (strin
 		logCtx.WithField("err", err).Info("Ignoring duplicate key error")
 	}
 
-	logCtx.Info("Nodes offloaded, cleaning up old offloads")
+	logCtx.Debug("Nodes offloaded, cleaning up old offloads")
 
 	// This might fail, which kind of fine (maybe a bug).
 	// It might not delete all records, which is also fine, as we always key on resource version.
@@ -98,7 +113,7 @@ func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (strin
 		Where(db.Cond{"clustername": wdc.clusterName}).
 		And(db.Cond{"uid": uid}).
 		And(db.Cond{"version <>": version}).
-		And("updatedat < current_timestamp - interval '5' minute").
+		And(wdc.oldOffload()).
 		Exec()
 	if err != nil {
 		return "", err
@@ -177,7 +192,7 @@ func (wdc *nodeOffloadRepo) ListOldOffloads(namespace string) ([]UUIDVersion, er
 		From(wdc.tableName).
 		Where(db.Cond{"clustername": wdc.clusterName}).
 		And(namespaceEqual(namespace)).
-		And("updatedat < current_timestamp - interval '5' minute").
+		And(wdc.oldOffload()).
 		All(&records)
 	if err != nil {
 		return nil, err
@@ -209,4 +224,8 @@ func (wdc *nodeOffloadRepo) Delete(uid, version string) error {
 	}
 	logCtx.WithField("rowsAffected", rowsAffected).Debug("Deleted offloaded nodes")
 	return nil
+}
+
+func (wdc *nodeOffloadRepo) oldOffload() string {
+	return fmt.Sprintf("updatedat < current_timestamp - interval '%d' second", int(wdc.ttl.Seconds()))
 }
