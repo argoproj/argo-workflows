@@ -1408,9 +1408,9 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 						},
 					},
-					"usage": {
+					"usageIndicator": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Usage is an estimate of resource usage. This is populated when the nodes completes.",
+							Description: "UsageIndicator is indicative, but not accurate, resource usage. This is populated when the nodes completes.",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,

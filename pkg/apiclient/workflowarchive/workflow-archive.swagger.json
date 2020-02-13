@@ -3824,13 +3824,13 @@
           "$ref": "#/definitions/v1Time",
           "title": "Time at which this node completed"
         },
-        "usage": {
+        "usageIndicator": {
           "type": "object",
           "additionalProperties": {
             "type": "string",
             "format": "int64"
           },
-          "description": "Usage is an estimate of resource usage. This is populated when the nodes completes."
+          "description": "UsageIndicator is indicative, but not accurate, resource usage. This is populated when the nodes completes."
         },
         "podIP": {
           "type": "string",

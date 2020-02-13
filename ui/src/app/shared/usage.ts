@@ -1,5 +1,5 @@
 // usage is seconds
-export function formatResourceUsage(u: number) {
+export function formatUsageIndicator(u: number) {
     if (u > 86400) {
         return u / 86400 + 'd';
     }

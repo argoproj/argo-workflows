@@ -862,44 +862,44 @@ type RetryStrategy struct {
 	Backoff *Backoff `json:"backoff,omitempty" protobuf:"bytes,3,opt,name=backoff,casttype=Backoff"`
 }
 
-// amount of resource * time in seconds, e.g.
+// An indicator (i.e. indicative but not accurate) amount of resource * time in seconds, e.g.
 // CPU 1000m * 1m = 1m
 // memory 1Gi * 2m = 2Gi
 // this is represented as duration in seconds, so can be converted to and from duration (with loss of precision below seconds)
-type ResourceUsage int64
+type ResourceUsageIndicator int64
 
-func NewResourceUsage(d time.Duration) ResourceUsage {
-	return ResourceUsage(d.Seconds())
+func NewResourceUsageIndicator(d time.Duration) ResourceUsageIndicator {
+	return ResourceUsageIndicator(d.Seconds())
 }
 
-func (s ResourceUsage) Duration() time.Duration {
-	return time.Duration(s) * time.Second
+func (i ResourceUsageIndicator) Duration() time.Duration {
+	return time.Duration(i) * time.Second
 }
 
-func (s ResourceUsage) String() string {
-	return s.Duration().String()
+func (i ResourceUsageIndicator) String() string {
+	return i.Duration().String()
 }
 
 // this represents a usage summary by resource (e.g. "memory", "cpu")
-type Usage map[apiv1.ResourceName]ResourceUsage
+type UsageIndicator map[apiv1.ResourceName]ResourceUsageIndicator
 
-func (u Usage) Add(o Usage) Usage {
+func (i UsageIndicator) Add(o UsageIndicator) UsageIndicator {
 	for r, d := range o {
-		u[r] = u[r] + d
+		i[r] = i[r] + d
 	}
-	return u
+	return i
 }
 
-func (u Usage) String() string {
+func (i UsageIndicator) String() string {
 	var parts []string
-	for r, d := range u {
+	for r, d := range i {
 		parts = append(parts, fmt.Sprintf("%v*%s", d, r))
 	}
 	return strings.Join(parts, ",")
 }
 
-func (u Usage) IsZero() bool {
-	return len(u) == 0
+func (i UsageIndicator) IsZero() bool {
+	return len(i) == 0
 }
 
 // NodeStatus contains status information about an individual node in the workflow
@@ -952,8 +952,8 @@ type NodeStatus struct {
 	// Time at which this node completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,11,opt,name=finishedAt"`
 
-	// Usage is an estimate of resource usage. This is populated when the nodes completes.
-	Usage Usage `json:"usage,omitempty" protobuf:"bytes,21,opt,name=usage"`
+	// UsageIndicator is indicative, but not accurate, resource usage. This is populated when the nodes completes.
+	UsageIndicator UsageIndicator `json:"usageIndicator,omitempty" protobuf:"bytes,21,opt,name=usageIndicator"`
 
 	// PodIP captures the IP of the pod for daemoned steps
 	PodIP string `json:"podIP,omitempty" protobuf:"bytes,12,opt,name=podIP"`
@@ -985,12 +985,12 @@ type NodeStatus struct {
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
 }
 
-func (n Nodes) GetUsage() Usage {
-	usage := Usage{}
+func (n Nodes) GetUsageIndicator() UsageIndicator {
+	i := UsageIndicator{}
 	for _, status := range n {
-		usage = usage.Add(status.Usage)
+		i = i.Add(status.UsageIndicator)
 	}
-	return usage
+	return i
 }
 
 //func (n NodeStatus) String() string {

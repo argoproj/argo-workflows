@@ -946,7 +946,7 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 			// finishedAt might not have been set.
 			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 		}
-		node.Usage = usage.EstimatePodUsage(pod, time.Now())
+		node.UsageIndicator = usage.IndicatorForPod(pod, time.Now())
 	}
 	if updated {
 		return node

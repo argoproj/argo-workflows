@@ -788,8 +788,8 @@
           "description": "Type indicates type of node",
           "type": "string"
         },
-        "usage": {
-          "description": "Usage is an estimate of resource usage. This is populated when the nodes completes.",
+        "usageIndicator": {
+          "description": "UsageIndicator is indicative, but not accurate, resource usage. This is populated when the nodes completes.",
           "type": "object",
           "additionalProperties": {
             "type": "integer",
