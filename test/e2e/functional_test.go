@@ -76,21 +76,6 @@ spec:
 		})
 }
 
-func (s *FunctionalSuite) TestResourceUsage() {
-	s.Given().
-		Workflow(`@testdata/usage.yaml`).
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(15 * time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			if assert.Equal(t, wfv1.NodeSucceeded, status.Phase) {
-				// we have 3 values cpu, memory, and nvidia.com/gpu
-				assert.Len(t, status.Nodes.GetUsage(), 3)
-			}
-		})
-}
-
 func (s *FunctionalSuite) TestFastFailOnPodTermination() {
 	// TODO: Test fails due to using a service account with insufficient permissions, skipping for now
 	// pods is forbidden: User "system:serviceaccount:argo:default" cannot list resource "pods" in API group "" in the namespace "argo"
