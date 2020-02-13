@@ -25,8 +25,8 @@ require('./workflows-list.scss');
 
 interface State {
     loading: boolean;
-    checkedServiceInfo: boolean;
-    isManagedNamespace: boolean;
+    initialized: boolean;
+    managedNamespace: boolean;
     namespace: string;
     selectedPhases: string[];
     selectedLabels: string[];
@@ -44,8 +44,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         super(props, context);
         this.state = {
             loading: true,
-            checkedServiceInfo: false,
-            isManagedNamespace: false,
+            initialized: false,
+            managedNamespace: false,
             namespace: this.props.match.params.namespace || '',
             selectedPhases: this.queryParams('phase'),
             selectedLabels: this.queryParams('label')
@@ -126,16 +126,16 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         }
         let l;
         let ns = namespace;
-        if (!this.state.checkedServiceInfo) {
+        if (!this.state.initialized) {
             l = services.info.get().then(info => {
                 if (info.managedNamespace) {
                     ns = info.managedNamespace;
                 }
-                this.setState({checkedServiceInfo: true, isManagedNamespace: info.managedNamespace ? true : false});
+                this.setState({initialized: true, managedNamespace: info.managedNamespace ? true : false});
                 return services.workflows.list(ns, selectedPhases, selectedLabels);
             });
         } else {
-            if (this.state.isManagedNamespace) {
+            if (this.state.managedNamespace) {
                 ns = this.state.namespace;
             }
             l = services.workflows.list(ns, selectedPhases, selectedLabels);
