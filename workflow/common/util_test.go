@@ -24,3 +24,47 @@ func TestFindOverlappingVolume(t *testing.T) {
 	assert.Equal(t, &volMnt, FindOverlappingVolume(templateWithVolMount, "/user-mount/subdir"))
 	assert.Nil(t, FindOverlappingVolume(templateWithVolMount, "/user-mount-coincidental-prefix"))
 }
+
+func TestUnknownFieldEnforcerForWorkflowStep(t *testing.T) {
+	validWf := `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-custom-enforcer
+spec:
+  entrypoint: test-custom-enforcer
+  templates:
+  - name: test-custom-enforcer
+    steps:
+    - - name: crawl-tables
+        template: echo
+  - name: echo
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+	_, err := SplitWorkflowYAMLFile([]byte(validWf), false)
+	assert.NoError(t, err)
+
+	invalidWf := `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-custom-enforcer
+spec:
+  entrypoint: test-custom-enforcer
+  templates:
+  - name: test-custom-enforcer
+    steps:
+    - - name: crawl-tables
+        doesNotExist: 10
+        template: echo
+  - name: echo
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+
+`
+	_, err = SplitWorkflowYAMLFile([]byte(invalidWf), false)
+	assert.Error(t, err, `unknown field "doesNotExist"`)
+}
