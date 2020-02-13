@@ -2,7 +2,7 @@
 
 ![alpha](assets/alpha.svg)
 
-Argo Workflows estimates how much resource your workflow has used and save this information. This is know as "resource usage" and is intended as an **indicative but not accurate** value. 
+Argo Workflows estimates how much resource your workflow has used and save this information. This is known as "resource usage" and is intended as an **indicative but not accurate** value. 
 
 ## Calculation
 
@@ -24,8 +24,10 @@ To calculate the usage we assume that request/limit/default for a resource is a 
 
 This is **never** actually the case:
 
-* The pod will probably use more that that the request and less than the limit.
+* The pod will probably use more that the request and less than the limit.
 * The pod may use more than the limit or less than the request.
+
+This is why the usage is **indicative but not accurate**.
 
 ## Memory Usage Truncation
 
