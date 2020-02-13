@@ -19,7 +19,7 @@ import {ZeroState} from '../../../shared/components/zero-state';
 import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
 
-import {FilterType, WorkflowFilters} from '../workflow-filters/workflow-filters';
+import {WorkflowFilters} from '../workflow-filters/workflow-filters';
 
 require('./workflows-list.scss');
 
@@ -92,9 +92,9 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 <div>{this.renderQuery(ctx)}</div>
                                 <div>
                                     <WorkflowFilters
-                                        type={FilterType.WORKFLOW}
                                         workflows={this.state.workflows}
                                         namespace={this.state.namespace}
+                                        phaseItems={Object.values(models.NODE_PHASE)}
                                         selectedPhases={this.state.selectedPhases}
                                         selectedLabels={this.state.selectedLabels}
                                         onChange={(namespace, selectedPhases, selectedLabels) => this.changeFilters(namespace, selectedPhases, selectedLabels)}
