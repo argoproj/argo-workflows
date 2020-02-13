@@ -16,6 +16,12 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) *wfv1.Workflow {
 
 func ConvertWorkflowTemplateToWorkflow(template *wfv1.WorkflowTemplate) *wfv1.Workflow {
 	wf := toWorkflow(template.TypeMeta, template.ObjectMeta, template.Spec.WorkflowSpec)
+	wfLabel := wf.ObjectMeta.GetLabels()
+	if wfLabel == nil {
+		wfLabel = make(map[string]string)
+	}
+	wfLabel[LabelKeyWorkflowTemplate] = template.ObjectMeta.Name
+	wf.Labels = wfLabel
 	return wf
 }
 
@@ -27,11 +33,10 @@ func toWorkflow(typeMeta metav1.TypeMeta, objectMeta metav1.ObjectMeta, spec wfv
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: objectMeta.GetName() + "-",
-			Labels:       objectMeta.GetLabels(),
-			Annotations:  objectMeta.GetAnnotations(),
 		},
 		Spec: spec,
 	}
+
 	if instanceId, ok := objectMeta.GetLabels()[LabelKeyControllerInstanceID]; ok {
 		wf.ObjectMeta.GetLabels()[LabelKeyControllerInstanceID] = instanceId
 	}

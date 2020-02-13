@@ -110,21 +110,6 @@ func enrichContextWithMetadata(meta metav1.ObjectMeta, ctx *templateValidationCt
 	}
 }
 
-// ValidateWorkflow accepts a workflow template and performs validation against it.
-func ValidateWorkflowTemplate1(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, wftmpl *wfv1.WorkflowTemplate) error {
-	ctx := newTemplateValidationCtx(nil, ValidateOpts{})
-	tmplCtx := templateresolution.NewContext(wftmplGetter, wftmpl, nil)
-
-	// Check if all templates can be resolved.
-	for _, template := range wftmpl.Spec.Templates {
-		_, err := ctx.validateTemplateHolder(&wfv1.Template{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
-		}
-	}
-	return nil
-}
-
 func ValidateWorkflowSpec(spec wfv1.WorkflowSpec, ctx *templateValidationCtx, tmplCtx *templateresolution.Context, wfTmplValidation bool) error {
 	err := validateWorkflowFieldNames(spec.Templates)
 	if err != nil {
@@ -181,13 +166,6 @@ func ValidateWorkflowSpec(spec wfv1.WorkflowSpec, ctx *templateValidationCtx, tm
 		}
 	}
 
-	//// Check if all templates can be resolved.
-	//for _, template := range spec.Templates {
-	//	_, err := ctx.validateTemplateHolder(&wfv1.Template{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})
-	//	if err != nil {
-	//		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
-	//	}
-	//}
 	return nil
 }
 

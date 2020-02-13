@@ -1061,6 +1061,6 @@ message WorkflowTemplateList {
 
 // WorkflowTemplateSpec is a spec of WorkflowTemplate.
 message WorkflowTemplateSpec {
-  optional WorkflowSpec workflowSpec = 3;
+  optional WorkflowSpec workflowSpec = 1;
 }
 

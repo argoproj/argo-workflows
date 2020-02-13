@@ -42,7 +42,7 @@ var _ TemplateGetter = &WorkflowTemplate{}
 
 // WorkflowTemplateSpec is a spec of WorkflowTemplate.
 type WorkflowTemplateSpec struct {
-	WorkflowSpec `json:",inline" protobuf:"bytes,3,opt,name=workflowSpec"`
+	WorkflowSpec `json:",inline" protobuf:"bytes,1,opt,name=workflowSpec"`
 }
 
 // GetTemplateByName retrieves a defined template by its name

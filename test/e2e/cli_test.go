@@ -281,7 +281,7 @@ func (s *CLISuite) TestTemplate() {
 			}
 		})
 	})
-	s.Run("Template Submittable", func() {
+	s.Run("Submittable-Template", func() {
 		s.Given().RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
