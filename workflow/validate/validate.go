@@ -154,7 +154,6 @@ func ValidateWorkflowSpec(spec wfv1.WorkflowSpec, ctx *templateValidationCtx, tm
 		ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderGenerator.NextPlaceholder()
 
 		_, err = ctx.validateTemplateHolder(&wfv1.Template{Template: spec.OnExit}, tmplCtx, &spec.Arguments, map[string]interface{}{})
-
 		if err != nil {
 			return err
 		}

@@ -5,7 +5,7 @@ metadata:
   labels:
     argo-e2e: true
 spec:
-  entryPoint: whalesay-template
+  entrypoint: whalesay-template
   arguments:
     parameters:
       - name: message

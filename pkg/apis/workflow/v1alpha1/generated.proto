@@ -503,7 +503,7 @@ message Parameter {
   optional string name = 1;
 
   // Default is the default value to use for an input parameter if a value was not supplied
-  // DEPRECATED - this field is never used
+  // DEPRECATED: This field is not used
   optional string default = 2;
 
   // Value is the literal value to use for the parameter.
@@ -1063,4 +1063,3 @@ message WorkflowTemplateList {
 message WorkflowTemplateSpec {
   optional WorkflowSpec workflowSpec = 1;
 }
-
