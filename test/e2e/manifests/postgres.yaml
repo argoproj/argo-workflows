@@ -459,7 +459,7 @@ spec:
         env:
         - name: ALWAYS_OFFLOAD_NODE_STATUS
           value: "true"
-        - name: OFFLOAD_NODE_STATUS_AGE
+        - name: OFFLOAD_NODE_STATUS_TTL
           value: 30s
         - name: WORKFLOW_GC_PERIOD
           value: 30s

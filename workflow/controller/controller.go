@@ -65,7 +65,7 @@ type WorkflowController struct {
 	// datastructures to support the processing of workflows and workflow pods
 	incompleteWfInformer cache.SharedIndexInformer
 	// only complete (i.e. not running) workflows
-	completeWfInformer    cache.SharedIndexInformer
+	completedWfInformer   cache.SharedIndexInformer
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
@@ -167,15 +167,15 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 		return
 	}
 
-	wfc.incompleteWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.incompleteTweakWorkflowList)
-	wfc.completeWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.completeTweakWorkflowList)
+	wfc.incompleteWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.incompleteWorkflowTweakListOptions)
+	wfc.completedWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.completedWorkflowTweakListOptions)
 	wfc.wftmplInformer = wfc.newWorkflowTemplateInformer()
 
 	wfc.addWorkflowInformerHandler()
 	wfc.podInformer = wfc.newPodInformer()
 
 	go wfc.incompleteWfInformer.Run(ctx.Done())
-	go wfc.completeWfInformer.Run(ctx.Done())
+	go wfc.completedWfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
 	go wfc.podLabeler(ctx.Done())
@@ -285,7 +285,7 @@ func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan st
 					log.WithField("err", err).Error("Failed to list incomplete workflows")
 					continue
 				}
-				completed, err := util.NewWorkflowLister(wfc.completeWfInformer).List()
+				completed, err := util.NewWorkflowLister(wfc.completedWfInformer).List()
 				if err != nil {
 					log.WithField("err", err).Error("Failed to list completed workflows")
 					continue
@@ -465,23 +465,22 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 	return true
 }
 
-func (wfc *WorkflowController) incompleteTweakWorkflowList(options *metav1.ListOptions) {
-	wfc.tweakWorkflowList(selection.NotIn, options)
+func (wfc *WorkflowController) incompleteWorkflowTweakListOptions(options *metav1.ListOptions) {
+	wfc.tweakListOptions(selection.NotIn, options)
 }
 
-func (wfc *WorkflowController) completeTweakWorkflowList(options *metav1.ListOptions) {
-	wfc.tweakWorkflowList(selection.In, options)
+func (wfc *WorkflowController) completedWorkflowTweakListOptions(options *metav1.ListOptions) {
+	wfc.tweakListOptions(selection.In, options)
 }
 
-func (wfc *WorkflowController) tweakWorkflowList(op selection.Operator, options *metav1.ListOptions) {
+func (wfc *WorkflowController) tweakListOptions(completedOp selection.Operator, options *metav1.ListOptions) {
 	options.FieldSelector = fields.Everything().String()
-	// completed notin (true)
-	incompleteReq, err := labels.NewRequirement(common.LabelKeyCompleted, op, []string{"true"})
+	requirement, err := labels.NewRequirement(common.LabelKeyCompleted, completedOp, []string{"true"})
 	if err != nil {
 		panic(err)
 	}
 	labelSelector := labels.NewSelector().
-		Add(*incompleteReq).
+		Add(*requirement).
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 	options.LabelSelector = labelSelector.String()
 }

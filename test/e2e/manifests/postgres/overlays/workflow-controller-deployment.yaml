@@ -25,7 +25,7 @@
     # these are designed to force offloading on and make GC happen regularly so we shake out any bugs
     - name: ALWAYS_OFFLOAD_NODE_STATUS
       value: "true"
-    - name: OFFLOAD_NODE_STATUS_AGE
+    - name: OFFLOAD_NODE_STATUS_TTL
       value: 30s
     - name: WORKFLOW_GC_PERIOD
       value: 30s

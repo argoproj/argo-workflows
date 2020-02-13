@@ -30,16 +30,18 @@ type OffloadNodeStatusRepo interface {
 }
 
 func NewOffloadNodeStatusRepo(session sqlbuilder.Database, clusterName, tableName string) (OffloadNodeStatusRepo, error) {
-	text, ok := os.LookupEnv("OFFLOAD_NODE_STATUS_AGE")
+	// this environment variable allows you to make Argo Workflows delete offloaded data more or less aggressively,
+	// useful for testing
+	text, ok := os.LookupEnv("OFFLOAD_NODE_STATUS_TTL")
 	if !ok {
 		text = "5m"
 	}
-	age, err := time.ParseDuration(text)
+	ttl, err := time.ParseDuration(text)
 	if err != nil {
 		return nil, err
 	}
-	log.WithField("age", age).Info("Node status offloading config")
-	return &nodeOffloadRepo{session: session, clusterName: clusterName, tableName: tableName, age: age}, nil
+	log.WithField("ttl", ttl).Info("Node status offloading config")
+	return &nodeOffloadRepo{session: session, clusterName: clusterName, tableName: tableName, ttl: ttl}, nil
 }
 
 type nodesRecord struct {
@@ -53,7 +55,8 @@ type nodeOffloadRepo struct {
 	session     sqlbuilder.Database
 	clusterName string
 	tableName   string
-	age         time.Duration
+	// time to live - at what ttl an offload becomes old
+	ttl time.Duration
 }
 
 func (wdc *nodeOffloadRepo) IsEnabled() bool {
@@ -224,5 +227,5 @@ func (wdc *nodeOffloadRepo) Delete(uid, version string) error {
 }
 
 func (wdc *nodeOffloadRepo) oldOffload() string {
-	return fmt.Sprintf("updatedat < current_timestamp - interval '%d' second", int(wdc.age.Seconds()))
+	return fmt.Sprintf("updatedat < current_timestamp - interval '%d' second", int(wdc.ttl.Seconds()))
 }
