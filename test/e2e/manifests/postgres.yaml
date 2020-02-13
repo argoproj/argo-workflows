@@ -459,6 +459,8 @@ spec:
         env:
         - name: ALWAYS_OFFLOAD_NODE_STATUS
           value: "true"
+        - name: OFFLOAD_NODE_STATUS_AGE
+          value: 30s
         - name: WORKFLOW_GC_PERIOD
           value: 30s
         - name: UPPERIO_DB_DEBUG
