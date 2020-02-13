@@ -109,6 +109,7 @@ Currently **officially** using Argo:
 1. [Peak AI](https://www.peak.ai/)
 1. [Preferred Networks](https://www.preferred-networks.jp/en/)
 1. [Quantibio](http://quantibio.com/us/en/)
+1. [Ramboll Shair](https://ramboll-shair.com/)
 1. [Red Hat](https://www.redhat.com/en)
 1. [SAP Fieldglass](https://www.fieldglass.com/)
 1. [SAP Hybris](https://cx.sap.com/)
