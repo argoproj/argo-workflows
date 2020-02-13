@@ -423,8 +423,8 @@ clean:
 $(HOME)/go/bin/swagger:
 	go get github.com/go-swagger/go-swagger/cmd/swagger
 
-api/argo-server/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES)
-	swagger mixin -c 412 pkg/apiclient/primary.swagger.json $(SWAGGER_FILES) | sed 's/VERSION/$(VERSION)/' > api/argo-server/swagger.json
+api/argo-server/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) dist/MANIFESTS_VERSION
+	swagger mixin -c 412 pkg/apiclient/primary.swagger.json $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' > api/argo-server/swagger.json
 
 # pre-push
 
