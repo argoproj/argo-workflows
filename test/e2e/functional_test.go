@@ -21,7 +21,7 @@ type FunctionalSuite struct {
 }
 
 func (s *FunctionalSuite) TestContinueOnFail() {
-	s.Given(s.T()).
+	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -42,7 +42,6 @@ spec:
         continueOn:
           failed: true
     - - name: C
-        dependencies: [A, B]
         template: whalesay
 
   - name: boom
@@ -66,7 +65,7 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(30 * time.Second).
 		Then().
-		Expect(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 			assert.Len(t, status.Nodes, 7)
 			nodeStatus := status.Nodes.FindByDisplayName("B")
@@ -82,13 +81,13 @@ func (s *FunctionalSuite) TestFastFailOnPodTermination() {
 	// TODO: Test fails due to using a service account with insufficient permissions, skipping for now
 	// pods is forbidden: User "system:serviceaccount:argo:default" cannot list resource "pods" in API group "" in the namespace "argo"
 	s.T().SkipNow()
-	s.Given(s.T()).
+	s.Given().
 		Workflow("@expectedfailures/pod-termination-failure.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(120 * time.Second).
 		Then().
-		Expect(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeFailed, status.Phase)
 			assert.Len(t, status.Nodes, 4)
 			nodeStatus := status.Nodes.FindByDisplayName("sleep")
@@ -99,7 +98,7 @@ func (s *FunctionalSuite) TestFastFailOnPodTermination() {
 
 func (s *FunctionalSuite) TestEventOnNodeFail() {
 	// Test whether an WorkflowFailed event (with appropriate message) is emitted in case of node failure
-	s.Given(s.T()).
+	s.Given().
 		Workflow("@expectedfailures/failed-step-event.yaml").
 		When().
 		SubmitWorkflow().
@@ -121,7 +120,7 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 
 func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 	// Test whether an WorkflowSuccess event is emitted in case of successfully completed workflow
-	s.Given(s.T()).
+	s.Given().
 		Workflow("@functional/success-event.yaml").
 		When().
 		SubmitWorkflow().
@@ -143,7 +142,7 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 
 func (s *FunctionalSuite) TestEventOnPVCFail() {
 	//  Test whether an WorkflowFailed event (with appropriate message) is emitted in case of error in creating the PVC
-	s.Given(s.T()).
+	s.Given().
 		Workflow("@expectedfailures/volumes-pvc-fail-event.yaml").
 		When().
 		SubmitWorkflow().

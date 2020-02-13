@@ -5,7 +5,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/robfig/cron"
+	cron "github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 	v12 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,7 +47,7 @@ func (woc *cronWfOperationCtx) Run() {
 		return
 	}
 
-	wf, err := common.ConvertToWorkflow(woc.cronWf)
+	wf, err := common.ConvertCronWorkflowToWorkflow(woc.cronWf)
 	if err != nil {
 		log.Errorf("Unable to create Workflow for CronWorkflow %s", woc.name)
 		return

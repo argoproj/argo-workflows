@@ -136,6 +136,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	if wf.Spec.OnExit != "" {
 		// now when validating onExit, {{workflow.status}} is now available as a global
 		ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderGenerator.NextPlaceholder()
+		ctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
 		_, err = ctx.validateTemplateHolder(&wfv1.Template{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
 		if err != nil {
 			return err
@@ -192,7 +193,7 @@ func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamesp
 		return errors.Errorf(errors.CodeBadRequest, "startingDeadlineSeconds must be positive")
 	}
 
-	wf, err := common.ConvertToWorkflow(cronWf)
+	wf, err := common.ConvertCronWorkflowToWorkflow(cronWf)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "cannot convert to Workflow: %s", err)
 	}
