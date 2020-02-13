@@ -6,7 +6,13 @@ import {TagsInput} from '../../../shared/components/tags-input/tags-input';
 
 require('./workflow-filters.scss');
 
+export enum FilterType {
+    WORKFLOW,
+    ARCHIVED_WORKFLOW
+}
+
 interface WorkflowFilterProps {
+    type: FilterType;
     workflows: models.Workflow[];
     namespace: string;
     selectedPhases: string[];
@@ -57,7 +63,11 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
 
     private getPhaseItems(workflows: models.Workflow[]) {
         const phasesMap = new Map<string, number>();
-        Object.values(models.NODE_PHASE).forEach(value => phasesMap.set(value, 0));
+        if (this.props.type === FilterType.ARCHIVED_WORKFLOW) {
+            Object.values([models.NODE_PHASE.SUCCEEDED, models.NODE_PHASE.FAILED, models.NODE_PHASE.ERROR]).forEach(value => phasesMap.set(value, 0));
+        } else {
+            Object.values(models.NODE_PHASE).forEach(value => phasesMap.set(value, 0));
+        }
         workflows.filter(wf => wf.status.phase).forEach(wf => phasesMap.set(wf.status.phase, (phasesMap.get(wf.status.phase) || 0) + 1));
         const results = new Array<{name: string; count: number}>();
         phasesMap.forEach((val, key) => {

@@ -19,12 +19,14 @@ import {ZeroState} from '../../../shared/components/zero-state';
 import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
 
-import {WorkflowFilters} from '../workflow-filters/workflow-filters';
+import {FilterType, WorkflowFilters} from '../workflow-filters/workflow-filters';
 
 require('./workflows-list.scss');
 
 interface State {
     loading: boolean;
+    checkedServiceInfo: boolean;
+    isManagedNamespace: boolean;
     namespace: string;
     selectedPhases: string[];
     selectedLabels: string[];
@@ -42,6 +44,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         super(props, context);
         this.state = {
             loading: true,
+            checkedServiceInfo: false,
+            isManagedNamespace: false,
             namespace: this.props.match.params.namespace || '',
             selectedPhases: this.queryParams('phase'),
             selectedLabels: this.queryParams('label')
@@ -49,7 +53,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     public componentDidMount(): void {
-        this.fetchWorkflows();
+        this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels);
     }
 
     public componentWillUnmount(): void {
@@ -88,6 +92,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 <div>{this.renderQuery(ctx)}</div>
                                 <div>
                                     <WorkflowFilters
+                                        type={FilterType.WORKFLOW}
                                         workflows={this.state.workflows}
                                         namespace={this.state.namespace}
                                         selectedPhases={this.state.selectedPhases}
@@ -115,24 +120,32 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         );
     }
 
-    private fetchWorkflows(): void {
+    private fetchWorkflows(namespace: string, selectedPhases: string[], selectedLabels: string[]): void {
         if (this.subscription) {
             this.subscription.unsubscribe();
         }
-        services.info
-            .get()
-            .then(info => {
-                if (info.managedNamespace && info.managedNamespace !== this.state.namespace) {
-                    this.setState({namespace: info.managedNamespace});
+        let l;
+        let ns = namespace;
+        if (!this.state.checkedServiceInfo) {
+            l = services.info.get().then(info => {
+                if (info.managedNamespace) {
+                    ns = info.managedNamespace;
                 }
-                return services.workflows.list(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels);
-            })
-            .then(list => list.items)
+                this.setState({checkedServiceInfo: true, isManagedNamespace: info.managedNamespace ? true : false});
+                return services.workflows.list(ns, selectedPhases, selectedLabels);
+            });
+        } else {
+            if (this.state.isManagedNamespace) {
+                ns = this.state.namespace;
+            }
+            l = services.workflows.list(ns, selectedPhases, selectedLabels);
+        }
+        l.then(list => list.items)
             .then(list => list || [])
-            .then(workflows => this.setState({workflows}))
+            .then(workflows => this.setState({workflows, namespace: ns, selectedPhases, selectedLabels}))
             .then(() => {
                 this.subscription = services.workflows
-                    .watch({namespace: this.state.namespace, phases: this.state.selectedPhases, labels: this.state.selectedLabels})
+                    .watch({namespace: ns, phases: selectedPhases, labels: selectedLabels})
                     .map(workflowChange => {
                         const workflows = this.state.workflows;
                         if (!workflowChange) {
@@ -167,7 +180,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private changeFilters(namespace: string, selectedPhases: string[], selectedLabels: string[]) {
-        this.setState({namespace, selectedPhases, selectedLabels});
         const params = new URLSearchParams();
         selectedPhases.forEach(phase => {
             params.append('phase', phase);
@@ -180,7 +192,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             url += '?' + params.toString();
         }
         history.pushState(null, '', uiUrl(url));
-        this.fetchWorkflows();
+        this.fetchWorkflows(namespace, selectedPhases, selectedLabels);
     }
 
     private renderWorkflows(ctx: any) {
