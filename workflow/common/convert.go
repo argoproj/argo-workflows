@@ -11,10 +11,9 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) *wfv1.Workflow {
 	wf := toWorkflow(cronWf.TypeMeta, cronWf.ObjectMeta, cronWf.Spec.WorkflowSpec)
 	wfLabel := wf.ObjectMeta.GetLabels()
 	if wfLabel == nil {
-		wfLabel = make(map[string]string)
+		wf.Labels = make(map[string]string)
 	}
-	wfLabel[LabelKeyCronWorkflow] = cronWf.Name
-	wf.Labels = wfLabel
+	wf.Labels[LabelKeyCronWorkflow] = cronWf.Name
 	wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *metav1.NewControllerRef(cronWf, wfv1.SchemeGroupVersion.WithKind(workflow.CronWorkflowKind))))
 	return wf
 }
@@ -23,10 +22,9 @@ func ConvertWorkflowTemplateToWorkflow(template *wfv1.WorkflowTemplate) *wfv1.Wo
 	wf := toWorkflow(template.TypeMeta, template.ObjectMeta, template.Spec.WorkflowSpec)
 	wfLabel := wf.ObjectMeta.GetLabels()
 	if wfLabel == nil {
-		wfLabel = make(map[string]string)
+		wf.Labels = make(map[string]string)
 	}
-	wfLabel[LabelKeyWorkflowTemplate] = template.ObjectMeta.Name
-	wf.Labels = wfLabel
+	wf.Labels[LabelKeyWorkflowTemplate] = template.ObjectMeta.Name
 	return wf
 }
 
