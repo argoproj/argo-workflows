@@ -13,6 +13,10 @@ data:
         secretKeySecret:
           name: my-minio-cred
           key: secretkey
+    metricsConfig:
+      enabled: true
+      path: /metrics
+      port: 9090
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

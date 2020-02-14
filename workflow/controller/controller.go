@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
 	"os"
 	"strings"
 	"time"
@@ -74,6 +75,8 @@ type WorkflowController struct {
 	session               sqlbuilder.Database
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wfArchive             sqldb.WorkflowArchive
+
+	Metrics map[string]prometheus.Metric
 }
 
 const (
@@ -119,7 +122,7 @@ func (wfc *WorkflowController) MetricsServer(ctx context.Context) {
 	if wfc.Config.MetricsConfig.Enabled {
 		informer := util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowMetricsResyncPeriod, wfc.tweakWorkflowMetricslist)
 		go informer.Run(ctx.Done())
-		registry := metrics.NewWorkflowRegistry(informer)
+		registry := metrics.NewMetricsRegistry(wfc, informer, false)
 		metrics.RunServer(ctx, wfc.Config.MetricsConfig, registry)
 	}
 }

@@ -274,6 +274,8 @@ type WorkflowSpec struct {
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,27,opt,name=podSpecPatch"`
+
+	EmitMetrics *EmitMetrics `json:"emitMetrics,omitempty"`
 }
 
 type ParallelSteps struct {
@@ -1465,4 +1467,73 @@ func (t *DAGTask) ContinuesOn(phase NodePhase) bool {
 // ContinuesOn returns whether the StepGroup should be proceeded if the task fails or errors.
 func (s *WorkflowStep) ContinuesOn(phase NodePhase) bool {
 	return continues(s.ContinueOn, phase)
+}
+
+type ComputedValue string
+
+const (
+	ComputedValueWorkflowDuration ComputedValue = "WorkflowDuration"
+)
+
+type MetricType string
+
+const (
+	MetricTypeGauge   MetricType = "Gauge"
+	MetricTypeUnknown MetricType = "Unknown"
+)
+
+type EmitMetrics struct {
+	Metrics []*Metric `json:"metrics"`
+}
+
+type Metric struct {
+	Name   string          `json:"name"`
+	Labels []*MetricLabels `json:"labels"`
+	Help   string          `json:"help"`
+	Gauge  *Gauge          `json:"gauge"`
+}
+
+func (m *Metric) GetMetricLabels() ([]string, []string) {
+	var keys []string
+	var values []string
+	for _, label := range m.Labels {
+		keys = append(keys, label.Key)
+		values = append(values, label.Value)
+	}
+	return keys, values
+}
+
+func (m *Metric) GetMetricType() MetricType {
+	if m.Gauge != nil {
+		return MetricTypeGauge
+	}
+	return MetricTypeUnknown
+}
+
+func (m *Metric) GetMetricValue() MetricValue {
+	switch m.GetMetricType() {
+	case MetricTypeGauge:
+		return m.Gauge.Value
+	default:
+		return MetricValue{}
+	}
+}
+
+type MetricLabels struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type Gauge struct {
+	Value MetricValue `json:"value"`
+}
+
+type MetricValue struct {
+	Literal  string        `json:"literal"`
+	Computed ComputedValue `json:"computed"`
+}
+
+type Histogram struct {
+	Value string `json:"value"`
+	Bins  []int  `json:"bins"`
 }

@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj/argo/workflow/metrics"
 	"math"
 	"os"
 	"reflect"
@@ -242,6 +243,12 @@ func (woc *wfOperationCtx) operate() {
 
 		return
 	}
+
+	err = woc.computeWorkflowMetrics()
+	if err != nil {
+		woc.log.Error("Could not emit metrics for workflow '%s': %s", woc.wf.ObjectMeta.Name, err)
+	}
+
 	if node == nil || !node.Completed() {
 		// node can be nil if a workflow created immediately in a parallelism == 0 state
 		return
@@ -2150,4 +2157,45 @@ func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID str
 		return true, onExitNode, err
 	}
 	return false, nil, nil
+}
+
+func (woc *wfOperationCtx) computeWorkflowMetrics() error {
+	if woc.wf.Spec.EmitMetrics != nil {
+		for _, metric := range woc.wf.Spec.EmitMetrics.Metrics {
+			err := woc.processMetric(metric)
+			if err != nil {
+				woc.log.Errorf("could not compute metric '%s' for Workflow '%s': %s", metric.Name, woc.wf.ObjectMeta.Name, err)
+			}
+		}
+	}
+}
+
+func (woc *wfOperationCtx) processMetric(metric *wfv1.Metric) error {
+	metricVal, err := woc.computeWorkflowMetricValue(metric.GetMetricValue())
+	if err != nil {
+		return err
+	}
+	metricObj := metrics.ConstructMetric(metric, metricVal)
+	woc.controller.Metrics[metric.Name] = metricObj
+	return nil
+}
+
+func (woc *wfOperationCtx) computeWorkflowMetricValue(value wfv1.MetricValue) (float64, error) {
+	if value.Literal != "" {
+		val, err := strconv.ParseFloat(value.Literal, 64)
+		if err != nil {
+			return 0.0, err
+		}
+		return val, nil
+	}
+
+	if value.Computed != "" {
+		switch value.Computed {
+		case wfv1.ComputedValueWorkflowDuration:
+			runtimeSeconds := time.Now().Sub(woc.wf.Status.StartedAt.Time).Seconds()
+			return runtimeSeconds, nil
+		}
+	}
+
+	return 0.0, fmt.Errorf("metric does not specify a value source")
 }
