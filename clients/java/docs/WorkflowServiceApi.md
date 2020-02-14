@@ -1,6 +1,6 @@
 # WorkflowServiceApi
 
-All URIs are relative to *http://localhost*
+All URIs are relative to *http://localhost:2746*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
@@ -36,7 +36,7 @@ import io.argoproj.argo.client.api.WorkflowServiceApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost");
+    defaultClient.setBasePath("http://localhost:2746");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -98,7 +98,7 @@ import io.argoproj.argo.client.api.WorkflowServiceApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost");
+    defaultClient.setBasePath("http://localhost:2746");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -172,7 +172,7 @@ import io.argoproj.argo.client.api.WorkflowServiceApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost");
+    defaultClient.setBasePath("http://localhost:2746");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -236,7 +236,7 @@ import io.argoproj.argo.client.api.WorkflowServiceApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost");
+    defaultClient.setBasePath("http://localhost:2746");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -298,7 +298,7 @@ import io.argoproj.argo.client.api.WorkflowServiceApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost");
+    defaultClient.setBasePath("http://localhost:2746");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -374,7 +374,7 @@ import io.argoproj.argo.client.api.WorkflowServiceApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost");
+    defaultClient.setBasePath("http://localhost:2746");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -456,7 +456,7 @@ import io.argoproj.argo.client.api.WorkflowServiceApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost");
+    defaultClient.setBasePath("http://localhost:2746");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -520,7 +520,7 @@ import io.argoproj.argo.client.api.WorkflowServiceApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost");
+    defaultClient.setBasePath("http://localhost:2746");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -584,7 +584,7 @@ import io.argoproj.argo.client.api.WorkflowServiceApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost");
+    defaultClient.setBasePath("http://localhost:2746");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -648,7 +648,7 @@ import io.argoproj.argo.client.api.WorkflowServiceApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost");
+    defaultClient.setBasePath("http://localhost:2746");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -712,7 +712,7 @@ import io.argoproj.argo.client.api.WorkflowServiceApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost");
+    defaultClient.setBasePath("http://localhost:2746");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 
@@ -776,7 +776,7 @@ import io.argoproj.argo.client.api.WorkflowServiceApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost");
+    defaultClient.setBasePath("http://localhost:2746");
 
     WorkflowServiceApi apiInstance = new WorkflowServiceApi(defaultClient);
     String namespace = "namespace_example"; // String | 

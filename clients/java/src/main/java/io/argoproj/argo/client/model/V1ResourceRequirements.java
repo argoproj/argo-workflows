@@ -1,6 +1,6 @@
 /*
- * Argo Server API
- * The Argo Server based API for Argo
+ * Argo
+ * Workflow Service API performs CRUD actions against application resources
  *
  * The version of the OpenAPI document: latest
  * 

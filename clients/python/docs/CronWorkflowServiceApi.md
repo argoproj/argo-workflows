@@ -1,6 +1,6 @@
 # openapi_client.CronWorkflowServiceApi
 
-All URIs are relative to *http://localhost*
+All URIs are relative to *http://localhost:2746*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------

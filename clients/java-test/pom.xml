@@ -3,13 +3,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.argoproj.argo</groupId>
-    <artifactId>argo-workflows-java-server-client-test</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>argo-workflows-java-client-test</artifactId>
     <version>latest</version>
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>argo-workflows-java-server-client</artifactId>
+            <artifactId>argo-workflows-java-client</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

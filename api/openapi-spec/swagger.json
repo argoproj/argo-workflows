@@ -5,12 +5,16 @@
   "produces": [
     "application/json"
   ],
+  "schemes": [
+    "http"
+  ],
   "swagger": "2.0",
   "info": {
-    "description": "The Argo Server based API for Argo",
-    "title": "Argo Server API",
+    "description": "Workflow Service API performs CRUD actions against application resources",
+    "title": "Argo",
     "version": "latest"
   },
+  "host": "localhost:2746",
   "paths": {
     "/api/v1/archived-workflows": {
       "get": {

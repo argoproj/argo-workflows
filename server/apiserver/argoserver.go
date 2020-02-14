@@ -165,9 +165,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
 	log.Info("API Clients")
 	for _, lang := range []string{"java", "python"} {
-		for _, t := range []string{"server", "kube"} {
-			log.Infof("  http://github.com/argoproj-labs/argo-workflows-%s-%s-client", lang, t)
-		}
+		log.Infof("  http://github.com/argoproj/argo/clients/%s-client", lang)
 	}
 	log.Infof("Argo Server started successfully on address %s", address)
 

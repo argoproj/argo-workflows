@@ -87,7 +87,7 @@ if(hasProperty('target') && target == 'android') {
 
     install {
         repositories.mavenInstaller {
-            pom.artifactId = 'argo-workflows--client'
+            pom.artifactId = 'argo-workflows-java-client'
         }
     }
 

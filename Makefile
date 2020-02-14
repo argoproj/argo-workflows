@@ -205,6 +205,7 @@ codegen:
 	./hack/update-openapigen.sh
 	make api/openapi-spec/swagger.json
 	find . -path '*/mocks/*' -type f -not -path '*/vendor/*' -exec ./hack/update-mocks.sh {} ';'
+	make client
 
 .PHONY: manifests
 manifests: status manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml manifests/quick-start-no-db.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml test/e2e/manifests/no-db.yaml
@@ -415,13 +416,16 @@ clean:
 	rm -Rf vendor
 	# Delete build files
 	rm -Rf dist ui/dist
+	# Delete clients compiled code
+	rm -Rf clients/java/target
+	rm -Rf clients/java-test/target
 
 # swagger
 
 $(HOME)/go/bin/swagger:
 	go get github.com/go-swagger/go-swagger/cmd/swagger
 
-api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES)
+api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) dist/MANIFESTS_VERSION
 	swagger mixin -c 412 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' > api/openapi-spec/swagger.json
 
 # clients
@@ -443,13 +447,13 @@ clients/%/README.md: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/o
         --api-package io.argoproj.argo.client.api \
         --model-package io.argoproj.argo.client.model \
         --group-id io.argoproj.argo \
-        --artifact-id argo-workflows-${lang}-client \
+        --artifact-id argo-workflows-$*-client \
         --artifact-version $(MANIFESTS_VERSION)
 
 .PHONY: test-clients
 test-clients: clients
 	cd clients/java && mvn install -DskipTests -Dmaven.javadoc.skip=true
-	cd clients/java-test && mvn verify
+	eval `make env` && cd clients/java-test && mvn verify
 
 # pre-push
 

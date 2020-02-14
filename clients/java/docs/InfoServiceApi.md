@@ -1,6 +1,6 @@
 # InfoServiceApi
 
-All URIs are relative to *http://localhost*
+All URIs are relative to *http://localhost:2746*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
@@ -25,7 +25,7 @@ import io.argoproj.argo.client.api.InfoServiceApi;
 public class Example {
   public static void main(String[] args) {
     ApiClient defaultClient = Configuration.getDefaultApiClient();
-    defaultClient.setBasePath("http://localhost");
+    defaultClient.setBasePath("http://localhost:2746");
 
     InfoServiceApi apiInstance = new InfoServiceApi(defaultClient);
     try {

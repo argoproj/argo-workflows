@@ -1,6 +1,6 @@
 /*
- * Argo Server API
- * The Argo Server based API for Argo
+ * Argo
+ * Workflow Service API performs CRUD actions against application resources
  *
  * The version of the OpenAPI document: latest
  * 
@@ -53,7 +53,7 @@ import io.argoproj.argo.client.auth.ApiKeyAuth;
 
 public class ApiClient {
 
-    private String basePath = "http://localhost";
+    private String basePath = "http://localhost:2746";
     private boolean debugging = false;
     private Map<String, String> defaultHeaderMap = new HashMap<String, String>();
     private Map<String, String> defaultCookieMap = new HashMap<String, String>();
@@ -116,7 +116,7 @@ public class ApiClient {
     /**
      * Set base path
      *
-     * @param basePath Base path of the URL (e.g http://localhost
+     * @param basePath Base path of the URL (e.g http://localhost:2746
      * @return An instance of OkHttpClient
      */
     public ApiClient setBasePath(String basePath) {

@@ -6,9 +6,12 @@
     "application/json"
   ],
   "swagger": "2.0",
+  "host": "localhost:2746",
+  "schemes": [
+    "http"
+  ],
   "info": {
-    "title": "Argo Server API",
-    "description": "The Argo Server based API for Argo",
+    "title": "Argo",
     "version": "VERSION"
   },
   "securityDefinitions": {
