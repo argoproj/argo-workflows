@@ -1,8 +1,8 @@
 [submodule "sdks/argo-workflows-java-sdk"]
-	path = sdks/argo-workflows-java-sdk
+	path = clients/argo-workflows-java-sdk
 	url = git@github.com:argoproj-labs/argo-workflows-java-sdk.git
 	branch = master
 [submodule "sdks/argo-workflows-python-sdk"]
-	path = sdks/argo-workflows-python-sdk
+	path = clients/argo-workflows-python-sdk
 	url = git@github.com:argoproj-labs/argo-workflows-python-sdk.git
 	branch = master

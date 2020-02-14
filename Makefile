@@ -431,8 +431,8 @@ api/argo-server/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES)
 dist/openapi-generator-cli.jar:
 	curl -L -o dist/openapi-generator-cli.jar https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/4.2.3/openapi-generator-cli-4.2.3.jar
 
-.PHONY: sdks
-sdks: dist/argo-workflows-java-sdk dist/argo-workflows-python-sdk
+.PHONY: clients
+clients: dist/argo-workflows-java-sdk dist/argo-workflows-python-sdk
 
 dist/argo-workflows-%-sdk: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/argo-server/swagger.json
 	./hack/update-sdk.sh $* $(GIT_BRANCH) $(MANIFESTS_VERSION)
