@@ -197,16 +197,13 @@ ifeq ($(K3D),true)
 	k3d import-images $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
 endif
 
-# generation
-
 .PHONY: codegen
 codegen:
 	# Generate code
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
 	./hack/update-openapigen.sh
-	go run ./hack/gen-openapi-spec/main.go $(MANIFESTS_VERSION) > ./api/openapi-spec/swagger.json
-	make api/argo-server/swagger.json
+	make api/openapi-spec/swagger.json
 	find . -path '*/mocks/*' -type f -not -path '*/vendor/*' -exec ./hack/update-mocks.sh {} ';'
 
 .PHONY: manifests
@@ -424,8 +421,8 @@ clean:
 $(HOME)/go/bin/swagger:
 	go get github.com/go-swagger/go-swagger/cmd/swagger
 
-api/argo-server/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES)
-	swagger mixin -c 412 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' > api/argo-server/swagger.json
+api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES)
+	swagger mixin -c 412 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' > api/openapi-spec/swagger.json
 
 # clients
 
@@ -433,15 +430,26 @@ dist/openapi-generator-cli.jar:
 	curl -L -o dist/openapi-generator-cli.jar https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/4.2.3/openapi-generator-cli-4.2.3.jar
 
 .PHONY: clients
-clients: dist/argo-workflows-java-server-client dist/argo-workflows-java-kube-client dist/argo-workflows-python-server-client dist/argo-workflows-python-kube-client
+clients: clients/java/README.md clients/python/README.md
 
-dist/argo-workflows-%-client: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/argo-server/swagger.json api/openapi-spec/swagger.json ./hack/update-client.sh
-	./hack/update-client.sh $* $(GIT_BRANCH) $(MANIFESTS_VERSION)
-	touch dist/argo-workflows-$*-client
+clients/%/README.md: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/openapi-spec/swagger.json
+	mkdir -p clients/$*
+	java -jar dist/openapi-generator-cli.jar generate \
+        -i api/openapi-spec/swagger.json \
+        -g $* \
+        -p hideGenerationTimestamp=true \
+        -o clients/$* \
+        --invoker-package io.argoproj.argo.client \
+        --api-package io.argoproj.argo.client.api \
+        --model-package io.argoproj.argo.client.model \
+        --group-id io.argoproj.argo \
+        --artifact-id argo-workflows-${lang}-client \
+        --artifact-version $(MANIFESTS_VERSION)
 
 .PHONY: test-clients
-test-clients:
-	cd clients/argo-workflows-java-kube-client && chmod a+x ./gradlew && ./gradlew test
+test-clients: clients
+	cd clients/java && mvn install -DskipTests -Dmaven.javadoc.skip=true
+	cd clients/java-test && mvn verify
 
 # pre-push
 
