@@ -1,7 +1,8 @@
 package common
 
 import (
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/yaml"
 	"testing"
