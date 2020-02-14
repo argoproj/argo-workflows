@@ -14,7 +14,7 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) *wfv1.Workflow {
 		wfLabel = make(map[string]string)
 	}
 	wfLabel[LabelKeyCronWorkflow] = cronWf.Name
-	wf.Labels= wfLabel
+	wf.Labels = wfLabel
 	wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *metav1.NewControllerRef(cronWf, wfv1.SchemeGroupVersion.WithKind(workflow.CronWorkflowKind))))
 	return wf
 }
