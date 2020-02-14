@@ -1,12 +1,34 @@
 #!/usr/bin/env bash
 set -eux -o pipefail
 
-lang=$1
+# "java-server"
+# "java-kube"
+# "python-server"
+# "python-kube"
+lang_type=$1
 git_branch=$2
 version=$3
 
+if [[ ${lang_type} == java-* ]]; then
+    lang=java
+else
+    lang=python
+fi
+
+if [[ ${lang_type} == *-server ]]; then
+    type=server
+else
+    type=kube
+fi
+
+if [[ ${type} = kube ]]; then
+    input=api/openapi-spec/swagger.json
+else
+    input=api/argo-server/swagger.json
+fi
+
 git_remote=origin
-git_repo=argo-workflows-${lang}-server-client
+git_repo=argo-workflows-${lang}-${type}-client
 path=clients/${git_repo}
 
 # init submodule
@@ -22,7 +44,7 @@ cd -
 
 # generate code
 java -jar dist/openapi-generator-cli.jar generate \
-    -i api/argo-server/swagger.json \
+    -i ${input}\
     -g ${lang} \
     -p hideGenerationTimestamp=true \
     -o ${path} \

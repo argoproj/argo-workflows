@@ -432,11 +432,11 @@ dist/openapi-generator-cli.jar:
 	curl -L -o dist/openapi-generator-cli.jar https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/4.2.3/openapi-generator-cli-4.2.3.jar
 
 .PHONY: clients
-clients: dist/argo-workflows-java-server-client dist/argo-workflows-python-server-client
+clients: dist/argo-workflows-java-server-client dist/argo-workflows-java-kube-client dist/argo-workflows-python-server-client dist/argo-workflows-python-kube-client
 
-dist/argo-workflows-%-server-client: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/argo-server/swagger.json
-	./hack/update-server-client.sh $* $(GIT_BRANCH) $(MANIFESTS_VERSION)
-	touch dist/argo-workflows-$*-server-client
+dist/argo-workflows-%-client: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/argo-server/swagger.json api/openapi-spec/swagger.json
+	./hack/update-client.sh $* $(GIT_BRANCH) $(MANIFESTS_VERSION)
+	touch dist/argo-workflows-$*-client
 
 # pre-push
 

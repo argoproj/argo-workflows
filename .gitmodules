@@ -6,3 +6,9 @@
 	path = clients/argo-workflows-python-server-client
 	url = git@github.com:argoproj-labs/argo-workflows-python-server-client.git
 	branch = master
+[submodule "clients/argo-workflows-java-kube-client"]
+	path = clients/argo-workflows-java-kube-client
+	url = git@github.com:argoproj-labs/argo-workflows-java-kube-client.git
+[submodule "clients/argo-workflows-python-kube-client"]
+	path = clients/argo-workflows-python-kube-client
+	url = git@github.com:argoproj-labs/argo-workflows-python-kube-client.git
