@@ -9,6 +9,7 @@ require('./workflow-filters.scss');
 interface WorkflowFilterProps {
     workflows: models.Workflow[];
     namespace: string;
+    phaseItems: string[];
     selectedPhases: string[];
     selectedLabels: string[];
     onChange: (namespace: string, selectedPhases: string[], labels: string[]) => void;
@@ -57,7 +58,7 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
 
     private getPhaseItems(workflows: models.Workflow[]) {
         const phasesMap = new Map<string, number>();
-        Object.values(models.NODE_PHASE).forEach(value => phasesMap.set(value, 0));
+        this.props.phaseItems.forEach(value => phasesMap.set(value, 0));
         workflows.filter(wf => wf.status.phase).forEach(wf => phasesMap.set(wf.status.phase, (phasesMap.get(wf.status.phase) || 0) + 1));
         const results = new Array<{name: string; count: number}>();
         phasesMap.forEach((val, key) => {
