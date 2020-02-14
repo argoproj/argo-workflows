@@ -124,28 +124,29 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         if (this.subscription) {
             this.subscription.unsubscribe();
         }
-        let l;
-        let ns = namespace;
+        let workflowList;
+        let newNamespace = namespace;
         if (!this.state.initialized) {
-            l = services.info.get().then(info => {
+            workflowList = services.info.get().then(info => {
                 if (info.managedNamespace) {
-                    ns = info.managedNamespace;
+                    newNamespace = info.managedNamespace;
                 }
                 this.setState({initialized: true, managedNamespace: info.managedNamespace ? true : false});
-                return services.workflows.list(ns, selectedPhases, selectedLabels);
+                return services.workflows.list(newNamespace, selectedPhases, selectedLabels);
             });
         } else {
             if (this.state.managedNamespace) {
-                ns = this.state.namespace;
+                newNamespace = this.state.namespace;
             }
-            l = services.workflows.list(ns, selectedPhases, selectedLabels);
+            workflowList = services.workflows.list(newNamespace, selectedPhases, selectedLabels);
         }
-        l.then(list => list.items)
+        workflowList
+            .then(list => list.items)
             .then(list => list || [])
-            .then(workflows => this.setState({workflows, namespace: ns, selectedPhases, selectedLabels}))
+            .then(workflows => this.setState({workflows, namespace: newNamespace, selectedPhases, selectedLabels}))
             .then(() => {
                 this.subscription = services.workflows
-                    .watch({namespace: ns, phases: selectedPhases, labels: selectedLabels})
+                    .watch({namespace: newNamespace, phases: selectedPhases, labels: selectedLabels})
                     .map(workflowChange => {
                         const workflows = this.state.workflows;
                         if (!workflowChange) {
