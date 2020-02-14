@@ -255,7 +255,7 @@ message DAGTemplate {
 }
 
 message EmitMetrics {
-  repeated Metrics metrics = 1 [(gogoproto.customname) = "Metrics"];
+  repeated Metric metrics = 1 [(gogoproto.customname) = "Metrics"];
 }
 
 // ExecutorConfig holds configurations of an executor container.
@@ -265,7 +265,7 @@ message ExecutorConfig {
 }
 
 message Gauge {
-  optional string value = 1 [(gogoproto.customname) = "Value", (gogoproto.nullable) = false];
+  optional MetricValue value = 1 [(gogoproto.customname) = "Value", (gogoproto.nullable) = false];
 }
 
 // GitArtifact is the location of an git artifact
@@ -352,6 +352,12 @@ message HTTPArtifact {
   optional string url = 1 [(gogoproto.customname) = "URL", (gogoproto.nullable) = false];
 }
 
+message Histogram {
+  optional string value = 1 [(gogoproto.customname) = "Value", (gogoproto.nullable) = false];
+
+  repeated int64 bins = 2 [(gogoproto.customname) = "Bins"];
+}
+
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 message Inputs {
   // Parameters are a list of parameters passed as inputs
@@ -415,13 +421,7 @@ message Metadata {
   map<string, string> labels = 2 [(gogoproto.customname) = "Labels", (gogoproto.nullable) = false];
 }
 
-message MetricLabels {
-  optional string key = 1 [(gogoproto.customname) = "Key", (gogoproto.nullable) = false];
-
-  optional string value = 2 [(gogoproto.customname) = "Value", (gogoproto.nullable) = false];
-}
-
-message Metrics {
+message Metric {
   optional string name = 1 [(gogoproto.customname) = "Name", (gogoproto.nullable) = false];
 
   repeated MetricLabels labels = 2 [(gogoproto.customname) = "Labels"];
@@ -429,6 +429,18 @@ message Metrics {
   optional string help = 3 [(gogoproto.customname) = "Help", (gogoproto.nullable) = false];
 
   optional Gauge gauge = 4 [(gogoproto.customname) = "Gauge"];
+}
+
+message MetricLabels {
+  optional string key = 1 [(gogoproto.customname) = "Key", (gogoproto.nullable) = false];
+
+  optional string value = 2 [(gogoproto.customname) = "Value", (gogoproto.nullable) = false];
+}
+
+message MetricValue {
+  optional string literal = 1 [(gogoproto.customname) = "Literal", (gogoproto.nullable) = false];
+
+  optional string computed = 2 [(gogoproto.casttype) = "ComputedValue", (gogoproto.customname) = "Computed", (gogoproto.nullable) = false];
 }
 
 // NodeStatus contains status information about an individual node in the workflow
