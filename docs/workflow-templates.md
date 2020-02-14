@@ -4,7 +4,7 @@
 
 > v2.4 and after
 
-Workflow templates are reusable checks of YAML that you can use within your workflows. This allows you to have a library of templates.
+Workflow templates are reusable chunks of YAML that you can use within your workflows. This allows you to have a library of templates.
 
 You can create some example templates as follows:
 
