@@ -5,7 +5,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/yaml"
-	"testing"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+
 )
 
 const cronWorkflow = `
@@ -36,7 +38,7 @@ spec:
 
 func TestConvertCronWorkflowToWorkflow(t *testing.T) {
 
-	var cronWf v1alpha1.CronWorkflow
+	var cronWf wfv1.CronWorkflow
 	err := yaml.Unmarshal([]byte(cronWorkflow), &cronWf)
 	if err != nil {
 		panic(err)
@@ -74,7 +76,7 @@ spec:
 `
 
 func TestConvertWorkflowTemplateToWorkflow(t *testing.T) {
-	var wfTmpl v1alpha1.WorkflowTemplate
+	var wfTmpl wfv1.WorkflowTemplate
 	err := yaml.Unmarshal([]byte(workflowTmpl), &wfTmpl)
 	if err != nil {
 		panic(err)
