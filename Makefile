@@ -435,7 +435,7 @@ dist/openapi-generator-cli.jar:
 .PHONY: clients
 clients: dist/argo-workflows-java-server-client dist/argo-workflows-java-kube-client dist/argo-workflows-python-server-client dist/argo-workflows-python-kube-client
 
-dist/argo-workflows-%-client: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/argo-server/swagger.json api/openapi-spec/swagger.json
+dist/argo-workflows-%-client: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/argo-server/swagger.json api/openapi-spec/swagger.json ./hack/update-client.sh
 	./hack/update-client.sh $* $(GIT_BRANCH) $(MANIFESTS_VERSION)
 	touch dist/argo-workflows-$*-client
 

@@ -51,7 +51,7 @@ java -jar dist/openapi-generator-cli.jar generate \
     --invoker-package io.argoproj.argo.client \
     --api-package io.argoproj.argo.client.api \
     --model-package io.argoproj.argo.client.model \
-    --group-id argoproj-labs \
+    --group-id io.argoproj.argo \
     --artifact-id ${git_repo} \
     --artifact-version ${version} \
     --git-user-id argoproj-labs \
