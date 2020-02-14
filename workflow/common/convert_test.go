@@ -46,6 +46,7 @@ func TestConvertCronWorkflowToWorkflow(t *testing.T) {
 	assert.NotNil(t, wf)
 	assert.Equal(t, wf.Labels[LabelKeyCronWorkflow], cronWf.Name)
 	assert.Equal(t, wf.GenerateName, cronWf.Name+"-")
+	assert.Equal(t, wf.OwnerReferences[0].Name, cronWf.Name)
 
 }
 
