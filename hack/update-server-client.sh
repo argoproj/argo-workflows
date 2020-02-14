@@ -6,8 +6,8 @@ git_branch=$2
 version=$3
 
 git_remote=origin
-git_repo=argo-workflows-${lang}-sdk
-path=sdks/${git_repo}
+git_repo=argo-workflows-${lang}-server-client
+path=clients/${git_repo}
 
 # init submodule
 git submodule update --init -f ${path}

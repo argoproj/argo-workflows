@@ -72,7 +72,7 @@ E2E_EXECUTOR     ?= pns
 SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json')
 
 .PHONY: build
-build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
+build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml clients
 
 .PHONY: status
 status:
@@ -418,7 +418,7 @@ clean:
 	# Delete build files
 	rm -Rf dist ui/dist
 
-# sdks
+# swagger
 
 $(HOME)/go/bin/swagger:
 	go get github.com/go-swagger/go-swagger/cmd/swagger
@@ -426,17 +426,17 @@ $(HOME)/go/bin/swagger:
 api/argo-server/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES)
 	swagger mixin -c 412 pkg/apiclient/primary.swagger.json $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFEST_VERSION)/' > api/argo-server/swagger.json
 
-# sdks
+# clients
 
 dist/openapi-generator-cli.jar:
 	curl -L -o dist/openapi-generator-cli.jar https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/4.2.3/openapi-generator-cli-4.2.3.jar
 
 .PHONY: clients
-clients: dist/argo-workflows-java-sdk dist/argo-workflows-python-sdk
+clients: dist/argo-workflows-java-server-client dist/argo-workflows-python-server-client
 
-dist/argo-workflows-%-sdk: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/argo-server/swagger.json
-	./hack/update-sdk.sh $* $(GIT_BRANCH) $(MANIFESTS_VERSION)
-	touch dist/argo-workflows-$*-sdk
+dist/argo-workflows-%-server-client: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/argo-server/swagger.json
+	./hack/update-server-client.sh $* $(GIT_BRANCH) $(MANIFESTS_VERSION)
+	touch dist/argo-workflows-$*-server-client
 
 # pre-push
 
