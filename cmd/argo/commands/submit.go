@@ -121,7 +121,7 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *util.Subm
 			Namespace: namespace,
 		})
 		if err != nil {
-			log.Fatalf("Unable to get CronWorkflow '%s': %s", name, err)
+			log.Fatalf("Unable to get cron workflow '%s': %s", name, err)
 		}
 		workflowToSubmit = common.ConvertCronWorkflowToWorkflow(cronWf)
 	case workflow.WorkflowTemplateKind, workflow.WorkflowTemplateSingular, workflow.WorkflowTemplatePlural, workflow.WorkflowTemplateShortName:
@@ -131,7 +131,7 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *util.Subm
 			Namespace: namespace,
 		})
 		if err != nil {
-			log.Fatalf("Unable to get WorkflowTemplate '%s': %s", name, err)
+			log.Fatalf("Unable to get workflow template '%s': %s", name, err)
 		}
 		workflowToSubmit = common.ConvertWorkflowTemplateToWorkflow(template)
 	default:
