@@ -12,13 +12,15 @@
     "version": "VERSION"
   },
   "securityDefinitions": {
-    "basic": {
-      "type": "basic"
-    },
-    "bearer": {
+    "BearerToken": {
+      "description": "Bearer Token authentication",
       "type": "apiKey",
-      "name": "Authorization",
+      "name": "authorization",
       "in": "header"
+    },
+    "HTTPBasic": {
+      "description": "HTTP Basic authentication",
+      "type": "basic"
     }
   },
   "paths": {},
