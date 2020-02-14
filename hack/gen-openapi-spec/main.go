@@ -26,6 +26,11 @@ func main() {
 	for defName, val := range oAPIDefs {
 		defs[swaggify(defName)] = val.Schema
 	}
+	defs["io.k8s.apimachinery.pkg.runtime.Object"] = spec.Schema{
+		SchemaProps: spec.SchemaProps{
+			Title: "This is a hack do deal with this problem: https://github.com/kubernetes/kube-openapi/issues/174",
+		},
+	}
 	swagger := spec.Swagger{
 		SwaggerProps: spec.SwaggerProps{
 			Swagger:     "2.0",
@@ -33,8 +38,9 @@ func main() {
 			Paths:       &spec.Paths{Paths: map[string]spec.PathItem{}},
 			Info: &spec.Info{
 				InfoProps: spec.InfoProps{
-					Title:   "Argo",
-					Version: version,
+					Title:       "Argo Kube API",
+					Description: "The Kubernetes based API for Argo",
+					Version:     version,
 				},
 			},
 		},

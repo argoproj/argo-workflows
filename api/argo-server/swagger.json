@@ -7,8 +7,8 @@
   ],
   "swagger": "2.0",
   "info": {
-    "description": "Argo Server",
-    "title": "Argo Server",
+    "description": "The Argo Server based API for Argo",
+    "title": "Argo Server API",
     "version": "latest"
   },
   "paths": {
@@ -1352,6 +1352,9 @@
           "format": "int64"
         }
       }
+    },
+    "io.k8s.apimachinery.pkg.runtime.Object": {
+      "title": "This is a hack do deal with this problem: https://github.com/kubernetes/kube-openapi/issues/174"
     },
     "protobufAny": {
       "type": "object",
@@ -5519,6 +5522,16 @@
           "type": "string"
         }
       }
+    }
+  },
+  "securityDefinitions": {
+    "basic": {
+      "type": "basic"
+    },
+    "bearer": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header"
     }
   },
   "x-stream-definitions": {

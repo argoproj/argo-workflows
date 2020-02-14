@@ -1,0 +1,30 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "swagger": "2.0",
+  "info": {
+    "title": "Argo Server API",
+    "description": "The Argo Server based API for Argo",
+    "version": "VERSION"
+  },
+  "securityDefinitions": {
+    "basic": {
+      "type": "basic"
+    },
+    "bearer": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header"
+    }
+  },
+  "paths": {},
+  "definitions": {
+    "io.k8s.apimachinery.pkg.runtime.Object": {
+      "title": "This is a hack do deal with this problem: https://github.com/kubernetes/kube-openapi/issues/174"
+    }
+  }
+}

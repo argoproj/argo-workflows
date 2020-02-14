@@ -69,7 +69,8 @@ CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join 
 MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
-SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json')
+# the sort puts _.primary first in the list
+SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json' | sort)
 
 .PHONY: build
 build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml clients
@@ -424,7 +425,7 @@ $(HOME)/go/bin/swagger:
 	go get github.com/go-swagger/go-swagger/cmd/swagger
 
 api/argo-server/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES)
-	swagger mixin -c 412 pkg/apiclient/primary.swagger.json $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFEST_VERSION)/' > api/argo-server/swagger.json
+	swagger mixin -c 412 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' > api/argo-server/swagger.json
 
 # clients
 
@@ -437,6 +438,10 @@ clients: dist/argo-workflows-java-server-client dist/argo-workflows-java-kube-cl
 dist/argo-workflows-%-client: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/argo-server/swagger.json api/openapi-spec/swagger.json
 	./hack/update-client.sh $* $(GIT_BRANCH) $(MANIFESTS_VERSION)
 	touch dist/argo-workflows-$*-client
+
+.PHONY: test-clients
+test-clients:
+	cd clients/argo-workflows-java-kube-client && chmod a+x ./gradlew && ./gradlew test
 
 # pre-push
 
