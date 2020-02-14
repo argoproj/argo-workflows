@@ -72,6 +72,7 @@ Currently **officially** using Argo:
 1. [Adobe](https://www.adobe.com/)
 1. [Alibaba Cloud](https://www.alibabacloud.com/about)
 1. [Ant Financial](https://www.antfin.com/)
+1. [BasisAI](https://basis-ai.com/)
 1. [BioBox Analytics](https://biobox.io)
 1. [BlackRock](https://www.blackrock.com/)
 1. [Canva](https://www.canva.com/)
