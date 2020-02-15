@@ -36,7 +36,7 @@ type archivedWorkflowRecord struct {
 
 type archivedWorkflowLabelRecord struct {
 	ClusterName string `db:"clustername"`
-	Uid         string `db:"uid"`
+	UID         string `db:"uid"`
 	// Why is this called "name" not "key"? Key is an SQL reserved word.
 	Key   string `db:"name"`
 	Value string `db:"value"`
@@ -114,7 +114,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 			_, err := sess.Collection(archiveLabelsTableName).
 				Insert(&archivedWorkflowLabelRecord{
 					ClusterName: r.clusterName,
-					Uid:         string(wf.UID),
+					UID:         string(wf.UID),
 					Key:         key,
 					Value:       value,
 				})
