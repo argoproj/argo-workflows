@@ -29,29 +29,29 @@ func requirementToCondition(t dbType, r labels.Requirement) (db.Compound, error)
 	// https://kb.objectrocket.com/postgresql/casting-in-postgresql-570#string+to+integer+casting
 	switch r.Operator() {
 	case selection.DoesNotExist:
-		return db.Raw(fmt.Sprintf("not exists (select 1 from %s where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s')", archiveLabelsTableName, r.Key())), nil
+		return db.Raw(fmt.Sprintf("not exists (select 1 from %s where clustername = %s.clustername and uid = %s.uid and name = '%s')", archiveLabelsTableName, archiveTableName, archiveTableName, r.Key())), nil
 	case selection.Equals, selection.DoubleEquals:
-		return db.Raw(fmt.Sprintf("exists (select 1 from %s where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s' and value = '%s')", archiveLabelsTableName, r.Key(), r.Values().List()[0])), nil
+		return db.Raw(fmt.Sprintf("exists (select 1 from %s where clustername = %s.clustername and uid = %s.uid and name = '%s' and value = '%s')", archiveLabelsTableName, archiveTableName, archiveTableName, r.Key(), r.Values().List()[0])), nil
 	case selection.In:
-		return db.Raw(fmt.Sprintf("exists (select 1 from %s where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s' and value in ('%s'))", archiveLabelsTableName, r.Key(), strings.Join(r.Values().List(), "', '"))), nil
+		return db.Raw(fmt.Sprintf("exists (select 1 from %s where clustername = %s.clustername and uid = %s.uid and name = '%s' and value in ('%s'))", archiveLabelsTableName, archiveTableName, archiveTableName, r.Key(), strings.Join(r.Values().List(), "', '"))), nil
 	case selection.NotEquals:
-		return db.Raw(fmt.Sprintf("not exists (select 1 from %s where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s' and value = '%s')", archiveLabelsTableName, r.Key(), r.Values().List()[0])), nil
+		return db.Raw(fmt.Sprintf("not exists (select 1 from %s where clustername = %s.clustername and uid = %s.uid and name = '%s' and value = '%s')", archiveLabelsTableName, archiveTableName, archiveTableName, r.Key(), r.Values().List()[0])), nil
 	case selection.NotIn:
-		return db.Raw(fmt.Sprintf("not exists (select 1 from %s where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s' and value in ('%s'))", archiveLabelsTableName, r.Key(), strings.Join(r.Values().List(), "', '"))), nil
+		return db.Raw(fmt.Sprintf("not exists (select 1 from %s where clustername = %s.clustername and uid = %s.uid and name = '%s' and value in ('%s'))", archiveLabelsTableName, archiveTableName, archiveTableName, r.Key(), strings.Join(r.Values().List(), "', '"))), nil
 	case selection.Exists:
-		return db.Raw(fmt.Sprintf("exists (select 1 from %s where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s')", archiveLabelsTableName, r.Key())), nil
+		return db.Raw(fmt.Sprintf("exists (select 1 from %s where clustername = %s.clustername and uid = %s.uid and name = '%s')", archiveLabelsTableName, archiveTableName, archiveTableName, r.Key())), nil
 	case selection.GreaterThan:
 		i, err := strconv.Atoi(r.Values().List()[0])
 		if err != nil {
 			return nil, err
 		}
-		return db.Raw(fmt.Sprintf("exists (select 1 from %s where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s' and cast(value as %s) > %d)", archiveLabelsTableName, r.Key(), t.intType(), i)), nil
+		return db.Raw(fmt.Sprintf("exists (select 1 from %s where clustername = %s.clustername and uid = %s.uid and name = '%s' and cast(value as %s) > %d)", archiveLabelsTableName, archiveTableName, archiveTableName, r.Key(), t.intType(), i)), nil
 	case selection.LessThan:
 		i, err := strconv.Atoi(r.Values().List()[0])
 		if err != nil {
 			return nil, err
 		}
-		return db.Raw(fmt.Sprintf("exists (select 1 from %s where clustername = argo_archived_workflows.clustername and uid = argo_archived_workflows.uid and name = '%s' and cast(value as %s) < %d)", archiveLabelsTableName, r.Key(), t.intType(), i)), nil
+		return db.Raw(fmt.Sprintf("exists (select 1 from %s where clustername = %s.clustername and uid = %s.uid and name = '%s' and cast(value as %s) < %d)", archiveLabelsTableName, archiveTableName, archiveTableName, r.Key(), t.intType(), i)), nil
 	}
 	return nil, fmt.Errorf("operation %v is not supported", r.Operator())
 }
