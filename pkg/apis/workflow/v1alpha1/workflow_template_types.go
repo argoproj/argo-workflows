@@ -11,7 +11,7 @@ import (
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type WorkflowTemplate struct {
-	metav1.TypeMeta   `json:",inline" protobuf:"bytes,3,opt,name=typeMeta"`
+	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 	Spec              WorkflowTemplateSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 }
@@ -33,7 +33,7 @@ func (w WorkflowTemplates) Swap(i, j int) {
 // WorkflowTemplateList is list of WorkflowTemplate resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type WorkflowTemplateList struct {
-	metav1.TypeMeta `json:",inline" protobuf:"bytes,3,opt,name=typeMeta"`
+	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 	Items           WorkflowTemplates `json:"items" protobuf:"bytes,2,rep,name=items"`
 }

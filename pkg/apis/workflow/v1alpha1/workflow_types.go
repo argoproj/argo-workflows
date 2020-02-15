@@ -92,7 +92,7 @@ type TemplateStorage interface {
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Workflow struct {
-	metav1.TypeMeta   `json:",inline" protobuf:"bytes,4,opt,name=typeMeta"`
+	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 	Spec              WorkflowSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec "`
 	Status            WorkflowStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
@@ -123,7 +123,7 @@ func (w Workflows) Less(i, j int) bool {
 // WorkflowList is list of Workflow resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type WorkflowList struct {
-	metav1.TypeMeta `json:",inline" protobuf:"bytes,3,opt,name=typeMeta"`
+	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 	Items           Workflows `json:"items" protobuf:"bytes,2,opt,name=items"`
 }
