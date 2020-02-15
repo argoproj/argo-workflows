@@ -438,23 +438,34 @@ dist/openapi-generator-cli.jar:
 .PHONY: clients
 clients: clients/java/README.md clients/python/README.md
 
-clients/%/README.md: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/openapi-spec/swagger.json
-	mkdir -p clients/$*
+clients/java/README.md: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/openapi-spec/swagger.json
+	mkdir -p clients/java
 	java \
 		-jar dist/openapi-generator-cli.jar \
 		generate \
         -i api/openapi-spec/swagger.json \
-        -g $* \
+        -g java \
         -p hideGenerationTimestamp=true \
-		-p modelDocs=false \
-		-p apiTests=false \
-		-p modelTests=false \
-		-p packageName=io.argoproj.argo \
-		-p packageVersion=$(MANIFESTS_VERSION) \
-        -o clients/$* \
+        -o clients/java \
+        --invoker-package io.argoproj.argo \
+        --api-package io.argoproj.argo.api \
+        --model-package io.argoproj.argo.model \
         --group-id io.argoproj.argo \
-        --artifact-id argo-workflows-$*-client \
+        --artifact-id argo-workflows-java-client \
         --artifact-version $(MANIFESTS_VERSION)
+
+clients/python/README.md: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/openapi-spec/swagger.json
+	mkdir -p clients/python
+	java \
+		-jar dist/openapi-generator-cli.jar \
+		generate \
+        -i api/openapi-spec/swagger.json \
+        -g python \
+		-p packageName=io_argoproj_argo \
+		-p packageVersion=$(MANIFESTS_VERSION) \
+        -o clients/python \
+    # Python tests seem to be garbage
+	rm -Rf clients/python/test
 
 .PHONY: test-clients
 test-clients: clients

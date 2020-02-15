@@ -1,10 +1,10 @@
-package io.argoproj.argo.server.client;
+package io.argoproj.argo;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonParseException;
-import org.openapitools.client.model.V1Time;
+import io.argoproj.argo.model.V1Time;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
