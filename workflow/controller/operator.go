@@ -2205,6 +2205,7 @@ func (woc *wfOperationCtx) computeWorkflowMetrics() error {
 			}
 		}
 	}
+	return nil
 }
 
 func (woc *wfOperationCtx) processMetric(metric *wfv1.Metric) error {
@@ -2213,26 +2214,29 @@ func (woc *wfOperationCtx) processMetric(metric *wfv1.Metric) error {
 		return err
 	}
 	metricObj := metrics.ConstructMetric(metric, metricVal)
-	woc.controller.Metrics[metric.Name] = metricObj
+	woc.controller.Metrics[metricObj().Desc().String()] = metricObj
 	return nil
 }
 
-func (woc *wfOperationCtx) computeWorkflowMetricValue(value wfv1.MetricValue) (float64, error) {
+func (woc *wfOperationCtx) computeWorkflowMetricValue(value wfv1.MetricValue) (func () float64, error) {
 	if value.Literal != "" {
 		val, err := strconv.ParseFloat(value.Literal, 64)
 		if err != nil {
-			return 0.0, err
+			return nil, err
 		}
-		return val, nil
+		return func() float64 {
+			return val
+		}, nil
 	}
 
 	if value.Computed != "" {
 		switch value.Computed {
 		case wfv1.ComputedValueWorkflowDuration:
-			runtimeSeconds := time.Now().Sub(woc.wf.Status.StartedAt.Time).Seconds()
-			return runtimeSeconds, nil
+			return func() float64 {
+				return time.Now().Sub(woc.wf.Status.StartedAt.Time).Seconds()
+			}, nil
 		}
 	}
 
-	return 0.0, fmt.Errorf("metric does not specify a value source")
+	return nil, fmt.Errorf("metric does not specify a value source")
 }

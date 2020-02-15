@@ -4,7 +4,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/metrics"
 )
 
 // WorkflowControllerConfig contain the configuration settings for the workflow controller
@@ -52,9 +51,9 @@ type WorkflowControllerConfig struct {
 	// controller watches workflows and pods that *are not* labeled with an instance id.
 	InstanceID string `json:"instanceID,omitempty"`
 
-	MetricsConfig metrics.PrometheusConfig `json:"metricsConfig,omitempty"`
+	MetricsConfig PrometheusConfig `json:"metricsConfig,omitempty"`
 
-	TelemetryConfig metrics.PrometheusConfig `json:"telemetryConfig,omitempty"`
+	TelemetryConfig PrometheusConfig `json:"telemetryConfig,omitempty"`
 
 	// Parallelism limits the max total parallel workflows that can execute at the same time
 	Parallelism int `json:"parallelism,omitempty"`
@@ -167,3 +166,11 @@ type HDFSArtifactRepository struct {
 	// Force copies a file forcibly even if it exists (default: false)
 	Force bool `json:"force,omitempty"`
 }
+
+// PrometheusConfig defines a config for a metrics server
+type PrometheusConfig struct {
+	Enabled bool   `json:"enabled,omitempty"`
+	Path    string `json:"path,omitempty"`
+	Port    string `json:"port,omitempty"`
+}
+

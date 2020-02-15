@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
 	"os"
 	"strings"
 	"time"
@@ -78,7 +77,7 @@ type WorkflowController struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wfArchive             sqldb.WorkflowArchive
 
-	Metrics map[string]prometheus.Metric
+	Metrics map[string]metrics.MetricLoader
 }
 
 const (
@@ -618,4 +617,8 @@ func (wfc *WorkflowController) GetContainerRuntimeExecutor() string {
 		return wfc.containerRuntimeExecutor
 	}
 	return wfc.Config.ContainerRuntimeExecutor
+}
+
+func (wfc *WorkflowController) GetMetrics() map[string]metrics.MetricLoader {
+	return wfc.Metrics
 }

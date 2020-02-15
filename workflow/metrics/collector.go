@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"github.com/argoproj/argo/workflow/controller"
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/tools/cache"
 	"os"
@@ -9,9 +8,16 @@ import (
 	"github.com/argoproj/argo/workflow/util"
 )
 
-func NewMetricsRegistry(controller *controller.WorkflowController, informer cache.SharedIndexInformer, includeLegacyMetrics bool) *prometheus.Registry {
+// TODO: What's the best place for these?
+type MetricsProvider interface {
+	GetMetrics() map[string]MetricLoader
+}
+
+type MetricLoader func () prometheus.Metric
+
+func NewMetricsRegistry(metricsProvider MetricsProvider, informer cache.SharedIndexInformer, includeLegacyMetrics bool) *prometheus.Registry {
 	registry := prometheus.NewRegistry()
-	registry.MustRegister(&customMetricsCollector{controller: controller})
+	registry.MustRegister(&customMetricsCollector{provider: metricsProvider})
 
 	if includeLegacyMetrics {
 		workflowLister := util.NewWorkflowLister(informer)
