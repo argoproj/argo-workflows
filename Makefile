@@ -443,16 +443,16 @@ clients/java/README.md: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar ap
 	java \
 		-jar dist/openapi-generator-cli.jar \
 		generate \
-        -i api/openapi-spec/swagger.json \
-        -g java \
-        -p hideGenerationTimestamp=true \
-        -o clients/java \
-        --invoker-package io.argoproj.argo \
-        --api-package io.argoproj.argo.api \
-        --model-package io.argoproj.argo.model \
-        --group-id io.argoproj.argo \
-        --artifact-id argo-workflows-java-client \
-        --artifact-version $(MANIFESTS_VERSION)
+		-i api/openapi-spec/swagger.json \
+		-g java \
+		-p hideGenerationTimestamp=true \
+		-o clients/java \
+		--invoker-package io.argoproj.argo \
+		--api-package io.argoproj.argo.api \
+		--model-package io.argoproj.argo.model \
+		--group-id io.argoproj.argo \
+		--artifact-id argo-workflows-java-client \
+		--artifact-version $(MANIFESTS_VERSION)
 
 clients/python/README.md: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/openapi-spec/swagger.json
 	mkdir -p clients/python
