@@ -459,11 +459,11 @@ clients/python/README.md: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar 
 	java \
 		-jar dist/openapi-generator-cli.jar \
 		generate \
-        -i api/openapi-spec/swagger.json \
-        -g python \
+		-i api/openapi-spec/swagger.json \
+		-g python \
 		-p packageName=io_argoproj_argo \
 		-p packageVersion=$(MANIFESTS_VERSION) \
-        -o clients/python \
+		-o clients/python \
     # Python tests seem to be garbage
 	rm -Rf clients/python/test
 
