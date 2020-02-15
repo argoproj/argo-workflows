@@ -142,7 +142,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 
 func (r *workflowArchive) ListWorkflows(namespace string, labelRequirements labels.Requirements, limit int, offset int) (wfv1.Workflows, error) {
 	var archivedWfs []archivedWorkflowMetadata
-	clause, err := r.dbType.labelsClause(labelRequirements)
+	clause, err := labelsClause(r.dbType, labelRequirements)
 	if err != nil {
 		return nil, err
 	}
