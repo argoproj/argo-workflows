@@ -3,10 +3,10 @@ package io.argoproj.argo.server.client;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import io.argoproj.argo.client.ApiClient;
-import io.argoproj.argo.client.ApiException;
-import io.argoproj.argo.client.model.V1alpha1Workflow;
 import okhttp3.Response;
+import org.openapitools.client.ApiClient;
+import org.openapitools.client.ApiException;
+import org.openapitools.client.model.V1alpha1Workflow;
 
 import java.io.IOException;
 

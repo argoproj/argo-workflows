@@ -1,11 +1,11 @@
 package io.argoproj.argo.server.client;
 
-import io.argoproj.argo.client.ApiClient;
-import io.argoproj.argo.client.ApiException;
-import io.argoproj.argo.client.JSON;
-import io.argoproj.argo.client.api.WorkflowServiceApi;
-import io.argoproj.argo.client.model.V1alpha1Workflow;
-import io.argoproj.argo.client.model.WorkflowWorkflowCreateRequest;
+import org.openapitools.client.ApiClient;
+import org.openapitools.client.ApiException;
+import org.openapitools.client.JSON;
+import org.openapitools.client.api.WorkflowServiceApi;
+import org.openapitools.client.model.V1alpha1Workflow;
+import org.openapitools.client.model.WorkflowWorkflowCreateRequest;
 
 public class ArgoServerAPI {
 

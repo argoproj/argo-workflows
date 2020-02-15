@@ -1,7 +1,7 @@
 package io.argoproj.argo.server.client;
 
-import io.argoproj.argo.client.model.*;
 import org.junit.Test;
+import org.openapitools.client.model.*;
 
 import java.util.ArrayList;
 import java.util.Collections;

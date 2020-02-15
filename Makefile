@@ -212,6 +212,7 @@ manifests: status manifests/install.yaml manifests/namespace-install.yaml manife
 
 # we use a different file to ./VERSION to force updating manifests after a `make clean`
 dist/MANIFESTS_VERSION:
+	mkdir -p dist
 	echo $(MANIFESTS_VERSION) > dist/MANIFESTS_VERSION
 
 manifests/install.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
@@ -417,8 +418,9 @@ clean:
 	# Delete build files
 	rm -Rf dist ui/dist
 	# Delete clients compiled code
-	rm -Rf clients/java/target
+	rm -Rf clients/java
 	rm -Rf clients/java-test/target
+	rm -Rf clients/python
 
 # swagger
 
@@ -438,21 +440,27 @@ clients: clients/java/README.md clients/python/README.md
 
 clients/%/README.md: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/openapi-spec/swagger.json
 	mkdir -p clients/$*
-	java -jar dist/openapi-generator-cli.jar generate \
+	java \
+		-jar dist/openapi-generator-cli.jar \
+		generate \
         -i api/openapi-spec/swagger.json \
         -g $* \
         -p hideGenerationTimestamp=true \
+		-p modelDocs=false \
+		-p apiTests=false \
+		-p modelTests=false \
+		-p packageName=io.argoproj.argo \
+		-p packageVersion=$(MANIFESTS_VERSION) \
         -o clients/$* \
-        --invoker-package io.argoproj.argo.client \
-        --api-package io.argoproj.argo.client.api \
-        --model-package io.argoproj.argo.client.model \
         --group-id io.argoproj.argo \
         --artifact-id argo-workflows-$*-client \
         --artifact-version $(MANIFESTS_VERSION)
 
 .PHONY: test-clients
 test-clients: clients
-	cd clients/java && mvn install -DskipTests -Dmaven.javadoc.skip=true
+	cd clients/python && python3 setup.py test
+	cd clients/python && python3 setup.py install
+	cd clients/java && mvn install -Dmaven.javadoc.skip=true
 	eval `make env` && cd clients/java-test && mvn verify
 
 # pre-push

@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonParseException;
-import io.argoproj.argo.client.model.V1Time;
+import org.openapitools.client.model.V1Time;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
