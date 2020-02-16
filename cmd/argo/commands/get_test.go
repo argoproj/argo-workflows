@@ -12,10 +12,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// TestPrintNode
-func TestPrintNode(t *testing.T) {
+func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, nodePrefix string, getArgs getFlags) {
 	var result bytes.Buffer
 	w := tabwriter.NewWriter(&result, 0, 8, 1, '\t', 0)
+	printNode(w, node, nodePrefix, getArgs)
+	w.Flush()
+	assert.Equal(t, expected, result.String())
+}
+
+// TestPrintNode
+func TestPrintNode(t *testing.T) {
 	nodeName := "testNode"
 	nodePrefix := ""
 	nodeTemplateName := "testTemplate"
@@ -39,48 +45,23 @@ func TestPrintNode(t *testing.T) {
 		FinishedAt:  timestamp,
 		Message:     nodeMessage,
 	}
-
-	printNode(w, node, nodePrefix, getArgs)
-	w.Flush()
-	assert.Equal(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), result.String())
-	result.Reset()
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
 
 	node.TemplateName = nodeTemplateName
-	printNode(w, node, nodePrefix, getArgs)
-	w.Flush()
-	assert.Equal(t, fmt.Sprintf("%s %s (%s)\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, nodeID, "0s", nodeMessage), result.String())
-	result.Reset()
-
-	node.TemplateName = nodeTemplateName
-	printNode(w, node, nodePrefix, getArgs)
-	w.Flush()
-	assert.Equal(t, fmt.Sprintf("%s %s (%s)\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, nodeID, "0s", nodeMessage), result.String())
-	result.Reset()
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s (%s)\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
 
 	node.Type = wfv1.NodeTypeSuspend
-	printNode(w, node, nodePrefix, getArgs)
-	w.Flush()
-	assert.Equal(t, fmt.Sprintf("%s %s (%s)\t%s\t%s\t%s\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateName, "", "", nodeMessage), result.String())
-	result.Reset()
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s (%s)\t%s\t%s\t%s\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateName, "", "", nodeMessage), node, nodePrefix, getArgs)
 
 	node.TemplateRef = &wfv1.TemplateRef{
 		Name:     nodeTemplateRefName,
 		Template: nodeTemplateRefName,
 	}
-	printNode(w, node, nodePrefix, getArgs)
-	w.Flush()
-	assert.Equal(t, fmt.Sprintf("%s %s (%s/%s)\t%s\t%s\t%s\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", nodeMessage), result.String())
-	result.Reset()
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s (%s/%s)\t%s\t%s\t%s\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", nodeMessage), node, nodePrefix, getArgs)
 
 	getArgs.output = "wide"
-	printNode(w, node, nodePrefix, getArgs)
-	w.Flush()
-	assert.Equal(t, fmt.Sprintf("%s %s (%s/%s)\t%s\t%s\t%s\t%s\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", getArtifactsString(node), nodeMessage), result.String())
-	result.Reset()
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s (%s/%s)\t%s\t%s\t%s\t%s\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", getArtifactsString(node), nodeMessage), node, nodePrefix, getArgs)
 
 	getArgs.status = "foobar"
-	printNode(w, node, nodePrefix, getArgs)
-	w.Flush()
-	assert.Equal(t, "", result.String())
-	result.Reset()
+	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
 }
