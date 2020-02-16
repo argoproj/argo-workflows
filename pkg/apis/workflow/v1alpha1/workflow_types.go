@@ -1005,6 +1005,11 @@ func (n *NodeStatus) IsResolvable() bool {
 	return true
 }
 
+// IsActiveSuspendNode returns whether this node is an active suspend node
+func (n *NodeStatus) IsActiveSuspendNode() bool {
+	return n.Type == NodeTypeSuspend && n.Phase == NodeRunning
+}
+
 // S3Bucket contains the access information required for interfacing with an S3 bucket
 type S3Bucket struct {
 	// Endpoint is the hostname of the bucket endpoint

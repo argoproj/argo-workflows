@@ -753,7 +753,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 func (woc *wfOperationCtx) failSuspendedNodesAfterDeadline() error {
 	if woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline) {
 		for _, node := range woc.wf.Status.Nodes {
-			if node.Type == wfv1.NodeTypeSuspend && node.Phase == wfv1.NodeRunning {
+			if node.IsActiveSuspendNode() {
 				var message string
 				if woc.workflowDeadline.IsZero() {
 					message = "terminated"
