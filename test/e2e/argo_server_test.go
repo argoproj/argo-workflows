@@ -795,7 +795,19 @@ func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 	}
 	var uid types.UID
 	s.Given().
-		Workflow("@smoke/basic.yaml").
+		Workflow(`
+metadata:
+  name: archie
+  labels:
+    argo-e2e: 1
+spec:
+  entrypoint: run-archie
+  templates:
+    - name: run-archie
+      container:
+        image: cowsay:v1
+        command: [cowsay, ":) Hello Argo!"]
+        imagePullPolicy: IfNotPresent`).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(20 * time.Second).
@@ -803,23 +815,60 @@ func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
 		})
-	s.Run("List", func() {
-		s.Given().
-			Workflow("@smoke/basic-2.yaml").
-			When().
-			SubmitWorkflow().
-			WaitForWorkflow(20 * time.Second)
+	s.Given().
+		Workflow(`
+metadata:
+  name: betty
+  labels:
+    argo-e2e: 2
+spec:
+  entrypoint: run-betty
+  templates:
+    - name: run-betty
+      container:
+        image: cowsay:v1
+        command: [cowsay, ":) Hello Argo!"]
+        imagePullPolicy: IfNotPresent`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(20 * time.Second)
 
-		s.e(s.T()).GET("/api/v1/archived-workflows").
-			WithQuery("listOptions.labelSelector", "argo-e2e").
-			Expect().
-			Status(200).
-			JSON().
-			Path("$.items").
-			Array().
-			Length().
-			Equal(2)
+	for _, tt := range []struct {
+		name     string
+		selector string
+		wantLen  int
+	}{
+		{"ListDoesNotExist", "!argo-e2e", 0},
+		{"ListEquals", "argo-e2e=1", 1},
+		{"ListDoubleEquals", "argo-e2e==1", 1},
+		{"ListIn", "argo-e2e in (1)", 1},
+		{"ListNotEquals", "argo-e2e!=1", 1},
+		{"ListNotIn", "argo-e2e notin (1)", 1},
+		{"ListExists", "argo-e2e", 2},
+		{"ListGreaterThan0", "argo-e2e>0", 2},
+		{"ListGreaterThan1", "argo-e2e>1", 1},
+		{"ListLessThan1", "argo-e2e<1", 0},
+		{"ListLessThan2", "argo-e2e<2", 1},
+	} {
+		s.Run(tt.name, func() {
+			path := s.e(s.T()).GET("/api/v1/archived-workflows").
+				WithQuery("listOptions.labelSelector", tt.selector).
+				Expect().
+				Status(200).
+				JSON().
+				Path("$.items")
 
+			if tt.wantLen == 0 {
+				path.Null()
+			} else {
+				path.Array().
+					Length().
+					Equal(tt.wantLen)
+			}
+		})
+	}
+
+	s.Run("ListWithLimitAndOffset", func() {
 		j := s.e(s.T()).GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "argo-e2e").
 			WithQuery("listOptions.limit", 1).
@@ -846,7 +895,7 @@ func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 			Status(200).
 			JSON().
 			Path("$.metadata.name").
-			Equal("basic")
+			Equal("archie")
 	})
 
 	s.Run("Delete", func() {

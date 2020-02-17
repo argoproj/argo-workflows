@@ -18,7 +18,8 @@ import (
 
 func NewListCommand() *cobra.Command {
 	var (
-		output string
+		selector string
+		output   string
 	)
 	var command = &cobra.Command{
 		Use: "list",
@@ -30,6 +31,7 @@ func NewListCommand() *cobra.Command {
 			resp, err := serviceClient.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{
 				ListOptions: &metav1.ListOptions{
 					FieldSelector: "metadata.namespace=" + namespace,
+					LabelSelector: selector,
 				},
 			})
 			errors.CheckError(err)
@@ -57,5 +59,6 @@ func NewListCommand() *cobra.Command {
 		},
 	}
 	command.Flags().StringVarP(&output, "output", "o", "wide", "Output format. One of: json|yaml|wide")
+	command.Flags().StringVarP(&selector, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones")
 	return command
 }
