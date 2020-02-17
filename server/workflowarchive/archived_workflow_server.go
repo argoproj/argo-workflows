@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/argoproj/argo/persist/sqldb"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
@@ -50,15 +51,21 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		namespace = strings.TrimPrefix(options.FieldSelector, "metadata.namespace=")
 	}
 
+	requirements, err := labels.ParseToRequirements(options.LabelSelector)
+	if err != nil {
+		return nil, err
+	}
+
 	items := make(wfv1.Workflows, 0)
 	authorizer := auth.NewAuthorizer(ctx)
 	// keep trying until we have enough
 	for len(items) < limit {
-		moreItems, err := w.wfArchive.ListWorkflows(namespace, limit, offset)
+		moreItems, err := w.wfArchive.ListWorkflows(namespace, requirements, limit, offset)
 		if err != nil {
 			return nil, err
 		}
 		for _, wf := range moreItems {
+			// TODO second pass filtering?
 			allowed, err := authorizer.CanI("get", workflow.WorkflowPlural, wf.Namespace, wf.Name)
 			if err != nil {
 				return nil, err
