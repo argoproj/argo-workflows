@@ -356,7 +356,7 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error 
 		}
 		// To resume a workflow with a suspended node we simply mark the node as Successful
 		for nodeID, node := range wf.Status.Nodes {
-			if node.Type == wfv1.NodeTypeSuspend && node.Phase == wfv1.NodeRunning {
+			if node.IsActiveSuspendNode() {
 				node.Phase = wfv1.NodeSucceeded
 				node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 				wf.Status.Nodes[nodeID] = node
@@ -585,7 +585,7 @@ func IsWorkflowSuspended(wf *wfv1.Workflow) bool {
 		return true
 	}
 	for _, node := range wf.Status.Nodes {
-		if node.Type == wfv1.NodeTypeSuspend && node.Phase == wfv1.NodeRunning {
+		if node.IsActiveSuspendNode() {
 			return true
 		}
 	}
