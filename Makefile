@@ -42,6 +42,15 @@ MANIFESTS_VERSION     := latest
 DEV_IMAGE             := true
 endif
 
+# the JAVA_CLIENT_VERSION should always be 1-SNAPSHOT unless releasing
+ifeq ($(findstring release,$(GIT_BRANCH)),release)
+JAVA_CLIENT_VERSION   := 1-SNAPSHOT
+else
+JAVA_CLIENT_VERSION   := $(MANIFESTS_VERSION)
+endif
+
+PYTHON_CLIENT_VERSION := $(MANIFESTS_VERSION)
+
 # perform static compilation
 STATIC_BUILD          ?= true
 CI                    ?= false
@@ -71,9 +80,7 @@ E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
 # the sort puts _.primary first in the list
 SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json' | sort)
-
-JAVA_FILES       := $(shell find clients/java/src/main/java -type f)
-JAVA_JAR         := $(HOME)/.m2/repository/io/argoproj/argo/argo-workflows-java-client/latest/argo-workflows-java-client-$(MANIFESTS_VERSION).jar
+JAVA_CLIENT_JAR  := $(HOME)/.m2/repository/io/argoproj/argo/argo-workflows-java-client/$(JAVA_CLIENT_VERSION)/argo-workflows-java-client-$(JAVA_CLIENT_VERSION).jar
 
 .PHONY: build
 build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml clients
@@ -436,6 +443,7 @@ api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) dist/MANI
 # clients
 
 dist/openapi-generator-cli.jar:
+	mkdir -p dist
 	curl -L -o dist/openapi-generator-cli.jar https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/4.2.3/openapi-generator-cli-4.2.3.jar
 
 .PHONY: clients
@@ -446,10 +454,7 @@ test-clients: test-java-client test-python-client
 
 # java client
 
-.PHONY: java-client
-java-client: clients/java/README.md $(JAVA_JAR)
-
-clients/java/README.md: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/openapi-spec/swagger.json
+clients/java/pom.xml: dist/openapi-generator-cli.jar api/openapi-spec/swagger.json
 	mkdir -p clients/java
 	java \
 		-jar dist/openapi-generator-cli.jar \
@@ -457,29 +462,38 @@ clients/java/README.md: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar ap
 		-i api/openapi-spec/swagger.json \
 		-g java \
 		-p hideGenerationTimestamp=true \
+		-p dateLibrary=joda \
 		-o clients/java \
 		--invoker-package io.argoproj.argo \
 		--api-package io.argoproj.argo.api \
 		--model-package io.argoproj.argo.model \
 		--group-id io.argoproj.argo \
 		--artifact-id argo-workflows-java-client \
-		--artifact-version $(MANIFESTS_VERSION)
+		--artifact-version $(JAVA_CLIENT_VERSION)
+	touch clients/java/pom.xml
 
+.PHONY: java-client
+java-client: $(JAVA_CLIENT_JAR)
 
-$(JAVA_JAR): $(JAVA_FILES)
-	cd clients/java && mvn install -DskipTests -Dmaven.javadoc.skip=true
+$(JAVA_CLIENT_JAR): clients/java/pom.xml
+	cd clients/java && mvn install -DskipTests -Dmaven.javadoc.skip
+
+.PHONY: publish-java-client
+publish-java-client: $(JAVA_CLIENT_JAR)
+	# https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-apache-maven-for-use-with-github-packages
+	cd clients/java && mvn deploy -DskipTests -Dmaven.javadoc.skip -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/argoproj/argo
 
 .PHONY: test-java-client
 test-java-client: java-client
-	cd clients/java && mvn install -Dmaven.javadoc.skip=true
-	eval `make env` && cd clients/java-test && mvn verify
+	cd clients/java && mvn install -Dmaven.javadoc.skip
+	eval `make env` && cd clients/java-test && mvn versions:set --DnewVersion=$(JAVA_CLIENT_VERSION) verify
 
 # python client
 
 .PHONY: python-client
 python-client: clients/python/README.md
 
-clients/python/README.md: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/openapi-spec/swagger.json
+clients/python/README.md: dist/openapi-generator-cli.jar api/openapi-spec/swagger.json
 	mkdir -p clients/python
 	java \
 		-jar dist/openapi-generator-cli.jar \
@@ -487,7 +501,7 @@ clients/python/README.md: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar 
 		-i api/openapi-spec/swagger.json \
 		-g python \
 		-p packageName=io_argoproj_argo \
-		-p packageVersion=$(MANIFESTS_VERSION) \
+		-p packageVersion=$(PYTHON_CLIENT_VERSION) \
 		-o clients/python \
     # Python tests seem to be garbage
 	rm -Rf clients/python/test
