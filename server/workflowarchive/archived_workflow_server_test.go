@@ -10,6 +10,7 @@ import (
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
@@ -44,8 +45,8 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		}, nil
 	})
 	// two pages of results for limit 1
-	repo.On("ListWorkflows", "", 1, 0).Return(wfv1.Workflows{{}}, nil)
-	repo.On("ListWorkflows", "", 1, 1).Return(wfv1.Workflows{}, nil)
+	repo.On("ListWorkflows", "", labels.Requirements(nil), 1, 0).Return(wfv1.Workflows{{}}, nil)
+	repo.On("ListWorkflows", "", labels.Requirements(nil), 1, 1).Return(wfv1.Workflows{}, nil)
 	repo.On("GetWorkflow", "").Return(nil, nil)
 	repo.On("GetWorkflow", "my-uid").Return(&wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-name"},
