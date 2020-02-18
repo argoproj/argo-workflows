@@ -3,14 +3,14 @@ package metrics
 import (
 	"context"
 	"fmt"
-	"github.com/argoproj/argo/workflow/config"
 	"net/http"
+
+	"github.com/argoproj/argo/workflow/config"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 )
-
 
 // RunServer starts a metrics server
 func RunServer(ctx context.Context, config config.PrometheusConfig, registry *prometheus.Registry) {

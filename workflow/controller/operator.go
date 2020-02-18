@@ -3,7 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo/workflow/metrics"
 	"math"
 	"os"
 	"reflect"
@@ -14,6 +13,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/argoproj/argo/workflow/metrics"
 
 	"github.com/argoproj/pkg/humanize"
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
@@ -256,7 +257,7 @@ func (woc *wfOperationCtx) operate() {
 
 	err = woc.computeWorkflowMetrics()
 	if err != nil {
-		woc.log.Error("Could not emit metrics for workflow '%s': %s", woc.wf.ObjectMeta.Name, err)
+		woc.log.Errorf("Could not emit metrics for workflow '%s': %s", woc.wf.ObjectMeta.Name, err)
 	}
 
 	if node == nil || !node.Completed() {
@@ -2218,7 +2219,7 @@ func (woc *wfOperationCtx) processMetric(metric *wfv1.Metric) error {
 	return nil
 }
 
-func (woc *wfOperationCtx) computeWorkflowMetricValue(value wfv1.MetricValue) (func () float64, error) {
+func (woc *wfOperationCtx) computeWorkflowMetricValue(value wfv1.MetricValue) (func() float64, error) {
 	if value.Literal != "" {
 		val, err := strconv.ParseFloat(value.Literal, 64)
 		if err != nil {
@@ -2233,7 +2234,10 @@ func (woc *wfOperationCtx) computeWorkflowMetricValue(value wfv1.MetricValue) (f
 		switch value.Computed {
 		case wfv1.ComputedValueWorkflowDuration:
 			return func() float64 {
-				return time.Now().Sub(woc.wf.Status.StartedAt.Time).Seconds()
+				if woc.wf.Status.Completed() {
+					return woc.wf.Status.FinishedAt.Time.Sub(woc.wf.Status.StartedAt.Time).Seconds()
+				}
+				return time.Since(woc.wf.Status.StartedAt.Time).Seconds()
 			}, nil
 		}
 	}

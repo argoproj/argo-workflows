@@ -1,10 +1,12 @@
 package metrics
 
 import (
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/util"
-	"github.com/prometheus/client_golang/prometheus"
-	"strings"
 )
 
 var (
@@ -46,7 +48,6 @@ var (
 type workflowCollector struct {
 	store util.WorkflowLister
 }
-
 
 // Describe implements the prometheus.Collector interface
 func (wc *workflowCollector) Describe(ch chan<- *prometheus.Desc) {
@@ -113,4 +114,3 @@ func boolFloat64(b bool) float64 {
 	}
 	return 0
 }
-

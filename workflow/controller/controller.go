@@ -113,6 +113,7 @@ func NewWorkflowController(
 		podQueue:                   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
+		Metrics:                    make(map[string]metrics.MetricLoader),
 	}
 	wfc.throttler = NewThrottler(0, wfc.wfQueue)
 	return &wfc

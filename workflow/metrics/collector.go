@@ -1,9 +1,10 @@
 package metrics
 
 import (
+	"os"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/tools/cache"
-	"os"
 
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -13,7 +14,7 @@ type MetricsProvider interface {
 	GetMetrics() map[string]MetricLoader
 }
 
-type MetricLoader func () prometheus.Metric
+type MetricLoader func() prometheus.Metric
 
 func NewMetricsRegistry(metricsProvider MetricsProvider, informer cache.SharedIndexInformer, includeLegacyMetrics bool) *prometheus.Registry {
 	registry := prometheus.NewRegistry()

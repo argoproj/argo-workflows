@@ -173,4 +173,3 @@ type PrometheusConfig struct {
 	Path    string `json:"path,omitempty"`
 	Port    string `json:"port,omitempty"`
 }
-
