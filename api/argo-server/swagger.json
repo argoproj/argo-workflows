@@ -9,7 +9,7 @@
   "info": {
     "description": "Argo Server",
     "title": "Argo Server",
-    "version": "latest"
+    "version": "metrics2"
   },
   "paths": {
     "/api/v1/archived-workflows": {
@@ -4228,6 +4228,17 @@
         }
       }
     },
+    "v1alpha1EmitMetrics": {
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1alpha1Metric"
+          }
+        }
+      }
+    },
     "v1alpha1ExecutorConfig": {
       "description": "ExecutorConfig holds configurations of an executor container.",
       "type": "object",
@@ -4235,6 +4246,14 @@
         "serviceAccountName": {
           "description": "ServiceAccountName specifies the service account name of the executor container.",
           "type": "string"
+        }
+      }
+    },
+    "v1alpha1Gauge": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "$ref": "#/definitions/v1alpha1MetricValue"
         }
       }
     },
@@ -4460,6 +4479,48 @@
           "additionalProperties": {
             "type": "string"
           }
+        }
+      }
+    },
+    "v1alpha1Metric": {
+      "type": "object",
+      "properties": {
+        "gauge": {
+          "$ref": "#/definitions/v1alpha1Gauge"
+        },
+        "help": {
+          "type": "string"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1alpha1MetricLabels"
+          }
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "v1alpha1MetricLabels": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "v1alpha1MetricValue": {
+      "type": "object",
+      "properties": {
+        "computed": {
+          "type": "string"
+        },
+        "literal": {
+          "type": "string"
         }
       }
     },
@@ -4994,6 +5055,9 @@
         "dnsPolicy": {
           "description": "Set DNS policy for the pod.\nDefaults to \"ClusterFirst\".\nValid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'.\nDNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy.\nTo have DNS options set along with hostNetwork, you have to specify DNS policy\nexplicitly to 'ClusterFirstWithHostNet'.",
           "type": "string"
+        },
+        "emitMetrics": {
+          "$ref": "#/definitions/v1alpha1EmitMetrics"
         },
         "entrypoint": {
           "type": "string",

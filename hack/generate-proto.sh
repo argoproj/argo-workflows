@@ -9,19 +9,17 @@ go get github.com/gogo/protobuf/gogoproto@v1.3.1
 
 go install k8s.io/code-generator/cmd/go-to-protobuf
 
-echo "================BEFORE====="
-
 go-to-protobuf \
     --go-header-file=./hack/custom-boilerplate.go.txt \
     --packages=github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
-    --apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1
-
-echo "================DONE====="
+    --apimachinery-packages=+k8s.io/apimachinery/pkg/util/intstr,+k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime/schema,+k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/api/core/v1 \
+    --proto-import ./vendor
 
 for f in $(find pkg -name '*.proto'); do
     protoc \
         -I /usr/local/include \
         -I . \
+        -I ./vendor \
         -I ${GOPATH}/src \
         -I ${GOPATH}/pkg/mod/github.com/gogo/protobuf@v1.3.1/gogoproto \
         -I ${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.12.1/third_party/googleapis \

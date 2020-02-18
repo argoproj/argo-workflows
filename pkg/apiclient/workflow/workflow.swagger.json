@@ -3440,6 +3440,17 @@
       },
       "title": "DAGTemplate is a template subtype for directed acyclic graph templates"
     },
+    "v1alpha1EmitMetrics": {
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1alpha1Metric"
+          }
+        }
+      }
+    },
     "v1alpha1ExecutorConfig": {
       "type": "object",
       "properties": {
@@ -3449,6 +3460,14 @@
         }
       },
       "description": "ExecutorConfig holds configurations of an executor container."
+    },
+    "v1alpha1Gauge": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "$ref": "#/definitions/v1alpha1MetricValue"
+        }
+      }
     },
     "v1alpha1GitArtifact": {
       "type": "object",
@@ -3674,6 +3693,48 @@
         }
       },
       "title": "Pod metdata"
+    },
+    "v1alpha1Metric": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1alpha1MetricLabels"
+          }
+        },
+        "help": {
+          "type": "string"
+        },
+        "gauge": {
+          "$ref": "#/definitions/v1alpha1Gauge"
+        }
+      }
+    },
+    "v1alpha1MetricLabels": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "v1alpha1MetricValue": {
+      "type": "object",
+      "properties": {
+        "literal": {
+          "type": "string"
+        },
+        "computed": {
+          "type": "string"
+        }
+      }
     },
     "v1alpha1NoneStrategy": {
       "type": "object",
@@ -4324,6 +4385,9 @@
         "podSpecPatch": {
           "type": "string",
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of\ncontainer fields which are not strings (e.g. resource limits)."
+        },
+        "emitMetrics": {
+          "$ref": "#/definitions/v1alpha1EmitMetrics"
         }
       },
       "description": "WorkflowSpec is the specification of a Workflow."

@@ -415,6 +415,20 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.EmitMetrics": {
+      "type": "object",
+      "required": [
+        "metrics"
+      ],
+      "properties": {
+        "metrics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metric"
+          }
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.ExecutorConfig": {
       "description": "ExecutorConfig holds configurations of an executor container.",
       "type": "object",
@@ -422,6 +436,17 @@
         "serviceAccountName": {
           "description": "ServiceAccountName specifies the service account name of the executor container.",
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Gauge": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MetricValue"
         }
       }
     },
@@ -610,6 +635,25 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Histogram": {
+      "type": "object",
+      "required": [
+        "value",
+        "bins"
+      ],
+      "properties": {
+        "bins": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Inputs": {
       "description": "Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another",
       "type": "object",
@@ -693,6 +737,62 @@
           "additionalProperties": {
             "type": "string"
           }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Metric": {
+      "type": "object",
+      "required": [
+        "name",
+        "labels",
+        "help",
+        "gauge"
+      ],
+      "properties": {
+        "gauge": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Gauge"
+        },
+        "help": {
+          "type": "string"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MetricLabels"
+          }
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.MetricLabels": {
+      "type": "object",
+      "required": [
+        "key",
+        "value"
+      ],
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.MetricValue": {
+      "type": "object",
+      "required": [
+        "literal",
+        "computed"
+      ],
+      "properties": {
+        "computed": {
+          "type": "string"
+        },
+        "literal": {
+          "type": "string"
         }
       }
     },
@@ -1660,6 +1760,9 @@
         "dnsPolicy": {
           "description": "Set DNS policy for the pod. Defaults to \"ClusterFirst\". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.",
           "type": "string"
+        },
+        "emitMetrics": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EmitMetrics"
         },
         "entrypoint": {
           "description": "Entrypoint is a template reference to the starting point of the workflow",

@@ -277,7 +277,7 @@ type WorkflowSpec struct {
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,27,opt,name=podSpecPatch"`
 
-	EmitMetrics *EmitMetrics `json:"emitMetrics,omitempty"`
+	EmitMetrics *EmitMetrics `json:"emitMetrics,omitempty" protobuf:"bytes,31,opt,name=emitMetrics"`
 }
 
 type ParallelSteps struct {
@@ -1515,14 +1515,14 @@ const (
 )
 
 type EmitMetrics struct {
-	Metrics []*Metric `json:"metrics"`
+	Metrics []*Metric `json:"metrics" protobuf:"bytes,1,rep,name=metrics"`
 }
 
 type Metric struct {
-	Name   string          `json:"name"`
-	Labels []*MetricLabels `json:"labels"`
-	Help   string          `json:"help"`
-	Gauge  *Gauge          `json:"gauge"`
+	Name   string          `json:"name" protobuf:"bytes,1,opt,name=name"`
+	Labels []*MetricLabels `json:"labels" protobuf:"bytes,2,rep,name=labels"`
+	Help   string          `json:"help" protobuf:"bytes,3,opt,name=help"`
+	Gauge  *Gauge          `json:"gauge" protobuf:"bytes,4,opt,name=gauge"`
 }
 
 func (m *Metric) GetMetricLabels() ([]string, []string) {
@@ -1552,20 +1552,20 @@ func (m *Metric) GetMetricValue() MetricValue {
 }
 
 type MetricLabels struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
+	Key   string `json:"key" protobuf:"bytes,1,opt,name=key"`
+	Value string `json:"value" protobuf:"bytes,2,opt,name=value"`
 }
 
 type Gauge struct {
-	Value MetricValue `json:"value"`
+	Value MetricValue `json:"value" protobuf:"bytes,1,opt,name=value"`
 }
 
 type MetricValue struct {
-	Literal  string        `json:"literal"`
-	Computed ComputedValue `json:"computed"`
+	Literal  string        `json:"literal" protobuf:"bytes,1,opt,name=literal"`
+	Computed ComputedValue `json:"computed" protobuf:"bytes,2,opt,name=computed,casttype=ComputedValue"`
 }
 
 type Histogram struct {
-	Value string `json:"value"`
-	Bins  []int  `json:"bins"`
+	Value string  `json:"value" protobuf:"bytes,1,opt,name=value"`
+	Bins  []int64 `json:"bins" protobuf:"varint,2,rep,name=bins"`
 }
