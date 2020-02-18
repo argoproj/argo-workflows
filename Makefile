@@ -72,6 +72,9 @@ E2E_EXECUTOR     ?= pns
 # the sort puts _.primary first in the list
 SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json' | sort)
 
+JAVA_FILES       := $(shell find clients/java/src/main/java -type f)
+JAVA_JAR         := $(HOME)/.m2/repository/io/argoproj/argo/argo-workflows-java-client/latest/argo-workflows-java-client-$(MANIFESTS_VERSION).jar
+
 .PHONY: build
 build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml clients
 
@@ -436,7 +439,15 @@ dist/openapi-generator-cli.jar:
 	curl -L -o dist/openapi-generator-cli.jar https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/4.2.3/openapi-generator-cli-4.2.3.jar
 
 .PHONY: clients
-clients: clients/java/README.md clients/python/README.md
+clients: java-client python-client
+
+.PHONY: test-clients
+test-clients: test-java-client test-python-client
+
+# java client
+
+.PHONY: java-client
+java-client: clients/java/README.md $(JAVA_JAR)
 
 clients/java/README.md: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/openapi-spec/swagger.json
 	mkdir -p clients/java
@@ -454,6 +465,20 @@ clients/java/README.md: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar ap
 		--artifact-id argo-workflows-java-client \
 		--artifact-version $(MANIFESTS_VERSION)
 
+
+$(JAVA_JAR): $(JAVA_FILES)
+	cd clients/java && mvn install -DskipTests -Dmaven.javadoc.skip=true
+
+.PHONY: test-java-client
+test-java-client: java-client
+	cd clients/java && mvn install -Dmaven.javadoc.skip=true
+	eval `make env` && cd clients/java-test && mvn verify
+
+# python client
+
+.PHONY: python-client
+python-client: clients/python/README.md
+
 clients/python/README.md: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar api/openapi-spec/swagger.json
 	mkdir -p clients/python
 	java \
@@ -467,12 +492,10 @@ clients/python/README.md: dist/MANIFESTS_VERSION dist/openapi-generator-cli.jar 
     # Python tests seem to be garbage
 	rm -Rf clients/python/test
 
-.PHONY: test-clients
-test-clients: clients
+.PHONY: test-python-client
+test-python-client: python-client
 	cd clients/python && python3 setup.py test
 	cd clients/python && python3 setup.py install
-	cd clients/java && mvn install -Dmaven.javadoc.skip=true
-	eval `make env` && cd clients/java-test && mvn verify
 
 # pre-push
 
