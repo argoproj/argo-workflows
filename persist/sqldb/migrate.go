@@ -210,6 +210,11 @@ func (m migrate) Exec(ctx context.Context) error {
     primary key (clustername, uid, name),
  	foreign key (clustername, uid) references argo_archived_workflows(clustername, uid) on delete cascade
 )`),
+		// MySQL can only store 64k in a TEXT field, both MySQL and Posgres can store 1GB in JSON.
+		ternary(dbType == MySQL,
+			ansiSQLChange(`alter table `+m.tableName+` modify column nodes json not null`),
+			ansiSQLChange(`alter table `+m.tableName+` alter column nodes type json using nodes::json`),
+		),
 	} {
 		err := m.applyChange(ctx, changeSchemaVersion, change)
 		if err != nil {
