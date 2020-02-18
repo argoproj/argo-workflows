@@ -58,13 +58,17 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 
 	items := make(wfv1.Workflows, 0)
 	authorizer := auth.NewAuthorizer(ctx)
+	hasMore := true
 	// keep trying until we have enough
 	for len(items) < limit {
-		moreItems, err := w.wfArchive.ListWorkflows(namespace, requirements, limit, offset)
+		moreItems, err := w.wfArchive.ListWorkflows(namespace, requirements, limit+1, offset)
 		if err != nil {
 			return nil, err
 		}
-		for _, wf := range moreItems {
+		for index, wf := range moreItems {
+			if index == limit {
+				break
+			}
 			// TODO second pass filtering?
 			allowed, err := authorizer.CanI("get", workflow.WorkflowPlural, wf.Namespace, wf.Name)
 			if err != nil {
@@ -74,13 +78,14 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 				items = append(items, wf)
 			}
 		}
-		if len(moreItems) < limit {
+		if len(moreItems) < limit+1 {
+			hasMore = false
 			break
 		}
 		offset = offset + limit
 	}
 	meta := metav1.ListMeta{}
-	if len(items) >= limit {
+	if hasMore {
 		meta.Continue = fmt.Sprintf("%v", offset)
 	}
 	sort.Sort(items)

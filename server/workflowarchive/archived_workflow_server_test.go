@@ -45,8 +45,8 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		}, nil
 	})
 	// two pages of results for limit 1
-	repo.On("ListWorkflows", "", labels.Requirements(nil), 1, 0).Return(wfv1.Workflows{{}}, nil)
-	repo.On("ListWorkflows", "", labels.Requirements(nil), 1, 1).Return(wfv1.Workflows{}, nil)
+	repo.On("ListWorkflows", "", labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}, {}}, nil)
+	repo.On("ListWorkflows", "", labels.Requirements(nil), 2, 1).Return(wfv1.Workflows{{}}, nil)
 	repo.On("GetWorkflow", "").Return(nil, nil)
 	repo.On("GetWorkflow", "my-uid").Return(&wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-name"},
@@ -79,7 +79,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		}
 		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Continue: "1", Limit: 1}})
 		if assert.NoError(t, err) {
-			assert.Len(t, resp.Items, 0)
+			assert.Len(t, resp.Items, 1)
 			assert.Empty(t, resp.Continue)
 		}
 	})
