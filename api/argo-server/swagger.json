@@ -4378,6 +4378,21 @@
         }
       }
     },
+    "v1alpha1Histogram": {
+      "type": "object",
+      "properties": {
+        "bins": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "value": {
+          "$ref": "#/definitions/v1alpha1MetricValue"
+        }
+      }
+    },
     "v1alpha1Inputs": {
       "type": "object",
       "title": "Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another",
@@ -4490,6 +4505,9 @@
         },
         "help": {
           "type": "string"
+        },
+        "histogram": {
+          "$ref": "#/definitions/v1alpha1Histogram"
         },
         "labels": {
           "type": "array",

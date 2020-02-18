@@ -11,13 +11,13 @@ type customMetricsCollector struct {
 // Describe implements the prometheus.Collector interface
 func (cmc *customMetricsCollector) Describe(ch chan<- *prometheus.Desc) {
 	for _, metric := range cmc.provider.GetMetrics() {
-		ch <- metric().Desc()
+		ch <- metric.Desc()
 	}
 }
 
 // Collect implements the prometheus.Collector interface
 func (cmc *customMetricsCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, metric := range cmc.provider.GetMetrics() {
-		ch <- metric()
+		ch <- metric
 	}
 }

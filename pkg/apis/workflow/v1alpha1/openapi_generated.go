@@ -1197,8 +1197,7 @@ func schema_pkg_apis_workflow_v1alpha1_Histogram(ref common.ReferenceCallback) c
 				Properties: map[string]spec.Schema{
 					"value": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MetricValue"),
 						},
 					},
 					"bins": {
@@ -1207,8 +1206,8 @@ func schema_pkg_apis_workflow_v1alpha1_Histogram(ref common.ReferenceCallback) c
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type:   []string{"integer"},
-										Format: "int64",
+										Type:   []string{"number"},
+										Format: "double",
 									},
 								},
 							},
@@ -1218,6 +1217,8 @@ func schema_pkg_apis_workflow_v1alpha1_Histogram(ref common.ReferenceCallback) c
 				Required: []string{"value", "bins"},
 			},
 		},
+		Dependencies: []string{
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MetricValue"},
 	}
 }
 
@@ -1426,12 +1427,17 @@ func schema_pkg_apis_workflow_v1alpha1_Metric(ref common.ReferenceCallback) comm
 							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Gauge"),
 						},
 					},
+					"histogram": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Histogram"),
+						},
+					},
 				},
-				Required: []string{"name", "labels", "help", "gauge"},
+				Required: []string{"name", "labels", "help", "gauge", "histogram"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Gauge", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MetricLabels"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Gauge", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Histogram", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MetricLabels"},
 	}
 }
 

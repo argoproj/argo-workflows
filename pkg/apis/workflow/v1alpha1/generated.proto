@@ -343,9 +343,9 @@ message HTTPArtifact {
 }
 
 message Histogram {
-  optional string value = 1;
+  optional MetricValue value = 1;
 
-  repeated int64 bins = 2;
+  repeated double bins = 2;
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
@@ -413,6 +413,8 @@ message Metric {
   optional string help = 3;
 
   optional Gauge gauge = 4;
+
+  optional Histogram histogram = 5;
 }
 
 message MetricLabels {

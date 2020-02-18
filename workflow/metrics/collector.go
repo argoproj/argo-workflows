@@ -11,10 +11,8 @@ import (
 
 // TODO: What's the best place for these?
 type MetricsProvider interface {
-	GetMetrics() map[string]MetricLoader
+	GetMetrics() map[string]prometheus.Metric
 }
-
-type MetricLoader func() prometheus.Metric
 
 func NewMetricsRegistry(metricsProvider MetricsProvider, informer cache.SharedIndexInformer, includeLegacyMetrics bool) *prometheus.Registry {
 	registry := prometheus.NewRegistry()

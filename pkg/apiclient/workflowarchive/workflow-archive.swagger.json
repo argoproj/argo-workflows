@@ -2920,6 +2920,21 @@
       },
       "title": "HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container"
     },
+    "v1alpha1Histogram": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "$ref": "#/definitions/v1alpha1MetricValue"
+        },
+        "bins": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      }
+    },
     "v1alpha1Inputs": {
       "type": "object",
       "properties": {
@@ -3041,6 +3056,9 @@
         },
         "gauge": {
           "$ref": "#/definitions/v1alpha1Gauge"
+        },
+        "histogram": {
+          "$ref": "#/definitions/v1alpha1Histogram"
         }
       }
     },

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -77,7 +79,7 @@ type WorkflowController struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wfArchive             sqldb.WorkflowArchive
 
-	Metrics map[string]metrics.MetricLoader
+	Metrics map[string]prometheus.Metric
 }
 
 const (
@@ -113,7 +115,7 @@ func NewWorkflowController(
 		podQueue:                   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
-		Metrics:                    make(map[string]metrics.MetricLoader),
+		Metrics:                    make(map[string]prometheus.Metric),
 	}
 	wfc.throttler = NewThrottler(0, wfc.wfQueue)
 	return &wfc
@@ -620,6 +622,6 @@ func (wfc *WorkflowController) GetContainerRuntimeExecutor() string {
 	return wfc.Config.ContainerRuntimeExecutor
 }
 
-func (wfc *WorkflowController) GetMetrics() map[string]metrics.MetricLoader {
+func (wfc *WorkflowController) GetMetrics() map[string]prometheus.Metric {
 	return wfc.Metrics
 }

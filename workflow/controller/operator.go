@@ -2199,48 +2199,16 @@ func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID str
 
 func (woc *wfOperationCtx) computeWorkflowMetrics() error {
 	if woc.wf.Spec.EmitMetrics != nil {
-		for _, metric := range woc.wf.Spec.EmitMetrics.Metrics {
-			err := woc.processMetric(metric)
+		for _, metricSpec := range woc.wf.Spec.EmitMetrics.Metrics {
+
+			// TODO: metric.Name is absolutely not the correct key to use here, using it temporarily. Change this later
+			metric := woc.controller.Metrics[metricSpec.Name]
+			updatedMetric, err := metrics.ConstructOrUpdateMetric(metric, metricSpec, woc.wf)
 			if err != nil {
-				woc.log.Errorf("could not compute metric '%s' for Workflow '%s': %s", metric.Name, woc.wf.ObjectMeta.Name, err)
+				woc.log.Errorf("could not compute metric '%s' for Workflow '%s': %s", metricSpec.Name, woc.wf.ObjectMeta.Name, err)
 			}
+			woc.controller.Metrics[metricSpec.Name] = updatedMetric
 		}
 	}
 	return nil
-}
-
-func (woc *wfOperationCtx) processMetric(metric *wfv1.Metric) error {
-	metricVal, err := woc.computeWorkflowMetricValue(metric.GetMetricValue())
-	if err != nil {
-		return err
-	}
-	metricObj := metrics.ConstructMetric(metric, metricVal)
-	woc.controller.Metrics[metricObj().Desc().String()] = metricObj
-	return nil
-}
-
-func (woc *wfOperationCtx) computeWorkflowMetricValue(value wfv1.MetricValue) (func() float64, error) {
-	if value.Literal != "" {
-		val, err := strconv.ParseFloat(value.Literal, 64)
-		if err != nil {
-			return nil, err
-		}
-		return func() float64 {
-			return val
-		}, nil
-	}
-
-	if value.Computed != "" {
-		switch value.Computed {
-		case wfv1.ComputedValueWorkflowDuration:
-			return func() float64 {
-				if woc.wf.Status.Completed() {
-					return woc.wf.Status.FinishedAt.Time.Sub(woc.wf.Status.StartedAt.Time).Seconds()
-				}
-				return time.Since(woc.wf.Status.StartedAt.Time).Seconds()
-			}, nil
-		}
-	}
-
-	return nil, fmt.Errorf("metric does not specify a value source")
 }

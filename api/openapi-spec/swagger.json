@@ -645,12 +645,12 @@
         "bins": {
           "type": "array",
           "items": {
-            "type": "integer",
-            "format": "int64"
+            "type": "number",
+            "format": "double"
           }
         },
         "value": {
-          "type": "string"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MetricValue"
         }
       }
     },
@@ -746,7 +746,8 @@
         "name",
         "labels",
         "help",
-        "gauge"
+        "gauge",
+        "histogram"
       ],
       "properties": {
         "gauge": {
@@ -754,6 +755,9 @@
         },
         "help": {
           "type": "string"
+        },
+        "histogram": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Histogram"
         },
         "labels": {
           "type": "array",

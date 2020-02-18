@@ -1510,8 +1510,9 @@ const (
 type MetricType string
 
 const (
-	MetricTypeGauge   MetricType = "Gauge"
-	MetricTypeUnknown MetricType = "Unknown"
+	MetricTypeGauge     MetricType = "Gauge"
+	MetricTypeHistogram MetricType = "Histogram"
+	MetricTypeUnknown   MetricType = "Unknown"
 )
 
 type EmitMetrics struct {
@@ -1519,25 +1520,27 @@ type EmitMetrics struct {
 }
 
 type Metric struct {
-	Name   string          `json:"name" protobuf:"bytes,1,opt,name=name"`
-	Labels []*MetricLabels `json:"labels" protobuf:"bytes,2,rep,name=labels"`
-	Help   string          `json:"help" protobuf:"bytes,3,opt,name=help"`
-	Gauge  *Gauge          `json:"gauge" protobuf:"bytes,4,opt,name=gauge"`
+	Name      string          `json:"name" protobuf:"bytes,1,opt,name=name"`
+	Labels    []*MetricLabels `json:"labels" protobuf:"bytes,2,rep,name=labels"`
+	Help      string          `json:"help" protobuf:"bytes,3,opt,name=help"`
+	Gauge     *Gauge          `json:"gauge" protobuf:"bytes,4,opt,name=gauge"`
+	Histogram *Histogram      `json:"histogram" protobuf:"bytes,5,opt,name=histogram"`
 }
 
-func (m *Metric) GetMetricLabels() ([]string, []string) {
-	var keys []string
-	var values []string
+func (m *Metric) GetMetricLabels() map[string]string {
+	labels := make(map[string]string)
 	for _, label := range m.Labels {
-		keys = append(keys, label.Key)
-		values = append(values, label.Value)
+		labels[label.Key] = label.Value
 	}
-	return keys, values
+	return labels
 }
 
 func (m *Metric) GetMetricType() MetricType {
 	if m.Gauge != nil {
 		return MetricTypeGauge
+	}
+	if m.Histogram != nil {
+		return MetricTypeHistogram
 	}
 	return MetricTypeUnknown
 }
@@ -1546,6 +1549,8 @@ func (m *Metric) GetMetricValue() MetricValue {
 	switch m.GetMetricType() {
 	case MetricTypeGauge:
 		return m.Gauge.Value
+	case MetricTypeHistogram:
+		return m.Histogram.Value
 	default:
 		return MetricValue{}
 	}
@@ -1566,6 +1571,6 @@ type MetricValue struct {
 }
 
 type Histogram struct {
-	Value string  `json:"value" protobuf:"bytes,1,opt,name=value"`
-	Bins  []int64 `json:"bins" protobuf:"varint,2,rep,name=bins"`
+	Value MetricValue `json:"value" protobuf:"bytes,1,opt,name=value"`
+	Bins  []float64   `json:"bins" protobuf:"fixed64,2,rep,name=bins"`
 }
