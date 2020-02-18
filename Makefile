@@ -42,11 +42,12 @@ MANIFESTS_VERSION     := latest
 DEV_IMAGE             := true
 endif
 
-# the JAVA_CLIENT_VERSION should always be 1-SNAPSHOT unless releasing
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
-JAVA_CLIENT_VERSION   := 1-SNAPSHOT
+# be the version, but with "v" removed, e.g. "2.5.0" rather than "v2.5.0"
+JAVA_CLIENT_VERSION   := $(subst v,,$(VERSION))
 else
-JAVA_CLIENT_VERSION   := $(MANIFESTS_VERSION)
+# the JAVA_CLIENT_VERSION must be a snapshot (e.g. 1-SNAPSHOT) if we need to re-publish
+JAVA_CLIENT_VERSION   := 1-SNAPSHOT
 endif
 
 PYTHON_CLIENT_VERSION := $(MANIFESTS_VERSION)
@@ -479,14 +480,14 @@ $(JAVA_CLIENT_JAR): clients/java/pom.xml
 	cd clients/java && mvn install -DskipTests -Dmaven.javadoc.skip
 
 .PHONY: publish-java-client
-publish-java-client: $(JAVA_CLIENT_JAR)
+publish-java-client: java-client
 	# https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-apache-maven-for-use-with-github-packages
 	cd clients/java && mvn deploy -DskipTests -Dmaven.javadoc.skip -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/argoproj/argo
 
 .PHONY: test-java-client
 test-java-client: java-client
 	cd clients/java && mvn install -Dmaven.javadoc.skip
-	eval `make env` && cd clients/java-test && mvn versions:set --DnewVersion=$(JAVA_CLIENT_VERSION) verify
+	eval `make env` && cd clients/java-test && mvn versions:set -DnewVersion=$(JAVA_CLIENT_VERSION) verify
 
 # python client
 

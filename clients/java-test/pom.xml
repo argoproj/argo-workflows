@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.argoproj.argo</groupId>
     <artifactId>argo-workflows-java-client-test</artifactId>
-    <version>latest</version>
+    <version>1-SNAPSHOT</version>
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
