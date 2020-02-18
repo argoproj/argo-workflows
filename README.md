@@ -77,6 +77,7 @@ Currently **officially** using Argo:
 1. [BlackRock](https://www.blackrock.com/)
 1. [Canva](https://www.canva.com/)
 1. [Capital One](https://www.capitalone.com/tech/)
+1. [CarTrack](https://www.cartrack.com/)
 1. [CCRi](https://www.ccri.com/)
 1. [Codec](https://www.codec.ai/)
 1. [Commodus Tech](https://www.commodus.tech)
