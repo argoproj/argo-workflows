@@ -5,7 +5,6 @@ import io.argoproj.argo.model.V1alpha1Workflow;
 import io.argoproj.argo.model.WorkflowWorkflowCreateRequest;
 
 public class ArgoServerAPI {
-
     /*
         By default, the Argo Server runs on port 2746. We need to provide a token - which can be found by running
         `argo auth token`.

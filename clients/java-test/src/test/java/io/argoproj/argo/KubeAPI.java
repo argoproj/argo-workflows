@@ -12,9 +12,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
 public class KubeAPI {
-
     public static final Gson GSON = GsonFactory.GSON;
-
     /*
         By default, the Kubernetes API Server runs on port 6443. We need to provide a token - which can be found by
         running `argo auth token`.
@@ -36,7 +34,6 @@ public class KubeAPI {
         }
         return GSON.fromJson(r.body().charStream(), V1alpha1Workflow.class);
     }
-
 
     // For Kubernetes, we must additionally add `kind` and `apiVersion` to our requests.
     public static Object withKindAPIVersion(V1alpha1Workflow wf) {
