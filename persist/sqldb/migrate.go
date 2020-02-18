@@ -202,6 +202,11 @@ func (m migrate) Exec(ctx context.Context) error {
 		),
 		// clustername(not null) | uid(not null) | | name (not null) | phase(not null) | namespace(not null) | workflow(not null) | startedat(not null)  | finishedat(not null)
 		ansiSQLChange(`create index ` + m.tableName + `_i2 on ` + m.tableName + ` (clustername,namespace,updatedat)`),
+		// MySQL can only store 64k in a TEXT field, both MySQL and Posgres can store 1GB in JSON.
+		ternary(dbType == "mysql",
+			ansiSQLChange(`alter table `+m.tableName+` modify column nodes json not null`),
+			ansiSQLChange(`alter table `+m.tableName+` alter column nodes type json using nodes::json`),
+		),
 	} {
 		err := m.applyChange(ctx, changeSchemaVersion, change)
 		if err != nil {
