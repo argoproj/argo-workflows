@@ -773,6 +773,62 @@ func TestSuspendWithDeadline(t *testing.T) {
 
 }
 
+var sequence = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: sequence
+spec:
+  entrypoint: steps
+  templates:
+  - name: steps
+    steps:
+      - - name: step1
+          template: echo
+          arguments:
+            parameters:
+            - name: msg
+              value: "{{item}}"
+          withSequence:
+            start: "100"
+            end: "101"
+
+  - name: echo
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: alpine:latest
+      command: [echo, "{{inputs.parameters.msg}}"]
+`
+
+func TestSequence(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := unmarshalWF(sequence)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	updatedWf, err := wfcset.Get(wf.Name, metav1.GetOptions{})
+	assert.NoError(t, err)
+	found100 := false
+	found101 := false
+	for _, node := range updatedWf.Status.Nodes {
+		if node.DisplayName == "step1(0:100)" {
+			assert.Equal(t, "100", *node.Inputs.Parameters[0].Value)
+			found100 = true
+		} else if node.DisplayName == "step1(1:101)" {
+			assert.Equal(t, "101", *node.Inputs.Parameters[0].Value)
+			found101 = true
+		}
+	}
+	assert.Equal(t, true, found100)
+	assert.Equal(t, true, found101)
+}
+
+
 var inputParametersAsJson = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
