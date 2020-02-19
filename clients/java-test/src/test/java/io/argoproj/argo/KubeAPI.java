@@ -1,9 +1,8 @@
 package io.argoproj.argo;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import io.argoproj.argo.model.V1alpha1Workflow;
+import io.argoproj.argo.models.Workflow;
 import okhttp3.Response;
 
 import java.io.IOException;
@@ -12,7 +11,6 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
 public class KubeAPI {
-    public static final Gson GSON = GsonFactory.GSON;
     /*
         By default, the Kubernetes API Server runs on port 6443. We need to provide a token - which can be found by
         running `argo auth token`.
@@ -23,7 +21,7 @@ public class KubeAPI {
             .setBasePath("https://localhost:6443")
             .addDefaultHeader("Authorization", "Bearer " + System.getenv("ARGO_TOKEN"));
 
-    public V1alpha1Workflow createWorkflow(V1alpha1Workflow wf) throws ApiException, IOException {
+    public Workflow createWorkflow(Workflow wf) throws ApiException, IOException {
         Response r = client.buildCall("/apis/argoproj.io/v1alpha1/namespaces/argo/workflows", "POST",
                 emptyList(), emptyList(),
                 withKindAPIVersion(wf),
@@ -32,12 +30,12 @@ public class KubeAPI {
         if (r.code() != 201) {
             throw new ApiException("failed to create workflow");
         }
-        return GSON.fromJson(r.body().charStream(), V1alpha1Workflow.class);
+        return client.getJSON().deserialize(r.body().string(), Workflow.class);
     }
 
     // For Kubernetes, we must additionally add `kind` and `apiVersion` to our requests.
-    public static Object withKindAPIVersion(V1alpha1Workflow wf) {
-        JsonObject o = (JsonObject) GSON.toJsonTree(wf);
+    public JsonObject withKindAPIVersion(Workflow wf) {
+        JsonObject o = (JsonObject) client.getJSON().getGson().toJsonTree(wf);
         o.add("kind", new JsonPrimitive("Workflow"));
         o.add("apiVersion", new JsonPrimitive("argoproj.io/v1alpha1"));
         return o;

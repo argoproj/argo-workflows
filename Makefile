@@ -214,6 +214,7 @@ codegen:
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
 	make api/openapi-spec/swagger.json
+	./hack/swaggify.sh
 	find . -path '*/mocks/*' -type f -not -path '*/vendor/*' -exec ./hack/update-mocks.sh {} ';'
 
 .PHONY: manifests
@@ -455,20 +456,49 @@ test-clients: test-java-client test-python-client
 
 clients/java/pom.xml: dist/openapi-generator-cli.jar api/openapi-spec/swagger.json
 	mkdir -p clients/java
+	# https://github.com/kubernetes-client/gen/blob/master/openapi/java.xml
 	java \
 		-jar dist/openapi-generator-cli.jar \
 		generate \
 		-i api/openapi-spec/swagger.json \
 		-g java \
+		-o clients/java \
 		-p hideGenerationTimestamp=true \
 		-p dateLibrary=joda \
-		-o clients/java \
+		--api-package io.argoproj.argo.apis \
 		--invoker-package io.argoproj.argo \
-		--api-package io.argoproj.argo.api \
-		--model-package io.argoproj.argo.model \
+		--model-package io.argoproj.argo.models \
 		--group-id io.argoproj.argo \
 		--artifact-id argo-workflows-java-client \
-		--artifact-version $(JAVA_CLIENT_VERSION)
+		--artifact-version $(JAVA_CLIENT_VERSION) \
+		--import-mappings Time=org.joda.time.DateTime \
+		--import-mappings Affinity=io.kubernetes.client.models.V1Affinity \
+		--import-mappings ConfigMapKeySelector=io.kubernetes.client.models.V1ConfigMapKeySelector \
+		--import-mappings Container=io.kubernetes.client.models.V1Container \
+		--import-mappings ContainerPort=io.kubernetes.client.models.V1ContainerPort \
+		--import-mappings EnvFromSource=io.kubernetes.client.models.V1EnvFromSource \
+		--import-mappings EnvVar=io.kubernetes.client.models.V1EnvVar \
+		--import-mappings HostAlias=io.kubernetes.client.models.V1HostAlias \
+		--import-mappings Lifecycle=io.kubernetes.client.models.V1Lifecycle \
+		--import-mappings ListMeta=io.kubernetes.client.models.V1ListMeta \
+		--import-mappings LocalObjectReference=io.kubernetes.client.models.V1LocalObjectReference \
+		--import-mappings ObjectMeta=io.kubernetes.client.models.V1ObjectMeta \
+		--import-mappings ObjectReference=io.kubernetes.client.models.V1ObjectReference \
+		--import-mappings PersistentVolumeClaim=io.kubernetes.client.models.V1PersistentVolumeClaim \
+		--import-mappings PodDNSConfig=io.kubernetes.client.models.V1PodDNSConfig \
+		--import-mappings PodSecurityContext=io.kubernetes.client.models.V1PodSecurityContext \
+		--import-mappings Probe=io.kubernetes.client.models.V1Probe \
+		--import-mappings ResourceRequirements=io.kubernetes.client.models.V1ResourceRequirements \
+		--import-mappings SecretKeySelector=io.kubernetes.client.models.V1SecretKeySelector \
+		--import-mappings SecurityContext=io.kubernetes.client.models.V1SecurityContext \
+		--import-mappings Toleration=io.kubernetes.client.models.V1Toleration \
+		--import-mappings Volume=io.kubernetes.client.models.V1Volume \
+		--import-mappings VolumeDevice=io.kubernetes.client.models.V1VolumeDevice \
+		--import-mappings VolumeMount=io.kubernetes.client.models.V1VolumeMount \
+	# add the io.kubernetes:java-client to the deps
+	cd clients/java && sed 's/<dependencies>/<dependencies><dependency><groupId>io.kubernetes<\/groupId><artifactId>client-java<\/artifactId><version>5.0.0<\/version><\/dependency>/g' pom.xml > tmp && mv tmp pom.xml
+    # I don't like these tests
+	rm -Rf clients/java/src/test
 	touch clients/java/pom.xml
 
 .PHONY: java-client
@@ -494,6 +524,7 @@ python-client: clients/python/README.md
 
 clients/python/README.md: dist/openapi-generator-cli.jar api/openapi-spec/swagger.json
 	mkdir -p clients/python
+	# https://github.com/kubernetes-client/gen/blob/master/openapi/python.xml
 	java \
 		-jar dist/openapi-generator-cli.jar \
 		generate \

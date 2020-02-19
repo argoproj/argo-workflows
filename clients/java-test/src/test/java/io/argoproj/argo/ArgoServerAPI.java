@@ -1,8 +1,8 @@
 package io.argoproj.argo;
 
-import io.argoproj.argo.api.WorkflowServiceApi;
-import io.argoproj.argo.model.V1alpha1Workflow;
-import io.argoproj.argo.model.WorkflowWorkflowCreateRequest;
+import io.argoproj.argo.apis.WorkflowServiceApi;
+import io.argoproj.argo.models.Workflow;
+import io.argoproj.argo.models.WorkflowCreateRequest;
 
 public class ArgoServerAPI {
     /*
@@ -10,15 +10,12 @@ public class ArgoServerAPI {
         `argo auth token`.
      */
     private final ApiClient client = new ApiClient()
-            .setVerifyingSsl(false)
             .setDebugging(true)
-            .setBasePath("http://localhost:2746")
-            .addDefaultHeader("Authorization", "Bearer " + System.getenv("ARGO_TOKEN"))
-            .setJSON(new JSON().setGson(GsonFactory.GSON));
+            .addDefaultHeader("Authorization", "Bearer " + System.getenv("ARGO_TOKEN"));
 
     private final WorkflowServiceApi api = new WorkflowServiceApi(client);
 
-    public V1alpha1Workflow createWorkflow(V1alpha1Workflow wf) throws ApiException {
-        return api.createWorkflow("argo", new WorkflowWorkflowCreateRequest().workflow(wf));
+    public Workflow createWorkflow(Workflow wf) throws ApiException {
+        return api.createWorkflow("argo", new WorkflowCreateRequest().workflow(wf));
     }
 }
