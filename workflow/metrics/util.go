@@ -25,11 +25,6 @@ func ConstructOrUpdateMetric(metric prometheus.Metric, metricSpec *wfv1.Metric, 
 }
 
 func constructOrUpdateGaugeMetric(metric prometheus.Metric, metricSpec *wfv1.Metric, wf *wfv1.Workflow) (prometheus.Metric, error) {
-	literal, computed, err := computeMetricValue(metricSpec.GetMetricValue(), wf)
-	if err != nil {
-		return nil, err
-	}
-
 	gaugeOpts := prometheus.GaugeOpts{
 		Namespace:   argoNamespace,
 		Subsystem:   workflowsSubsystem,
@@ -38,47 +33,75 @@ func constructOrUpdateGaugeMetric(metric prometheus.Metric, metricSpec *wfv1.Met
 		ConstLabels: metricSpec.GetMetricLabels(),
 	}
 
-	if computed != nil {
+	metricValue := metricSpec.GetMetricValue()
+
+	if metricValue.Duration != nil {
 		if metric == nil {
-			return prometheus.NewGaugeFunc(gaugeOpts, computed), nil
+			return prometheus.NewGaugeFunc(gaugeOpts, func() float64 {
+				if wf.Status.Completed() {
+					return wf.Status.FinishedAt.Time.Sub(wf.Status.StartedAt.Time).Seconds()
+				}
+				return time.Since(wf.Status.StartedAt.Time).Seconds()
+			}), nil
 		}
-		// When using computed metrics, there is no need to update them once they are created
+		// When using duration metrics, there is no need to update them once they are created
 		return metric, nil
 	}
 
+	val, err := strconv.ParseFloat(metricValue.Literal, 64)
+	if err != nil {
+		return nil, err
+	}
 	if metric == nil {
 		// This gauge has not been used before, create it
 		gauge := prometheus.NewGauge(gaugeOpts)
-		gauge.Set(literal)
+		gauge.Set(val)
 		return gauge, nil
 	}
 	// This gauge exists, simply update it
 	gauge := metric.(prometheus.Gauge)
-	gauge.Set(literal)
+	gauge.Set(val)
 	return gauge, nil
 }
 
-func computeMetricValue(value wfv1.MetricValue, wf *wfv1.Workflow) (float64, func() float64, error) {
-	if value.Literal != "" {
-		val, err := strconv.ParseFloat(value.Literal, 64)
-		if err != nil {
-			return 0.0, nil, err
-		}
-		return val, nil, nil
+func constructOrUpdateHistogramMetric(metric prometheus.Metric, metricSpec *wfv1.Metric, wf *wfv1.Workflow) (prometheus.Metric, error) {
+	gaugeOpts := prometheus.HistogramOpts{
+		Namespace:   argoNamespace,
+		Subsystem:   workflowsSubsystem,
+		Name:        metricSpec.Name,
+		Help:        metricSpec.Help,
+		ConstLabels: metricSpec.GetMetricLabels(),
+		Buckets:     metricSpec.Histogram.Bins,
 	}
 
-	if value.Computed != "" {
-		switch value.Computed {
-		case wfv1.ComputedValueWorkflowDuration:
-			if wf.Status.Completed() {
-				// If the workflow is finished, return a literal value
-				return wf.Status.FinishedAt.Time.Sub(wf.Status.StartedAt.Time).Seconds(), nil, nil
-			}
-			return 0.0, func() float64 {
-				return time.Since(wf.Status.StartedAt.Time).Seconds()
-			}, nil
+	metricValue := metricSpec.GetMetricValue()
+
+	if metricValue.Duration != nil {
+		var hist prometheus.Histogram
+		if metric == nil {
+			hist = prometheus.NewHistogram(gaugeOpts)
+		} else {
+			hist = metric.(prometheus.Histogram)
 		}
+		if wf.Status.Completed() {
+			hist.Observe(wf.Status.FinishedAt.Time.Sub(wf.Status.StartedAt.Time).Seconds())
+		}
+		// When using duration metrics, there is no need to update them once they are created
+		return metric, nil
 	}
 
-	return 0.0, nil, fmt.Errorf("metric does not specify a value source")
+	val, err := strconv.ParseFloat(metricValue.Literal, 64)
+	if err != nil {
+		return nil, err
+	}
+	if metric == nil {
+		// This gauge has not been used before, create it
+		gauge := prometheus.NewGauge(gaugeOpts)
+		gauge.Set(val)
+		return gauge, nil
+	}
+	// This gauge exists, simply update it
+	gauge := metric.(prometheus.Gauge)
+	gauge.Set(val)
+	return gauge, nil
 }

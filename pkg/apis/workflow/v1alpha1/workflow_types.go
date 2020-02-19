@@ -1545,14 +1545,14 @@ func (m *Metric) GetMetricType() MetricType {
 	return MetricTypeUnknown
 }
 
-func (m *Metric) GetMetricValue() MetricValue {
+func (m *Metric) GetMetricValue() *MetricValue {
 	switch m.GetMetricType() {
 	case MetricTypeGauge:
 		return m.Gauge.Value
 	case MetricTypeHistogram:
 		return m.Histogram.Value
 	default:
-		return MetricValue{}
+		return nil
 	}
 }
 
@@ -1562,15 +1562,18 @@ type MetricLabels struct {
 }
 
 type Gauge struct {
-	Value MetricValue `json:"value" protobuf:"bytes,1,opt,name=value"`
-}
-
-type MetricValue struct {
-	Literal  string        `json:"literal" protobuf:"bytes,1,opt,name=literal"`
-	Computed ComputedValue `json:"computed" protobuf:"bytes,2,opt,name=computed,casttype=ComputedValue"`
+	Value *MetricValue `json:"value" protobuf:"bytes,1,opt,name=value"`
 }
 
 type Histogram struct {
-	Value MetricValue `json:"value" protobuf:"bytes,1,opt,name=value"`
-	Bins  []float64   `json:"bins" protobuf:"fixed64,2,rep,name=bins"`
+	Value *MetricValue `json:"value" protobuf:"bytes,1,opt,name=value"`
+	Bins  []float64    `json:"bins" protobuf:"fixed64,2,rep,name=bins"`
+}
+
+type MetricValue struct {
+	Literal  string    `json:"literal" protobuf:"bytes,1,opt,name=literal"`
+	Duration *Duration `json:"computed"`
+}
+
+type Duration struct {
 }
