@@ -4169,6 +4169,9 @@
             "type": "string"
           }
         },
+        "emitMetrics": {
+          "$ref": "#/definitions/v1alpha1EmitMetrics"
+        },
         "name": {
           "type": "string",
           "title": "Name is the name of the target"
@@ -5264,6 +5267,9 @@
         "continueOn": {
           "title": "ContinueOn makes argo to proceed with the following step even if this step fails.\nErrors and Failed states can be specified",
           "$ref": "#/definitions/v1alpha1ContinueOn"
+        },
+        "emitMetrics": {
+          "$ref": "#/definitions/v1alpha1EmitMetrics"
         },
         "name": {
           "type": "string",

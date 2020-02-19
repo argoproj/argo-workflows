@@ -219,6 +219,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			}
 			continue
 		}
+
 		childNode, err := woc.executeTemplate(childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, stepsCtx.boundaryID)
 		if err != nil {
 			switch err {
@@ -235,9 +236,17 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		if childNode != nil {
 			nodeSteps[childNodeName] = step
 			woc.addChildNode(sgNodeName, childNodeName)
+
+			// Emit metrics once step begins execution
+			if step.EmitMetrics != nil {
+				for _, metricSpec := range step.EmitMetrics.Metrics {
+					woc.computeMetric(metricSpec, childNode)
+				}
+			}
 		}
 	}
 
+	woc.log.Infof("SIMON -- here ")
 	node = woc.getNodeByName(sgNodeName)
 	// Return if not all children completed
 	completed := true
@@ -251,6 +260,13 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
 				completed = false
+			}
+
+			// Emit metrics once step completes
+			if step.EmitMetrics != nil && (!hasOnExitNode || onExitNode.Completed()) {
+				for _, metricSpec := range step.EmitMetrics.Metrics {
+					woc.computeMetric(metricSpec, childNode)
+				}
 			}
 		}
 	}

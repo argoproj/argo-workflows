@@ -334,7 +334,8 @@
       "type": "object",
       "required": [
         "name",
-        "template"
+        "template",
+        "emitMetrics"
       ],
       "properties": {
         "arguments": {
@@ -351,6 +352,9 @@
           "items": {
             "type": "string"
           }
+        },
+        "emitMetrics": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EmitMetrics"
         },
         "name": {
           "description": "Name is the name of the target",
@@ -1956,6 +1960,9 @@
     "io.argoproj.workflow.v1alpha1.WorkflowStep": {
       "description": "WorkflowStep is a reference to a template to execute in a series of step",
       "type": "object",
+      "required": [
+        "emitMetrics"
+      ],
       "properties": {
         "arguments": {
           "description": "Arguments hold arguments to the template",
@@ -1964,6 +1971,9 @@
         "continueOn": {
           "description": "ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContinueOn"
+        },
+        "emitMetrics": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EmitMetrics"
         },
         "name": {
           "description": "Name of the step",

@@ -3107,6 +3107,9 @@
         "onExit": {
           "type": "string",
           "description": "OnExit is a template reference which is invoked at the end of the\ntemplate, irrespective of the success, failure, or error of the\nprimary template."
+        },
+        "emitMetrics": {
+          "$ref": "#/definitions/v1alpha1EmitMetrics"
         }
       },
       "title": "DAGTask represents a node in the graph during DAG execution"
@@ -4118,6 +4121,9 @@
         "onExit": {
           "type": "string",
           "description": "OnExit is a template reference which is invoked at the end of the\ntemplate, irrespective of the success, failure, or error of the\nprimary template."
+        },
+        "emitMetrics": {
+          "$ref": "#/definitions/v1alpha1EmitMetrics"
         }
       },
       "title": "WorkflowStep is a reference to a template to execute in a series of step"

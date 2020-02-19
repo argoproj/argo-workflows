@@ -685,6 +685,8 @@ type WorkflowStep struct {
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
+
+	EmitMetrics *EmitMetrics `json:"emitMetrics" protobuf:"bytes,12,opt,name=emitMetrics"`
 }
 
 var _ TemplateHolder = &WorkflowStep{}
@@ -1330,6 +1332,8 @@ type DAGTask struct {
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
+
+	EmitMetrics *EmitMetrics `json:"emitMetrics" protobuf:"bytes,12,opt,name=emitMetrics"`
 }
 
 var _ TemplateHolder = &DAGTask{}
@@ -1575,6 +1579,17 @@ func (m *Metric) GetMetricValue() *MetricValue {
 	default:
 		return nil
 	}
+}
+
+func (m *Metric) GetDesc() string {
+	// This serves as a hash for the metric
+	// TODO: Make sure this is what we want to use as the hash
+	desc := m.Name + "{"
+	for key, val := range m.GetMetricLabels() {
+		desc += key + "=" + val + ","
+	}
+	desc += "}"
+	return desc
 }
 
 type MetricLabels struct {

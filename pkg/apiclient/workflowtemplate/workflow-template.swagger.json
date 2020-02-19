@@ -2804,6 +2804,9 @@
         "onExit": {
           "type": "string",
           "description": "OnExit is a template reference which is invoked at the end of the\ntemplate, irrespective of the success, failure, or error of the\nprimary template."
+        },
+        "emitMetrics": {
+          "$ref": "#/definitions/v1alpha1EmitMetrics"
         }
       },
       "title": "DAGTask represents a node in the graph during DAG execution"
@@ -2830,6 +2833,17 @@
       },
       "title": "DAGTemplate is a template subtype for directed acyclic graph templates"
     },
+    "v1alpha1EmitMetrics": {
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1alpha1Metric"
+          }
+        }
+      }
+    },
     "v1alpha1ExecutorConfig": {
       "type": "object",
       "properties": {
@@ -2839,6 +2853,14 @@
         }
       },
       "description": "ExecutorConfig holds configurations of an executor container."
+    },
+    "v1alpha1Gauge": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "$ref": "#/definitions/v1alpha1MetricValue"
+        }
+      }
     },
     "v1alpha1GitArtifact": {
       "type": "object",
@@ -2961,6 +2983,21 @@
       },
       "title": "HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container"
     },
+    "v1alpha1Histogram": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "$ref": "#/definitions/v1alpha1MetricValue"
+        },
+        "bins": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      }
+    },
     "v1alpha1Inputs": {
       "type": "object",
       "properties": {
@@ -3064,6 +3101,51 @@
         }
       },
       "title": "Pod metdata"
+    },
+    "v1alpha1Metric": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1alpha1MetricLabels"
+          }
+        },
+        "help": {
+          "type": "string"
+        },
+        "gauge": {
+          "$ref": "#/definitions/v1alpha1Gauge"
+        },
+        "histogram": {
+          "$ref": "#/definitions/v1alpha1Histogram"
+        }
+      }
+    },
+    "v1alpha1MetricLabels": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "v1alpha1MetricValue": {
+      "type": "object",
+      "properties": {
+        "literal": {
+          "type": "string"
+        },
+        "duration": {
+          "type": "string"
+        }
+      }
     },
     "v1alpha1NoneStrategy": {
       "type": "object",
@@ -3551,6 +3633,9 @@
         "onExit": {
           "type": "string",
           "description": "OnExit is a template reference which is invoked at the end of the\ntemplate, irrespective of the success, failure, or error of the\nprimary template."
+        },
+        "emitMetrics": {
+          "$ref": "#/definitions/v1alpha1EmitMetrics"
         }
       },
       "title": "WorkflowStep is a reference to a template to execute in a series of step"

@@ -407,6 +407,11 @@ func (in *DAGTask) DeepCopyInto(out *DAGTask) {
 		*out = new(ContinueOn)
 		**out = **in
 	}
+	if in.EmitMetrics != nil {
+		in, out := &in.EmitMetrics, &out.EmitMetrics
+		*out = new(EmitMetrics)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 
@@ -1705,6 +1710,11 @@ func (in *WorkflowStep) DeepCopyInto(out *WorkflowStep) {
 		in, out := &in.ContinueOn, &out.ContinueOn
 		*out = new(ContinueOn)
 		**out = **in
+	}
+	if in.EmitMetrics != nil {
+		in, out := &in.EmitMetrics, &out.EmitMetrics
+		*out = new(EmitMetrics)
+		(*in).DeepCopyInto(*out)
 	}
 	return
 }

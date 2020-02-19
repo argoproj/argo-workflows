@@ -2207,15 +2207,17 @@ func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID str
 func (woc *wfOperationCtx) computeWorkflowMetrics() error {
 	if woc.wf.Spec.EmitMetrics != nil {
 		for _, metricSpec := range woc.wf.Spec.EmitMetrics.Metrics {
-
-			// TODO: metric.Name is absolutely not the correct key to use here, using it temporarily. Change this later
-			metric := woc.controller.Metrics[metricSpec.Name]
-			updatedMetric, err := metrics.ConstructOrUpdateMetric(metric, metricSpec, woc.wf.Status)
-			if err != nil {
-				woc.log.Errorf("could not compute metric '%s' for Workflow '%s': %s", metricSpec.Name, woc.wf.ObjectMeta.Name, err)
-			}
-			woc.controller.Metrics[metricSpec.Name] = updatedMetric
+			woc.computeMetric(metricSpec, woc.wf.Status)
 		}
 	}
 	return nil
+}
+
+func (woc *wfOperationCtx) computeMetric(metricSpec *wfv1.Metric, emitter wfv1.MetricsEmitter) {
+	metric := woc.controller.Metrics[metricSpec.GetDesc()]
+	updatedMetric, err := metrics.ConstructOrUpdateMetric(metric, metricSpec, emitter)
+	if err != nil {
+		woc.log.Errorf("could not compute metric '%s': %s", metricSpec.Name, err)
+	}
+	woc.controller.Metrics[metricSpec.GetDesc()] = updatedMetric
 }
