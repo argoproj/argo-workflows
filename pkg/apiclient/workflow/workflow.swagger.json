@@ -103,7 +103,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowList"
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha.WorkflowList"
             }
           }
         },
@@ -185,7 +185,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Workflow"
             }
           }
         },
@@ -217,7 +217,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Workflow"
             }
           }
         },
@@ -249,7 +249,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Workflow"
             }
           }
         },
@@ -362,7 +362,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Workflow"
             }
           }
         },
@@ -400,7 +400,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Workflow"
             }
           }
         },
@@ -438,7 +438,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Workflow"
             }
           }
         },
@@ -476,7 +476,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Workflow"
             }
           }
         },
@@ -514,7 +514,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Workflow"
             }
           }
         },
@@ -654,39 +654,39 @@
     }
   },
   "definitions": {
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArchiveStrategy": {
+    "io.argoproj.workflow.v1alpha.ArchiveStrategy": {
       "type": "object",
       "properties": {
         "tar": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TarStrategy"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.TarStrategy"
         },
         "none": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.NoneStrategy"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.NoneStrategy"
         }
       },
       "title": "ArchiveStrategy describes how to archive files/directory when saving artifacts"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Arguments": {
+    "io.argoproj.workflow.v1alpha.Arguments": {
       "type": "object",
       "properties": {
         "parameters": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Parameter"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Parameter"
           },
           "title": "Parameters is the list of parameters to pass to the template or workflow\n+patchStrategy=merge\n+patchMergeKey=name"
         },
         "artifacts": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Artifact"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Artifact"
           },
           "title": "Artifacts is the list of artifacts to pass to the template or workflow\n+patchStrategy=merge\n+patchMergeKey=name"
         }
       },
       "title": "Arguments to a template"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Artifact": {
+    "io.argoproj.workflow.v1alpha.Artifact": {
       "type": "object",
       "properties": {
         "name": {
@@ -707,7 +707,7 @@
           "title": "From allows an artifact to reference an artifact from a previous step"
         },
         "artifactLocation": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactLocation",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.ArtifactLocation",
           "title": "ArtifactLocation contains the location of the artifact"
         },
         "globalName": {
@@ -715,7 +715,7 @@
           "title": "GlobalName exports an output artifact to the global scope, making it available as\n'{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts"
         },
         "archive": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArchiveStrategy",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.ArchiveStrategy",
           "description": "Archive controls how the artifact will be saved to the artifact repository."
         },
         "optional": {
@@ -726,7 +726,7 @@
       },
       "title": "Artifact indicates an artifact to place at a specified path"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactLocation": {
+    "io.argoproj.workflow.v1alpha.ArtifactLocation": {
       "type": "object",
       "properties": {
         "archiveLogs": {
@@ -735,33 +735,33 @@
           "title": "ArchiveLogs indicates if the container logs should be archived"
         },
         "s3": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.S3Artifact",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.S3Artifact",
           "title": "S3 contains S3 artifact location details"
         },
         "git": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GitArtifact",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.GitArtifact",
           "title": "Git contains git artifact location details"
         },
         "http": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HTTPArtifact",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.HTTPArtifact",
           "title": "HTTP contains HTTP artifact location details"
         },
         "artifactory": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactoryArtifact",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.ArtifactoryArtifact",
           "title": "Artifactory contains artifactory artifact location details"
         },
         "hdfs": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HDFSArtifact",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.HDFSArtifact",
           "title": "HDFS contains HDFS artifact location details"
         },
         "raw": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.RawArtifact",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.RawArtifact",
           "title": "Raw contains raw artifact location details"
         }
       },
       "description": "ArtifactLocation describes a location for a single or multiple artifacts.\nIt is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).\nIt is also used to describe the location of multiple artifacts such as the archive location\nof a single workflow step, which the executor will use as a default location to store its files."
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactRepositoryRef": {
+    "io.argoproj.workflow.v1alpha.ArtifactRepositoryRef": {
       "type": "object",
       "properties": {
         "configMap": {
@@ -772,7 +772,7 @@
         }
       }
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactoryArtifact": {
+    "io.argoproj.workflow.v1alpha.ArtifactoryArtifact": {
       "type": "object",
       "properties": {
         "url": {
@@ -780,26 +780,26 @@
           "title": "URL of the artifact"
         },
         "artifactoryAuth": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactoryAuth"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.ArtifactoryAuth"
         }
       },
       "title": "ArtifactoryArtifact is the location of an artifactory artifact"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactoryAuth": {
+    "io.argoproj.workflow.v1alpha.ArtifactoryAuth": {
       "type": "object",
       "properties": {
         "usernameSecret": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "UsernameSecret is the secret selector to the repository username"
         },
         "passwordSecret": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "PasswordSecret is the secret selector to the repository password"
         }
       },
       "title": "ArtifactoryAuth describes the secret selectors required for authenticating to artifactory"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Backoff": {
+    "io.argoproj.workflow.v1alpha.Backoff": {
       "type": "object",
       "properties": {
         "duration": {
@@ -814,7 +814,7 @@
         }
       }
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ContinueOn": {
+    "io.argoproj.workflow.v1alpha.ContinueOn": {
       "type": "object",
       "properties": {
         "error": {
@@ -830,7 +830,7 @@
       },
       "description": "ContinueOn defines if a workflow should continue even if a task or step fails/errors.\nIt can be specified if the workflow should continue when the pod errors, fails or both."
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.DAGTask": {
+    "io.argoproj.workflow.v1alpha.DAGTask": {
       "type": "object",
       "properties": {
         "name": {
@@ -842,11 +842,11 @@
           "title": "Name of template to execute"
         },
         "arguments": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Arguments",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Arguments",
           "title": "Arguments are the parameter and artifact arguments to the template"
         },
         "templateRef": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TemplateRef",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.TemplateRef",
           "description": "TemplateRef is the reference to the template resource to execute."
         },
         "dependencies": {
@@ -859,7 +859,7 @@
         "withItems": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Item"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Item"
           },
           "title": "WithItems expands a task into multiple parallel tasks from the items in the list"
         },
@@ -868,7 +868,7 @@
           "description": "WithParam expands a task into multiple parallel tasks from the value in the parameter,\nwhich is expected to be a JSON list."
         },
         "withSequence": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Sequence",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Sequence",
           "title": "WithSequence expands a task into a numeric sequence"
         },
         "when": {
@@ -876,7 +876,7 @@
           "title": "When is an expression in which the task should conditionally execute"
         },
         "continueOn": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ContinueOn",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.ContinueOn",
           "title": "ContinueOn makes argo to proceed with the following step even if this step fails.\nErrors and Failed states can be specified"
         },
         "onExit": {
@@ -886,7 +886,7 @@
       },
       "title": "DAGTask represents a node in the graph during DAG execution"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.DAGTemplate": {
+    "io.argoproj.workflow.v1alpha.DAGTemplate": {
       "type": "object",
       "properties": {
         "target": {
@@ -896,7 +896,7 @@
         "tasks": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.DAGTask"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha.DAGTask"
           },
           "title": "Tasks are a list of DAG tasks\n+patchStrategy=merge\n+patchMergeKey=name"
         },
@@ -908,7 +908,7 @@
       },
       "title": "DAGTemplate is a template subtype for directed acyclic graph templates"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ExecutorConfig": {
+    "io.argoproj.workflow.v1alpha.ExecutorConfig": {
       "type": "object",
       "properties": {
         "serviceAccountName": {
@@ -918,7 +918,7 @@
       },
       "description": "ExecutorConfig holds configurations of an executor container."
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GitArtifact": {
+    "io.argoproj.workflow.v1alpha.GitArtifact": {
       "type": "object",
       "properties": {
         "repo": {
@@ -942,15 +942,15 @@
           "title": "Fetch specifies a number of refs that should be fetched before checkout"
         },
         "usernameSecret": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "UsernameSecret is the secret selector to the repository username"
         },
         "passwordSecret": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "PasswordSecret is the secret selector to the repository password"
         },
         "sshPrivateKeySecret": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "SSHPrivateKeySecret is the secret selector to the repository ssh private key"
         },
         "insecureIgnoreHostKey": {
@@ -961,11 +961,11 @@
       },
       "title": "GitArtifact is the location of an git artifact"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HDFSArtifact": {
+    "io.argoproj.workflow.v1alpha.HDFSArtifact": {
       "type": "object",
       "properties": {
         "hDFSConfig": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HDFSConfig"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.HDFSConfig"
         },
         "path": {
           "type": "string",
@@ -979,11 +979,11 @@
       },
       "title": "HDFSArtifact is the location of an HDFS artifact"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HDFSConfig": {
+    "io.argoproj.workflow.v1alpha.HDFSConfig": {
       "type": "object",
       "properties": {
         "hDFSKrbConfig": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HDFSKrbConfig"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.HDFSKrbConfig"
         },
         "addresses": {
           "type": "array",
@@ -999,15 +999,15 @@
       },
       "title": "HDFSConfig is configurations for HDFS"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HDFSKrbConfig": {
+    "io.argoproj.workflow.v1alpha.HDFSKrbConfig": {
       "type": "object",
       "properties": {
         "krbCCacheSecret": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "KrbCCacheSecret is the secret selector for Kerberos ccache\nEither ccache or keytab can be set to use Kerberos."
         },
         "krbKeytabSecret": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "description": "KrbKeytabSecret is the secret selector for Kerberos keytab\nEither ccache or keytab can be set to use Kerberos."
         },
         "krbUsername": {
@@ -1019,7 +1019,7 @@
           "description": "KrbRealm is the Kerberos realm used with Kerberos keytab\nIt must be set if keytab is used."
         },
         "krbConfigConfigMap": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.ConfigMapKeySelector",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector",
           "description": "KrbConfig is the configmap selector for Kerberos config as string\nIt must be set if either ccache or keytab is used."
         },
         "krbServicePrincipalName": {
@@ -1029,7 +1029,7 @@
       },
       "title": "HDFSKrbConfig is auth configurations for Kerberos"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HTTPArtifact": {
+    "io.argoproj.workflow.v1alpha.HTTPArtifact": {
       "type": "object",
       "properties": {
         "url": {
@@ -1039,27 +1039,27 @@
       },
       "title": "HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Inputs": {
+    "io.argoproj.workflow.v1alpha.Inputs": {
       "type": "object",
       "properties": {
         "parameters": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Parameter"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Parameter"
           },
           "title": "Parameters are a list of parameters passed as inputs\n+patchStrategy=merge\n+patchMergeKey=name"
         },
         "artifacts": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Artifact"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Artifact"
           },
           "title": "Artifact are a list of artifacts passed as inputs\n+patchStrategy=merge\n+patchMergeKey=name"
         }
       },
       "title": "Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Item": {
+    "io.argoproj.workflow.v1alpha.Item": {
       "type": "object",
       "properties": {
         "type": {
@@ -1079,20 +1079,20 @@
         "mapVal": {
           "type": "object",
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ItemValue"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha.ItemValue"
           }
         },
         "listVal": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ItemValue"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha.ItemValue"
           }
         }
       },
       "description": "+protobuf=true\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:openapi-gen=true",
       "title": "Item expands a single workflow step into multiple parallel steps\nThe value of Item can be a map, string, bool, or number"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ItemValue": {
+    "io.argoproj.workflow.v1alpha.ItemValue": {
       "type": "object",
       "properties": {
         "type": {
@@ -1125,7 +1125,7 @@
       },
       "title": "+protobuf=true\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:openapi-gen=true"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metadata": {
+    "io.argoproj.workflow.v1alpha.Metadata": {
       "type": "object",
       "properties": {
         "annotations": {
@@ -1143,7 +1143,7 @@
       },
       "title": "Pod metdata"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.NodeStatus": {
+    "io.argoproj.workflow.v1alpha.NodeStatus": {
       "type": "object",
       "properties": {
         "id": {
@@ -1167,7 +1167,7 @@
           "title": "TemplateName is the template name which this node corresponds to.\nNot applicable to virtual nodes (e.g. Retry, StepGroup)"
         },
         "templateRef": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TemplateRef",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.TemplateRef",
           "title": "TemplateRef is the reference to the template resource which this node corresponds to.\nNot applicable to virtual nodes (e.g. Retry, StepGroup)"
         },
         "storedTemplateID": {
@@ -1195,11 +1195,11 @@
           "description": "A human readable message indicating details about why the node is in this condition."
         },
         "startedAt": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
           "title": "Time at which this node started"
         },
         "finishedAt": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
           "title": "Time at which this node completed"
         },
         "podIP": {
@@ -1212,11 +1212,11 @@
           "title": "Daemoned tracks whether or not this node was daemoned and need to be terminated"
         },
         "inputs": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Inputs",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Inputs",
           "title": "Inputs captures input parameter values and artifact locations supplied to this template invocation"
         },
         "outputs": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Outputs",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Outputs",
           "title": "Outputs captures output parameter values and artifact locations produced by this template invocation"
         },
         "children": {
@@ -1236,24 +1236,24 @@
       },
       "title": "NodeStatus contains status information about an individual node in the workflow"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.NoneStrategy": {
+    "io.argoproj.workflow.v1alpha.NoneStrategy": {
       "type": "object",
       "description": "NoneStrategy indicates to skip tar process and upload the files or directory tree as independent\nfiles. Note that if the artifact is a directory, the artifact driver must support the ability to\nsave/load the directory appropriately."
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Outputs": {
+    "io.argoproj.workflow.v1alpha.Outputs": {
       "type": "object",
       "properties": {
         "parameters": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Parameter"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Parameter"
           },
           "title": "Parameters holds the list of output parameters produced by a step\n+patchStrategy=merge\n+patchMergeKey=name"
         },
         "artifacts": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Artifact"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Artifact"
           },
           "title": "Artifacts holds the list of output artifacts produced by a step\n+patchStrategy=merge\n+patchMergeKey=name"
         },
@@ -1264,18 +1264,18 @@
       },
       "title": "Outputs hold parameters, artifacts, and results from a step"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ParallelSteps": {
+    "io.argoproj.workflow.v1alpha.ParallelSteps": {
       "type": "object",
       "properties": {
         "steps": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowStep"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha.WorkflowStep"
           }
         }
       }
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Parameter": {
+    "io.argoproj.workflow.v1alpha.Parameter": {
       "type": "object",
       "properties": {
         "name": {
@@ -1291,7 +1291,7 @@
           "title": "Value is the literal value to use for the parameter.\nIf specified in the context of an input parameter, the value takes precedence over any passed values"
         },
         "valueFrom": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ValueFrom",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.ValueFrom",
           "title": "ValueFrom is the source for the output parameter's value"
         },
         "globalName": {
@@ -1301,7 +1301,7 @@
       },
       "title": "Parameter indicate a passed string parameter to a service template with an optional default value"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.PodGC": {
+    "io.argoproj.workflow.v1alpha.PodGC": {
       "type": "object",
       "properties": {
         "strategy": {
@@ -1310,7 +1310,7 @@
       },
       "title": "PodGC describes how to delete completed pods as they complete"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.RawArtifact": {
+    "io.argoproj.workflow.v1alpha.RawArtifact": {
       "type": "object",
       "properties": {
         "data": {
@@ -1320,7 +1320,7 @@
       },
       "title": "RawArtifact allows raw string content to be placed as an artifact in a container"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ResourceTemplate": {
+    "io.argoproj.workflow.v1alpha.ResourceTemplate": {
       "type": "object",
       "properties": {
         "action": {
@@ -1351,7 +1351,7 @@
       },
       "title": "ResourceTemplate is a template subtype to manipulate kubernetes resources"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.RetryStrategy": {
+    "io.argoproj.workflow.v1alpha.RetryStrategy": {
       "type": "object",
       "properties": {
         "limit": {
@@ -1364,17 +1364,17 @@
           "title": "RetryPolicy is a policy of NodePhase statuses that will be retried"
         },
         "backoff": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Backoff",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Backoff",
           "title": "Backoff is a backoff strategy"
         }
       },
       "title": "RetryStrategy provides controls on how to retry a workflow step"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.S3Artifact": {
+    "io.argoproj.workflow.v1alpha.S3Artifact": {
       "type": "object",
       "properties": {
         "s3Bucket": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.S3Bucket"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.S3Bucket"
         },
         "key": {
           "type": "string",
@@ -1383,7 +1383,7 @@
       },
       "title": "S3Artifact is the location of an S3 artifact"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.S3Bucket": {
+    "io.argoproj.workflow.v1alpha.S3Bucket": {
       "type": "object",
       "properties": {
         "endpoint": {
@@ -1404,11 +1404,11 @@
           "title": "Insecure will connect to the service with TLS"
         },
         "accessKeySecret": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "AccessKeySecret is the secret selector to the bucket's access key"
         },
         "secretKeySecret": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "SecretKeySecret is the secret selector to the bucket's secret key"
         },
         "roleARN": {
@@ -1418,11 +1418,11 @@
       },
       "title": "S3Bucket contains the access information required for interfacing with an S3 bucket"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ScriptTemplate": {
+    "io.argoproj.workflow.v1alpha.ScriptTemplate": {
       "type": "object",
       "properties": {
         "container": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.Container"
+          "$ref": "#/definitions/io.k8s.api.core.v1.Container"
         },
         "source": {
           "type": "string",
@@ -1431,7 +1431,7 @@
       },
       "title": "ScriptTemplate is a template subtype to enable scripting through code steps"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Sequence": {
+    "io.argoproj.workflow.v1alpha.Sequence": {
       "type": "object",
       "properties": {
         "count": {
@@ -1453,7 +1453,7 @@
       },
       "title": "Sequence expands a workflow step into numeric range"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SuspendTemplate": {
+    "io.argoproj.workflow.v1alpha.SuspendTemplate": {
       "type": "object",
       "properties": {
         "duration": {
@@ -1463,7 +1463,7 @@
       },
       "title": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TTLStrategy": {
+    "io.argoproj.workflow.v1alpha.TTLStrategy": {
       "type": "object",
       "properties": {
         "secondsAfterCompletion": {
@@ -1481,11 +1481,11 @@
       },
       "title": "TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TarStrategy": {
+    "io.argoproj.workflow.v1alpha.TarStrategy": {
       "type": "object",
       "title": "TarStrategy will tar and gzip the file or directory when saving"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Template": {
+    "io.argoproj.workflow.v1alpha.Template": {
       "type": "object",
       "properties": {
         "name": {
@@ -1497,19 +1497,19 @@
           "description": "Template is the name of the template which is used as the base of this template."
         },
         "arguments": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Arguments",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Arguments",
           "description": "Arguments hold arguments to the template."
         },
         "templateRef": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TemplateRef",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.TemplateRef",
           "description": "TemplateRef is the reference to the template resource which is used as the base of this template."
         },
         "inputs": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Inputs",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Inputs",
           "title": "Inputs describe what inputs parameters and artifacts are supplied to this template"
         },
         "outputs": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Outputs",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Outputs",
           "title": "Outputs describe the parameters and artifacts that this template produces"
         },
         "nodeSelector": {
@@ -1520,11 +1520,11 @@
           "description": "NodeSelector is a selector to schedule this step of the workflow to be\nrun on the selected node(s). Overrides the selector set at the workflow level."
         },
         "affinity": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.Affinity",
+          "$ref": "#/definitions/io.k8s.api.core.v1.Affinity",
           "title": "Affinity sets the pod's scheduling constraints\nOverrides the affinity set at the workflow level (if any)"
         },
         "metadata": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metadata",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Metadata",
           "title": "Metdata sets the pods's metadata, i.e. annotations and labels"
         },
         "daemon": {
@@ -1535,53 +1535,53 @@
         "steps": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ParallelSteps"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha.ParallelSteps"
           },
           "title": "Steps define a series of sequential/parallel workflow steps"
         },
         "container": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.Container",
+          "$ref": "#/definitions/io.k8s.api.core.v1.Container",
           "title": "Container is the main container image to run in the pod"
         },
         "script": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ScriptTemplate",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.ScriptTemplate",
           "title": "Script runs a portion of code against an interpreter"
         },
         "resource": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ResourceTemplate",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.ResourceTemplate",
           "title": "Resource template subtype which can run k8s resources"
         },
         "dag": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.DAGTemplate",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.DAGTemplate",
           "title": "DAG template subtype which runs a DAG"
         },
         "suspend": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SuspendTemplate",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.SuspendTemplate",
           "title": "Suspend template subtype which can suspend a workflow when reaching the step"
         },
         "volumes": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.Volume"
+            "$ref": "#/definitions/io.k8s.api.core.v1.Volume"
           },
           "title": "Volumes is a list of volumes that can be mounted by containers in a template.\n+patchStrategy=merge\n+patchMergeKey=name"
         },
         "initContainers": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.UserContainer"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha.UserContainer"
           },
           "title": "InitContainers is a list of containers which run before the main container.\n+patchStrategy=merge\n+patchMergeKey=name"
         },
         "sidecars": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.UserContainer"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha.UserContainer"
           },
           "title": "Sidecars is a list of containers which run alongside the main container\nSidecars are automatically killed when the main container completes\n+patchStrategy=merge\n+patchMergeKey=name"
         },
         "archiveLocation": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactLocation",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.ArtifactLocation",
           "description": "Location in which all files related to the step will be stored (logs, artifacts, etc...).\nCan be overridden by individual items in Outputs. If omitted, will use the default\nartifact repository location configured in the controller, appended with the\n\u003cworkflowname\u003e/\u003cnodename\u003e in the key."
         },
         "activeDeadlineSeconds": {
@@ -1590,7 +1590,7 @@
           "description": "Optional duration in seconds relative to the StartTime that the pod may be active on a node\nbefore the system actively tries to terminate the pod; value must be positive integer\nThis field is only applicable to container and script templates."
         },
         "retryStrategy": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.RetryStrategy",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.RetryStrategy",
           "title": "RetryStrategy describes how to retry a template when it fails"
         },
         "parallelism": {
@@ -1601,7 +1601,7 @@
         "tolerations": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.Toleration"
+            "$ref": "#/definitions/io.k8s.api.core.v1.Toleration"
           },
           "title": "Tolerations to apply to workflow pods.\n+patchStrategy=merge\n+patchMergeKey=key"
         },
@@ -1628,18 +1628,18 @@
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.\nServiceAccountName of ExecutorConfig must be specified if this value is false."
         },
         "executor": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ExecutorConfig",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.ExecutorConfig",
           "description": "Executor holds configurations of the executor container."
         },
         "hostAliases": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.HostAlias"
+            "$ref": "#/definitions/io.k8s.api.core.v1.HostAlias"
           },
           "title": "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec\n+patchStrategy=merge\n+patchMergeKey=ip"
         },
         "securityContext": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.PodSecurityContext",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PodSecurityContext",
           "title": "SecurityContext holds pod-level security attributes and common container settings.\nOptional: Defaults to empty.  See type description for default values of each field.\n+optional"
         },
         "podSpecPatch": {
@@ -1649,7 +1649,7 @@
       },
       "title": "Template is a reusable and composable unit of execution in a workflow"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TemplateRef": {
+    "io.argoproj.workflow.v1alpha.TemplateRef": {
       "type": "object",
       "properties": {
         "name": {
@@ -1668,11 +1668,11 @@
       },
       "description": "TemplateRef is a reference of template resource."
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.UserContainer": {
+    "io.argoproj.workflow.v1alpha.UserContainer": {
       "type": "object",
       "properties": {
         "container": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.Container"
+          "$ref": "#/definitions/io.k8s.api.core.v1.Container"
         },
         "mirrorVolumeMounts": {
           "type": "boolean",
@@ -1682,7 +1682,7 @@
       },
       "description": "UserContainer is a container specified by a user."
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ValueFrom": {
+    "io.argoproj.workflow.v1alpha.ValueFrom": {
       "type": "object",
       "properties": {
         "path": {
@@ -1704,43 +1704,43 @@
       },
       "title": "ValueFrom describes a location in which to obtain the value to a parameter"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow": {
+    "io.argoproj.workflow.v1alpha.Workflow": {
       "type": "object",
       "properties": {
         "metadata": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
         "spec": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowSpec"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.WorkflowSpec"
         },
         "status": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowStatus"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.WorkflowStatus"
         }
       },
-      "title": "Workflow is the definition of a workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
+      "title": "Workflow is the definition of a workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=io.k8s/apimachinery/pkg/runtime.Object"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowList": {
+    "io.argoproj.workflow.v1alpha.WorkflowList": {
       "type": "object",
       "properties": {
         "metadata": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
         },
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Workflow"
           }
         }
       },
-      "title": "WorkflowList is list of Workflow resources\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
+      "title": "WorkflowList is list of Workflow resources\n+k8s:deepcopy-gen:interfaces=io.k8s/apimachinery/pkg/runtime.Object"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowSpec": {
+    "io.argoproj.workflow.v1alpha.WorkflowSpec": {
       "type": "object",
       "properties": {
         "templates": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Template"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Template"
           },
           "title": "Templates is a list of workflow templates used in a workflow\n+patchStrategy=merge\n+patchMergeKey=name"
         },
@@ -1749,7 +1749,7 @@
           "title": "Entrypoint is a template reference to the starting point of the workflow"
         },
         "arguments": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Arguments",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Arguments",
           "title": "Arguments contain the parameters and artifacts sent to the workflow entrypoint\nParameters are referencable globally using the 'workflow' variable prefix.\ne.g. {{workflow.parameters.myparam}}"
         },
         "serviceAccountName": {
@@ -1762,20 +1762,20 @@
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.\nServiceAccountName of ExecutorConfig must be specified if this value is false."
         },
         "executor": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ExecutorConfig",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.ExecutorConfig",
           "description": "Executor holds configurations of executor containers of the workflow."
         },
         "volumes": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.Volume"
+            "$ref": "#/definitions/io.k8s.api.core.v1.Volume"
           },
           "title": "Volumes is a list of volumes that can be mounted by containers in a workflow.\n+patchStrategy=merge\n+patchMergeKey=name"
         },
         "volumeClaimTemplates": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.PersistentVolumeClaim"
+            "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaim"
           },
           "title": "VolumeClaimTemplates is a list of claims that containers are allowed to reference.\nThe Workflow controller will create the claims at the beginning of the workflow\nand delete the claims upon completion of the workflow\n+patchStrategy=merge\n+patchMergeKey=name"
         },
@@ -1785,7 +1785,7 @@
           "title": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow"
         },
         "artifactRepositoryRef": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactRepositoryRef",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.ArtifactRepositoryRef",
           "description": "ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config."
         },
         "suspend": {
@@ -1801,20 +1801,20 @@
           "description": "NodeSelector is a selector which will result in all pods of the workflow\nto be scheduled on the selected node(s). This is able to be overridden by\na nodeSelector specified in the template."
         },
         "affinity": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.Affinity",
+          "$ref": "#/definitions/io.k8s.api.core.v1.Affinity",
           "title": "Affinity sets the scheduling constraints for all pods in the workflow.\nCan be overridden by an affinity specified in the template"
         },
         "tolerations": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.Toleration"
+            "$ref": "#/definitions/io.k8s.api.core.v1.Toleration"
           },
           "title": "Tolerations to apply to workflow pods.\n+patchStrategy=merge\n+patchMergeKey=key"
         },
         "imagePullSecrets": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference"
+            "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
           },
           "title": "ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images\nin pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets\ncan be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet.\nMore info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod\n+patchStrategy=merge\n+patchMergeKey=name"
         },
@@ -1828,7 +1828,7 @@
           "description": "Set DNS policy for the pod.\nDefaults to \"ClusterFirst\".\nValid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'.\nDNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy.\nTo have DNS options set along with hostNetwork, you have to specify DNS policy\nexplicitly to 'ClusterFirstWithHostNet'."
         },
         "dnsConfig": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.PodDNSConfig",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PodDNSConfig",
           "description": "PodDNSConfig defines the DNS parameters of a pod in addition to\nthose generated from DNSPolicy."
         },
         "onExit": {
@@ -1841,7 +1841,7 @@
           "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution\n(Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be\ndeleted after ttlSecondsAfterFinished expires. If this field is unset,\nttlSecondsAfterFinished will not expire. If this field is set to zero,\nttlSecondsAfterFinished expires immediately after the Workflow finishes.\nDEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead."
         },
         "ttlStrategy": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TTLStrategy",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.TTLStrategy",
           "title": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it\nSucceeded or Failed. If this struct is set, once the Workflow finishes, it will be\ndeleted after the time to live expires. If this field is unset,\nthe controller config map will hold the default values\nUpdate"
         },
         "activeDeadlineSeconds": {
@@ -1859,7 +1859,7 @@
           "title": "Set scheduler name for all pods.\nWill be overridden if container/script template's scheduler name is set.\nDefault scheduler will be used if neither specified.\n+optional"
         },
         "podGC": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.PodGC",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.PodGC",
           "title": "PodGC describes the strategy to use when to deleting completed pods"
         },
         "podPriorityClassName": {
@@ -1874,12 +1874,12 @@
         "hostAliases": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.HostAlias"
+            "$ref": "#/definitions/io.k8s.api.core.v1.HostAlias"
           },
           "title": "+patchStrategy=merge\n+patchMergeKey=ip"
         },
         "securityContext": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.PodSecurityContext",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PodSecurityContext",
           "title": "SecurityContext holds pod-level security attributes and common container settings.\nOptional: Defaults to empty.  See type description for default values of each field.\n+optional"
         },
         "podSpecPatch": {
@@ -1889,7 +1889,7 @@
       },
       "description": "WorkflowSpec is the specification of a Workflow."
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowStatus": {
+    "io.argoproj.workflow.v1alpha.WorkflowStatus": {
       "type": "object",
       "properties": {
         "phase": {
@@ -1897,11 +1897,11 @@
           "description": "Phase a simple, high-level summary of where the workflow is in its lifecycle."
         },
         "startedAt": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
           "title": "Time at which this workflow started"
         },
         "finishedAt": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
           "title": "Time at which this workflow completed"
         },
         "message": {
@@ -1915,7 +1915,7 @@
         "nodes": {
           "type": "object",
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.NodeStatus"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha.NodeStatus"
           },
           "description": "Nodes is a mapping between a node ID and the node's status."
         },
@@ -1926,25 +1926,25 @@
         "storedTemplates": {
           "type": "object",
           "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Template"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Template"
           },
           "description": "StoredTemplates is a mapping between a template ref and the node's status."
         },
         "persistentVolumeClaims": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.Volume"
+            "$ref": "#/definitions/io.k8s.api.core.v1.Volume"
           },
           "description": "PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.\nThe contents of this list are drained at the end of the workflow."
         },
         "outputs": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Outputs",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Outputs",
           "title": "Outputs captures output values and artifact locations produced by the workflow via global outputs"
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowStep": {
+    "io.argoproj.workflow.v1alpha.WorkflowStep": {
       "type": "object",
       "properties": {
         "name": {
@@ -1956,17 +1956,17 @@
           "title": "Template is the name of the template to execute as the step"
         },
         "arguments": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Arguments",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Arguments",
           "title": "Arguments hold arguments to the template"
         },
         "templateRef": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TemplateRef",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.TemplateRef",
           "description": "TemplateRef is the reference to the template resource to execute as the step."
         },
         "withItems": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Item"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Item"
           },
           "title": "WithItems expands a step into multiple parallel steps from the items in the list"
         },
@@ -1975,7 +1975,7 @@
           "description": "WithParam expands a step into multiple parallel steps from the value in the parameter,\nwhich is expected to be a JSON list."
         },
         "withSequence": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Sequence",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Sequence",
           "title": "WithSequence expands a step into a numeric sequence"
         },
         "when": {
@@ -1983,7 +1983,7 @@
           "title": "When is an expression in which the step should conditionally execute"
         },
         "continueOn": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ContinueOn",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.ContinueOn",
           "title": "ContinueOn makes argo to proceed with the following step even if this step fails.\nErrors and Failed states can be specified"
         },
         "onExit": {
@@ -2030,7 +2030,7 @@
         }
       }
     },
-    "k8s.io.api.core.v1.AWSElasticBlockStoreVolumeSource": {
+    "io.k8s.api.core.v1.AWSElasticBlockStoreVolumeSource": {
       "type": "object",
       "properties": {
         "volumeID": {
@@ -2054,25 +2054,25 @@
       },
       "description": "Represents a Persistent Disk resource in AWS.\n\nAn AWS EBS disk must exist before mounting to a container. The disk\nmust also be in the same AWS zone as the kubelet. An AWS EBS disk\ncan only be mounted as read/write once. AWS EBS volumes support\nownership management and SELinux relabeling."
     },
-    "k8s.io.api.core.v1.Affinity": {
+    "io.k8s.api.core.v1.Affinity": {
       "type": "object",
       "properties": {
         "nodeAffinity": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.NodeAffinity",
+          "$ref": "#/definitions/io.k8s.api.core.v1.NodeAffinity",
           "title": "Describes node affinity scheduling rules for the pod.\n+optional"
         },
         "podAffinity": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.PodAffinity",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PodAffinity",
           "title": "Describes pod affinity scheduling rules (e.g. co-locate this pod in the same node, zone, etc. as some other pod(s)).\n+optional"
         },
         "podAntiAffinity": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.PodAntiAffinity",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PodAntiAffinity",
           "title": "Describes pod anti-affinity scheduling rules (e.g. avoid putting this pod in the same node, zone, etc. as some other pod(s)).\n+optional"
         }
       },
       "description": "Affinity is a group of affinity scheduling rules."
     },
-    "k8s.io.api.core.v1.AzureDiskVolumeSource": {
+    "io.k8s.api.core.v1.AzureDiskVolumeSource": {
       "type": "object",
       "properties": {
         "diskName": {
@@ -2103,7 +2103,7 @@
       },
       "description": "AzureDisk represents an Azure Data Disk mount on the host and bind mount to the pod."
     },
-    "k8s.io.api.core.v1.AzureFileVolumeSource": {
+    "io.k8s.api.core.v1.AzureFileVolumeSource": {
       "type": "object",
       "properties": {
         "secretName": {
@@ -2122,7 +2122,7 @@
       },
       "description": "AzureFile represents an Azure File Service mount on the host and bind mount to the pod."
     },
-    "k8s.io.api.core.v1.CSIVolumeSource": {
+    "io.k8s.api.core.v1.CSIVolumeSource": {
       "type": "object",
       "properties": {
         "driver": {
@@ -2146,13 +2146,13 @@
           "title": "VolumeAttributes stores driver-specific properties that are passed to the CSI\ndriver. Consult your driver's documentation for supported values.\n+optional"
         },
         "nodePublishSecretRef": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference",
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference",
           "title": "NodePublishSecretRef is a reference to the secret object containing\nsensitive information to pass to the CSI driver to complete the CSI\nNodePublishVolume and NodeUnpublishVolume calls.\nThis field is optional, and  may be empty if no secret is required. If the\nsecret object contains more than one secret, all secret references are passed.\n+optional"
         }
       },
       "title": "Represents a source location of a volume to mount, managed by an external CSI driver"
     },
-    "k8s.io.api.core.v1.Capabilities": {
+    "io.k8s.api.core.v1.Capabilities": {
       "type": "object",
       "properties": {
         "add": {
@@ -2172,7 +2172,7 @@
       },
       "description": "Adds and removes POSIX capabilities from running containers."
     },
-    "k8s.io.api.core.v1.CephFSVolumeSource": {
+    "io.k8s.api.core.v1.CephFSVolumeSource": {
       "type": "object",
       "properties": {
         "monitors": {
@@ -2180,7 +2180,7 @@
           "items": {
             "type": "string"
           },
-          "title": "Required: Monitors is a collection of Ceph monitors\nMore info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it"
+          "title": "Required: Monitors is a collection of Ceph monitors\nMore info: https://examples.io.k8s/volumes/cephfs/README.md#how-to-use-it"
         },
         "path": {
           "type": "string",
@@ -2188,52 +2188,52 @@
         },
         "user": {
           "type": "string",
-          "title": "Optional: User is the rados user name, default is admin\nMore info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it\n+optional"
+          "title": "Optional: User is the rados user name, default is admin\nMore info: https://examples.io.k8s/volumes/cephfs/README.md#how-to-use-it\n+optional"
         },
         "secretFile": {
           "type": "string",
-          "title": "Optional: SecretFile is the path to key ring for User, default is /etc/ceph/user.secret\nMore info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it\n+optional"
+          "title": "Optional: SecretFile is the path to key ring for User, default is /etc/ceph/user.secret\nMore info: https://examples.io.k8s/volumes/cephfs/README.md#how-to-use-it\n+optional"
         },
         "secretRef": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference",
-          "title": "Optional: SecretRef is reference to the authentication secret for User, default is empty.\nMore info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it\n+optional"
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference",
+          "title": "Optional: SecretRef is reference to the authentication secret for User, default is empty.\nMore info: https://examples.io.k8s/volumes/cephfs/README.md#how-to-use-it\n+optional"
         },
         "readOnly": {
           "type": "boolean",
           "format": "boolean",
-          "title": "Optional: Defaults to false (read/write). ReadOnly here will force\nthe ReadOnly setting in VolumeMounts.\nMore info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it\n+optional"
+          "title": "Optional: Defaults to false (read/write). ReadOnly here will force\nthe ReadOnly setting in VolumeMounts.\nMore info: https://examples.io.k8s/volumes/cephfs/README.md#how-to-use-it\n+optional"
         }
       },
       "description": "Represents a Ceph Filesystem mount that lasts the lifetime of a pod\nCephfs volumes do not support ownership management or SELinux relabeling."
     },
-    "k8s.io.api.core.v1.CinderVolumeSource": {
+    "io.k8s.api.core.v1.CinderVolumeSource": {
       "type": "object",
       "properties": {
         "volumeID": {
           "type": "string",
-          "title": "volume id used to identify the volume in cinder.\nMore info: https://examples.k8s.io/mysql-cinder-pd/README.md"
+          "title": "volume id used to identify the volume in cinder.\nMore info: https://examples.io.k8s/mysql-cinder-pd/README.md"
         },
         "fsType": {
           "type": "string",
-          "title": "Filesystem type to mount.\nMust be a filesystem type supported by the host operating system.\nExamples: \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.\nMore info: https://examples.k8s.io/mysql-cinder-pd/README.md\n+optional"
+          "title": "Filesystem type to mount.\nMust be a filesystem type supported by the host operating system.\nExamples: \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.\nMore info: https://examples.io.k8s/mysql-cinder-pd/README.md\n+optional"
         },
         "readOnly": {
           "type": "boolean",
           "format": "boolean",
-          "title": "Optional: Defaults to false (read/write). ReadOnly here will force\nthe ReadOnly setting in VolumeMounts.\nMore info: https://examples.k8s.io/mysql-cinder-pd/README.md\n+optional"
+          "title": "Optional: Defaults to false (read/write). ReadOnly here will force\nthe ReadOnly setting in VolumeMounts.\nMore info: https://examples.io.k8s/mysql-cinder-pd/README.md\n+optional"
         },
         "secretRef": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference",
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference",
           "title": "Optional: points to a secret object containing parameters used to connect\nto OpenStack.\n+optional"
         }
       },
       "description": "Represents a cinder volume resource in Openstack.\nA Cinder volume must exist before mounting to a container.\nThe volume must also be in the same region as the kubelet.\nCinder volumes support ownership management and SELinux relabeling."
     },
-    "k8s.io.api.core.v1.ConfigMapEnvSource": {
+    "io.k8s.api.core.v1.ConfigMapEnvSource": {
       "type": "object",
       "properties": {
         "localObjectReference": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference",
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference",
           "description": "The ConfigMap to select from."
         },
         "optional": {
@@ -2244,11 +2244,11 @@
       },
       "description": "ConfigMapEnvSource selects a ConfigMap to populate the environment\nvariables with.\n\nThe contents of the target ConfigMap's Data field will represent the\nkey-value pairs as environment variables."
     },
-    "k8s.io.api.core.v1.ConfigMapKeySelector": {
+    "io.k8s.api.core.v1.ConfigMapKeySelector": {
       "type": "object",
       "properties": {
         "localObjectReference": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference",
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference",
           "description": "The ConfigMap to select from."
         },
         "key": {
@@ -2263,16 +2263,16 @@
       },
       "description": "Selects a key from a ConfigMap."
     },
-    "k8s.io.api.core.v1.ConfigMapProjection": {
+    "io.k8s.api.core.v1.ConfigMapProjection": {
       "type": "object",
       "properties": {
         "localObjectReference": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference"
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
         },
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.KeyToPath"
+            "$ref": "#/definitions/io.k8s.api.core.v1.KeyToPath"
           },
           "title": "If unspecified, each key-value pair in the Data field of the referenced\nConfigMap will be projected into the volume as a file whose name is the\nkey and content is the value. If specified, the listed keys will be\nprojected into the specified paths, and unlisted keys will not be\npresent. If a key is specified which is not present in the ConfigMap,\nthe volume setup will error unless it is marked optional. Paths must be\nrelative and may not contain the '..' path or start with '..'.\n+optional"
         },
@@ -2284,16 +2284,16 @@
       },
       "description": "Adapts a ConfigMap into a projected volume.\n\nThe contents of the target ConfigMap's Data field will be presented in a\nprojected volume as files using the keys in the Data field as the file names,\nunless the items element is populated with specific mappings of keys to paths.\nNote that this is identical to a configmap volume source without the default\nmode."
     },
-    "k8s.io.api.core.v1.ConfigMapVolumeSource": {
+    "io.k8s.api.core.v1.ConfigMapVolumeSource": {
       "type": "object",
       "properties": {
         "localObjectReference": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference"
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
         },
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.KeyToPath"
+            "$ref": "#/definitions/io.k8s.api.core.v1.KeyToPath"
           },
           "title": "If unspecified, each key-value pair in the Data field of the referenced\nConfigMap will be projected into the volume as a file whose name is the\nkey and content is the value. If specified, the listed keys will be\nprojected into the specified paths, and unlisted keys will not be\npresent. If a key is specified which is not present in the ConfigMap,\nthe volume setup will error unless it is marked optional. Paths must be\nrelative and may not contain the '..' path or start with '..'.\n+optional"
         },
@@ -2310,7 +2310,7 @@
       },
       "description": "Adapts a ConfigMap into a volume.\n\nThe contents of the target ConfigMap's Data field will be presented in a\nvolume as files using the keys in the Data field as the file names, unless\nthe items element is populated with specific mappings of keys to paths.\nConfigMap volumes support ownership management and SELinux relabeling."
     },
-    "k8s.io.api.core.v1.Container": {
+    "io.k8s.api.core.v1.Container": {
       "type": "object",
       "properties": {
         "name": {
@@ -2342,56 +2342,56 @@
         "ports": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.ContainerPort"
+            "$ref": "#/definitions/io.k8s.api.core.v1.ContainerPort"
           },
           "title": "List of ports to expose from the container. Exposing a port here gives\nthe system additional information about the network connections a\ncontainer uses, but is primarily informational. Not specifying a port here\nDOES NOT prevent that port from being exposed. Any port which is\nlistening on the default \"0.0.0.0\" address inside a container will be\naccessible from the network.\nCannot be updated.\n+optional\n+patchMergeKey=containerPort\n+patchStrategy=merge\n+listType=map\n+listMapKey=containerPort\n+listMapKey=protocol"
         },
         "envFrom": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.EnvFromSource"
+            "$ref": "#/definitions/io.k8s.api.core.v1.EnvFromSource"
           },
           "title": "List of sources to populate environment variables in the container.\nThe keys defined within a source must be a C_IDENTIFIER. All invalid keys\nwill be reported as an event when the container is starting. When a key exists in multiple\nsources, the value associated with the last source will take precedence.\nValues defined by an Env with a duplicate key will take precedence.\nCannot be updated.\n+optional"
         },
         "env": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.EnvVar"
+            "$ref": "#/definitions/io.k8s.api.core.v1.EnvVar"
           },
           "title": "List of environment variables to set in the container.\nCannot be updated.\n+optional\n+patchMergeKey=name\n+patchStrategy=merge"
         },
         "resources": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.ResourceRequirements",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements",
           "title": "Compute Resources required by this container.\nCannot be updated.\nMore info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/\n+optional"
         },
         "volumeMounts": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.VolumeMount"
+            "$ref": "#/definitions/io.k8s.api.core.v1.VolumeMount"
           },
           "title": "Pod volumes to mount into the container's filesystem.\nCannot be updated.\n+optional\n+patchMergeKey=mountPath\n+patchStrategy=merge"
         },
         "volumeDevices": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.VolumeDevice"
+            "$ref": "#/definitions/io.k8s.api.core.v1.VolumeDevice"
           },
           "title": "volumeDevices is the list of block devices to be used by the container.\nThis is a beta feature.\n+patchMergeKey=devicePath\n+patchStrategy=merge\n+optional"
         },
         "livenessProbe": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.Probe",
+          "$ref": "#/definitions/io.k8s.api.core.v1.Probe",
           "title": "Periodic probe of container liveness.\nContainer will be restarted if the probe fails.\nCannot be updated.\nMore info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes\n+optional"
         },
         "readinessProbe": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.Probe",
+          "$ref": "#/definitions/io.k8s.api.core.v1.Probe",
           "title": "Periodic probe of container service readiness.\nContainer will be removed from service endpoints if the probe fails.\nCannot be updated.\nMore info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes\n+optional"
         },
         "startupProbe": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.Probe",
+          "$ref": "#/definitions/io.k8s.api.core.v1.Probe",
           "title": "StartupProbe indicates that the Pod has successfully initialized.\nIf specified, no other probes are executed until this completes successfully.\nIf this probe fails, the Pod will be restarted, just as if the livenessProbe failed.\nThis can be used to provide different probe parameters at the beginning of a Pod's lifecycle,\nwhen it might take a long time to load data or warm a cache, than during steady-state operation.\nThis cannot be updated.\nThis is an alpha feature enabled by the StartupProbe feature flag.\nMore info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes\n+optional"
         },
         "lifecycle": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.Lifecycle",
+          "$ref": "#/definitions/io.k8s.api.core.v1.Lifecycle",
           "title": "Actions that the management system should take in response to container lifecycle events.\nCannot be updated.\n+optional"
         },
         "terminationMessagePath": {
@@ -2407,7 +2407,7 @@
           "title": "Image pull policy.\nOne of Always, Never, IfNotPresent.\nDefaults to Always if :latest tag is specified, or IfNotPresent otherwise.\nCannot be updated.\nMore info: https://kubernetes.io/docs/concepts/containers/images#updating-images\n+optional"
         },
         "securityContext": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.SecurityContext",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext",
           "title": "Security options the pod should run with.\nMore info: https://kubernetes.io/docs/concepts/policy/security-context/\nMore info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/\n+optional"
         },
         "stdin": {
@@ -2428,7 +2428,7 @@
       },
       "description": "A single application container that you want to run within a pod."
     },
-    "k8s.io.api.core.v1.ContainerPort": {
+    "io.k8s.api.core.v1.ContainerPort": {
       "type": "object",
       "properties": {
         "name": {
@@ -2456,20 +2456,20 @@
       },
       "description": "ContainerPort represents a network port in a single container."
     },
-    "k8s.io.api.core.v1.DownwardAPIProjection": {
+    "io.k8s.api.core.v1.DownwardAPIProjection": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.DownwardAPIVolumeFile"
+            "$ref": "#/definitions/io.k8s.api.core.v1.DownwardAPIVolumeFile"
           },
           "title": "Items is a list of DownwardAPIVolume file\n+optional"
         }
       },
       "description": "Represents downward API info for projecting into a projected volume.\nNote that this is identical to a downwardAPI volume source without the default\nmode."
     },
-    "k8s.io.api.core.v1.DownwardAPIVolumeFile": {
+    "io.k8s.api.core.v1.DownwardAPIVolumeFile": {
       "type": "object",
       "properties": {
         "path": {
@@ -2477,11 +2477,11 @@
           "title": "Required: Path is  the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'"
         },
         "fieldRef": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.ObjectFieldSelector",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectFieldSelector",
           "title": "Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.\n+optional"
         },
         "resourceFieldRef": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.ResourceFieldSelector",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceFieldSelector",
           "title": "Selects a resource of the container: only resources limits and requests\n(limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.\n+optional"
         },
         "mode": {
@@ -2492,13 +2492,13 @@
       },
       "title": "DownwardAPIVolumeFile represents information to create the file containing the pod field"
     },
-    "k8s.io.api.core.v1.DownwardAPIVolumeSource": {
+    "io.k8s.api.core.v1.DownwardAPIVolumeSource": {
       "type": "object",
       "properties": {
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.DownwardAPIVolumeFile"
+            "$ref": "#/definitions/io.k8s.api.core.v1.DownwardAPIVolumeFile"
           },
           "title": "Items is a list of downward API volume file\n+optional"
         },
@@ -2510,7 +2510,7 @@
       },
       "description": "DownwardAPIVolumeSource represents a volume containing downward API info.\nDownward API volumes support ownership management and SELinux relabeling."
     },
-    "k8s.io.api.core.v1.EmptyDirVolumeSource": {
+    "io.k8s.api.core.v1.EmptyDirVolumeSource": {
       "type": "object",
       "properties": {
         "medium": {
@@ -2518,13 +2518,13 @@
           "title": "What type of storage medium should back this directory.\nThe default is \"\" which means to use the node's default medium.\nMust be an empty string (default) or Memory.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir\n+optional"
         },
         "sizeLimit": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.api.resource.Quantity",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity",
           "title": "Total amount of local storage required for this EmptyDir volume.\nThe size limit is also applicable for memory medium.\nThe maximum usage on memory medium EmptyDir would be the minimum value between\nthe SizeLimit specified here and the sum of memory limits of all containers in a pod.\nThe default is nil which means that the limit is undefined.\nMore info: http://kubernetes.io/docs/user-guide/volumes#emptydir\n+optional"
         }
       },
       "description": "Represents an empty directory for a pod.\nEmpty directory volumes support ownership management and SELinux relabeling."
     },
-    "k8s.io.api.core.v1.EnvFromSource": {
+    "io.k8s.api.core.v1.EnvFromSource": {
       "type": "object",
       "properties": {
         "prefix": {
@@ -2532,17 +2532,17 @@
           "title": "An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.\n+optional"
         },
         "configMapRef": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.ConfigMapEnvSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapEnvSource",
           "title": "The ConfigMap to select from\n+optional"
         },
         "secretRef": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.SecretEnvSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretEnvSource",
           "title": "The Secret to select from\n+optional"
         }
       },
       "title": "EnvFromSource represents the source of a set of ConfigMaps"
     },
-    "k8s.io.api.core.v1.EnvVar": {
+    "io.k8s.api.core.v1.EnvVar": {
       "type": "object",
       "properties": {
         "name": {
@@ -2554,35 +2554,35 @@
           "title": "Variable references $(VAR_NAME) are expanded\nusing the previous defined environment variables in the container and\nany service environment variables. If a variable cannot be resolved,\nthe reference in the input string will be unchanged. The $(VAR_NAME)\nsyntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped\nreferences will never be expanded, regardless of whether the variable\nexists or not.\nDefaults to \"\".\n+optional"
         },
         "valueFrom": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.EnvVarSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.EnvVarSource",
           "title": "Source for the environment variable's value. Cannot be used if value is not empty.\n+optional"
         }
       },
       "description": "EnvVar represents an environment variable present in a Container."
     },
-    "k8s.io.api.core.v1.EnvVarSource": {
+    "io.k8s.api.core.v1.EnvVarSource": {
       "type": "object",
       "properties": {
         "fieldRef": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.ObjectFieldSelector",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectFieldSelector",
           "title": "Selects a field of the pod: supports metadata.name, metadata.namespace, metadata.labels, metadata.annotations,\nspec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP.\n+optional"
         },
         "resourceFieldRef": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.ResourceFieldSelector",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceFieldSelector",
           "title": "Selects a resource of the container: only resources limits and requests\n(limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.\n+optional"
         },
         "configMapKeyRef": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.ConfigMapKeySelector",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector",
           "title": "Selects a key of a ConfigMap.\n+optional"
         },
         "secretKeyRef": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
           "title": "Selects a key of a secret in the pod's namespace\n+optional"
         }
       },
       "description": "EnvVarSource represents a source for the value of an EnvVar."
     },
-    "k8s.io.api.core.v1.ExecAction": {
+    "io.k8s.api.core.v1.ExecAction": {
       "type": "object",
       "properties": {
         "command": {
@@ -2595,7 +2595,7 @@
       },
       "description": "ExecAction describes a \"run in container\" action."
     },
-    "k8s.io.api.core.v1.FCVolumeSource": {
+    "io.k8s.api.core.v1.FCVolumeSource": {
       "type": "object",
       "properties": {
         "targetWWNs": {
@@ -2629,7 +2629,7 @@
       },
       "description": "Represents a Fibre Channel volume.\nFibre Channel volumes can only be mounted as read/write once.\nFibre Channel volumes support ownership management and SELinux relabeling."
     },
-    "k8s.io.api.core.v1.FlexVolumeSource": {
+    "io.k8s.api.core.v1.FlexVolumeSource": {
       "type": "object",
       "properties": {
         "driver": {
@@ -2641,7 +2641,7 @@
           "title": "Filesystem type to mount.\nMust be a filesystem type supported by the host operating system.\nEx. \"ext4\", \"xfs\", \"ntfs\". The default filesystem depends on FlexVolume script.\n+optional"
         },
         "secretRef": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference",
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference",
           "title": "Optional: SecretRef is reference to the secret object containing\nsensitive information to pass to the plugin scripts. This may be\nempty if no secret object is specified. If the secret object\ncontains more than one secret, all secrets are passed to the plugin\nscripts.\n+optional"
         },
         "readOnly": {
@@ -2659,7 +2659,7 @@
       },
       "description": "FlexVolume represents a generic volume resource that is\nprovisioned/attached using an exec based plugin."
     },
-    "k8s.io.api.core.v1.FlockerVolumeSource": {
+    "io.k8s.api.core.v1.FlockerVolumeSource": {
       "type": "object",
       "properties": {
         "datasetName": {
@@ -2673,7 +2673,7 @@
       },
       "description": "Represents a Flocker volume mounted by the Flocker agent.\nOne and only one of datasetName and datasetUUID should be set.\nFlocker volumes do not support ownership management or SELinux relabeling."
     },
-    "k8s.io.api.core.v1.GCEPersistentDiskVolumeSource": {
+    "io.k8s.api.core.v1.GCEPersistentDiskVolumeSource": {
       "type": "object",
       "properties": {
         "pdName": {
@@ -2697,7 +2697,7 @@
       },
       "description": "Represents a Persistent Disk resource in Google Compute Engine.\n\nA GCE PD must exist before mounting to a container. The disk must\nalso be in the same GCE project and zone as the kubelet. A GCE PD\ncan only be mounted as read/write once or read-only many times. GCE\nPDs support ownership management and SELinux relabeling."
     },
-    "k8s.io.api.core.v1.GitRepoVolumeSource": {
+    "io.k8s.api.core.v1.GitRepoVolumeSource": {
       "type": "object",
       "properties": {
         "repository": {
@@ -2715,26 +2715,26 @@
       },
       "description": "Represents a volume that is populated with the contents of a git repository.\nGit repo volumes do not support ownership management.\nGit repo volumes support SELinux relabeling.\n\nDEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an\nEmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir\ninto the Pod's container."
     },
-    "k8s.io.api.core.v1.GlusterfsVolumeSource": {
+    "io.k8s.api.core.v1.GlusterfsVolumeSource": {
       "type": "object",
       "properties": {
         "endpoints": {
           "type": "string",
-          "title": "EndpointsName is the endpoint name that details Glusterfs topology.\nMore info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod"
+          "title": "EndpointsName is the endpoint name that details Glusterfs topology.\nMore info: https://examples.io.k8s/volumes/glusterfs/README.md#create-a-pod"
         },
         "path": {
           "type": "string",
-          "title": "Path is the Glusterfs volume path.\nMore info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod"
+          "title": "Path is the Glusterfs volume path.\nMore info: https://examples.io.k8s/volumes/glusterfs/README.md#create-a-pod"
         },
         "readOnly": {
           "type": "boolean",
           "format": "boolean",
-          "title": "ReadOnly here will force the Glusterfs volume to be mounted with read-only permissions.\nDefaults to false.\nMore info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod\n+optional"
+          "title": "ReadOnly here will force the Glusterfs volume to be mounted with read-only permissions.\nDefaults to false.\nMore info: https://examples.io.k8s/volumes/glusterfs/README.md#create-a-pod\n+optional"
         }
       },
       "description": "Represents a Glusterfs mount that lasts the lifetime of a pod.\nGlusterfs volumes do not support ownership management or SELinux relabeling."
     },
-    "k8s.io.api.core.v1.HTTPGetAction": {
+    "io.k8s.api.core.v1.HTTPGetAction": {
       "type": "object",
       "properties": {
         "path": {
@@ -2742,7 +2742,7 @@
           "title": "Path to access on the HTTP server.\n+optional"
         },
         "port": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.util.intstr.IntOrString",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
           "description": "Name or number of the port to access on the container.\nNumber must be in the range 1 to 65535.\nName must be an IANA_SVC_NAME."
         },
         "host": {
@@ -2756,14 +2756,14 @@
         "httpHeaders": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.HTTPHeader"
+            "$ref": "#/definitions/io.k8s.api.core.v1.HTTPHeader"
           },
           "title": "Custom headers to set in the request. HTTP allows repeated headers.\n+optional"
         }
       },
       "description": "HTTPGetAction describes an action based on HTTP Get requests."
     },
-    "k8s.io.api.core.v1.HTTPHeader": {
+    "io.k8s.api.core.v1.HTTPHeader": {
       "type": "object",
       "properties": {
         "name": {
@@ -2777,25 +2777,25 @@
       },
       "title": "HTTPHeader describes a custom header to be used in HTTP probes"
     },
-    "k8s.io.api.core.v1.Handler": {
+    "io.k8s.api.core.v1.Handler": {
       "type": "object",
       "properties": {
         "exec": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.ExecAction",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ExecAction",
           "title": "One and only one of the following should be specified.\nExec specifies the action to take.\n+optional"
         },
         "httpGet": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.HTTPGetAction",
+          "$ref": "#/definitions/io.k8s.api.core.v1.HTTPGetAction",
           "title": "HTTPGet specifies the http request to perform.\n+optional"
         },
         "tcpSocket": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.TCPSocketAction",
+          "$ref": "#/definitions/io.k8s.api.core.v1.TCPSocketAction",
           "title": "TCPSocket specifies an action involving a TCP port.\nTCP hooks not yet supported\nTODO: implement a realistic TCP lifecycle hook\n+optional"
         }
       },
       "description": "Handler defines a specific action that should be taken\nTODO: pass structured data to these actions, and document that data here."
     },
-    "k8s.io.api.core.v1.HostAlias": {
+    "io.k8s.api.core.v1.HostAlias": {
       "type": "object",
       "properties": {
         "ip": {
@@ -2812,7 +2812,7 @@
       },
       "description": "HostAlias holds the mapping between IP and hostnames that will be injected as an entry in the\npod's hosts file."
     },
-    "k8s.io.api.core.v1.HostPathVolumeSource": {
+    "io.k8s.api.core.v1.HostPathVolumeSource": {
       "type": "object",
       "properties": {
         "path": {
@@ -2826,7 +2826,7 @@
       },
       "description": "Represents a host path mapped into a pod.\nHost path volumes do not support ownership management or SELinux relabeling."
     },
-    "k8s.io.api.core.v1.ISCSIVolumeSource": {
+    "io.k8s.api.core.v1.ISCSIVolumeSource": {
       "type": "object",
       "properties": {
         "targetPortal": {
@@ -2873,7 +2873,7 @@
           "title": "whether support iSCSI Session CHAP authentication\n+optional"
         },
         "secretRef": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference",
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference",
           "title": "CHAP Secret for iSCSI target and initiator authentication\n+optional"
         },
         "initiatorName": {
@@ -2883,7 +2883,7 @@
       },
       "description": "Represents an ISCSI disk.\nISCSI volumes can only be mounted as read/write once.\nISCSI volumes support ownership management and SELinux relabeling."
     },
-    "k8s.io.api.core.v1.KeyToPath": {
+    "io.k8s.api.core.v1.KeyToPath": {
       "type": "object",
       "properties": {
         "key": {
@@ -2902,21 +2902,21 @@
       },
       "description": "Maps a string key to a path within a volume."
     },
-    "k8s.io.api.core.v1.Lifecycle": {
+    "io.k8s.api.core.v1.Lifecycle": {
       "type": "object",
       "properties": {
         "postStart": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.Handler",
+          "$ref": "#/definitions/io.k8s.api.core.v1.Handler",
           "title": "PostStart is called immediately after a container is created. If the handler fails,\nthe container is terminated and restarted according to its restart policy.\nOther management of the container blocks until the hook completes.\nMore info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks\n+optional"
         },
         "preStop": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.Handler",
+          "$ref": "#/definitions/io.k8s.api.core.v1.Handler",
           "title": "PreStop is called immediately before a container is terminated due to an\nAPI request or management event such as liveness/startup probe failure,\npreemption, resource contention, etc. The handler is not called if the\ncontainer crashes or exits. The reason for termination is passed to the\nhandler. The Pod's termination grace period countdown begins before the\nPreStop hooked is executed. Regardless of the outcome of the handler, the\ncontainer will eventually terminate within the Pod's termination grace\nperiod. Other management of the container blocks until the hook completes\nor until the termination grace period is reached.\nMore info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks\n+optional"
         }
       },
       "description": "Lifecycle describes actions that the management system should take in response to container lifecycle\nevents. For the PostStart and PreStop lifecycle handlers, management of the container blocks\nuntil the action is complete, unless the container process fails, in which case the handler is aborted."
     },
-    "k8s.io.api.core.v1.LocalObjectReference": {
+    "io.k8s.api.core.v1.LocalObjectReference": {
       "type": "object",
       "properties": {
         "name": {
@@ -2926,7 +2926,7 @@
       },
       "description": "LocalObjectReference contains enough information to let you locate the\nreferenced object inside the same namespace."
     },
-    "k8s.io.api.core.v1.NFSVolumeSource": {
+    "io.k8s.api.core.v1.NFSVolumeSource": {
       "type": "object",
       "properties": {
         "server": {
@@ -2945,37 +2945,37 @@
       },
       "description": "Represents an NFS mount that lasts the lifetime of a pod.\nNFS volumes do not support ownership management or SELinux relabeling."
     },
-    "k8s.io.api.core.v1.NodeAffinity": {
+    "io.k8s.api.core.v1.NodeAffinity": {
       "type": "object",
       "properties": {
         "requiredDuringSchedulingIgnoredDuringExecution": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.NodeSelector",
+          "$ref": "#/definitions/io.k8s.api.core.v1.NodeSelector",
           "title": "If the affinity requirements specified by this field are not met at\nscheduling time, the pod will not be scheduled onto the node.\nIf the affinity requirements specified by this field cease to be met\nat some point during pod execution (e.g. due to an update), the system\nmay or may not try to eventually evict the pod from its node.\n+optional"
         },
         "preferredDuringSchedulingIgnoredDuringExecution": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.PreferredSchedulingTerm"
+            "$ref": "#/definitions/io.k8s.api.core.v1.PreferredSchedulingTerm"
           },
           "title": "The scheduler will prefer to schedule pods to nodes that satisfy\nthe affinity expressions specified by this field, but it may choose\na node that violates one or more of the expressions. The node that is\nmost preferred is the one with the greatest sum of weights, i.e.\nfor each node that meets all of the scheduling requirements (resource\nrequest, requiredDuringScheduling affinity expressions, etc.),\ncompute a sum by iterating through the elements of this field and adding\n\"weight\" to the sum if the node matches the corresponding matchExpressions; the\nnode(s) with the highest sum are the most preferred.\n+optional"
         }
       },
       "description": "Node affinity is a group of node affinity scheduling rules."
     },
-    "k8s.io.api.core.v1.NodeSelector": {
+    "io.k8s.api.core.v1.NodeSelector": {
       "type": "object",
       "properties": {
         "nodeSelectorTerms": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.NodeSelectorTerm"
+            "$ref": "#/definitions/io.k8s.api.core.v1.NodeSelectorTerm"
           },
           "description": "Required. A list of node selector terms. The terms are ORed."
         }
       },
       "description": "A node selector represents the union of the results of one or more label queries\nover a set of nodes; that is, it represents the OR of the selectors represented\nby the node selector terms."
     },
-    "k8s.io.api.core.v1.NodeSelectorRequirement": {
+    "io.k8s.api.core.v1.NodeSelectorRequirement": {
       "type": "object",
       "properties": {
         "key": {
@@ -2996,27 +2996,27 @@
       },
       "description": "A node selector requirement is a selector that contains values, a key, and an operator\nthat relates the key and values."
     },
-    "k8s.io.api.core.v1.NodeSelectorTerm": {
+    "io.k8s.api.core.v1.NodeSelectorTerm": {
       "type": "object",
       "properties": {
         "matchExpressions": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.NodeSelectorRequirement"
+            "$ref": "#/definitions/io.k8s.api.core.v1.NodeSelectorRequirement"
           },
           "title": "A list of node selector requirements by node's labels.\n+optional"
         },
         "matchFields": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.NodeSelectorRequirement"
+            "$ref": "#/definitions/io.k8s.api.core.v1.NodeSelectorRequirement"
           },
           "title": "A list of node selector requirements by node's fields.\n+optional"
         }
       },
       "description": "A null or empty node selector term matches no objects. The requirements of\nthem are ANDed.\nThe TopologySelectorTerm type implements a subset of the NodeSelectorTerm."
     },
-    "k8s.io.api.core.v1.ObjectFieldSelector": {
+    "io.k8s.api.core.v1.ObjectFieldSelector": {
       "type": "object",
       "properties": {
         "apiVersion": {
@@ -3030,25 +3030,25 @@
       },
       "description": "ObjectFieldSelector selects an APIVersioned field of an object."
     },
-    "k8s.io.api.core.v1.PersistentVolumeClaim": {
+    "io.k8s.api.core.v1.PersistentVolumeClaim": {
       "type": "object",
       "properties": {
         "metadata": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta",
-          "title": "Standard object's metadata.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta",
+          "title": "Standard object's metadata.\nMore info: https://git.io.k8s/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional"
         },
         "spec": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.PersistentVolumeClaimSpec",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaimSpec",
           "title": "Spec defines the desired characteristics of a volume requested by a pod author.\nMore info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims\n+optional"
         },
         "status": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.PersistentVolumeClaimStatus",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaimStatus",
           "title": "Status represents the current information/status of a persistent volume claim.\nRead-only.\nMore info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims\n+optional"
         }
       },
       "title": "PersistentVolumeClaim is a user's request for and claim to a persistent volume"
     },
-    "k8s.io.api.core.v1.PersistentVolumeClaimCondition": {
+    "io.k8s.api.core.v1.PersistentVolumeClaimCondition": {
       "type": "object",
       "properties": {
         "type": {
@@ -3058,11 +3058,11 @@
           "type": "string"
         },
         "lastProbeTime": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
           "title": "Last time we probed the condition.\n+optional"
         },
         "lastTransitionTime": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
           "title": "Last time the condition transitioned from one status to another.\n+optional"
         },
         "reason": {
@@ -3076,7 +3076,7 @@
       },
       "title": "PersistentVolumeClaimCondition contails details about state of pvc"
     },
-    "k8s.io.api.core.v1.PersistentVolumeClaimSpec": {
+    "io.k8s.api.core.v1.PersistentVolumeClaimSpec": {
       "type": "object",
       "properties": {
         "accessModes": {
@@ -3087,11 +3087,11 @@
           "title": "AccessModes contains the desired access modes the volume should have.\nMore info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1\n+optional"
         },
         "selector": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector",
           "title": "A label query over volumes to consider for binding.\n+optional"
         },
         "resources": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.ResourceRequirements",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements",
           "title": "Resources represents the minimum resources the volume should have.\nMore info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources\n+optional"
         },
         "volumeName": {
@@ -3107,13 +3107,13 @@
           "title": "volumeMode defines what type of volume is required by the claim.\nValue of Filesystem is implied when not included in claim spec.\nThis is a beta feature.\n+optional"
         },
         "dataSource": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.TypedLocalObjectReference",
+          "$ref": "#/definitions/io.k8s.api.core.v1.TypedLocalObjectReference",
           "title": "This field requires the VolumeSnapshotDataSource alpha feature gate to be\nenabled and currently VolumeSnapshot is the only supported data source.\nIf the provisioner can support VolumeSnapshot data source, it will create\na new volume and data will be restored to the volume at the same time.\nIf the provisioner does not support VolumeSnapshot data source, volume will\nnot be created and the failure will be reported as an event.\nIn the future, we plan to support more data source types and the behavior\nof the provisioner may change.\n+optional"
         }
       },
       "title": "PersistentVolumeClaimSpec describes the common attributes of storage devices\nand allows a Source for provider-specific attributes"
     },
-    "k8s.io.api.core.v1.PersistentVolumeClaimStatus": {
+    "io.k8s.api.core.v1.PersistentVolumeClaimStatus": {
       "type": "object",
       "properties": {
         "phase": {
@@ -3130,21 +3130,21 @@
         "capacity": {
           "type": "object",
           "additionalProperties": {
-            "$ref": "#/definitions/k8s.io.apimachinery.pkg.api.resource.Quantity"
+            "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
           },
           "title": "Represents the actual resources of the underlying volume.\n+optional"
         },
         "conditions": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.PersistentVolumeClaimCondition"
+            "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaimCondition"
           },
           "title": "Current Condition of persistent volume claim. If underlying persistent volume is being\nresized then the Condition will be set to 'ResizeStarted'.\n+optional\n+patchMergeKey=type\n+patchStrategy=merge"
         }
       },
       "description": "PersistentVolumeClaimStatus is the current status of a persistent volume claim."
     },
-    "k8s.io.api.core.v1.PersistentVolumeClaimVolumeSource": {
+    "io.k8s.api.core.v1.PersistentVolumeClaimVolumeSource": {
       "type": "object",
       "properties": {
         "claimName": {
@@ -3159,7 +3159,7 @@
       },
       "description": "PersistentVolumeClaimVolumeSource references the user's PVC in the same namespace.\nThis volume finds the bound PV and mounts that volume for the pod. A\nPersistentVolumeClaimVolumeSource is, essentially, a wrapper around another\ntype of volume that is owned by someone else (the system)."
     },
-    "k8s.io.api.core.v1.PhotonPersistentDiskVolumeSource": {
+    "io.k8s.api.core.v1.PhotonPersistentDiskVolumeSource": {
       "type": "object",
       "properties": {
         "pdID": {
@@ -3173,31 +3173,31 @@
       },
       "description": "Represents a Photon Controller persistent disk resource."
     },
-    "k8s.io.api.core.v1.PodAffinity": {
+    "io.k8s.api.core.v1.PodAffinity": {
       "type": "object",
       "properties": {
         "requiredDuringSchedulingIgnoredDuringExecution": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.PodAffinityTerm"
+            "$ref": "#/definitions/io.k8s.api.core.v1.PodAffinityTerm"
           },
           "title": "If the affinity requirements specified by this field are not met at\nscheduling time, the pod will not be scheduled onto the node.\nIf the affinity requirements specified by this field cease to be met\nat some point during pod execution (e.g. due to a pod label update), the\nsystem may or may not try to eventually evict the pod from its node.\nWhen there are multiple elements, the lists of nodes corresponding to each\npodAffinityTerm are intersected, i.e. all terms must be satisfied.\n+optional"
         },
         "preferredDuringSchedulingIgnoredDuringExecution": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.WeightedPodAffinityTerm"
+            "$ref": "#/definitions/io.k8s.api.core.v1.WeightedPodAffinityTerm"
           },
           "title": "The scheduler will prefer to schedule pods to nodes that satisfy\nthe affinity expressions specified by this field, but it may choose\na node that violates one or more of the expressions. The node that is\nmost preferred is the one with the greatest sum of weights, i.e.\nfor each node that meets all of the scheduling requirements (resource\nrequest, requiredDuringScheduling affinity expressions, etc.),\ncompute a sum by iterating through the elements of this field and adding\n\"weight\" to the sum if the node has pods which matches the corresponding podAffinityTerm; the\nnode(s) with the highest sum are the most preferred.\n+optional"
         }
       },
       "description": "Pod affinity is a group of inter pod affinity scheduling rules."
     },
-    "k8s.io.api.core.v1.PodAffinityTerm": {
+    "io.k8s.api.core.v1.PodAffinityTerm": {
       "type": "object",
       "properties": {
         "labelSelector": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector",
           "title": "A label query over a set of resources, in this case pods.\n+optional"
         },
         "namespaces": {
@@ -3214,27 +3214,27 @@
       },
       "title": "Defines a set of pods (namely those matching the labelSelector\nrelative to the given namespace(s)) that this pod should be\nco-located (affinity) or not co-located (anti-affinity) with,\nwhere co-located is defined as running on a node whose value of\nthe label with key \u003ctopologyKey\u003e matches that of any node on which\na pod of the set of pods is running"
     },
-    "k8s.io.api.core.v1.PodAntiAffinity": {
+    "io.k8s.api.core.v1.PodAntiAffinity": {
       "type": "object",
       "properties": {
         "requiredDuringSchedulingIgnoredDuringExecution": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.PodAffinityTerm"
+            "$ref": "#/definitions/io.k8s.api.core.v1.PodAffinityTerm"
           },
           "title": "If the anti-affinity requirements specified by this field are not met at\nscheduling time, the pod will not be scheduled onto the node.\nIf the anti-affinity requirements specified by this field cease to be met\nat some point during pod execution (e.g. due to a pod label update), the\nsystem may or may not try to eventually evict the pod from its node.\nWhen there are multiple elements, the lists of nodes corresponding to each\npodAffinityTerm are intersected, i.e. all terms must be satisfied.\n+optional"
         },
         "preferredDuringSchedulingIgnoredDuringExecution": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.WeightedPodAffinityTerm"
+            "$ref": "#/definitions/io.k8s.api.core.v1.WeightedPodAffinityTerm"
           },
           "title": "The scheduler will prefer to schedule pods to nodes that satisfy\nthe anti-affinity expressions specified by this field, but it may choose\na node that violates one or more of the expressions. The node that is\nmost preferred is the one with the greatest sum of weights, i.e.\nfor each node that meets all of the scheduling requirements (resource\nrequest, requiredDuringScheduling anti-affinity expressions, etc.),\ncompute a sum by iterating through the elements of this field and adding\n\"weight\" to the sum if the node has pods which matches the corresponding podAffinityTerm; the\nnode(s) with the highest sum are the most preferred.\n+optional"
         }
       },
       "description": "Pod anti affinity is a group of inter pod anti affinity scheduling rules."
     },
-    "k8s.io.api.core.v1.PodDNSConfig": {
+    "io.k8s.api.core.v1.PodDNSConfig": {
       "type": "object",
       "properties": {
         "nameservers": {
@@ -3254,14 +3254,14 @@
         "options": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.PodDNSConfigOption"
+            "$ref": "#/definitions/io.k8s.api.core.v1.PodDNSConfigOption"
           },
           "title": "A list of DNS resolver options.\nThis will be merged with the base options generated from DNSPolicy.\nDuplicated entries will be removed. Resolution options given in Options\nwill override those that appear in the base DNSPolicy.\n+optional"
         }
       },
       "description": "PodDNSConfig defines the DNS parameters of a pod in addition to\nthose generated from DNSPolicy."
     },
-    "k8s.io.api.core.v1.PodDNSConfigOption": {
+    "io.k8s.api.core.v1.PodDNSConfigOption": {
       "type": "object",
       "properties": {
         "name": {
@@ -3275,7 +3275,7 @@
       },
       "description": "PodDNSConfigOption defines DNS resolver options of a pod."
     },
-    "k8s.io.api.core.v1.PodLogOptions": {
+    "io.k8s.api.core.v1.PodLogOptions": {
       "type": "object",
       "properties": {
         "container": {
@@ -3298,7 +3298,7 @@
           "title": "A relative time in seconds before the current time from which to show logs. If this value\nprecedes the time a pod was started, only logs since the pod start will be returned.\nIf this value is in the future, no logs will be returned.\nOnly one of sinceSeconds or sinceTime may be specified.\n+optional"
         },
         "sinceTime": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
           "title": "An RFC3339 timestamp from which to show logs. If this value\nprecedes the time a pod was started, only logs since the pod start will be returned.\nIf this value is in the future, no logs will be returned.\nOnly one of sinceSeconds or sinceTime may be specified.\n+optional"
         },
         "timestamps": {
@@ -3319,15 +3319,15 @@
       },
       "description": "PodLogOptions is the query options for a Pod's logs REST call."
     },
-    "k8s.io.api.core.v1.PodSecurityContext": {
+    "io.k8s.api.core.v1.PodSecurityContext": {
       "type": "object",
       "properties": {
         "seLinuxOptions": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.SELinuxOptions",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SELinuxOptions",
           "title": "The SELinux context to be applied to all containers.\nIf unspecified, the container runtime will allocate a random SELinux context for each\ncontainer.  May also be set in SecurityContext.  If set in\nboth SecurityContext and PodSecurityContext, the value specified in SecurityContext\ntakes precedence for that container.\n+optional"
         },
         "windowsOptions": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.WindowsSecurityContextOptions",
+          "$ref": "#/definitions/io.k8s.api.core.v1.WindowsSecurityContextOptions",
           "title": "The Windows specific settings applied to all containers.\nIf unspecified, the options within a container's SecurityContext will be used.\nIf set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.\n+optional"
         },
         "runAsUser": {
@@ -3362,14 +3362,14 @@
         "sysctls": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.Sysctl"
+            "$ref": "#/definitions/io.k8s.api.core.v1.Sysctl"
           },
           "title": "Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported\nsysctls (by the container runtime) might fail to launch.\n+optional"
         }
       },
       "description": "PodSecurityContext holds pod-level security attributes and common container settings.\nSome fields are also present in container.securityContext.  Field values of\ncontainer.securityContext take precedence over field values of PodSecurityContext."
     },
-    "k8s.io.api.core.v1.PortworxVolumeSource": {
+    "io.k8s.api.core.v1.PortworxVolumeSource": {
       "type": "object",
       "properties": {
         "volumeID": {
@@ -3388,7 +3388,7 @@
       },
       "description": "PortworxVolumeSource represents a Portworx volume resource."
     },
-    "k8s.io.api.core.v1.PreferredSchedulingTerm": {
+    "io.k8s.api.core.v1.PreferredSchedulingTerm": {
       "type": "object",
       "properties": {
         "weight": {
@@ -3397,17 +3397,17 @@
           "description": "Weight associated with matching the corresponding nodeSelectorTerm, in the range 1-100."
         },
         "preference": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.NodeSelectorTerm",
+          "$ref": "#/definitions/io.k8s.api.core.v1.NodeSelectorTerm",
           "description": "A node selector term, associated with the corresponding weight."
         }
       },
       "description": "An empty preferred scheduling term matches all objects with implicit weight 0\n(i.e. it's a no-op). A null preferred scheduling term matches no objects (i.e. is also a no-op)."
     },
-    "k8s.io.api.core.v1.Probe": {
+    "io.k8s.api.core.v1.Probe": {
       "type": "object",
       "properties": {
         "handler": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.Handler",
+          "$ref": "#/definitions/io.k8s.api.core.v1.Handler",
           "title": "The action taken to determine the health of a container"
         },
         "initialDelaySeconds": {
@@ -3438,13 +3438,13 @@
       },
       "description": "Probe describes a health check to be performed against a container to determine whether it is\nalive or ready to receive traffic."
     },
-    "k8s.io.api.core.v1.ProjectedVolumeSource": {
+    "io.k8s.api.core.v1.ProjectedVolumeSource": {
       "type": "object",
       "properties": {
         "sources": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.VolumeProjection"
+            "$ref": "#/definitions/io.k8s.api.core.v1.VolumeProjection"
           },
           "title": "list of volume projections"
         },
@@ -3456,7 +3456,7 @@
       },
       "title": "Represents a projected volume source"
     },
-    "k8s.io.api.core.v1.QuobyteVolumeSource": {
+    "io.k8s.api.core.v1.QuobyteVolumeSource": {
       "type": "object",
       "properties": {
         "registry": {
@@ -3487,7 +3487,7 @@
       },
       "description": "Represents a Quobyte mount that lasts the lifetime of a pod.\nQuobyte volumes do not support ownership management or SELinux relabeling."
     },
-    "k8s.io.api.core.v1.RBDVolumeSource": {
+    "io.k8s.api.core.v1.RBDVolumeSource": {
       "type": "object",
       "properties": {
         "monitors": {
@@ -3495,11 +3495,11 @@
           "items": {
             "type": "string"
           },
-          "title": "A collection of Ceph monitors.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it"
+          "title": "A collection of Ceph monitors.\nMore info: https://examples.io.k8s/volumes/rbd/README.md#how-to-use-it"
         },
         "image": {
           "type": "string",
-          "title": "The rados image name.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it"
+          "title": "The rados image name.\nMore info: https://examples.io.k8s/volumes/rbd/README.md#how-to-use-it"
         },
         "fsType": {
           "type": "string",
@@ -3507,29 +3507,29 @@
         },
         "pool": {
           "type": "string",
-          "title": "The rados pool name.\nDefault is rbd.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it\n+optional"
+          "title": "The rados pool name.\nDefault is rbd.\nMore info: https://examples.io.k8s/volumes/rbd/README.md#how-to-use-it\n+optional"
         },
         "user": {
           "type": "string",
-          "title": "The rados user name.\nDefault is admin.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it\n+optional"
+          "title": "The rados user name.\nDefault is admin.\nMore info: https://examples.io.k8s/volumes/rbd/README.md#how-to-use-it\n+optional"
         },
         "keyring": {
           "type": "string",
-          "title": "Keyring is the path to key ring for RBDUser.\nDefault is /etc/ceph/keyring.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it\n+optional"
+          "title": "Keyring is the path to key ring for RBDUser.\nDefault is /etc/ceph/keyring.\nMore info: https://examples.io.k8s/volumes/rbd/README.md#how-to-use-it\n+optional"
         },
         "secretRef": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference",
-          "title": "SecretRef is name of the authentication secret for RBDUser. If provided\noverrides keyring.\nDefault is nil.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it\n+optional"
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference",
+          "title": "SecretRef is name of the authentication secret for RBDUser. If provided\noverrides keyring.\nDefault is nil.\nMore info: https://examples.io.k8s/volumes/rbd/README.md#how-to-use-it\n+optional"
         },
         "readOnly": {
           "type": "boolean",
           "format": "boolean",
-          "title": "ReadOnly here will force the ReadOnly setting in VolumeMounts.\nDefaults to false.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it\n+optional"
+          "title": "ReadOnly here will force the ReadOnly setting in VolumeMounts.\nDefaults to false.\nMore info: https://examples.io.k8s/volumes/rbd/README.md#how-to-use-it\n+optional"
         }
       },
       "description": "Represents a Rados Block Device mount that lasts the lifetime of a pod.\nRBD volumes support ownership management and SELinux relabeling."
     },
-    "k8s.io.api.core.v1.ResourceFieldSelector": {
+    "io.k8s.api.core.v1.ResourceFieldSelector": {
       "type": "object",
       "properties": {
         "containerName": {
@@ -3541,33 +3541,33 @@
           "title": "Required: resource to select"
         },
         "divisor": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.api.resource.Quantity",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity",
           "title": "Specifies the output format of the exposed resources, defaults to \"1\"\n+optional"
         }
       },
       "title": "ResourceFieldSelector represents container resources (cpu, memory) and their output format"
     },
-    "k8s.io.api.core.v1.ResourceRequirements": {
+    "io.k8s.api.core.v1.ResourceRequirements": {
       "type": "object",
       "properties": {
         "limits": {
           "type": "object",
           "additionalProperties": {
-            "$ref": "#/definitions/k8s.io.apimachinery.pkg.api.resource.Quantity"
+            "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
           },
           "title": "Limits describes the maximum amount of compute resources allowed.\nMore info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/\n+optional"
         },
         "requests": {
           "type": "object",
           "additionalProperties": {
-            "$ref": "#/definitions/k8s.io.apimachinery.pkg.api.resource.Quantity"
+            "$ref": "#/definitions/io.k8s.apimachinery.pkg.api.resource.Quantity"
           },
           "title": "Requests describes the minimum amount of compute resources required.\nIf Requests is omitted for a container, it defaults to Limits if that is explicitly specified,\notherwise to an implementation-defined value.\nMore info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/\n+optional"
         }
       },
       "description": "ResourceRequirements describes the compute resource requirements."
     },
-    "k8s.io.api.core.v1.SELinuxOptions": {
+    "io.k8s.api.core.v1.SELinuxOptions": {
       "type": "object",
       "properties": {
         "user": {
@@ -3589,7 +3589,7 @@
       },
       "title": "SELinuxOptions are the labels to be applied to the container"
     },
-    "k8s.io.api.core.v1.ScaleIOVolumeSource": {
+    "io.k8s.api.core.v1.ScaleIOVolumeSource": {
       "type": "object",
       "properties": {
         "gateway": {
@@ -3601,7 +3601,7 @@
           "description": "The name of the storage system as configured in ScaleIO."
         },
         "secretRef": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference",
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference",
           "description": "SecretRef references to the secret for ScaleIO user and other\nsensitive information. If this is not provided, Login operation will fail."
         },
         "sslEnabled": {
@@ -3637,11 +3637,11 @@
       },
       "title": "ScaleIOVolumeSource represents a persistent ScaleIO volume"
     },
-    "k8s.io.api.core.v1.SecretEnvSource": {
+    "io.k8s.api.core.v1.SecretEnvSource": {
       "type": "object",
       "properties": {
         "localObjectReference": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference",
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference",
           "description": "The Secret to select from."
         },
         "optional": {
@@ -3652,11 +3652,11 @@
       },
       "description": "SecretEnvSource selects a Secret to populate the environment\nvariables with.\n\nThe contents of the target Secret's Data field will represent the\nkey-value pairs as environment variables."
     },
-    "k8s.io.api.core.v1.SecretKeySelector": {
+    "io.k8s.api.core.v1.SecretKeySelector": {
       "type": "object",
       "properties": {
         "localObjectReference": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference",
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference",
           "description": "The name of the secret in the pod's namespace to select from."
         },
         "key": {
@@ -3671,16 +3671,16 @@
       },
       "description": "SecretKeySelector selects a key of a Secret."
     },
-    "k8s.io.api.core.v1.SecretProjection": {
+    "io.k8s.api.core.v1.SecretProjection": {
       "type": "object",
       "properties": {
         "localObjectReference": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference"
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
         },
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.KeyToPath"
+            "$ref": "#/definitions/io.k8s.api.core.v1.KeyToPath"
           },
           "title": "If unspecified, each key-value pair in the Data field of the referenced\nSecret will be projected into the volume as a file whose name is the\nkey and content is the value. If specified, the listed keys will be\nprojected into the specified paths, and unlisted keys will not be\npresent. If a key is specified which is not present in the Secret,\nthe volume setup will error unless it is marked optional. Paths must be\nrelative and may not contain the '..' path or start with '..'.\n+optional"
         },
@@ -3692,7 +3692,7 @@
       },
       "description": "Adapts a secret into a projected volume.\n\nThe contents of the target Secret's Data field will be presented in a\nprojected volume as files using the keys in the Data field as the file names.\nNote that this is identical to a secret volume source without the default\nmode."
     },
-    "k8s.io.api.core.v1.SecretVolumeSource": {
+    "io.k8s.api.core.v1.SecretVolumeSource": {
       "type": "object",
       "properties": {
         "secretName": {
@@ -3702,7 +3702,7 @@
         "items": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.KeyToPath"
+            "$ref": "#/definitions/io.k8s.api.core.v1.KeyToPath"
           },
           "title": "If unspecified, each key-value pair in the Data field of the referenced\nSecret will be projected into the volume as a file whose name is the\nkey and content is the value. If specified, the listed keys will be\nprojected into the specified paths, and unlisted keys will not be\npresent. If a key is specified which is not present in the Secret,\nthe volume setup will error unless it is marked optional. Paths must be\nrelative and may not contain the '..' path or start with '..'.\n+optional"
         },
@@ -3719,11 +3719,11 @@
       },
       "description": "Adapts a Secret into a volume.\n\nThe contents of the target Secret's Data field will be presented in a volume\nas files using the keys in the Data field as the file names.\nSecret volumes support ownership management and SELinux relabeling."
     },
-    "k8s.io.api.core.v1.SecurityContext": {
+    "io.k8s.api.core.v1.SecurityContext": {
       "type": "object",
       "properties": {
         "capabilities": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.Capabilities",
+          "$ref": "#/definitions/io.k8s.api.core.v1.Capabilities",
           "title": "The capabilities to add/drop when running containers.\nDefaults to the default set of capabilities granted by the container runtime.\n+optional"
         },
         "privileged": {
@@ -3732,11 +3732,11 @@
           "title": "Run container in privileged mode.\nProcesses in privileged containers are essentially equivalent to root on the host.\nDefaults to false.\n+optional"
         },
         "seLinuxOptions": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.SELinuxOptions",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SELinuxOptions",
           "title": "The SELinux context to be applied to the container.\nIf unspecified, the container runtime will allocate a random SELinux context for each\ncontainer.  May also be set in PodSecurityContext.  If set in both SecurityContext and\nPodSecurityContext, the value specified in SecurityContext takes precedence.\n+optional"
         },
         "windowsOptions": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.WindowsSecurityContextOptions",
+          "$ref": "#/definitions/io.k8s.api.core.v1.WindowsSecurityContextOptions",
           "title": "The Windows specific settings applied to all containers.\nIf unspecified, the options from the PodSecurityContext will be used.\nIf set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.\n+optional"
         },
         "runAsUser": {
@@ -3771,7 +3771,7 @@
       },
       "description": "SecurityContext holds security configuration that will be applied to a container.\nSome fields are present in both SecurityContext and PodSecurityContext.  When both\nare set, the values in SecurityContext take precedence."
     },
-    "k8s.io.api.core.v1.ServiceAccountTokenProjection": {
+    "io.k8s.api.core.v1.ServiceAccountTokenProjection": {
       "type": "object",
       "properties": {
         "audience": {
@@ -3790,7 +3790,7 @@
       },
       "description": "ServiceAccountTokenProjection represents a projected service account token\nvolume. This projection can be used to insert a service account token into\nthe pods runtime filesystem for use against APIs (Kubernetes API Server or\notherwise)."
     },
-    "k8s.io.api.core.v1.StorageOSVolumeSource": {
+    "io.k8s.api.core.v1.StorageOSVolumeSource": {
       "type": "object",
       "properties": {
         "volumeName": {
@@ -3811,13 +3811,13 @@
           "title": "Defaults to false (read/write). ReadOnly here will force\nthe ReadOnly setting in VolumeMounts.\n+optional"
         },
         "secretRef": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.LocalObjectReference",
+          "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference",
           "title": "SecretRef specifies the secret to use for obtaining the StorageOS API\ncredentials.  If not specified, default values will be attempted.\n+optional"
         }
       },
       "description": "Represents a StorageOS persistent volume resource."
     },
-    "k8s.io.api.core.v1.Sysctl": {
+    "io.k8s.api.core.v1.Sysctl": {
       "type": "object",
       "properties": {
         "name": {
@@ -3831,11 +3831,11 @@
       },
       "title": "Sysctl defines a kernel parameter to be set"
     },
-    "k8s.io.api.core.v1.TCPSocketAction": {
+    "io.k8s.api.core.v1.TCPSocketAction": {
       "type": "object",
       "properties": {
         "port": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.util.intstr.IntOrString",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
           "description": "Number or name of the port to access on the container.\nNumber must be in the range 1 to 65535.\nName must be an IANA_SVC_NAME."
         },
         "host": {
@@ -3845,7 +3845,7 @@
       },
       "title": "TCPSocketAction describes an action based on opening a socket"
     },
-    "k8s.io.api.core.v1.Toleration": {
+    "io.k8s.api.core.v1.Toleration": {
       "type": "object",
       "properties": {
         "key": {
@@ -3872,7 +3872,7 @@
       },
       "description": "The pod this Toleration is attached to tolerates any taint that matches\nthe triple \u003ckey,value,effect\u003e using the matching operator \u003coperator\u003e."
     },
-    "k8s.io.api.core.v1.TypedLocalObjectReference": {
+    "io.k8s.api.core.v1.TypedLocalObjectReference": {
       "type": "object",
       "properties": {
         "apiGroup": {
@@ -3890,7 +3890,7 @@
       },
       "description": "TypedLocalObjectReference contains enough information to let you locate the\ntyped referenced object inside the same namespace."
     },
-    "k8s.io.api.core.v1.Volume": {
+    "io.k8s.api.core.v1.Volume": {
       "type": "object",
       "properties": {
         "name": {
@@ -3898,13 +3898,13 @@
           "title": "Volume's name.\nMust be a DNS_LABEL and unique within the pod.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names"
         },
         "volumeSource": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.VolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.VolumeSource",
           "description": "VolumeSource represents the location and type of the mounted volume.\nIf not specified, the Volume is implied to be an EmptyDir.\nThis implied behavior is deprecated and will be removed in a future version."
         }
       },
       "description": "Volume represents a named volume in a pod that may be accessed by any container in the pod."
     },
-    "k8s.io.api.core.v1.VolumeDevice": {
+    "io.k8s.api.core.v1.VolumeDevice": {
       "type": "object",
       "properties": {
         "name": {
@@ -3918,7 +3918,7 @@
       },
       "description": "volumeDevice describes a mapping of a raw block device within a container."
     },
-    "k8s.io.api.core.v1.VolumeMount": {
+    "io.k8s.api.core.v1.VolumeMount": {
       "type": "object",
       "properties": {
         "name": {
@@ -3949,147 +3949,147 @@
       },
       "description": "VolumeMount describes a mounting of a Volume within a container."
     },
-    "k8s.io.api.core.v1.VolumeProjection": {
+    "io.k8s.api.core.v1.VolumeProjection": {
       "type": "object",
       "properties": {
         "secret": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.SecretProjection",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretProjection",
           "title": "information about the secret data to project\n+optional"
         },
         "downwardAPI": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.DownwardAPIProjection",
+          "$ref": "#/definitions/io.k8s.api.core.v1.DownwardAPIProjection",
           "title": "information about the downwardAPI data to project\n+optional"
         },
         "configMap": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.ConfigMapProjection",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapProjection",
           "title": "information about the configMap data to project\n+optional"
         },
         "serviceAccountToken": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.ServiceAccountTokenProjection",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ServiceAccountTokenProjection",
           "title": "information about the serviceAccountToken data to project\n+optional"
         }
       },
       "title": "Projection that may be projected along with other supported volume types"
     },
-    "k8s.io.api.core.v1.VolumeSource": {
+    "io.k8s.api.core.v1.VolumeSource": {
       "type": "object",
       "properties": {
         "hostPath": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.HostPathVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.HostPathVolumeSource",
           "title": "HostPath represents a pre-existing file or directory on the host\nmachine that is directly exposed to the container. This is generally\nused for system agents or other privileged things that are allowed\nto see the host machine. Most containers will NOT need this.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath\n---\nTODO(jonesdl) We need to restrict who can use host directory mounts and who can/can not\nmount host directories as read/write.\n+optional"
         },
         "emptyDir": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.EmptyDirVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.EmptyDirVolumeSource",
           "title": "EmptyDir represents a temporary directory that shares a pod's lifetime.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir\n+optional"
         },
         "gcePersistentDisk": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.GCEPersistentDiskVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.GCEPersistentDiskVolumeSource",
           "title": "GCEPersistentDisk represents a GCE Disk resource that is attached to a\nkubelet's host machine and then exposed to the pod.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk\n+optional"
         },
         "awsElasticBlockStore": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.AWSElasticBlockStoreVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.AWSElasticBlockStoreVolumeSource",
           "title": "AWSElasticBlockStore represents an AWS Disk resource that is attached to a\nkubelet's host machine and then exposed to the pod.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore\n+optional"
         },
         "gitRepo": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.GitRepoVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.GitRepoVolumeSource",
           "title": "GitRepo represents a git repository at a particular revision.\nDEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an\nEmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir\ninto the Pod's container.\n+optional"
         },
         "secret": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.SecretVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretVolumeSource",
           "title": "Secret represents a secret that should populate this volume.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#secret\n+optional"
         },
         "nfs": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.NFSVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.NFSVolumeSource",
           "title": "NFS represents an NFS mount on the host that shares a pod's lifetime\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#nfs\n+optional"
         },
         "iscsi": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.ISCSIVolumeSource",
-          "title": "ISCSI represents an ISCSI Disk resource that is attached to a\nkubelet's host machine and then exposed to the pod.\nMore info: https://examples.k8s.io/volumes/iscsi/README.md\n+optional"
+          "$ref": "#/definitions/io.k8s.api.core.v1.ISCSIVolumeSource",
+          "title": "ISCSI represents an ISCSI Disk resource that is attached to a\nkubelet's host machine and then exposed to the pod.\nMore info: https://examples.io.k8s/volumes/iscsi/README.md\n+optional"
         },
         "glusterfs": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.GlusterfsVolumeSource",
-          "title": "Glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.\nMore info: https://examples.k8s.io/volumes/glusterfs/README.md\n+optional"
+          "$ref": "#/definitions/io.k8s.api.core.v1.GlusterfsVolumeSource",
+          "title": "Glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.\nMore info: https://examples.io.k8s/volumes/glusterfs/README.md\n+optional"
         },
         "persistentVolumeClaim": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.PersistentVolumeClaimVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaimVolumeSource",
           "title": "PersistentVolumeClaimVolumeSource represents a reference to a\nPersistentVolumeClaim in the same namespace.\nMore info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims\n+optional"
         },
         "rbd": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.RBDVolumeSource",
-          "title": "RBD represents a Rados Block Device mount on the host that shares a pod's lifetime.\nMore info: https://examples.k8s.io/volumes/rbd/README.md\n+optional"
+          "$ref": "#/definitions/io.k8s.api.core.v1.RBDVolumeSource",
+          "title": "RBD represents a Rados Block Device mount on the host that shares a pod's lifetime.\nMore info: https://examples.io.k8s/volumes/rbd/README.md\n+optional"
         },
         "flexVolume": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.FlexVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.FlexVolumeSource",
           "title": "FlexVolume represents a generic volume resource that is\nprovisioned/attached using an exec based plugin.\n+optional"
         },
         "cinder": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.CinderVolumeSource",
-          "title": "Cinder represents a cinder volume attached and mounted on kubelets host machine.\nMore info: https://examples.k8s.io/mysql-cinder-pd/README.md\n+optional"
+          "$ref": "#/definitions/io.k8s.api.core.v1.CinderVolumeSource",
+          "title": "Cinder represents a cinder volume attached and mounted on kubelets host machine.\nMore info: https://examples.io.k8s/mysql-cinder-pd/README.md\n+optional"
         },
         "cephfs": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.CephFSVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.CephFSVolumeSource",
           "title": "CephFS represents a Ceph FS mount on the host that shares a pod's lifetime\n+optional"
         },
         "flocker": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.FlockerVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.FlockerVolumeSource",
           "title": "Flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running\n+optional"
         },
         "downwardAPI": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.DownwardAPIVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.DownwardAPIVolumeSource",
           "title": "DownwardAPI represents downward API about the pod that should populate this volume\n+optional"
         },
         "fc": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.FCVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.FCVolumeSource",
           "title": "FC represents a Fibre Channel resource that is attached to a kubelet's host machine and then exposed to the pod.\n+optional"
         },
         "azureFile": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.AzureFileVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.AzureFileVolumeSource",
           "title": "AzureFile represents an Azure File Service mount on the host and bind mount to the pod.\n+optional"
         },
         "configMap": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.ConfigMapVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapVolumeSource",
           "title": "ConfigMap represents a configMap that should populate this volume\n+optional"
         },
         "vsphereVolume": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.VsphereVirtualDiskVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.VsphereVirtualDiskVolumeSource",
           "title": "VsphereVolume represents a vSphere volume attached and mounted on kubelets host machine\n+optional"
         },
         "quobyte": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.QuobyteVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.QuobyteVolumeSource",
           "title": "Quobyte represents a Quobyte mount on the host that shares a pod's lifetime\n+optional"
         },
         "azureDisk": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.AzureDiskVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.AzureDiskVolumeSource",
           "title": "AzureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.\n+optional"
         },
         "photonPersistentDisk": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.PhotonPersistentDiskVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PhotonPersistentDiskVolumeSource",
           "title": "PhotonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine"
         },
         "projected": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.ProjectedVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ProjectedVolumeSource",
           "title": "Items for all in one resources secrets, configmaps, and downward API"
         },
         "portworxVolume": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.PortworxVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PortworxVolumeSource",
           "title": "PortworxVolume represents a portworx volume attached and mounted on kubelets host machine\n+optional"
         },
         "scaleIO": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.ScaleIOVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ScaleIOVolumeSource",
           "title": "ScaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.\n+optional"
         },
         "storageos": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.StorageOSVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.StorageOSVolumeSource",
           "title": "StorageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.\n+optional"
         },
         "csi": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.CSIVolumeSource",
+          "$ref": "#/definitions/io.k8s.api.core.v1.CSIVolumeSource",
           "title": "CSI (Container Storage Interface) represents storage that is handled by an external CSI driver (Alpha feature).\n+optional"
         }
       },
       "description": "Represents the source of a volume to mount.\nOnly one of its members may be specified."
     },
-    "k8s.io.api.core.v1.VsphereVirtualDiskVolumeSource": {
+    "io.k8s.api.core.v1.VsphereVirtualDiskVolumeSource": {
       "type": "object",
       "properties": {
         "volumePath": {
@@ -4111,7 +4111,7 @@
       },
       "description": "Represents a vSphere volume resource."
     },
-    "k8s.io.api.core.v1.WeightedPodAffinityTerm": {
+    "io.k8s.api.core.v1.WeightedPodAffinityTerm": {
       "type": "object",
       "properties": {
         "weight": {
@@ -4120,13 +4120,13 @@
           "description": "weight associated with matching the corresponding podAffinityTerm,\nin the range 1-100."
         },
         "podAffinityTerm": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.PodAffinityTerm",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PodAffinityTerm",
           "description": "Required. A pod affinity term, associated with the corresponding weight."
         }
       },
       "title": "The weights of all of the matched WeightedPodAffinityTerm fields are added per-node to find the most preferred node(s)"
     },
-    "k8s.io.api.core.v1.WindowsSecurityContextOptions": {
+    "io.k8s.api.core.v1.WindowsSecurityContextOptions": {
       "type": "object",
       "properties": {
         "gmsaCredentialSpecName": {
@@ -4144,7 +4144,7 @@
       },
       "description": "WindowsSecurityContextOptions contain Windows-specific options and credentials."
     },
-    "k8s.io.apimachinery.pkg.api.resource.Quantity": {
+    "io.k8s.apimachinery.pkg.api.resource.Quantity": {
       "type": "object",
       "properties": {
         "string": {
@@ -4153,7 +4153,7 @@
       },
       "description": "Quantity is a fixed-point representation of a number.\nIt provides convenient marshaling/unmarshaling in JSON and YAML,\nin addition to String() and AsInt64() accessors.\n\nThe serialization format is:\n\n\u003cquantity\u003e        ::= \u003csignedNumber\u003e\u003csuffix\u003e\n  (Note that \u003csuffix\u003e may be empty, from the \"\" case in \u003cdecimalSI\u003e.)\n\u003cdigit\u003e           ::= 0 | 1 | ... | 9\n\u003cdigits\u003e          ::= \u003cdigit\u003e | \u003cdigit\u003e\u003cdigits\u003e\n\u003cnumber\u003e          ::= \u003cdigits\u003e | \u003cdigits\u003e.\u003cdigits\u003e | \u003cdigits\u003e. | .\u003cdigits\u003e\n\u003csign\u003e            ::= \"+\" | \"-\"\n\u003csignedNumber\u003e    ::= \u003cnumber\u003e | \u003csign\u003e\u003cnumber\u003e\n\u003csuffix\u003e          ::= \u003cbinarySI\u003e | \u003cdecimalExponent\u003e | \u003cdecimalSI\u003e\n\u003cbinarySI\u003e        ::= Ki | Mi | Gi | Ti | Pi | Ei\n  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)\n\u003cdecimalSI\u003e       ::= m | \"\" | k | M | G | T | P | E\n  (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)\n\u003cdecimalExponent\u003e ::= \"e\" \u003csignedNumber\u003e | \"E\" \u003csignedNumber\u003e\n\nNo matter which of the three exponent forms is used, no quantity may represent\na number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal\nplaces. Numbers larger or more precise will be capped or rounded up.\n(E.g.: 0.1m will rounded up to 1m.)\nThis may be extended in the future if we require larger or smaller quantities.\n\nWhen a Quantity is parsed from a string, it will remember the type of suffix\nit had, and will use the same type again when it is serialized.\n\nBefore serializing, Quantity will be put in \"canonical form\".\nThis means that Exponent/suffix will be adjusted up or down (with a\ncorresponding increase or decrease in Mantissa) such that:\n  a. No precision is lost\n  b. No fractional digits will be emitted\n  c. The exponent (or suffix) is as large as possible.\nThe sign will be omitted unless the number is negative.\n\nExamples:\n  1.5 will be serialized as \"1500m\"\n  1.5Gi will be serialized as \"1536Mi\"\n\nNote that the quantity will NEVER be internally represented by a\nfloating point number. That is the whole point of this exercise.\n\nNon-canonical values will still parse as long as they are well formed,\nbut will be re-emitted in their canonical form. (So always use canonical\nform, or don't diff.)\n\nThis format is intended to make it difficult to use these numbers without\nwriting some sort of special handling code in the hopes that that will\ncause implementors to also use a fixed point implementation.\n\n+protobuf=true\n+protobuf.embed=string\n+protobuf.options.marshal=false\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:deepcopy-gen=true\n+k8s:openapi-gen=true"
     },
-    "k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions": {
+    "io.k8s.apimachinery.pkg.apis.meta.v1.CreateOptions": {
       "type": "object",
       "properties": {
         "dryRun": {
@@ -4170,7 +4170,7 @@
       },
       "description": "CreateOptions may be provided when creating an API object."
     },
-    "k8s.io.apimachinery.pkg.apis.meta.v1.DeleteOptions": {
+    "io.k8s.apimachinery.pkg.apis.meta.v1.DeleteOptions": {
       "type": "object",
       "properties": {
         "gracePeriodSeconds": {
@@ -4179,7 +4179,7 @@
           "title": "The duration in seconds before the object should be deleted. Value must be non-negative integer.\nThe value zero indicates delete immediately. If this value is nil, the default grace period for the\nspecified type will be used.\nDefaults to a per object value if not specified. zero means delete immediately.\n+optional"
         },
         "preconditions": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Preconditions",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Preconditions",
           "title": "Must be fulfilled before a deletion is carried out. If not possible, a 409 Conflict status will be\nreturned.\n+optional"
         },
         "orphanDependents": {
@@ -4201,7 +4201,7 @@
       },
       "description": "DeleteOptions may be provided when deleting an API object."
     },
-    "k8s.io.apimachinery.pkg.apis.meta.v1.FieldsV1": {
+    "io.k8s.apimachinery.pkg.apis.meta.v1.FieldsV1": {
       "type": "object",
       "properties": {
         "Raw": {
@@ -4210,9 +4210,9 @@
           "description": "Raw is the underlying serialization of this object."
         }
       },
-      "description": "FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format.\n\nEach key is either a '.' representing the field itself, and will always map to an empty set,\nor a string representing a sub-field or item. The string will follow one of these four formats:\n'f:\u003cname\u003e', where \u003cname\u003e is the name of a field in a struct, or key in a map\n'v:\u003cvalue\u003e', where \u003cvalue\u003e is the exact json formatted value of a list item\n'i:\u003cindex\u003e', where \u003cindex\u003e is position of a item in a list\n'k:\u003ckeys\u003e', where \u003ckeys\u003e is a map of  a list item's key fields to their unique values\nIf a key maps to an empty Fields value, the field that key represents is part of the set.\n\nThe exact format is defined in sigs.k8s.io/structured-merge-diff"
+      "description": "FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format.\n\nEach key is either a '.' representing the field itself, and will always map to an empty set,\nor a string representing a sub-field or item. The string will follow one of these four formats:\n'f:\u003cname\u003e', where \u003cname\u003e is the name of a field in a struct, or key in a map\n'v:\u003cvalue\u003e', where \u003cvalue\u003e is the exact json formatted value of a list item\n'i:\u003cindex\u003e', where \u003cindex\u003e is position of a item in a list\n'k:\u003ckeys\u003e', where \u003ckeys\u003e is a map of  a list item's key fields to their unique values\nIf a key maps to an empty Fields value, the field that key represents is part of the set.\n\nThe exact format is defined in sigs.io.k8s/structured-merge-diff"
     },
-    "k8s.io.apimachinery.pkg.apis.meta.v1.GetOptions": {
+    "io.k8s.apimachinery.pkg.apis.meta.v1.GetOptions": {
       "type": "object",
       "properties": {
         "resourceVersion": {
@@ -4222,7 +4222,7 @@
       },
       "description": "GetOptions is the standard query options to the standard REST get call."
     },
-    "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector": {
+    "io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelector": {
       "type": "object",
       "properties": {
         "matchLabels": {
@@ -4235,14 +4235,14 @@
         "matchExpressions": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelectorRequirement"
+            "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelectorRequirement"
           },
           "title": "matchExpressions is a list of label selector requirements. The requirements are ANDed.\n+optional"
         }
       },
       "description": "A label selector is a label query over a set of resources. The result of matchLabels and\nmatchExpressions are ANDed. An empty label selector matches all objects. A null\nlabel selector matches no objects."
     },
-    "k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelectorRequirement": {
+    "io.k8s.apimachinery.pkg.apis.meta.v1.LabelSelectorRequirement": {
       "type": "object",
       "properties": {
         "key": {
@@ -4263,7 +4263,7 @@
       },
       "description": "A label selector requirement is a selector that contains values, a key, and an operator that\nrelates the key and values."
     },
-    "k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta": {
+    "io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta": {
       "type": "object",
       "properties": {
         "selfLink": {
@@ -4272,7 +4272,7 @@
         },
         "resourceVersion": {
           "type": "string",
-          "title": "String that identifies the server's internal version of this object that\ncan be used by clients to determine when objects have changed.\nValue must be treated as opaque by clients and passed unmodified back to the server.\nPopulated by the system.\nRead-only.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency\n+optional"
+          "title": "String that identifies the server's internal version of this object that\ncan be used by clients to determine when objects have changed.\nValue must be treated as opaque by clients and passed unmodified back to the server.\nPopulated by the system.\nRead-only.\nMore info: https://git.io.k8s/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency\n+optional"
         },
         "continue": {
           "type": "string",
@@ -4286,7 +4286,7 @@
       },
       "description": "ListMeta describes metadata that synthetic resources must have, including lists and\nvarious status objects. A resource may have only one of {ObjectMeta, ListMeta}."
     },
-    "k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions": {
+    "io.k8s.apimachinery.pkg.apis.meta.v1.ListOptions": {
       "type": "object",
       "properties": {
         "labelSelector": {
@@ -4328,7 +4328,7 @@
       },
       "description": "ListOptions is the query options to a standard REST list call."
     },
-    "k8s.io.apimachinery.pkg.apis.meta.v1.ManagedFieldsEntry": {
+    "io.k8s.apimachinery.pkg.apis.meta.v1.ManagedFieldsEntry": {
       "type": "object",
       "properties": {
         "manager": {
@@ -4344,7 +4344,7 @@
           "description": "APIVersion defines the version of this resource that this field set\napplies to. The format is \"group/version\" just like the top-level\nAPIVersion field. It is necessary to track the version of a field\nset because it cannot be automatically converted."
         },
         "time": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
           "title": "Time is timestamp of when these fields were set. It should always be empty if Operation is 'Apply'\n+optional"
         },
         "fieldsType": {
@@ -4352,13 +4352,13 @@
           "title": "FieldsType is the discriminator for the different fields format and version.\nThere is currently only one possible value: \"FieldsV1\""
         },
         "fieldsV1": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.FieldsV1",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.FieldsV1",
           "title": "FieldsV1 holds the first JSON version format as described in the \"FieldsV1\" type.\n+optional"
         }
       },
       "description": "ManagedFieldsEntry is a workflow-id, a FieldSet and the group version of the resource\nthat the fieldset applies to."
     },
-    "k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta": {
+    "io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta": {
       "type": "object",
       "properties": {
         "name": {
@@ -4367,7 +4367,7 @@
         },
         "generateName": {
           "type": "string",
-          "description": "GenerateName is an optional prefix, used by the server, to generate a unique\nname ONLY IF the Name field has not been provided.\nIf this field is used, the name returned to the client will be different\nthan the name passed. This value will also be combined with a unique suffix.\nThe provided value has the same validation rules as the Name field,\nand may be truncated by the length of the suffix required to make the value\nunique on the server.\n\nIf this field is specified and the generated name exists, the server will\nNOT return a 409 - instead, it will either return 201 Created or 500 with Reason\nServerTimeout indicating a unique name could not be found in the time allotted, and the client\nshould retry (optionally after the time indicated in the Retry-After header).\n\nApplied only if Name is not specified.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency\n+optional"
+          "description": "GenerateName is an optional prefix, used by the server, to generate a unique\nname ONLY IF the Name field has not been provided.\nIf this field is used, the name returned to the client will be different\nthan the name passed. This value will also be combined with a unique suffix.\nThe provided value has the same validation rules as the Name field,\nand may be truncated by the length of the suffix required to make the value\nunique on the server.\n\nIf this field is specified and the generated name exists, the server will\nNOT return a 409 - instead, it will either return 201 Created or 500 with Reason\nServerTimeout indicating a unique name could not be found in the time allotted, and the client\nshould retry (optionally after the time indicated in the Retry-After header).\n\nApplied only if Name is not specified.\nMore info: https://git.io.k8s/community/contributors/devel/sig-architecture/api-conventions.md#idempotency\n+optional"
         },
         "namespace": {
           "type": "string",
@@ -4383,7 +4383,7 @@
         },
         "resourceVersion": {
           "type": "string",
-          "description": "An opaque value that represents the internal version of this object that can\nbe used by clients to determine when objects have changed. May be used for optimistic\nconcurrency, change detection, and the watch operation on a resource or set of resources.\nClients must treat these values as opaque and passed unmodified back to the server.\nThey may only be valid for a particular resource or set of resources.\n\nPopulated by the system.\nRead-only.\nValue must be treated as opaque by clients and .\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency\n+optional"
+          "description": "An opaque value that represents the internal version of this object that can\nbe used by clients to determine when objects have changed. May be used for optimistic\nconcurrency, change detection, and the watch operation on a resource or set of resources.\nClients must treat these values as opaque and passed unmodified back to the server.\nThey may only be valid for a particular resource or set of resources.\n\nPopulated by the system.\nRead-only.\nValue must be treated as opaque by clients and .\nMore info: https://git.io.k8s/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency\n+optional"
         },
         "generation": {
           "type": "string",
@@ -4391,12 +4391,12 @@
           "title": "A sequence number representing a specific generation of the desired state.\nPopulated by the system. Read-only.\n+optional"
         },
         "creationTimestamp": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
-          "description": "CreationTimestamp is a timestamp representing the server time when this object was\ncreated. It is not guaranteed to be set in happens-before order across separate operations.\nClients may not set this value. It is represented in RFC3339 form and is in UTC.\n\nPopulated by the system.\nRead-only.\nNull for lists.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
+          "description": "CreationTimestamp is a timestamp representing the server time when this object was\ncreated. It is not guaranteed to be set in happens-before order across separate operations.\nClients may not set this value. It is represented in RFC3339 form and is in UTC.\n\nPopulated by the system.\nRead-only.\nNull for lists.\nMore info: https://git.io.k8s/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional"
         },
         "deletionTimestamp": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
-          "description": "DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This\nfield is set by the server when a graceful deletion is requested by the user, and is not\ndirectly settable by a client. The resource is expected to be deleted (no longer visible\nfrom resource lists, and not reachable by name) after the time in this field, once the\nfinalizers list is empty. As long as the finalizers list contains items, deletion is blocked.\nOnce the deletionTimestamp is set, this value may not be unset or be set further into the\nfuture, although it may be shortened or the resource may be deleted prior to this time.\nFor example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react\nby sending a graceful termination signal to the containers in the pod. After that 30 seconds,\nthe Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup,\nremove the pod from the API. In the presence of network partitions, this object may still\nexist after this timestamp, until an administrator or automated process can determine the\nresource is fully terminated.\nIf not set, graceful deletion of the object has not been requested.\n\nPopulated by the system when a graceful deletion is requested.\nRead-only.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
+          "description": "DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This\nfield is set by the server when a graceful deletion is requested by the user, and is not\ndirectly settable by a client. The resource is expected to be deleted (no longer visible\nfrom resource lists, and not reachable by name) after the time in this field, once the\nfinalizers list is empty. As long as the finalizers list contains items, deletion is blocked.\nOnce the deletionTimestamp is set, this value may not be unset or be set further into the\nfuture, although it may be shortened or the resource may be deleted prior to this time.\nFor example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react\nby sending a graceful termination signal to the containers in the pod. After that 30 seconds,\nthe Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup,\nremove the pod from the API. In the presence of network partitions, this object may still\nexist after this timestamp, until an administrator or automated process can determine the\nresource is fully terminated.\nIf not set, graceful deletion of the object has not been requested.\n\nPopulated by the system when a graceful deletion is requested.\nRead-only.\nMore info: https://git.io.k8s/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional"
         },
         "deletionGracePeriodSeconds": {
           "type": "string",
@@ -4420,7 +4420,7 @@
         "ownerReferences": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference"
+            "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.OwnerReference"
           },
           "title": "List of objects depended by this object. If ALL objects in the list have\nbeen deleted, this object will be garbage collected. If this object is managed by a controller,\nthen an entry in this list will point to this controller, with the controller field set to true.\nThere cannot be more than one managing controller.\n+optional\n+patchMergeKey=uid\n+patchStrategy=merge"
         },
@@ -4438,14 +4438,14 @@
         "managedFields": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ManagedFieldsEntry"
+            "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ManagedFieldsEntry"
           },
           "description": "ManagedFields maps workflow-id and version to the set of fields\nthat are managed by that workflow. This is mostly for internal\nhousekeeping, and users typically shouldn't need to set or\nunderstand this field. A workflow can be the user's name, a\ncontroller's name, or the name of a specific apply path like\n\"ci-cd\". The set of fields is always in the version that the\nworkflow used when modifying the object.\n\n+optional"
         }
       },
       "description": "ObjectMeta is metadata that all persisted resources must have, which includes all objects\nusers must create."
     },
-    "k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference": {
+    "io.k8s.apimachinery.pkg.apis.meta.v1.OwnerReference": {
       "type": "object",
       "properties": {
         "apiVersion": {
@@ -4454,7 +4454,7 @@
         },
         "kind": {
           "type": "string",
-          "title": "Kind of the referent.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds"
+          "title": "Kind of the referent.\nMore info: https://git.io.k8s/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds"
         },
         "name": {
           "type": "string",
@@ -4477,7 +4477,7 @@
       },
       "description": "OwnerReference contains enough information to let you identify an owning\nobject. An owning object must be in the same namespace as the dependent, or\nbe cluster-scoped, so there is no namespace field."
     },
-    "k8s.io.apimachinery.pkg.apis.meta.v1.Preconditions": {
+    "io.k8s.apimachinery.pkg.apis.meta.v1.Preconditions": {
       "type": "object",
       "properties": {
         "uid": {
@@ -4491,7 +4491,7 @@
       },
       "description": "Preconditions must be fulfilled before an operation (update, delete, etc.) is carried out."
     },
-    "k8s.io.apimachinery.pkg.apis.meta.v1.Time": {
+    "io.k8s.apimachinery.pkg.apis.meta.v1.Time": {
       "type": "object",
       "properties": {
         "seconds": {
@@ -4507,7 +4507,7 @@
       },
       "description": "Time is a wrapper around time.Time which supports correct\nmarshaling to YAML and JSON.  Wrappers are provided for many\nof the factory methods that the time package offers.\n\n+protobuf.options.marshal=false\n+protobuf.as=Timestamp\n+protobuf.options.(gogoproto.goproto_stringer)=false"
     },
-    "k8s.io.apimachinery.pkg.util.intstr.IntOrString": {
+    "io.k8s.apimachinery.pkg.util.intstr.IntOrString": {
       "type": "object",
       "properties": {
         "type": {
@@ -4540,7 +4540,7 @@
           "type": "string"
         },
         "workflow": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Workflow"
         },
         "instanceID": {
           "type": "string"
@@ -4550,7 +4550,7 @@
           "format": "boolean"
         },
         "createOptions": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.CreateOptions"
         }
       }
     },
@@ -4564,7 +4564,7 @@
           "type": "string"
         },
         "workflow": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Workflow"
         }
       }
     },
@@ -4635,7 +4635,7 @@
           "title": "the type of change"
         },
         "object": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha.Workflow",
           "title": "the workflow"
         }
       }
