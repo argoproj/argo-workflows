@@ -9,7 +9,7 @@
   "info": {
     "description": "Argo Server",
     "title": "Argo Server",
-    "version": "latest"
+    "version": "v2.6.0-rc1"
   },
   "paths": {
     "/api/v1/archived-workflows": {
