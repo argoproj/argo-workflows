@@ -28,7 +28,7 @@
   },
   "paths": {},
   "definitions": {
-    "Object": {
+    "io.k8s.apimachinery.pkg.runtime.Object": {
       "title": "This is a hack do deal with this problem: https://github.com/kubernetes/kube-openapi/issues/174"
     }
   }

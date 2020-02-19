@@ -1,16 +1,15 @@
 package io.argoproj.argo;
 
+import static org.junit.Assert.assertNotNull;
+
 import io.argoproj.argo.models.Template;
 import io.argoproj.argo.models.Workflow;
 import io.argoproj.argo.models.WorkflowSpec;
 import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1ObjectMeta;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Collections;
-
-import static org.junit.Assert.assertNotNull;
+import org.junit.Test;
 
 public class SmokeIT {
 

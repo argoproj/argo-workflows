@@ -1286,57 +1286,34 @@
     }
   },
   "definitions": {
-    "AWSElasticBlockStoreVolumeSource": {
-      "description": "Represents a Persistent Disk resource in AWS.\n\nAn AWS EBS disk must exist before mounting to a container. The disk\nmust also be in the same AWS zone as the kubelet. An AWS EBS disk\ncan only be mounted as read/write once. AWS EBS volumes support\nownership management and SELinux relabeling.",
+    "CreateCronWorkflowRequest": {
       "type": "object",
       "properties": {
-        "fsType": {
-          "type": "string",
-          "title": "Filesystem type of the volume that you want to mount.\nTip: Ensure that the filesystem type is supported by the host operating system.\nExamples: \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore\nTODO: how do we prevent errors in the filesystem from compromising the machine\n+optional"
+        "createOptions": {
+          "$ref": "#/definitions/CreateOptions"
         },
-        "partition": {
-          "type": "integer",
-          "format": "int32",
-          "title": "The partition in the volume that you want to mount.\nIf omitted, the default is to mount by volume name.\nExamples: For volume /dev/sda1, you specify the partition as \"1\".\nSimilarly, the volume partition for /dev/sda is \"0\" (or you can leave the property empty).\n+optional"
+        "cronWorkflow": {
+          "$ref": "#/definitions/CronWorkflow"
         },
-        "readOnly": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "Specify \"true\" to force and set the ReadOnly property in VolumeMounts to \"true\".\nIf omitted, the default is \"false\".\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore\n+optional"
-        },
-        "volumeID": {
-          "type": "string",
-          "title": "Unique ID of the persistent disk resource in AWS (Amazon EBS volume).\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore"
+        "namespace": {
+          "type": "string"
         }
       }
     },
-    "Affinity": {
-      "description": "Affinity is a group of affinity scheduling rules.",
-      "type": "object",
-      "properties": {
-        "nodeAffinity": {
-          "title": "Describes node affinity scheduling rules for the pod.\n+optional",
-          "$ref": "#/definitions/NodeAffinity"
-        },
-        "podAffinity": {
-          "title": "Describes pod affinity scheduling rules (e.g. co-locate this pod in the same node, zone, etc. as some other pod(s)).\n+optional",
-          "$ref": "#/definitions/PodAffinity"
-        },
-        "podAntiAffinity": {
-          "title": "Describes pod anti-affinity scheduling rules (e.g. avoid putting this pod in the same node, zone, etc. as some other pod(s)).\n+optional",
-          "$ref": "#/definitions/PodAntiAffinity"
-        }
-      }
+    "CronWorkflowDeletedResponse": {
+      "type": "object"
     },
-    "Any": {
+    "UpdateCronWorkflowRequest": {
       "type": "object",
       "properties": {
-        "type_url": {
+        "cronWorkflow": {
+          "$ref": "#/definitions/CronWorkflow"
+        },
+        "name": {
           "type": "string"
         },
-        "value": {
-          "type": "string",
-          "format": "byte"
+        "namespace": {
+          "type": "string"
         }
       }
     },
@@ -1351,9 +1328,6 @@
           "$ref": "#/definitions/TarStrategy"
         }
       }
-    },
-    "ArchivedWorkflowDeletedResponse": {
-      "type": "object"
     },
     "Arguments": {
       "type": "object",
@@ -1488,6 +1462,1421 @@
         }
       }
     },
+    "Backoff": {
+      "type": "object",
+      "properties": {
+        "duration": {
+          "type": "string"
+        },
+        "factor": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "maxDuration": {
+          "type": "string"
+        }
+      }
+    },
+    "ContinueOn": {
+      "description": "ContinueOn defines if a workflow should continue even if a task or step fails/errors.\nIt can be specified if the workflow should continue when the pod errors, fails or both.",
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "+optional"
+        },
+        "failed": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "+optional"
+        }
+      }
+    },
+    "CronWorkflow": {
+      "type": "object",
+      "title": "CronWorkflow is the definition of a scheduled workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/CronWorkflowSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/CronWorkflowStatus"
+        }
+      }
+    },
+    "CronWorkflowList": {
+      "type": "object",
+      "title": "CronWorkflowList is list of CronWorkflow resources\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CronWorkflow"
+          }
+        },
+        "metadata": {
+          "$ref": "#/definitions/ListMeta"
+        }
+      }
+    },
+    "CronWorkflowSpec": {
+      "type": "object",
+      "properties": {
+        "concurrencyPolicy": {
+          "type": "string",
+          "title": "ConcurrencyPolicy is the K8s-style concurrency policy that will be used"
+        },
+        "failedJobsHistoryLimit": {
+          "type": "integer",
+          "format": "int32",
+          "title": "FailedJobsHistoryLimit is the number of successful jobs to be kept at a time"
+        },
+        "schedule": {
+          "type": "string",
+          "title": "Schedule is a schedule to run the Workflow in Cron format"
+        },
+        "startingDeadlineSeconds": {
+          "description": "StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its\noriginal scheduled time if it is missed.",
+          "type": "string",
+          "format": "int64"
+        },
+        "successfulJobsHistoryLimit": {
+          "type": "integer",
+          "format": "int32",
+          "title": "SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time"
+        },
+        "suspend": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Suspend is a flag that will stop new CronWorkflows from running if set to true"
+        },
+        "timezone": {
+          "description": "Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\". Default is machine's local time.",
+          "type": "string"
+        },
+        "workflowSpec": {
+          "title": "WorkflowSpec is the spec of the workflow to be run",
+          "$ref": "#/definitions/WorkflowSpec"
+        }
+      }
+    },
+    "CronWorkflowStatus": {
+      "type": "object",
+      "properties": {
+        "active": {
+          "type": "array",
+          "title": "Active is a list of active workflows stemming from this CronWorkflow",
+          "items": {
+            "$ref": "#/definitions/ObjectReference"
+          }
+        },
+        "lastScheduledTime": {
+          "title": "LastScheduleTime is the last time the CronWorkflow was scheduled",
+          "$ref": "#/definitions/Time"
+        }
+      }
+    },
+    "DAGTask": {
+      "type": "object",
+      "title": "DAGTask represents a node in the graph during DAG execution",
+      "properties": {
+        "arguments": {
+          "title": "Arguments are the parameter and artifact arguments to the template",
+          "$ref": "#/definitions/Arguments"
+        },
+        "continueOn": {
+          "title": "ContinueOn makes argo to proceed with the following step even if this step fails.\nErrors and Failed states can be specified",
+          "$ref": "#/definitions/ContinueOn"
+        },
+        "dependencies": {
+          "type": "array",
+          "title": "Dependencies are name of other targets which this depends on",
+          "items": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "type": "string",
+          "title": "Name is the name of the target"
+        },
+        "onExit": {
+          "description": "OnExit is a template reference which is invoked at the end of the\ntemplate, irrespective of the success, failure, or error of the\nprimary template.",
+          "type": "string"
+        },
+        "template": {
+          "type": "string",
+          "title": "Name of template to execute"
+        },
+        "templateRef": {
+          "description": "TemplateRef is the reference to the template resource to execute.",
+          "$ref": "#/definitions/TemplateRef"
+        },
+        "when": {
+          "type": "string",
+          "title": "When is an expression in which the task should conditionally execute"
+        },
+        "withItems": {
+          "type": "array",
+          "title": "WithItems expands a task into multiple parallel tasks from the items in the list",
+          "items": {
+            "$ref": "#/definitions/Item"
+          }
+        },
+        "withParam": {
+          "description": "WithParam expands a task into multiple parallel tasks from the value in the parameter,\nwhich is expected to be a JSON list.",
+          "type": "string"
+        },
+        "withSequence": {
+          "title": "WithSequence expands a task into a numeric sequence",
+          "$ref": "#/definitions/Sequence"
+        }
+      }
+    },
+    "DAGTemplate": {
+      "type": "object",
+      "title": "DAGTemplate is a template subtype for directed acyclic graph templates",
+      "properties": {
+        "failFast": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "This flag is for DAG logic. The DAG logic has a built-in \"fail fast\" feature to stop scheduling new steps,\nas soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed\nbefore failing the DAG itself.\nThe FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to\ncompletion (either success or failure), regardless of the failed outcomes of branches in the DAG.\nMore info and example about this feature at https://github.com/argoproj/argo/issues/1442"
+        },
+        "target": {
+          "type": "string",
+          "title": "Target are one or more names of targets to execute in a DAG"
+        },
+        "tasks": {
+          "type": "array",
+          "title": "Tasks are a list of DAG tasks\n+patchStrategy=merge\n+patchMergeKey=name",
+          "items": {
+            "$ref": "#/definitions/DAGTask"
+          }
+        }
+      }
+    },
+    "ExecutorConfig": {
+      "description": "ExecutorConfig holds configurations of an executor container.",
+      "type": "object",
+      "properties": {
+        "serviceAccountName": {
+          "description": "ServiceAccountName specifies the service account name of the executor container.",
+          "type": "string"
+        }
+      }
+    },
+    "GitArtifact": {
+      "type": "object",
+      "title": "GitArtifact is the location of an git artifact",
+      "properties": {
+        "depth": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Depth specifies clones/fetches should be shallow and include the given\nnumber of commits from the branch tip"
+        },
+        "fetch": {
+          "type": "array",
+          "title": "Fetch specifies a number of refs that should be fetched before checkout",
+          "items": {
+            "type": "string"
+          }
+        },
+        "insecureIgnoreHostKey": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "InsecureIgnoreHostKey disables SSH strict host key checking during git clone"
+        },
+        "passwordSecret": {
+          "title": "PasswordSecret is the secret selector to the repository password",
+          "$ref": "#/definitions/SecretKeySelector"
+        },
+        "repo": {
+          "type": "string",
+          "title": "Repo is the git repository"
+        },
+        "revision": {
+          "type": "string",
+          "title": "Revision is the git commit, tag, branch to checkout"
+        },
+        "sshPrivateKeySecret": {
+          "title": "SSHPrivateKeySecret is the secret selector to the repository ssh private key",
+          "$ref": "#/definitions/SecretKeySelector"
+        },
+        "usernameSecret": {
+          "title": "UsernameSecret is the secret selector to the repository username",
+          "$ref": "#/definitions/SecretKeySelector"
+        }
+      }
+    },
+    "HDFSArtifact": {
+      "type": "object",
+      "title": "HDFSArtifact is the location of an HDFS artifact",
+      "properties": {
+        "force": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Force copies a file forcibly even if it exists (default: false)"
+        },
+        "hDFSConfig": {
+          "$ref": "#/definitions/HDFSConfig"
+        },
+        "path": {
+          "type": "string",
+          "title": "Path is a file path in HDFS"
+        }
+      }
+    },
+    "HDFSConfig": {
+      "type": "object",
+      "title": "HDFSConfig is configurations for HDFS",
+      "properties": {
+        "addresses": {
+          "type": "array",
+          "title": "Addresses is accessible addresses of HDFS name nodes",
+          "items": {
+            "type": "string"
+          }
+        },
+        "hDFSKrbConfig": {
+          "$ref": "#/definitions/HDFSKrbConfig"
+        },
+        "hdfsUser": {
+          "description": "HDFSUser is the user to access HDFS file system.\nIt is ignored if either ccache or keytab is used.",
+          "type": "string"
+        }
+      }
+    },
+    "HDFSKrbConfig": {
+      "type": "object",
+      "title": "HDFSKrbConfig is auth configurations for Kerberos",
+      "properties": {
+        "krbCCacheSecret": {
+          "description": "KrbCCacheSecret is the secret selector for Kerberos ccache\nEither ccache or keytab can be set to use Kerberos.",
+          "$ref": "#/definitions/SecretKeySelector"
+        },
+        "krbConfigConfigMap": {
+          "description": "KrbConfig is the configmap selector for Kerberos config as string\nIt must be set if either ccache or keytab is used.",
+          "$ref": "#/definitions/ConfigMapKeySelector"
+        },
+        "krbKeytabSecret": {
+          "description": "KrbKeytabSecret is the secret selector for Kerberos keytab\nEither ccache or keytab can be set to use Kerberos.",
+          "$ref": "#/definitions/SecretKeySelector"
+        },
+        "krbRealm": {
+          "description": "KrbRealm is the Kerberos realm used with Kerberos keytab\nIt must be set if keytab is used.",
+          "type": "string"
+        },
+        "krbServicePrincipalName": {
+          "description": "KrbServicePrincipalName is the principal name of Kerberos service\nIt must be set if either ccache or keytab is used.",
+          "type": "string"
+        },
+        "krbUsername": {
+          "description": "KrbUsername is the Kerberos username used with Kerberos keytab\nIt must be set if keytab is used.",
+          "type": "string"
+        }
+      }
+    },
+    "HTTPArtifact": {
+      "type": "object",
+      "title": "HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container",
+      "properties": {
+        "url": {
+          "type": "string",
+          "title": "URL of the artifact"
+        }
+      }
+    },
+    "Inputs": {
+      "type": "object",
+      "title": "Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another",
+      "properties": {
+        "artifacts": {
+          "type": "array",
+          "title": "Artifact are a list of artifacts passed as inputs\n+patchStrategy=merge\n+patchMergeKey=name",
+          "items": {
+            "$ref": "#/definitions/Artifact"
+          }
+        },
+        "parameters": {
+          "type": "array",
+          "title": "Parameters are a list of parameters passed as inputs\n+patchStrategy=merge\n+patchMergeKey=name",
+          "items": {
+            "$ref": "#/definitions/Parameter"
+          }
+        }
+      }
+    },
+    "Item": {
+      "description": "+protobuf=true\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:openapi-gen=true",
+      "type": "object",
+      "title": "Item expands a single workflow step into multiple parallel steps\nThe value of Item can be a map, string, bool, or number",
+      "properties": {
+        "boolVal": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "listVal": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ItemValue"
+          }
+        },
+        "mapVal": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ItemValue"
+          }
+        },
+        "numVal": {
+          "type": "string"
+        },
+        "strVal": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "ItemValue": {
+      "type": "object",
+      "title": "+protobuf=true\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:openapi-gen=true",
+      "properties": {
+        "boolVal": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "listVal": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          }
+        },
+        "mapVal": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "numVal": {
+          "type": "string"
+        },
+        "strVal": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "Metadata": {
+      "type": "object",
+      "title": "Pod metdata",
+      "properties": {
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "NodeStatus": {
+      "type": "object",
+      "title": "NodeStatus contains status information about an individual node in the workflow",
+      "properties": {
+        "boundaryID": {
+          "type": "string",
+          "title": "BoundaryID indicates the node ID of the associated template root node in which this node belongs to"
+        },
+        "children": {
+          "type": "array",
+          "title": "Children is a list of child node IDs",
+          "items": {
+            "type": "string"
+          }
+        },
+        "daemoned": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Daemoned tracks whether or not this node was daemoned and need to be terminated"
+        },
+        "displayName": {
+          "type": "string",
+          "title": "DisplayName is a human readable representation of the node. Unique within a template boundary"
+        },
+        "finishedAt": {
+          "title": "Time at which this node completed",
+          "$ref": "#/definitions/Time"
+        },
+        "id": {
+          "type": "string",
+          "title": "ID is a unique identifier of a node within the worklow\nIt is implemented as a hash of the node name, which makes the ID deterministic"
+        },
+        "inputs": {
+          "title": "Inputs captures input parameter values and artifact locations supplied to this template invocation",
+          "$ref": "#/definitions/Inputs"
+        },
+        "message": {
+          "description": "A human readable message indicating details about why the node is in this condition.",
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "title": "Name is unique name in the node tree used to generate the node ID"
+        },
+        "outboundNodes": {
+          "description": "OutboundNodes tracks the node IDs which are considered \"outbound\" nodes to a template invocation.\nFor every invocation of a template, there are nodes which we considered as \"outbound\". Essentially,\nthese are last nodes in the execution sequence to run, before the template is considered completed.\nThese nodes are then connected as parents to a following step.\n\nIn the case of single pod steps (i.e. container, script, resource templates), this list will be nil\nsince the pod itself is already considered the \"outbound\" node.\nIn the case of DAGs, outbound nodes are the \"target\" tasks (tasks with no children).\nIn the case of steps, outbound nodes are all the containers involved in the last step group.\nNOTE: since templates are composable, the list of outbound nodes are carried upwards when\na DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of\na template, will be a superset of the outbound nodes of its last children.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "outputs": {
+          "title": "Outputs captures output parameter values and artifact locations produced by this template invocation",
+          "$ref": "#/definitions/Outputs"
+        },
+        "phase": {
+          "description": "Phase a simple, high-level summary of where the node is in its lifecycle.\nCan be used as a state machine.",
+          "type": "string"
+        },
+        "podIP": {
+          "type": "string",
+          "title": "PodIP captures the IP of the pod for daemoned steps"
+        },
+        "startedAt": {
+          "title": "Time at which this node started",
+          "$ref": "#/definitions/Time"
+        },
+        "storedTemplateID": {
+          "description": "StoredTemplateID is the ID of stored template.\nDEPRECATED: This value is not used anymore.",
+          "type": "string"
+        },
+        "templateName": {
+          "type": "string",
+          "title": "TemplateName is the template name which this node corresponds to.\nNot applicable to virtual nodes (e.g. Retry, StepGroup)"
+        },
+        "templateRef": {
+          "title": "TemplateRef is the reference to the template resource which this node corresponds to.\nNot applicable to virtual nodes (e.g. Retry, StepGroup)",
+          "$ref": "#/definitions/TemplateRef"
+        },
+        "templateScope": {
+          "description": "TemplateScope is the template scope in which the template of this node was retrieved.",
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "title": "Type indicates type of node"
+        },
+        "workflowTemplateName": {
+          "description": "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.\nDEPRECATED: This value is not used anymore.",
+          "type": "string"
+        }
+      }
+    },
+    "NoneStrategy": {
+      "description": "NoneStrategy indicates to skip tar process and upload the files or directory tree as independent\nfiles. Note that if the artifact is a directory, the artifact driver must support the ability to\nsave/load the directory appropriately.",
+      "type": "object"
+    },
+    "Outputs": {
+      "type": "object",
+      "title": "Outputs hold parameters, artifacts, and results from a step",
+      "properties": {
+        "artifacts": {
+          "type": "array",
+          "title": "Artifacts holds the list of output artifacts produced by a step\n+patchStrategy=merge\n+patchMergeKey=name",
+          "items": {
+            "$ref": "#/definitions/Artifact"
+          }
+        },
+        "parameters": {
+          "type": "array",
+          "title": "Parameters holds the list of output parameters produced by a step\n+patchStrategy=merge\n+patchMergeKey=name",
+          "items": {
+            "$ref": "#/definitions/Parameter"
+          }
+        },
+        "result": {
+          "type": "string",
+          "title": "Result holds the result (stdout) of a script template"
+        }
+      }
+    },
+    "ParallelSteps": {
+      "type": "object",
+      "properties": {
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/WorkflowStep"
+          }
+        }
+      }
+    },
+    "Parameter": {
+      "type": "object",
+      "title": "Parameter indicate a passed string parameter to a service template with an optional default value",
+      "properties": {
+        "default": {
+          "type": "string",
+          "title": "Default is the default value to use for an input parameter if a value was not supplied"
+        },
+        "globalName": {
+          "type": "string",
+          "title": "GlobalName exports an output parameter to the global scope, making it available as\n'{{outputs.parameters.XXXX}} and in status.outputs.parameters"
+        },
+        "name": {
+          "type": "string",
+          "title": "Name is the parameter name"
+        },
+        "value": {
+          "type": "string",
+          "title": "Value is the literal value to use for the parameter.\nIf specified in the context of an input parameter, the value takes precedence over any passed values"
+        },
+        "valueFrom": {
+          "title": "ValueFrom is the source for the output parameter's value",
+          "$ref": "#/definitions/ValueFrom"
+        }
+      }
+    },
+    "PodGC": {
+      "type": "object",
+      "title": "PodGC describes how to delete completed pods as they complete",
+      "properties": {
+        "strategy": {
+          "type": "string"
+        }
+      }
+    },
+    "RawArtifact": {
+      "type": "object",
+      "title": "RawArtifact allows raw string content to be placed as an artifact in a container",
+      "properties": {
+        "data": {
+          "type": "string",
+          "title": "Data is the string contents of the artifact"
+        }
+      }
+    },
+    "ResourceTemplate": {
+      "type": "object",
+      "title": "ResourceTemplate is a template subtype to manipulate kubernetes resources",
+      "properties": {
+        "action": {
+          "type": "string",
+          "title": "Action is the action to perform to the resource.\nMust be one of: get, create, apply, delete, replace, patch"
+        },
+        "failureCondition": {
+          "type": "string",
+          "title": "FailureCondition is a label selector expression which describes the conditions\nof the k8s resource in which the step was considered failed"
+        },
+        "manifest": {
+          "type": "string",
+          "title": "Manifest contains the kubernetes manifest"
+        },
+        "mergeStrategy": {
+          "type": "string",
+          "title": "MergeStrategy is the strategy used to merge a patch. It defaults to \"strategic\"\nMust be one of: strategic, merge, json"
+        },
+        "setOwnerReference": {
+          "description": "SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.",
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "successCondition": {
+          "type": "string",
+          "title": "SuccessCondition is a label selector expression which describes the conditions\nof the k8s resource in which it is acceptable to proceed to the following step"
+        }
+      }
+    },
+    "RetryStrategy": {
+      "type": "object",
+      "title": "RetryStrategy provides controls on how to retry a workflow step",
+      "properties": {
+        "backoff": {
+          "title": "Backoff is a backoff strategy",
+          "$ref": "#/definitions/Backoff"
+        },
+        "limit": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Limit is the maximum number of attempts when retrying a container"
+        },
+        "retryPolicy": {
+          "type": "string",
+          "title": "RetryPolicy is a policy of NodePhase statuses that will be retried"
+        }
+      }
+    },
+    "S3Artifact": {
+      "type": "object",
+      "title": "S3Artifact is the location of an S3 artifact",
+      "properties": {
+        "key": {
+          "type": "string",
+          "title": "Key is the key in the bucket where the artifact resides"
+        },
+        "s3Bucket": {
+          "$ref": "#/definitions/S3Bucket"
+        }
+      }
+    },
+    "S3Bucket": {
+      "type": "object",
+      "title": "S3Bucket contains the access information required for interfacing with an S3 bucket",
+      "properties": {
+        "accessKeySecret": {
+          "title": "AccessKeySecret is the secret selector to the bucket's access key",
+          "$ref": "#/definitions/SecretKeySelector"
+        },
+        "bucket": {
+          "type": "string",
+          "title": "Bucket is the name of the bucket"
+        },
+        "endpoint": {
+          "type": "string",
+          "title": "Endpoint is the hostname of the bucket endpoint"
+        },
+        "insecure": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Insecure will connect to the service with TLS"
+        },
+        "region": {
+          "type": "string",
+          "title": "Region contains the optional bucket region"
+        },
+        "roleARN": {
+          "description": "RoleARN is the Amazon Resource Name (ARN) of the role to assume.",
+          "type": "string"
+        },
+        "secretKeySecret": {
+          "title": "SecretKeySecret is the secret selector to the bucket's secret key",
+          "$ref": "#/definitions/SecretKeySelector"
+        }
+      }
+    },
+    "ScriptTemplate": {
+      "type": "object",
+      "title": "ScriptTemplate is a template subtype to enable scripting through code steps",
+      "properties": {
+        "container": {
+          "$ref": "#/definitions/Container"
+        },
+        "source": {
+          "type": "string",
+          "title": "Source contains the source code of the script to execute"
+        }
+      }
+    },
+    "Sequence": {
+      "type": "object",
+      "title": "Sequence expands a workflow step into numeric range",
+      "properties": {
+        "count": {
+          "type": "string",
+          "title": "Count is number of elements in the sequence (default: 0). Not to be used with end"
+        },
+        "end": {
+          "type": "string",
+          "title": "Number at which to end the sequence (default: 0). Not to be used with Count"
+        },
+        "format": {
+          "type": "string",
+          "title": "Format is a printf format string to format the value in the sequence"
+        },
+        "start": {
+          "type": "string",
+          "title": "Number at which to start the sequence (default: 0)"
+        }
+      }
+    },
+    "SuspendTemplate": {
+      "type": "object",
+      "title": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time",
+      "properties": {
+        "duration": {
+          "type": "string",
+          "title": "Duration is the seconds to wait before automatically resuming a template"
+        }
+      }
+    },
+    "TTLStrategy": {
+      "type": "object",
+      "title": "TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed",
+      "properties": {
+        "secondsAfterCompletion": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "secondsAfterFailure": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "secondsAfterSuccess": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "TarStrategy": {
+      "type": "object",
+      "title": "TarStrategy will tar and gzip the file or directory when saving"
+    },
+    "Template": {
+      "type": "object",
+      "title": "Template is a reusable and composable unit of execution in a workflow",
+      "properties": {
+        "activeDeadlineSeconds": {
+          "description": "Optional duration in seconds relative to the StartTime that the pod may be active on a node\nbefore the system actively tries to terminate the pod; value must be positive integer\nThis field is only applicable to container and script templates.",
+          "type": "string",
+          "format": "int64"
+        },
+        "affinity": {
+          "title": "Affinity sets the pod's scheduling constraints\nOverrides the affinity set at the workflow level (if any)",
+          "$ref": "#/definitions/Affinity"
+        },
+        "archiveLocation": {
+          "description": "Location in which all files related to the step will be stored (logs, artifacts, etc...).\nCan be overridden by individual items in Outputs. If omitted, will use the default\nartifact repository location configured in the controller, appended with the\n\u003cworkflowname\u003e/\u003cnodename\u003e in the key.",
+          "$ref": "#/definitions/ArtifactLocation"
+        },
+        "arguments": {
+          "description": "Arguments hold arguments to the template.",
+          "$ref": "#/definitions/Arguments"
+        },
+        "automountServiceAccountToken": {
+          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.\nServiceAccountName of ExecutorConfig must be specified if this value is false.",
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "container": {
+          "title": "Container is the main container image to run in the pod",
+          "$ref": "#/definitions/Container"
+        },
+        "daemon": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness"
+        },
+        "dag": {
+          "title": "DAG template subtype which runs a DAG",
+          "$ref": "#/definitions/DAGTemplate"
+        },
+        "executor": {
+          "description": "Executor holds configurations of the executor container.",
+          "$ref": "#/definitions/ExecutorConfig"
+        },
+        "hostAliases": {
+          "type": "array",
+          "title": "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec\n+patchStrategy=merge\n+patchMergeKey=ip",
+          "items": {
+            "$ref": "#/definitions/HostAlias"
+          }
+        },
+        "initContainers": {
+          "type": "array",
+          "title": "InitContainers is a list of containers which run before the main container.\n+patchStrategy=merge\n+patchMergeKey=name",
+          "items": {
+            "$ref": "#/definitions/UserContainer"
+          }
+        },
+        "inputs": {
+          "title": "Inputs describe what inputs parameters and artifacts are supplied to this template",
+          "$ref": "#/definitions/Inputs"
+        },
+        "metadata": {
+          "title": "Metdata sets the pods's metadata, i.e. annotations and labels",
+          "$ref": "#/definitions/Metadata"
+        },
+        "name": {
+          "type": "string",
+          "title": "Name is the name of the template"
+        },
+        "nodeSelector": {
+          "description": "NodeSelector is a selector to schedule this step of the workflow to be\nrun on the selected node(s). Overrides the selector set at the workflow level.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "outputs": {
+          "title": "Outputs describe the parameters and artifacts that this template produces",
+          "$ref": "#/definitions/Outputs"
+        },
+        "parallelism": {
+          "description": "Parallelism limits the max total parallel pods that can execute at the same time within the\nboundaries of this template invocation. If additional steps/dag templates are invoked, the\npods created by those templates will not be counted towards this total.",
+          "type": "string",
+          "format": "int64"
+        },
+        "podSpecPatch": {
+          "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of\ncontainer fields which are not strings (e.g. resource limits).",
+          "type": "string"
+        },
+        "priority": {
+          "description": "Priority to apply to workflow pods.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "priorityClassName": {
+          "description": "PriorityClassName to apply to workflow pods.",
+          "type": "string"
+        },
+        "resource": {
+          "title": "Resource template subtype which can run k8s resources",
+          "$ref": "#/definitions/ResourceTemplate"
+        },
+        "retryStrategy": {
+          "title": "RetryStrategy describes how to retry a template when it fails",
+          "$ref": "#/definitions/RetryStrategy"
+        },
+        "schedulerName": {
+          "type": "string",
+          "title": "If specified, the pod will be dispatched by specified scheduler.\nOr it will be dispatched by workflow scope scheduler if specified.\nIf neither specified, the pod will be dispatched by default scheduler.\n+optional"
+        },
+        "script": {
+          "title": "Script runs a portion of code against an interpreter",
+          "$ref": "#/definitions/ScriptTemplate"
+        },
+        "securityContext": {
+          "title": "SecurityContext holds pod-level security attributes and common container settings.\nOptional: Defaults to empty.  See type description for default values of each field.\n+optional",
+          "$ref": "#/definitions/PodSecurityContext"
+        },
+        "serviceAccountName": {
+          "type": "string",
+          "title": "ServiceAccountName to apply to workflow pods"
+        },
+        "sidecars": {
+          "type": "array",
+          "title": "Sidecars is a list of containers which run alongside the main container\nSidecars are automatically killed when the main container completes\n+patchStrategy=merge\n+patchMergeKey=name",
+          "items": {
+            "$ref": "#/definitions/UserContainer"
+          }
+        },
+        "steps": {
+          "type": "array",
+          "title": "Steps define a series of sequential/parallel workflow steps",
+          "items": {
+            "$ref": "#/definitions/ParallelSteps"
+          }
+        },
+        "suspend": {
+          "title": "Suspend template subtype which can suspend a workflow when reaching the step",
+          "$ref": "#/definitions/SuspendTemplate"
+        },
+        "template": {
+          "description": "Template is the name of the template which is used as the base of this template.",
+          "type": "string"
+        },
+        "templateRef": {
+          "description": "TemplateRef is the reference to the template resource which is used as the base of this template.",
+          "$ref": "#/definitions/TemplateRef"
+        },
+        "tolerations": {
+          "type": "array",
+          "title": "Tolerations to apply to workflow pods.\n+patchStrategy=merge\n+patchMergeKey=key",
+          "items": {
+            "$ref": "#/definitions/Toleration"
+          }
+        },
+        "volumes": {
+          "type": "array",
+          "title": "Volumes is a list of volumes that can be mounted by containers in a template.\n+patchStrategy=merge\n+patchMergeKey=name",
+          "items": {
+            "$ref": "#/definitions/Volume"
+          }
+        }
+      }
+    },
+    "TemplateRef": {
+      "description": "TemplateRef is a reference of template resource.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Name is the resource name of the template.",
+          "type": "string"
+        },
+        "runtimeResolution": {
+          "description": "RuntimeResolution skips validation at creation time.\nBy enabling this option, you can create the referred workflow template before the actual runtime.",
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "template": {
+          "description": "Template is the name of referred template in the resource.",
+          "type": "string"
+        }
+      }
+    },
+    "UserContainer": {
+      "description": "UserContainer is a container specified by a user.",
+      "type": "object",
+      "properties": {
+        "container": {
+          "$ref": "#/definitions/Container"
+        },
+        "mirrorVolumeMounts": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "MirrorVolumeMounts will mount the same volumes specified in the main container\nto the container (including artifacts), at the same mountPaths. This enables\ndind daemon to partially see the same filesystem as the main container in\norder to use features such as docker volume binding"
+        }
+      }
+    },
+    "ValueFrom": {
+      "type": "object",
+      "title": "ValueFrom describes a location in which to obtain the value to a parameter",
+      "properties": {
+        "jqFilter": {
+          "type": "string",
+          "title": "JQFilter expression against the resource object in resource templates"
+        },
+        "jsonPath": {
+          "type": "string",
+          "title": "JSONPath of a resource to retrieve an output parameter value from in resource templates"
+        },
+        "parameter": {
+          "type": "string",
+          "title": "Parameter reference to a step or dag task in which to retrieve an output parameter value from\n(e.g. '{{steps.mystep.outputs.myparam}}')"
+        },
+        "path": {
+          "type": "string",
+          "title": "Path in the container to retrieve an output parameter value from in container templates"
+        }
+      }
+    },
+    "Workflow": {
+      "type": "object",
+      "title": "Workflow is the definition of a workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/WorkflowSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/WorkflowStatus"
+        }
+      }
+    },
+    "WorkflowList": {
+      "type": "object",
+      "title": "WorkflowList is list of Workflow resources\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Workflow"
+          }
+        },
+        "metadata": {
+          "$ref": "#/definitions/ListMeta"
+        }
+      }
+    },
+    "WorkflowSpec": {
+      "description": "WorkflowSpec is the specification of a Workflow.",
+      "type": "object",
+      "properties": {
+        "activeDeadlineSeconds": {
+          "type": "string",
+          "format": "int64",
+          "title": "Optional duration in seconds relative to the workflow start time which the workflow is\nallowed to run before the controller terminates the  A value of zero is used to\nterminate a Running workflow"
+        },
+        "affinity": {
+          "title": "Affinity sets the scheduling constraints for all pods in the \nCan be overridden by an affinity specified in the template",
+          "$ref": "#/definitions/Affinity"
+        },
+        "arguments": {
+          "title": "Arguments contain the parameters and artifacts sent to the workflow entrypoint\nParameters are referencable globally using the 'workflow' variable prefix.\ne.g. {{parameters.myparam}}",
+          "$ref": "#/definitions/Arguments"
+        },
+        "artifactRepositoryRef": {
+          "description": "ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.",
+          "$ref": "#/definitions/ArtifactRepositoryRef"
+        },
+        "automountServiceAccountToken": {
+          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.\nServiceAccountName of ExecutorConfig must be specified if this value is false.",
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "dnsConfig": {
+          "description": "PodDNSConfig defines the DNS parameters of a pod in addition to\nthose generated from DNSPolicy.",
+          "$ref": "#/definitions/PodDNSConfig"
+        },
+        "dnsPolicy": {
+          "description": "Set DNS policy for the pod.\nDefaults to \"ClusterFirst\".\nValid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'.\nDNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy.\nTo have DNS options set along with hostNetwork, you have to specify DNS policy\nexplicitly to 'ClusterFirstWithHostNet'.",
+          "type": "string"
+        },
+        "entrypoint": {
+          "type": "string",
+          "title": "Entrypoint is a template reference to the starting point of the workflow"
+        },
+        "executor": {
+          "description": "Executor holds configurations of executor containers of the ",
+          "$ref": "#/definitions/ExecutorConfig"
+        },
+        "hostAliases": {
+          "type": "array",
+          "title": "+patchStrategy=merge\n+patchMergeKey=ip",
+          "items": {
+            "$ref": "#/definitions/HostAlias"
+          }
+        },
+        "hostNetwork": {
+          "description": "Host networking requested for this workflow pod. Default to false.",
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "title": "ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images\nin pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets\ncan be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet.\nMore info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod\n+patchStrategy=merge\n+patchMergeKey=name",
+          "items": {
+            "$ref": "#/definitions/LocalObjectReference"
+          }
+        },
+        "nodeSelector": {
+          "description": "NodeSelector is a selector which will result in all pods of the workflow\nto be scheduled on the selected node(s). This is able to be overridden by\na nodeSelector specified in the template.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "onExit": {
+          "description": "OnExit is a template reference which is invoked at the end of the\nworkflow, irrespective of the success, failure, or error of the\nprimary ",
+          "type": "string"
+        },
+        "parallelism": {
+          "type": "string",
+          "format": "int64",
+          "title": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow"
+        },
+        "podGC": {
+          "title": "PodGC describes the strategy to use when to deleting completed pods",
+          "$ref": "#/definitions/PodGC"
+        },
+        "podPriority": {
+          "description": "Priority to apply to workflow pods.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "podPriorityClassName": {
+          "description": "PriorityClassName to apply to workflow pods.",
+          "type": "string"
+        },
+        "podSpecPatch": {
+          "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of\ncontainer fields which are not strings (e.g. resource limits).",
+          "type": "string"
+        },
+        "priority": {
+          "description": "Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "schedulerName": {
+          "type": "string",
+          "title": "Set scheduler name for all pods.\nWill be overridden if container/script template's scheduler name is set.\nDefault scheduler will be used if neither specified.\n+optional"
+        },
+        "securityContext": {
+          "title": "SecurityContext holds pod-level security attributes and common container settings.\nOptional: Defaults to empty.  See type description for default values of each field.\n+optional",
+          "$ref": "#/definitions/PodSecurityContext"
+        },
+        "serviceAccountName": {
+          "description": "ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.",
+          "type": "string"
+        },
+        "suspend": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Suspend will suspend the workflow and prevent execution of any future steps in the workflow"
+        },
+        "templates": {
+          "type": "array",
+          "title": "Templates is a list of workflow templates used in a workflow\n+patchStrategy=merge\n+patchMergeKey=name",
+          "items": {
+            "$ref": "#/definitions/Template"
+          }
+        },
+        "tolerations": {
+          "type": "array",
+          "title": "Tolerations to apply to workflow pods.\n+patchStrategy=merge\n+patchMergeKey=key",
+          "items": {
+            "$ref": "#/definitions/Toleration"
+          }
+        },
+        "ttlSecondsAfterFinished": {
+          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution\n(Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be\ndeleted after ttlSecondsAfterFinished expires. If this field is unset,\nttlSecondsAfterFinished will not expire. If this field is set to zero,\nttlSecondsAfterFinished expires immediately after the Workflow finishes.\nDEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "ttlStrategy": {
+          "title": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it\nSucceeded or Failed. If this struct is set, once the Workflow finishes, it will be\ndeleted after the time to live expires. If this field is unset,\nthe controller config map will hold the default values\nUpdate",
+          "$ref": "#/definitions/TTLStrategy"
+        },
+        "volumeClaimTemplates": {
+          "type": "array",
+          "title": "VolumeClaimTemplates is a list of claims that containers are allowed to reference.\nThe Workflow controller will create the claims at the beginning of the workflow\nand delete the claims upon completion of the workflow\n+patchStrategy=merge\n+patchMergeKey=name",
+          "items": {
+            "$ref": "#/definitions/PersistentVolumeClaim"
+          }
+        },
+        "volumes": {
+          "type": "array",
+          "title": "Volumes is a list of volumes that can be mounted by containers in a \n+patchStrategy=merge\n+patchMergeKey=name",
+          "items": {
+            "$ref": "#/definitions/Volume"
+          }
+        }
+      }
+    },
+    "WorkflowStatus": {
+      "type": "object",
+      "title": "WorkflowStatus contains overall status information about a workflow",
+      "properties": {
+        "compressedNodes": {
+          "type": "string",
+          "title": "Compressed and base64 decoded Nodes map"
+        },
+        "finishedAt": {
+          "title": "Time at which this workflow completed",
+          "$ref": "#/definitions/Time"
+        },
+        "message": {
+          "description": "A human readable message indicating details about why the workflow is in this condition.",
+          "type": "string"
+        },
+        "nodes": {
+          "description": "Nodes is a mapping between a node ID and the node's status.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/NodeStatus"
+          }
+        },
+        "offloadNodeStatusVersion": {
+          "description": "Whether on not node status has been offloaded to a database. If exists, then Nodes and CompressedNodes will be empty.\nThis will actually be populated with a hash of the offloaded data.",
+          "type": "string"
+        },
+        "outputs": {
+          "title": "Outputs captures output values and artifact locations produced by the workflow via global outputs",
+          "$ref": "#/definitions/Outputs"
+        },
+        "persistentVolumeClaims": {
+          "description": "PersistentVolumeClaims tracks all PVCs that were created as part of the \nThe contents of this list are drained at the end of the ",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Volume"
+          }
+        },
+        "phase": {
+          "description": "Phase a simple, high-level summary of where the workflow is in its lifecycle.",
+          "type": "string"
+        },
+        "startedAt": {
+          "title": "Time at which this workflow started",
+          "$ref": "#/definitions/Time"
+        },
+        "storedTemplates": {
+          "description": "StoredTemplates is a mapping between a template ref and the node's status.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/Template"
+          }
+        }
+      }
+    },
+    "WorkflowStep": {
+      "type": "object",
+      "title": "WorkflowStep is a reference to a template to execute in a series of step",
+      "properties": {
+        "arguments": {
+          "title": "Arguments hold arguments to the template",
+          "$ref": "#/definitions/Arguments"
+        },
+        "continueOn": {
+          "title": "ContinueOn makes argo to proceed with the following step even if this step fails.\nErrors and Failed states can be specified",
+          "$ref": "#/definitions/ContinueOn"
+        },
+        "name": {
+          "type": "string",
+          "title": "Name of the step"
+        },
+        "onExit": {
+          "description": "OnExit is a template reference which is invoked at the end of the\ntemplate, irrespective of the success, failure, or error of the\nprimary template.",
+          "type": "string"
+        },
+        "template": {
+          "type": "string",
+          "title": "Template is the name of the template to execute as the step"
+        },
+        "templateRef": {
+          "description": "TemplateRef is the reference to the template resource to execute as the step.",
+          "$ref": "#/definitions/TemplateRef"
+        },
+        "when": {
+          "type": "string",
+          "title": "When is an expression in which the step should conditionally execute"
+        },
+        "withItems": {
+          "type": "array",
+          "title": "WithItems expands a step into multiple parallel steps from the items in the list",
+          "items": {
+            "$ref": "#/definitions/Item"
+          }
+        },
+        "withParam": {
+          "description": "WithParam expands a step into multiple parallel steps from the value in the parameter,\nwhich is expected to be a JSON list.",
+          "type": "string"
+        },
+        "withSequence": {
+          "title": "WithSequence expands a step into a numeric sequence",
+          "$ref": "#/definitions/Sequence"
+        }
+      }
+    },
+    "WorkflowTemplate": {
+      "type": "object",
+      "title": "WorkflowTemplate is the definition of a workflow template resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/WorkflowTemplateSpec"
+        }
+      }
+    },
+    "WorkflowTemplateList": {
+      "type": "object",
+      "title": "WorkflowTemplateList is list of WorkflowTemplate resources\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/WorkflowTemplate"
+          }
+        },
+        "metadata": {
+          "$ref": "#/definitions/ListMeta"
+        }
+      }
+    },
+    "WorkflowTemplateSpec": {
+      "description": "WorkflowTemplateSpec is a spec of WorkflowTemplate.",
+      "type": "object",
+      "properties": {
+        "arguments": {
+          "description": "Arguments hold arguments to the template.",
+          "$ref": "#/definitions/Arguments"
+        },
+        "templates": {
+          "description": "Templates is a list of workflow templates.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Template"
+          }
+        }
+      }
+    },
+    "Any": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "StreamError": {
+      "type": "object",
+      "properties": {
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Any"
+          }
+        },
+        "grpc_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "http_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "http_status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "InfoResponse": {
+      "type": "object",
+      "properties": {
+        "managedNamespace": {
+          "type": "string"
+        }
+      }
+    },
+    "Object": {
+      "title": "This is a hack do deal with this problem: https://github.com/kubernetes/kube-openapi/issues/174"
+    },
+    "AWSElasticBlockStoreVolumeSource": {
+      "description": "Represents a Persistent Disk resource in AWS.\n\nAn AWS EBS disk must exist before mounting to a container. The disk\nmust also be in the same AWS zone as the kubelet. An AWS EBS disk\ncan only be mounted as read/write once. AWS EBS volumes support\nownership management and SELinux relabeling.",
+      "type": "object",
+      "properties": {
+        "fsType": {
+          "type": "string",
+          "title": "Filesystem type of the volume that you want to mount.\nTip: Ensure that the filesystem type is supported by the host operating system.\nExamples: \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore\nTODO: how do we prevent errors in the filesystem from compromising the machine\n+optional"
+        },
+        "partition": {
+          "type": "integer",
+          "format": "int32",
+          "title": "The partition in the volume that you want to mount.\nIf omitted, the default is to mount by volume name.\nExamples: For volume /dev/sda1, you specify the partition as \"1\".\nSimilarly, the volume partition for /dev/sda is \"0\" (or you can leave the property empty).\n+optional"
+        },
+        "readOnly": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Specify \"true\" to force and set the ReadOnly property in VolumeMounts to \"true\".\nIf omitted, the default is \"false\".\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore\n+optional"
+        },
+        "volumeID": {
+          "type": "string",
+          "title": "Unique ID of the persistent disk resource in AWS (Amazon EBS volume).\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore"
+        }
+      }
+    },
+    "Affinity": {
+      "description": "Affinity is a group of affinity scheduling rules.",
+      "type": "object",
+      "properties": {
+        "nodeAffinity": {
+          "title": "Describes node affinity scheduling rules for the pod.\n+optional",
+          "$ref": "#/definitions/NodeAffinity"
+        },
+        "podAffinity": {
+          "title": "Describes pod affinity scheduling rules (e.g. co-locate this pod in the same node, zone, etc. as some other pod(s)).\n+optional",
+          "$ref": "#/definitions/PodAffinity"
+        },
+        "podAntiAffinity": {
+          "title": "Describes pod anti-affinity scheduling rules (e.g. avoid putting this pod in the same node, zone, etc. as some other pod(s)).\n+optional",
+          "$ref": "#/definitions/PodAntiAffinity"
+        }
+      }
+    },
     "AzureDiskVolumeSource": {
       "description": "AzureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.",
       "type": "object",
@@ -1535,21 +2924,6 @@
         "shareName": {
           "type": "string",
           "title": "Share Name"
-        }
-      }
-    },
-    "Backoff": {
-      "type": "object",
-      "properties": {
-        "duration": {
-          "type": "string"
-        },
-        "factor": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "maxDuration": {
-          "type": "string"
         }
       }
     },
@@ -1887,252 +3261,6 @@
         }
       }
     },
-    "ContinueOn": {
-      "description": "ContinueOn defines if a workflow should continue even if a task or step fails/errors.\nIt can be specified if the workflow should continue when the pod errors, fails or both.",
-      "type": "object",
-      "properties": {
-        "error": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "+optional"
-        },
-        "failed": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "+optional"
-        }
-      }
-    },
-    "CreateCronWorkflowRequest": {
-      "type": "object",
-      "properties": {
-        "createOptions": {
-          "$ref": "#/definitions/CreateOptions"
-        },
-        "cronWorkflow": {
-          "$ref": "#/definitions/CronWorkflow"
-        },
-        "namespace": {
-          "type": "string"
-        }
-      }
-    },
-    "CreateOptions": {
-      "description": "CreateOptions may be provided when creating an API object.",
-      "type": "object",
-      "properties": {
-        "dryRun": {
-          "type": "array",
-          "title": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional",
-          "items": {
-            "type": "string"
-          }
-        },
-        "fieldManager": {
-          "type": "string",
-          "title": "fieldManager is a name associated with the actor or entity\nthat is making these changes. The value must be less than or\n128 characters long, and only contain printable characters,\nas defined by https://golang.org/pkg/unicode/#IsPrint.\n+optional"
-        }
-      }
-    },
-    "CronWorkflow": {
-      "type": "object",
-      "title": "CronWorkflow is the definition of a scheduled workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
-      "properties": {
-        "metadata": {
-          "$ref": "#/definitions/ObjectMeta"
-        },
-        "spec": {
-          "$ref": "#/definitions/CronWorkflowSpec"
-        },
-        "status": {
-          "$ref": "#/definitions/CronWorkflowStatus"
-        }
-      }
-    },
-    "CronWorkflowDeletedResponse": {
-      "type": "object"
-    },
-    "CronWorkflowList": {
-      "type": "object",
-      "title": "CronWorkflowList is list of CronWorkflow resources\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
-      "properties": {
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/CronWorkflow"
-          }
-        },
-        "metadata": {
-          "$ref": "#/definitions/ListMeta"
-        }
-      }
-    },
-    "CronWorkflowSpec": {
-      "type": "object",
-      "properties": {
-        "concurrencyPolicy": {
-          "type": "string",
-          "title": "ConcurrencyPolicy is the K8s-style concurrency policy that will be used"
-        },
-        "failedJobsHistoryLimit": {
-          "type": "integer",
-          "format": "int32",
-          "title": "FailedJobsHistoryLimit is the number of successful jobs to be kept at a time"
-        },
-        "schedule": {
-          "type": "string",
-          "title": "Schedule is a schedule to run the Workflow in Cron format"
-        },
-        "startingDeadlineSeconds": {
-          "description": "StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its\noriginal scheduled time if it is missed.",
-          "type": "string",
-          "format": "int64"
-        },
-        "successfulJobsHistoryLimit": {
-          "type": "integer",
-          "format": "int32",
-          "title": "SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time"
-        },
-        "suspend": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "Suspend is a flag that will stop new CronWorkflows from running if set to true"
-        },
-        "timezone": {
-          "description": "Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\". Default is machine's local time.",
-          "type": "string"
-        },
-        "workflowSpec": {
-          "title": "WorkflowSpec is the spec of the workflow to be run",
-          "$ref": "#/definitions/WorkflowSpec"
-        }
-      }
-    },
-    "CronWorkflowStatus": {
-      "type": "object",
-      "properties": {
-        "active": {
-          "type": "array",
-          "title": "Active is a list of active workflows stemming from this CronWorkflow",
-          "items": {
-            "$ref": "#/definitions/ObjectReference"
-          }
-        },
-        "lastScheduledTime": {
-          "title": "LastScheduleTime is the last time the CronWorkflow was scheduled",
-          "$ref": "#/definitions/Time"
-        }
-      }
-    },
-    "DAGTask": {
-      "type": "object",
-      "title": "DAGTask represents a node in the graph during DAG execution",
-      "properties": {
-        "arguments": {
-          "title": "Arguments are the parameter and artifact arguments to the template",
-          "$ref": "#/definitions/Arguments"
-        },
-        "continueOn": {
-          "title": "ContinueOn makes argo to proceed with the following step even if this step fails.\nErrors and Failed states can be specified",
-          "$ref": "#/definitions/ContinueOn"
-        },
-        "dependencies": {
-          "type": "array",
-          "title": "Dependencies are name of other targets which this depends on",
-          "items": {
-            "type": "string"
-          }
-        },
-        "name": {
-          "type": "string",
-          "title": "Name is the name of the target"
-        },
-        "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the\ntemplate, irrespective of the success, failure, or error of the\nprimary template.",
-          "type": "string"
-        },
-        "template": {
-          "type": "string",
-          "title": "Name of template to execute"
-        },
-        "templateRef": {
-          "description": "TemplateRef is the reference to the template resource to execute.",
-          "$ref": "#/definitions/TemplateRef"
-        },
-        "when": {
-          "type": "string",
-          "title": "When is an expression in which the task should conditionally execute"
-        },
-        "withItems": {
-          "type": "array",
-          "title": "WithItems expands a task into multiple parallel tasks from the items in the list",
-          "items": {
-            "$ref": "#/definitions/Item"
-          }
-        },
-        "withParam": {
-          "description": "WithParam expands a task into multiple parallel tasks from the value in the parameter,\nwhich is expected to be a JSON list.",
-          "type": "string"
-        },
-        "withSequence": {
-          "title": "WithSequence expands a task into a numeric sequence",
-          "$ref": "#/definitions/Sequence"
-        }
-      }
-    },
-    "DAGTemplate": {
-      "type": "object",
-      "title": "DAGTemplate is a template subtype for directed acyclic graph templates",
-      "properties": {
-        "failFast": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "This flag is for DAG logic. The DAG logic has a built-in \"fail fast\" feature to stop scheduling new steps,\nas soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed\nbefore failing the DAG itself.\nThe FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to\ncompletion (either success or failure), regardless of the failed outcomes of branches in the DAG.\nMore info and example about this feature at https://github.com/argoproj/argo/issues/1442"
-        },
-        "target": {
-          "type": "string",
-          "title": "Target are one or more names of targets to execute in a DAG"
-        },
-        "tasks": {
-          "type": "array",
-          "title": "Tasks are a list of DAG tasks\n+patchStrategy=merge\n+patchMergeKey=name",
-          "items": {
-            "$ref": "#/definitions/DAGTask"
-          }
-        }
-      }
-    },
-    "DeleteOptions": {
-      "description": "DeleteOptions may be provided when deleting an API object.",
-      "type": "object",
-      "properties": {
-        "dryRun": {
-          "type": "array",
-          "title": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional",
-          "items": {
-            "type": "string"
-          }
-        },
-        "gracePeriodSeconds": {
-          "type": "string",
-          "format": "int64",
-          "title": "The duration in seconds before the object should be deleted. Value must be non-negative integer.\nThe value zero indicates delete immediately. If this value is nil, the default grace period for the\nspecified type will be used.\nDefaults to a per object value if not specified. zero means delete immediately.\n+optional"
-        },
-        "orphanDependents": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.\nShould the dependent objects be orphaned. If true/false, the \"orphan\"\nfinalizer will be added to/removed from the object's finalizers list.\nEither this field or PropagationPolicy may be set, but not both.\n+optional"
-        },
-        "preconditions": {
-          "title": "Must be fulfilled before a deletion is carried out. If not possible, a 409 Conflict status will be\nreturned.\n+optional",
-          "$ref": "#/definitions/Preconditions"
-        },
-        "propagationPolicy": {
-          "type": "string",
-          "title": "Whether and how garbage collection will be performed.\nEither this field or OrphanDependents may be set, but not both.\nThe default policy is decided by the existing finalizer set in the\nmetadata.finalizers and the resource-specific default policy.\nAcceptable values are: 'Orphan' - orphan the dependents; 'Background' -\nallow the garbage collector to delete the dependents in the background;\n'Foreground' - a cascading policy that deletes all dependents in the\nforeground.\n+optional"
-        }
-      }
-    },
     "DownwardAPIProjection": {
       "description": "Represents downward API info for projecting into a projected volume.\nNote that this is identical to a downwardAPI volume source without the default\nmode.",
       "type": "object",
@@ -2272,16 +3400,6 @@
         }
       }
     },
-    "ExecutorConfig": {
-      "description": "ExecutorConfig holds configurations of an executor container.",
-      "type": "object",
-      "properties": {
-        "serviceAccountName": {
-          "description": "ServiceAccountName specifies the service account name of the executor container.",
-          "type": "string"
-        }
-      }
-    },
     "FCVolumeSource": {
       "description": "Represents a Fibre Channel volume.\nFibre Channel volumes can only be mounted as read/write once.\nFibre Channel volumes support ownership management and SELinux relabeling.",
       "type": "object",
@@ -2313,17 +3431,6 @@
           "items": {
             "type": "string"
           }
-        }
-      }
-    },
-    "FieldsV1": {
-      "description": "FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format.\n\nEach key is either a '.' representing the field itself, and will always map to an empty set,\nor a string representing a sub-field or item. The string will follow one of these four formats:\n'f:\u003cname\u003e', where \u003cname\u003e is the name of a field in a struct, or key in a map\n'v:\u003cvalue\u003e', where \u003cvalue\u003e is the exact json formatted value of a list item\n'i:\u003cindex\u003e', where \u003cindex\u003e is position of a item in a list\n'k:\u003ckeys\u003e', where \u003ckeys\u003e is a map of  a list item's key fields to their unique values\nIf a key maps to an empty Fields value, the field that key represents is part of the set.\n\nThe exact format is defined in sigs.k8s.io/structured-merge-diff",
-      "type": "object",
-      "properties": {
-        "Raw": {
-          "description": "Raw is the underlying serialization of this object.",
-          "type": "string",
-          "format": "byte"
         }
       }
     },
@@ -2395,59 +3502,6 @@
         }
       }
     },
-    "GetOptions": {
-      "description": "GetOptions is the standard query options to the standard REST get call.",
-      "type": "object",
-      "properties": {
-        "resourceVersion": {
-          "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.",
-          "type": "string"
-        }
-      }
-    },
-    "GitArtifact": {
-      "type": "object",
-      "title": "GitArtifact is the location of an git artifact",
-      "properties": {
-        "depth": {
-          "type": "string",
-          "format": "uint64",
-          "title": "Depth specifies clones/fetches should be shallow and include the given\nnumber of commits from the branch tip"
-        },
-        "fetch": {
-          "type": "array",
-          "title": "Fetch specifies a number of refs that should be fetched before checkout",
-          "items": {
-            "type": "string"
-          }
-        },
-        "insecureIgnoreHostKey": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "InsecureIgnoreHostKey disables SSH strict host key checking during git clone"
-        },
-        "passwordSecret": {
-          "title": "PasswordSecret is the secret selector to the repository password",
-          "$ref": "#/definitions/SecretKeySelector"
-        },
-        "repo": {
-          "type": "string",
-          "title": "Repo is the git repository"
-        },
-        "revision": {
-          "type": "string",
-          "title": "Revision is the git commit, tag, branch to checkout"
-        },
-        "sshPrivateKeySecret": {
-          "title": "SSHPrivateKeySecret is the secret selector to the repository ssh private key",
-          "$ref": "#/definitions/SecretKeySelector"
-        },
-        "usernameSecret": {
-          "title": "UsernameSecret is the secret selector to the repository username",
-          "$ref": "#/definitions/SecretKeySelector"
-        }
-      }
-    },
     "GitRepoVolumeSource": {
       "description": "Represents a volume that is populated with the contents of a git repository.\nGit repo volumes do not support ownership management.\nGit repo volumes support SELinux relabeling.\n\nDEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an\nEmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir\ninto the Pod's container.",
       "type": "object",
@@ -2482,84 +3536,6 @@
           "type": "boolean",
           "format": "boolean",
           "title": "ReadOnly here will force the Glusterfs volume to be mounted with read-only permissions.\nDefaults to false.\nMore info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod\n+optional"
-        }
-      }
-    },
-    "HDFSArtifact": {
-      "type": "object",
-      "title": "HDFSArtifact is the location of an HDFS artifact",
-      "properties": {
-        "force": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "Force copies a file forcibly even if it exists (default: false)"
-        },
-        "hDFSConfig": {
-          "$ref": "#/definitions/HDFSConfig"
-        },
-        "path": {
-          "type": "string",
-          "title": "Path is a file path in HDFS"
-        }
-      }
-    },
-    "HDFSConfig": {
-      "type": "object",
-      "title": "HDFSConfig is configurations for HDFS",
-      "properties": {
-        "addresses": {
-          "type": "array",
-          "title": "Addresses is accessible addresses of HDFS name nodes",
-          "items": {
-            "type": "string"
-          }
-        },
-        "hDFSKrbConfig": {
-          "$ref": "#/definitions/HDFSKrbConfig"
-        },
-        "hdfsUser": {
-          "description": "HDFSUser is the user to access HDFS file system.\nIt is ignored if either ccache or keytab is used.",
-          "type": "string"
-        }
-      }
-    },
-    "HDFSKrbConfig": {
-      "type": "object",
-      "title": "HDFSKrbConfig is auth configurations for Kerberos",
-      "properties": {
-        "krbCCacheSecret": {
-          "description": "KrbCCacheSecret is the secret selector for Kerberos ccache\nEither ccache or keytab can be set to use Kerberos.",
-          "$ref": "#/definitions/SecretKeySelector"
-        },
-        "krbConfigConfigMap": {
-          "description": "KrbConfig is the configmap selector for Kerberos config as string\nIt must be set if either ccache or keytab is used.",
-          "$ref": "#/definitions/ConfigMapKeySelector"
-        },
-        "krbKeytabSecret": {
-          "description": "KrbKeytabSecret is the secret selector for Kerberos keytab\nEither ccache or keytab can be set to use Kerberos.",
-          "$ref": "#/definitions/SecretKeySelector"
-        },
-        "krbRealm": {
-          "description": "KrbRealm is the Kerberos realm used with Kerberos keytab\nIt must be set if keytab is used.",
-          "type": "string"
-        },
-        "krbServicePrincipalName": {
-          "description": "KrbServicePrincipalName is the principal name of Kerberos service\nIt must be set if either ccache or keytab is used.",
-          "type": "string"
-        },
-        "krbUsername": {
-          "description": "KrbUsername is the Kerberos username used with Kerberos keytab\nIt must be set if keytab is used.",
-          "type": "string"
-        }
-      }
-    },
-    "HTTPArtifact": {
-      "type": "object",
-      "title": "HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container",
-      "properties": {
-        "url": {
-          "type": "string",
-          "title": "URL of the artifact"
         }
       }
     },
@@ -2712,118 +3688,6 @@
         }
       }
     },
-    "InfoResponse": {
-      "type": "object",
-      "properties": {
-        "managedNamespace": {
-          "type": "string"
-        }
-      }
-    },
-    "Inputs": {
-      "type": "object",
-      "title": "Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another",
-      "properties": {
-        "artifacts": {
-          "type": "array",
-          "title": "Artifact are a list of artifacts passed as inputs\n+patchStrategy=merge\n+patchMergeKey=name",
-          "items": {
-            "$ref": "#/definitions/Artifact"
-          }
-        },
-        "parameters": {
-          "type": "array",
-          "title": "Parameters are a list of parameters passed as inputs\n+patchStrategy=merge\n+patchMergeKey=name",
-          "items": {
-            "$ref": "#/definitions/Parameter"
-          }
-        }
-      }
-    },
-    "IntOrString": {
-      "description": "+protobuf=true\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:openapi-gen=true",
-      "type": "object",
-      "title": "IntOrString is a type that can hold an int32 or a string.  When used in\nJSON or YAML marshalling and unmarshalling, it produces or consumes the\ninner type.  This allows you to have, for example, a JSON field that can\naccept a name or number.\nTODO: Rename to Int32OrString",
-      "properties": {
-        "intVal": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "strVal": {
-          "type": "string"
-        },
-        "type": {
-          "type": "string",
-          "format": "int64"
-        }
-      }
-    },
-    "Item": {
-      "description": "+protobuf=true\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:openapi-gen=true",
-      "type": "object",
-      "title": "Item expands a single workflow step into multiple parallel steps\nThe value of Item can be a map, string, bool, or number",
-      "properties": {
-        "boolVal": {
-          "type": "boolean",
-          "format": "boolean"
-        },
-        "listVal": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/ItemValue"
-          }
-        },
-        "mapVal": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/ItemValue"
-          }
-        },
-        "numVal": {
-          "type": "string"
-        },
-        "strVal": {
-          "type": "string"
-        },
-        "type": {
-          "type": "string",
-          "format": "int64"
-        }
-      }
-    },
-    "ItemValue": {
-      "type": "object",
-      "title": "+protobuf=true\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:openapi-gen=true",
-      "properties": {
-        "boolVal": {
-          "type": "boolean",
-          "format": "boolean"
-        },
-        "listVal": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "format": "byte"
-          }
-        },
-        "mapVal": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
-        },
-        "numVal": {
-          "type": "string"
-        },
-        "strVal": {
-          "type": "string"
-        },
-        "type": {
-          "type": "string",
-          "format": "int64"
-        }
-      }
-    },
     "KeyToPath": {
       "description": "Maps a string key to a path within a volume.",
       "type": "object",
@@ -2843,47 +3707,6 @@
         }
       }
     },
-    "LabelSelector": {
-      "description": "A label selector is a label query over a set of resources. The result of matchLabels and\nmatchExpressions are ANDed. An empty label selector matches all objects. A null\nlabel selector matches no objects.",
-      "type": "object",
-      "properties": {
-        "matchExpressions": {
-          "type": "array",
-          "title": "matchExpressions is a list of label selector requirements. The requirements are ANDed.\n+optional",
-          "items": {
-            "$ref": "#/definitions/LabelSelectorRequirement"
-          }
-        },
-        "matchLabels": {
-          "type": "object",
-          "title": "matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels\nmap is equivalent to an element of matchExpressions, whose key field is \"key\", the\noperator is \"In\", and the values array contains only \"value\". The requirements are ANDed.\n+optional",
-          "additionalProperties": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "LabelSelectorRequirement": {
-      "description": "A label selector requirement is a selector that contains values, a key, and an operator that\nrelates the key and values.",
-      "type": "object",
-      "properties": {
-        "key": {
-          "type": "string",
-          "title": "key is the label key that the selector applies to.\n+patchMergeKey=key\n+patchStrategy=merge"
-        },
-        "operator": {
-          "description": "operator represents a key's relationship to a set of values.\nValid operators are In, NotIn, Exists and DoesNotExist.",
-          "type": "string"
-        },
-        "values": {
-          "type": "array",
-          "title": "values is an array of string values. If the operator is In or NotIn,\nthe values array must be non-empty. If the operator is Exists or DoesNotExist,\nthe values array must be empty. This array is replaced during a strategic\nmerge patch.\n+optional",
-          "items": {
-            "type": "string"
-          }
-        }
-      }
-    },
     "Lifecycle": {
       "description": "Lifecycle describes actions that the management system should take in response to container lifecycle\nevents. For the PostStart and PreStop lifecycle handlers, management of the container blocks\nuntil the action is complete, unless the container process fails, in which case the handler is aborted.",
       "type": "object",
@@ -2898,71 +3721,6 @@
         }
       }
     },
-    "ListMeta": {
-      "description": "ListMeta describes metadata that synthetic resources must have, including lists and\nvarious status objects. A resource may have only one of {ObjectMeta, ListMeta}.",
-      "type": "object",
-      "properties": {
-        "continue": {
-          "description": "continue may be set if the user set a limit on the number of items returned, and indicates that\nthe server has more data available. The value is opaque and may be used to issue another request\nto the endpoint that served this list to retrieve the next set of available objects. Continuing a\nconsistent list may not be possible if the server configuration has changed or more than a few\nminutes have passed. The resourceVersion field returned when using this continue value will be\nidentical to the value in the first response, unless you have received this token from an error\nmessage.",
-          "type": "string"
-        },
-        "remainingItemCount": {
-          "type": "string",
-          "format": "int64",
-          "title": "remainingItemCount is the number of subsequent items in the list which are not included in this\nlist response. If the list request contained label or field selectors, then the number of\nremaining items is unknown and the field will be left unset and omitted during serialization.\nIf the list is complete (either because it is not chunking or because this is the last chunk),\nthen there are no more remaining items and this field will be left unset and omitted during\nserialization.\nServers older than v1.15 do not set this field.\nThe intended use of the remainingItemCount is *estimating* the size of a collection. Clients\nshould not rely on the remainingItemCount to be set or to be exact.\n+optional"
-        },
-        "resourceVersion": {
-          "type": "string",
-          "title": "String that identifies the server's internal version of this object that\ncan be used by clients to determine when objects have changed.\nValue must be treated as opaque by clients and passed unmodified back to the server.\nPopulated by the system.\nRead-only.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency\n+optional"
-        },
-        "selfLink": {
-          "description": "selfLink is a URL representing this object.\nPopulated by the system.\nRead-only.\n\nDEPRECATED\nKubernetes will stop propagating this field in 1.20 release and the field is planned\nto be removed in 1.21 release.\n+optional",
-          "type": "string"
-        }
-      }
-    },
-    "ListOptions": {
-      "description": "ListOptions is the query options to a standard REST list call.",
-      "type": "object",
-      "properties": {
-        "allowWatchBookmarks": {
-          "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional",
-          "type": "boolean",
-          "format": "boolean"
-        },
-        "continue": {
-          "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
-          "type": "string"
-        },
-        "fieldSelector": {
-          "type": "string",
-          "title": "A selector to restrict the list of returned objects by their fields.\nDefaults to everything.\n+optional"
-        },
-        "labelSelector": {
-          "type": "string",
-          "title": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional"
-        },
-        "limit": {
-          "description": "limit is a maximum number of responses to return for a list call. If more items exist, the\nserver will set the `continue` field on the list metadata to a value that can be used with the\nsame initial query to retrieve the next set of results. Setting a limit may return fewer than\nthe requested amount of items (up to zero items) in the event all requested objects are\nfiltered out and clients should only use the presence of the continue field to determine whether\nmore results are available. Servers may choose not to support the limit argument and will return\nall of the available results. If limit is specified and the continue field is empty, clients may\nassume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing\na single list call without a limit - that is, no objects created, modified, or deleted after the\nfirst request is issued will be included in any subsequent continued requests. This is sometimes\nreferred to as a consistent snapshot, and ensures that a client that is using limit to receive\nsmaller chunks of a very large result can ensure they see all possible objects. If objects are\nupdated during a chunked list the version of the object that was present at the time the first list\nresult was calculated is returned.",
-          "type": "string",
-          "format": "int64"
-        },
-        "resourceVersion": {
-          "type": "string",
-          "title": "When specified with a watch call, shows changes that occur after that particular version of a resource.\nDefaults to changes from the beginning of history.\nWhen specified for list:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.\n+optional"
-        },
-        "timeoutSeconds": {
-          "type": "string",
-          "format": "int64",
-          "title": "Timeout for the list/watch call.\nThis limits the duration of the call, regardless of any activity or inactivity.\n+optional"
-        },
-        "watch": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional"
-        }
-      }
-    },
     "LocalObjectReference": {
       "description": "LocalObjectReference contains enough information to let you locate the\nreferenced object inside the same namespace.",
       "type": "object",
@@ -2970,62 +3728,6 @@
         "name": {
           "type": "string",
           "title": "Name of the referent.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names\nTODO: Add other useful fields. apiVersion, kind, uid?\n+optional"
-        }
-      }
-    },
-    "LogEntry": {
-      "type": "object",
-      "properties": {
-        "content": {
-          "type": "string"
-        }
-      }
-    },
-    "ManagedFieldsEntry": {
-      "description": "ManagedFieldsEntry is a workflow-id, a FieldSet and the group version of the resource\nthat the fieldset applies to.",
-      "type": "object",
-      "properties": {
-        "apiVersion": {
-          "description": "APIVersion defines the version of this resource that this field set\napplies to. The format is \"group/version\" just like the top-level\nAPIVersion field. It is necessary to track the version of a field\nset because it cannot be automatically converted.",
-          "type": "string"
-        },
-        "fieldsType": {
-          "type": "string",
-          "title": "FieldsType is the discriminator for the different fields format and version.\nThere is currently only one possible value: \"FieldsV1\""
-        },
-        "fieldsV1": {
-          "title": "FieldsV1 holds the first JSON version format as described in the \"FieldsV1\" type.\n+optional",
-          "$ref": "#/definitions/FieldsV1"
-        },
-        "manager": {
-          "description": "Manager is an identifier of the workflow managing these fields.",
-          "type": "string"
-        },
-        "operation": {
-          "description": "Operation is the type of operation which lead to this ManagedFieldsEntry being created.\nThe only valid values for this field are 'Apply' and 'Update'.",
-          "type": "string"
-        },
-        "time": {
-          "title": "Time is timestamp of when these fields were set. It should always be empty if Operation is 'Apply'\n+optional",
-          "$ref": "#/definitions/Time"
-        }
-      }
-    },
-    "Metadata": {
-      "type": "object",
-      "title": "Pod metdata",
-      "properties": {
-        "annotations": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
-        },
-        "labels": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
         }
       }
     },
@@ -3119,106 +3821,6 @@
         }
       }
     },
-    "NodeStatus": {
-      "type": "object",
-      "title": "NodeStatus contains status information about an individual node in the workflow",
-      "properties": {
-        "boundaryID": {
-          "type": "string",
-          "title": "BoundaryID indicates the node ID of the associated template root node in which this node belongs to"
-        },
-        "children": {
-          "type": "array",
-          "title": "Children is a list of child node IDs",
-          "items": {
-            "type": "string"
-          }
-        },
-        "daemoned": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "Daemoned tracks whether or not this node was daemoned and need to be terminated"
-        },
-        "displayName": {
-          "type": "string",
-          "title": "DisplayName is a human readable representation of the node. Unique within a template boundary"
-        },
-        "finishedAt": {
-          "title": "Time at which this node completed",
-          "$ref": "#/definitions/Time"
-        },
-        "id": {
-          "type": "string",
-          "title": "ID is a unique identifier of a node within the worklow\nIt is implemented as a hash of the node name, which makes the ID deterministic"
-        },
-        "inputs": {
-          "title": "Inputs captures input parameter values and artifact locations supplied to this template invocation",
-          "$ref": "#/definitions/Inputs"
-        },
-        "message": {
-          "description": "A human readable message indicating details about why the node is in this condition.",
-          "type": "string"
-        },
-        "name": {
-          "type": "string",
-          "title": "Name is unique name in the node tree used to generate the node ID"
-        },
-        "outboundNodes": {
-          "description": "OutboundNodes tracks the node IDs which are considered \"outbound\" nodes to a template invocation.\nFor every invocation of a template, there are nodes which we considered as \"outbound\". Essentially,\nthese are last nodes in the execution sequence to run, before the template is considered completed.\nThese nodes are then connected as parents to a following step.\n\nIn the case of single pod steps (i.e. container, script, resource templates), this list will be nil\nsince the pod itself is already considered the \"outbound\" node.\nIn the case of DAGs, outbound nodes are the \"target\" tasks (tasks with no children).\nIn the case of steps, outbound nodes are all the containers involved in the last step group.\nNOTE: since templates are composable, the list of outbound nodes are carried upwards when\na DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of\na template, will be a superset of the outbound nodes of its last children.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "outputs": {
-          "title": "Outputs captures output parameter values and artifact locations produced by this template invocation",
-          "$ref": "#/definitions/Outputs"
-        },
-        "phase": {
-          "description": "Phase a simple, high-level summary of where the node is in its lifecycle.\nCan be used as a state machine.",
-          "type": "string"
-        },
-        "podIP": {
-          "type": "string",
-          "title": "PodIP captures the IP of the pod for daemoned steps"
-        },
-        "startedAt": {
-          "title": "Time at which this node started",
-          "$ref": "#/definitions/Time"
-        },
-        "storedTemplateID": {
-          "description": "StoredTemplateID is the ID of stored template.\nDEPRECATED: This value is not used anymore.",
-          "type": "string"
-        },
-        "templateName": {
-          "type": "string",
-          "title": "TemplateName is the template name which this node corresponds to.\nNot applicable to virtual nodes (e.g. Retry, StepGroup)"
-        },
-        "templateRef": {
-          "title": "TemplateRef is the reference to the template resource which this node corresponds to.\nNot applicable to virtual nodes (e.g. Retry, StepGroup)",
-          "$ref": "#/definitions/TemplateRef"
-        },
-        "templateScope": {
-          "description": "TemplateScope is the template scope in which the template of this node was retrieved.",
-          "type": "string"
-        },
-        "type": {
-          "type": "string",
-          "title": "Type indicates type of node"
-        },
-        "workflowTemplateName": {
-          "description": "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.\nDEPRECATED: This value is not used anymore.",
-          "type": "string"
-        }
-      }
-    },
-    "NoneStrategy": {
-      "description": "NoneStrategy indicates to skip tar process and upload the files or directory tree as independent\nfiles. Note that if the artifact is a directory, the artifact driver must support the ability to\nsave/load the directory appropriately.",
-      "type": "object"
-    },
-    "Object": {
-      "title": "This is a hack do deal with this problem: https://github.com/kubernetes/kube-openapi/issues/174"
-    },
     "ObjectFieldSelector": {
       "description": "ObjectFieldSelector selects an APIVersioned field of an object.",
       "type": "object",
@@ -3229,93 +3831,6 @@
         },
         "fieldPath": {
           "description": "Path of the field to select in the specified API version.",
-          "type": "string"
-        }
-      }
-    },
-    "ObjectMeta": {
-      "description": "ObjectMeta is metadata that all persisted resources must have, which includes all objects\nusers must create.",
-      "type": "object",
-      "properties": {
-        "annotations": {
-          "type": "object",
-          "title": "Annotations is an unstructured key value map stored with a resource that may be\nset by external tools to store and retrieve arbitrary metadata. They are not\nqueryable and should be preserved when modifying objects.\nMore info: http://kubernetes.io/docs/user-guide/annotations\n+optional",
-          "additionalProperties": {
-            "type": "string"
-          }
-        },
-        "clusterName": {
-          "type": "string",
-          "title": "The name of the cluster which the object belongs to.\nThis is used to distinguish resources with same name and namespace in different clusters.\nThis field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.\n+optional"
-        },
-        "creationTimestamp": {
-          "description": "CreationTimestamp is a timestamp representing the server time when this object was\ncreated. It is not guaranteed to be set in happens-before order across separate operations.\nClients may not set this value. It is represented in RFC3339 form and is in UTC.\n\nPopulated by the system.\nRead-only.\nNull for lists.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional",
-          "$ref": "#/definitions/Time"
-        },
-        "deletionGracePeriodSeconds": {
-          "type": "string",
-          "format": "int64",
-          "title": "Number of seconds allowed for this object to gracefully terminate before\nit will be removed from the system. Only set when deletionTimestamp is also set.\nMay only be shortened.\nRead-only.\n+optional"
-        },
-        "deletionTimestamp": {
-          "description": "DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This\nfield is set by the server when a graceful deletion is requested by the user, and is not\ndirectly settable by a client. The resource is expected to be deleted (no longer visible\nfrom resource lists, and not reachable by name) after the time in this field, once the\nfinalizers list is empty. As long as the finalizers list contains items, deletion is blocked.\nOnce the deletionTimestamp is set, this value may not be unset or be set further into the\nfuture, although it may be shortened or the resource may be deleted prior to this time.\nFor example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react\nby sending a graceful termination signal to the containers in the pod. After that 30 seconds,\nthe Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup,\nremove the pod from the API. In the presence of network partitions, this object may still\nexist after this timestamp, until an administrator or automated process can determine the\nresource is fully terminated.\nIf not set, graceful deletion of the object has not been requested.\n\nPopulated by the system when a graceful deletion is requested.\nRead-only.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional",
-          "$ref": "#/definitions/Time"
-        },
-        "finalizers": {
-          "type": "array",
-          "title": "Must be empty before the object is deleted from the registry. Each entry\nis an identifier for the responsible component that will remove the entry\nfrom the list. If the deletionTimestamp of the object is non-nil, entries\nin this list can only be removed.\n+optional\n+patchStrategy=merge",
-          "items": {
-            "type": "string"
-          }
-        },
-        "generateName": {
-          "description": "GenerateName is an optional prefix, used by the server, to generate a unique\nname ONLY IF the Name field has not been provided.\nIf this field is used, the name returned to the client will be different\nthan the name passed. This value will also be combined with a unique suffix.\nThe provided value has the same validation rules as the Name field,\nand may be truncated by the length of the suffix required to make the value\nunique on the server.\n\nIf this field is specified and the generated name exists, the server will\nNOT return a 409 - instead, it will either return 201 Created or 500 with Reason\nServerTimeout indicating a unique name could not be found in the time allotted, and the client\nshould retry (optionally after the time indicated in the Retry-After header).\n\nApplied only if Name is not specified.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency\n+optional",
-          "type": "string"
-        },
-        "generation": {
-          "type": "string",
-          "format": "int64",
-          "title": "A sequence number representing a specific generation of the desired state.\nPopulated by the system. Read-only.\n+optional"
-        },
-        "labels": {
-          "type": "object",
-          "title": "Map of string keys and values that can be used to organize and categorize\n(scope and select) objects. May match selectors of replication controllers\nand services.\nMore info: http://kubernetes.io/docs/user-guide/labels\n+optional",
-          "additionalProperties": {
-            "type": "string"
-          }
-        },
-        "managedFields": {
-          "description": "ManagedFields maps workflow-id and version to the set of fields\nthat are managed by that  This is mostly for internal\nhousekeeping, and users typically shouldn't need to set or\nunderstand this field. A workflow can be the user's name, a\ncontroller's name, or the name of a specific apply path like\n\"ci-cd\". The set of fields is always in the version that the\nworkflow used when modifying the object.\n\n+optional",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/ManagedFieldsEntry"
-          }
-        },
-        "name": {
-          "type": "string",
-          "title": "Name must be unique within a namespace. Is required when creating resources, although\nsome resources may allow a client to request the generation of an appropriate name\nautomatically. Name is primarily intended for creation idempotence and configuration\ndefinition.\nCannot be updated.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#names\n+optional"
-        },
-        "namespace": {
-          "description": "Namespace defines the space within each name must be unique. An empty namespace is\nequivalent to the \"default\" namespace, but \"default\" is the canonical representation.\nNot all objects are required to be scoped to a namespace - the value of this field for\nthose objects will be empty.\n\nMust be a DNS_LABEL.\nCannot be updated.\nMore info: http://kubernetes.io/docs/user-guide/namespaces\n+optional",
-          "type": "string"
-        },
-        "ownerReferences": {
-          "type": "array",
-          "title": "List of objects depended by this object. If ALL objects in the list have\nbeen deleted, this object will be garbage collected. If this object is managed by a controller,\nthen an entry in this list will point to this controller, with the controller field set to true.\nThere cannot be more than one managing controller.\n+optional\n+patchMergeKey=uid\n+patchStrategy=merge",
-          "items": {
-            "$ref": "#/definitions/OwnerReference"
-          }
-        },
-        "resourceVersion": {
-          "description": "An opaque value that represents the internal version of this object that can\nbe used by clients to determine when objects have changed. May be used for optimistic\nconcurrency, change detection, and the watch operation on a resource or set of resources.\nClients must treat these values as opaque and passed unmodified back to the server.\nThey may only be valid for a particular resource or set of resources.\n\nPopulated by the system.\nRead-only.\nValue must be treated as opaque by clients and .\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency\n+optional",
-          "type": "string"
-        },
-        "selfLink": {
-          "description": "SelfLink is a URL representing this object.\nPopulated by the system.\nRead-only.\n\nDEPRECATED\nKubernetes will stop propagating this field in 1.20 release and the field is planned\nto be removed in 1.21 release.\n+optional",
-          "type": "string"
-        },
-        "uid": {
-          "description": "UID is the unique in time and space value for this object. It is typically generated by\nthe server on successful creation of a resource and is not allowed to change on PUT\noperations.\n\nPopulated by the system.\nRead-only.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#uids\n+optional",
           "type": "string"
         }
       }
@@ -3351,99 +3866,6 @@
         "uid": {
           "type": "string",
           "title": "UID of the referent.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids\n+optional"
-        }
-      }
-    },
-    "Outputs": {
-      "type": "object",
-      "title": "Outputs hold parameters, artifacts, and results from a step",
-      "properties": {
-        "artifacts": {
-          "type": "array",
-          "title": "Artifacts holds the list of output artifacts produced by a step\n+patchStrategy=merge\n+patchMergeKey=name",
-          "items": {
-            "$ref": "#/definitions/Artifact"
-          }
-        },
-        "parameters": {
-          "type": "array",
-          "title": "Parameters holds the list of output parameters produced by a step\n+patchStrategy=merge\n+patchMergeKey=name",
-          "items": {
-            "$ref": "#/definitions/Parameter"
-          }
-        },
-        "result": {
-          "type": "string",
-          "title": "Result holds the result (stdout) of a script template"
-        }
-      }
-    },
-    "OwnerReference": {
-      "description": "OwnerReference contains enough information to let you identify an owning\nobject. An owning object must be in the same namespace as the dependent, or\nbe cluster-scoped, so there is no namespace field.",
-      "type": "object",
-      "properties": {
-        "apiVersion": {
-          "description": "API version of the referent.",
-          "type": "string"
-        },
-        "blockOwnerDeletion": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "If true, AND if the owner has the \"foregroundDeletion\" finalizer, then\nthe owner cannot be deleted from the key-value store until this\nreference is removed.\nDefaults to false.\nTo set this field, a user needs \"delete\" permission of the owner,\notherwise 422 (Unprocessable Entity) will be returned.\n+optional"
-        },
-        "controller": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "If true, this reference points to the managing controller.\n+optional"
-        },
-        "kind": {
-          "type": "string",
-          "title": "Kind of the referent.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds"
-        },
-        "name": {
-          "type": "string",
-          "title": "Name of the referent.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#names"
-        },
-        "uid": {
-          "type": "string",
-          "title": "UID of the referent.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#uids"
-        }
-      }
-    },
-    "ParallelSteps": {
-      "type": "object",
-      "properties": {
-        "steps": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/WorkflowStep"
-          }
-        }
-      }
-    },
-    "Parameter": {
-      "type": "object",
-      "title": "Parameter indicate a passed string parameter to a service template with an optional default value",
-      "properties": {
-        "default": {
-          "type": "string",
-          "title": "Default is the default value to use for an input parameter if a value was not supplied"
-        },
-        "globalName": {
-          "type": "string",
-          "title": "GlobalName exports an output parameter to the global scope, making it available as\n'{{outputs.parameters.XXXX}} and in status.outputs.parameters"
-        },
-        "name": {
-          "type": "string",
-          "title": "Name is the parameter name"
-        },
-        "value": {
-          "type": "string",
-          "title": "Value is the literal value to use for the parameter.\nIf specified in the context of an input parameter, the value takes precedence over any passed values"
-        },
-        "valueFrom": {
-          "title": "ValueFrom is the source for the output parameter's value",
-          "$ref": "#/definitions/ValueFrom"
         }
       }
     },
@@ -3692,15 +4114,6 @@
         }
       }
     },
-    "PodGC": {
-      "type": "object",
-      "title": "PodGC describes how to delete completed pods as they complete",
-      "properties": {
-        "strategy": {
-          "type": "string"
-        }
-      }
-    },
     "PodLogOptions": {
       "description": "PodLogOptions is the query options for a Pod's logs REST call.",
       "type": "object",
@@ -3814,20 +4227,6 @@
         }
       }
     },
-    "Preconditions": {
-      "description": "Preconditions must be fulfilled before an operation (update, delete, etc.) is carried out.",
-      "type": "object",
-      "properties": {
-        "resourceVersion": {
-          "type": "string",
-          "title": "Specifies the target ResourceVersion\n+optional"
-        },
-        "uid": {
-          "type": "string",
-          "title": "Specifies the target UID.\n+optional"
-        }
-      }
-    },
     "PreferredSchedulingTerm": {
       "description": "An empty preferred scheduling term matches all objects with implicit weight 0\n(i.e. it's a no-op). A null preferred scheduling term matches no objects (i.e. is also a no-op).",
       "type": "object",
@@ -3893,15 +4292,6 @@
           "items": {
             "$ref": "#/definitions/VolumeProjection"
           }
-        }
-      }
-    },
-    "Quantity": {
-      "description": "Quantity is a fixed-point representation of a number.\nIt provides convenient marshaling/unmarshaling in JSON and YAML,\nin addition to String() and AsInt64() accessors.\n\nThe serialization format is:\n\n\u003cquantity\u003e        ::= \u003csignedNumber\u003e\u003csuffix\u003e\n  (Note that \u003csuffix\u003e may be empty, from the \"\" case in \u003cdecimalSI\u003e.)\n\u003cdigit\u003e           ::= 0 | 1 | ... | 9\n\u003cdigits\u003e          ::= \u003cdigit\u003e | \u003cdigit\u003e\u003cdigits\u003e\n\u003cnumber\u003e          ::= \u003cdigits\u003e | \u003cdigits\u003e.\u003cdigits\u003e | \u003cdigits\u003e. | .\u003cdigits\u003e\n\u003csign\u003e            ::= \"+\" | \"-\"\n\u003csignedNumber\u003e    ::= \u003cnumber\u003e | \u003csign\u003e\u003cnumber\u003e\n\u003csuffix\u003e          ::= \u003cbinarySI\u003e | \u003cdecimalExponent\u003e | \u003cdecimalSI\u003e\n\u003cbinarySI\u003e        ::= Ki | Mi | Gi | Ti | Pi | Ei\n  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)\n\u003cdecimalSI\u003e       ::= m | \"\" | k | M | G | T | P | E\n  (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)\n\u003cdecimalExponent\u003e ::= \"e\" \u003csignedNumber\u003e | \"E\" \u003csignedNumber\u003e\n\nNo matter which of the three exponent forms is used, no quantity may represent\na number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal\nplaces. Numbers larger or more precise will be capped or rounded up.\n(E.g.: 0.1m will rounded up to 1m.)\nThis may be extended in the future if we require larger or smaller quantities.\n\nWhen a Quantity is parsed from a string, it will remember the type of suffix\nit had, and will use the same type again when it is serialized.\n\nBefore serializing, Quantity will be put in \"canonical form\".\nThis means that Exponent/suffix will be adjusted up or down (with a\ncorresponding increase or decrease in Mantissa) such that:\n  a. No precision is lost\n  b. No fractional digits will be emitted\n  c. The exponent (or suffix) is as large as possible.\nThe sign will be omitted unless the number is negative.\n\nExamples:\n  1.5 will be serialized as \"1500m\"\n  1.5Gi will be serialized as \"1536Mi\"\n\nNote that the quantity will NEVER be internally represented by a\nfloating point number. That is the whole point of this exercise.\n\nNon-canonical values will still parse as long as they are well formed,\nbut will be re-emitted in their canonical form. (So always use canonical\nform, or don't diff.)\n\nThis format is intended to make it difficult to use these numbers without\nwriting some sort of special handling code in the hopes that that will\ncause implementors to also use a fixed point implementation.\n\n+protobuf=true\n+protobuf.embed=string\n+protobuf.options.marshal=false\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:deepcopy-gen=true\n+k8s:openapi-gen=true",
-      "type": "object",
-      "properties": {
-        "string": {
-          "type": "string"
         }
       }
     },
@@ -3978,16 +4368,6 @@
         }
       }
     },
-    "RawArtifact": {
-      "type": "object",
-      "title": "RawArtifact allows raw string content to be placed as an artifact in a container",
-      "properties": {
-        "data": {
-          "type": "string",
-          "title": "Data is the string contents of the artifact"
-        }
-      }
-    },
     "ResourceFieldSelector": {
       "type": "object",
       "title": "ResourceFieldSelector represents container resources (cpu, memory) and their output format",
@@ -4023,104 +4403,6 @@
           "additionalProperties": {
             "$ref": "#/definitions/Quantity"
           }
-        }
-      }
-    },
-    "ResourceTemplate": {
-      "type": "object",
-      "title": "ResourceTemplate is a template subtype to manipulate kubernetes resources",
-      "properties": {
-        "action": {
-          "type": "string",
-          "title": "Action is the action to perform to the resource.\nMust be one of: get, create, apply, delete, replace, patch"
-        },
-        "failureCondition": {
-          "type": "string",
-          "title": "FailureCondition is a label selector expression which describes the conditions\nof the k8s resource in which the step was considered failed"
-        },
-        "manifest": {
-          "type": "string",
-          "title": "Manifest contains the kubernetes manifest"
-        },
-        "mergeStrategy": {
-          "type": "string",
-          "title": "MergeStrategy is the strategy used to merge a patch. It defaults to \"strategic\"\nMust be one of: strategic, merge, json"
-        },
-        "setOwnerReference": {
-          "description": "SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.",
-          "type": "boolean",
-          "format": "boolean"
-        },
-        "successCondition": {
-          "type": "string",
-          "title": "SuccessCondition is a label selector expression which describes the conditions\nof the k8s resource in which it is acceptable to proceed to the following step"
-        }
-      }
-    },
-    "RetryStrategy": {
-      "type": "object",
-      "title": "RetryStrategy provides controls on how to retry a workflow step",
-      "properties": {
-        "backoff": {
-          "title": "Backoff is a backoff strategy",
-          "$ref": "#/definitions/Backoff"
-        },
-        "limit": {
-          "type": "integer",
-          "format": "int32",
-          "title": "Limit is the maximum number of attempts when retrying a container"
-        },
-        "retryPolicy": {
-          "type": "string",
-          "title": "RetryPolicy is a policy of NodePhase statuses that will be retried"
-        }
-      }
-    },
-    "S3Artifact": {
-      "type": "object",
-      "title": "S3Artifact is the location of an S3 artifact",
-      "properties": {
-        "key": {
-          "type": "string",
-          "title": "Key is the key in the bucket where the artifact resides"
-        },
-        "s3Bucket": {
-          "$ref": "#/definitions/S3Bucket"
-        }
-      }
-    },
-    "S3Bucket": {
-      "type": "object",
-      "title": "S3Bucket contains the access information required for interfacing with an S3 bucket",
-      "properties": {
-        "accessKeySecret": {
-          "title": "AccessKeySecret is the secret selector to the bucket's access key",
-          "$ref": "#/definitions/SecretKeySelector"
-        },
-        "bucket": {
-          "type": "string",
-          "title": "Bucket is the name of the bucket"
-        },
-        "endpoint": {
-          "type": "string",
-          "title": "Endpoint is the hostname of the bucket endpoint"
-        },
-        "insecure": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "Insecure will connect to the service with TLS"
-        },
-        "region": {
-          "type": "string",
-          "title": "Region contains the optional bucket region"
-        },
-        "roleARN": {
-          "description": "RoleARN is the Amazon Resource Name (ARN) of the role to assume.",
-          "type": "string"
-        },
-        "secretKeySecret": {
-          "title": "SecretKeySecret is the secret selector to the bucket's secret key",
-          "$ref": "#/definitions/SecretKeySelector"
         }
       }
     },
@@ -4191,19 +4473,6 @@
         "volumeName": {
           "description": "The name of a volume already created in the ScaleIO system\nthat is associated with this volume source.",
           "type": "string"
-        }
-      }
-    },
-    "ScriptTemplate": {
-      "type": "object",
-      "title": "ScriptTemplate is a template subtype to enable scripting through code steps",
-      "properties": {
-        "container": {
-          "$ref": "#/definitions/Container"
-        },
-        "source": {
-          "type": "string",
-          "title": "Source contains the source code of the script to execute"
         }
       }
     },
@@ -4341,28 +4610,6 @@
         }
       }
     },
-    "Sequence": {
-      "type": "object",
-      "title": "Sequence expands a workflow step into numeric range",
-      "properties": {
-        "count": {
-          "type": "string",
-          "title": "Count is number of elements in the sequence (default: 0). Not to be used with end"
-        },
-        "end": {
-          "type": "string",
-          "title": "Number at which to end the sequence (default: 0). Not to be used with Count"
-        },
-        "format": {
-          "type": "string",
-          "title": "Format is a printf format string to format the value in the sequence"
-        },
-        "start": {
-          "type": "string",
-          "title": "Number at which to start the sequence (default: 0)"
-        }
-      }
-    },
     "ServiceAccountTokenProjection": {
       "description": "ServiceAccountTokenProjection represents a projected service account token\nvolume. This projection can be used to insert a service account token into\nthe pods runtime filesystem for use against APIs (Kubernetes API Server or\notherwise).",
       "type": "object",
@@ -4409,41 +4656,6 @@
         }
       }
     },
-    "StreamError": {
-      "type": "object",
-      "properties": {
-        "details": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Any"
-          }
-        },
-        "grpc_code": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "http_code": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "http_status": {
-          "type": "string"
-        },
-        "message": {
-          "type": "string"
-        }
-      }
-    },
-    "SuspendTemplate": {
-      "type": "object",
-      "title": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time",
-      "properties": {
-        "duration": {
-          "type": "string",
-          "title": "Duration is the seconds to wait before automatically resuming a template"
-        }
-      }
-    },
     "Sysctl": {
       "type": "object",
       "title": "Sysctl defines a kernel parameter to be set",
@@ -4469,227 +4681,6 @@
         "port": {
           "description": "Number or name of the port to access on the container.\nNumber must be in the range 1 to 65535.\nName must be an IANA_SVC_NAME.",
           "$ref": "#/definitions/IntOrString"
-        }
-      }
-    },
-    "TTLStrategy": {
-      "type": "object",
-      "title": "TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed",
-      "properties": {
-        "secondsAfterCompletion": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "secondsAfterFailure": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "secondsAfterSuccess": {
-          "type": "integer",
-          "format": "int32"
-        }
-      }
-    },
-    "TarStrategy": {
-      "type": "object",
-      "title": "TarStrategy will tar and gzip the file or directory when saving"
-    },
-    "Template": {
-      "type": "object",
-      "title": "Template is a reusable and composable unit of execution in a workflow",
-      "properties": {
-        "activeDeadlineSeconds": {
-          "description": "Optional duration in seconds relative to the StartTime that the pod may be active on a node\nbefore the system actively tries to terminate the pod; value must be positive integer\nThis field is only applicable to container and script templates.",
-          "type": "string",
-          "format": "int64"
-        },
-        "affinity": {
-          "title": "Affinity sets the pod's scheduling constraints\nOverrides the affinity set at the workflow level (if any)",
-          "$ref": "#/definitions/Affinity"
-        },
-        "archiveLocation": {
-          "description": "Location in which all files related to the step will be stored (logs, artifacts, etc...).\nCan be overridden by individual items in Outputs. If omitted, will use the default\nartifact repository location configured in the controller, appended with the\n\u003cworkflowname\u003e/\u003cnodename\u003e in the key.",
-          "$ref": "#/definitions/ArtifactLocation"
-        },
-        "arguments": {
-          "description": "Arguments hold arguments to the template.",
-          "$ref": "#/definitions/Arguments"
-        },
-        "automountServiceAccountToken": {
-          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.\nServiceAccountName of ExecutorConfig must be specified if this value is false.",
-          "type": "boolean",
-          "format": "boolean"
-        },
-        "container": {
-          "title": "Container is the main container image to run in the pod",
-          "$ref": "#/definitions/Container"
-        },
-        "daemon": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness"
-        },
-        "dag": {
-          "title": "DAG template subtype which runs a DAG",
-          "$ref": "#/definitions/DAGTemplate"
-        },
-        "executor": {
-          "description": "Executor holds configurations of the executor container.",
-          "$ref": "#/definitions/ExecutorConfig"
-        },
-        "hostAliases": {
-          "type": "array",
-          "title": "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec\n+patchStrategy=merge\n+patchMergeKey=ip",
-          "items": {
-            "$ref": "#/definitions/HostAlias"
-          }
-        },
-        "initContainers": {
-          "type": "array",
-          "title": "InitContainers is a list of containers which run before the main container.\n+patchStrategy=merge\n+patchMergeKey=name",
-          "items": {
-            "$ref": "#/definitions/UserContainer"
-          }
-        },
-        "inputs": {
-          "title": "Inputs describe what inputs parameters and artifacts are supplied to this template",
-          "$ref": "#/definitions/Inputs"
-        },
-        "metadata": {
-          "title": "Metdata sets the pods's metadata, i.e. annotations and labels",
-          "$ref": "#/definitions/Metadata"
-        },
-        "name": {
-          "type": "string",
-          "title": "Name is the name of the template"
-        },
-        "nodeSelector": {
-          "description": "NodeSelector is a selector to schedule this step of the workflow to be\nrun on the selected node(s). Overrides the selector set at the workflow level.",
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
-        },
-        "outputs": {
-          "title": "Outputs describe the parameters and artifacts that this template produces",
-          "$ref": "#/definitions/Outputs"
-        },
-        "parallelism": {
-          "description": "Parallelism limits the max total parallel pods that can execute at the same time within the\nboundaries of this template invocation. If additional steps/dag templates are invoked, the\npods created by those templates will not be counted towards this total.",
-          "type": "string",
-          "format": "int64"
-        },
-        "podSpecPatch": {
-          "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of\ncontainer fields which are not strings (e.g. resource limits).",
-          "type": "string"
-        },
-        "priority": {
-          "description": "Priority to apply to workflow pods.",
-          "type": "integer",
-          "format": "int32"
-        },
-        "priorityClassName": {
-          "description": "PriorityClassName to apply to workflow pods.",
-          "type": "string"
-        },
-        "resource": {
-          "title": "Resource template subtype which can run k8s resources",
-          "$ref": "#/definitions/ResourceTemplate"
-        },
-        "retryStrategy": {
-          "title": "RetryStrategy describes how to retry a template when it fails",
-          "$ref": "#/definitions/RetryStrategy"
-        },
-        "schedulerName": {
-          "type": "string",
-          "title": "If specified, the pod will be dispatched by specified scheduler.\nOr it will be dispatched by workflow scope scheduler if specified.\nIf neither specified, the pod will be dispatched by default scheduler.\n+optional"
-        },
-        "script": {
-          "title": "Script runs a portion of code against an interpreter",
-          "$ref": "#/definitions/ScriptTemplate"
-        },
-        "securityContext": {
-          "title": "SecurityContext holds pod-level security attributes and common container settings.\nOptional: Defaults to empty.  See type description for default values of each field.\n+optional",
-          "$ref": "#/definitions/PodSecurityContext"
-        },
-        "serviceAccountName": {
-          "type": "string",
-          "title": "ServiceAccountName to apply to workflow pods"
-        },
-        "sidecars": {
-          "type": "array",
-          "title": "Sidecars is a list of containers which run alongside the main container\nSidecars are automatically killed when the main container completes\n+patchStrategy=merge\n+patchMergeKey=name",
-          "items": {
-            "$ref": "#/definitions/UserContainer"
-          }
-        },
-        "steps": {
-          "type": "array",
-          "title": "Steps define a series of sequential/parallel workflow steps",
-          "items": {
-            "$ref": "#/definitions/ParallelSteps"
-          }
-        },
-        "suspend": {
-          "title": "Suspend template subtype which can suspend a workflow when reaching the step",
-          "$ref": "#/definitions/SuspendTemplate"
-        },
-        "template": {
-          "description": "Template is the name of the template which is used as the base of this template.",
-          "type": "string"
-        },
-        "templateRef": {
-          "description": "TemplateRef is the reference to the template resource which is used as the base of this template.",
-          "$ref": "#/definitions/TemplateRef"
-        },
-        "tolerations": {
-          "type": "array",
-          "title": "Tolerations to apply to workflow pods.\n+patchStrategy=merge\n+patchMergeKey=key",
-          "items": {
-            "$ref": "#/definitions/Toleration"
-          }
-        },
-        "volumes": {
-          "type": "array",
-          "title": "Volumes is a list of volumes that can be mounted by containers in a template.\n+patchStrategy=merge\n+patchMergeKey=name",
-          "items": {
-            "$ref": "#/definitions/Volume"
-          }
-        }
-      }
-    },
-    "TemplateRef": {
-      "description": "TemplateRef is a reference of template resource.",
-      "type": "object",
-      "properties": {
-        "name": {
-          "description": "Name is the resource name of the template.",
-          "type": "string"
-        },
-        "runtimeResolution": {
-          "description": "RuntimeResolution skips validation at creation time.\nBy enabling this option, you can create the referred workflow template before the actual runtime.",
-          "type": "boolean",
-          "format": "boolean"
-        },
-        "template": {
-          "description": "Template is the name of referred template in the resource.",
-          "type": "string"
-        }
-      }
-    },
-    "Time": {
-      "description": "Time is a wrapper around time.Time which supports correct\nmarshaling to YAML and JSON.  Wrappers are provided for many\nof the factory methods that the time package offers.\n\n+protobuf.options.marshal=false\n+protobuf.as=Timestamp\n+protobuf.options.(gogoproto.goproto_stringer)=false",
-      "type": "object",
-      "properties": {
-        "nanos": {
-          "description": "Non-negative fractions of a second at nanosecond resolution. Negative\nsecond values with fractions must still have non-negative nanos values\nthat count forward in time. Must be from 0 to 999,999,999\ninclusive. This field may be limited in precision depending on context.",
-          "type": "integer",
-          "format": "int32"
-        },
-        "seconds": {
-          "description": "Represents seconds of UTC time since Unix epoch\n1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to\n9999-12-31T23:59:59Z inclusive.",
-          "type": "string",
-          "format": "int64"
         }
       }
     },
@@ -4735,56 +4726,6 @@
         "name": {
           "type": "string",
           "title": "Name is the name of resource being referenced"
-        }
-      }
-    },
-    "UpdateCronWorkflowRequest": {
-      "type": "object",
-      "properties": {
-        "cronWorkflow": {
-          "$ref": "#/definitions/CronWorkflow"
-        },
-        "name": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        }
-      }
-    },
-    "UserContainer": {
-      "description": "UserContainer is a container specified by a user.",
-      "type": "object",
-      "properties": {
-        "container": {
-          "$ref": "#/definitions/Container"
-        },
-        "mirrorVolumeMounts": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "MirrorVolumeMounts will mount the same volumes specified in the main container\nto the container (including artifacts), at the same mountPaths. This enables\ndind daemon to partially see the same filesystem as the main container in\norder to use features such as docker volume binding"
-        }
-      }
-    },
-    "ValueFrom": {
-      "type": "object",
-      "title": "ValueFrom describes a location in which to obtain the value to a parameter",
-      "properties": {
-        "jqFilter": {
-          "type": "string",
-          "title": "JQFilter expression against the resource object in resource templates"
-        },
-        "jsonPath": {
-          "type": "string",
-          "title": "JSONPath of a resource to retrieve an output parameter value from in resource templates"
-        },
-        "parameter": {
-          "type": "string",
-          "title": "Parameter reference to a step or dag task in which to retrieve an output parameter value from\n(e.g. '{{steps.mystep.outputs.myparam}}')"
-        },
-        "path": {
-          "type": "string",
-          "title": "Path in the container to retrieve an output parameter value from in container templates"
         }
       }
     },
@@ -5042,18 +4983,392 @@
         }
       }
     },
-    "Workflow": {
+    "Quantity": {
+      "description": "Quantity is a fixed-point representation of a number.\nIt provides convenient marshaling/unmarshaling in JSON and YAML,\nin addition to String() and AsInt64() accessors.\n\nThe serialization format is:\n\n\u003cquantity\u003e        ::= \u003csignedNumber\u003e\u003csuffix\u003e\n  (Note that \u003csuffix\u003e may be empty, from the \"\" case in \u003cdecimalSI\u003e.)\n\u003cdigit\u003e           ::= 0 | 1 | ... | 9\n\u003cdigits\u003e          ::= \u003cdigit\u003e | \u003cdigit\u003e\u003cdigits\u003e\n\u003cnumber\u003e          ::= \u003cdigits\u003e | \u003cdigits\u003e.\u003cdigits\u003e | \u003cdigits\u003e. | .\u003cdigits\u003e\n\u003csign\u003e            ::= \"+\" | \"-\"\n\u003csignedNumber\u003e    ::= \u003cnumber\u003e | \u003csign\u003e\u003cnumber\u003e\n\u003csuffix\u003e          ::= \u003cbinarySI\u003e | \u003cdecimalExponent\u003e | \u003cdecimalSI\u003e\n\u003cbinarySI\u003e        ::= Ki | Mi | Gi | Ti | Pi | Ei\n  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)\n\u003cdecimalSI\u003e       ::= m | \"\" | k | M | G | T | P | E\n  (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)\n\u003cdecimalExponent\u003e ::= \"e\" \u003csignedNumber\u003e | \"E\" \u003csignedNumber\u003e\n\nNo matter which of the three exponent forms is used, no quantity may represent\na number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal\nplaces. Numbers larger or more precise will be capped or rounded up.\n(E.g.: 0.1m will rounded up to 1m.)\nThis may be extended in the future if we require larger or smaller quantities.\n\nWhen a Quantity is parsed from a string, it will remember the type of suffix\nit had, and will use the same type again when it is serialized.\n\nBefore serializing, Quantity will be put in \"canonical form\".\nThis means that Exponent/suffix will be adjusted up or down (with a\ncorresponding increase or decrease in Mantissa) such that:\n  a. No precision is lost\n  b. No fractional digits will be emitted\n  c. The exponent (or suffix) is as large as possible.\nThe sign will be omitted unless the number is negative.\n\nExamples:\n  1.5 will be serialized as \"1500m\"\n  1.5Gi will be serialized as \"1536Mi\"\n\nNote that the quantity will NEVER be internally represented by a\nfloating point number. That is the whole point of this exercise.\n\nNon-canonical values will still parse as long as they are well formed,\nbut will be re-emitted in their canonical form. (So always use canonical\nform, or don't diff.)\n\nThis format is intended to make it difficult to use these numbers without\nwriting some sort of special handling code in the hopes that that will\ncause implementors to also use a fixed point implementation.\n\n+protobuf=true\n+protobuf.embed=string\n+protobuf.options.marshal=false\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:deepcopy-gen=true\n+k8s:openapi-gen=true",
       "type": "object",
-      "title": "Workflow is the definition of a workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
       "properties": {
-        "metadata": {
-          "$ref": "#/definitions/ObjectMeta"
+        "string": {
+          "type": "string"
+        }
+      }
+    },
+    "CreateOptions": {
+      "description": "CreateOptions may be provided when creating an API object.",
+      "type": "object",
+      "properties": {
+        "dryRun": {
+          "type": "array",
+          "title": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional",
+          "items": {
+            "type": "string"
+          }
         },
-        "spec": {
-          "$ref": "#/definitions/WorkflowSpec"
+        "fieldManager": {
+          "type": "string",
+          "title": "fieldManager is a name associated with the actor or entity\nthat is making these changes. The value must be less than or\n128 characters long, and only contain printable characters,\nas defined by https://golang.org/pkg/unicode/#IsPrint.\n+optional"
+        }
+      }
+    },
+    "DeleteOptions": {
+      "description": "DeleteOptions may be provided when deleting an API object.",
+      "type": "object",
+      "properties": {
+        "dryRun": {
+          "type": "array",
+          "title": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional",
+          "items": {
+            "type": "string"
+          }
         },
-        "status": {
-          "$ref": "#/definitions/WorkflowStatus"
+        "gracePeriodSeconds": {
+          "type": "string",
+          "format": "int64",
+          "title": "The duration in seconds before the object should be deleted. Value must be non-negative integer.\nThe value zero indicates delete immediately. If this value is nil, the default grace period for the\nspecified type will be used.\nDefaults to a per object value if not specified. zero means delete immediately.\n+optional"
+        },
+        "orphanDependents": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.\nShould the dependent objects be orphaned. If true/false, the \"orphan\"\nfinalizer will be added to/removed from the object's finalizers list.\nEither this field or PropagationPolicy may be set, but not both.\n+optional"
+        },
+        "preconditions": {
+          "title": "Must be fulfilled before a deletion is carried out. If not possible, a 409 Conflict status will be\nreturned.\n+optional",
+          "$ref": "#/definitions/Preconditions"
+        },
+        "propagationPolicy": {
+          "type": "string",
+          "title": "Whether and how garbage collection will be performed.\nEither this field or OrphanDependents may be set, but not both.\nThe default policy is decided by the existing finalizer set in the\nmetadata.finalizers and the resource-specific default policy.\nAcceptable values are: 'Orphan' - orphan the dependents; 'Background' -\nallow the garbage collector to delete the dependents in the background;\n'Foreground' - a cascading policy that deletes all dependents in the\nforeground.\n+optional"
+        }
+      }
+    },
+    "FieldsV1": {
+      "description": "FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format.\n\nEach key is either a '.' representing the field itself, and will always map to an empty set,\nor a string representing a sub-field or item. The string will follow one of these four formats:\n'f:\u003cname\u003e', where \u003cname\u003e is the name of a field in a struct, or key in a map\n'v:\u003cvalue\u003e', where \u003cvalue\u003e is the exact json formatted value of a list item\n'i:\u003cindex\u003e', where \u003cindex\u003e is position of a item in a list\n'k:\u003ckeys\u003e', where \u003ckeys\u003e is a map of  a list item's key fields to their unique values\nIf a key maps to an empty Fields value, the field that key represents is part of the set.\n\nThe exact format is defined in sigs.k8s.io/structured-merge-diff",
+      "type": "object",
+      "properties": {
+        "Raw": {
+          "description": "Raw is the underlying serialization of this object.",
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "GetOptions": {
+      "description": "GetOptions is the standard query options to the standard REST get call.",
+      "type": "object",
+      "properties": {
+        "resourceVersion": {
+          "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.",
+          "type": "string"
+        }
+      }
+    },
+    "LabelSelector": {
+      "description": "A label selector is a label query over a set of resources. The result of matchLabels and\nmatchExpressions are ANDed. An empty label selector matches all objects. A null\nlabel selector matches no objects.",
+      "type": "object",
+      "properties": {
+        "matchExpressions": {
+          "type": "array",
+          "title": "matchExpressions is a list of label selector requirements. The requirements are ANDed.\n+optional",
+          "items": {
+            "$ref": "#/definitions/LabelSelectorRequirement"
+          }
+        },
+        "matchLabels": {
+          "type": "object",
+          "title": "matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels\nmap is equivalent to an element of matchExpressions, whose key field is \"key\", the\noperator is \"In\", and the values array contains only \"value\". The requirements are ANDed.\n+optional",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "LabelSelectorRequirement": {
+      "description": "A label selector requirement is a selector that contains values, a key, and an operator that\nrelates the key and values.",
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "title": "key is the label key that the selector applies to.\n+patchMergeKey=key\n+patchStrategy=merge"
+        },
+        "operator": {
+          "description": "operator represents a key's relationship to a set of values.\nValid operators are In, NotIn, Exists and DoesNotExist.",
+          "type": "string"
+        },
+        "values": {
+          "type": "array",
+          "title": "values is an array of string values. If the operator is In or NotIn,\nthe values array must be non-empty. If the operator is Exists or DoesNotExist,\nthe values array must be empty. This array is replaced during a strategic\nmerge patch.\n+optional",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ListMeta": {
+      "description": "ListMeta describes metadata that synthetic resources must have, including lists and\nvarious status objects. A resource may have only one of {ObjectMeta, ListMeta}.",
+      "type": "object",
+      "properties": {
+        "continue": {
+          "description": "continue may be set if the user set a limit on the number of items returned, and indicates that\nthe server has more data available. The value is opaque and may be used to issue another request\nto the endpoint that served this list to retrieve the next set of available objects. Continuing a\nconsistent list may not be possible if the server configuration has changed or more than a few\nminutes have passed. The resourceVersion field returned when using this continue value will be\nidentical to the value in the first response, unless you have received this token from an error\nmessage.",
+          "type": "string"
+        },
+        "remainingItemCount": {
+          "type": "string",
+          "format": "int64",
+          "title": "remainingItemCount is the number of subsequent items in the list which are not included in this\nlist response. If the list request contained label or field selectors, then the number of\nremaining items is unknown and the field will be left unset and omitted during serialization.\nIf the list is complete (either because it is not chunking or because this is the last chunk),\nthen there are no more remaining items and this field will be left unset and omitted during\nserialization.\nServers older than v1.15 do not set this field.\nThe intended use of the remainingItemCount is *estimating* the size of a collection. Clients\nshould not rely on the remainingItemCount to be set or to be exact.\n+optional"
+        },
+        "resourceVersion": {
+          "type": "string",
+          "title": "String that identifies the server's internal version of this object that\ncan be used by clients to determine when objects have changed.\nValue must be treated as opaque by clients and passed unmodified back to the server.\nPopulated by the system.\nRead-only.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency\n+optional"
+        },
+        "selfLink": {
+          "description": "selfLink is a URL representing this object.\nPopulated by the system.\nRead-only.\n\nDEPRECATED\nKubernetes will stop propagating this field in 1.20 release and the field is planned\nto be removed in 1.21 release.\n+optional",
+          "type": "string"
+        }
+      }
+    },
+    "ListOptions": {
+      "description": "ListOptions is the query options to a standard REST list call.",
+      "type": "object",
+      "properties": {
+        "allowWatchBookmarks": {
+          "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional",
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "continue": {
+          "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
+          "type": "string"
+        },
+        "fieldSelector": {
+          "type": "string",
+          "title": "A selector to restrict the list of returned objects by their fields.\nDefaults to everything.\n+optional"
+        },
+        "labelSelector": {
+          "type": "string",
+          "title": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional"
+        },
+        "limit": {
+          "description": "limit is a maximum number of responses to return for a list call. If more items exist, the\nserver will set the `continue` field on the list metadata to a value that can be used with the\nsame initial query to retrieve the next set of results. Setting a limit may return fewer than\nthe requested amount of items (up to zero items) in the event all requested objects are\nfiltered out and clients should only use the presence of the continue field to determine whether\nmore results are available. Servers may choose not to support the limit argument and will return\nall of the available results. If limit is specified and the continue field is empty, clients may\nassume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing\na single list call without a limit - that is, no objects created, modified, or deleted after the\nfirst request is issued will be included in any subsequent continued requests. This is sometimes\nreferred to as a consistent snapshot, and ensures that a client that is using limit to receive\nsmaller chunks of a very large result can ensure they see all possible objects. If objects are\nupdated during a chunked list the version of the object that was present at the time the first list\nresult was calculated is returned.",
+          "type": "string",
+          "format": "int64"
+        },
+        "resourceVersion": {
+          "type": "string",
+          "title": "When specified with a watch call, shows changes that occur after that particular version of a resource.\nDefaults to changes from the beginning of history.\nWhen specified for list:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.\n+optional"
+        },
+        "timeoutSeconds": {
+          "type": "string",
+          "format": "int64",
+          "title": "Timeout for the list/watch call.\nThis limits the duration of the call, regardless of any activity or inactivity.\n+optional"
+        },
+        "watch": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional"
+        }
+      }
+    },
+    "ManagedFieldsEntry": {
+      "description": "ManagedFieldsEntry is a workflow-id, a FieldSet and the group version of the resource\nthat the fieldset applies to.",
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the version of this resource that this field set\napplies to. The format is \"group/version\" just like the top-level\nAPIVersion field. It is necessary to track the version of a field\nset because it cannot be automatically converted.",
+          "type": "string"
+        },
+        "fieldsType": {
+          "type": "string",
+          "title": "FieldsType is the discriminator for the different fields format and version.\nThere is currently only one possible value: \"FieldsV1\""
+        },
+        "fieldsV1": {
+          "title": "FieldsV1 holds the first JSON version format as described in the \"FieldsV1\" type.\n+optional",
+          "$ref": "#/definitions/FieldsV1"
+        },
+        "manager": {
+          "description": "Manager is an identifier of the workflow managing these fields.",
+          "type": "string"
+        },
+        "operation": {
+          "description": "Operation is the type of operation which lead to this ManagedFieldsEntry being created.\nThe only valid values for this field are 'Apply' and 'Update'.",
+          "type": "string"
+        },
+        "time": {
+          "title": "Time is timestamp of when these fields were set. It should always be empty if Operation is 'Apply'\n+optional",
+          "$ref": "#/definitions/Time"
+        }
+      }
+    },
+    "ObjectMeta": {
+      "description": "ObjectMeta is metadata that all persisted resources must have, which includes all objects\nusers must create.",
+      "type": "object",
+      "properties": {
+        "annotations": {
+          "type": "object",
+          "title": "Annotations is an unstructured key value map stored with a resource that may be\nset by external tools to store and retrieve arbitrary metadata. They are not\nqueryable and should be preserved when modifying objects.\nMore info: http://kubernetes.io/docs/user-guide/annotations\n+optional",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "clusterName": {
+          "type": "string",
+          "title": "The name of the cluster which the object belongs to.\nThis is used to distinguish resources with same name and namespace in different clusters.\nThis field is not set anywhere right now and apiserver is going to ignore it if set in create or update request.\n+optional"
+        },
+        "creationTimestamp": {
+          "description": "CreationTimestamp is a timestamp representing the server time when this object was\ncreated. It is not guaranteed to be set in happens-before order across separate operations.\nClients may not set this value. It is represented in RFC3339 form and is in UTC.\n\nPopulated by the system.\nRead-only.\nNull for lists.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional",
+          "$ref": "#/definitions/Time"
+        },
+        "deletionGracePeriodSeconds": {
+          "type": "string",
+          "format": "int64",
+          "title": "Number of seconds allowed for this object to gracefully terminate before\nit will be removed from the system. Only set when deletionTimestamp is also set.\nMay only be shortened.\nRead-only.\n+optional"
+        },
+        "deletionTimestamp": {
+          "description": "DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This\nfield is set by the server when a graceful deletion is requested by the user, and is not\ndirectly settable by a client. The resource is expected to be deleted (no longer visible\nfrom resource lists, and not reachable by name) after the time in this field, once the\nfinalizers list is empty. As long as the finalizers list contains items, deletion is blocked.\nOnce the deletionTimestamp is set, this value may not be unset or be set further into the\nfuture, although it may be shortened or the resource may be deleted prior to this time.\nFor example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react\nby sending a graceful termination signal to the containers in the pod. After that 30 seconds,\nthe Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup,\nremove the pod from the API. In the presence of network partitions, this object may still\nexist after this timestamp, until an administrator or automated process can determine the\nresource is fully terminated.\nIf not set, graceful deletion of the object has not been requested.\n\nPopulated by the system when a graceful deletion is requested.\nRead-only.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional",
+          "$ref": "#/definitions/Time"
+        },
+        "finalizers": {
+          "type": "array",
+          "title": "Must be empty before the object is deleted from the registry. Each entry\nis an identifier for the responsible component that will remove the entry\nfrom the list. If the deletionTimestamp of the object is non-nil, entries\nin this list can only be removed.\n+optional\n+patchStrategy=merge",
+          "items": {
+            "type": "string"
+          }
+        },
+        "generateName": {
+          "description": "GenerateName is an optional prefix, used by the server, to generate a unique\nname ONLY IF the Name field has not been provided.\nIf this field is used, the name returned to the client will be different\nthan the name passed. This value will also be combined with a unique suffix.\nThe provided value has the same validation rules as the Name field,\nand may be truncated by the length of the suffix required to make the value\nunique on the server.\n\nIf this field is specified and the generated name exists, the server will\nNOT return a 409 - instead, it will either return 201 Created or 500 with Reason\nServerTimeout indicating a unique name could not be found in the time allotted, and the client\nshould retry (optionally after the time indicated in the Retry-After header).\n\nApplied only if Name is not specified.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency\n+optional",
+          "type": "string"
+        },
+        "generation": {
+          "type": "string",
+          "format": "int64",
+          "title": "A sequence number representing a specific generation of the desired state.\nPopulated by the system. Read-only.\n+optional"
+        },
+        "labels": {
+          "type": "object",
+          "title": "Map of string keys and values that can be used to organize and categorize\n(scope and select) objects. May match selectors of replication controllers\nand services.\nMore info: http://kubernetes.io/docs/user-guide/labels\n+optional",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "managedFields": {
+          "description": "ManagedFields maps workflow-id and version to the set of fields\nthat are managed by that  This is mostly for internal\nhousekeeping, and users typically shouldn't need to set or\nunderstand this field. A workflow can be the user's name, a\ncontroller's name, or the name of a specific apply path like\n\"ci-cd\". The set of fields is always in the version that the\nworkflow used when modifying the object.\n\n+optional",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ManagedFieldsEntry"
+          }
+        },
+        "name": {
+          "type": "string",
+          "title": "Name must be unique within a namespace. Is required when creating resources, although\nsome resources may allow a client to request the generation of an appropriate name\nautomatically. Name is primarily intended for creation idempotence and configuration\ndefinition.\nCannot be updated.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#names\n+optional"
+        },
+        "namespace": {
+          "description": "Namespace defines the space within each name must be unique. An empty namespace is\nequivalent to the \"default\" namespace, but \"default\" is the canonical representation.\nNot all objects are required to be scoped to a namespace - the value of this field for\nthose objects will be empty.\n\nMust be a DNS_LABEL.\nCannot be updated.\nMore info: http://kubernetes.io/docs/user-guide/namespaces\n+optional",
+          "type": "string"
+        },
+        "ownerReferences": {
+          "type": "array",
+          "title": "List of objects depended by this object. If ALL objects in the list have\nbeen deleted, this object will be garbage collected. If this object is managed by a controller,\nthen an entry in this list will point to this controller, with the controller field set to true.\nThere cannot be more than one managing controller.\n+optional\n+patchMergeKey=uid\n+patchStrategy=merge",
+          "items": {
+            "$ref": "#/definitions/OwnerReference"
+          }
+        },
+        "resourceVersion": {
+          "description": "An opaque value that represents the internal version of this object that can\nbe used by clients to determine when objects have changed. May be used for optimistic\nconcurrency, change detection, and the watch operation on a resource or set of resources.\nClients must treat these values as opaque and passed unmodified back to the server.\nThey may only be valid for a particular resource or set of resources.\n\nPopulated by the system.\nRead-only.\nValue must be treated as opaque by clients and .\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency\n+optional",
+          "type": "string"
+        },
+        "selfLink": {
+          "description": "SelfLink is a URL representing this object.\nPopulated by the system.\nRead-only.\n\nDEPRECATED\nKubernetes will stop propagating this field in 1.20 release and the field is planned\nto be removed in 1.21 release.\n+optional",
+          "type": "string"
+        },
+        "uid": {
+          "description": "UID is the unique in time and space value for this object. It is typically generated by\nthe server on successful creation of a resource and is not allowed to change on PUT\noperations.\n\nPopulated by the system.\nRead-only.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#uids\n+optional",
+          "type": "string"
+        }
+      }
+    },
+    "OwnerReference": {
+      "description": "OwnerReference contains enough information to let you identify an owning\nobject. An owning object must be in the same namespace as the dependent, or\nbe cluster-scoped, so there is no namespace field.",
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "description": "API version of the referent.",
+          "type": "string"
+        },
+        "blockOwnerDeletion": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "If true, AND if the owner has the \"foregroundDeletion\" finalizer, then\nthe owner cannot be deleted from the key-value store until this\nreference is removed.\nDefaults to false.\nTo set this field, a user needs \"delete\" permission of the owner,\notherwise 422 (Unprocessable Entity) will be returned.\n+optional"
+        },
+        "controller": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "If true, this reference points to the managing controller.\n+optional"
+        },
+        "kind": {
+          "type": "string",
+          "title": "Kind of the referent.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds"
+        },
+        "name": {
+          "type": "string",
+          "title": "Name of the referent.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#names"
+        },
+        "uid": {
+          "type": "string",
+          "title": "UID of the referent.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#uids"
+        }
+      }
+    },
+    "Preconditions": {
+      "description": "Preconditions must be fulfilled before an operation (update, delete, etc.) is carried out.",
+      "type": "object",
+      "properties": {
+        "resourceVersion": {
+          "type": "string",
+          "title": "Specifies the target ResourceVersion\n+optional"
+        },
+        "uid": {
+          "type": "string",
+          "title": "Specifies the target UID.\n+optional"
+        }
+      }
+    },
+    "Time": {
+      "description": "Time is a wrapper around time.Time which supports correct\nmarshaling to YAML and JSON.  Wrappers are provided for many\nof the factory methods that the time package offers.\n\n+protobuf.options.marshal=false\n+protobuf.as=Timestamp\n+protobuf.options.(gogoproto.goproto_stringer)=false",
+      "type": "object",
+      "properties": {
+        "nanos": {
+          "description": "Non-negative fractions of a second at nanosecond resolution. Negative\nsecond values with fractions must still have non-negative nanos values\nthat count forward in time. Must be from 0 to 999,999,999\ninclusive. This field may be limited in precision depending on context.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "seconds": {
+          "description": "Represents seconds of UTC time since Unix epoch\n1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to\n9999-12-31T23:59:59Z inclusive.",
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "IntOrString": {
+      "description": "+protobuf=true\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:openapi-gen=true",
+      "type": "object",
+      "title": "IntOrString is a type that can hold an int32 or a string.  When used in\nJSON or YAML marshalling and unmarshalling, it produces or consumes the\ninner type.  This allows you to have, for example, a JSON field that can\naccept a name or number.\nTODO: Rename to Int32OrString",
+      "properties": {
+        "intVal": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "strVal": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "LogEntry": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string"
         }
       }
     },
@@ -5089,21 +5404,6 @@
         },
         "workflow": {
           "$ref": "#/definitions/Workflow"
-        }
-      }
-    },
-    "WorkflowList": {
-      "type": "object",
-      "title": "WorkflowList is list of Workflow resources\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
-      "properties": {
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Workflow"
-          }
-        },
-        "metadata": {
-          "$ref": "#/definitions/ListMeta"
         }
       }
     },
@@ -5144,265 +5444,6 @@
         }
       }
     },
-    "WorkflowSpec": {
-      "description": "WorkflowSpec is the specification of a Workflow.",
-      "type": "object",
-      "properties": {
-        "activeDeadlineSeconds": {
-          "type": "string",
-          "format": "int64",
-          "title": "Optional duration in seconds relative to the workflow start time which the workflow is\nallowed to run before the controller terminates the  A value of zero is used to\nterminate a Running workflow"
-        },
-        "affinity": {
-          "title": "Affinity sets the scheduling constraints for all pods in the \nCan be overridden by an affinity specified in the template",
-          "$ref": "#/definitions/Affinity"
-        },
-        "arguments": {
-          "title": "Arguments contain the parameters and artifacts sent to the workflow entrypoint\nParameters are referencable globally using the 'workflow' variable prefix.\ne.g. {{parameters.myparam}}",
-          "$ref": "#/definitions/Arguments"
-        },
-        "artifactRepositoryRef": {
-          "description": "ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.",
-          "$ref": "#/definitions/ArtifactRepositoryRef"
-        },
-        "automountServiceAccountToken": {
-          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.\nServiceAccountName of ExecutorConfig must be specified if this value is false.",
-          "type": "boolean",
-          "format": "boolean"
-        },
-        "dnsConfig": {
-          "description": "PodDNSConfig defines the DNS parameters of a pod in addition to\nthose generated from DNSPolicy.",
-          "$ref": "#/definitions/PodDNSConfig"
-        },
-        "dnsPolicy": {
-          "description": "Set DNS policy for the pod.\nDefaults to \"ClusterFirst\".\nValid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'.\nDNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy.\nTo have DNS options set along with hostNetwork, you have to specify DNS policy\nexplicitly to 'ClusterFirstWithHostNet'.",
-          "type": "string"
-        },
-        "entrypoint": {
-          "type": "string",
-          "title": "Entrypoint is a template reference to the starting point of the workflow"
-        },
-        "executor": {
-          "description": "Executor holds configurations of executor containers of the ",
-          "$ref": "#/definitions/ExecutorConfig"
-        },
-        "hostAliases": {
-          "type": "array",
-          "title": "+patchStrategy=merge\n+patchMergeKey=ip",
-          "items": {
-            "$ref": "#/definitions/HostAlias"
-          }
-        },
-        "hostNetwork": {
-          "description": "Host networking requested for this workflow pod. Default to false.",
-          "type": "boolean",
-          "format": "boolean"
-        },
-        "imagePullSecrets": {
-          "type": "array",
-          "title": "ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images\nin pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets\ncan be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet.\nMore info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod\n+patchStrategy=merge\n+patchMergeKey=name",
-          "items": {
-            "$ref": "#/definitions/LocalObjectReference"
-          }
-        },
-        "nodeSelector": {
-          "description": "NodeSelector is a selector which will result in all pods of the workflow\nto be scheduled on the selected node(s). This is able to be overridden by\na nodeSelector specified in the template.",
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
-        },
-        "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the\nworkflow, irrespective of the success, failure, or error of the\nprimary ",
-          "type": "string"
-        },
-        "parallelism": {
-          "type": "string",
-          "format": "int64",
-          "title": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow"
-        },
-        "podGC": {
-          "title": "PodGC describes the strategy to use when to deleting completed pods",
-          "$ref": "#/definitions/PodGC"
-        },
-        "podPriority": {
-          "description": "Priority to apply to workflow pods.",
-          "type": "integer",
-          "format": "int32"
-        },
-        "podPriorityClassName": {
-          "description": "PriorityClassName to apply to workflow pods.",
-          "type": "string"
-        },
-        "podSpecPatch": {
-          "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of\ncontainer fields which are not strings (e.g. resource limits).",
-          "type": "string"
-        },
-        "priority": {
-          "description": "Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.",
-          "type": "integer",
-          "format": "int32"
-        },
-        "schedulerName": {
-          "type": "string",
-          "title": "Set scheduler name for all pods.\nWill be overridden if container/script template's scheduler name is set.\nDefault scheduler will be used if neither specified.\n+optional"
-        },
-        "securityContext": {
-          "title": "SecurityContext holds pod-level security attributes and common container settings.\nOptional: Defaults to empty.  See type description for default values of each field.\n+optional",
-          "$ref": "#/definitions/PodSecurityContext"
-        },
-        "serviceAccountName": {
-          "description": "ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.",
-          "type": "string"
-        },
-        "suspend": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "Suspend will suspend the workflow and prevent execution of any future steps in the workflow"
-        },
-        "templates": {
-          "type": "array",
-          "title": "Templates is a list of workflow templates used in a workflow\n+patchStrategy=merge\n+patchMergeKey=name",
-          "items": {
-            "$ref": "#/definitions/Template"
-          }
-        },
-        "tolerations": {
-          "type": "array",
-          "title": "Tolerations to apply to workflow pods.\n+patchStrategy=merge\n+patchMergeKey=key",
-          "items": {
-            "$ref": "#/definitions/Toleration"
-          }
-        },
-        "ttlSecondsAfterFinished": {
-          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution\n(Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be\ndeleted after ttlSecondsAfterFinished expires. If this field is unset,\nttlSecondsAfterFinished will not expire. If this field is set to zero,\nttlSecondsAfterFinished expires immediately after the Workflow finishes.\nDEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.",
-          "type": "integer",
-          "format": "int32"
-        },
-        "ttlStrategy": {
-          "title": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it\nSucceeded or Failed. If this struct is set, once the Workflow finishes, it will be\ndeleted after the time to live expires. If this field is unset,\nthe controller config map will hold the default values\nUpdate",
-          "$ref": "#/definitions/TTLStrategy"
-        },
-        "volumeClaimTemplates": {
-          "type": "array",
-          "title": "VolumeClaimTemplates is a list of claims that containers are allowed to reference.\nThe Workflow controller will create the claims at the beginning of the workflow\nand delete the claims upon completion of the workflow\n+patchStrategy=merge\n+patchMergeKey=name",
-          "items": {
-            "$ref": "#/definitions/PersistentVolumeClaim"
-          }
-        },
-        "volumes": {
-          "type": "array",
-          "title": "Volumes is a list of volumes that can be mounted by containers in a \n+patchStrategy=merge\n+patchMergeKey=name",
-          "items": {
-            "$ref": "#/definitions/Volume"
-          }
-        }
-      }
-    },
-    "WorkflowStatus": {
-      "type": "object",
-      "title": "WorkflowStatus contains overall status information about a workflow",
-      "properties": {
-        "compressedNodes": {
-          "type": "string",
-          "title": "Compressed and base64 decoded Nodes map"
-        },
-        "finishedAt": {
-          "title": "Time at which this workflow completed",
-          "$ref": "#/definitions/Time"
-        },
-        "message": {
-          "description": "A human readable message indicating details about why the workflow is in this condition.",
-          "type": "string"
-        },
-        "nodes": {
-          "description": "Nodes is a mapping between a node ID and the node's status.",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/NodeStatus"
-          }
-        },
-        "offloadNodeStatusVersion": {
-          "description": "Whether on not node status has been offloaded to a database. If exists, then Nodes and CompressedNodes will be empty.\nThis will actually be populated with a hash of the offloaded data.",
-          "type": "string"
-        },
-        "outputs": {
-          "title": "Outputs captures output values and artifact locations produced by the workflow via global outputs",
-          "$ref": "#/definitions/Outputs"
-        },
-        "persistentVolumeClaims": {
-          "description": "PersistentVolumeClaims tracks all PVCs that were created as part of the \nThe contents of this list are drained at the end of the ",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Volume"
-          }
-        },
-        "phase": {
-          "description": "Phase a simple, high-level summary of where the workflow is in its lifecycle.",
-          "type": "string"
-        },
-        "startedAt": {
-          "title": "Time at which this workflow started",
-          "$ref": "#/definitions/Time"
-        },
-        "storedTemplates": {
-          "description": "StoredTemplates is a mapping between a template ref and the node's status.",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/Template"
-          }
-        }
-      }
-    },
-    "WorkflowStep": {
-      "type": "object",
-      "title": "WorkflowStep is a reference to a template to execute in a series of step",
-      "properties": {
-        "arguments": {
-          "title": "Arguments hold arguments to the template",
-          "$ref": "#/definitions/Arguments"
-        },
-        "continueOn": {
-          "title": "ContinueOn makes argo to proceed with the following step even if this step fails.\nErrors and Failed states can be specified",
-          "$ref": "#/definitions/ContinueOn"
-        },
-        "name": {
-          "type": "string",
-          "title": "Name of the step"
-        },
-        "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the\ntemplate, irrespective of the success, failure, or error of the\nprimary template.",
-          "type": "string"
-        },
-        "template": {
-          "type": "string",
-          "title": "Template is the name of the template to execute as the step"
-        },
-        "templateRef": {
-          "description": "TemplateRef is the reference to the template resource to execute as the step.",
-          "$ref": "#/definitions/TemplateRef"
-        },
-        "when": {
-          "type": "string",
-          "title": "When is an expression in which the step should conditionally execute"
-        },
-        "withItems": {
-          "type": "array",
-          "title": "WithItems expands a step into multiple parallel steps from the items in the list",
-          "items": {
-            "$ref": "#/definitions/Item"
-          }
-        },
-        "withParam": {
-          "description": "WithParam expands a step into multiple parallel steps from the value in the parameter,\nwhich is expected to be a JSON list.",
-          "type": "string"
-        },
-        "withSequence": {
-          "title": "WithSequence expands a step into a numeric sequence",
-          "$ref": "#/definitions/Sequence"
-        }
-      }
-    },
     "WorkflowSuspendRequest": {
       "type": "object",
       "properties": {
@@ -5414,17 +5455,35 @@
         }
       }
     },
-    "WorkflowTemplate": {
+    "WorkflowTerminateRequest": {
       "type": "object",
-      "title": "WorkflowTemplate is the definition of a workflow template resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
       "properties": {
-        "metadata": {
-          "$ref": "#/definitions/ObjectMeta"
+        "name": {
+          "type": "string"
         },
-        "spec": {
-          "$ref": "#/definitions/WorkflowTemplateSpec"
+        "namespace": {
+          "type": "string"
         }
       }
+    },
+    "WorkflowWatchEvent": {
+      "type": "object",
+      "properties": {
+        "object": {
+          "title": "the workflow",
+          "$ref": "#/definitions/Workflow"
+        },
+        "type": {
+          "type": "string",
+          "title": "the type of change"
+        }
+      }
+    },
+    "ArchivedWorkflowDeletedResponse": {
+      "type": "object"
+    },
+    "WorkflowDeleteResponse": {
+      "type": "object"
     },
     "WorkflowTemplateCreateRequest": {
       "type": "object",
@@ -5454,38 +5513,6 @@
         }
       }
     },
-    "WorkflowTemplateList": {
-      "type": "object",
-      "title": "WorkflowTemplateList is list of WorkflowTemplate resources\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
-      "properties": {
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/WorkflowTemplate"
-          }
-        },
-        "metadata": {
-          "$ref": "#/definitions/ListMeta"
-        }
-      }
-    },
-    "WorkflowTemplateSpec": {
-      "description": "WorkflowTemplateSpec is a spec of WorkflowTemplate.",
-      "type": "object",
-      "properties": {
-        "arguments": {
-          "description": "Arguments hold arguments to the template.",
-          "$ref": "#/definitions/Arguments"
-        },
-        "templates": {
-          "description": "Templates is a list of workflow templates.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Template"
-          }
-        }
-      }
-    },
     "WorkflowTemplateUpdateRequest": {
       "type": "object",
       "properties": {
@@ -5497,30 +5524,6 @@
         },
         "template": {
           "$ref": "#/definitions/WorkflowTemplate"
-        }
-      }
-    },
-    "WorkflowTerminateRequest": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        }
-      }
-    },
-    "WorkflowWatchEvent": {
-      "type": "object",
-      "properties": {
-        "object": {
-          "title": "the workflow",
-          "$ref": "#/definitions/Workflow"
-        },
-        "type": {
-          "type": "string",
-          "title": "the type of change"
         }
       }
     }

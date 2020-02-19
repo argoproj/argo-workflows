@@ -1,14 +1,13 @@
 package io.argoproj.argo;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.argoproj.argo.models.Workflow;
-import okhttp3.Response;
-
 import java.io.IOException;
-
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
+import okhttp3.Response;
 
 public class KubeAPI {
   /*
