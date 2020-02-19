@@ -426,7 +426,7 @@ message MetricLabels {
 message MetricValue {
   optional string literal = 1;
 
-  optional string computed = 2;
+  optional string duration = 2;
 }
 
 // NodeStatus contains status information about an individual node in the workflow

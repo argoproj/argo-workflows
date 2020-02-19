@@ -4534,7 +4534,7 @@
     "v1alpha1MetricValue": {
       "type": "object",
       "properties": {
-        "computed": {
+        "duration": {
           "type": "string"
         },
         "literal": {

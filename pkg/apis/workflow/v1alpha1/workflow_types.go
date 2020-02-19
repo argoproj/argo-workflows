@@ -955,18 +955,26 @@ func isCompletedPhase(phase NodePhase) bool {
 }
 
 // Completed returns whether or not the workflow has completed execution
-func (ws *WorkflowStatus) Completed() bool {
+func (ws WorkflowStatus) Completed() bool {
 	return isCompletedPhase(ws.Phase)
 }
 
 // Successful return whether or not the workflow has succeeded
-func (ws *WorkflowStatus) Successful() bool {
+func (ws WorkflowStatus) Successful() bool {
 	return ws.Phase == NodeSucceeded
 }
 
 // Failed return whether or not the workflow has failed
-func (ws *WorkflowStatus) Failed() bool {
+func (ws WorkflowStatus) Failed() bool {
 	return ws.Phase == NodeFailed
+}
+
+func (ws WorkflowStatus) StartTime() metav1.Time {
+	return ws.StartedAt
+}
+
+func (ws WorkflowStatus) FinishTime() metav1.Time {
+	return ws.FinishedAt
 }
 
 // Remove returns whether or not the node has completed execution
@@ -985,6 +993,18 @@ func (n NodeStatus) IsDaemoned() bool {
 // Successful returns whether or not this node completed successfully
 func (n NodeStatus) Successful() bool {
 	return n.Phase == NodeSucceeded || n.Phase == NodeSkipped || n.IsDaemoned() && n.Phase != NodePending
+}
+
+func (n NodeStatus) Failed() bool {
+	return !n.Successful()
+}
+
+func (n NodeStatus) StartTime() metav1.Time {
+	return n.StartedAt
+}
+
+func (n NodeStatus) FinishTime() metav1.Time {
+	return n.FinishedAt
 }
 
 // CanRetry returns whether the node should be retried or not.
@@ -1501,12 +1521,13 @@ func (s *WorkflowStep) ContinuesOn(phase NodePhase) bool {
 	return continues(s.ContinueOn, phase)
 }
 
-type ComputedValue string
-
-const (
-	ComputedValueWorkflowDuration ComputedValue = "WorkflowDuration"
-)
-
+type MetricsEmitter interface {
+	Completed() bool
+	Successful() bool
+	Failed() bool
+	StartTime() metav1.Time
+	FinishTime() metav1.Time
+}
 type MetricType string
 
 const (
@@ -1570,10 +1591,14 @@ type Histogram struct {
 	Bins  []float64    `json:"bins" protobuf:"fixed64,2,rep,name=bins"`
 }
 
-type MetricValue struct {
-	Literal  string    `json:"literal" protobuf:"bytes,1,opt,name=literal"`
-	Duration *Duration `json:"computed"`
-}
+type DurationType string
 
-type Duration struct {
+const (
+	DurationTypeRealTime     DurationType = "RealTime"
+	DurationTypeOnCompletion DurationType = "OnCompletion"
+)
+
+type MetricValue struct {
+	Literal  string       `json:"literal" protobuf:"bytes,1,opt,name=literal"`
+	Duration DurationType `json:"duration" protobuf:"bytes,2,opt,name=duration,casttype=DurationType"`
 }

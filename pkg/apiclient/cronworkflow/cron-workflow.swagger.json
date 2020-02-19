@@ -3442,7 +3442,7 @@
         "literal": {
           "type": "string"
         },
-        "computed": {
+        "duration": {
           "type": "string"
         }
       }

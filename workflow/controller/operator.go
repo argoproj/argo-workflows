@@ -179,6 +179,12 @@ func (woc *wfOperationCtx) operate() {
 			return
 		}
 		woc.workflowDeadline = woc.getWorkflowDeadline()
+
+		// Compute Workflow-level metrics once before operation
+		err = woc.computeWorkflowMetrics()
+		if err != nil {
+			woc.log.Errorf("Could not emit metrics for workflow '%s': %s", woc.wf.ObjectMeta.Name, err)
+		}
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation()
@@ -253,11 +259,6 @@ func (woc *wfOperationCtx) operate() {
 		}
 
 		return
-	}
-
-	err = woc.computeWorkflowMetrics()
-	if err != nil {
-		woc.log.Errorf("Could not emit metrics for workflow '%s': %s", woc.wf.ObjectMeta.Name, err)
 	}
 
 	if node == nil || !node.Completed() {
@@ -353,6 +354,12 @@ func (woc *wfOperationCtx) operate() {
 		// we should have returned earlier.
 		err = errors.InternalErrorf("Unexpected node phase %s: %+v", woc.wf.ObjectMeta.Name, err)
 		woc.markWorkflowError(err, true)
+	}
+
+	// Compute Workflow-level metrics one last time after completion
+	err = woc.computeWorkflowMetrics()
+	if err != nil {
+		woc.log.Errorf("Could not emit metrics for workflow '%s': %s", woc.wf.ObjectMeta.Name, err)
 	}
 }
 
@@ -2203,7 +2210,7 @@ func (woc *wfOperationCtx) computeWorkflowMetrics() error {
 
 			// TODO: metric.Name is absolutely not the correct key to use here, using it temporarily. Change this later
 			metric := woc.controller.Metrics[metricSpec.Name]
-			updatedMetric, err := metrics.ConstructOrUpdateMetric(metric, metricSpec, woc.wf)
+			updatedMetric, err := metrics.ConstructOrUpdateMetric(metric, metricSpec, woc.wf.Status)
 			if err != nil {
 				woc.log.Errorf("could not compute metric '%s' for Workflow '%s': %s", metricSpec.Name, woc.wf.ObjectMeta.Name, err)
 			}

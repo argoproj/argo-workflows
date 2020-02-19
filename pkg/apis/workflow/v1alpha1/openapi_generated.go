@@ -1478,14 +1478,14 @@ func schema_pkg_apis_workflow_v1alpha1_MetricValue(ref common.ReferenceCallback)
 							Format: "",
 						},
 					},
-					"computed": {
+					"duration": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",
 						},
 					},
 				},
-				Required: []string{"literal", "computed"},
+				Required: []string{"literal", "duration"},
 			},
 		},
 	}
