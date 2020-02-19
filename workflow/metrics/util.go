@@ -21,9 +21,16 @@ func ConstructOrUpdateMetric(metric prometheus.Metric, metricSpec *wfv1.Metric, 
 		return constructOrUpdateGaugeMetric(metric, metricSpec, emitter)
 	case wfv1.MetricTypeHistogram:
 		return constructOrUpdateHistogramMetric(metric, metricSpec, emitter)
+	case wfv1.MetricTypeCounter:
+		return constructOrUpdateCounterMetric(metric, metricSpec, emitter)
 	default:
 		return nil, fmt.Errorf("invalid metric spec")
 	}
+}
+
+func constructOrUpdateCounterMetric(metric prometheus.Metric, metricSpec *wfv1.Metric, emitter wfv1.MetricsEmitter) (prometheus.Metric, error) {
+
+	prometheus.NewCounter()
 }
 
 func constructOrUpdateGaugeMetric(metric prometheus.Metric, metricSpec *wfv1.Metric, emitter wfv1.MetricsEmitter) (prometheus.Metric, error) {

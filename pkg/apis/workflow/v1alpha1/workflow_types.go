@@ -1532,11 +1532,13 @@ type MetricsEmitter interface {
 	StartTime() metav1.Time
 	FinishTime() metav1.Time
 }
+
 type MetricType string
 
 const (
 	MetricTypeGauge     MetricType = "Gauge"
 	MetricTypeHistogram MetricType = "Histogram"
+	MetricTypeCounter  MetricType = "Counter"
 	MetricTypeUnknown   MetricType = "Unknown"
 )
 
@@ -1550,6 +1552,7 @@ type Metric struct {
 	Help      string          `json:"help" protobuf:"bytes,3,opt,name=help"`
 	Gauge     *Gauge          `json:"gauge" protobuf:"bytes,4,opt,name=gauge"`
 	Histogram *Histogram      `json:"histogram" protobuf:"bytes,5,opt,name=histogram"`
+	Counter   *Counter        `json:"counter" protobuf:"bytes,6,opt,name=counter"`
 }
 
 func (m *Metric) GetMetricLabels() map[string]string {
@@ -1566,6 +1569,9 @@ func (m *Metric) GetMetricType() MetricType {
 	}
 	if m.Histogram != nil {
 		return MetricTypeHistogram
+	}
+	if m.Counter != nil {
+		return MetricTypeCounter
 	}
 	return MetricTypeUnknown
 }
@@ -1604,6 +1610,16 @@ type Gauge struct {
 type Histogram struct {
 	Value *MetricValue `json:"value" protobuf:"bytes,1,opt,name=value"`
 	Bins  []float64    `json:"bins" protobuf:"fixed64,2,rep,name=bins"`
+}
+
+type CounterTrigger string
+
+const (
+	CounterTriggerExecuted CounterTrigger = "Executed"
+)
+
+type Counter struct {
+	IncrementOn CounterTrigger `json:"incrementOn" protobuf:"bytes,1,opt,name=incrementOn,casttype=CounterTrigger"`
 }
 
 type DurationType string

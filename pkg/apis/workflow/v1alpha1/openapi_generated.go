@@ -22,6 +22,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryAuth":       schema_pkg_apis_workflow_v1alpha1_ArtifactoryAuth(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Backoff":               schema_pkg_apis_workflow_v1alpha1_Backoff(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn":            schema_pkg_apis_workflow_v1alpha1_ContinueOn(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Counter":               schema_pkg_apis_workflow_v1alpha1_Counter(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflow":          schema_pkg_apis_workflow_v1alpha1_CronWorkflow(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowList":      schema_pkg_apis_workflow_v1alpha1_CronWorkflowList(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowSpec":      schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref),
@@ -454,6 +455,25 @@ func schema_pkg_apis_workflow_v1alpha1_ContinueOn(ref common.ReferenceCallback) 
 						},
 					},
 				},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_Counter(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"incrementOn": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"incrementOn"},
 			},
 		},
 	}
@@ -1437,12 +1457,17 @@ func schema_pkg_apis_workflow_v1alpha1_Metric(ref common.ReferenceCallback) comm
 							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Histogram"),
 						},
 					},
+					"counter": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Counter"),
+						},
+					},
 				},
-				Required: []string{"name", "labels", "help", "gauge", "histogram"},
+				Required: []string{"name", "labels", "help", "gauge", "histogram", "counter"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Gauge", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Histogram", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MetricLabels"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Counter", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Gauge", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Histogram", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.MetricLabels"},
 	}
 }
 

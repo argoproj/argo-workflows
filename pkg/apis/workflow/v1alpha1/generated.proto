@@ -130,6 +130,10 @@ message ContinueOn {
   optional bool failed = 2;
 }
 
+message Counter {
+  optional string incrementOn = 1;
+}
+
 // CronWorkflow is the definition of a scheduled workflow resource
 // +genclient
 // +genclient:noStatus
@@ -417,6 +421,8 @@ message Metric {
   optional Gauge gauge = 4;
 
   optional Histogram histogram = 5;
+
+  optional Counter counter = 6;
 }
 
 message MetricLabels {

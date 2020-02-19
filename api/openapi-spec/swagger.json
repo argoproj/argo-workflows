@@ -215,6 +215,17 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Counter": {
+      "type": "object",
+      "required": [
+        "incrementOn"
+      ],
+      "properties": {
+        "incrementOn": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.CronWorkflow": {
       "description": "CronWorkflow is the definition of a scheduled workflow resource",
       "type": "object",
@@ -751,9 +762,13 @@
         "labels",
         "help",
         "gauge",
-        "histogram"
+        "histogram",
+        "counter"
       ],
       "properties": {
+        "counter": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Counter"
+        },
         "gauge": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Gauge"
         },

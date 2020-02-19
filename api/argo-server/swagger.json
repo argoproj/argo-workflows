@@ -4063,6 +4063,14 @@
         }
       }
     },
+    "v1alpha1Counter": {
+      "type": "object",
+      "properties": {
+        "incrementOn": {
+          "type": "string"
+        }
+      }
+    },
     "v1alpha1CronWorkflow": {
       "type": "object",
       "title": "CronWorkflow is the definition of a scheduled workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
@@ -4503,6 +4511,9 @@
     "v1alpha1Metric": {
       "type": "object",
       "properties": {
+        "counter": {
+          "$ref": "#/definitions/v1alpha1Counter"
+        },
         "gauge": {
           "$ref": "#/definitions/v1alpha1Gauge"
         },

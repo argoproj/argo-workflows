@@ -3362,6 +3362,14 @@
       },
       "description": "ContinueOn defines if a workflow should continue even if a task or step fails/errors.\nIt can be specified if the workflow should continue when the pod errors, fails or both."
     },
+    "v1alpha1Counter": {
+      "type": "object",
+      "properties": {
+        "incrementOn": {
+          "type": "string"
+        }
+      }
+    },
     "v1alpha1DAGTask": {
       "type": "object",
       "properties": {
@@ -3732,6 +3740,9 @@
         },
         "histogram": {
           "$ref": "#/definitions/v1alpha1Histogram"
+        },
+        "counter": {
+          "$ref": "#/definitions/v1alpha1Counter"
         }
       }
     },
