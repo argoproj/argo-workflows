@@ -973,6 +973,10 @@ func (ws *WorkflowStatus) Failed() bool {
 	return ws.Phase == NodeFailed
 }
 
+func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
+	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
+}
+
 // Remove returns whether or not the node has completed execution
 func (n NodeStatus) Completed() bool {
 	return isCompletedPhase(n.Phase) || n.IsDaemoned() && n.Phase != NodePending

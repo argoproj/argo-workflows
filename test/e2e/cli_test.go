@@ -156,6 +156,7 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
+		WaitForWorkflowToStart(15*time.Second).
 		RunCli([]string{"suspend", "basic"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "workflow basic suspended")
@@ -163,10 +164,9 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 		}).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeRunning, status.Phase)
-			assert.True(t, status.Nodes.Any(func(node wfv1.NodeStatus) bool {
-				return node.IsActiveSuspendNode()
-			}))
+			if assert.Equal(t, wfv1.NodeRunning, status.Phase) {
+				assert.True(t, status.AnyActiveSuspendNode())
+			}
 		}).
 		When().
 		RunCli([]string{"resume", "basic"}, func(t *testing.T, output string, err error) {
