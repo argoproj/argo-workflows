@@ -24,14 +24,14 @@ func NewSuspendCommand() *cobra.Command {
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			for _, wfName := range args {
-				wf, err := serviceClient.SuspendWorkflow(ctx, &workflowpkg.WorkflowSuspendRequest{
+				_, err := serviceClient.SuspendWorkflow(ctx, &workflowpkg.WorkflowSuspendRequest{
 					Name:      wfName,
 					Namespace: namespace,
 				})
 				if err != nil {
 					log.Fatalf("Failed to suspended %s: %+v", wfName, err)
 				}
-				fmt.Printf("workflow %s suspended\n", wf.Name)
+				fmt.Printf("workflow %s suspended\n", wfName)
 			}
 		},
 	}

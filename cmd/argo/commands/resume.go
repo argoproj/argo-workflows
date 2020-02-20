@@ -24,14 +24,14 @@ func NewResumeCommand() *cobra.Command {
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 			for _, wfName := range args {
-				wf, err := serviceClient.ResumeWorkflow(ctx, &workflowpkg.WorkflowResumeRequest{
+				_, err := serviceClient.ResumeWorkflow(ctx, &workflowpkg.WorkflowResumeRequest{
 					Name:      wfName,
 					Namespace: namespace,
 				})
 				if err != nil {
 					log.Fatalf("Failed to resume %s: %+v", wfName, err)
 				}
-				fmt.Printf("workflow %s resumed\n", wf.Name)
+				fmt.Printf("workflow %s resumed\n", wfName)
 			}
 
 		},
