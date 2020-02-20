@@ -12,7 +12,7 @@ import (
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/util/workflow"
+	"github.com/argoproj/argo/util/watch"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/templateresolution"
@@ -129,7 +129,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 }
 
 func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, ws workflowpkg.WorkflowService_WatchWorkflowsServer) error {
-	watcher := workflow.NewWatcher(auth.GetWfClient(ws.Context()), s.offloadNodeStatusRepo)
+	watcher := watch.NewWorkflowWatcher(auth.GetWfClient(ws.Context()), s.offloadNodeStatusRepo)
 	return watcher.WatchWorkflows(ws.Context(), req.Namespace, req.ListOptions, ws)
 }
 

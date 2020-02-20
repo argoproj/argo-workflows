@@ -14,7 +14,7 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/util/help"
-	"github.com/argoproj/argo/util/workflow"
+	"github.com/argoproj/argo/util/watch"
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/util"
@@ -110,7 +110,7 @@ func (k *classicWorkflowServiceClient) ListWorkflows(_ context.Context, in *work
 	return list, nil
 }
 func (k *classicWorkflowServiceClient) WatchWorkflows(ctx context.Context, req *workflowpkg.WatchWorkflowsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsClient, error) {
-	watcher := workflow.NewWatcher(k.Interface, sqldb.ExplosiveOffloadNodeStatusRepo)
+	watcher := watch.NewWorkflowWatcher(k.Interface, sqldb.ExplosiveOffloadNodeStatusRepo)
 	intermediary := newWatchIntermediary()
 	err := watcher.WatchWorkflows(ctx, req.Namespace, req.ListOptions, intermediary)
 	if err != nil {

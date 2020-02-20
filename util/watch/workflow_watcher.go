@@ -1,4 +1,4 @@
-package workflow
+package watch
 
 import (
 	"context"
@@ -14,24 +14,24 @@ import (
 	"github.com/argoproj/argo/workflow/packer"
 )
 
-type Watcher interface {
-	WatchWorkflows(ctx context.Context, namespace string, opts *metav1.ListOptions, sender WatchEventSender) error
+type WorkflowWatcher interface {
+	WatchWorkflows(ctx context.Context, namespace string, opts *metav1.ListOptions, sender EventSender) error
 }
 
-type WatchEventSender interface {
+type EventSender interface {
 	Send(e *workflowpkg.WorkflowWatchEvent) error
 }
 
-func NewWatcher(wfClient versioned.Interface, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) Watcher {
-	return &watcher{wfClient, offloadNodeStatusRepo}
+func NewWorkflowWatcher(wfClient versioned.Interface, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) WorkflowWatcher {
+	return &workflowWatcher{wfClient, offloadNodeStatusRepo}
 }
 
-type watcher struct {
+type workflowWatcher struct {
 	wfClient              versioned.Interface
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 }
 
-func (s *watcher) WatchWorkflows(ctx context.Context, namespace string, opts *metav1.ListOptions, sender WatchEventSender) error {
+func (s *workflowWatcher) WatchWorkflows(ctx context.Context, namespace string, opts *metav1.ListOptions, sender EventSender) error {
 	wfClient := s.wfClient
 	if opts == nil {
 		opts = &metav1.ListOptions{}
