@@ -9,7 +9,7 @@
   "info": {
     "description": "Argo Server",
     "title": "Argo Server",
-    "version": "latest"
+    "version": "cli-logs"
   },
   "paths": {
     "/api/v1/archived-workflows": {
@@ -5264,6 +5264,9 @@
       "type": "object",
       "properties": {
         "content": {
+          "type": "string"
+        },
+        "podName": {
           "type": "string"
         }
       }
