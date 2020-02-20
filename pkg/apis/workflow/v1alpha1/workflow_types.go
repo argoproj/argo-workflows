@@ -774,6 +774,15 @@ func (n Nodes) FindByDisplayName(name string) *NodeStatus {
 	return nil
 }
 
+func (in Nodes) Any(f func(node NodeStatus) bool) bool {
+	for _, i := range in {
+		if f(i) {
+			return true
+		}
+	}
+	return false
+}
+
 // UserContainer is a container specified by a user.
 type UserContainer struct {
 	apiv1.Container `json:",inline" protobuf:"bytes,1,opt,name=container"`

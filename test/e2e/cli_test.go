@@ -151,6 +151,36 @@ func (s *CLISuite) TestRoot() {
 	})
 }
 
+func (s *CLISuite) TestWorkflowSuspendResume() {
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"suspend", "basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "workflow basic suspended")
+			}
+		}).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeRunning, status.Phase)
+			assert.True(t, status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+				return node.IsActiveSuspendNode()
+			}))
+		}).
+		When().
+		RunCli([]string{"resume", "basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "workflow basic resumed")
+			}
+		}).
+		WaitForWorkflow(15 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
 func (s *CLISuite) TestWorkflowDelete() {
 	s.Run("DeleteByName", func() {
 		s.Given().
