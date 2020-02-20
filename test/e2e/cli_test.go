@@ -99,6 +99,7 @@ func (s *CLISuite) TestRoot() {
 	s.Run("Submit", func() {
 		s.Given().RunCli([]string{"submit", "smoke/basic.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
 				assert.Contains(t, output, "ServiceAccount:")
 				assert.Contains(t, output, "Status:")
@@ -120,6 +121,7 @@ func (s *CLISuite) TestRoot() {
 	s.Run("Get", func() {
 		s.Given().RunCli([]string{"get", "basic"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
 				assert.Contains(t, output, "ServiceAccount:")
 				assert.Contains(t, output, "Status:")
@@ -150,7 +152,6 @@ func (s *CLISuite) TestRoot() {
 			})
 	})
 }
-
 func (s *CLISuite) TestWorkflowDelete() {
 	s.Run("DeleteByName", func() {
 		s.Given().
@@ -315,6 +316,24 @@ func (s *CLISuite) TestTemplate() {
 			assert.NoError(t, err)
 		})
 	})
+}
+
+func (s *CLISuite) TestWorkflowResubmit() {
+	s.Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(15*time.Second).
+		Given().
+		RunCli([]string{"resubmit", "--memoized", "exit-1"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "ServiceAccount:")
+				assert.Contains(t, output, "Status:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
 }
 
 func (s *CLISuite) TestCron() {
