@@ -162,6 +162,21 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 		})
 }
 
+func (s *FunctionalSuite) TestExpectedStep() {
+	//  Test whether an WorkflowFailed event (with appropriate message) is emitted in case of error in creating the PVC
+	s.Given().
+		WorkflowTemplate("@testdata/issue-templates.yaml").
+		Workflow("@testdata/issue-workflow.yaml").
+		When().
+		CreateWorkflowTemplates().
+		SubmitWorkflow().
+		WaitForWorkflow(15 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+	})
+}
+
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }

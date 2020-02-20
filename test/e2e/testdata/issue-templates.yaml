@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-autobahn
+  labels:
+    argo-e2e: true
+spec:
+  templates:
+    - name: remoteA
+      steps:
+        - - name: deploy-quick
+            template: remoteB
+
+    #  - name: remoteA
+    #    steps:
+    #      - - name: deploy-quick
+    #          templateRef:
+    #            name: workflow-template-autobahn
+    #            template: remoteB
+
+    - name: remoteB
+      steps:
+        - - name: remoteC
+            template: remoteC
+
+    - name: remoteC
+      container:
+        image: cowsay:v1
+        command: [cowsay]
+        args: [Happy]
+

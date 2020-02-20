@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: my-service-deploy-quick-
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: localA
+  templates:
+
+    - name: localA
+      templateRef:
+        name: workflow-template-autobahn
+        template: remoteA
+
+#  - name: remoteB
+#    container:
+#      image: alpine
+#      command: [sh, -c]
+#      args: ["echo Must exist, never called"]
