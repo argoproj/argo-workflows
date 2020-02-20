@@ -34,6 +34,7 @@ var (
 	// DEPRECATED
 	wftmplClient     v1alpha1.WorkflowTemplateInterface
 	jobStatusIconMap map[wfv1.NodePhase]string
+	nodeTypeIconMap  map[wfv1.NodeType]string
 	noColor          bool
 	// DEPRECATED
 	namespace string
@@ -70,6 +71,9 @@ func initializeSession() {
 		wfv1.NodeSkipped:   ansiFormat("○", FgDefault),
 		wfv1.NodeFailed:    ansiFormat("✖", FgRed),
 		wfv1.NodeError:     ansiFormat("⚠", FgRed),
+	}
+	nodeTypeIconMap = map[wfv1.NodeType]string{
+		wfv1.NodeTypeSuspend: ansiFormat("ǁ", FgCyan),
 	}
 }
 

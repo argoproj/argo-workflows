@@ -32,6 +32,22 @@ func (s *CLISuite) TestCompletion() {
 		assert.Contains(t, output, "bash completion for argo")
 	})
 }
+
+func (s *CLISuite) TestVersion() {
+	s.Given().RunCli([]string{"version"}, func(t *testing.T, output string, err error) {
+		assert.NoError(t, err)
+		assert.Contains(t, output, "argo:")
+		assert.Contains(t, output, "BuildDate:")
+		assert.Contains(t, output, "GitCommit:")
+		assert.Contains(t, output, "GitTreeState:")
+		assert.Contains(t, output, "GoVersion:")
+		assert.Contains(t, output, "Compiler:")
+		assert.Contains(t, output, "Platform:")
+		assert.NotContains(t, output, "argo: v0.0.0+unknown")
+		assert.NotContains(t, output, "  BuildDate: 1970-01-01T00:00:00Z")
+	})
+}
+
 func (s *CLISuite) TestSubmitDryRun() {
 	s.Given().
 		RunCli([]string{"submit", "smoke/basic.yaml", "--dry-run", "-o", "yaml"}, func(t *testing.T, output string, err error) {

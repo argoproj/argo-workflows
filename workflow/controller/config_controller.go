@@ -71,7 +71,15 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 		}
 
 		wfc.session = session
-		wfc.offloadNodeStatusRepo = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+		if persistence.NodeStatusOffload {
+			wfc.offloadNodeStatusRepo, err = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+			if err != nil {
+				return err
+			}
+			log.Info("Node status offloading is enabled")
+		} else {
+			log.Info("Node status offloading is disabled")
+		}
 		if persistence.Archive {
 			wfc.wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName())
 			log.Info("Workflow archiving is enabled")

@@ -337,9 +337,6 @@ type Template struct {
 	// Template is the name of the template which is used as the base of this template.
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
-	// Arguments hold arguments to the template.
-	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
-
 	// TemplateRef is the reference to the template resource which is used as the base of this template.
 	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,4,opt,name=templateRef"`
 
@@ -1055,6 +1052,11 @@ func (n *NodeStatus) GetTemplateRef() *TemplateRef {
 
 func (n *NodeStatus) IsResolvable() bool {
 	return true
+}
+
+// IsActiveSuspendNode returns whether this node is an active suspend node
+func (n *NodeStatus) IsActiveSuspendNode() bool {
+	return n.Type == NodeTypeSuspend && n.Phase == NodeRunning
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket

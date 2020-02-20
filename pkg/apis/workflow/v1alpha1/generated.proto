@@ -650,9 +650,6 @@ message Template {
   // Template is the name of the template which is used as the base of this template.
   optional string template = 2;
 
-  // Arguments hold arguments to the template.
-  optional Arguments arguments = 3;
-
   // TemplateRef is the reference to the template resource which is used as the base of this template.
   optional TemplateRef templateRef = 4;
 

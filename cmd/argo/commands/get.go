@@ -435,6 +435,9 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, get
 		return
 	}
 	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], node.DisplayName)
+	if node.IsActiveSuspendNode() {
+		nodeName = fmt.Sprintf("%s %s", nodeTypeIconMap[node.Type], node.DisplayName)
+	}
 	if node.TemplateRef != nil {
 		nodeName = fmt.Sprintf("%s (%s/%s)", nodeName, node.TemplateRef.Name, node.TemplateRef.Template)
 	} else if node.TemplateName != "" {

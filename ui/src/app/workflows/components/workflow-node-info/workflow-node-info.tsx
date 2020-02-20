@@ -83,6 +83,9 @@ export const WorkflowNodeSummary = (props: Props) => {
             )
         }
     ];
+    if (props.node.type === 'Pod') {
+        attributes.splice(2, 0, {title: 'POD NAME', value: props.node.id});
+    }
     const template = Utils.getResolvedTemplates(props.workflow, props.node);
     return (
         <div className='white-box'>
