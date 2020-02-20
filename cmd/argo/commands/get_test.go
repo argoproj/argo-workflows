@@ -52,7 +52,7 @@ func TestPrintNode(t *testing.T) {
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s (%s)\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
 
 	node.Type = wfv1.NodeTypeSuspend
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s (%s)\t%s\t%s\t%s\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateName, "", "", nodeMessage), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s (%s)\t%s\t%s\t%s\t\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateName, "", "", nodeMessage), node, nodePrefix, getArgs)
 
 	node.TemplateRef = &wfv1.TemplateRef{
 		Name:     nodeTemplateRefName,
