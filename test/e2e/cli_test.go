@@ -268,7 +268,7 @@ func (s *CLISuite) TestWorkflowTerminate() {
 		Given().
 		RunCli([]string{"terminate", "basic"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				assert.Contains(t, output, "Workflow 'basic' terminated")
+				assert.Contains(t, output, "workflow basic terminated")
 			}
 		})
 }
