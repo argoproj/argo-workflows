@@ -124,8 +124,20 @@ func (k *classicWorkflowServiceClient) RetryWorkflow(_ context.Context, _ *workf
 	panic("implement me")
 }
 
-func (k *classicWorkflowServiceClient) ResubmitWorkflow(_ context.Context, _ *workflowpkg.WorkflowResubmitRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
-	panic("implement me")
+func (k *classicWorkflowServiceClient) ResubmitWorkflow(_ context.Context, req *workflowpkg.WorkflowResubmitRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+	wf, err := k.getWorkflow(req.Namespace, req.Name, nil)
+	if err != nil {
+		return nil, err
+	}
+	newWF, err := util.FormulateResubmitWorkflow(wf, req.Memoized)
+	if err != nil {
+		return nil, err
+	}
+	created, err := util.SubmitWorkflow(k.Interface.ArgoprojV1alpha1().Workflows(req.Namespace), k.Interface, req.Namespace, newWF, &util.SubmitOpts{})
+	if err != nil {
+		return nil, err
+	}
+	return created, nil
 }
 
 func (k *classicWorkflowServiceClient) ResumeWorkflow(_ context.Context, _ *workflowpkg.WorkflowResumeRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
