@@ -69,12 +69,15 @@ func (k *classicWorkflowServiceClient) checkServerVersionForDryRun() (bool, erro
 	return true, nil
 }
 
-func (k *classicWorkflowServiceClient) GetWorkflow(_ context.Context, in *workflowpkg.WorkflowGetRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
-	options := metav1.GetOptions{}
-	if in.GetOptions != nil {
-		options = *in.GetOptions
+func (k *classicWorkflowServiceClient) GetWorkflow(_ context.Context, req *workflowpkg.WorkflowGetRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+	return k.getWorkflow(req.Namespace, req.Name, req.GetOptions)
+}
+
+func (k *classicWorkflowServiceClient) getWorkflow(namespace, name string, options *metav1.GetOptions) (*v1alpha1.Workflow, error) {
+	if options == nil {
+		options = &metav1.GetOptions{}
 	}
-	wf, err := k.ArgoprojV1alpha1().Workflows(in.Namespace).Get(in.Name, options)
+	wf, err := k.Interface.ArgoprojV1alpha1().Workflows(namespace).Get(name, *options)
 	if err != nil {
 		return nil, err
 	}
@@ -133,8 +136,12 @@ func (k *classicWorkflowServiceClient) SuspendWorkflow(_ context.Context, _ *wor
 	panic("implement me")
 }
 
-func (k *classicWorkflowServiceClient) TerminateWorkflow(_ context.Context, _ *workflowpkg.WorkflowTerminateRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
-	panic("implement me")
+func (k *classicWorkflowServiceClient) TerminateWorkflow(_ context.Context, req *workflowpkg.WorkflowTerminateRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+	err := util.TerminateWorkflow(k.Interface.ArgoprojV1alpha1().Workflows(req.Namespace), req.Name)
+	if err != nil {
+		return nil, err
+	}
+	return k.getWorkflow(req.Namespace, req.Name, nil)
 }
 
 func (k *classicWorkflowServiceClient) LintWorkflow(_ context.Context, in *workflowpkg.WorkflowLintRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
