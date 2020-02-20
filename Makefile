@@ -50,17 +50,17 @@ K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-
 ARGO_TOKEN            = $(shell kubectl -n argo get secret -o name | grep argo-server | xargs kubectl -n argo get -o jsonpath='{.data.token}' | base64 --decode)
 
 override LDFLAGS += \
-  -X ${PACKAGE}.version=$(VERSION) \
-  -X ${PACKAGE}.buildDate=${BUILD_DATE} \
-  -X ${PACKAGE}.gitCommit=${GIT_COMMIT} \
-  -X ${PACKAGE}.gitTreeState=${GIT_TREE_STATE}
+  -X github.com/argoproj/argo.version=$(VERSION) \
+  -X github.com/argoproj/argo.buildDate=${BUILD_DATE} \
+  -X github.com/argoproj/argo.gitCommit=${GIT_COMMIT} \
+  -X github.com/argoproj/argo.gitTreeState=${GIT_TREE_STATE}
 
 ifeq ($(STATIC_BUILD), true)
 override LDFLAGS += -extldflags "-static"
 endif
 
 ifneq ($(GIT_TAG),)
-override LDFLAGS += -X ${PACKAGE}.gitTag=${GIT_TAG}
+override LDFLAGS += -X github.com/argoproj/argo.gitTag=${GIT_TAG}
 endif
 
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
