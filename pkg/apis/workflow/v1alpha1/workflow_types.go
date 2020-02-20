@@ -882,7 +882,7 @@ type UsageIndicator map[apiv1.ResourceName]ResourceUsageIndicator
 
 func (i UsageIndicator) Add(o UsageIndicator) UsageIndicator {
 	for r, d := range o {
-		i[r] = i[r] + d
+		i[r] += d
 	}
 	return i
 }
