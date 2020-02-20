@@ -153,11 +153,11 @@ func (s *CLISuite) TestRoot() {
 
 func (s *CLISuite) TestWorkflowSuspendResume() {
 	s.Given().
-		Workflow("@smoke/basic.yaml").
+		Workflow("@testdata/sleep-3s.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflowToStart(15*time.Second).
-		RunCli([]string{"suspend", "basic"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"suspend", "sleep-3s"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "workflow basic suspended")
 			}
@@ -169,7 +169,7 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 			}
 		}).
 		When().
-		RunCli([]string{"resume", "basic"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"resume", "sleep-3s"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "workflow basic resumed")
 			}

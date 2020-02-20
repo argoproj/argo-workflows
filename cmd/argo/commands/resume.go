@@ -3,7 +3,6 @@ package commands
 import (
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -14,12 +13,8 @@ import (
 func NewResumeCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "resume WORKFLOW1 WORKFLOW2...",
-		Short: "resume a workflow",
+		Short: "resume zero or more workflows",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
