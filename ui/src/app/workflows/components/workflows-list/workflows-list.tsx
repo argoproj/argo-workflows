@@ -25,6 +25,8 @@ require('./workflows-list.scss');
 
 interface State {
     loading: boolean;
+    initialized: boolean;
+    managedNamespace: boolean;
     namespace: string;
     selectedPhases: string[];
     selectedLabels: string[];
@@ -42,6 +44,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         super(props, context);
         this.state = {
             loading: true,
+            initialized: false,
+            managedNamespace: false,
             namespace: this.props.match.params.namespace || '',
             selectedPhases: this.queryParams('phase'),
             selectedLabels: this.queryParams('label')
@@ -49,7 +53,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     public componentDidMount(): void {
-        this.fetchWorkflows();
+        this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels);
     }
 
     public componentWillUnmount(): void {
@@ -84,19 +88,20 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                             tools: []
                         }}>
                         <div className='row'>
-                            <div className='columns small-2'>
+                            <div className='columns small-12 xlarge-2'>
                                 <div>{this.renderQuery(ctx)}</div>
                                 <div>
                                     <WorkflowFilters
                                         workflows={this.state.workflows}
                                         namespace={this.state.namespace}
+                                        phaseItems={Object.values(models.NODE_PHASE)}
                                         selectedPhases={this.state.selectedPhases}
                                         selectedLabels={this.state.selectedLabels}
                                         onChange={(namespace, selectedPhases, selectedLabels) => this.changeFilters(namespace, selectedPhases, selectedLabels)}
                                     />
                                 </div>
                             </div>
-                            <div className='columns small-10'>{this.renderWorkflows(ctx)}</div>
+                            <div className='columns small-12 xlarge-10'>{this.renderWorkflows(ctx)}</div>
                         </div>
                         <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
                             <ResourceSubmit<models.Workflow>
@@ -115,24 +120,33 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         );
     }
 
-    private fetchWorkflows(): void {
+    private fetchWorkflows(namespace: string, selectedPhases: string[], selectedLabels: string[]): void {
         if (this.subscription) {
             this.subscription.unsubscribe();
         }
-        services.info
-            .get()
-            .then(info => {
-                if (info.managedNamespace && info.managedNamespace !== this.state.namespace) {
-                    this.setState({namespace: info.managedNamespace});
+        let workflowList;
+        let newNamespace = namespace;
+        if (!this.state.initialized) {
+            workflowList = services.info.get().then(info => {
+                if (info.managedNamespace) {
+                    newNamespace = info.managedNamespace;
                 }
-                return services.workflows.list(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels);
-            })
+                this.setState({initialized: true, managedNamespace: info.managedNamespace ? true : false});
+                return services.workflows.list(newNamespace, selectedPhases, selectedLabels);
+            });
+        } else {
+            if (this.state.managedNamespace) {
+                newNamespace = this.state.namespace;
+            }
+            workflowList = services.workflows.list(newNamespace, selectedPhases, selectedLabels);
+        }
+        workflowList
             .then(list => list.items)
             .then(list => list || [])
-            .then(workflows => this.setState({workflows}))
+            .then(workflows => this.setState({workflows, namespace: newNamespace, selectedPhases, selectedLabels}))
             .then(() => {
                 this.subscription = services.workflows
-                    .watch({namespace: this.state.namespace, phases: this.state.selectedPhases, labels: this.state.selectedLabels})
+                    .watch({namespace: newNamespace, phases: selectedPhases, labels: selectedLabels})
                     .map(workflowChange => {
                         const workflows = this.state.workflows;
                         if (!workflowChange) {
@@ -167,7 +181,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     private changeFilters(namespace: string, selectedPhases: string[], selectedLabels: string[]) {
-        this.setState({namespace, selectedPhases, selectedLabels});
         const params = new URLSearchParams();
         selectedPhases.forEach(phase => {
             params.append('phase', phase);
@@ -180,7 +193,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             url += '?' + params.toString();
         }
         history.pushState(null, '', uiUrl(url));
-        this.fetchWorkflows();
+        this.fetchWorkflows(namespace, selectedPhases, selectedLabels);
     }
 
     private renderWorkflows(ctx: any) {

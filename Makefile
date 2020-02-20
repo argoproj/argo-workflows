@@ -50,25 +50,26 @@ K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-
 ARGO_TOKEN            = $(shell kubectl -n argo get secret -o name | grep argo-server | xargs kubectl -n argo get -o jsonpath='{.data.token}' | base64 --decode)
 
 override LDFLAGS += \
-  -X ${PACKAGE}.version=$(VERSION) \
-  -X ${PACKAGE}.buildDate=${BUILD_DATE} \
-  -X ${PACKAGE}.gitCommit=${GIT_COMMIT} \
-  -X ${PACKAGE}.gitTreeState=${GIT_TREE_STATE}
+  -X github.com/argoproj/argo.version=$(VERSION) \
+  -X github.com/argoproj/argo.buildDate=${BUILD_DATE} \
+  -X github.com/argoproj/argo.gitCommit=${GIT_COMMIT} \
+  -X github.com/argoproj/argo.gitTreeState=${GIT_TREE_STATE}
 
 ifeq ($(STATIC_BUILD), true)
 override LDFLAGS += -extldflags "-static"
 endif
 
 ifneq ($(GIT_TAG),)
-override LDFLAGS += -X ${PACKAGE}.gitTag=${GIT_TAG}
+override LDFLAGS += -X github.com/argoproj/argo.gitTag=${GIT_TAG}
 endif
 
-ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
-CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
-CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
+ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | cut -c 26-)
+CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo' | cut -c 26-)
+CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | cut -c 26-)
 MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
+SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json')
 
 .PHONY: build
 build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
@@ -77,10 +78,9 @@ build: status clis executor-image controller-image manifests/install.yaml manife
 status:
 	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE)
 
-vendor: Gopkg.toml Gopkg.lock
-	# Get Go dependencies
-	rm -Rf .vendor-new
-	dep ensure -v
+.PHONY: vendor
+vendor: go.mod go.sum
+	go mod download
 
 # cli
 
@@ -205,23 +205,11 @@ codegen:
 	./hack/update-codegen.sh
 	./hack/update-openapigen.sh
 	go run ./hack/gen-openapi-spec/main.go $(MANIFESTS_VERSION) > ./api/openapi-spec/swagger.json
+	make api/argo-server/swagger.json
 	find . -path '*/mocks/*' -type f -not -path '*/vendor/*' -exec ./hack/update-mocks.sh {} ';'
-
-.PHONY: verify-codegen
-verify-codegen:
-	# Verify generated code
-	./hack/verify-codegen.sh
-	./hack/update-openapigen.sh --verify-only
-	mkdir -p ./dist
-	go run ./hack/gen-openapi-spec/main.go $(MANIFESTS_VERSION) > ./dist/swagger.json
-	diff ./dist/swagger.json ./api/openapi-spec/swagger.json
 
 .PHONY: manifests
 manifests: status manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml manifests/quick-start-no-db.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml test/e2e/manifests/no-db.yaml
-
-.PHONY: verify-manifests
-verify-manifests: manifests
-	git diff --exit-code
 
 # we use a different file to ./VERSION to force updating manifests after a `make clean`
 dist/MANIFESTS_VERSION:
@@ -246,6 +234,8 @@ manifests/quick-start-postgres.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
 
 .PHONY: lint
 lint: server/static/files.go
+	# Tidy Go modules
+	go mod tidy
 	# Lint Go files
 	golangci-lint run --fix --verbose
 ifeq ($(CI),false)
@@ -373,7 +363,7 @@ up:
 .PHONY: env
 env:
 	export ARGO_SERVER=localhost:2746
-	export ARGO_TOKEN="Bearer $(ARGO_TOKEN)"
+	export ARGO_TOKEN=$(ARGO_TOKEN)
 
 .PHONY: pf
 pf:
@@ -423,12 +413,18 @@ test-cli: test-images cli
 
 .PHONY: clean
 clean:
-	# Remove images
-	[ "`docker images -q $(IMAGE_NAMESPACE)/argocli:$(VERSION)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argocli:$(VERSION)
-	[ "`docker images -q $(IMAGE_NAMESPACE)/argoexec:$(VERSION)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
-	[ "`docker images -q $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
+	# Delete pre-go 1.3 vendor
+	rm -Rf vendor
 	# Delete build files
 	rm -Rf dist ui/dist
+
+# sdks
+
+$(HOME)/go/bin/swagger:
+	go get github.com/go-swagger/go-swagger/cmd/swagger
+
+api/argo-server/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES)
+	swagger mixin -c 412 pkg/apiclient/primary.swagger.json $(SWAGGER_FILES) | sed 's/VERSION/$(VERSION)/' > api/argo-server/swagger.json
 
 # pre-push
 

@@ -124,10 +124,14 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.WithField("nodeStatusOffload", persistence.NodeStatusOffload).Info("Offload node status")
-		if persistence.NodeStatusOffload {
-			offloadRepo = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+		// we always enable node offload, as this is read-only for the Argo Server, i.e. you can turn it off if you
+		// like and the controller won't offload newly created workflows, but you can still read them
+		offloadRepo, err = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+		if err != nil {
+			log.Fatal(err)
 		}
+		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
+		// disable the archiving - and still read old records
 		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName())
 	}
 	artifactServer := artifacts.NewArtifactServer(as.authenticator, offloadRepo, wfArchive)
@@ -276,7 +280,7 @@ func (as *argoServer) restartOnConfigChange(stopCh <-chan struct{}) error {
 			case <-stopCh:
 				return
 			case e := <-w.ResultChan():
-				if e.Type != watch.Added {
+				if e.Type != watch.Added && e.Type != watch.Bookmark {
 					log.WithField("eventType", e.Type).Info("config map event, exiting gracefully")
 					as.stopCh <- struct{}{}
 					return

@@ -3,7 +3,7 @@
 # Initial stage which pulls prepares build dependencies and CLI tooling we need for our final image
 # Also used as the image in CI jobs so needs all dependencies
 ####################################################################################################
-FROM golang:1.11.5 as builder
+FROM golang:1.13.4 as builder
 
 RUN apt-get update && apt-get install -y \
     git \

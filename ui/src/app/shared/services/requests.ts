@@ -54,7 +54,11 @@ export default {
             };
             eventSource.onmessage = (msg: any) => observer.next(msg.data);
             eventSource.onerror = (e: any) => {
-                observer.error(e);
+                if (e.eventPhase === Event.AT_TARGET) {
+                    observer.complete();
+                } else {
+                    observer.error(e);
+                }
             };
             return () => {
                 eventSource.close();

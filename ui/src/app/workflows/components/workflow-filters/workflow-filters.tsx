@@ -9,6 +9,7 @@ require('./workflow-filters.scss');
 interface WorkflowFilterProps {
     workflows: models.Workflow[];
     namespace: string;
+    phaseItems: string[];
     selectedPhases: string[];
     selectedLabels: string[];
     onChange: (namespace: string, selectedPhases: string[], labels: string[]) => void;
@@ -18,8 +19,8 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
     public render() {
         return (
             <div className='wf-filters-container'>
-                <div className='columns small-12 medium-3 xxlarge-12'>
-                    <div className='row'>
+                <div className='row'>
+                    <div className='columns small-3 xlarge-12'>
                         <p className='wf-filters-container__title'>Namespace</p>
                         <NamespaceFilter
                             value={this.props.namespace}
@@ -28,18 +29,7 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
                             }}
                         />
                     </div>
-                    <div className='row'>
-                        <p className='wf-filters-container__title'>Phases</p>
-                        <CheckboxFilter
-                            selected={this.props.selectedPhases}
-                            onChange={selected => {
-                                this.props.onChange(this.props.namespace, selected, this.props.selectedLabels);
-                            }}
-                            items={this.getPhaseItems(this.props.workflows)}
-                            type='phase'
-                        />
-                    </div>
-                    <div className='row'>
+                    <div className='columns small-3 xlarge-12'>
                         <p className='wf-filters-container__title'>Labels</p>
                         <TagsInput
                             placeholder=''
@@ -50,13 +40,25 @@ export class WorkflowFilters extends React.Component<WorkflowFilterProps, {}> {
                             }}
                         />
                     </div>
+                    <div className='columns small-6 xlarge-12'>
+                        <p className='wf-filters-container__title'>Phases</p>
+                        <CheckboxFilter
+                            selected={this.props.selectedPhases}
+                            onChange={selected => {
+                                this.props.onChange(this.props.namespace, selected, this.props.selectedLabels);
+                            }}
+                            items={this.getPhaseItems(this.props.workflows)}
+                            type='phase'
+                        />
+                    </div>
                 </div>
             </div>
         );
     }
+
     private getPhaseItems(workflows: models.Workflow[]) {
         const phasesMap = new Map<string, number>();
-        Object.values(models.NODE_PHASE).forEach(value => phasesMap.set(value, 0));
+        this.props.phaseItems.forEach(value => phasesMap.set(value, 0));
         workflows.filter(wf => wf.status.phase).forEach(wf => phasesMap.set(wf.status.phase, (phasesMap.get(wf.status.phase) || 0) + 1));
         const results = new Array<{name: string; count: number}>();
         phasesMap.forEach((val, key) => {
