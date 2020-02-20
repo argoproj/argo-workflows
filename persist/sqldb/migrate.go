@@ -136,7 +136,7 @@ func (m migrate) Exec(ctx context.Context) error {
 			ansiSQLChange(`alter table argo_archived_workflows alter column finishedat set not null`),
 		),
 		ansiSQLChange(`alter table argo_archived_workflows add clustername varchar(64)`), // DNS entry can only be max 63 bytes
-		ansiSQLChange(`update argo_archived_workflows set clustername = ` + m.clusterName + ` where clustername is null`),
+		ansiSQLChange(`update argo_archived_workflows set clustername = '` + m.clusterName + `' where clustername is null`),
 		ternary(dbType == "mysql",
 			ansiSQLChange(`alter table argo_archived_workflows modify column clustername varchar(64) not null`),
 			ansiSQLChange(`alter table argo_archived_workflows alter column clustername set not null`),
@@ -163,7 +163,7 @@ func (m migrate) Exec(ctx context.Context) error {
 			ansiSQLChange(`alter table `+m.tableName+` alter column namespace set not null`),
 		),
 		ansiSQLChange(`alter table ` + m.tableName + ` add column clustername varchar(64)`), // DNS cannot be longer than 64 bytes
-		ansiSQLChange(`update ` + m.tableName + ` set clustername = ` + m.clusterName + ` where clustername is null`),
+		ansiSQLChange(`update ` + m.tableName + ` set clustername = '` + m.clusterName + `' where clustername is null`),
 		ternary(dbType == "mysql",
 			ansiSQLChange(`alter table `+m.tableName+` modify column clustername varchar(64) not null`),
 			ansiSQLChange(`alter table `+m.tableName+` alter column clustername set not null`),
