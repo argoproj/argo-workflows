@@ -22,14 +22,9 @@ func NewWaitCommand() *cobra.Command {
 		ignoreNotFound bool
 	)
 	var command = &cobra.Command{
-		Use:   "wait WORKFLOW1 WORKFLOW2..,",
-		Short: "waits for a workflow to complete",
+		Use:   "wait [WORKFLOW...]",
+		Short: "waits for workflows to complete",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
-
 			WaitWorkflows(args, ignoreNotFound, false)
 		},
 	}
@@ -41,34 +36,20 @@ func NewWaitCommand() *cobra.Command {
 func WaitWorkflows(workflowNames []string, ignoreNotFound, quiet bool) {
 	var wg sync.WaitGroup
 	wfSuccessStatus := true
-	var apiClient workflowpkg.WorkflowServiceClient
-	var ctx context.Context
-	ns, _, _ := client.Config.Namespace()
-	if client.ArgoServer != "" {
-		conn := client.GetClientConn()
-		defer conn.Close()
-		apiClient, ctx = GetWFApiServerGRPCClient(conn)
-	} else {
-		InitWorkflowClient()
-	}
 
-	for _, workflowName := range workflowNames {
+	ctx, apiClient := client.NewAPIClient()
+	serviceClient := apiClient.NewWorkflowServiceClient()
+	namespace := client.Namespace()
+
+	for _, name := range workflowNames {
 		wg.Add(1)
-		if client.ArgoServer != "" {
-			go func(name string) {
-				if !apiServerWaitOnOne(apiClient, ctx, name, ns, ignoreNotFound, quiet) {
-					wfSuccessStatus = false
-				}
-				wg.Done()
-			}(workflowName)
-		} else {
-			go func(name string) {
-				if !waitOnOne(name, ignoreNotFound, quiet) {
-					wfSuccessStatus = false
-				}
-				wg.Done()
-			}(workflowName)
-		}
+		go func(name string) {
+			if !waitOnOne(serviceClient, ctx, name, namespace, ignoreNotFound, quiet) {
+				wfSuccessStatus = false
+			}
+			wg.Done()
+		}(name)
+
 	}
 	wg.Wait()
 
@@ -77,16 +58,17 @@ func WaitWorkflows(workflowNames []string, ignoreNotFound, quiet bool) {
 	}
 }
 
-func apiServerWaitOnOne(client workflowpkg.WorkflowServiceClient, ctx context.Context, wfName string, namespace string, ignoreNotFound, quiet bool) bool {
-	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", wfName))
-	wfReq := workflowpkg.WatchWorkflowsRequest{
+func waitOnOne(client workflowpkg.WorkflowServiceClient, ctx context.Context, wfName, namespace string, ignoreNotFound, quiet bool) bool {
+	stream, err := client.WatchWorkflows(ctx, &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{
-			FieldSelector: fieldSelector.String(),
+			FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", wfName)).String(),
 		},
-	}
-	stream, err := client.WatchWorkflows(ctx, &wfReq)
+	})
 	if err != nil {
+		if apierr.IsNotFound(err) && ignoreNotFound {
+			return true
+		}
 		errors.CheckError(err)
 		return false
 	}
@@ -111,42 +93,4 @@ func apiServerWaitOnOne(client workflowpkg.WorkflowServiceClient, ctx context.Co
 		}
 	}
 	return true
-}
-
-func waitOnOne(workflowName string, ignoreNotFound, quiet bool) bool {
-	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", workflowName))
-	opts := metav1.ListOptions{
-		FieldSelector: fieldSelector.String(),
-	}
-
-	_, err := wfClient.Get(workflowName, metav1.GetOptions{})
-	if err != nil {
-		if apierr.IsNotFound(err) && ignoreNotFound {
-			return true
-		}
-		errors.CheckError(err)
-	}
-
-	watchIf, err := wfClient.Watch(opts)
-	errors.CheckError(err)
-	defer watchIf.Stop()
-	for {
-		next := <-watchIf.ResultChan()
-		wf, _ := next.Object.(*wfv1.Workflow)
-		if wf == nil {
-			watchIf.Stop()
-			watchIf, err = wfClient.Watch(opts)
-			errors.CheckError(err)
-			continue
-		}
-		if !wf.Status.FinishedAt.IsZero() {
-			if !quiet {
-				fmt.Printf("%s %s at %v\n", workflowName, wf.Status.Phase, wf.Status.FinishedAt)
-			}
-			if wf.Status.Phase == wfv1.NodeFailed || wf.Status.Phase == wfv1.NodeError {
-				return false
-			}
-			return true
-		}
-	}
 }

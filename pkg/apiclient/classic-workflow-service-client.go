@@ -9,10 +9,12 @@ import (
 	"google.golang.org/grpc"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/argoproj/argo/persist/sqldb"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/util/help"
+	"github.com/argoproj/argo/util/workflow"
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/util"
@@ -104,9 +106,14 @@ func (k *classicWorkflowServiceClient) ListWorkflows(_ context.Context, in *work
 	}
 	return list, nil
 }
-
-func (k *classicWorkflowServiceClient) WatchWorkflows(_ context.Context, _ *workflowpkg.WatchWorkflowsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsClient, error) {
-	panic("implement me")
+func (k *classicWorkflowServiceClient) WatchWorkflows(ctx context.Context, req *workflowpkg.WatchWorkflowsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsClient, error) {
+	watcher := workflow.NewWatcher(k.Interface, sqldb.ExplosiveOffloadNodeStatusRepo)
+	intermediary := newWatchIntermediary()
+	err := watcher.WatchWorkflows(ctx, req.Namespace, req.ListOptions, intermediary)
+	if err != nil {
+		return nil, err
+	}
+	return intermediary, nil
 }
 
 func (k *classicWorkflowServiceClient) DeleteWorkflow(_ context.Context, in *workflowpkg.WorkflowDeleteRequest, _ ...grpc.CallOption) (*workflowpkg.WorkflowDeleteResponse, error) {
