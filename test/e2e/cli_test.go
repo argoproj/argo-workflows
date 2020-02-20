@@ -161,7 +161,7 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 		WaitForWorkflowToStart(15*time.Second).
 		RunCli([]string{"suspend", "sleep-3s"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				assert.Contains(t, output, "workflow basic suspended")
+				assert.Contains(t, output, "workflow sleep-3s suspended")
 			}
 		}).
 		Then().
@@ -173,7 +173,7 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 		When().
 		RunCli([]string{"resume", "sleep-3s"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				assert.Contains(t, output, "workflow basic resumed")
+				assert.Contains(t, output, "workflow sleep-3s resumed")
 			}
 		}).
 		WaitForWorkflow(15 * time.Second).
