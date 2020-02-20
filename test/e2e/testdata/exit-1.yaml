@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: exit-1
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: exit
+  templates:
+    - name: exit
+      container:
+        image: cowsay:v1
+        command: [sh, -c, "exit 1"]
+        imagePullPolicy: IfNotPresent
