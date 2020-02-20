@@ -72,10 +72,7 @@ export class WorkflowsService {
             )
             .pipe(
                 map(line => JSON.parse(line).result.content),
-                catchError(err => {
-                    console.log(err);
-                    return logsFromArtifacts;
-                })
+                catchError(() => logsFromArtifacts)
             );
     }
 
