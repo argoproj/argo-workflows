@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -25,6 +26,7 @@ var (
 
 type classicWorkflowServiceClient struct {
 	versioned.Interface
+	kubeClient kubernetes.Interface
 }
 
 func (k *classicWorkflowServiceClient) CreateWorkflow(_ context.Context, in *workflowpkg.WorkflowCreateRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
@@ -69,12 +71,15 @@ func (k *classicWorkflowServiceClient) checkServerVersionForDryRun() (bool, erro
 	return true, nil
 }
 
-func (k *classicWorkflowServiceClient) GetWorkflow(_ context.Context, in *workflowpkg.WorkflowGetRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
-	options := metav1.GetOptions{}
-	if in.GetOptions != nil {
-		options = *in.GetOptions
+func (k *classicWorkflowServiceClient) GetWorkflow(_ context.Context, req *workflowpkg.WorkflowGetRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+	return k.getWorkflow(req.Namespace, req.Name, req.GetOptions)
+}
+
+func (k *classicWorkflowServiceClient) getWorkflow(namespace, name string, options *metav1.GetOptions) (*v1alpha1.Workflow, error) {
+	if options == nil {
+		options = &metav1.GetOptions{}
 	}
-	wf, err := k.ArgoprojV1alpha1().Workflows(in.Namespace).Get(in.Name, options)
+	wf, err := k.Interface.ArgoprojV1alpha1().Workflows(namespace).Get(name, *options)
 	if err != nil {
 		return nil, err
 	}
@@ -117,8 +122,12 @@ func (k *classicWorkflowServiceClient) DeleteWorkflow(_ context.Context, in *wor
 	return &workflowpkg.WorkflowDeleteResponse{}, nil
 }
 
-func (k *classicWorkflowServiceClient) RetryWorkflow(_ context.Context, _ *workflowpkg.WorkflowRetryRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
-	panic("implement me")
+func (k *classicWorkflowServiceClient) RetryWorkflow(_ context.Context, req *workflowpkg.WorkflowRetryRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+	wf, err := k.getWorkflow(req.Namespace, req.Name, nil)
+	if err != nil {
+		return nil, err
+	}
+	return util.RetryWorkflow(k.kubeClient, k.Interface.ArgoprojV1alpha1().Workflows(req.Namespace), wf)
 }
 
 func (k *classicWorkflowServiceClient) ResubmitWorkflow(_ context.Context, _ *workflowpkg.WorkflowResubmitRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
