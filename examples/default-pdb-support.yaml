@@ -1,15 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
-  labels:
-    argo-e2e: true
+  generateName: default-pdb-support-
+
 spec:
-  entrypoint: whalesay
+  entrypoint: pdbcreate
   poddisruptionbudget:
     minavailable: 100%
   templates:
-  - name: whalesay
+  - name: pdbcreate
     container:
       image: alpine:latest
       command: [sh, -c]

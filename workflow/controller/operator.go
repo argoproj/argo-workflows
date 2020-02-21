@@ -167,11 +167,17 @@ func (woc *wfOperationCtx) operate() {
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == "" {
 		woc.markWorkflowRunning()
-		woc.createPDBResource()
+		err := woc.createPDBResource()
+		if err != nil {
+			msg := fmt.Sprintf("Unable to create PDB resource for workflow, %s error: %s", woc.wf.Name, err)
+			woc.markWorkflowFailed(msg)
+			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg)
+			return
+		}
 		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: argo.EventReasonWorkflowRunning}, "Workflow Running")
 		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.controller.GetContainerRuntimeExecutor()}
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
-		err := validate.ValidateWorkflow(wftmplGetter, woc.wf, validateOpts)
+		err = validate.ValidateWorkflow(wftmplGetter, woc.wf, validateOpts)
 		if err != nil {
 			msg := fmt.Sprintf("invalid spec: %s", err.Error())
 			woc.markWorkflowFailed(msg)
@@ -2192,20 +2198,16 @@ func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID str
 	return false, nil, nil
 }
 
-func (woc *wfOperationCtx) createPDBResource() {
+func (woc *wfOperationCtx) createPDBResource() error {
 
 	if woc.wf.Spec.PodDisruptionBudget == nil {
-		return
-	}
-	if woc.wf.Status.PDBResourceName != "" {
-		return
+		return nil
 	}
 
-	PDBName := woc.wf.Name + "-pdb"
-
+	PDBName := woc.wf.Name
 	pdb, _ := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(PDBName, metav1.GetOptions{})
-	if pdb != nil && pdb.Name == PDBName {
-		return
+	if pdb != nil && pdb.Name != "" {
+		return nil
 	}
 
 	if woc.wf.Spec.PodDisruptionBudget.Selector == nil {
@@ -2216,7 +2218,7 @@ func (woc *wfOperationCtx) createPDBResource() {
 
 	newPDB := policyv1.PodDisruptionBudget{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: woc.wf.Name + "-pdb",
+			Name: woc.wf.Name,
 		},
 		Spec: *woc.wf.Spec.PodDisruptionBudget,
 	}
@@ -2225,22 +2227,21 @@ func (woc *wfOperationCtx) createPDBResource() {
 	newPDB.SetOwnerReferences(append(newPDB.GetOwnerReferences(), *metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))))
 	created, err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(&newPDB)
 	if err != nil {
-		woc.log.Errorf("Unable to create PDB resource for workflow, %s error: %s", woc.wf.Name, err)
-		return
+		return err
 	}
 	woc.log.Infof("PDB resource %s created for workflow %s", created.Name, woc.wf.Name)
-	woc.wf.Status.PDBResourceName = created.Name
 	woc.updated = true
 }
 
 func (woc *wfOperationCtx) deletePDBResource() {
-	if woc.wf.Status.PDBResourceName == "" {
-		return
-	}
-	err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Status.PDBResourceName, &metav1.DeleteOptions{})
+
+	err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
 	if err != nil {
+		if apierr.IsNotFound(err) {
+			return
+		}
 		woc.log.Errorf("Unable to delete PDB resource for workflow, %s error: %s", woc.wf.Name, err)
 		return
 	}
-	woc.log.Infof("PDB resource %s deleted for workflow %s", woc.wf.Status.PDBResourceName, woc.wf.Name)
+	woc.log.Infof("PDB resource deleted for workflow %s", woc.wf.Name)
 }

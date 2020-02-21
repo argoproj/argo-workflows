@@ -3709,9 +3709,6 @@
         "outputs": {
           "$ref": "#/definitions/v1alpha1Outputs",
           "title": "Outputs captures output values and artifact locations produced by the workflow via global outputs"
-        },
-        "pdbResourceName": {
-          "type": "string"
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"

@@ -5147,9 +5147,6 @@
           "title": "Outputs captures output values and artifact locations produced by the workflow via global outputs",
           "$ref": "#/definitions/v1alpha1Outputs"
         },
-        "pdbResourceName": {
-          "type": "string"
-        },
         "persistentVolumeClaims": {
           "description": "PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.\nThe contents of this list are drained at the end of the workflow.",
           "type": "array",

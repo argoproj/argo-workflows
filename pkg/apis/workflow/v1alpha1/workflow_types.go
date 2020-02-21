@@ -825,8 +825,6 @@ type WorkflowStatus struct {
 
 	// Outputs captures output values and artifact locations produced by the workflow via global outputs
 	Outputs *Outputs `json:"outputs,omitempty" protobuf:"bytes,8,opt,name=outputs"`
-
-	PDBResourceName string `json:"pdbResourceName,omitempty" protobuf:"bytes,11,opt,name=pdbResourceName"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {

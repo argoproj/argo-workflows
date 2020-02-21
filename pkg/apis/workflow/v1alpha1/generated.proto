@@ -1005,8 +1005,6 @@ message WorkflowStatus {
 
   // Outputs captures output values and artifact locations produced by the workflow via global outputs
   optional Outputs outputs = 8;
-
-  optional string pdbResourceName = 11;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step
