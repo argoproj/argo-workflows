@@ -213,10 +213,6 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 	}
 	ctx.results[tmplID] = true
 
-	if hasArguments(tmpl) {
-		return errors.Errorf(errors.CodeBadRequest, "templates.%s.arguments must be used with template or templateRef", tmpl.Name)
-	}
-
 	if err := validateTemplateType(tmpl); err != nil {
 		return err
 	}
@@ -1068,10 +1064,6 @@ func isValidParamOrArtifactName(p string) []string {
 		return append(errs, "Parameter/Artifact name must consist of alpha-numeric characters, '_' or '-' e.g. my_param_1, MY-PARAM-1")
 	}
 	return errs
-}
-
-func hasArguments(tmpl *wfv1.Template) bool {
-	return len(tmpl.Arguments.Parameters) > 0 || len(tmpl.Arguments.Artifacts) > 0
 }
 
 const (

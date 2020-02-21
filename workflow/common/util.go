@@ -588,17 +588,6 @@ func MergeReferredTemplate(tmpl *wfv1.Template, referred *wfv1.Template) (*wfv1.
 		newTmpl.Outputs.Artifacts = artifacts
 	}
 
-	if len(tmpl.Arguments.Parameters) > 0 {
-		parameters := make([]wfv1.Parameter, len(tmpl.Arguments.Parameters))
-		copy(parameters, tmpl.Arguments.Parameters)
-		newTmpl.Arguments.Parameters = parameters
-	}
-	if len(tmpl.Arguments.Artifacts) > 0 {
-		artifacts := make([]wfv1.Artifact, len(tmpl.Arguments.Artifacts))
-		copy(artifacts, tmpl.Arguments.Artifacts)
-		newTmpl.Arguments.Artifacts = artifacts
-	}
-
 	if len(tmpl.NodeSelector) > 0 {
 		m := make(map[string]string, len(tmpl.NodeSelector))
 		for k, v := range tmpl.NodeSelector {

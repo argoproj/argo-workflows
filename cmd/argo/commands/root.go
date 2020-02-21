@@ -46,7 +46,7 @@ If you're using the Argo Server (e.g. because you need large workflow support or
 	command.AddCommand(NewSubmitCommand())
 	command.AddCommand(NewSuspendCommand())
 	command.AddCommand(auth.NewAuthCommand())
-	command.AddCommand(NewWatchCommand())
+	command.AddCommand(NewWaitCommand())
 	command.AddCommand(NewWatchCommand())
 	command.AddCommand(NewTerminateCommand())
 	command.AddCommand(archive.NewArchiveCommand())
