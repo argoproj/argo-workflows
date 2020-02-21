@@ -27,3 +27,8 @@ func TestNodes_FindByDisplayName(t *testing.T) {
 	assert.Nil(t, Nodes{}.FindByDisplayName(""))
 	assert.NotNil(t, Nodes{"": NodeStatus{DisplayName: "foo"}}.FindByDisplayName("foo"))
 }
+
+func TestNodes_Any(t *testing.T) {
+	assert.False(t, Nodes{"": NodeStatus{Name: "foo"}}.Any(func(node NodeStatus) bool { return node.Name == "bar" }))
+	assert.True(t, Nodes{"": NodeStatus{Name: "foo"}}.Any(func(node NodeStatus) bool { return node.Name == "foo" }))
+}

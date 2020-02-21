@@ -336,9 +336,6 @@ type Template struct {
 	// Template is the name of the template which is used as the base of this template.
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
-	// Arguments hold arguments to the template.
-	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
-
 	// TemplateRef is the reference to the template resource which is used as the base of this template.
 	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,4,opt,name=templateRef"`
 
@@ -777,6 +774,15 @@ func (n Nodes) FindByDisplayName(name string) *NodeStatus {
 	return nil
 }
 
+func (in Nodes) Any(f func(node NodeStatus) bool) bool {
+	for _, i := range in {
+		if f(i) {
+			return true
+		}
+	}
+	return false
+}
+
 // UserContainer is a container specified by a user.
 type UserContainer struct {
 	apiv1.Container `json:",inline" protobuf:"bytes,1,opt,name=container"`
@@ -965,6 +971,10 @@ func (ws *WorkflowStatus) Successful() bool {
 // Failed return whether or not the workflow has failed
 func (ws *WorkflowStatus) Failed() bool {
 	return ws.Phase == NodeFailed
+}
+
+func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
+	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
 }
 
 // Remove returns whether or not the node has completed execution
