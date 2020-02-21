@@ -2231,9 +2231,14 @@ func (woc *wfOperationCtx) createPDBResource() error {
 	}
 	woc.log.Infof("PDB resource %s created for workflow %s", created.Name, woc.wf.Name)
 	woc.updated = true
+	return nil
 }
 
 func (woc *wfOperationCtx) deletePDBResource() {
+
+	if woc.wf.Spec.PodDisruptionBudget == nil {
+		return
+	}
 
 	err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
 	if err != nil {

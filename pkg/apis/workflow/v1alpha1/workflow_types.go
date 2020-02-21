@@ -279,7 +279,7 @@ type WorkflowSpec struct {
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,27,opt,name=podSpecPatch"`
 
 	//PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.
-	//Controller will automatically add the selector with workflow name, if selector is empty
+	//Controller will automatically add the selector with workflow name, if selector is empty.
 	//Optional: Defaults to empty.
 	// +optional
 	PodDisruptionBudget *policyv1.PodDisruptionBudgetSpec `json:"podDisruptionBudget,omitempty" protobuf:"bytes,31,opt,name=podDisruptionBudget"`
