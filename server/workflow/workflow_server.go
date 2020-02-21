@@ -2,6 +2,7 @@ package workflow
 
 import (
 	"fmt"
+	"reflect"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -153,7 +154,7 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 		logCtx.Debug("Received event")
 		wf, ok := next.Object.(*v1alpha1.Workflow)
 		if !ok {
-			return fmt.Errorf("watch object was not a workflow %v", gvk)
+			return fmt.Errorf("watch object was not a workflow %v", reflect.TypeOf(next.Object))
 		}
 		err := packer.DecompressWorkflow(wf)
 		if err != nil {

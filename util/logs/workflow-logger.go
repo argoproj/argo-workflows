@@ -3,6 +3,7 @@ package logs
 import (
 	"bufio"
 	"context"
+	"reflect"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
@@ -82,9 +83,12 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 
 	// this func start a stream if one is not already running
 	ensureWeAreStreaming := func(pod *corev1.Pod) {
+		wg.Add(1)
+		defer wg.Done()
 		streamedPodsGuard.Lock()
 		defer streamedPodsGuard.Unlock()
 		logCtx := logCtx.WithField("podName", pod.GetName())
+		defer logCtx.Debug("Pod logs stream done")
 		logCtx.WithFields(log.Fields{"podPhase": pod.Status.Phase, "alreadyStreaming": streamedPods[pod.UID]}).Debug("Ensuring pod logs stream")
 		if pod.Status.Phase != corev1.PodPending && !streamedPods[pod.UID] {
 			logCtx.WithField("logOptions", req.GetLogOptions()).Debug("Streaming pod logs")
@@ -100,11 +104,10 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 				}()
 				stream, err := podInterface.GetLogs(podName, req.GetLogOptions()).Stream()
 				if err != nil {
-					logCtx.WithField("err", err).Error("Unable to get logs")
+					logCtx.WithField("err", err).Error("Unable to get pod logs")
 					return
 				}
 				scanner := bufio.NewScanner(stream)
-				logCtx.Debug("ALEX")
 				for scanner.Scan() {
 					select {
 					case <-ctx.Done():
@@ -172,10 +175,10 @@ func (l *workflowLogger) Run(ctx context.Context) {
 				case <-ctx.Done():
 					l.logCtx.Debug("Done")
 					return
-				case event := <-l.podWatch.ResultChan():
+				case event := <-l.wfWatch.ResultChan():
 					wf, ok := event.Object.(*wfv1.Workflow)
 					if !ok {
-						l.logCtx.Errorf("watch object was not a workflow %v", event.Object.GetObjectKind())
+						l.logCtx.Errorf("watch object was not a workflow %v", reflect.TypeOf(event.Object))
 						return
 					}
 					l.logCtx.WithFields(log.Fields{"eventType": event.Type, "podName": wf.GetName(), "completed": wf.Status.Completed()}).Debug("Workflow event")
@@ -201,13 +204,15 @@ func (l *workflowLogger) Run(ctx context.Context) {
 				case event := <-l.podWatch.ResultChan():
 					pod, ok := event.Object.(*corev1.Pod)
 					if !ok {
-						l.logCtx.Errorf("watch object was not a pod %v", event.Object.GetObjectKind())
+						l.logCtx.Errorf("watch object was not a pod %v", reflect.TypeOf(event.Object))
 						return
 					}
-					l.logCtx.WithFields(log.Fields{"eventType": event.Type, "podName": pod.GetName()}).Debug("Event")
-					// whenever a new pod appears, we start a goroutine to watch it
-					if pod.Status.Phase == corev1.PodRunning {
+					l.logCtx.WithFields(log.Fields{"eventType": event.Type, "podName": pod.GetName(), "phase": pod.Status.Phase}).Debug("Pod event")
+					switch pod.Status.Phase {
+					case corev1.PodRunning:
 						l.ensureWeAreStreaming(pod)
+					case corev1.PodSucceeded, corev1.PodFailed:
+						return
 					}
 				}
 			}

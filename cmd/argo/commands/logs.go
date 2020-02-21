@@ -26,21 +26,26 @@ func NewLogsCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "logs POD|WORKFLOW",
 		Short: "view logs of a pod or workflow",
-		Example: `# Follow the logs of a workflow:
+		Example: `# Print the logs of a workflow:
 
   argo logs my-wf
 
-# Follow the logs of single container in a pod
+# Follow the logs of a workflows:
+
+  argo logs my-wf --follow
+
+# Print the logs of single container in a pod
 
   argo logs my-wf my-pod -c my-container
 
-# Follow the logs of a workflow's pods:
+# Print the logs of a workflow's pods:
 
   argo logs my-wf my-pod
 
-# Follow the logs of a pods:
+# Print the logs of a pods:
 
   argo logs --since=1h my-pod
+
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 

@@ -96,20 +96,28 @@ func (s *CLISuite) TestTokenArg() {
 }
 
 func (s *CLISuite) TestLogs() {
-	s.Run("SetUp", func() {
+	s.Given().
+		Workflow(`@smoke/basic.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflowToStart(5*time.Second).
+		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.Nodes.FindByDisplayName("basic") != nil
+		}, "pod running", 10*time.Second)
+
+	s.Run("FollowWorkflowLogs", func() {
 		s.Given().
-			Workflow(`@smoke/basic.yaml`).
-			When().
-			SubmitWorkflow().
-			WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
-				return wf.Status.Nodes.FindByDisplayName("basic") != nil
-			}, "pod running", 10*time.Second)
+			RunCli([]string{"logs", "basic", "--follow"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, ":) Hello Argo!")
+				}
+			})
 	})
 	s.Run("FollowPodLogs", func() {
 		s.Given().
 			RunCli([]string{"logs", "basic", "basic", "--follow"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.Contains(t, output, ":) Hello Logs!")
+					assert.Contains(t, output, ":) Hello Argo!")
 				}
 			})
 	})
@@ -123,9 +131,9 @@ func (s *CLISuite) TestLogs() {
 	})
 	s.Run("Since", func() {
 		s.Given().
-			RunCli([]string{"logs", "basic", "--since=0s"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"logs", "basic", "--since=1s"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.NotContains(t, output, ":) Hello Logs!")
+					assert.NotContains(t, output, ":) Hello Argo!")
 				}
 			})
 	})
@@ -133,7 +141,7 @@ func (s *CLISuite) TestLogs() {
 		s.Given().
 			RunCli([]string{"logs", "basic", "--since-time=" + time.Now().Format(time.RFC3339)}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.NotContains(t, output, ":) Hello Logs!")
+					assert.NotContains(t, output, ":) Hello Argo!")
 				}
 			})
 	})
@@ -141,7 +149,7 @@ func (s *CLISuite) TestLogs() {
 		s.Given().
 			RunCli([]string{"logs", "basic", "--tail=0"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.NotContains(t, output, ":) Hello Logs!")
+					assert.NotContains(t, output, ":) Hello Argo!")
 				}
 			})
 	})
@@ -151,9 +159,9 @@ func (s *CLISuite) TestLogs() {
 			When().
 			WaitForWorkflow(10*time.Second).
 			Then().
-			RunCli([]string{"logs", "basic", "basic", "--tail=10"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"logs", "basic", "--tail=10"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.Contains(t, output, ":) Hello Logs!")
+					assert.Contains(t, output, ":) Hello Argo!")
 				}
 			})
 	})

@@ -78,10 +78,6 @@ build: status clis executor-image controller-image manifests/install.yaml manife
 status:
 	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE)
 
-.PHONY: vendor
-vendor: go.mod go.sum
-	go mod download
-
 # cli
 
 .PHONY: cli
@@ -114,22 +110,22 @@ server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/app
 	# Pack UI into a Go file.
 	staticfiles -o server/static/files.go ui/dist/app
 
-dist/argo: vendor server/static/files.go $(CLI_PKGS)
+dist/argo: server/static/files.go $(CLI_PKGS)
 	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
 
-dist/argo-linux-amd64: vendor server/static/files.go $(CLI_PKGS)
+dist/argo-linux-amd64: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-amd64 ./cmd/argo
 
-dist/argo-linux-ppc64le: vendor server/static/files.go $(CLI_PKGS)
+dist/argo-linux-ppc64le: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-ppc64le ./cmd/argo
 
-dist/argo-linux-s390x: vendor server/static/files.go $(CLI_PKGS)
+dist/argo-linux-s390x: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-s390x ./cmd/argo
 
-dist/argo-darwin-amd64: vendor server/static/files.go $(CLI_PKGS)
+dist/argo-darwin-amd64: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-darwin-amd64 ./cmd/argo
 
-dist/argo-windows-amd64: vendor server/static/files.go $(CLI_PKGS)
+dist/argo-windows-amd64: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-windows-amd64 ./cmd/argo
 
 .PHONY: cli-image
@@ -154,7 +150,7 @@ clis: dist/argo-linux-amd64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/a
 
 # controller
 
-dist/workflow-controller-linux-amd64: vendor $(CONTROLLER_PKGS)
+dist/workflow-controller-linux-amd64: $(CONTROLLER_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/workflow-controller-linux-amd64 ./cmd/workflow-controller
 
 .PHONY: controller-image
@@ -176,7 +172,7 @@ endif
 
 # argoexec
 
-dist/argoexec-linux-amd64: vendor $(ARGOEXEC_PKGS)
+dist/argoexec-linux-amd64: $(ARGOEXEC_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argoexec-linux-amd64 ./cmd/argoexec
 
 .PHONY: executor-image
@@ -244,7 +240,7 @@ ifeq ($(CI),false)
 endif
 
 .PHONY: test
-test: server/static/files.go vendor
+test: server/static/files.go
 	# Run unit tests
 ifeq ($(CI),false)
 	go test `go list ./... | grep -v 'test/e2e'`
