@@ -14,6 +14,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	apiv1 "k8s.io/api/core/v1"
+	apiError "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
@@ -258,6 +259,9 @@ func (as *argoServer) rsyncConfig() (*config.WorkflowControllerConfig, error) {
 	cm, err := as.kubeClientset.CoreV1().ConfigMaps(as.namespace).
 		Get(as.configName, metav1.GetOptions{})
 	if err != nil {
+		if apiError.IsNotFound(err) {
+			return &config.WorkflowControllerConfig{}, nil
+		}
 		return nil, errors.InternalWrapError(err)
 	}
 	return as.updateConfig(cm)
