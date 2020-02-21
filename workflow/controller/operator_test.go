@@ -828,7 +828,6 @@ func TestSequence(t *testing.T) {
 	assert.Equal(t, true, found101)
 }
 
-
 var inputParametersAsJson = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
