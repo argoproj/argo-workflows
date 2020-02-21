@@ -21,7 +21,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
-	policyv1 "k8s.io/api/policy/v1beta1"
+	policyv1beta "k8s.io/api/policy/v1beta1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -2216,7 +2216,7 @@ func (woc *wfOperationCtx) createPDBResource() error {
 		}
 	}
 
-	newPDB := policyv1.PodDisruptionBudget{
+	newPDB := policyv1beta.PodDisruptionBudget{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: woc.wf.Name,
 		},
