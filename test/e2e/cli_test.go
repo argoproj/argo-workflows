@@ -152,6 +152,37 @@ func (s *CLISuite) TestRoot() {
 			})
 	})
 }
+
+func (s *CLISuite) TestWorkflowSuspendResume() {
+	s.Given().
+		Workflow("@testdata/sleep-3s.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflowToStart(15*time.Second).
+		RunCli([]string{"suspend", "sleep-3s"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "workflow sleep-3s suspended")
+			}
+		}).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			if assert.Equal(t, wfv1.NodeRunning, status.Phase) {
+				assert.True(t, status.AnyActiveSuspendNode())
+			}
+		}).
+		When().
+		RunCli([]string{"resume", "sleep-3s"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "workflow sleep-3s resumed")
+			}
+		}).
+		WaitForWorkflow(15 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
 func (s *CLISuite) TestWorkflowDelete() {
 	s.Run("DeleteByName", func() {
 		s.Given().

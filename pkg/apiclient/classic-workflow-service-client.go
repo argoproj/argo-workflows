@@ -147,12 +147,22 @@ func (k *classicWorkflowServiceClient) ResubmitWorkflow(_ context.Context, req *
 	return created, nil
 }
 
-func (k *classicWorkflowServiceClient) ResumeWorkflow(_ context.Context, _ *workflowpkg.WorkflowResumeRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
-	panic("implement me")
+func (k *classicWorkflowServiceClient) ResumeWorkflow(_ context.Context, req *workflowpkg.WorkflowResumeRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+	workflowInterface := k.Interface.ArgoprojV1alpha1().Workflows(req.Namespace)
+	err := util.ResumeWorkflow(workflowInterface, req.Name)
+	if err != nil {
+		return nil, err
+	}
+	return workflowInterface.Get(req.Name, metav1.GetOptions{})
 }
 
-func (k *classicWorkflowServiceClient) SuspendWorkflow(_ context.Context, _ *workflowpkg.WorkflowSuspendRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
-	panic("implement me")
+func (k *classicWorkflowServiceClient) SuspendWorkflow(_ context.Context, req *workflowpkg.WorkflowSuspendRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+	workflowInterface := k.Interface.ArgoprojV1alpha1().Workflows(req.Namespace)
+	err := util.SuspendWorkflow(workflowInterface, req.Name)
+	if err != nil {
+		return nil, err
+	}
+	return workflowInterface.Get(req.Name, metav1.GetOptions{})
 }
 
 func (k *classicWorkflowServiceClient) TerminateWorkflow(_ context.Context, _ *workflowpkg.WorkflowTerminateRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
