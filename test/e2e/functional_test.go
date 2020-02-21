@@ -162,6 +162,17 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 		})
 }
 
+func (s *FunctionalSuite) TestDefaultPDB() {
+	s.Given().Workflow("@functional/default-pdb-support.yaml").When().SubmitWorkflow().Wait(10 * time.Second).
+		Then().ExpectWorkflow(func(t *testing.T, meta *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		pdb, _ := s.KubeClient.PolicyV1beta1().PodDisruptionBudgets("argo").Get(meta.Name+"-pdb", metav1.GetOptions{})
+		assert.NotNil(t, pdb)
+		time.Sleep(40 * time.Second)
+		pdb, err := s.KubeClient.PolicyV1beta1().PodDisruptionBudgets("argo").Get(meta.Name+"-pdb", metav1.GetOptions{})
+		assert.Equal(t, "", pdb.Name)
+		assert.NotNil(t, err)
+	})
+}
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }

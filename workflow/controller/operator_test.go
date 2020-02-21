@@ -2136,3 +2136,38 @@ func TestEventFailArtifactRepoCm(t *testing.T) {
 	assert.Equal(t, "WorkflowFailed", failEvent.Reason)
 	assert.Equal(t, "Failed to load artifact repository configMap: configmaps \"artifact-repository\" not found", failEvent.Message)
 }
+
+var pdbwf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: artifact-repo-config-ref
+spec:
+  entrypoint: whalesay
+  poddisruptionbudget: 
+    minavailable: 100%
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+`
+
+func TestPDBCreation(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(pdbwf)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	fmt.Println(woc.wf.Status.PDBResourceName)
+	assert.Equal(t, wf.Name+"-pdb", woc.wf.Status.PDBResourceName)
+	pdb, _ := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Status.PDBResourceName, metav1.GetOptions{})
+	assert.NotNil(t, pdb)
+	woc.markWorkflowSuccess()
+	woc.operate()
+	pdb, _ = controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Status.PDBResourceName, metav1.GetOptions{})
+	assert.Nil(t, pdb)
+}

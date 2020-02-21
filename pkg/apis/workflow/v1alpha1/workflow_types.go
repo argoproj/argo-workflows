@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	apiv1 "k8s.io/api/core/v1"
+	policyv1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -276,6 +277,12 @@ type WorkflowSpec struct {
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,27,opt,name=podSpecPatch"`
+
+	//PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.
+	//Controller will automatically add the selector with workflow name, if selector is empty
+	//Optional: Defaults to empty.
+	// +optional
+	PodDisruptionBudget *policyv1.PodDisruptionBudgetSpec `json:"podDisruptionBudget,omitempty" protobuf:"bytes,31,opt,name=podDisruptionBudget"`
 }
 
 type ParallelSteps struct {
@@ -818,6 +825,8 @@ type WorkflowStatus struct {
 
 	// Outputs captures output values and artifact locations produced by the workflow via global outputs
 	Outputs *Outputs `json:"outputs,omitempty" protobuf:"bytes,8,opt,name=outputs"`
+
+	PDBResourceName string `json:"pdbResourceName,omitempty" protobuf:"bytes,11,opt,name=pdbResourceName"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {

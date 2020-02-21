@@ -1702,6 +1702,10 @@
           "type": "integer",
           "format": "int64"
         },
+        "podDisruptionBudget": {
+          "description": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty Optional: Defaults to empty.",
+          "$ref": "#/definitions/io.k8s.api.policy.v1beta1.PodDisruptionBudgetSpec"
+        },
         "podGC": {
           "description": "PodGC describes the strategy to use when to deleting completed pods",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PodGC"
@@ -1817,6 +1821,9 @@
         "outputs": {
           "description": "Outputs captures output values and artifact locations produced by the workflow via global outputs",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
+        },
+        "pdbResourceName": {
+          "type": "string"
         },
         "persistentVolumeClaims": {
           "description": "PersistentVolumeClaims tracks all PVCs that were created as part of the workflow. The contents of this list are drained at the end of the workflow.",

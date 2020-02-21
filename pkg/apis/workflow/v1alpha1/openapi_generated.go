@@ -3229,12 +3229,18 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
+					"podDisruptionBudget": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty Optional: Defaults to empty.",
+							Ref:         ref("k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec"),
+						},
+					},
 				},
 				Required: []string{"templates", "entrypoint"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec"},
 	}
 }
 
@@ -3330,6 +3336,12 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 						SchemaProps: spec.SchemaProps{
 							Description: "Outputs captures output values and artifact locations produced by the workflow via global outputs",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs"),
+						},
+					},
+					"pdbResourceName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
 						},
 					},
 				},
