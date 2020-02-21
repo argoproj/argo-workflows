@@ -21,7 +21,7 @@ import (
 type argoKubeClient struct {
 }
 
-func newClassicClient(clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
+func newArgoKubeClient(clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
 	restConfig, err := clientConfig.ClientConfig()
 	if err != nil {
 		return nil, nil, err

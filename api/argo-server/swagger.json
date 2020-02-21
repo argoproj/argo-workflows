@@ -9,7 +9,7 @@
   "info": {
     "description": "Argo Server",
     "title": "Argo Server",
-    "version": "kube-client"
+    "version": "latest"
   },
   "paths": {
     "/api/v1/archived-workflows": {
