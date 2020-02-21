@@ -21,6 +21,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
+	policyv1 "k8s.io/api/policy/v1beta1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -166,6 +167,7 @@ func (woc *wfOperationCtx) operate() {
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == "" {
 		woc.markWorkflowRunning()
+		woc.createPDBResource()
 		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: argo.EventReasonWorkflowRunning}, "Workflow Running")
 		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.controller.GetContainerRuntimeExecutor()}
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
@@ -1422,6 +1424,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 				woc.wf.ObjectMeta.Labels = make(map[string]string)
 			}
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
+			woc.deletePDBResource()
 			err := woc.controller.wfArchive.ArchiveWorkflow(woc.wf)
 			if err != nil {
 				woc.log.WithField("err", err).Error("Failed to archive workflow")
@@ -2187,4 +2190,57 @@ func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID str
 		return true, onExitNode, err
 	}
 	return false, nil, nil
+}
+
+func (woc *wfOperationCtx) createPDBResource() {
+
+	if woc.wf.Spec.PodDisruptionBudget == nil {
+		return
+	}
+	if woc.wf.Status.PDBResourceName != "" {
+		return
+	}
+
+	PDBName := woc.wf.Name + "-pdb"
+
+	pdb, _ := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(PDBName, metav1.GetOptions{})
+	if pdb != nil && pdb.Name == PDBName {
+		return
+	}
+
+	if woc.wf.Spec.PodDisruptionBudget.Selector == nil {
+		woc.wf.Spec.PodDisruptionBudget.Selector = &metav1.LabelSelector{
+			MatchLabels: map[string]string{common.LabelKeyWorkflow: woc.wf.Name},
+		}
+	}
+
+	newPDB := policyv1.PodDisruptionBudget{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: woc.wf.Name + "-pdb",
+		},
+		Spec: *woc.wf.Spec.PodDisruptionBudget,
+	}
+	newPDB.SetLabels(make(map[string]string))
+	newPDB.Labels[common.LabelKeyWorkflow] = woc.wf.Name
+	newPDB.SetOwnerReferences(append(newPDB.GetOwnerReferences(), *metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))))
+	created, err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(&newPDB)
+	if err != nil {
+		woc.log.Errorf("Unable to create PDB resource for workflow, %s error: %s", woc.wf.Name, err)
+		return
+	}
+	woc.log.Infof("PDB resource %s created for workflow %s", created.Name, woc.wf.Name)
+	woc.wf.Status.PDBResourceName = created.Name
+	woc.updated = true
+}
+
+func (woc *wfOperationCtx) deletePDBResource() {
+	if woc.wf.Status.PDBResourceName == "" {
+		return
+	}
+	err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Status.PDBResourceName, &metav1.DeleteOptions{})
+	if err != nil {
+		woc.log.Errorf("Unable to delete PDB resource for workflow, %s error: %s", woc.wf.Name, err)
+		return
+	}
+	woc.log.Infof("PDB resource %s deleted for workflow %s", woc.wf.Status.PDBResourceName, woc.wf.Name)
 }

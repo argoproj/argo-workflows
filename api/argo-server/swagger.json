@@ -9,7 +9,7 @@
   "info": {
     "description": "Argo Server",
     "title": "Argo Server",
-    "version": "latest"
+    "version": "pdbdefault"
   },
   "paths": {
     "/api/v1/archived-workflows": {
@@ -5034,6 +5034,10 @@
           "format": "int64",
           "title": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow"
         },
+        "podDisruptionBudget": {
+          "title": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.\nController will automatically add the selector with workflow name, if selector is empty\nOptional: Defaults to empty.\n+optional",
+          "$ref": "#/definitions/v1beta1PodDisruptionBudgetSpec"
+        },
         "podGC": {
           "title": "PodGC describes the strategy to use when to deleting completed pods",
           "$ref": "#/definitions/v1alpha1PodGC"
@@ -5142,6 +5146,9 @@
         "outputs": {
           "title": "Outputs captures output values and artifact locations produced by the workflow via global outputs",
           "$ref": "#/definitions/v1alpha1Outputs"
+        },
+        "pdbResourceName": {
+          "type": "string"
         },
         "persistentVolumeClaims": {
           "description": "PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.\nThe contents of this list are drained at the end of the workflow.",
@@ -5257,6 +5264,24 @@
           "items": {
             "$ref": "#/definitions/v1alpha1Template"
           }
+        }
+      }
+    },
+    "v1beta1PodDisruptionBudgetSpec": {
+      "description": "PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.",
+      "type": "object",
+      "properties": {
+        "maxUnavailable": {
+          "title": "An eviction is allowed if at most \"maxUnavailable\" pods selected by\n\"selector\" are unavailable after the eviction, i.e. even in absence of\nthe evicted pod. For example, one can prevent all voluntary evictions\nby specifying 0. This is a mutually exclusive setting with \"minAvailable\".\n+optional",
+          "$ref": "#/definitions/intstrIntOrString"
+        },
+        "minAvailable": {
+          "title": "An eviction is allowed if at least \"minAvailable\" pods selected by\n\"selector\" will still be available after the eviction, i.e. even in the\nabsence of the evicted pod.  So for example you can prevent all voluntary\nevictions by specifying \"100%\".\n+optional",
+          "$ref": "#/definitions/intstrIntOrString"
+        },
+        "selector": {
+          "title": "Label query over pods whose evictions are managed by the disruption\nbudget.\n+optional",
+          "$ref": "#/definitions/v1LabelSelector"
         }
       }
     },
@@ -5515,32 +5540,6 @@
           "type": "string"
         }
       }
-    }
-  },
-  "x-stream-definitions": {
-    "workflowLogEntry": {
-      "properties": {
-        "error": {
-          "$ref": "#/definitions/runtimeStreamError"
-        },
-        "result": {
-          "$ref": "#/definitions/workflowLogEntry"
-        }
-      },
-      "title": "Stream result of workflowLogEntry",
-      "type": "object"
-    },
-    "workflowWorkflowWatchEvent": {
-      "properties": {
-        "error": {
-          "$ref": "#/definitions/runtimeStreamError"
-        },
-        "result": {
-          "$ref": "#/definitions/workflowWorkflowWatchEvent"
-        }
-      },
-      "title": "Stream result of workflowWorkflowWatchEvent",
-      "type": "object"
     }
   }
 }
