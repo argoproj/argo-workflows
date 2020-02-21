@@ -304,6 +304,19 @@ func (s *CLISuite) TestWorkflowWait() {
 		})
 }
 
+func (s *CLISuite) TestWorkflowWatch() {
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		Given().
+		RunCli([]string{"watch", "basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+			}
+		})
+}
+
 func (s *CLISuite) TestTemplate() {
 	s.Run("Lint", func() {
 		s.Given().RunCli([]string{"template", "lint", "smoke/workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
