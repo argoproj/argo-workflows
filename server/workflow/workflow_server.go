@@ -3,6 +3,7 @@ package workflow
 import (
 	"bufio"
 	"fmt"
+	"reflect"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -12,7 +13,6 @@ import (
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/util/watch"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/templateresolution"
@@ -129,8 +129,52 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 }
 
 func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, ws workflowpkg.WorkflowService_WatchWorkflowsServer) error {
-	watcher := watch.NewWorkflowWatcher(auth.GetWfClient(ws.Context()), s.offloadNodeStatusRepo)
-	return watcher.WatchWorkflows(ws.Context(), req.Namespace, req.ListOptions, ws)
+	ctx := ws.Context()
+	wfClient := auth.GetWfClient(ctx)
+	opts := req.ListOptions
+	if opts == nil {
+		opts = &metav1.ListOptions{}
+	}
+	watch, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Watch(*opts)
+	if err != nil {
+		return err
+	}
+	defer watch.Stop()
+
+	log.Debug("Piping events to channel")
+
+	for next := range watch.ResultChan() {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+		gvk := next.Object.GetObjectKind().GroupVersionKind().String()
+		logCtx := log.WithFields(log.Fields{"type": next.Type, "objectKind": gvk})
+		logCtx.Debug("Received event")
+		wf, ok := next.Object.(*v1alpha1.Workflow)
+		if !ok {
+			return fmt.Errorf("watch object was not a workflow %v", reflect.TypeOf(next.Object))
+		}
+		err := packer.DecompressWorkflow(wf)
+		if err != nil {
+			return err
+		}
+		if wf.Status.IsOffloadNodeStatus() && s.offloadNodeStatusRepo.IsEnabled() {
+			offloadedNodes, err := s.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+			if err != nil {
+				return err
+			}
+			wf.Status.Nodes = offloadedNodes
+		}
+		logCtx.Debug("Sending event")
+		err = ws.Send(&workflowpkg.WorkflowWatchEvent{Type: string(next.Type), Object: wf})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *workflowpkg.WorkflowDeleteRequest) (*workflowpkg.WorkflowDeleteResponse, error) {
