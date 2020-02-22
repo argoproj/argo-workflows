@@ -20,6 +20,6 @@ func NewClient(argoServer string, authSupplier func() string, clientConfig clien
 	if argoServer != "" {
 		return newArgoServerClient(argoServer, authSupplier())
 	} else {
-		return newClassicClient(clientConfig)
+		return newArgoKubeClient(clientConfig)
 	}
 }

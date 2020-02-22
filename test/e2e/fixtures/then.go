@@ -100,3 +100,17 @@ func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err
 	block(t.t, output, err)
 	return t
 }
+
+func (t *Then) When() *When {
+	return &When{
+		t:                     t.t,
+		diagnostics:           t.diagnostics,
+		client:                t.client,
+		cronClient:            t.cronClient,
+		offloadNodeStatusRepo: t.offloadNodeStatusRepo,
+		workflowName:          t.workflowName,
+		wfTemplateNames:       t.wfTemplateNames,
+		cronWorkflowName:      t.cronWorkflowName,
+		kubeClient:            t.kubeClient,
+	}
+}
