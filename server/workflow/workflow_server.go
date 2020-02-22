@@ -3,7 +3,6 @@ package workflow
 import (
 	"bufio"
 	"fmt"
-	"reflect"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -129,17 +128,17 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 }
 
 func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, ws workflowpkg.WorkflowService_WatchWorkflowsServer) error {
-	ctx := ws.Context()
-	wfClient := auth.GetWfClient(ctx)
-	opts := req.ListOptions
-	if opts == nil {
-		opts = &metav1.ListOptions{}
+	wfClient := auth.GetWfClient(ws.Context())
+	opts := metav1.ListOptions{}
+	if req.ListOptions != nil {
+		opts = *req.ListOptions
 	}
-	watch, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Watch(*opts)
+	watch, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Watch(opts)
 	if err != nil {
 		return err
 	}
 	defer watch.Stop()
+	ctx := ws.Context()
 
 	log.Debug("Piping events to channel")
 
@@ -154,7 +153,7 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 		logCtx.Debug("Received event")
 		wf, ok := next.Object.(*v1alpha1.Workflow)
 		if !ok {
-			return fmt.Errorf("watch object was not a workflow %v", reflect.TypeOf(next.Object))
+			return fmt.Errorf("watch object was not a workflow %v", gvk)
 		}
 		err := packer.DecompressWorkflow(wf)
 		if err != nil {
@@ -172,6 +171,7 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 		if err != nil {
 			return err
 		}
+
 	}
 
 	return nil
