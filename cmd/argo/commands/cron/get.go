@@ -7,11 +7,13 @@ import (
 	"os"
 	"strings"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	"github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -28,13 +30,18 @@ func NewGetCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			cronWfClient := InitCronWorkflowClient()
+
+			ctx, apiClient := client.NewAPIClient()
+			serviceClient := apiClient.NewCronWorkflowServiceClient()
+			namespace := client.Namespace()
+
 			for _, arg := range args {
-				wftmpl, err := cronWfClient.Get(arg, metav1.GetOptions{})
-				if err != nil {
-					log.Fatal(err)
-				}
-				printCronWorkflow(wftmpl, output)
+				cronWf, err := serviceClient.GetCronWorkflow(ctx, &cronworkflow.GetCronWorkflowRequest{
+					Name:       arg,
+					Namespace:  namespace,
+				})
+				errors.CheckError(err)
+				printCronWorkflow(cronWf, output)
 			}
 		},
 	}
@@ -54,13 +61,13 @@ func printCronWorkflow(wf *wfv1.CronWorkflow, outFmt string) {
 		outBytes, _ := yaml.Marshal(wf)
 		fmt.Print(string(outBytes))
 	case "wide", "":
-		printCronWorkflowTemplate(wf, outFmt)
+		printCronWorkflowTemplate(wf)
 	default:
 		log.Fatalf("Unknown output format: %s", outFmt)
 	}
 }
 
-func printCronWorkflowTemplate(wf *wfv1.CronWorkflow, outFmt string) {
+func printCronWorkflowTemplate(wf *wfv1.CronWorkflow) {
 	const fmtStr = "%-30s %v\n"
 	fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
 	fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)

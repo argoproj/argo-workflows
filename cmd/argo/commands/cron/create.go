@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	"github.com/argoproj/argo/workflow/templateresolution"
 
 	"github.com/argoproj/pkg/json"
@@ -48,7 +50,10 @@ func NewCreateCommand() *cobra.Command {
 }
 
 func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts *cronWorkflowSubmitOpts) {
-	defaultCronWfClient := InitCronWorkflowClient()
+
+	ctx, apiClient := client.NewAPIClient()
+	serviceClient := apiClient.NewCronWorkflowServiceClient()
+	namespace := client.Namespace()
 
 	fileContents, err := util.ReadManifest(filePaths...)
 	if err != nil {
@@ -73,15 +78,14 @@ func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts 
 		if err != nil {
 			log.Fatalf("Failed to validate cron workflow: %v", err)
 		}
-		cronWfClient := defaultCronWfClient
-		if cronWf.Namespace != "" {
-			cronWfClient = InitCronWorkflowClient(cronWf.Namespace)
-		}
-		created, err := cronWfClient.Create(&cronWf)
+		created, err := serviceClient.CreateCronWorkflow(ctx, &cronworkflowpkg.CreateCronWorkflowRequest{
+			Namespace:    namespace,
+			CronWorkflow: &cronWf,
+		})
 		if err != nil {
 			log.Fatalf("Failed to create workflow template: %v", err)
 		}
-		printCronWorkflowTemplate(created, cliOpts.output)
+		printCronWorkflowTemplate(created)
 	}
 }
 

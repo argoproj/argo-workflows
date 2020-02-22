@@ -1,14 +1,11 @@
 package cron
 
 import (
-	"fmt"
-	"log"
-	"os"
-
+	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 )
 
 // NewDeleteCommand returns a new instance of an `argo delete` command
@@ -18,42 +15,30 @@ func NewDeleteCommand() *cobra.Command {
 	)
 
 	var command = &cobra.Command{
-		Use:   "delete CRON_WORKFLOW",
+		Use:   "delete [CRON_WORKFLOW.. | --all]",
 		Short: "delete a cron workflow",
 		Run: func(cmd *cobra.Command, args []string) {
-			cronWfClient := InitCronWorkflowClient()
+			ctx, apiClient := client.NewAPIClient()
+			serviceClient := apiClient.NewCronWorkflowServiceClient()
 			if all {
-				deleteCronWorkflows(cronWfClient, metav1.ListOptions{})
-			} else {
-				if len(args) == 0 {
-					cmd.HelpFunc()(cmd, args)
-					os.Exit(1)
+				cronWfList, err := serviceClient.ListCronWorkflows(ctx, &cronworkflowpkg.ListCronWorkflowsRequest{
+					Namespace: client.Namespace(),
+				})
+				errors.CheckError(err)
+				for _, cronWf := range cronWfList.Items {
+					args = append(args, cronWf.Name)
 				}
-				for _, wftmplName := range args {
-					deleteCronWorkflow(cronWfClient, wftmplName)
-				}
+			}
+			for _, name := range args {
+				_, err := serviceClient.DeleteCronWorkflow(ctx, &cronworkflowpkg.DeleteCronWorkflowRequest{
+					Name:      name,
+					Namespace: client.Namespace(),
+				})
+				errors.CheckError(err)
 			}
 		},
 	}
 
 	command.Flags().BoolVar(&all, "all", false, "Delete all workflow templates")
 	return command
-}
-
-func deleteCronWorkflow(cronWfClient v1alpha1.CronWorkflowInterface, cronWf string) {
-	err := cronWfClient.Delete(cronWf, &metav1.DeleteOptions{})
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("CronWorkflow '%s' deleted\n", cronWf)
-}
-
-func deleteCronWorkflows(cronWfClient v1alpha1.CronWorkflowInterface, options metav1.ListOptions) {
-	cronWfList, err := cronWfClient.List(options)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, cronWf := range cronWfList.Items {
-		deleteCronWorkflow(cronWfClient, cronWf.ObjectMeta.Name)
-	}
 }
