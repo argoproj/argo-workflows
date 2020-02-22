@@ -99,6 +99,7 @@ func (s *CLISuite) TestRoot() {
 	s.Run("Submit", func() {
 		s.Given().RunCli([]string{"submit", "smoke/basic.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
 				assert.Contains(t, output, "ServiceAccount:")
 				assert.Contains(t, output, "Status:")
@@ -120,6 +121,7 @@ func (s *CLISuite) TestRoot() {
 	s.Run("Get", func() {
 		s.Given().RunCli([]string{"get", "basic"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
 				assert.Contains(t, output, "ServiceAccount:")
 				assert.Contains(t, output, "Status:")
@@ -149,6 +151,37 @@ func (s *CLISuite) TestRoot() {
 				assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 			})
 	})
+}
+
+func (s *CLISuite) TestWorkflowSuspendResume() {
+	// this test is flakey
+	s.T().SkipNow()
+	s.Given().
+		Workflow("@testdata/sleep-3s.yaml").
+		When().
+		SubmitWorkflow().
+		RunCli([]string{"suspend", "sleep-3s"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "workflow sleep-3s suspended")
+			}
+		}).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			if assert.Equal(t, wfv1.NodeRunning, status.Phase) {
+				assert.True(t, status.AnyActiveSuspendNode())
+			}
+		}).
+		When().
+		RunCli([]string{"resume", "sleep-3s"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "workflow sleep-3s resumed")
+			}
+		}).
+		WaitForWorkflow(15 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
 }
 
 func (s *CLISuite) TestWorkflowDelete() {
@@ -317,6 +350,24 @@ func (s *CLISuite) TestTemplate() {
 			assert.NoError(t, err)
 		})
 	})
+}
+
+func (s *CLISuite) TestWorkflowResubmit() {
+	s.Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(15*time.Second).
+		Given().
+		RunCli([]string{"resubmit", "--memoized", "exit-1"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "ServiceAccount:")
+				assert.Contains(t, output, "Status:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
 }
 
 func (s *CLISuite) TestCron() {
