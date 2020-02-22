@@ -9,7 +9,7 @@
   "info": {
     "description": "Argo Server",
     "title": "Argo Server",
-    "version": "cli-logs"
+    "version": "latest"
   },
   "paths": {
     "/api/v1/archived-workflows": {
@@ -5518,32 +5518,6 @@
           "type": "string"
         }
       }
-    }
-  },
-  "x-stream-definitions": {
-    "workflowLogEntry": {
-      "properties": {
-        "error": {
-          "$ref": "#/definitions/runtimeStreamError"
-        },
-        "result": {
-          "$ref": "#/definitions/workflowLogEntry"
-        }
-      },
-      "title": "Stream result of workflowLogEntry",
-      "type": "object"
-    },
-    "workflowWorkflowWatchEvent": {
-      "properties": {
-        "error": {
-          "$ref": "#/definitions/runtimeStreamError"
-        },
-        "result": {
-          "$ref": "#/definitions/workflowWorkflowWatchEvent"
-        }
-      },
-      "title": "Stream result of workflowWorkflowWatchEvent",
-      "type": "object"
     }
   }
 }
