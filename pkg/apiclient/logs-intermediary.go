@@ -10,9 +10,10 @@ import (
 )
 
 // The "Poison pill pattern" to tell the channel to close.
-var closeTheChan *workflowpkg.LogEntry
+var closeTheLogEntriesChan *workflowpkg.LogEntry
 
 type logsIntermediary struct {
+	ctx        context.Context
 	logEntries chan *workflowpkg.LogEntry
 }
 
@@ -23,14 +24,14 @@ func (c *logsIntermediary) Send(logEntry *workflowpkg.LogEntry) error {
 
 func (c *logsIntermediary) Recv() (*workflowpkg.LogEntry, error) {
 	logEntry := <-c.logEntries
-	if logEntry == closeTheChan {
+	if logEntry == closeTheLogEntriesChan {
 		return nil, io.EOF
 	}
 	return logEntry, nil
 }
 
-func newLogsIntermediary() *logsIntermediary {
-	return &logsIntermediary{make(chan *workflowpkg.LogEntry, 512)}
+func newLogsIntermediary(ctx context.Context) *logsIntermediary {
+	return &logsIntermediary{ctx, make(chan *workflowpkg.LogEntry, 512)}
 }
 
 func (c *logsIntermediary) SetHeader(metadata.MD) error {
@@ -54,12 +55,12 @@ func (c *logsIntermediary) Trailer() metadata.MD {
 }
 
 func (c *logsIntermediary) CloseSend() error {
-	c.logEntries <- closeTheChan
+	c.logEntries <- closeTheLogEntriesChan
 	return nil
 }
 
 func (c *logsIntermediary) Context() context.Context {
-	panic("implement me")
+	return c.ctx
 }
 
 func (c *logsIntermediary) SendMsg(interface{}) error {
