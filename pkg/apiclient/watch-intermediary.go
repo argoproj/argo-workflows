@@ -10,7 +10,7 @@ import (
 )
 
 // The "Poison pill pattern" to tell the channel to close.
-var closeTheChan *workflowpkg.WorkflowWatchEvent
+var closeTheWorkflowWatchEventChan *workflowpkg.WorkflowWatchEvent
 
 type watchIntermediary struct {
 	events chan *workflowpkg.WorkflowWatchEvent
@@ -27,7 +27,7 @@ func (c watchIntermediary) Send(e *workflowpkg.WorkflowWatchEvent) error {
 
 func (c watchIntermediary) Recv() (*workflowpkg.WorkflowWatchEvent, error) {
 	e := <-c.events
-	if e == closeTheChan {
+	if e == closeTheWorkflowWatchEventChan {
 		return nil, io.EOF
 	}
 	return e, nil
@@ -42,7 +42,7 @@ func (c watchIntermediary) Trailer() metadata.MD {
 }
 
 func (c watchIntermediary) CloseSend() error {
-	c.events <- closeTheChan
+	c.events <- closeTheWorkflowWatchEventChan
 	return nil
 }
 

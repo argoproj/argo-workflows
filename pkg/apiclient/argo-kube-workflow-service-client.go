@@ -7,6 +7,8 @@ import (
 
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/util/watch"
 )
 
 type argoKubeWorkflowServiceClient struct {
@@ -26,7 +28,13 @@ func (c argoKubeWorkflowServiceClient) ListWorkflows(ctx context.Context, req *w
 }
 
 func (c argoKubeWorkflowServiceClient) WatchWorkflows(ctx context.Context, req *workflowpkg.WatchWorkflowsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsClient, error) {
-	panic("not implemented")
+	watcher := watch.NewWorkflowWatcher(auth.GetWfClient(ctx), argoKubeOffloadNodeStatusRepo)
+	intermediary := newWatchIntermediary()
+	err := watcher.WatchWorkflows(ctx, req.Namespace, req.ListOptions, intermediary)
+	if err != nil {
+		return nil, err
+	}
+	return intermediary, nil
 }
 
 func (c argoKubeWorkflowServiceClient) DeleteWorkflow(ctx context.Context, req *workflowpkg.WorkflowDeleteRequest, _ ...grpc.CallOption) (*workflowpkg.WorkflowDeleteResponse, error) {
