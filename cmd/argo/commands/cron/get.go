@@ -23,7 +23,7 @@ func NewGetCommand() *cobra.Command {
 	)
 
 	var command = &cobra.Command{
-		Use:   "get CRON_WORKFLOW",
+		Use:   "get CRON_WORKFLOW...",
 		Short: "display details about a cron workflow",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
@@ -37,8 +37,8 @@ func NewGetCommand() *cobra.Command {
 
 			for _, arg := range args {
 				cronWf, err := serviceClient.GetCronWorkflow(ctx, &cronworkflow.GetCronWorkflowRequest{
-					Name:       arg,
-					Namespace:  namespace,
+					Name:      arg,
+					Namespace: namespace,
 				})
 				errors.CheckError(err)
 				printCronWorkflow(cronWf, output)

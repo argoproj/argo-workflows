@@ -7,6 +7,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
 
 	"github.com/spf13/cobra"
@@ -44,10 +45,7 @@ func NewListCommand() *cobra.Command {
 				Namespace:   namespace,
 				ListOptions: &listOpts,
 			})
-			if err != nil {
-				log.Fatal(err)
-			}
-
+			errors.CheckError(err)
 			switch listArgs.output {
 			case "", "wide":
 				printTable(cronWfList.Items, &listArgs)

@@ -4,17 +4,15 @@ import (
 	"log"
 	"os"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
-	"github.com/argoproj/argo/workflow/templateresolution"
-
 	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
+
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
-	"github.com/argoproj/argo/workflow/validate"
 )
 
 type cliCreateOpts struct {
@@ -72,12 +70,7 @@ func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts 
 	}
 
 	for _, cronWf := range cronWorkflows {
-		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wftmplClient)
 		applySubmitOpts(&cronWf, submitOpts)
-		err := validate.ValidateCronWorkflow(wftmplGetter, &cronWf)
-		if err != nil {
-			log.Fatalf("Failed to validate cron workflow: %v", err)
-		}
 		created, err := serviceClient.CreateCronWorkflow(ctx, &cronworkflowpkg.CreateCronWorkflowRequest{
 			Namespace:    namespace,
 			CronWorkflow: &cronWf,

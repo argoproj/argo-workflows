@@ -356,6 +356,19 @@ func (s *CLISuite) TestWorkflowResubmit() {
 }
 
 func (s *CLISuite) TestCron() {
+	s.Run("Lint", func() {
+		s.Given().RunCli([]string{"cron", "lint", "testdata/basic.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "Created:")
+				assert.Contains(t, output, "Schedule:")
+				assert.Contains(t, output, "Suspended:")
+				assert.Contains(t, output, "StartingDeadlineSeconds:")
+				assert.Contains(t, output, "ConcurrencyPolicy:")
+			}
+		})
+	})
 	s.Run("Create", func() {
 		s.Given().RunCli([]string{"cron", "create", "testdata/basic.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
@@ -377,6 +390,20 @@ func (s *CLISuite) TestCron() {
 				assert.Contains(t, output, "LAST RUN")
 				assert.Contains(t, output, "SCHEDULE")
 				assert.Contains(t, output, "SUSPENDED")
+			}
+		})
+	})
+	s.Run("Suspend", func() {
+		s.Given().RunCli([]string{"cron", "suspend", "basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "CronWorkflow 'basic' suspended")
+			}
+		})
+	})
+	s.Run("Resume", func() {
+		s.Given().RunCli([]string{"cron", "resume", "basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "CronWorkflow 'basic' resumed")
 			}
 		})
 	})
