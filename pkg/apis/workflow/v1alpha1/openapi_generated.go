@@ -466,6 +466,12 @@ func schema_pkg_apis_workflow_v1alpha1_Counter(ref common.ReferenceCallback) com
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
+					"increment": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"number"},
+							Format: "double",
+						},
+					},
 					"incrementOn": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
@@ -473,7 +479,7 @@ func schema_pkg_apis_workflow_v1alpha1_Counter(ref common.ReferenceCallback) com
 						},
 					},
 				},
-				Required: []string{"incrementOn"},
+				Required: []string{"increment", "incrementOn"},
 			},
 		},
 	}

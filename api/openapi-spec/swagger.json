@@ -218,9 +218,14 @@
     "io.argoproj.workflow.v1alpha1.Counter": {
       "type": "object",
       "required": [
+        "increment",
         "incrementOn"
       ],
       "properties": {
+        "increment": {
+          "type": "number",
+          "format": "double"
+        },
         "incrementOn": {
           "type": "string"
         }

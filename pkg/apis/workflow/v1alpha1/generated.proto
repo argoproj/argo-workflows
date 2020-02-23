@@ -131,7 +131,9 @@ message ContinueOn {
 }
 
 message Counter {
-  optional string incrementOn = 1;
+  optional double increment = 1;
+
+  optional string incrementOn = 2;
 }
 
 // CronWorkflow is the definition of a scheduled workflow resource

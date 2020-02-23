@@ -971,12 +971,12 @@ func (ws WorkflowStatus) Failed() bool {
 	return ws.Phase == NodeFailed
 }
 
-func (ws WorkflowStatus) StartTime() metav1.Time {
-	return ws.StartedAt
+func (ws WorkflowStatus) StartTime() *metav1.Time {
+	return &ws.StartedAt
 }
 
-func (ws WorkflowStatus) FinishTime() metav1.Time {
-	return ws.FinishedAt
+func (ws WorkflowStatus) FinishTime() *metav1.Time {
+	return &ws.FinishedAt
 }
 
 // Remove returns whether or not the node has completed execution
@@ -1001,12 +1001,12 @@ func (n NodeStatus) Failed() bool {
 	return !n.Successful()
 }
 
-func (n NodeStatus) StartTime() metav1.Time {
-	return n.StartedAt
+func (n NodeStatus) StartTime() *metav1.Time {
+	return &n.StartedAt
 }
 
-func (n NodeStatus) FinishTime() metav1.Time {
-	return n.FinishedAt
+func (n NodeStatus) FinishTime() *metav1.Time {
+	return &n.FinishedAt
 }
 
 // CanRetry returns whether the node should be retried or not.
@@ -1529,8 +1529,8 @@ type MetricsEmitter interface {
 	Completed() bool
 	Successful() bool
 	Failed() bool
-	StartTime() metav1.Time
-	FinishTime() metav1.Time
+	StartTime() *metav1.Time
+	FinishTime() *metav1.Time
 }
 
 type MetricType string
@@ -1538,7 +1538,7 @@ type MetricType string
 const (
 	MetricTypeGauge     MetricType = "Gauge"
 	MetricTypeHistogram MetricType = "Histogram"
-	MetricTypeCounter  MetricType = "Counter"
+	MetricTypeCounter   MetricType = "Counter"
 	MetricTypeUnknown   MetricType = "Unknown"
 )
 
@@ -1615,11 +1615,15 @@ type Histogram struct {
 type CounterTrigger string
 
 const (
-	CounterTriggerExecuted CounterTrigger = "Executed"
+	CounterTriggerExecution  CounterTrigger = "Execution"
+	CounterTriggerCompletion CounterTrigger = "Completion"
+	CounterTriggerFailure    CounterTrigger = "Failure"
+	CounterTriggerSuccess    CounterTrigger = "Success"
 )
 
 type Counter struct {
-	IncrementOn CounterTrigger `json:"incrementOn" protobuf:"bytes,1,opt,name=incrementOn,casttype=CounterTrigger"`
+	Increment   float64        `json:"increment" protobuf:"varint,1,opt,name=increment"`
+	IncrementOn CounterTrigger `json:"incrementOn" protobuf:"bytes,2,opt,name=incrementOn,casttype=CounterTrigger"`
 }
 
 type DurationType string

@@ -240,13 +240,13 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			// Emit metrics once step begins execution
 			if step.EmitMetrics != nil {
 				for _, metricSpec := range step.EmitMetrics.Metrics {
+					woc.log.Infof("SIMON Emit Starting for: %+v", childNode)
 					woc.computeMetric(metricSpec, childNode)
 				}
 			}
 		}
 	}
 
-	woc.log.Infof("SIMON -- here ")
 	node = woc.getNodeByName(sgNodeName)
 	// Return if not all children completed
 	completed := true
@@ -265,6 +265,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			// Emit metrics once step completes
 			if step.EmitMetrics != nil && (!hasOnExitNode || onExitNode.Completed()) {
 				for _, metricSpec := range step.EmitMetrics.Metrics {
+					woc.log.Infof("SIMON Emit Complete for: %+v", childNode)
 					woc.computeMetric(metricSpec, childNode)
 				}
 			}

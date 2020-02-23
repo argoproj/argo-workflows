@@ -2971,6 +2971,10 @@
     "v1alpha1Counter": {
       "type": "object",
       "properties": {
+        "increment": {
+          "type": "number",
+          "format": "double"
+        },
         "incrementOn": {
           "type": "string"
         }

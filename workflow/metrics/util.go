@@ -29,8 +29,49 @@ func ConstructOrUpdateMetric(metric prometheus.Metric, metricSpec *wfv1.Metric, 
 }
 
 func constructOrUpdateCounterMetric(metric prometheus.Metric, metricSpec *wfv1.Metric, emitter wfv1.MetricsEmitter) (prometheus.Metric, error) {
+	counterOpts := prometheus.CounterOpts{
+		Namespace:   argoNamespace,
+		Subsystem:   workflowsSubsystem,
+		Name:        metricSpec.Name,
+		Help:        metricSpec.Help,
+		ConstLabels: metricSpec.GetMetricLabels(),
+	}
+	if metric == nil {
+		metric = prometheus.NewCounter(counterOpts)
+	}
 
-	prometheus.NewCounter()
+	counter := metric.(prometheus.Counter)
+
+	fmt.Println("SIMON About to increment")
+	if metricSpec.Counter.IncrementOn != "" {
+		fmt.Println("SIMON In cond to increment")
+		switch metricSpec.Counter.IncrementOn {
+		case wfv1.CounterTriggerExecution:
+			fmt.Println("SIMON About to increment exec")
+			if !emitter.StartTime().IsZero() && !emitter.Completed() {
+				counter.Inc()
+			}
+		case wfv1.CounterTriggerCompletion:
+			fmt.Println("SIMON About to increment comp")
+			if emitter.Completed() {
+				counter.Inc()
+			}
+		case wfv1.CounterTriggerFailure:
+			fmt.Println("SIMON About to increment fail")
+			if emitter.Completed() && emitter.Failed() {
+				counter.Inc()
+			}
+		case wfv1.CounterTriggerSuccess:
+			if emitter.Completed() && emitter.Successful() {
+				counter.Inc()
+			}
+		}
+		return counter, nil
+	}
+
+	counter.Add(metricSpec.Counter.Increment)
+	return counter, nil
+
 }
 
 func constructOrUpdateGaugeMetric(metric prometheus.Metric, metricSpec *wfv1.Metric, emitter wfv1.MetricsEmitter) (prometheus.Metric, error) {
