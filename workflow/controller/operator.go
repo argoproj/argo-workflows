@@ -2204,8 +2204,10 @@ func (woc *wfOperationCtx) createPDBResource() error {
 		return nil
 	}
 
-	PDBName := woc.wf.Name
-	pdb, _ := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(PDBName, metav1.GetOptions{})
+	pdb, err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(woc.wf.Name, metav1.GetOptions{})
+	if err != nil && !apierr.IsNotFound(err){
+		return err
+	}
 	if pdb != nil && pdb.Name != "" {
 		return nil
 	}
@@ -2219,11 +2221,10 @@ func (woc *wfOperationCtx) createPDBResource() error {
 	newPDB := policyv1beta.PodDisruptionBudget{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: woc.wf.Name,
+			Labels: map[string]string{common.LabelKeyWorkflow : woc.wf.Name},
 		},
 		Spec: *woc.wf.Spec.PodDisruptionBudget,
 	}
-	newPDB.SetLabels(make(map[string]string))
-	newPDB.Labels[common.LabelKeyWorkflow] = woc.wf.Name
 	newPDB.SetOwnerReferences(append(newPDB.GetOwnerReferences(), *metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))))
 	created, err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(&newPDB)
 	if err != nil {
