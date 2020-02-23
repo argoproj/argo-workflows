@@ -2205,7 +2205,7 @@ func (woc *wfOperationCtx) createPDBResource() error {
 	}
 
 	pdb, err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(woc.wf.Name, metav1.GetOptions{})
-	if err != nil && !apierr.IsNotFound(err){
+	if err != nil && !apierr.IsNotFound(err) {
 		return err
 	}
 	if pdb != nil && pdb.Name != "" {
