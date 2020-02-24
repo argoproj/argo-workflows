@@ -118,6 +118,15 @@ func InitWorkflowClient(ns ...string) v1alpha1.WorkflowInterface {
 	return wfClient
 }
 
+func ansiColorCode(s string) int {
+	i := 0
+	for _, c := range s {
+		i += int(c)
+	}
+	colors := []int{FgRed, FgGreen, FgYellow, FgBlue, FgMagenta, FgCyan, FgWhite}
+	return colors[i%len(colors)]
+}
+
 // ansiFormat wraps ANSI escape codes to a string to format the string to a desired color.
 // NOTE: we still apply formatting even if there is no color formatting desired.
 // The purpose of doing this is because when we apply ANSI color escape sequences to our

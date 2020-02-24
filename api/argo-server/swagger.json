@@ -5308,6 +5308,9 @@
       "properties": {
         "content": {
           "type": "string"
+        },
+        "podName": {
+          "type": "string"
         }
       }
     },

@@ -86,6 +86,7 @@ message WorkflowWatchEvent {
 
 message LogEntry {
     string content = 1;
+    string podName = 2;
 }
 
 message WorkflowLintRequest {

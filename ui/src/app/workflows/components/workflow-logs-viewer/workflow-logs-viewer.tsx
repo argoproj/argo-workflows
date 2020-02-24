@@ -88,6 +88,9 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                         </div>
                     )}
                 </div>
+                <p>
+                    <i className='fa fa-info-circle' /> No data? Logs for deleted pods may be found in the artifacts tab.
+                </p>
             </div>
         );
     }
