@@ -199,7 +199,7 @@ endif
 # generation
 
 .PHONY: codegen
-codegen:
+codegen: vendor
 	# Generate code
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
@@ -225,6 +225,7 @@ verify-manifests: manifests
 
 # we use a different file to ./VERSION to force updating manifests after a `make clean`
 dist/MANIFESTS_VERSION:
+	mkdir -p dist
 	echo $(MANIFESTS_VERSION) > dist/MANIFESTS_VERSION
 
 manifests/install.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
@@ -435,10 +436,11 @@ clean:
 .PHONY: pre-commit
 pre-commit: test lint codegen manifests start pf-bg smoke test-api test-cli
 
-# release
+# release - targets only available on release branch
+ifneq ($(findstring release,$(GIT_BRANCH)),)
 
 .PHONY: prepare-release
-prepare-release: manifests codegen
+prepare-release: clean codegen manifests
 	# Commit if any changes
 	git diff --quiet || git commit -am "Update manifests to $(VERSION)"
 	git tag $(VERSION)
@@ -449,5 +451,6 @@ publish-release:
 	docker push $(IMAGE_NAMESPACE)/argocli:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
-	git push --follow-tags
-
+	git push
+	git push origin $(VERSION)
+endif
