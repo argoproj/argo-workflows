@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"context"
+	"io"
 
 	"google.golang.org/grpc"
 
@@ -32,6 +33,8 @@ func (c argoKubeWorkflowServiceClient) WatchWorkflows(ctx context.Context, req *
 		err := c.delegate.WatchWorkflows(req, intermediary)
 		if err != nil {
 			intermediary.error <- err
+		} else {
+			intermediary.error <- io.EOF
 		}
 	}()
 	return intermediary, nil

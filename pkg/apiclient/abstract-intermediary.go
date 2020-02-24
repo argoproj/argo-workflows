@@ -8,10 +8,11 @@ type abstractIntermediary struct {
 	panicIntermediary
 	ctx    context.Context
 	cancel context.CancelFunc
-	error  chan error
+	// if anything is on this channel, then then we must be done - the error maybe io.EOF - which just means stop
+	error chan error
 }
 
-func (w watchIntermediary) Context() context.Context {
+func (w abstractIntermediary) Context() context.Context {
 	return w.ctx
 }
 

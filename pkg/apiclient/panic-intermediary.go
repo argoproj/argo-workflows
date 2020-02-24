@@ -17,22 +17,22 @@ func (w abstractIntermediary) CloseSend() error {
 	panic("implement me")
 }
 
-func (w watchIntermediary) SendMsg(interface{}) error {
+func (w abstractIntermediary) SendMsg(interface{}) error {
 	panic("implement me")
 }
 
-func (w watchIntermediary) RecvMsg(interface{}) error {
+func (w abstractIntermediary) RecvMsg(interface{}) error {
 	panic("implement me")
 }
 
-func (w watchIntermediary) SetHeader(metadata.MD) error {
+func (w abstractIntermediary) SetHeader(metadata.MD) error {
 	panic("implement me")
 }
 
-func (w watchIntermediary) SendHeader(metadata.MD) error {
+func (w abstractIntermediary) SendHeader(metadata.MD) error {
 	panic("implement me")
 }
 
-func (w watchIntermediary) SetTrailer(metadata.MD) {
+func (w abstractIntermediary) SetTrailer(metadata.MD) {
 	panic("implement me")
 }
