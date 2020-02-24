@@ -7,15 +7,16 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
 
 	"github.com/spf13/cobra"
-	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
 
 type listFlags struct {
@@ -31,20 +32,20 @@ func NewListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "list cron workflows",
 		Run: func(cmd *cobra.Command, args []string) {
-			var cronWfClient v1alpha1.CronWorkflowInterface
+			ctx, apiClient := client.NewAPIClient()
+			serviceClient := apiClient.NewCronWorkflowServiceClient()
+			namespace := client.Namespace()
 			if listArgs.allNamespaces {
-				cronWfClient = InitCronWorkflowClient(apiv1.NamespaceAll)
-			} else {
-				cronWfClient = InitCronWorkflowClient()
+				namespace = ""
 			}
 			listOpts := metav1.ListOptions{}
 			labelSelector := labels.NewSelector()
 			listOpts.LabelSelector = labelSelector.String()
-			cronWfList, err := cronWfClient.List(listOpts)
-			if err != nil {
-				log.Fatal(err)
-			}
-
+			cronWfList, err := serviceClient.ListCronWorkflows(ctx, &cronworkflowpkg.ListCronWorkflowsRequest{
+				Namespace:   namespace,
+				ListOptions: &listOpts,
+			})
+			errors.CheckError(err)
 			switch listArgs.output {
 			case "", "wide":
 				printTable(cronWfList.Items, &listArgs)
@@ -65,13 +66,13 @@ func NewListCommand() *cobra.Command {
 func printTable(wfList []wfv1.CronWorkflow, listArgs *listFlags) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 	if listArgs.allNamespaces {
-		fmt.Fprint(w, "NAMESPACE\t")
+		_, _ = fmt.Fprint(w, "NAMESPACE\t")
 	}
-	fmt.Fprint(w, "NAME\tAGE\tLAST RUN\tSCHEDULE\tSUSPENDED")
-	fmt.Fprint(w, "\n")
+	_, _ = fmt.Fprint(w, "NAME\tAGE\tLAST RUN\tSCHEDULE\tSUSPENDED")
+	_, _ = fmt.Fprint(w, "\n")
 	for _, wf := range wfList {
 		if listArgs.allNamespaces {
-			fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Namespace)
+			_, _ = fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Namespace)
 		}
 		var cleanLastScheduledTime string
 		if wf.Status.LastScheduledTime != nil {
@@ -79,8 +80,8 @@ func printTable(wfList []wfv1.CronWorkflow, listArgs *listFlags) {
 		} else {
 			cleanLastScheduledTime = "N/A"
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%t", wf.ObjectMeta.Name, humanize.RelativeDurationShort(wf.ObjectMeta.CreationTimestamp.Time, time.Now()), cleanLastScheduledTime, wf.Spec.Schedule, wf.Spec.Suspend)
-		fmt.Fprintf(w, "\n")
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%t", wf.ObjectMeta.Name, humanize.RelativeDurationShort(wf.ObjectMeta.CreationTimestamp.Time, time.Now()), cleanLastScheduledTime, wf.Spec.Schedule, wf.Spec.Suspend)
+		_, _ = fmt.Fprintf(w, "\n")
 	}
 	_ = w.Flush()
 }
