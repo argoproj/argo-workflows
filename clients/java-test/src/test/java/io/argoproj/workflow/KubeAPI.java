@@ -1,11 +1,11 @@
-package io.argoproj.argo;
+package io.argoproj.workflow;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import io.argoproj.argo.models.Workflow;
+import io.argoproj.workflow.models.Workflow;
 import java.io.IOException;
 import okhttp3.Response;
 

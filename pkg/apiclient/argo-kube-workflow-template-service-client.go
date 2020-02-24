@@ -29,7 +29,7 @@ func (a argoKubeWorkflowTemplateServiceClient) UpdateWorkflowTemplate(ctx contex
 	return a.delegate.UpdateWorkflowTemplate(ctx, req)
 }
 
-func (a argoKubeWorkflowTemplateServiceClient) DeleteWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateDeleteRequest, _ ...grpc.CallOption) (*workflowtemplatepkg.WorkflowDeleteResponse, error) {
+func (a argoKubeWorkflowTemplateServiceClient) DeleteWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateDeleteRequest, _ ...grpc.CallOption) (*workflowtemplatepkg.WorkflowTemplateDeleteResponse, error) {
 	return a.delegate.DeleteWorkflowTemplate(ctx, req)
 }
 

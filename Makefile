@@ -81,7 +81,7 @@ E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
 # the sort puts _.primary first in the list
 SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json' | sort)
-JAVA_CLIENT_JAR  := $(HOME)/.m2/repository/io/argoproj/argo/argo-workflows-java-client/$(JAVA_CLIENT_VERSION)/argo-workflows-java-client-$(JAVA_CLIENT_VERSION).jar
+JAVA_CLIENT_JAR  := $(HOME)/.m2/repository/io/argoproj/workflow/argo-workflows-java-client/$(JAVA_CLIENT_VERSION)/argo-workflows-java-client-$(JAVA_CLIENT_VERSION).jar
 
 .PHONY: build
 build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml clients
@@ -454,7 +454,7 @@ test-clients: test-java-client
 # java client
 
 dist/java.swagger.json: api/openapi-spec/swagger.json
-	cat api/openapi-spec/swagger.json | sed 's/io.argoproj.argo.v1alpha1.//' > dist/java.swagger.json
+	cat api/openapi-spec/swagger.json | sed 's/io.argoproj.workflow.v1alpha1.//' > dist/java.swagger.json
 
 clients/java/pom.xml: dist/openapi-generator-cli.jar dist/java.swagger.json
 	rm -Rf clients/java
@@ -468,10 +468,10 @@ clients/java/pom.xml: dist/openapi-generator-cli.jar dist/java.swagger.json
 		-o clients/java \
 		-p hideGenerationTimestamp=true \
 		-p dateLibrary=joda \
-		--api-package io.argoproj.argo.apis \
-		--invoker-package io.argoproj.argo \
-		--model-package io.argoproj.argo.models \
-		--group-id io.argoproj.argo \
+		--api-package io.argoproj.workflow.apis \
+		--invoker-package io.argoproj.workflow \
+		--model-package io.argoproj.workflow.models \
+		--group-id io.argoproj.workflow \
 		--artifact-id argo-workflows-java-client \
 		--artifact-version $(JAVA_CLIENT_VERSION) \
 		--import-mappings io.k8s.api.core.v1.Time=org.joda.time.DateTime \

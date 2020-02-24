@@ -200,7 +200,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/workflowtemplate.WorkflowDeleteResponse"
+              "$ref": "#/definitions/workflowtemplate.WorkflowTemplateDeleteResponse"
             }
           }
         },
@@ -3595,9 +3595,6 @@
       "description": "+protobuf=true\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:openapi-gen=true",
       "title": "IntOrString is a type that can hold an int32 or a string.  When used in\nJSON or YAML marshalling and unmarshalling, it produces or consumes the\ninner type.  This allows you to have, for example, a JSON field that can\naccept a name or number.\nTODO: Rename to Int32OrString"
     },
-    "workflowtemplate.WorkflowDeleteResponse": {
-      "type": "object"
-    },
     "workflowtemplate.WorkflowTemplateCreateRequest": {
       "type": "object",
       "properties": {
@@ -3611,6 +3608,9 @@
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions"
         }
       }
+    },
+    "workflowtemplate.WorkflowTemplateDeleteResponse": {
+      "type": "object"
     },
     "workflowtemplate.WorkflowTemplateLintRequest": {
       "type": "object",

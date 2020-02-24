@@ -1,10 +1,10 @@
-package io.argoproj.argo;
+package io.argoproj.workflow;
 
 import static org.junit.Assert.assertNotNull;
 
-import io.argoproj.argo.models.Template;
-import io.argoproj.argo.models.Workflow;
-import io.argoproj.argo.models.WorkflowSpec;
+import io.argoproj.workflow.models.Template;
+import io.argoproj.workflow.models.Workflow;
+import io.argoproj.workflow.models.WorkflowSpec;
 import io.kubernetes.client.models.V1Container;
 import io.kubernetes.client.models.V1ObjectMeta;
 import java.util.ArrayList;

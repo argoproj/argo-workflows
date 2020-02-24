@@ -1,8 +1,8 @@
-package io.argoproj.argo;
+package io.argoproj.workflow;
 
-import io.argoproj.argo.apis.WorkflowServiceApi;
-import io.argoproj.argo.models.Workflow;
-import io.argoproj.argo.models.WorkflowCreateRequest;
+import io.argoproj.workflow.apis.WorkflowServiceApi;
+import io.argoproj.workflow.models.Workflow;
+import io.argoproj.workflow.models.WorkflowCreateRequest;
 
 public class ArgoServerAPI {
   /*
