@@ -91,7 +91,11 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                 {this.state.lines.length === 0 && (
                     <p>
                         Still waiting for data or an error? Try getting{' '}
-                        <a href={services.workflows.getMainLogsUrl(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived)}> logs from the artifacts</a>.
+                        <a href={services.workflows.getArtifactLogsUrl(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived)}>
+                            {' '}
+                            logs from the artifacts
+                        </a>
+                        .
                     </p>
                 )}
             </div>

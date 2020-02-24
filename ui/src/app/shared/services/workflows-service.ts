@@ -57,7 +57,7 @@ export class WorkflowsService {
         // but if that fails, then we try and get them from the artifacts
         const logsFromArtifacts: Observable<string> = Observable.create((observer: Observer<string>) => {
             requests
-                .get(this.getMainLogsUrl(workflow, nodeId, container, archived))
+                .get(this.getArtifactLogsUrl(workflow, nodeId, container, archived))
                 .then(resp => {
                     resp.text.split('\n').forEach(line => observer.next(line));
                 })
@@ -76,7 +76,7 @@ export class WorkflowsService {
             );
     }
 
-    public getMainLogsUrl(workflow: Workflow, nodeId: string, container: string, archived: boolean) {
+    public getArtifactLogsUrl(workflow: Workflow, nodeId: string, container: string, archived: boolean) {
         return this.getArtifactDownloadUrl(workflow, nodeId, container + '-logs', archived);
     }
 
