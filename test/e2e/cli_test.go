@@ -292,6 +292,21 @@ func (s *CLISuite) TestWorkflowLint() {
 	})
 }
 
+func (s *CLISuite) TestWorkflowRetry() {
+	s.Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(15*time.Second).
+		Given().
+		RunCli([]string{"retry", "exit-1"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+			}
+		})
+}
+
 func (s *CLISuite) TestTemplate() {
 	s.Run("Lint", func() {
 		s.Given().RunCli([]string{"template", "lint", "smoke/workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
