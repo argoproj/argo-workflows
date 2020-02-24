@@ -220,6 +220,12 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			continue
 		}
 
+		// Infer if this is the first time this node gets executed, so that we can emit execution metrics once
+		firstTimeExecution := false
+		if woc.getNodeByName(childNodeName) == nil {
+			firstTimeExecution = true
+		}
+
 		childNode, err := woc.executeTemplate(childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, stepsCtx.boundaryID)
 		if err != nil {
 			switch err {
@@ -238,7 +244,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			woc.addChildNode(sgNodeName, childNodeName)
 
 			// Emit metrics once step begins execution
-			if step.EmitMetrics != nil {
+			if firstTimeExecution && step.EmitMetrics != nil {
 				for _, metricSpec := range step.EmitMetrics.Metrics {
 					woc.log.Infof("SIMON Emit Starting for: %+v", childNode)
 					woc.computeMetric(metricSpec, childNode)
@@ -262,17 +268,35 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 				completed = false
 			}
 
-			// Emit metrics once step completes
-			if step.EmitMetrics != nil && (!hasOnExitNode || onExitNode.Completed()) {
-				for _, metricSpec := range step.EmitMetrics.Metrics {
-					woc.log.Infof("SIMON Emit Complete for: %+v", childNode)
-					woc.computeMetric(metricSpec, childNode)
-				}
-			}
+			// Reference 1 (see below)
 		}
 	}
 	if !completed {
 		return node
+	}
+
+	// Emit metrics once step completes
+	//
+	// Completion metrics are reported once all steps in a step group complete. Ideally, we would want to report
+	// metrics as soon as an individual step completes, the place to do so would be "Reference 1" above. However,
+	// computing metrics there presents the challenge of ensuring that completion metrics are only computed once. There
+	// is no guarantee of the number of times code in "Reference 1" will be executed. If there are multiple steps in the
+	// step group (which is a common case), "Reference 1" will be executed once every time each step completes. In order
+	// for us to be able to compute metrics there, we would have to either (a) guarantee that metric computation is
+	// idempotent (which, given the presence of "Counter" metrics is not feasible), or (b) store which step's metrics
+	// have already been computed. The challenge with (b) is that there is not obvious place to store that information.
+	// If (i) stored in memory, the information would be deleted on controller restart; if (ii) stored in the workflow it
+	// would allow for transfer the source of truth of metrics emission to the workflow object.
+	// TODO: Find a solution to this
+	for _, childNodeID := range node.Children {
+		childNode := woc.wf.Status.Nodes[childNodeID]
+		step := nodeSteps[childNode.Name]
+		if step.EmitMetrics != nil {
+			for _, metricSpec := range step.EmitMetrics.Metrics {
+				woc.log.Infof("SIMON Emit Complete for: %+v", childNode)
+				woc.computeMetric(metricSpec, childNode)
+			}
+		}
 	}
 
 	// All children completed. Determine step group status as a whole
