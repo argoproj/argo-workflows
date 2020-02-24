@@ -234,6 +234,38 @@
         }
       }
     },
+    "/api/v1/cron-workflows/{namespace}/lint": {
+      "post": {
+        "tags": [
+          "CronWorkflowService"
+        ],
+        "operationId": "LintCronWorkflow",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/cronworkflowLintCronWorkflowRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1CronWorkflow"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/cron-workflows/{namespace}/{name}": {
       "get": {
         "tags": [
@@ -1312,6 +1344,17 @@
     },
     "cronworkflowCronWorkflowDeletedResponse": {
       "type": "object"
+    },
+    "cronworkflowLintCronWorkflowRequest": {
+      "type": "object",
+      "properties": {
+        "cronWorkflow": {
+          "$ref": "#/definitions/v1alpha1CronWorkflow"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      }
     },
     "cronworkflowUpdateCronWorkflowRequest": {
       "type": "object",
@@ -5518,6 +5561,32 @@
           "type": "string"
         }
       }
+    }
+  },
+  "x-stream-definitions": {
+    "workflowLogEntry": {
+      "properties": {
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        },
+        "result": {
+          "$ref": "#/definitions/workflowLogEntry"
+        }
+      },
+      "title": "Stream result of workflowLogEntry",
+      "type": "object"
+    },
+    "workflowWorkflowWatchEvent": {
+      "properties": {
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        },
+        "result": {
+          "$ref": "#/definitions/workflowWorkflowWatchEvent"
+        }
+      },
+      "title": "Stream result of workflowWorkflowWatchEvent",
+      "type": "object"
     }
   }
 }
