@@ -1,10 +1,7 @@
 package cron
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 func NewCronWorkflowCommand() *cobra.Command {
@@ -24,17 +21,5 @@ func NewCronWorkflowCommand() *cobra.Command {
 	command.AddCommand(NewSuspendCommand())
 	command.AddCommand(NewResumeCommand())
 
-	addKubectlFlagsToCmd(command)
 	return command
-}
-
-func addKubectlFlagsToCmd(cmd *cobra.Command) {
-	// The "usual" clientcmd/kubectl flags
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-	overrides := clientcmd.ConfigOverrides{}
-	kflags := clientcmd.RecommendedConfigOverrideFlags("")
-	cmd.PersistentFlags().StringVar(&loadingRules.ExplicitPath, "kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
-	clientcmd.BindOverrideFlags(&overrides, cmd.PersistentFlags(), kflags)
-	clientConfig = clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
 }

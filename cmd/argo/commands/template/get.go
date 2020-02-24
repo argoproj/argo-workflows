@@ -4,10 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/pkg/humanize"
@@ -23,40 +21,21 @@ func NewGetCommand() *cobra.Command {
 	)
 
 	var command = &cobra.Command{
-		Use:   "get WORKFLOW_TEMPLATE",
+		Use:   "get WORKFLOW_TEMPLATE...",
 		Short: "display details about a workflow template",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
-			var wftmpl *wfv1.WorkflowTemplate
-			var err error
-			if client.ArgoServer != "" {
-				conn := client.GetClientConn()
-				defer conn.Close()
-				ns, _, _ := client.Config.Namespace()
-				wftmplApiClient, ctx := GetWFtmplApiServerGRPCClient(conn)
-				for _, arg := range args {
-					wfTempReq := workflowtemplatepkg.WorkflowTemplateGetRequest{
-						Name:      arg,
-						Namespace: ns,
-					}
-					wftmpl, err = wftmplApiClient.GetWorkflowTemplate(ctx, &wfTempReq)
-					if err != nil {
-						log.Fatal(err)
-					}
-					printWorkflowTemplate(wftmpl, output)
+			ctx, apiClient := client.NewAPIClient()
+			serviceClient := apiClient.NewWorkflowTemplateServiceClient()
+			namespace := client.Namespace()
+			for _, name := range args {
+				wftmpl, err := serviceClient.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{
+					Name:      name,
+					Namespace: namespace,
+				})
+				if err != nil {
+					log.Fatal(err)
 				}
-			} else {
-				wftmplClient := InitWorkflowTemplateClient()
-				for _, arg := range args {
-					wftmpl, err = wftmplClient.Get(arg, metav1.GetOptions{})
-					if err != nil {
-						log.Fatal(err)
-					}
-					printWorkflowTemplate(wftmpl, output)
-				}
+				printWorkflowTemplate(wftmpl, output)
 			}
 		},
 	}
@@ -76,13 +55,13 @@ func printWorkflowTemplate(wf *wfv1.WorkflowTemplate, outFmt string) {
 		outBytes, _ := yaml.Marshal(wf)
 		fmt.Print(string(outBytes))
 	case "wide", "":
-		printWorkflowTemplateHelper(wf, outFmt)
+		printWorkflowTemplateHelper(wf)
 	default:
 		log.Fatalf("Unknown output format: %s", outFmt)
 	}
 }
 
-func printWorkflowTemplateHelper(wf *wfv1.WorkflowTemplate, outFmt string) {
+func printWorkflowTemplateHelper(wf *wfv1.WorkflowTemplate) {
 	const fmtStr = "%-20s %v\n"
 	fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
 	fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)

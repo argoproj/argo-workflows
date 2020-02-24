@@ -9,6 +9,7 @@ import (
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
+	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 )
 
 type argoServerClient struct {
@@ -29,6 +30,10 @@ func (a *argoServerClient) NewWorkflowServiceClient() workflowpkg.WorkflowServic
 
 func (a *argoServerClient) NewCronWorkflowServiceClient() cronworkflowpkg.CronWorkflowServiceClient {
 	return cronworkflowpkg.NewCronWorkflowServiceClient(a.ClientConn)
+}
+
+func (a *argoServerClient) NewWorkflowTemplateServiceClient() workflowtemplatepkg.WorkflowTemplateServiceClient {
+	return workflowtemplatepkg.NewWorkflowTemplateServiceClient(a.ClientConn)
 }
 
 func (a *argoServerClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {
