@@ -446,7 +446,7 @@ prepare-release: clean codegen manifests
 	git tag $(VERSION)
 
 .PHONY: publish-release
-publish-release:
+publish-release: build
 	# Push images to Docker Hub
 	docker push $(IMAGE_NAMESPACE)/argocli:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
