@@ -178,6 +178,20 @@ func (s *FunctionalSuite) TestLoopEmptyParam() {
 		})
 }
 
+func (s *FunctionalSuite) TestparameterAggregation() {
+	s.Given().
+		Workflow("@functional/param-aggregation.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(60 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			nodeStatus := status.Nodes.FindByDisplayName("print(0:1)")
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+		})
+}
+
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }
