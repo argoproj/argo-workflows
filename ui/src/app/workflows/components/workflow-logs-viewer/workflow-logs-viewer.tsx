@@ -55,32 +55,30 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                 <h3>Logs</h3>
                 {this.props.archived && (
                     <p>
-                        <i className='fa fa-exclamation-triangle'/> Logs for archived workflows maybe overwritten by a
-                        more recent workflow with the same name.
+                        <i className='fa fa-exclamation-triangle' /> Logs for archived workflows maybe overwritten by a more recent workflow with the same name.
                     </p>
                 )}
                 <p>
-                    <i className='fa fa-box'/> {this.props.nodeId}/{this.props.container}
+                    <i className='fa fa-box' /> {this.props.nodeId}/{this.props.container}
                     {this.state.lines.length > 0 && <small className='muted'> {this.state.lines.length} line(s)</small>}
                 </p>
                 <div className='white-box'>
                     {this.state.error && (
                         <p>
-                            <i className='fa fa-exclamation-triangle status-icon--failed'/> Failed to load
-                            logs: {this.state.error.message}
+                            <i className='fa fa-exclamation-triangle status-icon--failed' /> Failed to load logs: {this.state.error.message}
                         </p>
                     )}
                     {!this.state.error && this.state.lines.length === 0 && (
                         <p>
-                            <i className='fa fa-circle-notch fa-spin'/> Waiting for data...
+                            <i className='fa fa-circle-notch fa-spin' /> Waiting for data...
                         </p>
                     )}
                     {this.state.lines.length > 0 && (
                         <div className='log-box'>
-                            <i className='fa fa-chevron-down'/>
-                            <br/>
+                            <i className='fa fa-chevron-down' />
+                            <br />
                             {this.state.lines.join('\n\r')}
-                            <br/>
+                            <br />
                             <i
                                 className='fa fa-chevron-up'
                                 ref={el => {
@@ -92,7 +90,8 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                 </div>
                 {this.state.lines.length === 0 && (
                     <p>
-                        Still waiting for data or an error? Try getting <a href={services.workflows.getMainLogsUrl(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived)}> logs from the artifacts</a>.
+                        Still waiting for data or an error? Try getting{' '}
+                        <a href={services.workflows.getMainLogsUrl(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived)}> logs from the artifacts</a>.
                     </p>
                 )}
             </div>
