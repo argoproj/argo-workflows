@@ -3362,10 +3362,6 @@
           "type": "string",
           "description": "Template is the name of the template which is used as the base of this template."
         },
-        "arguments": {
-          "$ref": "#/definitions/v1alpha1Arguments",
-          "description": "Arguments hold arguments to the template."
-        },
         "templateRef": {
           "$ref": "#/definitions/v1alpha1TemplateRef",
           "description": "TemplateRef is the reference to the template resource which is used as the base of this template."

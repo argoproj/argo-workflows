@@ -338,9 +338,6 @@ type Template struct {
 	// Template is the name of the template which is used as the base of this template.
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
-	// Arguments hold arguments to the template.
-	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
-
 	// TemplateRef is the reference to the template resource which is used as the base of this template.
 	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,4,opt,name=templateRef"`
 
@@ -781,6 +778,15 @@ func (n Nodes) FindByDisplayName(name string) *NodeStatus {
 	return nil
 }
 
+func (in Nodes) Any(f func(node NodeStatus) bool) bool {
+	for _, i := range in {
+		if f(i) {
+			return true
+		}
+	}
+	return false
+}
+
 // UserContainer is a container specified by a user.
 type UserContainer struct {
 	apiv1.Container `json:",inline" protobuf:"bytes,1,opt,name=container"`
@@ -984,6 +990,10 @@ func (n NodeStatus) Completed() bool {
 	return isCompletedPhase(n.Phase) || n.IsDaemoned() && n.Phase != NodePending
 }
 
+func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
+	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
+}
+
 // IsDaemoned returns whether or not the node is deamoned
 func (n NodeStatus) IsDaemoned() bool {
 	if n.Daemoned == nil || !*n.Daemoned {
@@ -1027,6 +1037,11 @@ func (n *NodeStatus) GetTemplateRef() *TemplateRef {
 
 func (n *NodeStatus) IsResolvable() bool {
 	return true
+}
+
+// IsActiveSuspendNode returns whether this node is an active suspend node
+func (n *NodeStatus) IsActiveSuspendNode() bool {
+	return n.Type == NodeTypeSuspend && n.Phase == NodeRunning
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket
