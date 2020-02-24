@@ -292,6 +292,21 @@ func (s *CLISuite) TestWorkflowLint() {
 	})
 }
 
+func (s *CLISuite) TestWorkflowRetry() {
+	s.Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(15*time.Second).
+		Given().
+		RunCli([]string{"retry", "exit-1"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+			}
+		})
+}
+
 func (s *CLISuite) TestWorkflowWait() {
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -382,6 +397,14 @@ func (s *CLISuite) TestWorkflowResubmit() {
 }
 
 func (s *CLISuite) TestCron() {
+	s.Run("Lint", func() {
+		s.Given().RunCli([]string{"cron", "lint", "testdata/basic.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "testdata/basic.yaml is valid")
+				assert.Contains(t, output, "Cron workflow manifests validated")
+			}
+		})
+	})
 	s.Run("Create", func() {
 		s.Given().RunCli([]string{"cron", "create", "testdata/basic.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
@@ -406,10 +429,26 @@ func (s *CLISuite) TestCron() {
 			}
 		})
 	})
+	s.Run("Suspend", func() {
+		s.Given().RunCli([]string{"cron", "suspend", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "CronWorkflow 'test-cron-wf-basic' suspended")
+			}
+		})
+	})
+	s.Run("Resume", func() {
+		s.Given().RunCli([]string{"cron", "resume", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "CronWorkflow 'test-cron-wf-basic' resumed")
+			}
+		})
+	})
 	s.Run("Get", func() {
 		s.Given().RunCli([]string{"cron", "get", "not-found"}, func(t *testing.T, output string, err error) {
-			assert.Error(t, err, "exit status 1")
-			assert.Contains(t, output, `"not-found" not found`)
+			if assert.Error(t, err, "exit status 1") {
+				assert.Contains(t, output, `\"not-found\" not found`)
+
+			}
 		}).RunCli([]string{"cron", "get", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
