@@ -5,12 +5,11 @@ import (
 	"sort"
 	"time"
 
-	"k8s.io/apimachinery/pkg/types"
-
 	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
-	v12 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
@@ -77,10 +76,10 @@ func (woc *cronWfOperationCtx) Run() {
 	}
 }
 
-func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow) v12.ObjectReference {
+func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow) corev1.ObjectReference {
 	// This is a bit of a hack. Ideally we'd use ref.GetReference, but for some reason the `runWf` object is coming back
 	// without `Kind` and `APIVersion` set (even though it it set on `wf`). To fix this, we hard code those values.
-	return v12.ObjectReference{
+	return corev1.ObjectReference{
 		Kind:            wf.Kind,
 		APIVersion:      wf.APIVersion,
 		Name:            runWf.GetName(),
@@ -201,7 +200,7 @@ func (woc *cronWfOperationCtx) removeActiveWf(wf *v1alpha1.Workflow) {
 }
 
 func (woc *cronWfOperationCtx) removeFromActiveList(uid types.UID) {
-	var newActive []v12.ObjectReference
+	var newActive []corev1.ObjectReference
 	for _, ref := range woc.cronWf.Status.Active {
 		if ref.UID != uid {
 			newActive = append(newActive, ref)
