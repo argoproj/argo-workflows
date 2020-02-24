@@ -187,7 +187,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	}
 
 	// Next, expand the step's withItems (if any)
-	stepGroup, err = woc.expandStepGroup(stepGroup)
+	stepGroup, err = woc.expandStepGroup(sgNodeName, stepGroup, stepsCtx)
 	if err != nil {
 		return woc.markNodeError(sgNodeName, err)
 	}
@@ -364,7 +364,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 }
 
 // expandStepGroup looks at each step in a collection of parallel steps, and expands all steps using withItems/withParam
-func (woc *wfOperationCtx) expandStepGroup(stepGroup []wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
+func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.WorkflowStep, stepsCtx *stepsContext) ([]wfv1.WorkflowStep, error) {
 	newStepGroup := make([]wfv1.WorkflowStep, 0)
 	for _, step := range stepGroup {
 		if len(step.WithItems) == 0 && step.WithParam == "" && step.WithSequence == nil {
@@ -374,6 +374,17 @@ func (woc *wfOperationCtx) expandStepGroup(stepGroup []wfv1.WorkflowStep) ([]wfv
 		expandedStep, err := woc.expandStep(step)
 		if err != nil {
 			return nil, err
+		}
+		if len(expandedStep) == 0 {
+			// Empty list
+			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
+			if woc.getNodeByName(childNodeName) == nil {
+				stepTemplateScope := stepsCtx.tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+				skipReason := fmt.Sprint("Skipped, empty params")
+				woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
+				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+				woc.addChildNode(sgNodeName, childNodeName)
+			}
 		}
 		newStepGroup = append(newStepGroup, expandedStep...)
 	}
