@@ -2220,8 +2220,8 @@ func (woc *wfOperationCtx) createPDBResource() error {
 
 	newPDB := policyv1beta.PodDisruptionBudget{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: woc.wf.Name,
-			Labels: map[string]string{common.LabelKeyWorkflow : woc.wf.Name},
+			Name:   woc.wf.Name,
+			Labels: map[string]string{common.LabelKeyWorkflow: woc.wf.Name},
 		},
 		Spec: *woc.wf.Spec.PodDisruptionBudget,
 	}
