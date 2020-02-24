@@ -132,7 +132,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1alpha1CronWorkflow"
+              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.CronWorkflow"
             }
           }
         },
@@ -148,7 +148,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/cronworkflowLintCronWorkflowRequest"
+              "$ref": "#/definitions/cronworkflow.LintCronWorkflowRequest"
             }
           }
         ],
@@ -325,18 +325,17 @@
     "cronworkflow.CronWorkflowDeletedResponse": {
       "type": "object"
     },
-    "cronworkflowLintCronWorkflowRequest": {
+    "cronworkflow.LintCronWorkflowRequest": {
       "type": "object",
       "properties": {
         "namespace": {
           "type": "string"
         },
         "cronWorkflow": {
-          "$ref": "#/definitions/v1alpha1CronWorkflow"
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.CronWorkflow"
         }
       }
     },
-    "cronworkflowUpdateCronWorkflowRequest": {
     "cronworkflow.UpdateCronWorkflowRequest": {
       "type": "object",
       "properties": {
