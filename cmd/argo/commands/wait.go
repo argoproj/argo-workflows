@@ -59,6 +59,8 @@ func WaitWorkflows(workflowNames []string, ignoreNotFound, quiet bool) {
 }
 
 func waitOnOne(client workflowpkg.WorkflowServiceClient, ctx context.Context, wfName, namespace string, ignoreNotFound, quiet bool) bool {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	stream, err := client.WatchWorkflows(ctx, &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{

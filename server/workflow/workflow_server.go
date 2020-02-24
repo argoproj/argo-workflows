@@ -3,6 +3,7 @@ package workflow
 import (
 	"bufio"
 	"fmt"
+	"reflect"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -148,13 +149,12 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 			return ctx.Err()
 		default:
 		}
-		gvk := next.Object.GetObjectKind().GroupVersionKind().String()
-		logCtx := log.WithFields(log.Fields{"type": next.Type, "objectKind": gvk})
-		logCtx.Debug("Received event")
+		log.Debug("Received event")
 		wf, ok := next.Object.(*v1alpha1.Workflow)
 		if !ok {
-			return fmt.Errorf("watch object was not a workflow %v", gvk)
+			return fmt.Errorf("watch object was not a workflow %v", reflect.TypeOf(next.Object))
 		}
+		logCtx := log.WithFields(log.Fields{"workflow": wf.Name, "type": next.Type, "phase": wf.Status.Phase})
 		err := packer.DecompressWorkflow(wf)
 		if err != nil {
 			return err
@@ -173,6 +173,8 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 		}
 
 	}
+
+	log.Debug("Result channel done")
 
 	return nil
 }

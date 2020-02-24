@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -37,7 +38,8 @@ func watchWorkflow(wfName string) {
 	ctx, apiClient := client.NewAPIClient()
 	serviceClient := apiClient.NewWorkflowServiceClient()
 	namespace := client.Namespace()
-
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	stream, err := serviceClient.WatchWorkflows(ctx, &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{
