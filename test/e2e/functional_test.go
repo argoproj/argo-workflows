@@ -162,6 +162,22 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 		})
 }
 
+func (s *FunctionalSuite) TestLoopEmptyParam() {
+	s.Given().
+		Workflow("@functional/loops-empty-param.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Len(t, status.Nodes, 5)
+			nodeStatus := status.Nodes.FindByDisplayName("sleep")
+			assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
+			assert.Equal(t, "Skipped, empty params", nodeStatus.Message)
+		})
+}
+
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }
