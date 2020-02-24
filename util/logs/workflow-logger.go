@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"reflect"
+	"sort"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
@@ -38,15 +39,14 @@ type sender interface {
 }
 
 type workflowLogger struct {
-	// initial pods
-	pods                 []corev1.Pod
 	logCtx               *log.Entry
-	ensureWeAreStreaming func(pod *corev1.Pod)
-	podWatch             watch.Interface
-	wg                   *sync.WaitGroup
-	wfWatch              watch.Interface
 	completed            bool
 	follow               bool
+	wg                   sync.WaitGroup
+	initialPods          []corev1.Pod
+	ensureWeAreStreaming func(pod *corev1.Pod)
+	podWatch             watch.Interface
+	wfWatch              watch.Interface
 }
 
 func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeClient kubernetes.Interface, req request, sender sender) (WorkflowLogger, error) {
@@ -99,7 +99,6 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 				defer func() {
 					streamedPodsGuard.Lock()
 					defer streamedPodsGuard.Unlock()
-					streamedPods[pod.UID] = false
 					logCtx.Debug("Pod logs stream done")
 				}()
 				stream, err := podInterface.GetLogs(podName, req.GetLogOptions()).Stream()
@@ -142,14 +141,14 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 	}
 
 	return &workflowLogger{
-		pods:                 list.Items,
 		logCtx:               logCtx,
+		initialPods:          list.Items,
 		completed:            completed,
 		follow:               req.GetLogOptions().Follow,
+		wg:                   wg,
 		ensureWeAreStreaming: ensureWeAreStreaming,
 		wfWatch:              wfWatch,
 		podWatch:             podWatch,
-		wg:                   &wg,
 	}, nil
 }
 
@@ -159,7 +158,12 @@ func (l *workflowLogger) Run(ctx context.Context) {
 
 	l.logCtx.WithFields(log.Fields{"completed": l.completed, "follow": l.follow}).Debug("Running")
 
-	for _, pod := range l.pods {
+	// print logs by start time-ish
+	sort.Slice(l.initialPods, func(i, j int) bool {
+		return l.initialPods[i].Status.StartTime.Before(l.initialPods[j].Status.StartTime)
+	})
+
+	for _, pod := range l.initialPods {
 		l.ensureWeAreStreaming(&pod)
 	}
 

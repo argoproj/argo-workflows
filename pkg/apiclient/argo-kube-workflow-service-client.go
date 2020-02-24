@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"context"
+	"io"
 
 	"google.golang.org/grpc"
 
@@ -59,9 +60,14 @@ func (c argoKubeWorkflowServiceClient) LintWorkflow(ctx context.Context, req *wo
 
 func (c argoKubeWorkflowServiceClient) PodLogs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
 	intermediary := newLogsIntermediary(ctx)
-	err := c.delegate.PodLogs(req, intermediary)
-	if err != nil {
-		return nil, err
-	}
+	go func() {
+		defer intermediary.cancel()
+		err := c.delegate.PodLogs(req, intermediary)
+		if err != nil {
+			intermediary.error <- err
+		} else {
+			intermediary.error <- io.EOF
+		}
+	}()
 	return intermediary, nil
 }
