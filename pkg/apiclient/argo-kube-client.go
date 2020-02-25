@@ -20,6 +20,8 @@ import (
 	"github.com/argoproj/argo/util/help"
 )
 
+var argoKubeOffloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
+
 type argoKubeClient struct {
 }
 
@@ -45,7 +47,7 @@ func newArgoKubeClient(clientConfig clientcmd.ClientConfig) (context.Context, Cl
 }
 
 func (a *argoKubeClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
-	return &argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer(sqldb.ExplosiveOffloadNodeStatusRepo)}
+	return &argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer(argoKubeOffloadNodeStatusRepo)}
 }
 
 func (a *argoKubeClient) NewCronWorkflowServiceClient() cronworkflow.CronWorkflowServiceClient {

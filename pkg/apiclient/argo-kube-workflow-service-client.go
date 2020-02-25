@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"context"
+	"io"
 
 	"google.golang.org/grpc"
 
@@ -26,7 +27,17 @@ func (c argoKubeWorkflowServiceClient) ListWorkflows(ctx context.Context, req *w
 }
 
 func (c argoKubeWorkflowServiceClient) WatchWorkflows(ctx context.Context, req *workflowpkg.WatchWorkflowsRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_WatchWorkflowsClient, error) {
-	panic("not implemented")
+	intermediary := newWatchIntermediary(ctx)
+	go func() {
+		defer intermediary.cancel()
+		err := c.delegate.WatchWorkflows(req, intermediary)
+		if err != nil {
+			intermediary.error <- err
+		} else {
+			intermediary.error <- io.EOF
+		}
+	}()
+	return intermediary, nil
 }
 
 func (c argoKubeWorkflowServiceClient) DeleteWorkflow(ctx context.Context, req *workflowpkg.WorkflowDeleteRequest, _ ...grpc.CallOption) (*workflowpkg.WorkflowDeleteResponse, error) {
@@ -58,5 +69,15 @@ func (c argoKubeWorkflowServiceClient) LintWorkflow(ctx context.Context, req *wo
 }
 
 func (c argoKubeWorkflowServiceClient) PodLogs(ctx context.Context, req *workflowpkg.WorkflowLogRequest, _ ...grpc.CallOption) (workflowpkg.WorkflowService_PodLogsClient, error) {
-	panic("not implemented")
+	intermediary := newLogsIntermediary(ctx)
+	go func() {
+		defer intermediary.cancel()
+		err := c.delegate.PodLogs(req, intermediary)
+		if err != nil {
+			intermediary.error <- err
+		} else {
+			intermediary.error <- io.EOF
+		}
+	}()
+	return intermediary, nil
 }
