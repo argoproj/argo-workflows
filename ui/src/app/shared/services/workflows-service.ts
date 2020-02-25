@@ -57,7 +57,7 @@ export class WorkflowsService {
         // but if that fails, then we try and get them from the artifacts
         const logsFromArtifacts: Observable<string> = Observable.create((observer: Observer<string>) => {
             requests
-                .get(this.getArtifactDownloadUrl(workflow, nodeId, container + '-logs', archived))
+                .get(this.getArtifactLogsUrl(workflow, nodeId, container, archived))
                 .then(resp => {
                     resp.text.split('\n').forEach(line => observer.next(line));
                 })
@@ -76,10 +76,14 @@ export class WorkflowsService {
             );
     }
 
+    public getArtifactLogsUrl(workflow: Workflow, nodeId: string, container: string, archived: boolean) {
+        return this.getArtifactDownloadUrl(workflow, nodeId, container + '-logs', archived);
+    }
+
     public getArtifactDownloadUrl(workflow: Workflow, nodeId: string, artifactName: string, archived: boolean) {
         return archived
-            ? `artifacts-by-uid/${workflow.metadata.uid}/${nodeId}/${encodeURIComponent(artifactName)}?Authorization=${localStorage.getItem('token')}`
-            : `artifacts/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}?Authorization=${localStorage.getItem('token')}`;
+            ? `artifacts-by-uid/${workflow.metadata.uid}/${nodeId}/${encodeURIComponent(artifactName)}`
+            : `artifacts/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}`;
     }
 
     private queryParams(filter: {namespace?: string; name?: string; phases?: Array<string>; labels?: Array<string>}) {
