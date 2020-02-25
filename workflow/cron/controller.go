@@ -33,6 +33,7 @@ type Controller struct {
 	nameEntryIDMap   map[string]cron.EntryID
 	wfClientset      versioned.Interface
 	wfInformer       cache.SharedIndexInformer
+	wfLister         util.WorkflowLister
 	wfQueue          workqueue.RateLimitingInterface
 	cronWfInformer   extv1alpha1.CronWorkflowInformer
 	cronWfQueue      workqueue.RateLimitingInterface
@@ -84,6 +85,8 @@ func (cc *Controller) Run(ctx context.Context) {
 	})
 	cc.addWorkflowInformerHandler()
 
+	cc.wfLister = util.NewWorkflowLister(cc.wfInformer)
+
 	cc.cron.Start()
 	defer cc.cron.Stop()
 
@@ -134,7 +137,7 @@ func (cc *Controller) processNextCronItem() bool {
 		return true
 	}
 
-	cronWorkflowOperationCtx, err := newCronWfOperationCtx(cronWf, cc.wfClientset)
+	cronWorkflowOperationCtx, err := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.wfLister)
 	if err != nil {
 		log.Error(err)
 		return true
@@ -184,6 +187,13 @@ func (cc *Controller) processNextWorkflowItem() bool {
 	obj, wfExists, err := cc.wfInformer.GetIndexer().GetByKey(key.(string))
 	if err != nil {
 		log.Errorf("Failed to get Workflow '%s' from informer index: %+v", key, err)
+		return true
+	}
+
+	// Check if the workflow no longer exists. If the workflow was deleted while it was an active workflow of a cron
+	// workflow, the cron workflow will reconcile this fact on its own next time it is processed.
+	if !wfExists {
+		log.Warnf("Workflow '%s' no longer exists", key)
 		return true
 	}
 
