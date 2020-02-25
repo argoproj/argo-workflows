@@ -1,18 +1,11 @@
 package commands
 
 import (
-	"os"
-
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/argoproj/pkg/errors"
+	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	"github.com/argoproj/argo/workflow/packer"
-	"github.com/argoproj/argo/workflow/util"
 )
 
 func NewRetryCommand() *cobra.Command {
@@ -20,36 +13,24 @@ func NewRetryCommand() *cobra.Command {
 		cliSubmitOpts cliSubmitOpts
 	)
 	var command = &cobra.Command{
-		Use:   "retry WORKFLOW",
-		Short: "retry a workflow",
+		Use:   "retry [WORKFLOW...]",
+		Short: "retry zero or more workflows",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
+			ctx, apiClient := client.NewAPIClient()
+			serviceClient := apiClient.NewWorkflowServiceClient()
+			namespace := client.Namespace()
 
-			if client.ArgoServer != "" {
-				apiServerWFRetry(args[0], cliSubmitOpts)
-			} else {
-
-				kubeClient := InitKubeClient()
-				wfClient := InitWorkflowClient()
-				wf, err := wfClient.Get(args[0], metav1.GetOptions{})
+			for _, name := range args {
+				wf, err := serviceClient.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{
+					Name:      name,
+					Namespace: namespace,
+				})
 				if err != nil {
-					log.Fatal(err)
-				}
-
-				err = packer.DecompressWorkflow(wf)
-				if err != nil {
-					log.Fatal(err)
-				}
-
-				wf, err = util.RetryWorkflow(kubeClient, wfClient, wf)
-				if err != nil {
-					log.Fatal(err)
+					errors.CheckError(err)
+					return
 				}
 				printWorkflow(wf, cliSubmitOpts.output, DefaultStatus)
-				waitOrWatch([]string{wf.Name}, cliSubmitOpts)
+				waitOrWatch([]string{name}, cliSubmitOpts)
 			}
 		},
 	}
@@ -57,24 +38,4 @@ func NewRetryCommand() *cobra.Command {
 	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete")
 	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes")
 	return command
-}
-
-func apiServerWFRetry(wfName string, opts cliSubmitOpts) {
-	conn := client.GetClientConn()
-	defer conn.Close()
-	ns, _, _ := client.Config.Namespace()
-	wfApiClient, ctx := GetWFApiServerGRPCClient(conn)
-
-	wfReq := workflowpkg.WorkflowRetryRequest{
-		Name:      wfName,
-		Namespace: ns,
-	}
-	wf, err := wfApiClient.RetryWorkflow(ctx, &wfReq)
-	if err != nil {
-		errors.CheckError(err)
-		return
-	}
-	printWorkflow(wf, opts.output, DefaultStatus)
-	waitOrWatch([]string{wf.Name}, opts)
-
 }

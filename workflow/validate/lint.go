@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -134,29 +135,10 @@ func LintWorkflowTemplateFile(wftmplGetter templateresolution.WorkflowTemplateNa
 	return nil
 }
 
-// LintCronWorkflowDir validates all cron workflow manifests in a directory. Ignores non-workflow template manifests
-func LintCronWorkflowDir(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, dirPath string, strict bool) error {
-	walkFunc := func(path string, info os.FileInfo, err error) error {
-		if info == nil || info.IsDir() {
-			return nil
-		}
-		fileExt := filepath.Ext(info.Name())
-		switch fileExt {
-		case ".yaml", ".yml", ".json":
-		default:
-			return nil
-		}
-		return LintCronWorkflowFile(wftmplGetter, path, strict)
-	}
-	return filepath.Walk(dirPath, walkFunc)
-}
-
-// LintCronWorkflowFile lints a json file, or multiple cron workflow manifest in a single yaml file. Ignores
-// non-cron workflow manifests
-func LintCronWorkflowFile(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, filePath string, strict bool) error {
+func ParseCronWorkflowsFromFile(filePath string, strict bool) ([]wfv1.CronWorkflow, error) {
 	body, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "Can't read from file: %s, err: %v", filePath, err)
+		return nil, fmt.Errorf("Can't read from file: %s, err: %v", filePath, err)
 	}
 	var cronWorkflows []wfv1.CronWorkflow
 	if json.IsJSON(body) {
@@ -170,22 +152,16 @@ func LintCronWorkflowFile(wftmplGetter templateresolution.WorkflowTemplateNamesp
 			cronWorkflows = []wfv1.CronWorkflow{cronWf}
 		} else {
 			if cronWf.Kind != "" && cronWf.Kind != workflow.CronWorkflowKind {
-				// If we get here, it was a k8s manifest which was not of type 'Workflow'
-				// We ignore these since we only care about validating Workflow manifests.
-				return nil
+				// If we get here, it was a k8s manifest which was not of type 'CronWorkflow'
+				// We ignore these since we only care about validating cron workflow manifests.
+				return nil, nil
 			}
 		}
 	} else {
 		cronWorkflows, err = common.SplitCronWorkflowYAMLFile(body, strict)
 	}
 	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "%s failed to parse: %v", filePath, err)
+		return nil, fmt.Errorf("%s failed to parse: %v", filePath, err)
 	}
-	for _, cronWf := range cronWorkflows {
-		err = ValidateCronWorkflow(wftmplGetter, &cronWf)
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "%s: %s", filePath, err.Error())
-		}
-	}
-	return nil
+	return cronWorkflows, nil
 }
