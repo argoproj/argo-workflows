@@ -14,7 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/wait"
 	"github.com/argoproj/pkg/humanize"
 	"github.com/argoproj/pkg/strftime"
 	jsonpatch "github.com/evanphx/json-patch"
