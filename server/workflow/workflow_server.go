@@ -87,12 +87,16 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 		return nil, err
 	}
 
-	if wf.Status.IsOffloadNodeStatus() && s.offloadNodeStatusRepo.IsEnabled() {
-		offloadedNodes, err := s.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-		if err != nil {
-			return nil, err
+	if wf.Status.IsOffloadNodeStatus() {
+		if s.offloadNodeStatusRepo.IsEnabled() {
+			offloadedNodes, err := s.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+			if err != nil {
+				return nil, err
+			}
+			wf.Status.Nodes = offloadedNodes
+		} else {
+			log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn(sqldb.OffloadNodeStatusDisabledWarning)
 		}
-		wf.Status.Nodes = offloadedNodes
 	}
 	err = packer.DecompressWorkflow(wf)
 	if err != nil {
@@ -120,7 +124,11 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		}
 		for i, wf := range wfList.Items {
 			if wf.Status.IsOffloadNodeStatus() {
-				wfList.Items[i].Status.Nodes = offloadedNodes[sqldb.UUIDVersion{UID: string(wf.UID), Version: wf.GetOffloadNodeStatusVersion()}]
+				if s.offloadNodeStatusRepo.IsEnabled() {
+					wfList.Items[i].Status.Nodes = offloadedNodes[sqldb.UUIDVersion{UID: string(wf.UID), Version: wf.GetOffloadNodeStatusVersion()}]
+				} else {
+					log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn("Workflow has offloaded nodes, but offloading has been disabled")
+				}
 			}
 		}
 	}
@@ -159,12 +167,16 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 		if err != nil {
 			return err
 		}
-		if wf.Status.IsOffloadNodeStatus() && s.offloadNodeStatusRepo.IsEnabled() {
-			offloadedNodes, err := s.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-			if err != nil {
-				return err
+		if wf.Status.IsOffloadNodeStatus() {
+			if s.offloadNodeStatusRepo.IsEnabled() {
+				offloadedNodes, err := s.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+				if err != nil {
+					return err
+				}
+				wf.Status.Nodes = offloadedNodes
+			} else {
+				log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn(sqldb.OffloadNodeStatusDisabledWarning)
 			}
-			wf.Status.Nodes = offloadedNodes
 		}
 		logCtx.Debug("Sending event")
 		err = ws.Send(&workflowpkg.WorkflowWatchEvent{Type: string(next.Type), Object: wf})
