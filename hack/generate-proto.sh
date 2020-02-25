@@ -22,6 +22,6 @@ for f in $(find pkg -name '*.proto'); do
         --include_imports \
         --gogofast_out=plugins=grpc:${GOPATH}/src \
         --grpc-gateway_out=logtostderr=true:${GOPATH}/src \
-        --swagger_out=logtostderr=true:. \
+        --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
         $f
 done
