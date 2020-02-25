@@ -42,6 +42,7 @@ import (
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
+
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
 )
 
