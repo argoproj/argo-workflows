@@ -18,7 +18,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/infoInfoResponse"
+              "$ref": "#/definitions/info.InfoResponse"
             }
           }
         },
@@ -29,7 +29,7 @@
     }
   },
   "definitions": {
-    "infoInfoResponse": {
+    "info.InfoResponse": {
       "type": "object",
       "properties": {
         "managedNamespace": {

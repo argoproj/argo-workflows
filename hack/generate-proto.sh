@@ -23,6 +23,6 @@ for f in $(find pkg -name '*.proto'); do
         -I ${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.12.1/third_party/googleapis \
         --gogofast_out=plugins=grpc:${GOPATH}/src \
         --grpc-gateway_out=logtostderr=true:${GOPATH}/src \
-        --swagger_out=logtostderr=true:. \
+        --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
         $f
 done
