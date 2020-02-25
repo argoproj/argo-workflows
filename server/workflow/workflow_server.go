@@ -1,7 +1,6 @@
 package workflow
 
 import (
-	"bufio"
 	"fmt"
 	"reflect"
 
@@ -13,6 +12,7 @@ import (
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/util/logs"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/templateresolution"
@@ -295,17 +295,13 @@ func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.Work
 }
 
 func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflowpkg.WorkflowService_PodLogsServer) error {
-	kubeClient := auth.GetKubeClient(ws.Context())
-	stream, err := kubeClient.CoreV1().Pods(req.Namespace).GetLogs(req.PodName, req.LogOptions).Stream()
+	ctx := ws.Context()
+	wfClient := auth.GetWfClient(ctx)
+	kubeClient := auth.GetKubeClient(ctx)
+	logger, err := logs.NewWorkflowLogger(ctx, wfClient, kubeClient, req, ws)
 	if err != nil {
 		return err
 	}
-	scanner := bufio.NewScanner(stream)
-	for scanner.Scan() {
-		err = ws.Send(&workflowpkg.LogEntry{Content: scanner.Text()})
-		if err != nil {
-			return err
-		}
-	}
+	logger.Run(ctx)
 	return nil
 }
