@@ -42,7 +42,7 @@ type workflowLogger struct {
 	logCtx               *log.Entry
 	completed            bool
 	follow               bool
-	wg                   sync.WaitGroup
+	wg                   *sync.WaitGroup
 	initialPods          []corev1.Pod
 	ensureWeAreStreaming func(pod *corev1.Pod)
 	podWatch             watch.Interface
@@ -145,7 +145,7 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 		initialPods:          list.Items,
 		completed:            completed,
 		follow:               req.GetLogOptions().Follow,
-		wg:                   wg,
+		wg:                   &wg,
 		ensureWeAreStreaming: ensureWeAreStreaming,
 		wfWatch:              wfWatch,
 		podWatch:             podWatch,
