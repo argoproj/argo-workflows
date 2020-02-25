@@ -1,6 +1,7 @@
 
 BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
+GIT_REMOTE             = origin
 GIT_BRANCH             = $(shell git rev-parse --abbrev-ref=loose HEAD | sed 's/heads\///')
 GIT_TAG                = $(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
@@ -429,21 +430,23 @@ api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) dist/MANI
 # pre-push
 
 .PHONY: pre-commit
-pre-commit: test codegen manifests lint start pf-bg smoke test-api test-cli
+pre-commit: test lint codegen manifests start pf-bg smoke test-api test-cli
 
-# release
+# release - targets only available on release branch
+ifneq ($(findstring release,$(GIT_BRANCH)),)
 
 .PHONY: prepare-release
-prepare-release: manifests codegen
+prepare-release: clean codegen manifests
 	# Commit if any changes
 	git diff --quiet || git commit -am "Update manifests to $(VERSION)"
 	git tag $(VERSION)
 
 .PHONY: publish-release
-publish-release:
+publish-release: build
 	# Push images to Docker Hub
 	docker push $(IMAGE_NAMESPACE)/argocli:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
-	git push --follow-tags
-
+	git push
+	git push $(GIT_REMOTE) $(VERSION)
+endif
