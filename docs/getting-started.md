@@ -20,7 +20,7 @@ brew install argoproj/tap/argo
 And via `curl`
 ```sh
 # Download the binary
-curl -sLO https://github.com/argoproj/argo/releases/download/v2.4.3/argo-darwin-amd64
+curl -sLO https://github.com/argoproj/argo/releases/download/v2.5.2/argo-darwin-amd64
 
 # Make binary executable
 chmod +x argo-darwin-amd64
@@ -37,7 +37,7 @@ argo version
 Available via `curl`
 ```sh
 # Download the binary
-curl -sLO https://github.com/argoproj/argo/releases/download/v2.4.3/argo-linux-amd64
+curl -sLO https://github.com/argoproj/argo/releases/download/v2.5.2/argo-linux-amd64
 
 # Make binary executable
 chmod +x argo-linux-amd64
@@ -54,11 +54,19 @@ argo version
 You can download the latest and previous Argo binaries from our [releases page](https://github.com/argoproj/argo/releases/).
 
 ## 2. Install the Controller and UI
+
 ```sh
 kubectl create namespace argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/v2.4.3/manifests/install.yaml
+kubectl apply -f -n argo https://raw.githubusercontent.com/argoproj/argo/v2.5.2/manifests/install.yaml
 ```
+
+Namespaced installs as well as installs with MinIO and/or a database built in [are also available](https://github.com/argoproj/argo/tree/v2.5.2/manifests). 
+
+Examples below will assume you've installed argo in the `argo` namespace. If you have not, adjust 
+the commands accordingly.
+
 NOTE: On GKE, you may need to grant your account the ability to create new `clusterrole`s
+
 ```sh
 kubectl create clusterrolebinding YOURNAME-cluster-admin-binding --clusterrole=cluster-admin --user=YOUREMAIL@gmail.com
 ```
@@ -89,17 +97,17 @@ For the purposes of this demo, we will grant the `default` `ServiceAccount` admi
 kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default
 ```
 
-**Note that this will grant admin privilages to the `default` `ServiceAccount` in the namespace that the command is run from, so you will only be able to
+**Note that this will grant admin privileges to the `default` `ServiceAccount` in the namespace that the command is run from, so you will only be able to
 run Workflows in the namespace where the `RoleBinding` was made.**
 
 ## 4. Run Sample Workflows
 ```sh
-argo submit --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
-argo submit --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/coinflip.yaml
-argo submit --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/loops-maps.yaml
-argo list
-argo get xxx-workflow-name-xxx
-argo logs xxx-pod-name-xxx #from get command above
+argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
+argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/coinflip.yaml
+argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/loops-maps.yaml
+argo list -n argo
+argo get -n argo xxx-workflow-name-xxx
+argo logs -n argo xxx-pod-name-xxx #from get command above
 ```
 
 Additional examples and more information about the CLI are available on the [Argo Workflows by Example](../examples/README.md) page.
@@ -108,11 +116,11 @@ You can also create Workflows directly with `kubectl`. However, the Argo CLI off
 that `kubectl` does not, such as YAML validation, workflow visualization, parameter passing, retries
 and resubmits, suspend and resume, and more.
 ```sh
-kubectl create -f https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
-kubectl get wf
-kubectl get wf hello-world-xxx
-kubectl get po --selector=workflows.argoproj.io/workflow=hello-world-xxx --show-all
-kubectl logs hello-world-yyy -c main
+kubectl create -n argo -f https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
+kubectl get -n argo wf
+kubectl get -n argo wf hello-world-xxx
+kubectl get -n argo po --selector=workflows.argoproj.io/workflow=hello-world-xxx --show-all
+kubectl logs -n argo hello-world-yyy -c main
 ```
 
 
@@ -185,7 +193,7 @@ namespace you use for Workflows.
 
 ## 7. Run a workflow which uses artifacts
 ```sh
-argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/artifact-passing.yaml
+argo submit -n argo https://raw.githubusercontent.com/argoproj/argo/master/examples/artifact-passing.yaml
 ```
 
 ## 8. Access the Argo UI
