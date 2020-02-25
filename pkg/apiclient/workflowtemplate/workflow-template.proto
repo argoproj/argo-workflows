@@ -40,7 +40,7 @@ message WorkflowTemplateDeleteRequest {
     string namespace = 2;
     k8s.io.apimachinery.pkg.apis.meta.v1.DeleteOptions deleteOptions = 3;
 }
-message WorkflowDeleteResponse {
+message WorkflowTemplateDeleteResponse {
 }
 message WorkflowTemplateLintRequest {
     string namespace = 1;
@@ -71,7 +71,7 @@ service WorkflowTemplateService {
         };
     }
 
-    rpc DeleteWorkflowTemplate (WorkflowTemplateDeleteRequest) returns (WorkflowDeleteResponse) {
+    rpc DeleteWorkflowTemplate (WorkflowTemplateDeleteRequest) returns (WorkflowTemplateDeleteResponse) {
         option (google.api.http).delete = "/api/v1/workflow-templates/{namespace}/{name}";
     }
 
