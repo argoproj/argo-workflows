@@ -46,10 +46,7 @@ See %s`, help.ArgoSever),
 			config.Burst = 30
 			config.QPS = 20.0
 
-			namespace, _, err := client.Config.Namespace()
-			if err != nil {
-				return err
-			}
+			namespace := client.Namespace()
 
 			kubeConfig := kubernetes.NewForConfigOrDie(config)
 			wflientset := wfclientset.NewForConfigOrDie(config)
