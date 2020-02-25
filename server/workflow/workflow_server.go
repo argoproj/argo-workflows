@@ -3,6 +3,7 @@ package workflow
 import (
 	"bufio"
 	"fmt"
+	"reflect"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -86,12 +87,16 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 		return nil, err
 	}
 
-	if wf.Status.IsOffloadNodeStatus() && s.offloadNodeStatusRepo.IsEnabled() {
-		offloadedNodes, err := s.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-		if err != nil {
-			return nil, err
+	if wf.Status.IsOffloadNodeStatus() {
+		if s.offloadNodeStatusRepo.IsEnabled() {
+			offloadedNodes, err := s.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+			if err != nil {
+				return nil, err
+			}
+			wf.Status.Nodes = offloadedNodes
+		} else {
+			log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn(sqldb.OffloadNodeStatusDisabledWarning)
 		}
-		wf.Status.Nodes = offloadedNodes
 	}
 	err = packer.DecompressWorkflow(wf)
 	if err != nil {
@@ -119,7 +124,11 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		}
 		for i, wf := range wfList.Items {
 			if wf.Status.IsOffloadNodeStatus() {
-				wfList.Items[i].Status.Nodes = offloadedNodes[sqldb.UUIDVersion{UID: string(wf.UID), Version: wf.GetOffloadNodeStatusVersion()}]
+				if s.offloadNodeStatusRepo.IsEnabled() {
+					wfList.Items[i].Status.Nodes = offloadedNodes[sqldb.UUIDVersion{UID: string(wf.UID), Version: wf.GetOffloadNodeStatusVersion()}]
+				} else {
+					log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn("Workflow has offloaded nodes, but offloading has been disabled")
+				}
 			}
 		}
 	}
@@ -148,23 +157,26 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 			return ctx.Err()
 		default:
 		}
-		gvk := next.Object.GetObjectKind().GroupVersionKind().String()
-		logCtx := log.WithFields(log.Fields{"type": next.Type, "objectKind": gvk})
-		logCtx.Debug("Received event")
+		log.Debug("Received event")
 		wf, ok := next.Object.(*v1alpha1.Workflow)
 		if !ok {
-			return fmt.Errorf("watch object was not a workflow %v", gvk)
+			return fmt.Errorf("watch object was not a workflow %v", reflect.TypeOf(next.Object))
 		}
+		logCtx := log.WithFields(log.Fields{"workflow": wf.Name, "type": next.Type, "phase": wf.Status.Phase})
 		err := packer.DecompressWorkflow(wf)
 		if err != nil {
 			return err
 		}
-		if wf.Status.IsOffloadNodeStatus() && s.offloadNodeStatusRepo.IsEnabled() {
-			offloadedNodes, err := s.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-			if err != nil {
-				return err
+		if wf.Status.IsOffloadNodeStatus() {
+			if s.offloadNodeStatusRepo.IsEnabled() {
+				offloadedNodes, err := s.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+				if err != nil {
+					return err
+				}
+				wf.Status.Nodes = offloadedNodes
+			} else {
+				log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn(sqldb.OffloadNodeStatusDisabledWarning)
 			}
-			wf.Status.Nodes = offloadedNodes
 		}
 		logCtx.Debug("Sending event")
 		err = ws.Send(&workflowpkg.WorkflowWatchEvent{Type: string(next.Type), Object: wf})
@@ -173,6 +185,8 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 		}
 
 	}
+
+	log.Debug("Result channel done")
 
 	return nil
 }
