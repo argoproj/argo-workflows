@@ -3231,7 +3231,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"podDisruptionBudget": {
 						SchemaProps: spec.SchemaProps{
-							Description: "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty Optional: Defaults to empty.",
+							Description: "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty. Optional: Defaults to empty.",
 							Ref:         ref("k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec"),
 						},
 					},

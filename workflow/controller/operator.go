@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/wait"
 	"github.com/argoproj/pkg/humanize"
-	argokubeerr "github.com/argoproj/pkg/kube/errors"
 	"github.com/argoproj/pkg/strftime"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
@@ -41,6 +41,7 @@ import (
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
+	argokubeerr "github.com/argoproj/pkg/kube/errors"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -1430,10 +1431,17 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 				woc.wf.ObjectMeta.Labels = make(map[string]string)
 			}
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
-			woc.deletePDBResource()
-			err := woc.controller.wfArchive.ArchiveWorkflow(woc.wf)
+			err := woc.deletePDBResource()
+			if err != nil {
+				woc.wf.Status.Phase = wfv1.NodeError
+				woc.wf.ObjectMeta.Labels[common.LabelKeyPhase] = string(wfv1.NodeError)
+				woc.updated = true
+				woc.wf.Status.Message = err.Error()
+			}
+			err = woc.controller.wfArchive.ArchiveWorkflow(woc.wf)
 			if err != nil {
 				woc.log.WithField("err", err).Error("Failed to archive workflow")
+
 			}
 			woc.updated = true
 		}
@@ -2235,19 +2243,26 @@ func (woc *wfOperationCtx) createPDBResource() error {
 	return nil
 }
 
-func (woc *wfOperationCtx) deletePDBResource() {
-
+func (woc *wfOperationCtx) deletePDBResource() error {
 	if woc.wf.Spec.PodDisruptionBudget == nil {
-		return
+		return nil
 	}
-
-	err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
-	if err != nil {
-		if apierr.IsNotFound(err) {
-			return
+	var err error
+	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+		err = woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
+		if err != nil {
+			log.Warnf("Failed to delete PDB '%s': %v", woc.wf.Name, err)
+			if !retry.IsRetryableKubeAPIError(err) {
+				return false, err
+			}
+			return false, nil
 		}
-		woc.log.Errorf("Unable to delete PDB resource for workflow, %s error: %s", woc.wf.Name, err)
-		return
+		return true, nil
+	})
+	if err != nil {
+		woc.log.Errorf("Unable to delete PDB resource for workflow, '%s' : %v", woc.wf.Name, err)
+		return err
 	}
 	woc.log.Infof("PDB resource deleted for workflow %s", woc.wf.Name)
+	return nil
 }

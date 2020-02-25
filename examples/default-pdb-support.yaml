@@ -5,6 +5,7 @@ metadata:
 
 spec:
   entrypoint: pdbcreate
+  serviceaccountname: default
   poddisruptionbudget:
     minavailable: 100%
   templates:
@@ -12,4 +13,4 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["sleep 30"]
+      args: ["sleep 10"]

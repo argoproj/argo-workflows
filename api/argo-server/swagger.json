@@ -9,7 +9,7 @@
   "info": {
     "description": "Argo Server",
     "title": "Argo Server",
-    "version": "pdbdefault"
+    "version": "latest"
   },
   "paths": {
     "/api/v1/archived-workflows": {
@@ -5035,7 +5035,7 @@
           "title": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow"
         },
         "podDisruptionBudget": {
-          "title": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.\nController will automatically add the selector with workflow name, if selector is empty\nOptional: Defaults to empty.\n+optional",
+          "title": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.\nController will automatically add the selector with workflow name, if selector is empty.\nOptional: Defaults to empty.\n+optional",
           "$ref": "#/definitions/v1beta1PodDisruptionBudgetSpec"
         },
         "podGC": {

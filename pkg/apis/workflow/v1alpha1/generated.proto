@@ -966,7 +966,7 @@ message WorkflowSpec {
   optional string podSpecPatch = 27;
 
   // PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.
-  // Controller will automatically add the selector with workflow name, if selector is empty
+  // Controller will automatically add the selector with workflow name, if selector is empty.
   // Optional: Defaults to empty.
   // +optional
   optional k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec podDisruptionBudget = 31;

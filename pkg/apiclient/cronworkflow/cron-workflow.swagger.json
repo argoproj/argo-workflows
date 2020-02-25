@@ -3986,7 +3986,7 @@
         },
         "podDisruptionBudget": {
           "$ref": "#/definitions/v1beta1PodDisruptionBudgetSpec",
-          "title": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.\nController will automatically add the selector with workflow name, if selector is empty\nOptional: Defaults to empty.\n+optional"
+          "title": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.\nController will automatically add the selector with workflow name, if selector is empty.\nOptional: Defaults to empty.\n+optional"
         }
       },
       "description": "WorkflowSpec is the specification of a Workflow."

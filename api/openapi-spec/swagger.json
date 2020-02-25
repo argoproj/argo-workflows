@@ -1703,7 +1703,7 @@
           "format": "int64"
         },
         "podDisruptionBudget": {
-          "description": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty Optional: Defaults to empty.",
+          "description": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty. Optional: Defaults to empty.",
           "$ref": "#/definitions/io.k8s.api.policy.v1beta1.PodDisruptionBudgetSpec"
         },
         "podGC": {
