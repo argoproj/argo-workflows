@@ -2220,8 +2220,9 @@ func (woc *wfOperationCtx) createPDBResource() error {
 		return nil
 	}
 
-	if woc.wf.Spec.PodDisruptionBudget.Selector == nil {
-		woc.wf.Spec.PodDisruptionBudget.Selector = &metav1.LabelSelector{
+	pdbSpec := *woc.wf.Spec.PodDisruptionBudget
+	if pdbSpec.Selector == nil {
+		pdbSpec.Selector = &metav1.LabelSelector{
 			MatchLabels: map[string]string{common.LabelKeyWorkflow: woc.wf.Name},
 		}
 	}
@@ -2230,10 +2231,13 @@ func (woc *wfOperationCtx) createPDBResource() error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   woc.wf.Name,
 			Labels: map[string]string{common.LabelKeyWorkflow: woc.wf.Name},
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
+			},
 		},
-		Spec: *woc.wf.Spec.PodDisruptionBudget,
+		Spec: pdbSpec,
 	}
-	newPDB.SetOwnerReferences(append(newPDB.GetOwnerReferences(), *metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))))
+
 	created, err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(&newPDB)
 	if err != nil {
 		return err
