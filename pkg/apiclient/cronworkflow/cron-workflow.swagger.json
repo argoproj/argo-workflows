@@ -530,10 +530,6 @@
       "type": "object",
       "properties": {
         "increment": {
-          "type": "number",
-          "format": "double"
-        },
-        "incrementOn": {
           "type": "string"
         }
       }
@@ -678,8 +674,8 @@
           "type": "string",
           "description": "OnExit is a template reference which is invoked at the end of the\ntemplate, irrespective of the success, failure, or error of the\nprimary template."
         },
-        "emitMetrics": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.EmitMetrics"
+        "metrics": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metrics"
         }
       },
       "title": "DAGTask represents a node in the graph during DAG execution"
@@ -706,17 +702,6 @@
       },
       "title": "DAGTemplate is a template subtype for directed acyclic graph templates"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.EmitMetrics": {
-      "type": "object",
-      "properties": {
-        "metrics": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metric"
-          }
-        }
-      }
-    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ExecutorConfig": {
       "type": "object",
       "properties": {
@@ -731,7 +716,11 @@
       "type": "object",
       "properties": {
         "value": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.MetricValue"
+          "type": "string"
+        },
+        "realTime": {
+          "type": "boolean",
+          "format": "boolean"
         }
       }
     },
@@ -860,7 +849,7 @@
       "type": "object",
       "properties": {
         "value": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.MetricValue"
+          "type": "string"
         },
         "bins": {
           "type": "array",
@@ -975,32 +964,6 @@
       },
       "title": "Pod metdata"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metric": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "labels": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.MetricLabels"
-          }
-        },
-        "help": {
-          "type": "string"
-        },
-        "gauge": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Gauge"
-        },
-        "histogram": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Histogram"
-        },
-        "counter": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Counter"
-        }
-      }
-    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.MetricLabels": {
       "type": "object",
       "properties": {
@@ -1012,14 +975,14 @@
         }
       }
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.MetricValue": {
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metrics": {
       "type": "object",
       "properties": {
-        "literal": {
-          "type": "string"
-        },
-        "duration": {
-          "type": "string"
+        "prometheus": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Prometheus"
+          }
         }
       }
     },
@@ -1096,6 +1059,35 @@
         }
       },
       "title": "PodGC describes how to delete completed pods as they complete"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Prometheus": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.MetricLabels"
+          }
+        },
+        "help": {
+          "type": "string"
+        },
+        "when": {
+          "type": "string"
+        },
+        "gauge": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Gauge"
+        },
+        "histogram": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Histogram"
+        },
+        "counter": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Counter"
+        }
+      }
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.RawArtifact": {
       "type": "object",
@@ -1639,8 +1631,8 @@
           "type": "string",
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of\ncontainer fields which are not strings (e.g. resource limits)."
         },
-        "emitMetrics": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.EmitMetrics"
+        "metrics": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metrics"
         }
       },
       "description": "WorkflowSpec is the specification of a Workflow."
@@ -1691,8 +1683,8 @@
           "type": "string",
           "description": "OnExit is a template reference which is invoked at the end of the\ntemplate, irrespective of the success, failure, or error of the\nprimary template."
         },
-        "emitMetrics": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.EmitMetrics"
+        "metrics": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metrics"
         }
       },
       "title": "WorkflowStep is a reference to a template to execute in a series of step"

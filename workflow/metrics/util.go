@@ -2,12 +2,9 @@ package metrics
 
 import (
 	"fmt"
-	"strconv"
-	"time"
-
-	"github.com/prometheus/client_golang/prometheus"
-
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/prometheus/client_golang/prometheus"
+	"strconv"
 )
 
 const (
@@ -15,20 +12,24 @@ const (
 	workflowsSubsystem = "workflows"
 )
 
-func ConstructOrUpdateMetric(metric prometheus.Metric, metricSpec *wfv1.Metric, emitter wfv1.MetricsEmitter) (prometheus.Metric, error) {
+type RealTimeMetric struct {
+	Func func () float64
+}
+
+func ConstructOrUpdateMetric(metric prometheus.Metric, metricSpec wfv1.Prometheus, realTimeMetric RealTimeMetric) (prometheus.Metric, error) {
 	switch metricSpec.GetMetricType() {
 	case wfv1.MetricTypeGauge:
-		return constructOrUpdateGaugeMetric(metric, metricSpec, emitter)
+		return constructOrUpdateGaugeMetric(metric, metricSpec, realTimeMetric)
 	case wfv1.MetricTypeHistogram:
-		return constructOrUpdateHistogramMetric(metric, metricSpec, emitter)
+		return constructOrUpdateHistogramMetric(metric, metricSpec)
 	case wfv1.MetricTypeCounter:
-		return constructOrUpdateCounterMetric(metric, metricSpec, emitter)
+		return constructOrUpdateCounterMetric(metric, metricSpec)
 	default:
 		return nil, fmt.Errorf("invalid metric spec")
 	}
 }
 
-func constructOrUpdateCounterMetric(metric prometheus.Metric, metricSpec *wfv1.Metric, emitter wfv1.MetricsEmitter) (prometheus.Metric, error) {
+func constructOrUpdateCounterMetric(metric prometheus.Metric, metricSpec wfv1.Prometheus) (prometheus.Metric, error) {
 	counterOpts := prometheus.CounterOpts{
 		Namespace:   argoNamespace,
 		Subsystem:   workflowsSubsystem,
@@ -36,45 +37,22 @@ func constructOrUpdateCounterMetric(metric prometheus.Metric, metricSpec *wfv1.M
 		Help:        metricSpec.Help,
 		ConstLabels: metricSpec.GetMetricLabels(),
 	}
+
+	val, err := strconv.ParseFloat(metricSpec.Counter.Increment, 64)
+	if err != nil {
+		return nil, err
+	}
+
 	if metric == nil {
 		metric = prometheus.NewCounter(counterOpts)
 	}
-
 	counter := metric.(prometheus.Counter)
-
-	fmt.Println("SIMON About to increment")
-	if metricSpec.Counter.IncrementOn != "" {
-		fmt.Println("SIMON In cond to increment")
-		switch metricSpec.Counter.IncrementOn {
-		case wfv1.CounterTriggerExecution:
-			fmt.Println("SIMON About to increment exec")
-			if !emitter.StartTime().IsZero() && !emitter.Completed() {
-				counter.Inc()
-			}
-		case wfv1.CounterTriggerCompletion:
-			fmt.Println("SIMON About to increment comp")
-			if emitter.Completed() {
-				counter.Inc()
-			}
-		case wfv1.CounterTriggerFailure:
-			fmt.Println("SIMON About to increment fail")
-			if emitter.Completed() && emitter.Failed() {
-				counter.Inc()
-			}
-		case wfv1.CounterTriggerSuccess:
-			if emitter.Completed() && emitter.Successful() {
-				counter.Inc()
-			}
-		}
-		return counter, nil
-	}
-
-	counter.Add(metricSpec.Counter.Increment)
+	counter.Add(val)
 	return counter, nil
 
 }
 
-func constructOrUpdateGaugeMetric(metric prometheus.Metric, metricSpec *wfv1.Metric, emitter wfv1.MetricsEmitter) (prometheus.Metric, error) {
+func constructOrUpdateGaugeMetric(metric prometheus.Metric, metricSpec wfv1.Prometheus, realTimeMetric RealTimeMetric) (prometheus.Metric, error) {
 	gaugeOpts := prometheus.GaugeOpts{
 		Namespace:   argoNamespace,
 		Subsystem:   workflowsSubsystem,
@@ -83,41 +61,18 @@ func constructOrUpdateGaugeMetric(metric prometheus.Metric, metricSpec *wfv1.Met
 		ConstLabels: metricSpec.GetMetricLabels(),
 	}
 
-	metricValue := metricSpec.GetMetricValue()
-
-	if metricValue.Duration != "" {
-		switch metricValue.Duration {
-		case wfv1.DurationTypeRealTime:
-			// When using real time duration, update the function every time
-			return prometheus.NewGaugeFunc(gaugeOpts, func() float64 {
-				if emitter.Completed() {
-					return emitter.FinishTime().Time.Sub(emitter.StartTime().Time).Seconds()
-				}
-				return time.Since(emitter.StartTime().Time).Seconds()
-			}), nil
-		case wfv1.DurationTypeOnCompletion:
-			if metric == nil {
-				metric = prometheus.NewGauge(gaugeOpts)
-			}
-			if emitter.Completed() {
-				metric := metric.(prometheus.Gauge)
-				metric.Set(emitter.FinishTime().Time.Sub(emitter.StartTime().Time).Seconds())
-			}
-			return metric, nil
-		default:
-			return nil, fmt.Errorf("unknown Duration value '%s' for metric '%s'", metricValue.Duration, metricSpec.Name)
-		}
+	if metricSpec.Gauge.RealTime != nil && *metricSpec.Gauge.RealTime {
+		return prometheus.NewGaugeFunc(gaugeOpts, realTimeMetric.Func), nil
 	}
 
-	val, err := strconv.ParseFloat(metricValue.Literal, 64)
+	val, err := strconv.ParseFloat(metricSpec.Gauge.Value, 64)
 	if err != nil {
 		return nil, err
 	}
+
 	if metric == nil {
 		// This gauge has not been used before, create it
-		gauge := prometheus.NewGauge(gaugeOpts)
-		gauge.Set(val)
-		return gauge, nil
+		metric = prometheus.NewGauge(gaugeOpts)
 	}
 	// This gauge exists, simply update it
 	gauge := metric.(prometheus.Gauge)
@@ -125,7 +80,7 @@ func constructOrUpdateGaugeMetric(metric prometheus.Metric, metricSpec *wfv1.Met
 	return gauge, nil
 }
 
-func constructOrUpdateHistogramMetric(metric prometheus.Metric, metricSpec *wfv1.Metric, emitter wfv1.MetricsEmitter) (prometheus.Metric, error) {
+func constructOrUpdateHistogramMetric(metric prometheus.Metric, metricSpec wfv1.Prometheus) (prometheus.Metric, error) {
 	histOpts := prometheus.HistogramOpts{
 		Namespace:   argoNamespace,
 		Subsystem:   workflowsSubsystem,
@@ -135,38 +90,13 @@ func constructOrUpdateHistogramMetric(metric prometheus.Metric, metricSpec *wfv1
 		Buckets:     metricSpec.Histogram.Bins,
 	}
 
-	metricValue := metricSpec.GetMetricValue()
-
-	if metricValue.Duration != "" {
-		switch metricValue.Duration {
-		case wfv1.DurationTypeOnCompletion:
-			var hist prometheus.Histogram
-			if metric == nil {
-				hist = prometheus.NewHistogram(histOpts)
-			} else {
-				hist = metric.(prometheus.Histogram)
-			}
-			if emitter.Completed() {
-				hist.Observe(emitter.FinishTime().Time.Sub(emitter.StartTime().Time).Seconds())
-			}
-			// When using duration metrics, there is no need to update them once they are created
-			return hist, nil
-		case wfv1.DurationTypeRealTime:
-			return nil, fmt.Errorf("unable to use real time duration with histograms")
-		default:
-			return nil, fmt.Errorf("unknown Duration value '%s' for metric '%s'", metricValue.Duration, metricSpec.Name)
-		}
-	}
-
-	val, err := strconv.ParseFloat(metricValue.Literal, 64)
+	val, err := strconv.ParseFloat(metricSpec.Histogram.Value, 64)
 	if err != nil {
 		return nil, err
 	}
 	if metric == nil {
 		// This gauge has not been used before, create it
-		hist := prometheus.NewHistogram(histOpts)
-		hist.Observe(val)
-		return hist, nil
+		metric = prometheus.NewHistogram(histOpts)
 	}
 	// This gauge exists, simply update it
 	hist := metric.(prometheus.Histogram)

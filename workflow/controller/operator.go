@@ -165,6 +165,9 @@ func (woc *wfOperationCtx) operate() {
 
 	woc.log.Infof("Processing workflow")
 
+	// Update workflow duration variable
+	woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
+
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == "" {
 		woc.markWorkflowRunning()
@@ -180,11 +183,12 @@ func (woc *wfOperationCtx) operate() {
 		}
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 
-		// Compute Workflow-level metrics once before operation
-		err = woc.computeWorkflowMetrics()
-		if err != nil {
-			woc.log.Errorf("Could not emit metrics for workflow '%s': %s", woc.wf.ObjectMeta.Name, err)
-		}
+		// TODO: SIMON
+		//// Compute Workflow-level metrics once before operation
+		//err = woc.computeWorkflowMetrics()
+		//if err != nil {
+		//	woc.log.Errorf("Could not emit metrics for workflow '%s': %s", woc.wf.ObjectMeta.Name, err)
+		//}
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation()
@@ -357,9 +361,13 @@ func (woc *wfOperationCtx) operate() {
 	}
 
 	// Compute Workflow-level metrics one last time after completion
-	err = woc.computeWorkflowMetrics()
-	if err != nil {
-		woc.log.Errorf("Could not emit metrics for workflow '%s': %s", woc.wf.ObjectMeta.Name, err)
+	if woc.wf.Spec.Metrics != nil {
+		for _, metricSpec := range woc.wf.Spec.Metrics.Prometheus {
+			err := woc.computeMetric(*metricSpec, nil)
+			if err != nil {
+				woc.log.Errorf("Could not emit metrics for workflow '%s': %s", woc.wf.ObjectMeta.Name, err)
+			}
+		}
 	}
 }
 
@@ -1433,6 +1441,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 		if markCompleted && !woc.hasDaemonNodes() {
 			woc.log.Infof("Marking workflow completed")
 			woc.wf.Status.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+			woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", woc.wf.Status.FinishedAt.Sub(woc.wf.Status.StartedAt.Time).Seconds())
 			if woc.wf.ObjectMeta.Labels == nil {
 				woc.wf.ObjectMeta.Labels = make(map[string]string)
 			}
@@ -2202,20 +2211,30 @@ func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID str
 	return false, nil, nil
 }
 
-func (woc *wfOperationCtx) computeWorkflowMetrics() error {
-	if woc.wf.Spec.EmitMetrics != nil {
-		for _, metricSpec := range woc.wf.Spec.EmitMetrics.Metrics {
-			woc.computeMetric(metricSpec, woc.wf.Status)
+func (woc *wfOperationCtx) computeMetric(metricSpec wfv1.Prometheus, localScope map[string]interface{}) error {
+	replaceMap := make(map[string]string)
+	for key, val := range woc.globalParams {
+		replaceMap[key] = val
+	}
+	for key, val := range localScope {
+		if stringVal, ok := val.(string); ok {
+			replaceMap[key] = stringVal
 		}
 	}
-	return nil
-}
 
-func (woc *wfOperationCtx) computeMetric(metricSpec *wfv1.Metric, emitter wfv1.MetricsEmitter) {
 	metric := woc.controller.Metrics[metricSpec.GetDesc()]
-	updatedMetric, err := metrics.ConstructOrUpdateMetric(metric, metricSpec, emitter)
+
+	fstTmpl := fasttemplate.New(metricSpec.GetValueString(), "{{", "}}")
+	replacedValue, err := common.Replace(fstTmpl, replaceMap, true)
+	if err != nil {
+		return fmt.Errorf("unable to compute metric '%s': %s", metricSpec.Name, err)
+	}
+	metricSpec.SetValueString(replacedValue)
+
+	updatedMetric, err := metrics.ConstructOrUpdateMetric(metric, metricSpec, metrics.RealTimeMetric{})
 	if err != nil {
 		woc.log.Errorf("could not compute metric '%s': %s", metricSpec.Name, err)
 	}
 	woc.controller.Metrics[metricSpec.GetDesc()] = updatedMetric
+	return nil
 }

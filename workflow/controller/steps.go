@@ -220,11 +220,12 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			continue
 		}
 
-		// Infer if this is the first time this node gets executed, so that we can emit execution metrics once
-		firstTimeExecution := false
-		if woc.getNodeByName(childNodeName) == nil {
-			firstTimeExecution = true
-		}
+		// TODO: SIMON
+		//// Infer if this is the first time this node gets executed, so that we can emit execution metrics once
+		//firstTimeExecution := false
+		//if woc.getNodeByName(childNodeName) == nil {
+		//	firstTimeExecution = true
+		//}
 
 		childNode, err := woc.executeTemplate(childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, stepsCtx.boundaryID)
 		if err != nil {
@@ -243,13 +244,14 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			nodeSteps[childNodeName] = step
 			woc.addChildNode(sgNodeName, childNodeName)
 
-			// Emit metrics once step begins execution
-			if firstTimeExecution && step.EmitMetrics != nil {
-				for _, metricSpec := range step.EmitMetrics.Metrics {
-					woc.log.Infof("SIMON Emit Starting for: %+v", childNode)
-					woc.computeMetric(metricSpec, childNode)
-				}
-			}
+			// TODO: SIMON
+			//// Emit metrics once step begins execution
+			//if firstTimeExecution && step.EmitMetrics != nil {
+			//	for _, metricSpec := range step.EmitMetrics.Metrics {
+			//		woc.log.Infof("SIMON Emit Starting for: %+v", childNode)
+			//		woc.computeMetric(metricSpec, childNode)
+			//	}
+			//}
 		}
 	}
 
@@ -275,6 +277,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		return node
 	}
 
+	// TODO: SIMON
 	// Emit metrics once step completes
 	//
 	// Completion metrics are reported once all steps in a step group complete. Ideally, we would want to report
@@ -291,10 +294,12 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	for _, childNodeID := range node.Children {
 		childNode := woc.wf.Status.Nodes[childNodeID]
 		step := nodeSteps[childNode.Name]
-		if step.EmitMetrics != nil {
-			for _, metricSpec := range step.EmitMetrics.Metrics {
-				woc.log.Infof("SIMON Emit Complete for: %+v", childNode)
-				woc.computeMetric(metricSpec, childNode)
+		if step.Metrics != nil {
+			for _, metricSpec := range step.Metrics.Prometheus {
+				err := woc.computeMetric(*metricSpec, stepsCtx.scope.scope)
+				if err != nil {
+					woc.log.Errorf("could not step metric '%s': %s", metricSpec.Name, err)
+				}
 			}
 		}
 	}

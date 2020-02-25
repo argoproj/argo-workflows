@@ -313,12 +313,13 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			return
 		}
 
+		// TODO: SIMON
 		// Emit metrics once dag task completes
-		if task.EmitMetrics != nil && (!hasOnExitNode || onExitNode.Completed()) {
-			for _, metricSpec := range task.EmitMetrics.Metrics {
-				woc.computeMetric(metricSpec, node)
-			}
-		}
+		//if task.EmitMetrics != nil && (!hasOnExitNode || onExitNode.Completed()) {
+		//	for _, metricSpec := range task.EmitMetrics.Metrics {
+		//		woc.computeMetric(metricSpec, node)
+		//	}
+		//}
 
 		return
 	}
@@ -339,12 +340,13 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 					return
 				}
 
+				// TODO: SIMON
 				// Emit metrics once dag task completes
-				if task.EmitMetrics != nil && (!hasOnExitNode || onExitNode.Completed()) {
-					for _, metricSpec := range task.EmitMetrics.Metrics {
-						woc.computeMetric(metricSpec, depNode)
-					}
-				}
+				//if task.EmitMetrics != nil && (!hasOnExitNode || onExitNode.Completed()) {
+				//	for _, metricSpec := range task.EmitMetrics.Metrics {
+				//		woc.computeMetric(metricSpec, depNode)
+				//	}
+				//}
 
 				if !depNode.Successful() && !depTask.ContinuesOn(depNode.Phase) {
 					dependenciesSuccessful = false
@@ -450,14 +452,15 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		}
 
 		// Finally execute the template
-		nodeStatus, _ := woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, dagCtx.boundaryID)
+		_, _ = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, dagCtx.boundaryID)
 
+		// TODO: SIMON
 		// Emit metrics once dag task begins execution
-		if t.EmitMetrics != nil {
-			for _, metricSpec := range t.EmitMetrics.Metrics {
-				woc.computeMetric(metricSpec, nodeStatus)
-			}
-		}
+		//if t.EmitMetrics != nil {
+		//	for _, metricSpec := range t.EmitMetrics.Metrics {
+		//		woc.computeMetric(metricSpec, nodeStatus)
+		//	}
+		//}
 	}
 
 	if taskGroupNode != nil {

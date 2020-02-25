@@ -277,7 +277,7 @@ type WorkflowSpec struct {
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,27,opt,name=podSpecPatch"`
 
-	EmitMetrics *EmitMetrics `json:"emitMetrics,omitempty" protobuf:"bytes,31,opt,name=emitMetrics"`
+	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,31,opt,name=metrics"`
 }
 
 type ParallelSteps struct {
@@ -683,7 +683,7 @@ type WorkflowStep struct {
 	// primary template.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 
-	EmitMetrics *EmitMetrics `json:"emitMetrics" protobuf:"bytes,12,opt,name=emitMetrics"`
+	Metrics *Metrics `json:"metrics" protobuf:"bytes,12,opt,name=metrics"`
 }
 
 var _ TemplateHolder = &WorkflowStep{}
@@ -1348,7 +1348,7 @@ type DAGTask struct {
 	// primary template.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 
-	EmitMetrics *EmitMetrics `json:"emitMetrics" protobuf:"bytes,12,opt,name=emitMetrics"`
+	Metrics *Metrics `json:"metrics" protobuf:"bytes,12,opt,name=metrics"`
 }
 
 var _ TemplateHolder = &DAGTask{}
@@ -1540,14 +1540,6 @@ func (s *WorkflowStep) ContinuesOn(phase NodePhase) bool {
 	return continues(s.ContinueOn, phase)
 }
 
-type MetricsEmitter interface {
-	Completed() bool
-	Successful() bool
-	Failed() bool
-	StartTime() *metav1.Time
-	FinishTime() *metav1.Time
-}
-
 type MetricType string
 
 const (
@@ -1557,56 +1549,70 @@ const (
 	MetricTypeUnknown   MetricType = "Unknown"
 )
 
-type EmitMetrics struct {
-	Metrics []*Metric `json:"metrics" protobuf:"bytes,1,rep,name=metrics"`
+type Metrics struct {
+	Prometheus []*Prometheus `json:"prometheus" protobuf:"bytes,1,rep,name=prometheus"`
 }
 
-type Metric struct {
+type Prometheus struct {
 	Name      string          `json:"name" protobuf:"bytes,1,opt,name=name"`
 	Labels    []*MetricLabels `json:"labels" protobuf:"bytes,2,rep,name=labels"`
 	Help      string          `json:"help" protobuf:"bytes,3,opt,name=help"`
-	Gauge     *Gauge          `json:"gauge" protobuf:"bytes,4,opt,name=gauge"`
-	Histogram *Histogram      `json:"histogram" protobuf:"bytes,5,opt,name=histogram"`
-	Counter   *Counter        `json:"counter" protobuf:"bytes,6,opt,name=counter"`
+	When      string          `json:"when" protobuf:"bytes,4,opt,name=when"`
+	Gauge     *Gauge          `json:"gauge" protobuf:"bytes,5,opt,name=gauge"`
+	Histogram *Histogram      `json:"histogram" protobuf:"bytes,6,opt,name=histogram"`
+	Counter   *Counter        `json:"counter" protobuf:"bytes,7,opt,name=counter"`
 }
 
-func (m *Metric) GetMetricLabels() map[string]string {
+func (p *Prometheus) GetMetricLabels() map[string]string {
 	labels := make(map[string]string)
-	for _, label := range m.Labels {
+	for _, label := range p.Labels {
 		labels[label.Key] = label.Value
 	}
 	return labels
 }
 
-func (m *Metric) GetMetricType() MetricType {
-	if m.Gauge != nil {
+func (p *Prometheus) GetMetricType() MetricType {
+	if p.Gauge != nil {
 		return MetricTypeGauge
 	}
-	if m.Histogram != nil {
+	if p.Histogram != nil {
 		return MetricTypeHistogram
 	}
-	if m.Counter != nil {
+	if p.Counter != nil {
 		return MetricTypeCounter
 	}
 	return MetricTypeUnknown
 }
 
-func (m *Metric) GetMetricValue() *MetricValue {
-	switch m.GetMetricType() {
+func (p *Prometheus) GetValueString() string {
+	switch p.GetMetricType() {
 	case MetricTypeGauge:
-		return m.Gauge.Value
+		return p.Gauge.Value
+	case MetricTypeCounter:
+		return p.Counter.Increment
 	case MetricTypeHistogram:
-		return m.Histogram.Value
+		return p.Histogram.Value
 	default:
-		return nil
+		return ""
 	}
 }
 
-func (m *Metric) GetDesc() string {
+func (p *Prometheus) SetValueString(val string) {
+	switch p.GetMetricType() {
+	case MetricTypeGauge:
+		p.Gauge.Value = val
+	case MetricTypeCounter:
+		p.Counter.Increment = val
+	case MetricTypeHistogram:
+		p.Histogram.Value = val
+	}
+}
+
+func (p *Prometheus) GetDesc() string {
 	// This serves as a hash for the metric
 	// TODO: Make sure this is what we want to use as the hash
-	desc := m.Name + "{"
-	for key, val := range m.GetMetricLabels() {
+	desc := p.Name + "{"
+	for key, val := range p.GetMetricLabels() {
 		desc += key + "=" + val + ","
 	}
 	desc += "}"
@@ -1619,36 +1625,15 @@ type MetricLabels struct {
 }
 
 type Gauge struct {
-	Value *MetricValue `json:"value" protobuf:"bytes,1,opt,name=value"`
+	Value    string `json:"value" protobuf:"bytes,1,opt,name=value"`
+	RealTime *bool  `json:"realTime" protobuf:"varint,2,opt,name=realTime"`
 }
 
 type Histogram struct {
-	Value *MetricValue `json:"value" protobuf:"bytes,1,opt,name=value"`
-	Bins  []float64    `json:"bins" protobuf:"fixed64,2,rep,name=bins"`
+	Value string    `json:"value" protobuf:"bytes,3,opt,name=value"`
+	Bins  []float64 `json:"bins" protobuf:"fixed64,2,rep,name=bins"`
 }
-
-type CounterTrigger string
-
-const (
-	CounterTriggerExecution  CounterTrigger = "Execution"
-	CounterTriggerCompletion CounterTrigger = "Completion"
-	CounterTriggerFailure    CounterTrigger = "Failure"
-	CounterTriggerSuccess    CounterTrigger = "Success"
-)
 
 type Counter struct {
-	Increment   float64        `json:"increment" protobuf:"varint,1,opt,name=increment"`
-	IncrementOn CounterTrigger `json:"incrementOn" protobuf:"bytes,2,opt,name=incrementOn,casttype=CounterTrigger"`
-}
-
-type DurationType string
-
-const (
-	DurationTypeRealTime     DurationType = "RealTime"
-	DurationTypeOnCompletion DurationType = "OnCompletion"
-)
-
-type MetricValue struct {
-	Literal  string       `json:"literal" protobuf:"bytes,1,opt,name=literal"`
-	Duration DurationType `json:"duration" protobuf:"bytes,2,opt,name=duration,casttype=DurationType"`
+	Increment string `json:"increment" protobuf:"varint,1,opt,name=increment"`
 }

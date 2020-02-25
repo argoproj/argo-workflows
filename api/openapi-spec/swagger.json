@@ -1540,10 +1540,6 @@
       "type": "object",
       "properties": {
         "increment": {
-          "type": "number",
-          "format": "double"
-        },
-        "incrementOn": {
           "type": "string"
         }
       }
@@ -1654,8 +1650,8 @@
             "type": "string"
           }
         },
-        "emitMetrics": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EmitMetrics"
+        "metrics": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metrics"
         },
         "name": {
           "type": "string",
@@ -1716,17 +1712,6 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.EmitMetrics": {
-      "type": "object",
-      "properties": {
-        "metrics": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metric"
-          }
-        }
-      }
-    },
     "io.argoproj.workflow.v1alpha1.ExecutorConfig": {
       "description": "ExecutorConfig holds configurations of an executor container.",
       "type": "object",
@@ -1740,8 +1725,12 @@
     "io.argoproj.workflow.v1alpha1.Gauge": {
       "type": "object",
       "properties": {
+        "realTime": {
+          "type": "boolean",
+          "format": "boolean"
+        },
         "value": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MetricValue"
+          "type": "string"
         }
       }
     },
@@ -1877,7 +1866,7 @@
           }
         },
         "value": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MetricValue"
+          "type": "string"
         }
       }
     },
@@ -1985,32 +1974,6 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.Metric": {
-      "type": "object",
-      "properties": {
-        "counter": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Counter"
-        },
-        "gauge": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Gauge"
-        },
-        "help": {
-          "type": "string"
-        },
-        "histogram": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Histogram"
-        },
-        "labels": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MetricLabels"
-          }
-        },
-        "name": {
-          "type": "string"
-        }
-      }
-    },
     "io.argoproj.workflow.v1alpha1.MetricLabels": {
       "type": "object",
       "properties": {
@@ -2022,14 +1985,14 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.MetricValue": {
+    "io.argoproj.workflow.v1alpha1.Metrics": {
       "type": "object",
       "properties": {
-        "duration": {
-          "type": "string"
-        },
-        "literal": {
-          "type": "string"
+        "prometheus": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Prometheus"
+          }
         }
       }
     },
@@ -2196,6 +2159,35 @@
       "title": "PodGC describes how to delete completed pods as they complete",
       "properties": {
         "strategy": {
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Prometheus": {
+      "type": "object",
+      "properties": {
+        "counter": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Counter"
+        },
+        "gauge": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Gauge"
+        },
+        "help": {
+          "type": "string"
+        },
+        "histogram": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Histogram"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MetricLabels"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "when": {
           "type": "string"
         }
       }
@@ -2654,9 +2646,6 @@
           "description": "Set DNS policy for the pod.\nDefaults to \"ClusterFirst\".\nValid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'.\nDNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy.\nTo have DNS options set along with hostNetwork, you have to specify DNS policy\nexplicitly to 'ClusterFirstWithHostNet'.",
           "type": "string"
         },
-        "emitMetrics": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EmitMetrics"
-        },
         "entrypoint": {
           "type": "string",
           "title": "Entrypoint is a template reference to the starting point of the workflow"
@@ -2683,6 +2672,9 @@
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
           }
+        },
+        "metrics": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metrics"
         },
         "nodeSelector": {
           "description": "NodeSelector is a selector which will result in all pods of the workflow\nto be scheduled on the selected node(s). This is able to be overridden by\na nodeSelector specified in the template.",
@@ -2845,8 +2837,8 @@
           "title": "ContinueOn makes argo to proceed with the following step even if this step fails.\nErrors and Failed states can be specified",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContinueOn"
         },
-        "emitMetrics": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.EmitMetrics"
+        "metrics": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metrics"
         },
         "name": {
           "type": "string",

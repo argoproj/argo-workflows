@@ -55,6 +55,7 @@ The following variables are made available to reference various metadata of a wo
 | `workflow.creationTimestamp` | Workflow creation timestamp formatted in RFC 3339  (e.g. `2018-08-23T05:42:49Z`) |
 | `workflow.creationTimestamp.<STRFTIMECHAR>` | Creation timestamp formatted with a [strftime](http://strftime.org) format character |
 | `workflow.priority` | Workflow priority |
+| `workflow.duration` | Workflow duration estimate, may differ from actual duration by a couple of seconds |
 
 ## Exit Handler:
 | Variable | Description|

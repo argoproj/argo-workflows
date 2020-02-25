@@ -131,9 +131,7 @@ message ContinueOn {
 }
 
 message Counter {
-  optional double increment = 1;
-
-  optional string incrementOn = 2;
+  optional string increment = 1;
 }
 
 // CronWorkflow is the definition of a scheduled workflow resource
@@ -230,7 +228,7 @@ message DAGTask {
   // primary template.
   optional string onExit = 11;
 
-  optional EmitMetrics emitMetrics = 12;
+  optional Metrics metrics = 12;
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -252,10 +250,6 @@ message DAGTemplate {
   optional bool failFast = 3;
 }
 
-message EmitMetrics {
-  repeated Metric metrics = 1;
-}
-
 // ExecutorConfig holds configurations of an executor container.
 message ExecutorConfig {
   // ServiceAccountName specifies the service account name of the executor container.
@@ -263,7 +257,9 @@ message ExecutorConfig {
 }
 
 message Gauge {
-  optional MetricValue value = 1;
+  optional string value = 1;
+
+  optional bool realTime = 2;
 }
 
 // GitArtifact is the location of an git artifact
@@ -351,7 +347,7 @@ message HTTPArtifact {
 }
 
 message Histogram {
-  optional MetricValue value = 1;
+  optional string value = 3;
 
   repeated double bins = 2;
 }
@@ -413,30 +409,14 @@ message Metadata {
   map<string, string> labels = 2;
 }
 
-message Metric {
-  optional string name = 1;
-
-  repeated MetricLabels labels = 2;
-
-  optional string help = 3;
-
-  optional Gauge gauge = 4;
-
-  optional Histogram histogram = 5;
-
-  optional Counter counter = 6;
-}
-
 message MetricLabels {
   optional string key = 1;
 
   optional string value = 2;
 }
 
-message MetricValue {
-  optional string literal = 1;
-
-  optional string duration = 2;
+message Metrics {
+  repeated Prometheus prometheus = 1;
 }
 
 // NodeStatus contains status information about an individual node in the workflow
@@ -568,6 +548,22 @@ message Parameter {
 // PodGC describes how to delete completed pods as they complete
 message PodGC {
   optional string strategy = 1;
+}
+
+message Prometheus {
+  optional string name = 1;
+
+  repeated MetricLabels labels = 2;
+
+  optional string help = 3;
+
+  optional string when = 4;
+
+  optional Gauge gauge = 5;
+
+  optional Histogram histogram = 6;
+
+  optional Counter counter = 7;
 }
 
 // RawArtifact allows raw string content to be placed as an artifact in a container
@@ -1012,7 +1008,7 @@ message WorkflowSpec {
   // container fields which are not strings (e.g. resource limits).
   optional string podSpecPatch = 27;
 
-  optional EmitMetrics emitMetrics = 31;
+  optional Metrics metrics = 31;
 }
 
 // WorkflowStatus contains overall status information about a workflow
@@ -1086,7 +1082,7 @@ message WorkflowStep {
   // primary template.
   optional string onExit = 11;
 
-  optional EmitMetrics emitMetrics = 12;
+  optional Metrics metrics = 12;
 }
 
 // WorkflowTemplate is the definition of a workflow template resource
