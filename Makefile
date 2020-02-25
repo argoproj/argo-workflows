@@ -42,16 +42,6 @@ MANIFESTS_VERSION     := latest
 DEV_IMAGE             := true
 endif
 
-ifeq ($(findstring release,$(GIT_BRANCH)),release)
-# be the version, but with "v" removed, e.g. "2.5.0" rather than "v2.5.0"
-JAVA_CLIENT_VERSION   := $(subst v,,$(VERSION))
-else
-# the JAVA_CLIENT_VERSION must be a snapshot (e.g. 1-SNAPSHOT) if we need to re-publish
-JAVA_CLIENT_VERSION   := 1-SNAPSHOT
-endif
-
-PYTHON_CLIENT_VERSION := $(MANIFESTS_VERSION)
-
 # perform static compilation
 STATIC_BUILD          ?= true
 CI                    ?= false
@@ -81,7 +71,6 @@ E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
 # the sort puts _.primary first in the list
 SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json' | sort)
-JAVA_CLIENT_JAR  := $(HOME)/.m2/repository/io/argoproj/workflow/argo-workflows-java-client/$(JAVA_CLIENT_VERSION)/argo-workflows-java-client-$(JAVA_CLIENT_VERSION).jar
 
 .PHONY: build
 build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml clients
@@ -438,87 +427,6 @@ $(HOME)/go/bin/swagger:
 
 api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) dist/MANIFESTS_VERSION hack/swaggify.sh
 	swagger mixin -c 412 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
-
-# clients
-
-dist/openapi-generator-cli.jar:
-	mkdir -p dist
-	curl -L -o dist/openapi-generator-cli.jar https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/4.2.3/openapi-generator-cli-4.2.3.jar
-
-.PHONY: clients
-clients: java-client
-
-.PHONY: test-clients
-test-clients: test-java-client
-
-# java client
-
-dist/java.swagger.json: api/openapi-spec/swagger.json
-	cat api/openapi-spec/swagger.json | sed 's/io.argoproj.workflow.v1alpha1.//' > dist/java.swagger.json
-
-clients/java/pom.xml: dist/openapi-generator-cli.jar dist/java.swagger.json
-	rm -Rf clients/java
-	mkdir -p clients/java
-	# https://github.com/kubernetes-client/gen/blob/master/openapi/java.xml
-	java \
-		-jar dist/openapi-generator-cli.jar \
-		generate \
-		-i dist/java.swagger.json \
-		-g java \
-		-o clients/java \
-		-p hideGenerationTimestamp=true \
-		-p dateLibrary=joda \
-		--api-package io.argoproj.workflow.apis \
-		--invoker-package io.argoproj.workflow \
-		--model-package io.argoproj.workflow.models \
-		--group-id io.argoproj.workflow \
-		--artifact-id argo-workflows-java-client \
-		--artifact-version $(JAVA_CLIENT_VERSION) \
-		--import-mappings io.k8s.api.core.v1.Time=org.joda.time.DateTime \
-		--import-mappings io.k8s.api.core.v1.Affinity=io.kubernetes.client.models.V1Affinity \
-		--import-mappings io.k8s.api.core.v1.ConfigMapKeySelector=io.kubernetes.client.models.V1ConfigMapKeySelector \
-		--import-mappings io.k8s.api.core.v1.Container=io.kubernetes.client.models.V1Container \
-		--import-mappings io.k8s.api.core.v1.ContainerPort=io.kubernetes.client.models.V1ContainerPort \
-		--import-mappings io.k8s.api.core.v1.EnvFromSource=io.kubernetes.client.models.V1EnvFromSource \
-		--import-mappings io.k8s.api.core.v1.EnvVar=io.kubernetes.client.models.V1EnvVar \
-		--import-mappings io.k8s.api.core.v1.HostAlias=io.kubernetes.client.models.V1HostAlias \
-		--import-mappings io.k8s.api.core.v1.Lifecycle=io.kubernetes.client.models.V1Lifecycle \
-		--import-mappings io.k8s.api.core.v1.ListMeta=io.kubernetes.client.models.V1ListMeta \
-		--import-mappings io.k8s.api.core.v1.LocalObjectReference=io.kubernetes.client.models.V1LocalObjectReference \
-		--import-mappings io.k8s.api.core.v1.ObjectMeta=io.kubernetes.client.models.V1ObjectMeta \
-		--import-mappings io.k8s.api.core.v1.ObjectReference=io.kubernetes.client.models.V1ObjectReference \
-		--import-mappings io.k8s.api.core.v1.PersistentVolumeClaim=io.kubernetes.client.models.V1PersistentVolumeClaim \
-		--import-mappings io.k8s.api.core.v1.PodDNSConfig=io.kubernetes.client.models.V1PodDNSConfig \
-		--import-mappings io.k8s.api.core.v1.PodSecurityContext=io.kubernetes.client.models.V1PodSecurityContext \
-		--import-mappings io.k8s.api.core.v1.Probe=io.kubernetes.client.models.V1Probe \
-		--import-mappings io.k8s.api.core.v1.ResourceRequirements=io.kubernetes.client.models.V1ResourceRequirements \
-		--import-mappings io.k8s.api.core.v1.SecretKeySelector=io.kubernetes.client.models.V1SecretKeySelector \
-		--import-mappings io.k8s.api.core.v1.SecurityContext=io.kubernetes.client.models.V1SecurityContext \
-		--import-mappings io.k8s.api.core.v1.Toleration=io.kubernetes.client.models.V1Toleration \
-		--import-mappings io.k8s.api.core.v1.Volume=io.kubernetes.client.models.V1Volume \
-		--import-mappings io.k8s.api.core.v1.VolumeDevice=io.kubernetes.client.models.V1VolumeDevice \
-		--import-mappings io.k8s.api.core.v1.VolumeMount=io.kubernetes.client.models.V1VolumeMount \
-	# add the io.kubernetes:java-client to the deps
-	cd clients/java && sed 's/<dependencies>/<dependencies><dependency><groupId>io.kubernetes<\/groupId><artifactId>client-java<\/artifactId><version>5.0.0<\/version><\/dependency>/g' pom.xml > tmp && mv tmp pom.xml
-    # I don't like these tests
-	rm -Rf clients/java/src/test
-	touch clients/java/pom.xml
-
-.PHONY: java-client
-java-client: $(JAVA_CLIENT_JAR)
-
-$(JAVA_CLIENT_JAR): clients/java/pom.xml
-	cd clients/java && mvn install -DskipTests -Dmaven.javadoc.skip
-
-.PHONY: publish-java-client
-publish-java-client: java-client
-	# https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-apache-maven-for-use-with-github-packages
-	cd clients/java && mvn deploy -DskipTests -Dmaven.javadoc.skip -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/argoproj/argo
-
-.PHONY: test-java-client
-test-java-client: java-client
-	cd clients/java && mvn install -Dmaven.javadoc.skip
-	eval `make env` && cd clients/java-test && mvn versions:set -DnewVersion=$(JAVA_CLIENT_VERSION) verify
 
 # pre-push
 
