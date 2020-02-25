@@ -1719,14 +1719,12 @@ func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 }
 
 // getStepOrDAGTaskName will extract the node from NodeStatus Name
-func getStepOrDAGTaskName(nodeName string, hasRetryStrategy bool) string {
+func getStepOrDAGTaskName(nodeName string) string {
 	if strings.Contains(nodeName, ".") {
 		name := nodeName[strings.LastIndex(nodeName, ".")+1:]
-		// Check retry scenario
-		if hasRetryStrategy {
-			if indx := strings.LastIndex(name, "("); indx > 0 {
-				return name[0:indx]
-			}
+		// Retry, withItems and withParam scenario
+		if indx := strings.LastIndex(name, "("); indx > 0 {
+			return name[0:indx]
 		}
 		return name
 	}
@@ -1747,7 +1745,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 		if err != nil {
 			return node, err
 		}
-		name := getStepOrDAGTaskName(nodeName, tmpl.RetryStrategy != nil)
+		name := getStepOrDAGTaskName(nodeName)
 		includeScriptOutput = hasOutputResultRef(name, parentTemplate)
 	}
 
