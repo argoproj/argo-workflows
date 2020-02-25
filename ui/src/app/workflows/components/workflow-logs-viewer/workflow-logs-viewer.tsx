@@ -88,9 +88,15 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                         </div>
                     )}
                 </div>
-                <p>
-                    <i className='fa fa-info-circle' /> No data? Logs for deleted pods may be found in the artifacts tab.
-                </p>
+                {this.state.lines.length === 0 && (
+                    <p>
+                        Still waiting for data or an error? Try getting{' '}
+                        <a href={services.workflows.getArtifactLogsUrl(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived)}>
+                            logs from the artifacts
+                        </a>
+                        .
+                    </p>
+                )}
             </div>
         );
     }
