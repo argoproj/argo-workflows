@@ -92,7 +92,6 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                     <p>
                         Still waiting for data or an error? Try getting{' '}
                         <a href={services.workflows.getArtifactLogsUrl(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived)}>
-                            {' '}
                             logs from the artifacts
                         </a>
                         .
