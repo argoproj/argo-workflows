@@ -69,7 +69,8 @@ CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join 
 MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
-SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json')
+# the sort puts _.primary first in the list
+SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json' | sort)
 
 .PHONY: build
 build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
@@ -203,9 +204,7 @@ codegen:
 	# Generate code
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
-	./hack/update-openapigen.sh
-	go run ./hack/gen-openapi-spec/main.go $(MANIFESTS_VERSION) > ./api/openapi-spec/swagger.json
-	make api/argo-server/swagger.json
+	make api/openapi-spec/swagger.json
 	find . -path '*/mocks/*' -type f -not -path '*/vendor/*' -exec ./hack/update-mocks.sh {} ';'
 
 .PHONY: manifests
@@ -213,6 +212,7 @@ manifests: status manifests/install.yaml manifests/namespace-install.yaml manife
 
 # we use a different file to ./VERSION to force updating manifests after a `make clean`
 dist/MANIFESTS_VERSION:
+	mkdir -p dist
 	echo $(MANIFESTS_VERSION) > dist/MANIFESTS_VERSION
 
 manifests/install.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
@@ -418,13 +418,13 @@ clean:
 	# Delete build files
 	rm -Rf dist ui/dist
 
-# sdks
+# swagger
 
 $(HOME)/go/bin/swagger:
 	go get github.com/go-swagger/go-swagger/cmd/swagger
 
-api/argo-server/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES)
-	swagger mixin -c 412 pkg/apiclient/primary.swagger.json $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' > api/argo-server/swagger.json
+api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) dist/MANIFESTS_VERSION hack/swaggify.sh
+	swagger mixin -c 412 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
 
 # pre-push
 
