@@ -1881,6 +1881,10 @@
         "podSpecPatch": {
           "type": "string",
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of\ncontainer fields which are not strings (e.g. resource limits)."
+        },
+        "podDisruptionBudget": {
+          "$ref": "#/definitions/k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec",
+          "title": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.\nController will automatically add the selector with workflow name, if selector is empty.\nOptional: Defaults to empty.\n+optional"
         }
       },
       "description": "WorkflowSpec is the specification of a Workflow."
@@ -4140,6 +4144,24 @@
       },
       "description": "WindowsSecurityContextOptions contain Windows-specific options and credentials."
     },
+    "k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec": {
+      "type": "object",
+      "properties": {
+        "minAvailable": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.util.intstr.IntOrString",
+          "title": "An eviction is allowed if at least \"minAvailable\" pods selected by\n\"selector\" will still be available after the eviction, i.e. even in the\nabsence of the evicted pod.  So for example you can prevent all voluntary\nevictions by specifying \"100%\".\n+optional"
+        },
+        "selector": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector",
+          "title": "Label query over pods whose evictions are managed by the disruption\nbudget.\n+optional"
+        },
+        "maxUnavailable": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.util.intstr.IntOrString",
+          "title": "An eviction is allowed if at most \"maxUnavailable\" pods selected by\n\"selector\" are unavailable after the eviction, i.e. even in absence of\nthe evicted pod. For example, one can prevent all voluntary evictions\nby specifying 0. This is a mutually exclusive setting with \"minAvailable\".\n+optional"
+        }
+      },
+      "description": "PodDisruptionBudgetSpec is a description of a PodDisruptionBudget."
+    },
     "k8s.io.apimachinery.pkg.api.resource.Quantity": {
       "type": "object",
       "properties": {
@@ -4350,11 +4372,6 @@
         "fieldsV1": {
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.FieldsV1",
           "title": "FieldsV1 holds the first JSON version format as described in the \"FieldsV1\" type.\n+optional"
-          "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of\ncontainer fields which are not strings (e.g. resource limits)."
-        },
-        "podDisruptionBudget": {
-          "$ref": "#/definitions/v1beta1PodDisruptionBudgetSpec",
-          "title": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.\nController will automatically add the selector with workflow name, if selector is empty.\nOptional: Defaults to empty.\n+optional"
         }
       },
       "description": "ManagedFieldsEntry is a workflow-id, a FieldSet and the group version of the resource\nthat the fieldset applies to."
@@ -4526,25 +4543,7 @@
       "description": "+protobuf=true\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:openapi-gen=true",
       "title": "IntOrString is a type that can hold an int32 or a string.  When used in\nJSON or YAML marshalling and unmarshalling, it produces or consumes the\ninner type.  This allows you to have, for example, a JSON field that can\naccept a name or number.\nTODO: Rename to Int32OrString"
     },
-    "v1beta1PodDisruptionBudgetSpec": {
-      "type": "object",
-      "properties": {
-        "minAvailable": {
-          "$ref": "#/definitions/intstrIntOrString",
-          "title": "An eviction is allowed if at least \"minAvailable\" pods selected by\n\"selector\" will still be available after the eviction, i.e. even in the\nabsence of the evicted pod.  So for example you can prevent all voluntary\nevictions by specifying \"100%\".\n+optional"
-        },
-        "selector": {
-          "$ref": "#/definitions/v1LabelSelector",
-          "title": "Label query over pods whose evictions are managed by the disruption\nbudget.\n+optional"
-        },
-        "maxUnavailable": {
-          "$ref": "#/definitions/intstrIntOrString",
-          "title": "An eviction is allowed if at most \"maxUnavailable\" pods selected by\n\"selector\" are unavailable after the eviction, i.e. even in absence of\nthe evicted pod. For example, one can prevent all voluntary evictions\nby specifying 0. This is a mutually exclusive setting with \"minAvailable\".\n+optional"
-        }
-      },
-      "description": "PodDisruptionBudgetSpec is a description of a PodDisruptionBudget."
-    },
-    "workflowLogEntry": {
+    "workflow.LogEntry": {
       "type": "object",
       "properties": {
         "content": {
