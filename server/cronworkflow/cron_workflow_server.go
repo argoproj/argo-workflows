@@ -8,6 +8,8 @@ import (
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/workflow/templateresolution"
+	"github.com/argoproj/argo/workflow/validate"
 )
 
 type cronWorkflowServiceServer struct {
@@ -15,6 +17,16 @@ type cronWorkflowServiceServer struct {
 
 func NewCronWorkflowServer() cronworkflowpkg.CronWorkflowServiceServer {
 	return &cronWorkflowServiceServer{}
+}
+
+func (c *cronWorkflowServiceServer) LintCronWorkflow(ctx context.Context, req *cronworkflowpkg.LintCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
+	wfClient := auth.GetWfClient(ctx)
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
+	err := validate.ValidateCronWorkflow(wftmplGetter, req.CronWorkflow)
+	if err != nil {
+		return nil, err
+	}
+	return req.CronWorkflow, nil
 }
 
 func (c *cronWorkflowServiceServer) ListCronWorkflows(ctx context.Context, req *cronworkflowpkg.ListCronWorkflowsRequest) (*v1alpha1.CronWorkflowList, error) {

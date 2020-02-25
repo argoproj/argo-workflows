@@ -125,6 +125,38 @@
         ]
       }
     },
+    "/api/v1/cron-workflows/{namespace}/lint": {
+      "post": {
+        "operationId": "LintCronWorkflow",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1CronWorkflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/cronworkflowLintCronWorkflowRequest"
+            }
+          }
+        ],
+        "tags": [
+          "CronWorkflowService"
+        ]
+      }
+    },
     "/api/v1/cron-workflows/{namespace}/{name}": {
       "get": {
         "operationId": "GetCronWorkflow",
@@ -306,6 +338,17 @@
     },
     "cronworkflowCronWorkflowDeletedResponse": {
       "type": "object"
+    },
+    "cronworkflowLintCronWorkflowRequest": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "cronWorkflow": {
+          "$ref": "#/definitions/v1alpha1CronWorkflow"
+        }
+      }
     },
     "cronworkflowUpdateCronWorkflowRequest": {
       "type": "object",

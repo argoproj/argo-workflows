@@ -429,7 +429,7 @@ api/argo-server/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES)
 # pre-push
 
 .PHONY: pre-commit
-pre-commit: test lint codegen manifests start pf-bg smoke test-api test-cli
+pre-commit: test codegen manifests lint start pf-bg smoke test-api test-cli
 
 # release
 

@@ -13,6 +13,10 @@ type argoKubeCronWorkflowServiceClient struct {
 	delegate cronworkflowpkg.CronWorkflowServiceServer
 }
 
+func (c argoKubeCronWorkflowServiceClient) LintCronWorkflow(ctx context.Context, req *cronworkflowpkg.LintCronWorkflowRequest, _ ...grpc.CallOption) (*v1alpha1.CronWorkflow, error) {
+	return c.delegate.LintCronWorkflow(ctx, req)
+}
+
 func (c argoKubeCronWorkflowServiceClient) CreateCronWorkflow(ctx context.Context, req *cronworkflowpkg.CreateCronWorkflowRequest, _ ...grpc.CallOption) (*v1alpha1.CronWorkflow, error) {
 	return c.delegate.CreateCronWorkflow(ctx, req)
 }
