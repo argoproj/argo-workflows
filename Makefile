@@ -73,7 +73,7 @@ E2E_EXECUTOR     ?= pns
 SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json' | sort)
 
 .PHONY: build
-build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml clients
+build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
 
 .PHONY: status
 status:
@@ -196,6 +196,8 @@ endif
 ifeq ($(K3D),true)
 	k3d import-images $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
 endif
+
+# generation
 
 .PHONY: codegen
 codegen:
@@ -415,10 +417,6 @@ clean:
 	rm -Rf vendor
 	# Delete build files
 	rm -Rf dist ui/dist
-	# Delete clients compiled code
-	rm -Rf clients/java
-	rm -Rf clients/java-test/target
-	rm -Rf clients/python
 
 # swagger
 
