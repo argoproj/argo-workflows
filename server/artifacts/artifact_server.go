@@ -169,11 +169,15 @@ func (a *ArtifactServer) getWorkflow(ctx context.Context, namespace string, work
 		return nil, err
 	}
 	if wf.Status.IsOffloadNodeStatus() {
-		offloadedNodes, err := a.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-		if err != nil {
-			return nil, err
+		if a.offloadNodeStatusRepo.IsEnabled() {
+			offloadedNodes, err := a.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+			if err != nil {
+				return nil, err
+			}
+			wf.Status.Nodes = offloadedNodes
+		} else {
+			log.WithFields(log.Fields{"namespace": namespace, "name": workflowName}).Warn(sqldb.OffloadNodeStatusDisabledWarning)
 		}
-		wf.Status.Nodes = offloadedNodes
 	}
 	return wf, nil
 }

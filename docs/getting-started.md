@@ -20,7 +20,7 @@ brew install argoproj/tap/argo
 And via `curl`
 ```sh
 # Download the binary
-curl -sLO https://github.com/argoproj/argo/releases/download/v2.4.3/argo-darwin-amd64
+curl -sLO https://github.com/argoproj/argo/releases/download/v2.5.2/argo-darwin-amd64
 
 # Make binary executable
 chmod +x argo-darwin-amd64
@@ -37,7 +37,7 @@ argo version
 Available via `curl`
 ```sh
 # Download the binary
-curl -sLO https://github.com/argoproj/argo/releases/download/v2.4.3/argo-linux-amd64
+curl -sLO https://github.com/argoproj/argo/releases/download/v2.5.2/argo-linux-amd64
 
 # Make binary executable
 chmod +x argo-linux-amd64
@@ -54,11 +54,19 @@ argo version
 You can download the latest and previous Argo binaries from our [releases page](https://github.com/argoproj/argo/releases/).
 
 ## 2. Install the Controller and UI
+
 ```sh
 kubectl create namespace argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/v2.4.3/manifests/install.yaml
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/v2.5.2/manifests/install.yaml
 ```
+
+Namespaced installs as well as installs with MinIO and/or a database built in [are also available](https://github.com/argoproj/argo/tree/v2.5.2/manifests). 
+
+Examples below will assume you've installed argo in the `argo` namespace. If you have not, adjust 
+the commands accordingly.
+
 NOTE: On GKE, you may need to grant your account the ability to create new `clusterrole`s
+
 ```sh
 kubectl create clusterrolebinding YOURNAME-cluster-admin-binding --clusterrole=cluster-admin --user=YOUREMAIL@gmail.com
 ```
@@ -89,7 +97,7 @@ For the purposes of this demo, we will grant the `default` `ServiceAccount` admi
 kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default
 ```
 
-**Note that this will grant admin privilages to the `default` `ServiceAccount` in the namespace that the command is run from, so you will only be able to
+**Note that this will grant admin privileges to the `default` `ServiceAccount` in the namespace that the command is run from, so you will only be able to
 run Workflows in the namespace where the `RoleBinding` was made.**
 
 ## 4. Run Sample Workflows

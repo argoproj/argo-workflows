@@ -6,17 +6,14 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/argoproj/argo/pkg/apiclient"
 	"github.com/argoproj/argo/util/kubeconfig"
 )
 
-// DEPRECATED
-var ArgoServer string
+var argoServer string
 
-// DEPRECATED
 var Config clientcmd.ClientConfig
 
 func AddKubectlFlagsToCmd(cmd *cobra.Command) {
@@ -31,20 +28,11 @@ func AddKubectlFlagsToCmd(cmd *cobra.Command) {
 }
 
 func AddArgoServerFlagsToCmd(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringVar(&ArgoServer, "argo-server", os.Getenv("ARGO_SERVER"), "API server `host:port`. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.")
-}
-
-// DEPRECATED
-func GetClientConn() *grpc.ClientConn {
-	conn, err := apiclient.NewClientConn(ArgoServer)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return conn
+	cmd.PersistentFlags().StringVar(&argoServer, "argo-server", os.Getenv("ARGO_SERVER"), "API server `host:port`. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.")
 }
 
 func NewAPIClient() (context.Context, apiclient.Client) {
-	ctx, client, err := apiclient.NewClient(ArgoServer, func() string {
+	ctx, client, err := apiclient.NewClient(argoServer, func() string {
 		return GetAuthString()
 	}, Config)
 	if err != nil {
@@ -59,11 +47,6 @@ func Namespace() string {
 		log.Fatal(err)
 	}
 	return namespace
-}
-
-// DEPRECATED should only be used by client/v1 package
-func GetContext() context.Context {
-	return apiclient.NewContext(GetAuthString())
 }
 
 func GetAuthString() string {
