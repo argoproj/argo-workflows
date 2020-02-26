@@ -1,7 +1,7 @@
 package oss
 
 import (
-        aliyunoss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	ossdriver "github.com/aliyun/aliyun-oss-go-sdk/oss"
         wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
         log "github.com/sirupsen/logrus"
         "k8s.io/apimachinery/pkg/util/wait"
@@ -15,8 +15,8 @@ type OSSArtifactDriver struct {
 	SecretKey string
 }
 
-func (ossDriver *OSSArtifactDriver) newOSSClient() (*aliyunoss.Client, error) {
-	client, err := aliyunoss.New(ossDriver.Endpoint, ossDriver.AccessKey, ossDriver.SecretKey)
+func (ossDriver *OSSArtifactDriver) newOSSClient() (*ossdriver.Client, error) {
+	client, err := ossdriver.New(ossDriver.Endpoint, ossDriver.AccessKey, ossDriver.SecretKey)
 	if err != nil {
 		log.Warnf("Failed to create new OSS client: %v", err)
 		return nil, err
