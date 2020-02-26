@@ -6,6 +6,8 @@ import (
 	mock "github.com/stretchr/testify/mock"
 	labels "k8s.io/apimachinery/pkg/labels"
 
+	time "time"
+
 	v1alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -35,6 +37,20 @@ func (_m *WorkflowArchive) DeleteWorkflow(uid string) error {
 	var r0 error
 	if rf, ok := ret.Get(0).(func(string) error); ok {
 		r0 = rf(uid)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// DeleteWorkflows provides a mock function with given fields: ttl
+func (_m *WorkflowArchive) DeleteWorkflows(ttl time.Duration) error {
+	ret := _m.Called(ttl)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(time.Duration) error); ok {
+		r0 = rf(ttl)
 	} else {
 		r0 = ret.Error(0)
 	}
