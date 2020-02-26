@@ -57,7 +57,7 @@ You can download the latest and previous Argo binaries from our [releases page](
 
 ```sh
 kubectl create namespace argo
-kubectl apply -f -n argo https://raw.githubusercontent.com/argoproj/argo/v2.5.2/manifests/install.yaml
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/v2.5.2/manifests/install.yaml
 ```
 
 Namespaced installs as well as installs with MinIO and/or a database built in [are also available](https://github.com/argoproj/argo/tree/v2.5.2/manifests). 
