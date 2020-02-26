@@ -4,15 +4,15 @@ import (
 	"log"
 	"os"
 
-	"github.com/argoproj/argo/workflow/templateresolution"
-
 	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
+
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
-	"github.com/argoproj/argo/workflow/validate"
 )
 
 type cliCreateOpts struct {
@@ -20,9 +20,14 @@ type cliCreateOpts struct {
 	strict bool   // --strict
 }
 
+type cronWorkflowSubmitOpts struct {
+	instanceId string
+}
+
 func NewCreateCommand() *cobra.Command {
 	var (
 		cliCreateOpts cliCreateOpts
+		submitOpts    cronWorkflowSubmitOpts
 	)
 	var command = &cobra.Command{
 		Use:   "create FILE1 FILE2...",
@@ -33,16 +38,20 @@ func NewCreateCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			CreateCronWorkflows(args, &cliCreateOpts)
+			CreateCronWorkflows(args, &cliCreateOpts, &submitOpts)
 		},
 	}
 	command.Flags().StringVarP(&cliCreateOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
+	command.Flags().StringVar(&submitOpts.instanceId, "instanceid", "", "submit with a specific controller's instance id label")
 	command.Flags().BoolVar(&cliCreateOpts.strict, "strict", true, "perform strict workflow validation")
 	return command
 }
 
-func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts) {
-	defaultCronWfClient := InitCronWorkflowClient()
+func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts *cronWorkflowSubmitOpts) {
+
+	ctx, apiClient := client.NewAPIClient()
+	serviceClient := apiClient.NewCronWorkflowServiceClient()
+	namespace := client.Namespace()
 
 	fileContents, err := util.ReadManifest(filePaths...)
 	if err != nil {
@@ -61,20 +70,15 @@ func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts) {
 	}
 
 	for _, cronWf := range cronWorkflows {
-		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wftmplClient)
-		err := validate.ValidateCronWorkflow(wftmplGetter, &cronWf)
-		if err != nil {
-			log.Fatalf("Failed to validate cron workflow: %v", err)
-		}
-		cronWfClient := defaultCronWfClient
-		if cronWf.Namespace != "" {
-			cronWfClient = InitCronWorkflowClient(cronWf.Namespace)
-		}
-		created, err := cronWfClient.Create(&cronWf)
+		applySubmitOpts(&cronWf, submitOpts)
+		created, err := serviceClient.CreateCronWorkflow(ctx, &cronworkflowpkg.CreateCronWorkflowRequest{
+			Namespace:    namespace,
+			CronWorkflow: &cronWf,
+		})
 		if err != nil {
 			log.Fatalf("Failed to create workflow template: %v", err)
 		}
-		printCronWorkflowTemplate(created, cliOpts.output)
+		printCronWorkflowTemplate(created)
 	}
 }
 
@@ -95,4 +99,15 @@ func unmarshalCronWorkflows(wfBytes []byte, strict bool) []wfv1.CronWorkflow {
 	}
 	log.Fatalf("Failed to parse workflow template: %v", err)
 	return nil
+}
+
+func applySubmitOpts(cwf *wfv1.CronWorkflow, submitOpts *cronWorkflowSubmitOpts) {
+	labels := cwf.GetLabels()
+	if labels == nil {
+		labels = make(map[string]string)
+	}
+	if submitOpts.instanceId != "" {
+		labels[common.LabelKeyControllerInstanceID] = submitOpts.instanceId
+	}
+	cwf.SetLabels(labels)
 }

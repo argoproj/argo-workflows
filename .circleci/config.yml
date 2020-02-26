@@ -5,35 +5,29 @@ commands:
       - run:
           name: Install Kustomize
           command: cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
-  dep_ensure:
+  restore_go_mod:
     steps:
-      - run:
-          name: Install Dep v0.5.3
-          command: DEP_RELEASE_TAG=v0.5.3 curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
       - restore_cache:
-          name: Restore vendor cache
+          name: Restore go mod cache
           keys:
-            - vendor-v6-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
-      - run:
-          name: Ensure dependencies
-          command: |
-            # dep ensure takes 5m, but is only needed if not cached
-            [[ -e vendor ]] || make vendor && touch vendor
+            -  go-mod-v1-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
+  save_go_mod:
+    steps:
       - save_cache:
-          name: Save vendor cache
-          key: vendor-v6-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
+          name: Save go mod cache
+          key:  go-mod-v1-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
           paths:
-            - vendor
+            - /home/circleci/.go_workspace/go/pkg/mod
           when: always
   install_golang:
     steps:
       - run:
-          name: Install Golang v1.12.6
+          name: Install Golang v1.13.4
           command: |
-            go get golang.org/dl/go1.12.6
-            [ -e /home/circleci/sdk/go1.12.6 ] || go1.12.6 download
+            go get golang.org/dl/go1.13.4
+            [ -e /home/circleci/sdk/go1.13.4 ] || go1.13.4 download
             echo "export GOPATH=/home/circleci/.go_workspace" | tee -a $BASH_ENV
-            echo "export PATH=/home/circleci/sdk/go1.12.6/bin:\$PATH" | tee -a $BASH_ENV
+            echo "export PATH=/home/circleci/sdk/go1.13.4/bin:\$PATH" | tee -a $BASH_ENV
   save_go_cache:
     steps:
       - save_cache:
@@ -41,7 +35,7 @@ commands:
           key: go-v5-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - /home/circleci/.cache/go-build
-            - /home/circleci/sdk/go1.12.6
+            - /home/circleci/sdk/go1.13.4
           when: always
   restore_go_cache:
     steps:
@@ -50,8 +44,6 @@ commands:
           keys:
             - go-v5-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
             - go-v5-master-{{ .Environment.CIRCLE_JOB }}
-            - go-v4-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
-            - go-v4-master-{{ .Environment.CIRCLE_JOB }}
   e2e:
     steps:
       - install_kustomize
@@ -63,7 +55,7 @@ commands:
       - install_golang
       - go_junit_report
       - checkout
-      - dep_ensure
+      - restore_go_mod
       - run:
           name: Create KUBECONFIG
           # Copy kubeconfig file, and add a fake user for "argo --token xxx" testing
@@ -108,6 +100,7 @@ commands:
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
             make test-e2e 2>&1 | tee test-results/test.out
+      - save_go_mod
       - save_go_cache
       - store_test_results:
           path: test-results
@@ -130,17 +123,15 @@ jobs:
       - install_golang
       - go_junit_report
       - checkout
-      - dep_ensure
+      - restore_go_mod
       - run:
           name: Run tests
           command: |
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
             make test 2>&1 | tee test-results/test.out
-      - run:
-          name: Verify code generation
-          command: make verify-codegen verify-manifests
       - save_go_cache
+      - save_go_mod
       - run:
           name: Uploading code coverage
           command: bash <(curl -s https://codecov.io/bash) -f coverage.out

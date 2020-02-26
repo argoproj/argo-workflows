@@ -71,7 +71,15 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 		}
 
 		wfc.session = session
-		wfc.offloadNodeStatusRepo = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+		if persistence.NodeStatusOffload {
+			wfc.offloadNodeStatusRepo, err = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+			if err != nil {
+				return err
+			}
+			log.Info("Node status offloading is enabled")
+		} else {
+			log.Info("Node status offloading is disabled")
+		}
 		if persistence.Archive {
 			wfc.wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName())
 			log.Info("Workflow archiving is enabled")
@@ -178,10 +186,15 @@ func ReadConfigMapValue(clientset kubernetes.Interface, namespace string, name s
 	return value, nil
 }
 
-func getArtifactRepositoryRef(wfc *WorkflowController, configMapName string, key string) (*config.ArtifactRepository, error) {
-	configStr, err := ReadConfigMapValue(wfc.kubeclientset, wfc.namespace, configMapName, key)
+func getArtifactRepositoryRef(wfc *WorkflowController, configMapName string, key string, namespace string) (*config.ArtifactRepository, error) {
+	// Getting the ConfigMap from the workflow's namespace
+	configStr, err := ReadConfigMapValue(wfc.kubeclientset, namespace, configMapName, key)
 	if err != nil {
-		return nil, err
+		// Falling back to getting the ConfigMap from the controller's namespace
+		configStr, err = ReadConfigMapValue(wfc.kubeclientset, wfc.namespace, configMapName, key)
+		if err != nil {
+			return nil, err
+		}
 	}
 	var config config.ArtifactRepository
 	err = yaml.Unmarshal([]byte(configStr), &config)

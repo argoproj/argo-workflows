@@ -1,62 +1,57 @@
-import {Page} from 'argo-ui';
+import {Page, SlidingPanel} from 'argo-ui';
 
 import * as classNames from 'classnames';
+import {isNaN} from 'formik';
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
+import * as models from '../../../../models';
 import {Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
-import {NamespaceFilter} from '../../../shared/components/namespace-filter';
+import {ResourceSubmit} from '../../../shared/components/resource-submit';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
+import {Consumer} from '../../../shared/context';
+import {exampleWorkflow} from '../../../shared/examples';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
+import {WorkflowFilters} from '../../../workflows/components/workflow-filters/workflow-filters';
 
 interface State {
-    continue: string;
+    offset: number;
+    nextOffset: number;
     loading: boolean;
+    initialized: boolean;
+    managedNamespace: boolean;
     namespace: string;
+    selectedPhases: string[];
+    selectedLabels: string[];
     workflows?: Workflow[];
     error?: Error;
 }
 
 export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, State> {
-    private get continue() {
-        return this.queryParam('continue') || '';
-    }
-
-    private set continue(continueArg: string) {
-        this.setQueryParams({continue: continueArg});
-    }
-
-    private get namespace() {
-        return this.state.namespace;
-    }
-
-    private set namespace(namespace: string) {
-        this.setState({namespace});
-        history.pushState(null, '', uiUrl('cron-workflows/' + namespace));
+    private get wfInput() {
+        return Utils.tryJsonParse(this.queryParam('new'));
     }
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = {continue: '', loading: true, namespace: this.props.match.params.namespace || ''};
+        this.state = {
+            loading: true,
+            offset: this.parseOffset(this.queryParam('continue') || ''),
+            nextOffset: 0,
+            initialized: false,
+            managedNamespace: false,
+            namespace: this.props.match.params.namespace || '',
+            selectedPhases: this.queryParams('phase'),
+            selectedLabels: this.queryParams('label')
+        };
     }
 
     public componentDidMount(): void {
-        services.info
-            .get()
-            .then(info => {
-                if (info.managedNamespace && info.managedNamespace !== this.namespace) {
-                    this.namespace = info.managedNamespace;
-                }
-                return services.archivedWorkflows.list(this.namespace, this.continue);
-            })
-            .then(list => {
-                this.setState({workflows: list.items || [], continue: list.metadata.continue || '', loading: false});
-            })
-            .catch(error => this.setState({error, loading: false}));
+        this.fetchArchivedWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.offset);
     }
 
     public render() {
@@ -67,25 +62,112 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             throw this.state.error;
         }
         return (
-            <Page
-                title='Archived Workflows'
-                toolbar={{
-                    breadcrumbs: [{title: 'Archived Workflows', path: uiUrl('archived-workflow')}],
-                    tools: [
-                        <NamespaceFilter
-                            key='namespace-filter'
-                            value={this.namespace}
-                            onChange={namespace => {
-                                this.namespace = namespace;
-                            }}
-                        />
-                    ]
-                }}>
-                <div className='row'>
-                    <div className='columns small-12'>{this.renderWorkflows()}</div>
-                </div>
-            </Page>
+            <Consumer>
+                {ctx => (
+                    <Page
+                        title='Archived Workflows'
+                        toolbar={{
+                            breadcrumbs: [{title: 'Archived Workflows', path: uiUrl('archived-workflows')}],
+                            actionMenu: {
+                                items: [
+                                    {
+                                        title: 'Submit New Workflow',
+                                        iconClassName: 'fa fa-plus',
+                                        action: () => ctx.navigation.goto('.', {new: '{}'})
+                                    }
+                                ]
+                            },
+                            tools: []
+                        }}>
+                        <div className='row'>
+                            <div className='columns small-12 xlarge-2'>
+                                <div>
+                                    <WorkflowFilters
+                                        workflows={this.state.workflows}
+                                        namespace={this.state.namespace}
+                                        phaseItems={Object.values([models.NODE_PHASE.SUCCEEDED, models.NODE_PHASE.FAILED, models.NODE_PHASE.ERROR])}
+                                        selectedPhases={this.state.selectedPhases}
+                                        selectedLabels={this.state.selectedLabels}
+                                        onChange={(namespace, selectedPhases, selectedLabels) => this.changeFilters(namespace, selectedPhases, selectedLabels, 0)}
+                                    />
+                                </div>
+                            </div>
+                            <div className='columns small-12 xlarge-10'>{this.renderWorkflows()}</div>
+                        </div>
+                        <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
+                            <ResourceSubmit<models.Workflow>
+                                resourceName={'Workflow'}
+                                defaultResource={exampleWorkflow(this.state.namespace)}
+                                onSubmit={wfValue => {
+                                    return services.workflows
+                                        .create(wfValue, wfValue.metadata.namespace || this.state.namespace)
+                                        .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)));
+                                }}
+                            />
+                        </SlidingPanel>
+                    </Page>
+                )}
+            </Consumer>
         );
+    }
+
+    private parseOffset(str: string) {
+        if (isNaN(str)) {
+            return 0;
+        }
+        const result = parseInt(str, 10);
+        return result >= 0 ? result : 0;
+    }
+
+    private changeFilters(namespace: string, selectedPhases: string[], selectedLabels: string[], offset: number) {
+        const params = new URLSearchParams();
+        selectedPhases.forEach(phase => {
+            params.append('phase', phase);
+        });
+        selectedLabels.forEach(label => {
+            params.append('label', label);
+        });
+        if (offset > 0) {
+            params.append('continue', offset.toString());
+        }
+        let url = 'archived-workflows/' + namespace;
+        if (selectedPhases.length > 0 || selectedLabels.length > 0 || offset > 0) {
+            url += '?' + params.toString();
+        }
+        history.pushState(null, '', uiUrl(url));
+        this.fetchArchivedWorkflows(namespace, selectedPhases, selectedLabels, offset && offset >= 0 ? offset : 0);
+    }
+
+    private fetchArchivedWorkflows(namespace: string, selectedPhases: string[], selectedLabels: string[], offset: number): void {
+        let archivedWorkflowList;
+        let newNamespace = namespace;
+        if (!this.state.initialized) {
+            archivedWorkflowList = services.info.get().then(info => {
+                if (info.managedNamespace) {
+                    newNamespace = info.managedNamespace;
+                }
+                this.setState({initialized: true, managedNamespace: info.managedNamespace ? true : false});
+                return services.archivedWorkflows.list(newNamespace, selectedPhases, selectedLabels, offset);
+            });
+        } else {
+            if (this.state.managedNamespace) {
+                newNamespace = this.state.namespace;
+            }
+            archivedWorkflowList = services.archivedWorkflows.list(newNamespace, selectedPhases, selectedLabels, offset);
+        }
+        archivedWorkflowList
+            .then(list => {
+                this.setState({
+                    namespace: newNamespace,
+                    workflows: list.items || [],
+                    selectedPhases,
+                    selectedLabels,
+                    offset,
+                    nextOffset: this.parseOffset(list.metadata.continue || ''),
+                    loading: false
+                });
+            })
+            .catch(error => this.setState({error, loading: false}));
     }
     private renderWorkflows() {
         if (!this.state.workflows) {
@@ -124,14 +206,22 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                     ))}
                 </div>
                 <p>
-                    {this.continue !== '' && (
-                        <button className='argo-button argo-button--base-o' onClick={() => (this.continue = '')}>
+                    {this.state.offset !== 0 && (
+                        <button
+                            className='argo-button argo-button--base-o'
+                            onClick={() => {
+                                this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, 0);
+                            }}>
                             <i className='fa fa-chevron-left' /> Start
                         </button>
                     )}
-                    {this.state.continue !== '' && (
-                        <button className='argo-button argo-button--base-o' onClick={() => (this.continue = this.state.continue)}>
-                            Next: {this.state.continue} <i className='fa fa-chevron-right' />
+                    {this.state.nextOffset !== 0 && (
+                        <button
+                            className='argo-button argo-button--base-o'
+                            onClick={() => {
+                                this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.nextOffset);
+                            }}>
+                            Next: {this.state.nextOffset} <i className='fa fa-chevron-right' />
                         </button>
                     )}
                 </p>

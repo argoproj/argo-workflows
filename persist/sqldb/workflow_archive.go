@@ -1,12 +1,14 @@
 package sqldb
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
@@ -15,6 +17,7 @@ import (
 )
 
 const archiveTableName = "argo_archived_workflows"
+const archiveLabelsTableName = archiveTableName + "_labels"
 
 type archivedWorkflowMetadata struct {
 	ClusterName string         `db:"clustername"`
@@ -30,9 +33,18 @@ type archivedWorkflowRecord struct {
 	archivedWorkflowMetadata
 	Workflow string `db:"workflow"`
 }
+
+type archivedWorkflowLabelRecord struct {
+	ClusterName string `db:"clustername"`
+	UID         string `db:"uid"`
+	// Why is this called "name" not "key"? Key is an SQL reserved word.
+	Key   string `db:"name"`
+	Value string `db:"value"`
+}
+
 type WorkflowArchive interface {
 	ArchiveWorkflow(wf *wfv1.Workflow) error
-	ListWorkflows(namespace string, limit, offset int) (wfv1.Workflows, error)
+	ListWorkflows(namespace string, labelRequirements labels.Requirements, limit, offset int) (wfv1.Workflows, error)
 	GetWorkflow(uid string) (*wfv1.Workflow, error)
 	DeleteWorkflow(uid string) error
 }
@@ -40,71 +52,106 @@ type WorkflowArchive interface {
 type workflowArchive struct {
 	session     sqlbuilder.Database
 	clusterName string
+	dbType      dbType
 }
 
 func NewWorkflowArchive(session sqlbuilder.Database, clusterName string) WorkflowArchive {
-	return &workflowArchive{session: session, clusterName: clusterName}
+	return &workflowArchive{session: session, clusterName: clusterName, dbType: dbTypeFor(session)}
 }
 
 func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
-	logCtx := log.WithField("uid", wf.UID)
-	log.Debug("Archiving workflow")
+	logCtx := log.WithFields(log.Fields{"uid": wf.UID, "labels": wf.GetLabels()})
+	logCtx.Debug("Archiving workflow")
 	workflow, err := json.Marshal(wf)
 	if err != nil {
 		return err
 	}
-	// We assume that we're much more likely to be inserting rows that updating them, so we try and insert,
-	// and if that fails, then we update.
-	// There is no check for race condition here, last writer wins.
-	_, err = r.session.Collection(archiveTableName).
-		Insert(&archivedWorkflowRecord{
-			archivedWorkflowMetadata: archivedWorkflowMetadata{
-				ClusterName: r.clusterName,
-				UID:         string(wf.UID),
-				Name:        wf.Name,
-				Namespace:   wf.Namespace,
-				Phase:       wf.Status.Phase,
-				StartedAt:   wf.Status.StartedAt.Time,
-				FinishedAt:  wf.Status.FinishedAt.Time,
-			},
-			Workflow: string(workflow),
-		})
-	if err != nil {
-		if isDuplicateKeyError(err) {
-			res, err := r.session.
-				Update(archiveTableName).
-				Set("workflow", string(workflow)).
-				Set("phase", wf.Status.Phase).
-				Set("startedat", wf.Status.StartedAt.Time).
-				Set("finishedat", wf.Status.FinishedAt.Time).
-				Where(db.Cond{"clustername": r.clusterName}).
-				And(db.Cond{"uid": wf.UID}).
-				Exec()
-			if err != nil {
+	return r.session.Tx(context.Background(), func(sess sqlbuilder.Tx) error {
+		// We assume that we're much more likely to be inserting rows that updating them, so we try and insert,
+		// and if that fails, then we update.
+		// There is no check for race condition here, last writer wins.
+		_, err = sess.Collection(archiveTableName).
+			Insert(&archivedWorkflowRecord{
+				archivedWorkflowMetadata: archivedWorkflowMetadata{
+					ClusterName: r.clusterName,
+					UID:         string(wf.UID),
+					Name:        wf.Name,
+					Namespace:   wf.Namespace,
+					Phase:       wf.Status.Phase,
+					StartedAt:   wf.Status.StartedAt.Time,
+					FinishedAt:  wf.Status.FinishedAt.Time,
+				},
+				Workflow: string(workflow),
+			})
+		if err != nil {
+			if isDuplicateKeyError(err) {
+				res, err := sess.
+					Update(archiveTableName).
+					Set("workflow", string(workflow)).
+					Set("phase", wf.Status.Phase).
+					Set("startedat", wf.Status.StartedAt.Time).
+					Set("finishedat", wf.Status.FinishedAt.Time).
+					Where(db.Cond{"clustername": r.clusterName}).
+					And(db.Cond{"uid": wf.UID}).
+					Exec()
+				if err != nil {
+					return err
+				}
+				rowsAffected, err := res.RowsAffected()
+				if err != nil {
+					return err
+				}
+				if rowsAffected != 1 {
+					logCtx.WithField("rowsAffected", rowsAffected).Warn("Expected exactly one row affected")
+				}
+			} else {
 				return err
 			}
-			rowsAffected, err := res.RowsAffected()
-			if err != nil {
-				return err
-			}
-			if rowsAffected != 1 {
-				logCtx.WithField("rowsAffected", rowsAffected).Warn("Expected exactly one row affected")
-			}
-		} else {
-			return err
 		}
-	}
 
-	return nil
+		// insert the labels
+		for key, value := range wf.GetLabels() {
+			_, err := sess.Collection(archiveLabelsTableName).
+				Insert(&archivedWorkflowLabelRecord{
+					ClusterName: r.clusterName,
+					UID:         string(wf.UID),
+					Key:         key,
+					Value:       value,
+				})
+			if err != nil {
+				if isDuplicateKeyError(err) {
+					_, err = sess.
+						Update(archiveLabelsTableName).
+						Set("value", value).
+						Where(db.Cond{"clustername": r.clusterName}).
+						And(db.Cond{"uid": wf.UID}).
+						And(db.Cond{"name": key}).
+						Exec()
+					if err != nil {
+						return err
+					}
+				} else {
+					return err
+				}
+			}
+
+		}
+		return nil
+	})
 }
 
-func (r *workflowArchive) ListWorkflows(namespace string, limit int, offset int) (wfv1.Workflows, error) {
+func (r *workflowArchive) ListWorkflows(namespace string, labelRequirements labels.Requirements, limit int, offset int) (wfv1.Workflows, error) {
 	var archivedWfs []archivedWorkflowMetadata
-	err := r.session.
+	clause, err := labelsClause(r.dbType, labelRequirements)
+	if err != nil {
+		return nil, err
+	}
+	err = r.session.
 		Select("name", "namespace", "uid", "phase", "startedat", "finishedat").
 		From(archiveTableName).
 		Where(db.Cond{"clustername": r.clusterName}).
 		And(namespaceEqual(namespace)).
+		And(clause).
 		OrderBy("-startedat").
 		Limit(limit).
 		Offset(offset).

@@ -95,6 +95,16 @@ var (
 // for before requeuing the workflow onto the workqueue.
 const maxOperationTime = 10 * time.Second
 
+// failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
+type failedNodeStatus struct {
+	DisplayName  string      `json:"displayName"`
+	Message      string      `json:"message"`
+	TemplateName string      `json:"templateName"`
+	Phase        string      `json:"phase"`
+	PodName      string      `json:"podName"`
+	FinishedAt   metav1.Time `json:"finishedAt"`
+}
+
 // newWorkflowOperationCtx creates and initializes a new wfOperationCtx object.
 func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOperationCtx {
 	// NEVER modify objects from the store. It's a read-only, local cache.
@@ -194,7 +204,7 @@ func (woc *wfOperationCtx) operate() {
 
 	if woc.wf.Spec.ArtifactRepositoryRef != nil {
 		repoReference := woc.wf.Spec.ArtifactRepositoryRef
-		repo, err := getArtifactRepositoryRef(woc.controller, repoReference.ConfigMap, repoReference.Key)
+		repo, err := getArtifactRepositoryRef(woc.controller, repoReference.ConfigMap, repoReference.Key, woc.wf.ObjectMeta.Namespace)
 		if err == nil {
 			woc.artifactRepository = repo
 		} else {
@@ -262,6 +272,29 @@ func (woc *wfOperationCtx) operate() {
 		} else {
 			woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 		}
+
+		var failures []failedNodeStatus
+		for _, node := range woc.wf.Status.Nodes {
+			if node.Phase == wfv1.NodeFailed || node.Phase == wfv1.NodeError {
+				failures = append(failures,
+					failedNodeStatus{
+						DisplayName:  node.DisplayName,
+						Message:      node.Message,
+						TemplateName: node.TemplateName,
+						Phase:        string(node.Phase),
+						PodName:      node.ID,
+						FinishedAt:   node.FinishedAt,
+					})
+			}
+		}
+		failedNodeBytes, err := json.Marshal(failures)
+		if err != nil {
+			woc.log.Errorf("Error marshalling failed nodes list: %+v", err)
+			// No need to return here
+		}
+		// This strconv.Quote is necessary so that the escaped quotes are not removed during parameter substitution
+		woc.globalParams[common.GlobalVarWorkflowFailures] = strconv.Quote(string(failedNodeBytes))
+
 		woc.log.Infof("Running OnExit handler: %s", woc.wf.Spec.OnExit)
 		onExitNodeName := woc.wf.ObjectMeta.Name + ".onExit"
 		onExitNode, err = woc.executeTemplate(onExitNodeName, &wfv1.Template{Template: woc.wf.Spec.OnExit}, tmplCtx, woc.wf.Spec.Arguments, "")
@@ -720,7 +753,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 func (woc *wfOperationCtx) failSuspendedNodesAfterDeadline() error {
 	if woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline) {
 		for _, node := range woc.wf.Status.Nodes {
-			if node.Type == wfv1.NodeTypeSuspend && node.Phase == wfv1.NodeRunning {
+			if node.IsActiveSuspendNode() {
 				var message string
 				if woc.workflowDeadline.IsZero() {
 					message = "terminated"
@@ -1097,6 +1130,10 @@ func (woc *wfOperationCtx) createPVCs() error {
 		pvcName := fmt.Sprintf("%s-%s", woc.wf.ObjectMeta.Name, pvcTmpl.ObjectMeta.Name)
 		woc.log.Infof("Creating pvc %s", pvcName)
 		pvcTmpl.ObjectMeta.Name = pvcName
+		if pvcTmpl.ObjectMeta.Labels == nil {
+			pvcTmpl.ObjectMeta.Labels = make(map[string]string)
+		}
+		pvcTmpl.ObjectMeta.Labels[common.LabelKeyWorkflow] = woc.wf.ObjectMeta.Name
 		pvcTmpl.OwnerReferences = []metav1.OwnerReference{
 			*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
 		}
@@ -1667,14 +1704,12 @@ func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 }
 
 // getStepOrDAGTaskName will extract the node from NodeStatus Name
-func getStepOrDAGTaskName(nodeName string, hasRetryStrategy bool) string {
+func getStepOrDAGTaskName(nodeName string) string {
 	if strings.Contains(nodeName, ".") {
 		name := nodeName[strings.LastIndex(nodeName, ".")+1:]
-		// Check retry scenario
-		if hasRetryStrategy {
-			if indx := strings.LastIndex(name, "("); indx > 0 {
-				return name[0:indx]
-			}
+		// Retry, withItems and withParam scenario
+		if indx := strings.LastIndex(name, "("); indx > 0 {
+			return name[0:indx]
 		}
 		return name
 	}
@@ -1695,7 +1730,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 		if err != nil {
 			return node, err
 		}
-		name := getStepOrDAGTaskName(nodeName, tmpl.RetryStrategy != nil)
+		name := getStepOrDAGTaskName(nodeName)
 		includeScriptOutput = hasOutputResultRef(name, parentTemplate)
 	}
 
@@ -2085,11 +2120,11 @@ func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
 	}
 	if start <= end {
 		for i := start; i <= end; i++ {
-			items = append(items, wfv1.Item{Type: wfv1.Number, StrVal: fmt.Sprintf(format, i)})
+			items = append(items, wfv1.Item{Type: wfv1.String, StrVal: fmt.Sprintf(format, i)})
 		}
 	} else {
 		for i := start; i >= end; i-- {
-			items = append(items, wfv1.Item{Type: wfv1.Number, StrVal: fmt.Sprintf(format, i)})
+			items = append(items, wfv1.Item{Type: wfv1.String, StrVal: fmt.Sprintf(format, i)})
 		}
 	}
 	return items, nil

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"reflect"
+	"strings"
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -280,11 +282,41 @@ type ParallelSteps struct {
 	Steps []WorkflowStep `protobuf:"bytes,1,rep,name=steps"`
 }
 
+// WorkflowStep is an anonymous list inside of ParallelSteps (i.e. it does not have a key), so it needs its own
+// custom Unmarshaller
 func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
-	err := json.Unmarshal(value, &p.Steps)
+	// Since we are writing a custom unmarshaller, we have to enforce the "DisallowUnknownFields" requirement manually.
+
+	// First, get a generic representation of the contents
+	var candidate []map[string]interface{}
+	err := json.Unmarshal(value, &candidate)
 	if err != nil {
 		return err
 	}
+
+	// Generate a list of all the available JSON fields of the WorkflowStep struct
+	availableFields := map[string]bool{}
+	reflectType := reflect.TypeOf(WorkflowStep{})
+	for i := 0; i < reflectType.NumField(); i++ {
+		cleanString := strings.ReplaceAll(reflectType.Field(i).Tag.Get("json"), ",omitempty", "")
+		availableFields[cleanString] = true
+	}
+
+	// Enforce that no unknown fields are present
+	for _, step := range candidate {
+		for key := range step {
+			if _, ok := availableFields[key]; !ok {
+				return fmt.Errorf(`json: unknown field "%s"`, key)
+			}
+		}
+	}
+
+	// Finally, attempt to fully unmarshal the struct
+	err = json.Unmarshal(value, &p.Steps)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -303,9 +335,6 @@ type Template struct {
 
 	// Template is the name of the template which is used as the base of this template.
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
-
-	// Arguments hold arguments to the template.
-	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
 
 	// TemplateRef is the reference to the template resource which is used as the base of this template.
 	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,4,opt,name=templateRef"`
@@ -748,6 +777,15 @@ func (n Nodes) FindByDisplayName(name string) *NodeStatus {
 	return nil
 }
 
+func (in Nodes) Any(f func(node NodeStatus) bool) bool {
+	for _, i := range in {
+		if f(i) {
+			return true
+		}
+	}
+	return false
+}
+
 // UserContainer is a container specified by a user.
 type UserContainer struct {
 	apiv1.Container `json:",inline" protobuf:"bytes,1,opt,name=container"`
@@ -938,6 +976,10 @@ func (ws *WorkflowStatus) Failed() bool {
 	return ws.Phase == NodeFailed
 }
 
+func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
+	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
+}
+
 // Remove returns whether or not the node has completed execution
 func (n NodeStatus) Completed() bool {
 	return isCompletedPhase(n.Phase) || n.IsDaemoned() && n.Phase != NodePending
@@ -974,6 +1016,11 @@ func (n *NodeStatus) GetTemplateRef() *TemplateRef {
 
 func (n *NodeStatus) IsResolvable() bool {
 	return true
+}
+
+// IsActiveSuspendNode returns whether this node is an active suspend node
+func (n *NodeStatus) IsActiveSuspendNode() bool {
+	return n.Type == NodeTypeSuspend && n.Phase == NodeRunning
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket

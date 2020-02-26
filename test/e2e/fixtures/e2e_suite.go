@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"strings"
-	"testing"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -18,7 +17,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/argo/commands"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/kubeconfig"
@@ -101,8 +99,9 @@ func (s *E2ESuite) DeleteResources(label string) {
 		}
 		for _, wf := range list.Items {
 			isTestWf[wf.Name] = false
-			if s.Persistence.IsEnabled() {
-				err := s.Persistence.offloadNodeStatusRepo.Delete(string(wf.UID))
+			if s.Persistence.IsEnabled() && wf.Status.IsOffloadNodeStatus() {
+				// TODO - may make tests flakey
+				err := s.Persistence.offloadNodeStatusRepo.Delete(string(wf.UID), wf.Status.OffloadNodeStatusVersion)
 				if err != nil {
 					panic(err)
 				}
@@ -209,14 +208,6 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 	return "", nil
 }
 
-func (s *E2ESuite) Run(name string, f func(t *testing.T)) {
-	t := s.T()
-	if t.Failed() {
-		t.SkipNow()
-	}
-	t.Run(name, f)
-}
-
 func (s *E2ESuite) AfterTest(_, _ string) {
 	if s.T().Failed() {
 		s.printDiagnostics()
@@ -230,31 +221,38 @@ func (s *E2ESuite) printDiagnostics() {
 		s.T().Fatal(err)
 	}
 	for _, wf := range wfs.Items {
-		s.printWorkflowDiagnostics(wf)
+		s.printWorkflowDiagnostics(wf.GetName())
 	}
 }
 
-func (s *E2ESuite) printWorkflowDiagnostics(wf wfv1.Workflow) {
-	logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": wf.Name})
+func (s *E2ESuite) printWorkflowDiagnostics(name string) {
+	logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": name})
+	// print logs
+	wf, err := s.wfClient.Get(name, metav1.GetOptions{})
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	err = packer.DecompressWorkflow(wf)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	if wf.Status.IsOffloadNodeStatus() {
+		offloaded, err := s.Persistence.offloadNodeStatusRepo.Get(string(wf.UID), wf.Status.OffloadNodeStatusVersion)
+		if err != nil {
+			s.T().Fatal(err)
+		}
+		wf.Status.Nodes = offloaded
+	}
 	logCtx.Info("Workflow metadata:")
 	printJSON(wf.ObjectMeta)
 	logCtx.Info("Workflow status:")
 	printJSON(wf.Status)
-	// print logs
-	workflow, err := s.wfClient.Get(wf.Name, metav1.GetOptions{})
-	if err != nil {
-		s.T().Fatal(err)
-	}
-	err = packer.DecompressWorkflow(workflow)
-	if err != nil {
-		s.T().Fatal(err)
-	}
-	for _, node := range workflow.Status.Nodes {
+	for _, node := range wf.Status.Nodes {
 		if node.Type != "Pod" {
 			continue
 		}
 		logCtx := logCtx.WithFields(log.Fields{"node": node.DisplayName})
-		s.printPodDiagnostics(logCtx, workflow.Namespace, node.ID)
+		s.printPodDiagnostics(logCtx, wf.Namespace, node.ID)
 	}
 }
 
@@ -302,9 +300,9 @@ func (s *E2ESuite) printPodLogs(logCtx *log.Entry, namespace, pod, container str
 	fmt.Println("---")
 }
 
-func (s *E2ESuite) Given(t *testing.T) *Given {
+func (s *E2ESuite) Given() *Given {
 	return &Given{
-		t:                     t,
+		t:                     s.T(),
 		diagnostics:           s.Diagnostics,
 		client:                s.wfClient,
 		wfTemplateClient:      s.wfTemplateClient,

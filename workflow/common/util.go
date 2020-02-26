@@ -24,9 +24,8 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/pkg/apis/workflow"
-
 	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
 )
@@ -589,17 +588,6 @@ func MergeReferredTemplate(tmpl *wfv1.Template, referred *wfv1.Template) (*wfv1.
 		newTmpl.Outputs.Artifacts = artifacts
 	}
 
-	if len(tmpl.Arguments.Parameters) > 0 {
-		parameters := make([]wfv1.Parameter, len(tmpl.Arguments.Parameters))
-		copy(parameters, tmpl.Arguments.Parameters)
-		newTmpl.Arguments.Parameters = parameters
-	}
-	if len(tmpl.Arguments.Artifacts) > 0 {
-		artifacts := make([]wfv1.Artifact, len(tmpl.Arguments.Artifacts))
-		copy(artifacts, tmpl.Arguments.Artifacts)
-		newTmpl.Arguments.Artifacts = artifacts
-	}
-
 	if len(tmpl.NodeSelector) > 0 {
 		m := make(map[string]string, len(tmpl.NodeSelector))
 		for k, v := range tmpl.NodeSelector {
@@ -679,25 +667,4 @@ func GetTemplateHolderString(tmplHolder wfv1.TemplateHolder) string {
 	} else {
 		return fmt.Sprintf("%T (%s)", tmplHolder, tmplName)
 	}
-}
-
-func ConvertToWorkflow(cronWf *wfv1.CronWorkflow) (*wfv1.Workflow, error) {
-	newTypeMeta := metav1.TypeMeta{
-		Kind:       workflow.WorkflowKind,
-		APIVersion: cronWf.TypeMeta.APIVersion,
-	}
-
-	newObjectMeta := metav1.ObjectMeta{}
-	newObjectMeta.GenerateName = cronWf.Name + "-"
-
-	newObjectMeta.Labels = make(map[string]string)
-	newObjectMeta.Labels[LabelCronWorkflow] = cronWf.Name
-
-	wf := &wfv1.Workflow{
-		TypeMeta:   newTypeMeta,
-		ObjectMeta: newObjectMeta,
-		Spec:       cronWf.Spec.WorkflowSpec,
-	}
-	wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *metav1.NewControllerRef(cronWf, wfv1.SchemeGroupVersion.WithKind(workflow.CronWorkflowKind))))
-	return wf, nil
 }

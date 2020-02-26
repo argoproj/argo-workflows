@@ -57,8 +57,8 @@ const (
 	LabelKeyWorkflow = workflow.WorkflowFullName + "/workflow"
 	// LabelKeyPhase is a label applied to workflows to indicate the current phase of the workflow (for filtering purposes)
 	LabelKeyPhase = workflow.WorkflowFullName + "/phase"
-	// LabelCronWorkflow is a label applied to Workflows that are started by a CronWorkflow
-	LabelCronWorkflow = workflow.WorkflowFullName + "/cron-workflow"
+	// LabelKeyCronWorkflow is a label applied to Workflows that are started by a CronWorkflow
+	LabelKeyCronWorkflow = workflow.WorkflowFullName + "/cron-workflow"
 
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)
@@ -118,6 +118,8 @@ const (
 	GlobalVarWorkflowCreationTimestamp = "workflow.creationTimestamp"
 	// GlobalVarWorkflowPriority is the workflow variable referencing the workflow's priority field
 	GlobalVarWorkflowPriority = "workflow.priority"
+	// GlobalVarWorkflowFailures is a global variable of a JSON map referencing the workflow's failed nodes
+	GlobalVarWorkflowFailures = "workflow.failures"
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"
 
