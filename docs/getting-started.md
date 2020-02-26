@@ -102,12 +102,12 @@ run Workflows in the namespace where the `RoleBinding` was made.**
 
 ## 4. Run Sample Workflows
 ```sh
-argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
-argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/coinflip.yaml
-argo submit -n argo --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/loops-maps.yaml
-argo list -n argo
-argo get -n argo xxx-workflow-name-xxx
-argo logs -n argo xxx-pod-name-xxx #from get command above
+argo submit --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
+argo submit --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/coinflip.yaml
+argo submit --watch https://raw.githubusercontent.com/argoproj/argo/master/examples/loops-maps.yaml
+argo list
+argo get xxx-workflow-name-xxx
+argo logs xxx-pod-name-xxx #from get command above
 ```
 
 Additional examples and more information about the CLI are available on the [Argo Workflows by Example](../examples/README.md) page.
@@ -116,11 +116,11 @@ You can also create Workflows directly with `kubectl`. However, the Argo CLI off
 that `kubectl` does not, such as YAML validation, workflow visualization, parameter passing, retries
 and resubmits, suspend and resume, and more.
 ```sh
-kubectl create -n argo -f https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
-kubectl get -n argo wf
-kubectl get -n argo wf hello-world-xxx
-kubectl get -n argo po --selector=workflows.argoproj.io/workflow=hello-world-xxx --show-all
-kubectl logs -n argo hello-world-yyy -c main
+kubectl create -f https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
+kubectl get wf
+kubectl get wf hello-world-xxx
+kubectl get po --selector=workflows.argoproj.io/workflow=hello-world-xxx --show-all
+kubectl logs hello-world-yyy -c main
 ```
 
 
@@ -193,7 +193,7 @@ namespace you use for Workflows.
 
 ## 7. Run a workflow which uses artifacts
 ```sh
-argo submit -n argo https://raw.githubusercontent.com/argoproj/argo/master/examples/artifact-passing.yaml
+argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/artifact-passing.yaml
 ```
 
 ## 8. Access the Argo UI
