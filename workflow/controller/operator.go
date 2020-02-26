@@ -2237,7 +2237,7 @@ func (woc *wfOperationCtx) createPDBResource() error {
 		},
 		Spec: pdbSpec,
 	}
-	_ , err = woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(&newPDB)
+	_, err = woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(&newPDB)
 	if err != nil {
 		return err
 	}
