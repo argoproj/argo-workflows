@@ -74,9 +74,118 @@ tracking the duration of model execution over time, a metric descriptor could be
  In summary, whenever you want to track a particular metric over time, you should use the same metric name _and_ metric
  labels wherever it is emitted. This is how these metrics are "linked" as belonging to the same series.
  
- ## Define metrics in Argo
+ ## Defining metrics
  
- In Argo you can define a metric on the `Workflow` level or on the `Step/Task` level.
+ Metrics are defined in-place on the Workflow/Step/Task where they are emitted from. Metrics are always processed _after_
+ the Workflow/Step/Task completes, with the exception of [realtime metrics](#realtime-metrics).
+ 
+ Metric definitions **must** include a `name` and a `help` doc string. They can also include any number of `labels` (when
+ defining labels avoid cardinality explosion).
+ 
+ All metrics can also be conditionally emitted by defining a `when` clause. This `when` clause works the same as elsewhere
+ in a workflow.
+ 
+ A metric must also have a type, it can be one of `gauge`, `histogram`, and `counter` ([see below](#metric-spec)). Within
+ the metric type a `value` must be specified. This value can be either a literal value of be an [Argo variable](variables.md).
+ 
+ When defining a `histogram`, `bins` must also be provided (see below).
+ 
+ ### Metric Spec
+ 
+ In Argo you can define a metric on the `Workflow` level or on the `Step/Task` level. Here is an example of a `Workflow`
+ level Gauge metric that will report the Workflow duration time:
+ 
+ ```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: model-training-
+spec:
+  entrypoint: steps
+  metrics:
+    prometheus:
+      - name: exec_duration_gauge         # Metric name (will be prepended with "argo_workflows_")
+        labels:                           # Labels are optional. Avoid cardinality explosion.
+          - key: name
+            value: model_a
+        help: "Duration gauge by name"    # A help doc describing your metric. This is required.
+        gauge:                            # The metric type. Available are "gauge", "histogram", and "counter".
+          value: "{{workflow.duration}}"  # The value of your metric. It could be an Argo variable (see variables doc) or a literal value
 
+... 
+```
 
+And example of a `Task`-level Counter metric that will increase a counter every time the step fails:
 
+```yaml
+...
+  templates:
+    - name: dag
+      dag:
+        tasks:
+        - name: flakey
+          template: flakey
+          dependencies: [random-int]
+          metrics:
+            prometheus:
+              - name: failure_counter
+                help: "How many times a step has failed"
+                labels:
+                  - key: taks_name
+                    value: flakey
+                when: "{{task.status}} == Failed"       # Emit the metric conditionally. Works the same as normal "when"
+                counter:
+                  value: "1"                            # This increments the counter by 1
+...
+```
+
+Finally, an example of a `Step`-level Histogram metric that tracks an internal value:
+
+```yaml
+...
+  templates:
+    - name: steps
+      steps:
+        - - name: random-int
+            template: random-int
+            metrics:
+              prometheus:
+                - name: random_int_step_histogram
+                  help: "Value of the int emitted by random-int at step level"
+                  histogram:
+                    bins:                                                       # Bins must be defined for histogram metrics
+                      - 2.01                                                    # and are part of the metric descriptor.
+                      - 4.01                                                    # All metrics in this series MUST have the
+                      - 6.01                                                    # same bins.
+                      - 8.01
+                      - 10.01
+                    value: "{{task.outputs.parameters.rand-int-value}}"         # References itself for its output (see variables doc)
+
+...
+
+    - name: random-int
+      outputs:
+        parameters:
+          - name: rand-int-value
+            valueFrom:
+              path: /tmp/rand_int.txt
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["RAND_INT=$((1 + RANDOM % 10)); echo $RAND_INT; echo $RAND_INT > /tmp/rand_int.txt"]
+
+...
+```
+
+### Realtime metrics
+
+Argo supports a limited number of real-time metrics. These metrics are emitted in realtime, beginning when the step execution starts
+and ending when it completes. Realtime metrics are only available on Gauge type metrics and with a [limited number of variables](variables.md#realtime-metrics).
+
+To define a realtime metric simply add `realtime: true` to a gauge metric with a valid realtime variable. For example:
+
+```yaml
+  gauge:
+    realtime: true
+    value: "{{step.duration}}"
+```

@@ -52,7 +52,7 @@ func constructOrUpdateCounterMetric(metric prometheus.Metric, metricSpec *wfv1.P
 		ConstLabels: metricSpec.GetMetricLabels(),
 	}
 
-	val, err := strconv.ParseFloat(metricSpec.Counter.Increment, 64)
+	val, err := strconv.ParseFloat(metricSpec.Counter.Value, 64)
 	if err != nil {
 		return nil, err
 	}

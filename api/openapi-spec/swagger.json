@@ -1539,7 +1539,7 @@
     "io.argoproj.workflow.v1alpha1.Counter": {
       "type": "object",
       "properties": {
-        "increment": {
+        "value": {
           "type": "string"
         }
       }

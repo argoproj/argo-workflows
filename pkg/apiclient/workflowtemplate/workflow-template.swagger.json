@@ -477,7 +477,7 @@
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Counter": {
       "type": "object",
       "properties": {
-        "increment": {
+        "value": {
           "type": "string"
         }
       }

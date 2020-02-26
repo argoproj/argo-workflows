@@ -1604,7 +1604,7 @@ func (p *Prometheus) GetValueString() string {
 	case MetricTypeGauge:
 		return p.Gauge.Value
 	case MetricTypeCounter:
-		return p.Counter.Increment
+		return p.Counter.Value
 	case MetricTypeHistogram:
 		return p.Histogram.Value
 	default:
@@ -1617,7 +1617,7 @@ func (p *Prometheus) SetValueString(val string) {
 	case MetricTypeGauge:
 		p.Gauge.Value = val
 	case MetricTypeCounter:
-		p.Counter.Increment = val
+		p.Counter.Value = val
 	case MetricTypeHistogram:
 		p.Histogram.Value = val
 	}
@@ -1654,5 +1654,5 @@ type Histogram struct {
 }
 
 type Counter struct {
-	Increment string `json:"increment" protobuf:"varint,1,opt,name=increment"`
+	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
 }
