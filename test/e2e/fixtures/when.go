@@ -81,6 +81,10 @@ func (w *When) CreateCronWorkflow() *When {
 	return w
 }
 
+func (w *When) WaitForWorkflowCondition(test func(wf *wfv1.Workflow) bool, condition string, duration time.Duration) *When {
+	return w.waitForWorkflow(w.workflowName, test, condition, duration)
+}
+
 func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow) bool, condition string, timeout time.Duration) *When {
 	logCtx := log.WithFields(log.Fields{"workflow": workflowName, "condition": condition, "timeout": timeout})
 	logCtx.Info("Waiting for condition")
