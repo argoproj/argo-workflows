@@ -313,7 +313,7 @@ func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan st
 
 func (wfc *WorkflowController) periodicArchivedWorkflowGarbageCollector(stopCh <-chan struct{}) {
 	value, ok := os.LookupEnv("ARCHIVED_WORKFLOW_GC_PERIOD")
-	periodicity := 5 * time.Minute
+	periodicity := 24 * time.Hour
 	if ok {
 		var err error
 		periodicity, err = time.ParseDuration(value)
@@ -322,13 +322,17 @@ func (wfc *WorkflowController) periodicArchivedWorkflowGarbageCollector(stopCh <
 		}
 	}
 	value, ok = os.LookupEnv("ARCHIVED_WORKFLOW_TTL")
-	ttl := 5 * time.Minute
+	ttl := 0 * time.Second
 	if ok {
 		var err error
-		periodicity, err = time.ParseDuration(value)
+		ttl, err = time.ParseDuration(value)
 		if err != nil {
 			log.WithFields(log.Fields{"err": err, "value": value}).Fatal("Failed to parse ARCHIVED_WORKFLOW_TTL")
 		}
+	}
+	if ttl == 0*time.Second {
+		log.Info("Periodic GC archive workflows disabled")
+		return
 	}
 	log.Infof("Performing periodic GC archive workflows every %v", periodicity)
 	ticker := time.NewTicker(periodicity)
