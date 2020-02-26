@@ -3,11 +3,12 @@ package oss
 import (
 	"time"
 
-	ossdriver "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/wait"
+
+	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // OSSArtifactDriver is a driver for OSS
@@ -17,8 +18,8 @@ type OSSArtifactDriver struct {
 	SecretKey string
 }
 
-func (ossDriver *OSSArtifactDriver) newOSSClient() (*ossdriver.Client, error) {
-	client, err := ossdriver.New(ossDriver.Endpoint, ossDriver.AccessKey, ossDriver.SecretKey)
+func (ossDriver *OSSArtifactDriver) newOSSClient() (*oss.Client, error) {
+	client, err := oss.New(ossDriver.Endpoint, ossDriver.AccessKey, ossDriver.SecretKey)
 	if err != nil {
 		log.Warnf("Failed to create new OSS client: %v", err)
 		return nil, err
