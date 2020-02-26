@@ -718,7 +718,7 @@
         "value": {
           "type": "string"
         },
-        "realTime": {
+        "realtime": {
           "type": "boolean",
           "format": "boolean"
         }

@@ -259,7 +259,7 @@ message ExecutorConfig {
 message Gauge {
   optional string value = 1;
 
-  optional bool realTime = 2;
+  optional bool realtime = 2;
 }
 
 // GitArtifact is the location of an git artifact
@@ -498,8 +498,8 @@ message NodeStatus {
   // a template, will be a superset of the outbound nodes of its last children.
   repeated string outboundNodes = 17;
 
-  // MetricEmitted is a flag to indicate that the metric associated with this Node has been emitted
-  optional bool metricEmitted = 21;
+  // MetricLifecycle is a flag to indicate during which metric lifecycle the node is located
+  optional int64 metricLifecycle = 21;
 }
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent

@@ -183,12 +183,12 @@ func (woc *wfOperationCtx) operate() {
 		}
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 
-		// TODO: SIMON
-		//// Compute Workflow-level metrics once before operation
-		//err = woc.computeWorkflowMetrics()
-		//if err != nil {
-		//	woc.log.Errorf("Could not emit metrics for workflow '%s': %s", woc.wf.ObjectMeta.Name, err)
-		//}
+		if woc.wf.Spec.Metrics != nil {
+			realTimeScope := map[string]func() float64{common.GlobalVarWorkflowDuration: func() float64 {
+				return time.Since(woc.wf.Status.StartedAt.Time).Seconds()
+			}}
+			woc.computeMetrics(woc.wf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
+		}
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation()
@@ -361,10 +361,10 @@ func (woc *wfOperationCtx) operate() {
 	}
 
 	if woc.wf.Spec.Metrics != nil {
-		err := woc.computeMetrics(woc.wf.Spec.Metrics.Prometheus, woc.globalParams)
-		if err != nil {
-			woc.log.Error(err)
-		}
+		realTimeScope := map[string]func() float64{common.GlobalVarWorkflowDuration: func() float64 {
+			return node.FinishedAt.Sub(node.StartedAt.Time).Seconds()
+		}}
+		woc.computeMetrics(woc.wf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, false)
 	}
 }
 
@@ -2208,42 +2208,66 @@ func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID str
 	return false, nil, nil
 }
 
-func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localScope map[string]string) error {
+func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localScope map[string]string, realTimeScope map[string]func() float64, realTimeOnly bool) {
 	for _, metricTmpl := range metricList {
+
+		if realTimeOnly && !metricTmpl.IsRealtime() {
+			continue
+		}
 
 		// Substitute when expression
 		fstTmpl := fasttemplate.New(metricTmpl.When, "{{", "}}")
 		when, err := common.Replace(fstTmpl, localScope, false)
 		if err != nil {
-			return fmt.Errorf("unable to compute metric '%s': %s", metricTmpl.Name, err)
+			woc.log.Errorf("unable to substitute parameters for 'when' clause in metric '%s': %s", metricTmpl.Name, err)
+			continue
 		}
 
 		proceed, err := shouldExecute(when)
 		if err != nil {
-			return fmt.Errorf("could not emit metrics for workflow '%s': %s", woc.wf.ObjectMeta.Name, err)
+			woc.log.Errorf("unable to compute 'when' clause for metric '%s': %s", woc.wf.ObjectMeta.Name, err)
+			continue
 		}
-
 		if !proceed {
 			continue
 		}
 
-		metricSpec := metricTmpl.DeepCopy()
+		if metricTmpl.IsRealtime() {
+			value := metricTmpl.Gauge.Value
+			if !(strings.HasPrefix(value, "{{") && strings.HasSuffix(value, "}}")) {
+				woc.log.Errorf("real time metrics can only be used with metric variables")
+				continue
+			}
+			value = strings.TrimSuffix(strings.TrimPrefix(value, "{{"), "}}")
+			valueFunc, ok := realTimeScope[value]
+			if !ok {
+				woc.log.Errorf("'%s' is not available as a real time metric", value)
+				continue
+			}
+			updatedMetric := metrics.ConstructRealTimeGaugeMetric(metricTmpl, valueFunc)
+			woc.controller.Metrics[metricTmpl.GetDesc()] = updatedMetric
+			continue
+		} else {
+			metricSpec := metricTmpl.DeepCopy()
 
-		// Substitute parameters
-		fstTmpl = fasttemplate.New(metricSpec.GetValueString(), "{{", "}}")
-		replacedValue, err := common.Replace(fstTmpl, localScope, false)
-		if err != nil {
-			return fmt.Errorf("unable to compute metric '%s': %s", metricTmpl.Name, err)
-		}
-		metricSpec.SetValueString(replacedValue)
+			// Substitute parameters
+			fstTmpl = fasttemplate.New(metricSpec.GetValueString(), "{{", "}}")
+			replacedValue, err := common.Replace(fstTmpl, localScope, false)
+			if err != nil {
+				woc.log.Errorf("unable to substitute parameters for metric '%s': %s", metricSpec.Name, err)
+				continue
+			}
+			metricSpec.SetValueString(replacedValue)
 
-		metric := woc.controller.Metrics[metricSpec.GetDesc()]
-		updatedMetric, err := metrics.ConstructOrUpdateMetric(metric, metricTmpl, metrics.RealTimeMetric{})
-		if err != nil {
-			woc.log.Errorf("could not compute metric '%s': %s", metricTmpl.Name, err)
+			metric := woc.controller.Metrics[metricSpec.GetDesc()]
+			// It is valid to pass a nil metric to ConstructOrUpdateMetric, in that case the metric will be created for us
+			updatedMetric, err := metrics.ConstructOrUpdateMetric(metric, metricSpec)
+			if err != nil {
+				woc.log.Errorf("could not compute metric '%s': %s", metricSpec.Name, err)
+				continue
+			}
+			woc.controller.Metrics[metricSpec.GetDesc()] = updatedMetric
+			continue
 		}
-		woc.controller.Metrics[metricTmpl.GetDesc()] = updatedMetric
 	}
-
-	return nil
 }

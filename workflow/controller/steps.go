@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Knetic/govaluate"
 	"github.com/valyala/fasttemplate"
@@ -220,13 +221,6 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			continue
 		}
 
-		// TODO: SIMON
-		//// Infer if this is the first time this node gets executed, so that we can emit execution metrics once
-		//firstTimeExecution := false
-		//if woc.getNodeByName(childNodeName) == nil {
-		//	firstTimeExecution = true
-		//}
-
 		childNode, err := woc.executeTemplate(childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, stepsCtx.boundaryID)
 		if err != nil {
 			switch err {
@@ -244,14 +238,12 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			nodeSteps[childNodeName] = step
 			woc.addChildNode(sgNodeName, childNodeName)
 
-			// TODO: SIMON
-			//// Emit metrics once step begins execution
-			//if firstTimeExecution && step.EmitMetrics != nil {
-			//	for _, metricSpec := range step.EmitMetrics.Metrics {
-			//		woc.log.Infof("SIMON Emit Starting for: %+v", childNode)
-			//		woc.computeMetric(metricSpec, childNode)
-			//	}
-			//}
+			if step.Metrics != nil && childNode.GetMetricLifecycle() < wfv1.MetricLifecyclePreExecution {
+				localScope, realTimeScope := woc.prepareMetricScope(childNode, stepsCtx.scope, "step")
+				woc.computeMetrics(step.Metrics.Prometheus, localScope, realTimeScope, true)
+				childNode.SetMetricLifecycle(wfv1.MetricLifecyclePreExecution)
+				woc.wf.Status.Nodes[childNode.ID] = *childNode
+			}
 		}
 	}
 
@@ -270,13 +262,10 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 				completed = false
 			}
 
-			if step.Metrics != nil && !childNode.Emitted() && (!hasOnExitNode || onExitNode.Completed()) {
-				localScope := woc.prepareLocalMetricScope(&childNode, stepsCtx.scope)
-				err := woc.computeMetrics(step.Metrics.Prometheus, localScope)
-				if err != nil {
-					woc.log.Error(err)
-				}
-				childNode.MarkEmitted()
+			if step.Metrics != nil && childNode.GetMetricLifecycle() < wfv1.MetricLifecyclePostExecution && (!hasOnExitNode || onExitNode.Completed()) {
+				localScope, realTimeScope := woc.prepareMetricScope(&childNode, stepsCtx.scope, "step")
+				woc.computeMetrics(step.Metrics.Prometheus, localScope, realTimeScope, false)
+				childNode.SetMetricLifecycle(wfv1.MetricLifecyclePostExecution)
 				woc.wf.Status.Nodes[childNodeID] = childNode
 			}
 		}
@@ -457,33 +446,46 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	return expandedStep, nil
 }
 
-func (woc *wfOperationCtx) prepareLocalMetricScope(node *wfv1.NodeStatus, scope *wfScope) map[string]string {
-	replaceMap := make(map[string]string)
+func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus, scope *wfScope, prefix string) (map[string]string, map[string]func() float64) {
+	realTimeScope := make(map[string]func() float64)
+	localScope := make(map[string]string)
 	for key, val := range woc.globalParams {
-		replaceMap[key] = val
+		localScope[key] = val
 	}
 	for key, val := range scope.scope {
 		if stringVal, ok := val.(string); ok {
-			replaceMap[key] = stringVal
+			localScope[key] = stringVal
 		}
 	}
-	if !node.FinishedAt.IsZero() {
-		replaceMap["this.duration"] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())
-	}
-	if node.Phase != "" {
-		replaceMap["this.status"] = string(node.Phase)
-	}
-	if node.Outputs == nil {
-		return replaceMap
-	}
-	if node.Outputs.Result != nil {
-		key := "this.outputs.result"
-		replaceMap[key] = *node.Outputs.Result
-	}
-	for _, param := range node.Outputs.Parameters {
-		key := fmt.Sprintf("this.outputs.parameters.%s", param.Name)
-		replaceMap[key] = *param.Value
+
+	durationKey := fmt.Sprintf("%s.duration", prefix)
+	if node.Completed() {
+		localScope[durationKey] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())
+		realTimeScope[durationKey] = func() float64 {
+			return node.FinishedAt.Sub(node.StartedAt.Time).Seconds()
+		}
+	} else {
+		localScope[durationKey] = fmt.Sprintf("%f", time.Since(node.StartedAt.Time).Seconds())
+		realTimeScope[durationKey] = func() float64 {
+			return time.Since(node.StartedAt.Time).Seconds()
+		}
 	}
 
-	return replaceMap
+	if node.Phase != "" {
+		key := fmt.Sprintf("%s.status", prefix)
+		localScope[key] = string(node.Phase)
+	}
+
+	if node.Outputs != nil {
+		if node.Outputs.Result != nil {
+			key := fmt.Sprintf("%s.outputs.result", prefix)
+			localScope[key] = *node.Outputs.Result
+		}
+		for _, param := range node.Outputs.Parameters {
+			key := fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)
+			localScope[key] = *param.Value
+		}
+	}
+
+	return localScope, realTimeScope
 }

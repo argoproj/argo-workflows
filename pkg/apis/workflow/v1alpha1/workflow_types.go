@@ -950,8 +950,8 @@ type NodeStatus struct {
 	// a template, will be a superset of the outbound nodes of its last children.
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
 
-	// MetricEmitted is a flag to indicate that the metric associated with this Node has been emitted
-	MetricEmitted bool `json:"metricEmitted" protobuf:"varint,21,opt,name=metricEmitted"`
+	// MetricLifecycle is a flag to indicate during which metric lifecycle the node is located
+	MetricLifecycle MetricLifecycle `json:"metricLifecycle" protobuf:"varint,21,opt,name=metricLifecycle,casttype=MetricLifecycle"`
 }
 
 func isCompletedPhase(phase NodePhase) bool {
@@ -1043,12 +1043,12 @@ func (n *NodeStatus) IsActiveSuspendNode() bool {
 	return n.Type == NodeTypeSuspend && n.Phase == NodeRunning
 }
 
-func (n *NodeStatus) Emitted() bool {
-	return n.MetricEmitted
+func (n *NodeStatus) GetMetricLifecycle() MetricLifecycle {
+	return n.MetricLifecycle
 }
 
-func (n *NodeStatus) MarkEmitted() {
-	n.MetricEmitted = true
+func (n *NodeStatus) SetMetricLifecycle(lifecycle MetricLifecycle) {
+	n.MetricLifecycle = lifecycle
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket
@@ -1556,6 +1556,14 @@ const (
 	MetricTypeUnknown   MetricType = "Unknown"
 )
 
+type MetricLifecycle int
+
+const (
+	MetricLifecycleUnprocessed MetricLifecycle = iota
+	MetricLifecyclePreExecution
+	MetricLifecyclePostExecution
+)
+
 type Metrics struct {
 	Prometheus []*Prometheus `json:"prometheus" protobuf:"bytes,1,rep,name=prometheus"`
 }
@@ -1626,6 +1634,10 @@ func (p *Prometheus) GetDesc() string {
 	return desc
 }
 
+func (p *Prometheus) IsRealtime() bool {
+	return p.GetMetricType() == MetricTypeGauge && p.Gauge.Realtime != nil && *p.Gauge.Realtime
+}
+
 type MetricLabels struct {
 	Key   string `json:"key" protobuf:"bytes,1,opt,name=key"`
 	Value string `json:"value" protobuf:"bytes,2,opt,name=value"`
@@ -1633,7 +1645,7 @@ type MetricLabels struct {
 
 type Gauge struct {
 	Value    string `json:"value" protobuf:"bytes,1,opt,name=value"`
-	RealTime *bool  `json:"realTime" protobuf:"varint,2,opt,name=realTime"`
+	Realtime *bool  `json:"realtime" protobuf:"varint,2,opt,name=realtime"`
 }
 
 type Histogram struct {

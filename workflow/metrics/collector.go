@@ -9,7 +9,6 @@ import (
 	"github.com/argoproj/argo/workflow/util"
 )
 
-// TODO: What's the best place for these?
 type MetricsProvider interface {
 	GetMetrics() map[string]prometheus.Metric
 }

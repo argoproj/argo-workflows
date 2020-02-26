@@ -1725,7 +1725,7 @@
     "io.argoproj.workflow.v1alpha1.Gauge": {
       "type": "object",
       "properties": {
-        "realTime": {
+        "realtime": {
           "type": "boolean",
           "format": "boolean"
         },
@@ -2036,10 +2036,10 @@
           "description": "A human readable message indicating details about why the node is in this condition.",
           "type": "string"
         },
-        "metricEmitted": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "MetricEmitted is a flag to indicate that the metric associated with this Node has been emitted"
+        "metricLifecycle": {
+          "type": "string",
+          "format": "int64",
+          "title": "MetricLifecycle is a flag to indicate during which metric lifecycle the node is located"
         },
         "name": {
           "type": "string",
@@ -5507,6 +5507,9 @@
       "type": "object",
       "properties": {
         "content": {
+          "type": "string"
+        },
+        "podName": {
           "type": "string"
         }
       }

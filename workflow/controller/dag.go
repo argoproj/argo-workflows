@@ -313,13 +313,17 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			return
 		}
 
-		// TODO: SIMON
-		// Emit metrics once dag task completes
-		//if task.EmitMetrics != nil && (!hasOnExitNode || onExitNode.Completed()) {
-		//	for _, metricSpec := range task.EmitMetrics.Metrics {
-		//		woc.computeMetric(metricSpec, node)
-		//	}
-		//}
+		if task.Metrics != nil && node.GetMetricLifecycle() < wfv1.MetricLifecyclePostExecution && (!hasOnExitNode || onExitNode.Completed()) {
+			dagScope, err := woc.buildLocalScopeFromTask(dagCtx, task)
+			if err != nil {
+				woc.log.Error(err)
+				return
+			}
+			localScope, realTimeScope := woc.prepareMetricScope(node, dagScope, "task")
+			woc.computeMetrics(task.Metrics.Prometheus, localScope, realTimeScope, false)
+			node.SetMetricLifecycle(wfv1.MetricLifecyclePostExecution)
+			woc.wf.Status.Nodes[node.ID] = *node
+		}
 
 		return
 	}
@@ -340,19 +344,22 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 					return
 				}
 
-				if depTask.Metrics != nil && !depNode.Emitted() && (!hasOnExitNode || onExitNode.Completed()) {
-					localScope := woc.prepareLocalMetricScope(&childNode, dagCtx.scope)
-					err := woc.computeMetrics(depTask.Metrics.Prometheus, localScope)
-					if err != nil {
-						woc.log.Error(err)
-					}
-					depNode.MarkEmitted()
-					woc.wf.Status.Nodes[depNode.ID] = *depNode
-				}
-
 				if !depNode.Successful() && !depTask.ContinuesOn(depNode.Phase) {
 					dependenciesSuccessful = false
 				}
+
+				if task.Metrics != nil && depNode.GetMetricLifecycle() < wfv1.MetricLifecyclePostExecution && (!hasOnExitNode || onExitNode.Completed()) {
+					dagScope, err := woc.buildLocalScopeFromTask(dagCtx, depTask)
+					if err != nil {
+						woc.log.Error(err)
+						continue
+					}
+					localScope, realTimeScope := woc.prepareMetricScope(depNode, dagScope, "task")
+					woc.computeMetrics(depTask.Metrics.Prometheus, localScope, realTimeScope, false)
+					depNode.SetMetricLifecycle(wfv1.MetricLifecyclePostExecution)
+					woc.wf.Status.Nodes[depNode.ID] = *depNode
+				}
+
 				continue
 			}
 		}
@@ -454,15 +461,18 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		}
 
 		// Finally execute the template
-		_, _ = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, dagCtx.boundaryID)
+		executedNode, _ := woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, dagCtx.boundaryID)
 
-		// TODO: SIMON
-		// Emit metrics once dag task begins execution
-		//if t.EmitMetrics != nil {
-		//	for _, metricSpec := range t.EmitMetrics.Metrics {
-		//		woc.computeMetric(metricSpec, nodeStatus)
-		//	}
-		//}
+		if task.Metrics != nil && executedNode.GetMetricLifecycle() < wfv1.MetricLifecyclePreExecution {
+			dagScope, err := woc.buildLocalScopeFromTask(dagCtx, task)
+			if err != nil {
+				woc.log.Error(err)
+			}
+			localScope, realTimeScope := woc.prepareMetricScope(executedNode, dagScope, "task")
+			woc.computeMetrics(task.Metrics.Prometheus, localScope, realTimeScope, true)
+			executedNode.SetMetricLifecycle(wfv1.MetricLifecyclePreExecution)
+			woc.wf.Status.Nodes[executedNode.ID] = *executedNode
+		}
 	}
 
 	if taskGroupNode != nil {
@@ -481,9 +491,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 }
 
-// resolveDependencyReferences replaces any references to outputs of task dependencies, or artifacts in the inputs
-// NOTE: by now, input parameters should have been substituted throughout the template
-func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task *wfv1.DAGTask) (*wfv1.DAGTask, error) {
+func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv1.DAGTask) (*wfScope, error) {
 	// build up the scope
 	scope := wfScope{
 		tmpl:  dagCtx.tmpl,
@@ -517,10 +525,21 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 			woc.processNodeOutputs(&scope, prefix, ancestorNode)
 		}
 	}
+	return &scope, nil
+}
+
+// resolveDependencyReferences replaces any references to outputs of task dependencies, or artifacts in the inputs
+// NOTE: by now, input parameters should have been substituted throughout the template
+func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task *wfv1.DAGTask) (*wfv1.DAGTask, error) {
+
+	scope, err := woc.buildLocalScopeFromTask(dagCtx, task)
+	if err != nil {
+		return nil, err
+	}
 
 	// Perform replacement
 	// Replace woc.volumes
-	err := woc.substituteParamsInVolumes(scope.replaceMap())
+	err = woc.substituteParamsInVolumes(scope.replaceMap())
 	if err != nil {
 		return nil, err
 	}

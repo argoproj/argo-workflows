@@ -433,8 +433,8 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 			if (tag == "item" || strings.HasPrefix(tag, "item.")) && allowAllItemRefs {
 				// we are *probably* referencing a undetermined item using withParam
 				// NOTE: this is far from foolproof.
-			} else if strings.HasPrefix(tag, "this.") {
-				// We are self referencing for metric emission, allow it. "this." is only used in metric emission
+			} else if strings.HasPrefix(tag, "step.") || strings.HasPrefix(tag, "task.") {
+				// We are self referencing for metric emission, allow it.
 			} else if strings.HasPrefix(tag, common.GlobalVarWorkflowCreationTimestamp) {
 			} else {
 				unresolvedErr = fmt.Errorf("failed to resolve {{%s}}", tag)
