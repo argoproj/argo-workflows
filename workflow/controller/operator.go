@@ -2237,12 +2237,11 @@ func (woc *wfOperationCtx) createPDBResource() error {
 		},
 		Spec: pdbSpec,
 	}
-
-	created, err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(&newPDB)
+	_ , err = woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(&newPDB)
 	if err != nil {
 		return err
 	}
-	woc.log.Infof("PDB resource %s created for workflow %s", created.Name, woc.wf.Name)
+	woc.log.Infof("Created PDB resource for workflow.")
 	woc.updated = true
 	return nil
 }
@@ -2255,7 +2254,7 @@ func (woc *wfOperationCtx) deletePDBResource() error {
 	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		err = woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
 		if err != nil {
-			log.Warnf("Failed to delete PDB '%s': %v", woc.wf.Name, err)
+			woc.log.WithField("err", err).Warn("Failed to delete PDB.")
 			if !retry.IsRetryableKubeAPIError(err) {
 				return false, err
 			}
@@ -2264,9 +2263,9 @@ func (woc *wfOperationCtx) deletePDBResource() error {
 		return true, nil
 	})
 	if err != nil {
-		woc.log.Errorf("Unable to delete PDB resource for workflow, '%s' : %v", woc.wf.Name, err)
+		woc.log.WithField("err", err).Error("Unable to delete PDB resource for workflow.")
 		return err
 	}
-	woc.log.Infof("PDB resource deleted for workflow %s", woc.wf.Name)
+	woc.log.Infof("Deleted PDB resource for workflow.")
 	return nil
 }
