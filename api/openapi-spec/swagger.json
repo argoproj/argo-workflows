@@ -2036,6 +2036,11 @@
           "description": "A human readable message indicating details about why the node is in this condition.",
           "type": "string"
         },
+        "metricEmitted": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "MetricEmitted is a flag to indicate that the metric associated with this Node has been emitted"
+        },
         "name": {
           "type": "string",
           "title": "Name is unique name in the node tree used to generate the node ID"

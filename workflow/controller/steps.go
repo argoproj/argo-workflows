@@ -270,38 +270,19 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 				completed = false
 			}
 
-			// Reference 1 (see below)
+			if step.Metrics != nil && !childNode.Emitted() && (!hasOnExitNode || onExitNode.Completed()) {
+				localScope := woc.prepareLocalMetricScope(&childNode, stepsCtx.scope)
+				err := woc.computeMetrics(step.Metrics.Prometheus, localScope)
+				if err != nil {
+					woc.log.Error(err)
+				}
+				childNode.MarkEmitted()
+				woc.wf.Status.Nodes[childNodeID] = childNode
+			}
 		}
 	}
 	if !completed {
 		return node
-	}
-
-	// TODO: SIMON
-	// Emit metrics once step completes
-	//
-	// Completion metrics are reported once all steps in a step group complete. Ideally, we would want to report
-	// metrics as soon as an individual step completes, the place to do so would be "Reference 1" above. However,
-	// computing metrics there presents the challenge of ensuring that completion metrics are only computed once. There
-	// is no guarantee of the number of times code in "Reference 1" will be executed. If there are multiple steps in the
-	// step group (which is a common case), "Reference 1" will be executed once every time each step completes. In order
-	// for us to be able to compute metrics there, we would have to either (a) guarantee that metric computation is
-	// idempotent (which, given the presence of "Counter" metrics is not feasible), or (b) store which step's metrics
-	// have already been computed. The challenge with (b) is that there is not obvious place to store that information.
-	// If (i) stored in memory, the information would be deleted on controller restart; if (ii) stored in the workflow it
-	// would allow for transfer the source of truth of metrics emission to the workflow object.
-	// TODO: Find a solution to this
-	for _, childNodeID := range node.Children {
-		childNode := woc.wf.Status.Nodes[childNodeID]
-		step := nodeSteps[childNode.Name]
-		if step.Metrics != nil {
-			for _, metricSpec := range step.Metrics.Prometheus {
-				err := woc.computeMetric(*metricSpec, stepsCtx.scope.scope)
-				if err != nil {
-					woc.log.Errorf("could not step metric '%s': %s", metricSpec.Name, err)
-				}
-			}
-		}
 	}
 
 	// All children completed. Determine step group status as a whole
@@ -474,4 +455,35 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 		expandedStep = append(expandedStep, newStep)
 	}
 	return expandedStep, nil
+}
+
+func (woc *wfOperationCtx) prepareLocalMetricScope(node *wfv1.NodeStatus, scope *wfScope) map[string]string {
+	replaceMap := make(map[string]string)
+	for key, val := range woc.globalParams {
+		replaceMap[key] = val
+	}
+	for key, val := range scope.scope {
+		if stringVal, ok := val.(string); ok {
+			replaceMap[key] = stringVal
+		}
+	}
+	if !node.FinishedAt.IsZero() {
+		replaceMap["this.duration"] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())
+	}
+	if node.Phase != "" {
+		replaceMap["this.status"] = string(node.Phase)
+	}
+	if node.Outputs == nil {
+		return replaceMap
+	}
+	if node.Outputs.Result != nil {
+		key := "this.outputs.result"
+		replaceMap[key] = *node.Outputs.Result
+	}
+	for _, param := range node.Outputs.Parameters {
+		key := fmt.Sprintf("this.outputs.parameters.%s", param.Name)
+		replaceMap[key] = *param.Value
+	}
+
+	return replaceMap
 }

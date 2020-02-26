@@ -16,7 +16,7 @@ type RealTimeMetric struct {
 	Func func () float64
 }
 
-func ConstructOrUpdateMetric(metric prometheus.Metric, metricSpec wfv1.Prometheus, realTimeMetric RealTimeMetric) (prometheus.Metric, error) {
+func ConstructOrUpdateMetric(metric prometheus.Metric, metricSpec *wfv1.Prometheus, realTimeMetric RealTimeMetric) (prometheus.Metric, error) {
 	switch metricSpec.GetMetricType() {
 	case wfv1.MetricTypeGauge:
 		return constructOrUpdateGaugeMetric(metric, metricSpec, realTimeMetric)
@@ -29,7 +29,7 @@ func ConstructOrUpdateMetric(metric prometheus.Metric, metricSpec wfv1.Prometheu
 	}
 }
 
-func constructOrUpdateCounterMetric(metric prometheus.Metric, metricSpec wfv1.Prometheus) (prometheus.Metric, error) {
+func constructOrUpdateCounterMetric(metric prometheus.Metric, metricSpec *wfv1.Prometheus) (prometheus.Metric, error) {
 	counterOpts := prometheus.CounterOpts{
 		Namespace:   argoNamespace,
 		Subsystem:   workflowsSubsystem,
@@ -52,7 +52,7 @@ func constructOrUpdateCounterMetric(metric prometheus.Metric, metricSpec wfv1.Pr
 
 }
 
-func constructOrUpdateGaugeMetric(metric prometheus.Metric, metricSpec wfv1.Prometheus, realTimeMetric RealTimeMetric) (prometheus.Metric, error) {
+func constructOrUpdateGaugeMetric(metric prometheus.Metric, metricSpec *wfv1.Prometheus, realTimeMetric RealTimeMetric) (prometheus.Metric, error) {
 	gaugeOpts := prometheus.GaugeOpts{
 		Namespace:   argoNamespace,
 		Subsystem:   workflowsSubsystem,
@@ -80,7 +80,7 @@ func constructOrUpdateGaugeMetric(metric prometheus.Metric, metricSpec wfv1.Prom
 	return gauge, nil
 }
 
-func constructOrUpdateHistogramMetric(metric prometheus.Metric, metricSpec wfv1.Prometheus) (prometheus.Metric, error) {
+func constructOrUpdateHistogramMetric(metric prometheus.Metric, metricSpec *wfv1.Prometheus) (prometheus.Metric, error) {
 	histOpts := prometheus.HistogramOpts{
 		Namespace:   argoNamespace,
 		Subsystem:   workflowsSubsystem,

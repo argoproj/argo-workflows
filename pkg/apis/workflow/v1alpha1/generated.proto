@@ -497,6 +497,9 @@ message NodeStatus {
   // a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
   // a template, will be a superset of the outbound nodes of its last children.
   repeated string outboundNodes = 17;
+
+  // MetricEmitted is a flag to indicate that the metric associated with this Node has been emitted
+  optional bool metricEmitted = 21;
 }
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent

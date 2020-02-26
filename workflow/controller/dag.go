@@ -340,13 +340,15 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 					return
 				}
 
-				// TODO: SIMON
-				// Emit metrics once dag task completes
-				//if task.EmitMetrics != nil && (!hasOnExitNode || onExitNode.Completed()) {
-				//	for _, metricSpec := range task.EmitMetrics.Metrics {
-				//		woc.computeMetric(metricSpec, depNode)
-				//	}
-				//}
+				if depTask.Metrics != nil && !depNode.Emitted() && (!hasOnExitNode || onExitNode.Completed()) {
+					localScope := woc.prepareLocalMetricScope(&childNode, dagCtx.scope)
+					err := woc.computeMetrics(depTask.Metrics.Prometheus, localScope)
+					if err != nil {
+						woc.log.Error(err)
+					}
+					depNode.MarkEmitted()
+					woc.wf.Status.Nodes[depNode.ID] = *depNode
+				}
 
 				if !depNode.Successful() && !depTask.ContinuesOn(depNode.Phase) {
 					dependenciesSuccessful = false

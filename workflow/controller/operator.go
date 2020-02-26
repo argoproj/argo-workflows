@@ -360,13 +360,10 @@ func (woc *wfOperationCtx) operate() {
 		woc.markWorkflowError(err, true)
 	}
 
-	// Compute Workflow-level metrics one last time after completion
 	if woc.wf.Spec.Metrics != nil {
-		for _, metricSpec := range woc.wf.Spec.Metrics.Prometheus {
-			err := woc.computeMetric(*metricSpec, nil)
-			if err != nil {
-				woc.log.Errorf("Could not emit metrics for workflow '%s': %s", woc.wf.ObjectMeta.Name, err)
-			}
+		err := woc.computeMetrics(woc.wf.Spec.Metrics.Prometheus, woc.globalParams)
+		if err != nil {
+			woc.log.Error(err)
 		}
 	}
 }
@@ -2211,30 +2208,42 @@ func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID str
 	return false, nil, nil
 }
 
-func (woc *wfOperationCtx) computeMetric(metricSpec wfv1.Prometheus, localScope map[string]interface{}) error {
-	replaceMap := make(map[string]string)
-	for key, val := range woc.globalParams {
-		replaceMap[key] = val
-	}
-	for key, val := range localScope {
-		if stringVal, ok := val.(string); ok {
-			replaceMap[key] = stringVal
+func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localScope map[string]string) error {
+	for _, metricTmpl := range metricList {
+
+		// Substitute when expression
+		fstTmpl := fasttemplate.New(metricTmpl.When, "{{", "}}")
+		when, err := common.Replace(fstTmpl, localScope, false)
+		if err != nil {
+			return fmt.Errorf("unable to compute metric '%s': %s", metricTmpl.Name, err)
 		}
+
+		proceed, err := shouldExecute(when)
+		if err != nil {
+			return fmt.Errorf("could not emit metrics for workflow '%s': %s", woc.wf.ObjectMeta.Name, err)
+		}
+
+		if !proceed {
+			continue
+		}
+
+		metricSpec := metricTmpl.DeepCopy()
+
+		// Substitute parameters
+		fstTmpl = fasttemplate.New(metricSpec.GetValueString(), "{{", "}}")
+		replacedValue, err := common.Replace(fstTmpl, localScope, false)
+		if err != nil {
+			return fmt.Errorf("unable to compute metric '%s': %s", metricTmpl.Name, err)
+		}
+		metricSpec.SetValueString(replacedValue)
+
+		metric := woc.controller.Metrics[metricSpec.GetDesc()]
+		updatedMetric, err := metrics.ConstructOrUpdateMetric(metric, metricTmpl, metrics.RealTimeMetric{})
+		if err != nil {
+			woc.log.Errorf("could not compute metric '%s': %s", metricTmpl.Name, err)
+		}
+		woc.controller.Metrics[metricTmpl.GetDesc()] = updatedMetric
 	}
 
-	metric := woc.controller.Metrics[metricSpec.GetDesc()]
-
-	fstTmpl := fasttemplate.New(metricSpec.GetValueString(), "{{", "}}")
-	replacedValue, err := common.Replace(fstTmpl, replaceMap, true)
-	if err != nil {
-		return fmt.Errorf("unable to compute metric '%s': %s", metricSpec.Name, err)
-	}
-	metricSpec.SetValueString(replacedValue)
-
-	updatedMetric, err := metrics.ConstructOrUpdateMetric(metric, metricSpec, metrics.RealTimeMetric{})
-	if err != nil {
-		woc.log.Errorf("could not compute metric '%s': %s", metricSpec.Name, err)
-	}
-	woc.controller.Metrics[metricSpec.GetDesc()] = updatedMetric
 	return nil
 }

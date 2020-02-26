@@ -949,11 +949,10 @@ type NodeStatus struct {
 	// a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
 	// a template, will be a superset of the outbound nodes of its last children.
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
-}
 
-//func (n NodeStatus) String() string {
-//	return fmt.Sprintf("%s (%s)", n.Name, n.ID)
-//}
+	// MetricEmitted is a flag to indicate that the metric associated with this Node has been emitted
+	MetricEmitted bool `json:"metricEmitted" protobuf:"varint,21,opt,name=metricEmitted"`
+}
 
 func isCompletedPhase(phase NodePhase) bool {
 	return phase == NodeSucceeded ||
@@ -1042,6 +1041,14 @@ func (n *NodeStatus) IsResolvable() bool {
 // IsActiveSuspendNode returns whether this node is an active suspend node
 func (n *NodeStatus) IsActiveSuspendNode() bool {
 	return n.Type == NodeTypeSuspend && n.Phase == NodeRunning
+}
+
+func (n *NodeStatus) Emitted() bool {
+	return n.MetricEmitted
+}
+
+func (n *NodeStatus) MarkEmitted() {
+	n.MetricEmitted = true
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket
