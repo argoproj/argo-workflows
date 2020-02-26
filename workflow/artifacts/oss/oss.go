@@ -4,8 +4,9 @@ import (
 	"time"
 
 	ossdriver "github.com/aliyun/aliyun-oss-go-sdk/oss"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	log "github.com/sirupsen/logrus"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
