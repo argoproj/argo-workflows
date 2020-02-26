@@ -386,6 +386,10 @@ spec:
           value: 30s
         - name: WORKFLOW_GC_PERIOD
           value: 30s
+        - name: ARCHIVED_WORKFLOW_TTL
+          value: 5m
+        - name: ARCHIVED_WORKFLOW_GC_PERIOD
+          value: 30s
         - name: UPPERIO_DB_DEBUG
           value: "1"
         image: argoproj/workflow-controller:latest

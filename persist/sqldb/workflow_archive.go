@@ -3,6 +3,7 @@ package sqldb
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -47,6 +48,7 @@ type WorkflowArchive interface {
 	ListWorkflows(namespace string, labelRequirements labels.Requirements, limit, offset int) (wfv1.Workflows, error)
 	GetWorkflow(uid string) (*wfv1.Workflow, error)
 	DeleteWorkflow(uid string) error
+	DeleteWorkflows(ttl time.Duration) error
 }
 
 type workflowArchive struct {
@@ -222,5 +224,22 @@ func (r *workflowArchive) DeleteWorkflow(uid string) error {
 		return err
 	}
 	log.WithFields(log.Fields{"uid": uid, "rowsAffected": rowsAffected}).Debug("Deleted archived workflow")
+	return nil
+}
+
+func (r *workflowArchive) DeleteWorkflows(ttl time.Duration) error {
+	rs, err := r.session.
+		DeleteFrom(archiveTableName).
+		Where(db.Cond{"clustername": r.clusterName}).
+		And(fmt.Sprintf("finishedat < current_timestamp - interval '%d' second", int(ttl.Seconds()))).
+		Exec()
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := rs.RowsAffected()
+	if err != nil {
+		return err
+	}
+	log.WithFields(log.Fields{"rowsAffected": rowsAffected}).Debug("Deleted archived workflows")
 	return nil
 }

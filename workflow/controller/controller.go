@@ -181,6 +181,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.podLabeler(ctx.Done())
 	go wfc.podGarbageCollector(ctx.Done())
 	go wfc.periodicWorkflowGarbageCollector(ctx.Done())
+	go wfc.periodicArchivedWorkflowGarbageCollector(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	for _, informer := range []cache.SharedIndexInformer{wfc.incompleteWfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
@@ -305,6 +306,42 @@ func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan st
 						}
 					}
 				}
+			}
+		}
+	}
+}
+
+func (wfc *WorkflowController) periodicArchivedWorkflowGarbageCollector(stopCh <-chan struct{}) {
+	value, ok := os.LookupEnv("ARCHIVED_WORKFLOW_GC_PERIOD")
+	periodicity := 5 * time.Minute
+	if ok {
+		var err error
+		periodicity, err = time.ParseDuration(value)
+		if err != nil {
+			log.WithFields(log.Fields{"err": err, "value": value}).Fatal("Failed to parse ARCHIVED_WORKFLOW_GC_PERIOD")
+		}
+	}
+	value, ok = os.LookupEnv("ARCHIVED_WORKFLOW_TTL")
+	ttl := 5 * time.Minute
+	if ok {
+		var err error
+		periodicity, err = time.ParseDuration(value)
+		if err != nil {
+			log.WithFields(log.Fields{"err": err, "value": value}).Fatal("Failed to parse ARCHIVED_WORKFLOW_TTL")
+		}
+	}
+	log.Infof("Performing periodic GC archive workflows every %v", periodicity)
+	ticker := time.NewTicker(periodicity)
+	for {
+		select {
+		case <-stopCh:
+			ticker.Stop()
+			return
+		case <-ticker.C:
+			log.Info("Performing periodic archived workflow GC")
+			err := wfc.wfArchive.DeleteWorkflows(ttl)
+			if err != nil {
+				log.WithField("err", err).Error("Failed to delete archived workflows")
 			}
 		}
 	}

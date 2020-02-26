@@ -2,6 +2,7 @@ package sqldb
 
 import (
 	"fmt"
+	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -27,4 +28,8 @@ func (r *nullWorkflowArchive) GetWorkflow(string) (*wfv1.Workflow, error) {
 
 func (r *nullWorkflowArchive) DeleteWorkflow(string) error {
 	return fmt.Errorf("deleting archived workflows not supported")
+}
+
+func (r *nullWorkflowArchive) DeleteWorkflows(time.Duration) error {
+	return nil
 }

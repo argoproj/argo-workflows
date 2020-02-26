@@ -215,6 +215,7 @@ func (m migrate) Exec(ctx context.Context) error {
 			ansiSQLChange(`alter table `+m.tableName+` modify column nodes json not null`),
 			ansiSQLChange(`alter table `+m.tableName+` alter column nodes type json using nodes::json`),
 		),
+		ansiSQLChange(`create index argo_archived_workflows_i2 on argo_archived_workflows (clustername,finishedat)`),
 	} {
 		err := m.applyChange(ctx, changeSchemaVersion, change)
 		if err != nil {
