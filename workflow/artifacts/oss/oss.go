@@ -1,11 +1,11 @@
 package oss
 
 import (
-	aliyunoss "github.com/aliyun/aliyun-oss-go-sdk/oss"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"time"
+        aliyunoss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+        wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+        log "github.com/sirupsen/logrus"
+        "k8s.io/apimachinery/pkg/util/wait"
+        "time"
 )
 
 // OSSArtifactDriver is a driver for OSS
