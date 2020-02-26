@@ -2,14 +2,14 @@
 
 The following variables are made available to reference various metadata of a workflow:
 
-## All Templates:
+## All Templates
 | Variable | Description|
 |----------|------------|
 | `inputs.parameters.<NAME>`| Input parameter to a template |
 | `inputs.parameters`| All input parameters to a template as a JSON string |
 | `inputs.artifacts.<NAME>` | Input artifact to a template |
 
-## Steps Templates:
+## Steps Templates
 | Variable | Description|
 |----------|------------|
 | `steps.<STEPNAME>.ip` | IP address of a previous daemon container step |
@@ -18,7 +18,7 @@ The following variables are made available to reference various metadata of a wo
 | `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step |
 | `steps.<STEPNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous step |
 
-## DAG Templates:
+## DAG Templates
 | Variable | Description|
 |----------|------------|
 | `tasks.<TASKNAME>.ip` | IP address of a previous daemon container task |
@@ -27,7 +27,7 @@ The following variables are made available to reference various metadata of a wo
 | `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task |
 | `tasks.<TASKNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous task |
 
-## Container/Script Templates:
+## Container/Script Templates
 | Variable | Description|
 |----------|------------|
 | `pod.name` | Pod name of the container/script |
@@ -41,7 +41,42 @@ The following variables are made available to reference various metadata of a wo
 | `item` | Value of the item in a list |
 | `item.<FIELDNAME>` | Field value of the item in a list of maps |
 
-## Global:
+## Metrics
+When emitting custom metrics in a `step` or `task` template, special variables are available that allow self-reference to the current
+step. Here, "step" refers to the step emitting the metrics.
+
+| Variable | Description|
+|----------|------------|
+| `step.status` | Phase status of the step |
+| `step.duration` | Duration of the step in seconds |
+| `step.outputs.result` | Output result of the step |
+| `step.outputs.parameters.<NAME>` | Output parameter the step |
+
+Similarly, for a `task` template:
+
+| Variable | Description|
+|----------|------------|
+| `task.status` | Phase status of the task |
+| `task.duration` | Duration of the task in seconds |
+| `task.outputs.result` | Output result of the task |
+| `task.outputs.parameters.<NAME>` | Output parameter the task |
+
+### Realtime Metrics
+
+Some variables can be emitted in realtime (as opposed to just when the step/task completes). To emit these variables in
+real time, set `realtime: true` under `gauge` (note: only Gauge metrics allow for real time variable emission). Metrics
+currently available for real time emission:
+
+For `Workflow`-level metrics:
+* `workflow.duration`
+
+For `step`-level metrics:
+* `step.duration`
+
+For `task`-level metrics:
+* `task.duration`
+
+## Global
 | Variable | Description|
 |----------|------------|
 | `workflow.name` | Workflow name |
@@ -57,7 +92,7 @@ The following variables are made available to reference various metadata of a wo
 | `workflow.priority` | Workflow priority |
 | `workflow.duration` | Workflow duration estimate, may differ from actual duration by a couple of seconds |
 
-## Exit Handler:
+## Exit Handler
 | Variable | Description|
 |----------|------------|
 | `workflow.status` | Workflow status. One of: `Succeeded`, `Failed`, `Error` |
