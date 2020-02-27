@@ -25,7 +25,7 @@ function parseSidePanelParam(param: string) {
     return null;
 }
 
-export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {workflow: models.Workflow}> {
+export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {zoom: number; hideSucceeded: boolean; workflow: models.Workflow}> {
     public static contextTypes = {
         router: PropTypes.object,
         apis: PropTypes.object
@@ -48,7 +48,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
 
     constructor(props: RouteComponentProps<any>) {
         super(props);
-        this.state = {workflow: null};
+        this.state = {zoom: 1, hideSucceeded: false, workflow: null};
     }
 
     public componentDidMount() {
@@ -140,6 +140,22 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                     <a className={classNames({active: this.selectedTabKey === 'workflow'})} onClick={() => this.selectTab('workflow')}>
                                         <i className='fa argo-icon-workflow' />
                                     </a>
+                                    <a
+                                        className={classNames({active: this.state.zoom > 1})}
+                                        onClick={() => {
+                                            this.setState({zoom: this.state.zoom === 1 ? 2 : 1});
+                                        }}
+                                        title='Zoom into the timeline'>
+                                        <i className='fa fa-search-plus' />
+                                    </a>
+                                    <a
+                                        className={classNames({active: !this.state.hideSucceeded})}
+                                        onClick={() => {
+                                            this.setState({hideSucceeded: !this.state.hideSucceeded});
+                                        }}
+                                        title='Hide succeeded'>
+                                        <i className='fa fa-check' />
+                                    </a>
                                 </div>
                             )
                         }}>
@@ -149,7 +165,13 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                     <div>
                                         <div className='workflow-details__graph-container'>
                                             {(this.selectedTabKey === 'workflow' && (
-                                                <WorkflowDag workflow={this.state.workflow} selectedNodeId={this.selectedNodeId} nodeClicked={node => this.selectNode(node.id)} />
+                                                <WorkflowDag
+                                                    zoom={this.state.zoom}
+                                                    hideSucceeded={this.state.hideSucceeded}
+                                                    workflow={this.state.workflow}
+                                                    selectedNodeId={this.selectedNodeId}
+                                                    nodeClicked={node => this.selectNode(node.id)}
+                                                />
                                             )) || (
                                                 <WorkflowTimeline
                                                     workflow={this.state.workflow}
@@ -196,7 +218,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
         }
         services.workflows
             .delete(this.props.match.params.name, this.props.match.params.namespace)
-            .then(wfDeleteRes => ctx.navigation.goto(uiUrl(`workflows/`)))
+            .then(() => ctx.navigation.goto(uiUrl(`workflows/`)))
             .catch(error => {
                 this.appContext.apis.notifications.show({
                     content: 'Unable to delete workflow',
