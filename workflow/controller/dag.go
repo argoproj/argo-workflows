@@ -313,16 +313,17 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			return
 		}
 
-		if task.Metrics != nil && node.GetMetricLifecycle() < wfv1.MetricLifecyclePostExecution && (!hasOnExitNode || onExitNode.Completed()) {
-			dagScope, err := woc.buildLocalScopeFromTask(dagCtx, task)
-			if err != nil {
-				woc.log.Error(err)
-				return
+		if task.Metrics != nil && (!hasOnExitNode || onExitNode.Completed()) {
+			// We can infer that this node completed during the current operation, emit metrics
+			if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Completed() {
+				dagScope, err := woc.buildLocalScopeFromTask(dagCtx, task)
+				if err != nil {
+					woc.log.Error(err)
+					return
+				}
+				localScope, realTimeScope := woc.prepareMetricScope(node, dagScope, "task")
+				woc.computeMetrics(task.Metrics.Prometheus, localScope, realTimeScope, false)
 			}
-			localScope, realTimeScope := woc.prepareMetricScope(node, dagScope, "task")
-			woc.computeMetrics(task.Metrics.Prometheus, localScope, realTimeScope, false)
-			node.SetMetricLifecycle(wfv1.MetricLifecyclePostExecution)
-			woc.wf.Status.Nodes[node.ID] = *node
 		}
 
 		return
@@ -348,16 +349,17 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 					dependenciesSuccessful = false
 				}
 
-				if task.Metrics != nil && depNode.GetMetricLifecycle() < wfv1.MetricLifecyclePostExecution && (!hasOnExitNode || onExitNode.Completed()) {
-					dagScope, err := woc.buildLocalScopeFromTask(dagCtx, depTask)
-					if err != nil {
-						woc.log.Error(err)
-						continue
+				if task.Metrics != nil && (!hasOnExitNode || onExitNode.Completed()) {
+					// We can infer that this node completed during the current operation, emit metrics
+					if prevNodeStatus, ok := woc.preExecutionNodePhases[depNode.ID]; ok && !prevNodeStatus.Completed() {
+						dagScope, err := woc.buildLocalScopeFromTask(dagCtx, depTask)
+						if err != nil {
+							woc.log.Error(err)
+							continue
+						}
+						localScope, realTimeScope := woc.prepareMetricScope(depNode, dagScope, "task")
+						woc.computeMetrics(depTask.Metrics.Prometheus, localScope, realTimeScope, false)
 					}
-					localScope, realTimeScope := woc.prepareMetricScope(depNode, dagScope, "task")
-					woc.computeMetrics(depTask.Metrics.Prometheus, localScope, realTimeScope, false)
-					depNode.SetMetricLifecycle(wfv1.MetricLifecyclePostExecution)
-					woc.wf.Status.Nodes[depNode.ID] = *depNode
 				}
 
 				continue
@@ -463,15 +465,16 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		// Finally execute the template
 		executedNode, _ := woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, dagCtx.boundaryID)
 
-		if task.Metrics != nil && executedNode.GetMetricLifecycle() < wfv1.MetricLifecyclePreExecution {
-			dagScope, err := woc.buildLocalScopeFromTask(dagCtx, task)
-			if err != nil {
-				woc.log.Error(err)
+		if task.Metrics != nil {
+			// If the node did not previously exist, we can infer that it was just created
+			if _, ok := woc.preExecutionNodePhases[executedNode.ID]; !ok {
+				dagScope, err := woc.buildLocalScopeFromTask(dagCtx, task)
+				if err != nil {
+					woc.log.Error(err)
+				}
+				localScope, realTimeScope := woc.prepareMetricScope(executedNode, dagScope, "task")
+				woc.computeMetrics(task.Metrics.Prometheus, localScope, realTimeScope, true)
 			}
-			localScope, realTimeScope := woc.prepareMetricScope(executedNode, dagScope, "task")
-			woc.computeMetrics(task.Metrics.Prometheus, localScope, realTimeScope, true)
-			executedNode.SetMetricLifecycle(wfv1.MetricLifecyclePreExecution)
-			woc.wf.Status.Nodes[executedNode.ID] = *executedNode
 		}
 	}
 

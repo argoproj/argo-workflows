@@ -497,9 +497,6 @@ message NodeStatus {
   // a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
   // a template, will be a superset of the outbound nodes of its last children.
   repeated string outboundNodes = 17;
-
-  // MetricLifecycle is a flag to indicate during which metric lifecycle the node is located
-  optional int64 metricLifecycle = 21;
 }
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent

@@ -949,12 +949,9 @@ type NodeStatus struct {
 	// a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
 	// a template, will be a superset of the outbound nodes of its last children.
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
-
-	// MetricLifecycle is a flag to indicate during which metric lifecycle the node is located
-	MetricLifecycle MetricLifecycle `json:"metricLifecycle" protobuf:"varint,21,opt,name=metricLifecycle,casttype=MetricLifecycle"`
 }
 
-func isCompletedPhase(phase NodePhase) bool {
+func (phase NodePhase) Completed() bool {
 	return phase == NodeSucceeded ||
 		phase == NodeFailed ||
 		phase == NodeError ||
@@ -963,7 +960,7 @@ func isCompletedPhase(phase NodePhase) bool {
 
 // Completed returns whether or not the workflow has completed execution
 func (ws WorkflowStatus) Completed() bool {
-	return isCompletedPhase(ws.Phase)
+	return ws.Phase.Completed()
 }
 
 // Successful return whether or not the workflow has succeeded
@@ -986,7 +983,7 @@ func (ws WorkflowStatus) FinishTime() *metav1.Time {
 
 // Remove returns whether or not the node has completed execution
 func (n NodeStatus) Completed() bool {
-	return isCompletedPhase(n.Phase) || n.IsDaemoned() && n.Phase != NodePending
+	return n.Phase.Completed() || n.IsDaemoned() && n.Phase != NodePending
 }
 
 func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
@@ -1041,14 +1038,6 @@ func (n *NodeStatus) IsResolvable() bool {
 // IsActiveSuspendNode returns whether this node is an active suspend node
 func (n *NodeStatus) IsActiveSuspendNode() bool {
 	return n.Type == NodeTypeSuspend && n.Phase == NodeRunning
-}
-
-func (n *NodeStatus) GetMetricLifecycle() MetricLifecycle {
-	return n.MetricLifecycle
-}
-
-func (n *NodeStatus) SetMetricLifecycle(lifecycle MetricLifecycle) {
-	n.MetricLifecycle = lifecycle
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket
@@ -1554,14 +1543,6 @@ const (
 	MetricTypeHistogram MetricType = "Histogram"
 	MetricTypeCounter   MetricType = "Counter"
 	MetricTypeUnknown   MetricType = "Unknown"
-)
-
-type MetricLifecycle int
-
-const (
-	MetricLifecycleUnprocessed MetricLifecycle = iota
-	MetricLifecyclePreExecution
-	MetricLifecyclePostExecution
 )
 
 type Metrics struct {

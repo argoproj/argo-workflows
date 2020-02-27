@@ -238,11 +238,12 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			nodeSteps[childNodeName] = step
 			woc.addChildNode(sgNodeName, childNodeName)
 
-			if step.Metrics != nil && childNode.GetMetricLifecycle() < wfv1.MetricLifecyclePreExecution {
-				localScope, realTimeScope := woc.prepareMetricScope(childNode, stepsCtx.scope, "step")
-				woc.computeMetrics(step.Metrics.Prometheus, localScope, realTimeScope, true)
-				childNode.SetMetricLifecycle(wfv1.MetricLifecyclePreExecution)
-				woc.wf.Status.Nodes[childNode.ID] = *childNode
+			if step.Metrics != nil {
+				// If the node did not previously exist, we can infer that it was just created
+				if _, ok := woc.preExecutionNodePhases[childNode.ID]; !ok {
+					localScope, realTimeScope := woc.prepareMetricScope(childNode, stepsCtx.scope, "step")
+					woc.computeMetrics(step.Metrics.Prometheus, localScope, realTimeScope, true)
+				}
 			}
 		}
 	}
@@ -262,11 +263,12 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 				completed = false
 			}
 
-			if step.Metrics != nil && childNode.GetMetricLifecycle() < wfv1.MetricLifecyclePostExecution && (!hasOnExitNode || onExitNode.Completed()) {
-				localScope, realTimeScope := woc.prepareMetricScope(&childNode, stepsCtx.scope, "step")
-				woc.computeMetrics(step.Metrics.Prometheus, localScope, realTimeScope, false)
-				childNode.SetMetricLifecycle(wfv1.MetricLifecyclePostExecution)
-				woc.wf.Status.Nodes[childNodeID] = childNode
+			if step.Metrics != nil && (!hasOnExitNode || onExitNode.Completed()) {
+				// We can infer that this node completed during the current operation, emit metrics
+				if prevNodeStatus, ok := woc.preExecutionNodePhases[childNode.ID]; ok && !prevNodeStatus.Completed() {
+					localScope, realTimeScope := woc.prepareMetricScope(&childNode, stepsCtx.scope, "step")
+					woc.computeMetrics(step.Metrics.Prometheus, localScope, realTimeScope, false)
+				}
 			}
 		}
 	}

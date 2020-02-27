@@ -2036,11 +2036,6 @@
           "description": "A human readable message indicating details about why the node is in this condition.",
           "type": "string"
         },
-        "metricLifecycle": {
-          "type": "string",
-          "format": "int64",
-          "title": "MetricLifecycle is a flag to indicate during which metric lifecycle the node is located"
-        },
         "name": {
           "type": "string",
           "title": "Name is unique name in the node tree used to generate the node ID"
