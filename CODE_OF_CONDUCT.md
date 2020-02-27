@@ -19,5 +19,5 @@ Be patient
 
 # Relevant References
 * https://www.djangoproject.com/conduct/
-* http://contributor-covenant.org/version/1/4/code_of_conduct.md
+* https://www.contributor-covenant.org/version/1/4/code-of-conduct/
 * http://contributor-covenant.org/
