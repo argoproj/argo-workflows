@@ -10,7 +10,6 @@
   ],
   "swagger": "2.0",
   "info": {
-    "description": "Workflow Service API performs CRUD actions against application resources",
     "title": "Argo",
     "version": "latest"
   },
@@ -2600,6 +2599,10 @@
           "format": "int64",
           "title": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow"
         },
+        "podDisruptionBudget": {
+          "title": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.\nController will automatically add the selector with workflow name, if selector is empty.\nOptional: Defaults to empty.\n+optional",
+          "$ref": "#/definitions/k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec"
+        },
         "podGC": {
           "title": "PodGC describes the strategy to use when to deleting completed pods",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PodGC"
@@ -5022,6 +5025,24 @@
         }
       }
     },
+    "k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec": {
+      "description": "PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.",
+      "type": "object",
+      "properties": {
+        "maxUnavailable": {
+          "title": "An eviction is allowed if at most \"maxUnavailable\" pods selected by\n\"selector\" are unavailable after the eviction, i.e. even in absence of\nthe evicted pod. For example, one can prevent all voluntary evictions\nby specifying 0. This is a mutually exclusive setting with \"minAvailable\".\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.IntOrString"
+        },
+        "minAvailable": {
+          "title": "An eviction is allowed if at least \"minAvailable\" pods selected by\n\"selector\" will still be available after the eviction, i.e. even in the\nabsence of the evicted pod.  So for example you can prevent all voluntary\nevictions by specifying \"100%\".\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.IntOrString"
+        },
+        "selector": {
+          "title": "Label query over pods whose evictions are managed by the disruption\nbudget.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.LabelSelector"
+        }
+      }
+    },
     "io.k8s.api.core.v1.Quantity": {
       "description": "Quantity is a fixed-point representation of a number.\nIt provides convenient marshaling/unmarshaling in JSON and YAML,\nin addition to String() and AsInt64() accessors.\n\nThe serialization format is:\n\n\u003cquantity\u003e        ::= \u003csignedNumber\u003e\u003csuffix\u003e\n  (Note that \u003csuffix\u003e may be empty, from the \"\" case in \u003cdecimalSI\u003e.)\n\u003cdigit\u003e           ::= 0 | 1 | ... | 9\n\u003cdigits\u003e          ::= \u003cdigit\u003e | \u003cdigit\u003e\u003cdigits\u003e\n\u003cnumber\u003e          ::= \u003cdigits\u003e | \u003cdigits\u003e.\u003cdigits\u003e | \u003cdigits\u003e. | .\u003cdigits\u003e\n\u003csign\u003e            ::= \"+\" | \"-\"\n\u003csignedNumber\u003e    ::= \u003cnumber\u003e | \u003csign\u003e\u003cnumber\u003e\n\u003csuffix\u003e          ::= \u003cbinarySI\u003e | \u003cdecimalExponent\u003e | \u003cdecimalSI\u003e\n\u003cbinarySI\u003e        ::= Ki | Mi | Gi | Ti | Pi | Ei\n  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)\n\u003cdecimalSI\u003e       ::= m | \"\" | k | M | G | T | P | E\n  (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)\n\u003cdecimalExponent\u003e ::= \"e\" \u003csignedNumber\u003e | \"E\" \u003csignedNumber\u003e\n\nNo matter which of the three exponent forms is used, no quantity may represent\na number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal\nplaces. Numbers larger or more precise will be capped or rounded up.\n(E.g.: 0.1m will rounded up to 1m.)\nThis may be extended in the future if we require larger or smaller quantities.\n\nWhen a Quantity is parsed from a string, it will remember the type of suffix\nit had, and will use the same type again when it is serialized.\n\nBefore serializing, Quantity will be put in \"canonical form\".\nThis means that Exponent/suffix will be adjusted up or down (with a\ncorresponding increase or decrease in Mantissa) such that:\n  a. No precision is lost\n  b. No fractional digits will be emitted\n  c. The exponent (or suffix) is as large as possible.\nThe sign will be omitted unless the number is negative.\n\nExamples:\n  1.5 will be serialized as \"1500m\"\n  1.5Gi will be serialized as \"1536Mi\"\n\nNote that the quantity will NEVER be internally represented by a\nfloating point number. That is the whole point of this exercise.\n\nNon-canonical values will still parse as long as they are well formed,\nbut will be re-emitted in their canonical form. (So always use canonical\nform, or don't diff.)\n\nThis format is intended to make it difficult to use these numbers without\nwriting some sort of special handling code in the hopes that that will\ncause implementors to also use a fixed point implementation.\n\n+protobuf=true\n+protobuf.embed=string\n+protobuf.options.marshal=false\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:deepcopy-gen=true\n+k8s:openapi-gen=true",
       "type": "object",
@@ -5577,32 +5598,6 @@
     "HTTPBasic": {
       "description": "HTTP Basic authentication",
       "type": "basic"
-    }
-  },
-  "x-stream-definitions": {
-    "io.argoproj.workflow.v1alpha1.LogEntry": {
-      "properties": {
-        "error": {
-          "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
-        },
-        "result": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LogEntry"
-        }
-      },
-      "title": "Stream result of io.argoproj.workflow.v1alpha1.LogEntry",
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowWatchEvent": {
-      "properties": {
-        "error": {
-          "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
-        },
-        "result": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowWatchEvent"
-        }
-      },
-      "title": "Stream result of io.argoproj.workflow.v1alpha1.WorkflowWatchEvent",
-      "type": "object"
     }
   }
 }
