@@ -2209,7 +2209,7 @@ func TestEventTimeout(t *testing.T) {
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
-	makePodsRunning(t, controller.kubeclientset, wf.ObjectMeta.Namespace)
+	makePodsPhase(t, apiv1.PodRunning, controller.kubeclientset, wf.ObjectMeta.Namespace)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	woc = newWorkflowOperationCtx(wf, controller)

@@ -1325,6 +1325,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		}
 		if lastChildNode != nil && !lastChildNode.Completed() {
 			// Last child node is still running.
+			nodeName = lastChildNode.Name
 			node = lastChildNode
 		} else {
 			// Create a new child node and append it to the retry node.
