@@ -624,9 +624,8 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		if time.Now().Before(waitingDeadline) {
 			retryMessage := fmt.Sprintf("Retrying in %s", humanize.Duration(time.Until(waitingDeadline)))
 			return woc.markNodePhase(node.Name, node.Phase, retryMessage), false, nil
-		} else {
-			node = woc.markNodePhase(node.Name, node.Phase, "")
 		}
+		node = woc.markNodePhase(node.Name, node.Phase, "")
 	}
 
 	var retryOnFailed bool
@@ -1312,7 +1311,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	// the container. The status of this node should be "Success" if any
 	// of the retries succeed. Otherwise, it is "Failed".
 	retryNodeName := ""
-	if processedTmpl.IsLeaf() && processedTmpl.RetryStrategy != nil {
+	if processedTmpl.RetryStrategy != nil {
 		retryNodeName = nodeName
 		retryParentNode := node
 		if retryParentNode == nil {
@@ -1337,19 +1336,20 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		}
 		if lastChildNode != nil && !lastChildNode.Completed() {
 			// Last child node is still running.
-			return retryParentNode, nil
-		}
+			nodeName = lastChildNode.Name
+			node = lastChildNode
+		} else {
+			// Create a new child node and append it to the retry node.
+			nodeName = fmt.Sprintf("%s(%d)", retryNodeName, len(retryParentNode.Children))
+			woc.addChildNode(retryNodeName, nodeName)
+			node = nil
 
-		// Create a new child node and append it to the retry node.
-		nodeName = fmt.Sprintf("%s(%d)", retryNodeName, len(retryParentNode.Children))
-		woc.addChildNode(retryNodeName, nodeName)
-		node = nil
-
-		// Change the `pod.name` variable to the new retry node name
-		if processedTmpl.IsPodType() {
-			processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, map[string]string{common.LocalVarPodName: woc.wf.NodeID(nodeName)})
-			if err != nil {
-				return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, err), err
+			// Change the `pod.name` variable to the new retry node name
+			if processedTmpl.IsPodType() {
+				processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, map[string]string{common.LocalVarPodName: woc.wf.NodeID(nodeName)})
+				if err != nil {
+					return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, err), err
+				}
 			}
 		}
 	}
@@ -1383,9 +1383,16 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 	node = woc.getNodeByName(node.Name)
 
-	// Swap the node back to retry node.
+	// Swap the node back to retry node
 	if retryNodeName != "" {
-		node = woc.getNodeByName(retryNodeName)
+		retryNode := woc.getNodeByName(retryNodeName)
+		if !retryNode.Completed() && node.Completed() { //if the retry child has completed we need to update outself
+			node, err = woc.executeTemplate(retryNodeName, orgTmpl, tmplCtx, args, boundaryID)
+			if err != nil {
+				return woc.markNodeError(node.Name, err), err
+			}
+		}
+		node = retryNode
 	}
 
 	return node, nil

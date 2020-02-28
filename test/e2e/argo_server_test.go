@@ -462,6 +462,21 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			NotNull()
 	})
 
+	s.Run("ListWithFields", func() {
+		j := s.e(s.T()).GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
+			WithQuery("fields", "-items.status.nodes,items.status.finishedAt,items.status.startedAt").
+			Expect().
+			Status(200).
+			JSON()
+		j.
+			Path("$.items").
+			Array().
+			Length().
+			Equal(1)
+		j.Path("$.items[0].status").Object().ContainsKey("phase").NotContainsKey("nodes")
+	})
+
 	s.Run("Get", func() {
 		j := s.e(s.T()).GET("/api/v1/workflows/argo/test").
 			Expect().
@@ -478,6 +493,15 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 		s.e(s.T()).GET("/api/v1/workflows/argo/not-found").
 			Expect().
 			Status(404)
+	})
+
+	s.Run("GetWithFields", func() {
+		j := s.e(s.T()).GET("/api/v1/workflows/argo/test").
+			WithQuery("fields", "status.phase").
+			Expect().
+			Status(200).
+			JSON()
+		j.Path("$.status").Object().ContainsKey("phase").NotContainsKey("nodes")
 	})
 
 	s.Run("Suspend", func() {
