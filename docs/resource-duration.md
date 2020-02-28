@@ -2,7 +2,11 @@
 
 ![alpha](assets/alpha.svg)
 
-Argo Workflows provides an indication of how much resource your workflow has used and save this information. This is intended to be an **indicative but not accurate** value. 
+Argo Workflows provides an indication of how much resource your workflow has used and save this information. This is intended to be an **indicative but not accurate** value.
+
+## Configuration
+
+This is only set if [the feature flags is enabled in config](workflow-controller-configmap.yaml).
 
 ## Calculation
 

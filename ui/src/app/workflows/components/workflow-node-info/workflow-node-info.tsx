@@ -67,8 +67,11 @@ export const WorkflowNodeSummary = (props: Props) => {
                     {now => <Duration durationMs={nodeDuration(props.node, now)} />}
                 </Ticker>
             )
-        },
-        {
+        }
+    ];
+    if (props.node.type === 'Pod') {
+        attributes.splice(2, 0, {title: 'POD NAME', value: props.node.id});
+        attributes.push({
             title: 'RESOURCES DURATION',
             value: (
                 <>
@@ -81,10 +84,7 @@ export const WorkflowNodeSummary = (props: Props) => {
                     </a>
                 </>
             )
-        }
-    ];
-    if (props.node.type === 'Pod') {
-        attributes.splice(2, 0, {title: 'POD NAME', value: props.node.id});
+        });
     }
     const template = Utils.getResolvedTemplates(props.workflow, props.node);
     return (

@@ -13,6 +13,8 @@ data:
         secretKeySecret:
           name: my-minio-cred
           key: secretkey
+    featureFlags:
+      resourcesDuration: true
     persistence:
       connectionPool:
         maxIdleConns: 100

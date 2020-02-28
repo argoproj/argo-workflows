@@ -52,6 +52,9 @@ type WorkflowControllerConfig struct {
 	// controller watches workflows and pods that *are not* labeled with an instance id.
 	InstanceID string `json:"instanceID,omitempty"`
 
+	// FeatureFlags for general/experimental features
+	FeatureFlags FeatureFlags `json:"featureFlags,omitempty"`
+
 	MetricsConfig metrics.PrometheusConfig `json:"metricsConfig,omitempty"`
 
 	TelemetryConfig metrics.PrometheusConfig `json:"telemetryConfig,omitempty"`
@@ -64,6 +67,12 @@ type WorkflowControllerConfig struct {
 
 	// Config customized Docker Sock path
 	DockerSockPath string `json:"dockerSockPath,omitempty"`
+}
+
+// More general feature flags.
+type FeatureFlags struct {
+	// ResourcesDuration.
+	ResourcesDuration bool `json:"resourcesDuration,omitempty"`
 }
 
 // KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,

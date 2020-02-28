@@ -31,6 +31,10 @@ data:
     #   # volume name when mounting the secret, default to kubeconfig
     #   volumeName: kube-config-volume
 
+    featureFlags:
+      # Enable resource duration
+      resourcesDuration: true
+
     # artifactRepository defines the default location to be used as the artifact repository for
     # container artifacts.
     artifactRepository:
