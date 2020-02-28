@@ -28,7 +28,6 @@
 
     &__node {
         position: absolute;
-        padding-left: 3.5em;
         box-shadow: 1px 1px 1px $argo-color-gray-4;
         background-color: white;
         border-radius: 4px;
@@ -39,7 +38,7 @@
             border-color: $argo-color-teal-6;
         }
 
-        &.virtual {
+        &.small {
             background-color: transparent;
             box-shadow: none;
             border: none;
@@ -49,7 +48,6 @@
                 content: '';
                 position: absolute;
                 display: block;
-                border-radius: 10px;
                 width: 20px;
                 height: 20px;
                 left: -10px;
@@ -57,11 +55,17 @@
                 border: 1px dashed $argo-color-gray-5;
             }
 
-            .workflow-dag__node-status, .workflow-dag__node-title {
+            .workflow-dag__node-title, .workflow-dag__node-status {
                 display: none;
             }
         }
-        &.virtual.active {
+        &.virtual {
+            &:after {
+                /* give virtual nodes a circle */
+                border-radius: 10px;
+            }
+        }
+        &.small.active {
             &:after {
                 border-color: $argo-color-teal-6;
             }
@@ -78,7 +82,6 @@
         left: -1px;
         bottom: -1px;
         top: -1px;
-        width: 3em;
         border-top-left-radius: 4px;
         border-bottom-left-radius: 4px;
         text-align: center;
@@ -121,7 +124,7 @@
             from {transform:rotate(0deg);}
             to {transform:rotate(360deg);}
         }
-    
+
         &--succeeded {
             background-color: $argo-success-color;
             &::after {
