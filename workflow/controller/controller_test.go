@@ -2,9 +2,11 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/imdario/mergo"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,6 +67,32 @@ func newController() *WorkflowController {
 	}
 }
 
+func newControllerWithDefaults() *WorkflowController {
+	wfclientset := fakewfclientset.NewSimpleClientset()
+	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
+	wftmplInformer := informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
+	ctx := context.Background()
+	go wftmplInformer.Informer().Run(ctx.Done())
+	if !cache.WaitForCacheSync(ctx.Done(), wftmplInformer.Informer().HasSynced) {
+		panic("Timed out waiting for caches to sync")
+	}
+	myBool := true
+	return &WorkflowController{
+		Config: config.WorkflowControllerConfig{
+			ExecutorImage: "executor:latest",
+			WorkflowDefaults: &wfv1.WorkflowSpec{
+				HostNetwork: &myBool,
+			},
+		},
+		kubeclientset:  fake.NewSimpleClientset(),
+		wfclientset:    wfclientset,
+		completedPods:  make(chan string, 512),
+		wftmplInformer: wftmplInformer,
+		wfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfArchive:      sqldb.NullWorkflowArchive,
+	}
+}
+
 func unmarshalWF(yamlStr string) *wfv1.Workflow {
 	var wf wfv1.Workflow
 	err := yaml.Unmarshal([]byte(yamlStr), &wf)
@@ -92,4 +120,24 @@ func makePodsRunning(t *testing.T, kubeclientset kubernetes.Interface, namespace
 		pod.Status.Phase = apiv1.PodRunning
 		_, _ = podcs.Update(&pod)
 	}
+}
+
+func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
+	// Run it here
+	assert.Equal(t, "hello", "hello")
+	ans := true
+	controller := newController()
+	workflow := unmarshalWF(helloWorldWf)
+	if err := mergo.Merge(workflow, workflow); err != nil {
+		fmt.Printf("hello")
+	}
+	controller.addingWorkflowDefaultValueIfValueNotExist(workflow)
+	assert.Equal(t, workflow, unmarshalWF(helloWorldWf))
+
+	controllerDefaults := newControllerWithDefaults()
+	workflowDefaults := unmarshalWF(helloWorldWf)
+	controllerDefaults.addingWorkflowDefaultValueIfValueNotExist(workflowDefaults)
+	assert.Equal(t, workflowDefaults.Spec.HostNetwork, &ans)
+	assert.NotEqual(t, workflowDefaults, unmarshalWF(helloWorldWf))
+	assert.Equal(t, *workflowDefaults.Spec.HostNetwork, true)
 }

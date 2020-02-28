@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -45,8 +46,10 @@ type WorkflowController struct {
 	// namespace of the workflow controller
 	namespace        string
 	managedNamespace string
+
 	// configMap is the name of the config map in which to derive configuration of the controller from
 	configMap string
+
 	// Config is the workflow controller's configuration
 	Config config.WorkflowControllerConfig
 
@@ -355,6 +358,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 		wfc.throttler.Remove(key)
 		return true
 	}
+	wfc.addingWorkflowDefaultValueIfValueNotExist(wf)
 
 	if wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true" {
 		wfc.throttler.Remove(key)
@@ -415,6 +419,17 @@ func (wfc *WorkflowController) processNextItem() bool {
 	// See: https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go
 	//c.handleErr(err, key)
 	return true
+}
+
+func (wfc *WorkflowController) addingWorkflowDefaultValueIfValueNotExist(wf *wfv1.Workflow) {
+	//var workflowSpec *wfv1.WorkflowSpec = &wf.Spec
+	if wfc.Config.WorkflowDefaults != nil {
+		if err := mergo.Merge(&wf.Spec, *wfc.Config.WorkflowDefaults); err != nil {
+			log.Errorf("Failed to merge defaults and workflow : %+v", err)
+			panic(err)
+		}
+	}
+	// customer merger depending on if it is a pointer or not ...
 }
 
 func (wfc *WorkflowController) podWorker() {
