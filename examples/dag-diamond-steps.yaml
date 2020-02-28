@@ -27,13 +27,6 @@ metadata:
 spec:
   entrypoint: diamond
   templates:
-  - name: exit-1
-    inputs:
-      parameters:
-        - name: message
-    container:
-      image: alpine:3.7
-      command: [exit, 1]
   - name: echo
     inputs:
       parameters:
@@ -66,7 +59,7 @@ spec:
           parameters: [{name: message, value: B}]
       - name: C
         dependencies: [A]
-        template: exit-1
+        template: echo-thrice
         arguments:
           parameters: [{name: message, value: C}]
       - name: D

@@ -26,13 +26,6 @@ export const Utils = {
         return classes.join(' ');
     },
 
-    compactNodeName(node: {name: string; displayName: string}): string {
-        return this.shortNodeName(node)
-            .split('-')
-            .map((t: string) => t.substring(0, 1))
-            .join('');
-    },
-
     shortNodeName(node: {name: string; displayName: string}): string {
         return node.displayName || node.name;
     },
