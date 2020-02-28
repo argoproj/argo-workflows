@@ -9,6 +9,7 @@ import (
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
+	policyv1beta "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -277,6 +278,12 @@ type WorkflowSpec struct {
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,27,opt,name=podSpecPatch"`
+
+	//PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.
+	//Controller will automatically add the selector with workflow name, if selector is empty.
+	//Optional: Defaults to empty.
+	// +optional
+	PodDisruptionBudget *policyv1beta.PodDisruptionBudgetSpec `json:"podDisruptionBudget,omitempty" protobuf:"bytes,31,opt,name=podDisruptionBudget"`
 }
 
 type ParallelSteps struct {
@@ -775,6 +782,15 @@ func (n Nodes) FindByDisplayName(name string) *NodeStatus {
 	return nil
 }
 
+func (in Nodes) Any(f func(node NodeStatus) bool) bool {
+	for _, i := range in {
+		if f(i) {
+			return true
+		}
+	}
+	return false
+}
+
 // UserContainer is a container specified by a user.
 type UserContainer struct {
 	apiv1.Container `json:",inline" protobuf:"bytes,1,opt,name=container"`
@@ -1014,6 +1030,10 @@ func (ws *WorkflowStatus) Successful() bool {
 // Failed return whether or not the workflow has failed
 func (ws *WorkflowStatus) Failed() bool {
 	return ws.Phase == NodeFailed
+}
+
+func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
+	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
 }
 
 // Remove returns whether or not the node has completed execution

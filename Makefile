@@ -1,6 +1,7 @@
 
 BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
+GIT_REMOTE             = origin
 GIT_BRANCH             = $(shell git rev-parse --abbrev-ref=loose HEAD | sed 's/heads\///')
 GIT_TAG                = $(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
@@ -69,7 +70,8 @@ CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join 
 MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
-SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json')
+# the sort puts _.primary first in the list
+SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json' | sort)
 
 .PHONY: build
 build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
@@ -203,9 +205,7 @@ codegen:
 	# Generate code
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
-	./hack/update-openapigen.sh
-	go run ./hack/gen-openapi-spec/main.go $(MANIFESTS_VERSION) > ./api/openapi-spec/swagger.json
-	make api/argo-server/swagger.json
+	make api/openapi-spec/swagger.json
 	find . -path '*/mocks/*' -type f -not -path '*/vendor/*' -exec ./hack/update-mocks.sh {} ';'
 
 .PHONY: manifests
@@ -213,6 +213,7 @@ manifests: status manifests/install.yaml manifests/namespace-install.yaml manife
 
 # we use a different file to ./VERSION to force updating manifests after a `make clean`
 dist/MANIFESTS_VERSION:
+	mkdir -p dist
 	echo $(MANIFESTS_VERSION) > dist/MANIFESTS_VERSION
 
 manifests/install.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
@@ -418,32 +419,34 @@ clean:
 	# Delete build files
 	rm -Rf dist ui/dist
 
-# sdks
+# swagger
 
 $(HOME)/go/bin/swagger:
 	go get github.com/go-swagger/go-swagger/cmd/swagger
 
-api/argo-server/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) dist/MANIFESTS_VERSION
-	swagger mixin -c 412 pkg/apiclient/primary.swagger.json $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' > api/argo-server/swagger.json
+api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) dist/MANIFESTS_VERSION hack/swaggify.sh
+	swagger mixin -c 412 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
 
 # pre-push
 
 .PHONY: pre-commit
 pre-commit: test lint codegen manifests start pf-bg smoke test-api test-cli
 
-# release
+# release - targets only available on release branch
+ifneq ($(findstring release,$(GIT_BRANCH)),)
 
 .PHONY: prepare-release
-prepare-release: manifests codegen
+prepare-release: clean codegen manifests
 	# Commit if any changes
 	git diff --quiet || git commit -am "Update manifests to $(VERSION)"
 	git tag $(VERSION)
 
 .PHONY: publish-release
-publish-release:
+publish-release: build
 	# Push images to Docker Hub
 	docker push $(IMAGE_NAMESPACE)/argocli:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
-	git push --follow-tags
-
+	git push
+	git push $(GIT_REMOTE) $(VERSION)
+endif
