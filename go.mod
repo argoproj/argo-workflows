@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go v0.51.0 // indirect
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
 	github.com/ajg/form v1.5.1 // indirect
-	github.com/argoproj/pkg v0.0.0-20200102163130-2dd1f3f6b4de
+	github.com/argoproj/pkg v0.0.0-20200226231057-d69f0b04da65
 	github.com/aws/aws-sdk-go v1.27.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/colinmarc/hdfs v1.1.4-0.20180805212432-9746310a4d31
