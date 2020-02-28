@@ -46,11 +46,11 @@ func DurationForPod(pod *corev1.Pod, now time.Time) wfv1.ResourcesDuration {
 			// https://medium.com/@betz.mark/understanding-resource-limits-in-kubernetes-memory-6b41e9a955f9
 			corev1.ResourceMemory: resource.MustParse("100Mi"),
 		}}
-		for n, q := range c.Resources.Limits {
-			summaries[c.Name].ResourceList[n] = q
+		for name, quantity := range c.Resources.Limits {
+			summaries[c.Name].ResourceList[name] = quantity
 		}
-		for n, q := range c.Resources.Requests {
-			summaries[c.Name].ResourceList[n] = q
+		for name, quantity := range c.Resources.Requests {
+			summaries[c.Name].ResourceList[name] = quantity
 		}
 	}
 	for _, c := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {

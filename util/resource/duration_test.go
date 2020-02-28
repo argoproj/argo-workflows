@@ -14,7 +14,6 @@ import (
 
 func TestDurationForPod(t *testing.T) {
 	now := time.Now()
-	zero := now.Add(-time.Since(now))
 
 	tests := []struct {
 		name string
@@ -35,7 +34,7 @@ func TestDurationForPod(t *testing.T) {
 						State: corev1.ContainerState{
 							Running: &corev1.ContainerStateRunning{
 								StartedAt: metav1.Time{
-									Time: zero.Add(-1 * time.Minute),
+									Time: now.Add(-1 * time.Minute),
 								},
 							},
 						},
@@ -62,7 +61,7 @@ func TestDurationForPod(t *testing.T) {
 						State: corev1.ContainerState{
 							Running: &corev1.ContainerStateRunning{
 								StartedAt: metav1.Time{
-									Time: zero.Add(-3 * time.Minute),
+									Time: now.Add(-3 * time.Minute),
 								},
 							},
 						},
@@ -77,7 +76,7 @@ func TestDurationForPod(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := DurationForPod(tt.pod, zero)
+			got := DurationForPod(tt.pod, now)
 			assert.Equal(t, tt.want, got)
 		})
 	}
