@@ -10,9 +10,10 @@ import {NodePhase} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {services} from '../../../shared/services';
 
-import {WorkflowArtifacts, WorkflowDag, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowSummaryPanel, WorkflowTimeline, WorkflowYamlViewer} from '..';
+import {WorkflowArtifacts, WorkflowDag, WorkflowDagRenderOptions, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowSummaryPanel, WorkflowTimeline, WorkflowYamlViewer} from '..';
 import {Consumer, ContextApis} from '../../../shared/context';
 import {Utils} from '../../../shared/utils';
+import {WorkflowDagRenderOptionsPanel} from '../workflow-dag/workflow-dag-render-options-panel';
 import {WorkflowParametersPanel} from '../workflow-parameters-panel';
 
 require('./workflow-details.scss');
@@ -25,7 +26,7 @@ function parseSidePanelParam(param: string) {
     return null;
 }
 
-export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {workflow: models.Workflow}> {
+export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {workflowDagRenderOptions: WorkflowDagRenderOptions; workflow: models.Workflow}> {
     public static contextTypes = {
         router: PropTypes.object,
         apis: PropTypes.object
@@ -48,7 +49,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
 
     constructor(props: RouteComponentProps<any>) {
         super(props);
-        this.state = {workflow: null};
+        this.state = {workflowDagRenderOptions: {horizontal: false, zoom: 1, hideSucceeded: false}, workflow: null};
     }
 
     public componentDidMount() {
@@ -131,6 +132,12 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                             },
                             tools: (
                                 <div className='workflow-details__topbar-buttons'>
+                                    {this.selectedTabKey === 'workflow' && (
+                                        <WorkflowDagRenderOptionsPanel
+                                            {...this.state.workflowDagRenderOptions}
+                                            onChange={workflowDagRenderOptions => this.setState({workflowDagRenderOptions})}
+                                        />
+                                    )}
                                     <a className={classNames({active: this.selectedTabKey === 'summary'})} onClick={() => this.selectTab('summary')}>
                                         <i className='fa fa-columns' />
                                     </a>
@@ -149,7 +156,12 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                     <div>
                                         <div className='workflow-details__graph-container'>
                                             {(this.selectedTabKey === 'workflow' && (
-                                                <WorkflowDag workflow={this.state.workflow} selectedNodeId={this.selectedNodeId} nodeClicked={node => this.selectNode(node.id)} />
+                                                <WorkflowDag
+                                                    renderOptions={this.state.workflowDagRenderOptions}
+                                                    workflow={this.state.workflow}
+                                                    selectedNodeId={this.selectedNodeId}
+                                                    nodeClicked={node => this.selectNode(node.id)}
+                                                />
                                             )) || (
                                                 <WorkflowTimeline
                                                     workflow={this.state.workflow}
@@ -196,7 +208,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
         }
         services.workflows
             .delete(this.props.match.params.name, this.props.match.params.namespace)
-            .then(wfDeleteRes => ctx.navigation.goto(uiUrl(`workflows/`)))
+            .then(() => ctx.navigation.goto(uiUrl(`workflows/`)))
             .catch(error => {
                 this.appContext.apis.notifications.show({
                     content: 'Unable to delete workflow',
