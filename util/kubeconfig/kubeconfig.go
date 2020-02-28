@@ -189,7 +189,7 @@ func ReloadKubeConfig(explicitPath string) clientcmd.ClientConfig {
 	return clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
 }
 
-func RefreshTokenIfExpired(restConfig *restclient.Config, explicitPath, curentToken string, ) (string, error) {
+func RefreshTokenIfExpired(restConfig *restclient.Config, explicitPath, curentToken string) (string, error) {
 	if restConfig.AuthProvider != nil {
 		timestr := restConfig.AuthProvider.Config["expiry"]
 		if timestr != "" {
