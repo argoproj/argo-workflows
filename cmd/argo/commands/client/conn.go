@@ -61,6 +61,5 @@ func GetAuthString() string {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	return authString
 }
