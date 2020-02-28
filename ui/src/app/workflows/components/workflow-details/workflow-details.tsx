@@ -10,9 +10,10 @@ import {NodePhase} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {services} from '../../../shared/services';
 
-import {WorkflowArtifacts, WorkflowDag, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowSummaryPanel, WorkflowTimeline, WorkflowYamlViewer} from '..';
+import {WorkflowArtifacts, WorkflowDag, WorkflowDagRenderOptions, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowSummaryPanel, WorkflowTimeline, WorkflowYamlViewer} from '..';
 import {Consumer, ContextApis} from '../../../shared/context';
 import {Utils} from '../../../shared/utils';
+import {WorkflowDagRenderOptionsPanel} from '../workflow-dag/workflow-dag-render-options-panel';
 import {WorkflowParametersPanel} from '../workflow-parameters-panel';
 
 require('./workflow-details.scss');
@@ -25,7 +26,7 @@ function parseSidePanelParam(param: string) {
     return null;
 }
 
-export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {zoom: number; hideSucceeded: boolean; workflow: models.Workflow}> {
+export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {workflowDagRenderOptions: WorkflowDagRenderOptions; workflow: models.Workflow}> {
     public static contextTypes = {
         router: PropTypes.object,
         apis: PropTypes.object
@@ -48,7 +49,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
 
     constructor(props: RouteComponentProps<any>) {
         super(props);
-        this.state = {zoom: 1, hideSucceeded: false, workflow: null};
+        this.state = {workflowDagRenderOptions: {horizontal: false, zoom: 1, hideSucceeded: false}, workflow: null};
     }
 
     public componentDidMount() {
@@ -131,6 +132,12 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                             },
                             tools: (
                                 <div className='workflow-details__topbar-buttons'>
+                                    {this.selectedTabKey === 'workflow' && (
+                                        <WorkflowDagRenderOptionsPanel
+                                            {...this.state.workflowDagRenderOptions}
+                                            onChange={workflowDagRenderOptions => this.setState({workflowDagRenderOptions})}
+                                        />
+                                    )}
                                     <a className={classNames({active: this.selectedTabKey === 'summary'})} onClick={() => this.selectTab('summary')}>
                                         <i className='fa fa-columns' />
                                     </a>
@@ -139,22 +146,6 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                     </a>
                                     <a className={classNames({active: this.selectedTabKey === 'workflow'})} onClick={() => this.selectTab('workflow')}>
                                         <i className='fa argo-icon-workflow' />
-                                    </a>
-                                    <a
-                                        className={classNames({active: this.state.zoom > 1})}
-                                        onClick={() => {
-                                            this.setState({zoom: this.state.zoom === 1 ? 2 : 1});
-                                        }}
-                                        title='Zoom into the timeline'>
-                                        <i className='fa fa-search-plus' />
-                                    </a>
-                                    <a
-                                        className={classNames({active: !this.state.hideSucceeded})}
-                                        onClick={() => {
-                                            this.setState({hideSucceeded: !this.state.hideSucceeded});
-                                        }}
-                                        title='Hide succeeded'>
-                                        <i className='fa fa-check' />
                                     </a>
                                 </div>
                             )
@@ -166,8 +157,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                         <div className='workflow-details__graph-container'>
                                             {(this.selectedTabKey === 'workflow' && (
                                                 <WorkflowDag
-                                                    zoom={this.state.zoom}
-                                                    hideSucceeded={this.state.hideSucceeded}
+                                                    renderOptions={this.state.workflowDagRenderOptions}
                                                     workflow={this.state.workflow}
                                                     selectedNodeId={this.selectedNodeId}
                                                     nodeClicked={node => this.selectNode(node.id)}

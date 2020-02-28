@@ -6,12 +6,23 @@ import * as models from '../../../../models';
 import {NODE_PHASE} from '../../../../models';
 import {Utils} from '../../../shared/utils';
 
+export const defaultWorkflowDagRenderOptions: WorkflowDagRenderOptions = {
+    hideSucceeded: false,
+    horizontal: false,
+    zoom: 1
+};
+
+export interface WorkflowDagRenderOptions {
+    horizontal: boolean;
+    zoom: number;
+    hideSucceeded: boolean;
+}
+
 export interface WorkflowDagProps {
     workflow: models.Workflow;
     selectedNodeId?: string;
     nodeClicked?: (node: models.NodeStatus) => any;
-    zoom?: number;
-    hideSucceeded?: boolean;
+    renderOptions: WorkflowDagRenderOptions;
 }
 
 interface Line {
@@ -26,7 +37,7 @@ require('./workflow-dag.scss');
 
 export class WorkflowDag extends React.Component<WorkflowDagProps> {
     private get zoom() {
-        return this.props.zoom || 1;
+        return this.props.renderOptions.zoom || 1;
     }
 
     private get nodeWidth() {
@@ -40,7 +51,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
     public render() {
         const graph = new dagre.graphlib.Graph();
         // https://github.com/dagrejs/dagre/wiki
-        graph.setGraph({nodesep: 50 / this.zoom, ranksep: 50 / this.zoom, edgesep: 20 / this.zoom});
+        graph.setGraph({
+            edgesep: 20 / this.zoom,
+            nodesep: 50 / this.zoom,
+            rankdir: this.props.renderOptions.horizontal ? 'LR' : 'TB',
+            ranksep: 50 / this.zoom
+        });
         graph.setDefaultEdgeLabel(() => ({}));
         const nodes = (this.props.workflow.status && this.props.workflow.status.nodes) || {};
         Object.values(nodes).forEach(node => {
@@ -111,7 +127,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
                                 className={`fas workflow-dag__node-status workflow-dag__node-status--${Utils.isNodeSuspended(node) ? 'suspended' : node.phase.toLocaleLowerCase()}`}
                                 style={{width: statusWidth + 'em', lineHeight: this.nodeHeight + 'px'}}
                             />
-                            <div className='workflow-dag__node-title' style={{lineHeight: this.nodeHeight + 'px'}}>
+                            <div className='workflow-dag__node-title' style={{lineHeight: this.nodeHeight + 'px', fontSize: 1 / this.zoom + 'em'}}>
                                 {node.label}
                             </div>
                         </div>
@@ -144,7 +160,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
     }
 
     private isSmall(node: models.NodeStatus) {
-        return this.isVirtual(node) || (this.props.hideSucceeded && node.phase === NODE_PHASE.SUCCEEDED);
+        return this.isVirtual(node) || (this.props.renderOptions.hideSucceeded && node.phase === NODE_PHASE.SUCCEEDED);
     }
 
     private getOutboundNodes(nodeID: string): string[] {
