@@ -6,22 +6,19 @@
 
 > v2.5 and after
 
-Since version v2.5 Argo Workflows ships with a server that provide more features and security that before.
+Since version v2.5 Argo Workflows ships with a server that provide more features and security than before.
 
 The server can be configured with or without client auth (`server --auth-mode client`). When it is disabled, then clients must pass their Kubeconfig base 64 encoded in the HTTP `Authorization` header:
 
 ```
-token=$(argo token)
-curl -H "Authorization: Bearer $token" http://localhost:2746/api/v1/workflows/argo
+token=$(argo auth token)
+curl -H "Authorization: $token" http://localhost:2746/api/v1/workflows/argo
 ```
 
 To view the API:
  
 1. Open [https://editor.swagger.io/](https://editor.swagger.io/)
-2. Copy and paste either:
-    1. ../server/workflow/workflow.swagger.json
-    2. ../server/workflowtemplate/workflow-template.swagger.json 
-    1. ../server/workflowarchive/archived-workflows.swagger.json
+2. Copy and paste ../api/argo-server/swagger.json
 
 ## Classic API
 

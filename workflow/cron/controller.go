@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/robfig/cron"
+	cron "github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -28,10 +28,12 @@ import (
 type Controller struct {
 	namespace        string
 	managedNamespace string
+	instanceId       string
 	cron             *cron.Cron
 	nameEntryIDMap   map[string]cron.EntryID
 	wfClientset      versioned.Interface
 	wfInformer       cache.SharedIndexInformer
+	wfLister         util.WorkflowLister
 	wfQueue          workqueue.RateLimitingInterface
 	cronWfInformer   extv1alpha1.CronWorkflowInformer
 	cronWfQueue      workqueue.RateLimitingInterface
@@ -49,11 +51,13 @@ func NewCronController(
 	restConfig *rest.Config,
 	namespace string,
 	managedNamespace string,
+	instanceId string,
 ) *Controller {
 	return &Controller{
 		wfClientset:      wfclientset,
 		namespace:        namespace,
 		managedNamespace: managedNamespace,
+		instanceId:       instanceId,
 		cron:             cron.New(),
 		restConfig:       restConfig,
 		nameEntryIDMap:   make(map[string]cron.EntryID),
@@ -66,12 +70,22 @@ func (cc *Controller) Run(ctx context.Context) {
 	defer cc.cronWfQueue.ShutDown()
 	defer cc.wfQueue.ShutDown()
 	log.Infof("Starting CronWorkflow controller")
+	if cc.instanceId != "" {
+		log.Infof("...with InstanceID: %s", cc.instanceId)
+	}
 
-	cc.cronWfInformer = externalversions.NewSharedInformerFactoryWithOptions(cc.wfClientset, cronWorkflowResyncPeriod, externalversions.WithNamespace(cc.managedNamespace)).Argoproj().V1alpha1().CronWorkflows()
+	cc.cronWfInformer = externalversions.NewSharedInformerFactoryWithOptions(cc.wfClientset, cronWorkflowResyncPeriod, externalversions.WithNamespace(cc.managedNamespace),
+		externalversions.WithTweakListOptions(func(options *v1.ListOptions) {
+			cronWfInformerListOptionsFunc(options, cc.instanceId)
+		})).Argoproj().V1alpha1().CronWorkflows()
 	cc.addCronWorkflowInformerHandler()
 
-	cc.wfInformer = util.NewWorkflowInformer(cc.restConfig, cc.managedNamespace, cronWorkflowResyncPeriod, wfInformerListOptionsFunc)
+	cc.wfInformer = util.NewWorkflowInformer(cc.restConfig, cc.managedNamespace, cronWorkflowResyncPeriod, func(options *v1.ListOptions) {
+		wfInformerListOptionsFunc(options, cc.instanceId)
+	})
 	cc.addWorkflowInformerHandler()
+
+	cc.wfLister = util.NewWorkflowLister(cc.wfInformer)
 
 	cc.cron.Start()
 	defer cc.cron.Stop()
@@ -123,7 +137,7 @@ func (cc *Controller) processNextCronItem() bool {
 		return true
 	}
 
-	cronWorkflowOperationCtx, err := newCronWfOperationCtx(cronWf, cc.wfClientset)
+	cronWorkflowOperationCtx, err := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.wfLister)
 	if err != nil {
 		log.Error(err)
 		return true
@@ -173,6 +187,13 @@ func (cc *Controller) processNextWorkflowItem() bool {
 	obj, wfExists, err := cc.wfInformer.GetIndexer().GetByKey(key.(string))
 	if err != nil {
 		log.Errorf("Failed to get Workflow '%s' from informer index: %+v", key, err)
+		return true
+	}
+
+	// Check if the workflow no longer exists. If the workflow was deleted while it was an active workflow of a cron
+	// workflow, the cron workflow will reconcile this fact on its own next time it is processed.
+	if !wfExists {
+		log.Warnf("Workflow '%s' no longer exists", key)
 		return true
 	}
 
@@ -267,12 +288,19 @@ func (cc *Controller) addWorkflowInformerHandler() {
 	)
 }
 
-func wfInformerListOptionsFunc(options *v1.ListOptions) {
+func cronWfInformerListOptionsFunc(options *v1.ListOptions, instanceId string) {
 	options.FieldSelector = fields.Everything().String()
-	isCronWorkflowChildReq, err := labels.NewRequirement(common.LabelCronWorkflow, selection.Exists, []string{})
+	labelSelector := labels.NewSelector().Add(util.InstanceIDRequirement(instanceId))
+	options.LabelSelector = labelSelector.String()
+}
+
+func wfInformerListOptionsFunc(options *v1.ListOptions, instanceId string) {
+	options.FieldSelector = fields.Everything().String()
+	isCronWorkflowChildReq, err := labels.NewRequirement(common.LabelKeyCronWorkflow, selection.Exists, []string{})
 	if err != nil {
 		panic(err)
 	}
 	labelSelector := labels.NewSelector().Add(*isCronWorkflowChildReq)
+	labelSelector = labelSelector.Add(util.InstanceIDRequirement(instanceId))
 	options.LabelSelector = labelSelector.String()
 }

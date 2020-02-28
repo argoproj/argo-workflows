@@ -1,8 +1,8 @@
 package workflow
 
 import (
-	"bufio"
 	"fmt"
+	"reflect"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -12,6 +12,7 @@ import (
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/util/logs"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/templateresolution"
@@ -86,12 +87,16 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 		return nil, err
 	}
 
-	if wf.Status.IsOffloadNodeStatus() && s.offloadNodeStatusRepo.IsEnabled() {
-		offloadedNodes, err := s.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-		if err != nil {
-			return nil, err
+	if wf.Status.IsOffloadNodeStatus() {
+		if s.offloadNodeStatusRepo.IsEnabled() {
+			offloadedNodes, err := s.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+			if err != nil {
+				return nil, err
+			}
+			wf.Status.Nodes = offloadedNodes
+		} else {
+			log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn(sqldb.OffloadNodeStatusDisabledWarning)
 		}
-		wf.Status.Nodes = offloadedNodes
 	}
 	err = packer.DecompressWorkflow(wf)
 	if err != nil {
@@ -119,7 +124,11 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		}
 		for i, wf := range wfList.Items {
 			if wf.Status.IsOffloadNodeStatus() {
-				wfList.Items[i].Status.Nodes = offloadedNodes[sqldb.UUIDVersion{UID: string(wf.UID), Version: wf.GetOffloadNodeStatusVersion()}]
+				if s.offloadNodeStatusRepo.IsEnabled() {
+					wfList.Items[i].Status.Nodes = offloadedNodes[sqldb.UUIDVersion{UID: string(wf.UID), Version: wf.GetOffloadNodeStatusVersion()}]
+				} else {
+					log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn("Workflow has offloaded nodes, but offloading has been disabled")
+				}
 			}
 		}
 	}
@@ -148,23 +157,26 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 			return ctx.Err()
 		default:
 		}
-		gvk := next.Object.GetObjectKind().GroupVersionKind().String()
-		logCtx := log.WithFields(log.Fields{"type": next.Type, "objectKind": gvk})
-		logCtx.Debug("Received event")
+		log.Debug("Received event")
 		wf, ok := next.Object.(*v1alpha1.Workflow)
 		if !ok {
-			return fmt.Errorf("watch object was not a workflow %v", gvk)
+			return fmt.Errorf("watch object was not a workflow %v", reflect.TypeOf(next.Object))
 		}
+		logCtx := log.WithFields(log.Fields{"workflow": wf.Name, "type": next.Type, "phase": wf.Status.Phase})
 		err := packer.DecompressWorkflow(wf)
 		if err != nil {
 			return err
 		}
-		if wf.Status.IsOffloadNodeStatus() && s.offloadNodeStatusRepo.IsEnabled() {
-			offloadedNodes, err := s.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-			if err != nil {
-				return err
+		if wf.Status.IsOffloadNodeStatus() {
+			if s.offloadNodeStatusRepo.IsEnabled() {
+				offloadedNodes, err := s.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+				if err != nil {
+					return err
+				}
+				wf.Status.Nodes = offloadedNodes
+			} else {
+				log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn(sqldb.OffloadNodeStatusDisabledWarning)
 			}
-			wf.Status.Nodes = offloadedNodes
 		}
 		logCtx.Debug("Sending event")
 		err = ws.Send(&workflowpkg.WorkflowWatchEvent{Type: string(next.Type), Object: wf})
@@ -173,6 +185,8 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 		}
 
 	}
+
+	log.Debug("Result channel done")
 
 	return nil
 }
@@ -281,17 +295,13 @@ func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.Work
 }
 
 func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflowpkg.WorkflowService_PodLogsServer) error {
-	kubeClient := auth.GetKubeClient(ws.Context())
-	stream, err := kubeClient.CoreV1().Pods(req.Namespace).GetLogs(req.PodName, req.LogOptions).Stream()
+	ctx := ws.Context()
+	wfClient := auth.GetWfClient(ctx)
+	kubeClient := auth.GetKubeClient(ctx)
+	logger, err := logs.NewWorkflowLogger(ctx, wfClient, kubeClient, req, ws)
 	if err != nil {
 		return err
 	}
-	scanner := bufio.NewScanner(stream)
-	for scanner.Scan() {
-		err = ws.Send(&workflowpkg.LogEntry{Content: scanner.Text()})
-		if err != nil {
-			return err
-		}
-	}
+	logger.Run(ctx)
 	return nil
 }

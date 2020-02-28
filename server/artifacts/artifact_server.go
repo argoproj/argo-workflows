@@ -59,6 +59,7 @@ func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
 		a.serverInternalError(err, w)
 		return
 	}
+	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
 	a.ok(w, data)
 }
 func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request) {
@@ -88,6 +89,7 @@ func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request
 		a.serverInternalError(err, w)
 		return
 	}
+	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
 	a.ok(w, data)
 }
 func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
@@ -95,9 +97,12 @@ func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
 	if token == "" {
 		cookie, err := r.Cookie("authorization")
 		if err != nil {
-			return nil, err
+			if err != http.ErrNoCookie {
+				return nil, err
+			}
+		} else {
+			token = cookie.Value
 		}
-		token = cookie.Value
 	}
 	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"authorization": []string{token}})
 	return a.authN.Context(ctx)
@@ -164,11 +169,15 @@ func (a *ArtifactServer) getWorkflow(ctx context.Context, namespace string, work
 		return nil, err
 	}
 	if wf.Status.IsOffloadNodeStatus() {
-		offloadedNodes, err := a.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-		if err != nil {
-			return nil, err
+		if a.offloadNodeStatusRepo.IsEnabled() {
+			offloadedNodes, err := a.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+			if err != nil {
+				return nil, err
+			}
+			wf.Status.Nodes = offloadedNodes
+		} else {
+			log.WithFields(log.Fields{"namespace": namespace, "name": workflowName}).Warn(sqldb.OffloadNodeStatusDisabledWarning)
 		}
-		wf.Status.Nodes = offloadedNodes
 	}
 	return wf, nil
 }

@@ -1,42 +1,21 @@
 package commands
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/templateresolution"
 )
 
 // Global variables
 var (
-	// DEPRECATED
-	restConfig *rest.Config
-	// DEPRECATED
-	clientset *kubernetes.Clientset
-	// DEPRECATED
-	wfClientset *versioned.Clientset
-	// DEPRECATED
-	wfClient v1alpha1.WorkflowInterface
-	// DEPRECATED
-	wftmplClient     v1alpha1.WorkflowTemplateInterface
 	jobStatusIconMap map[wfv1.NodePhase]string
+	nodeTypeIconMap  map[wfv1.NodeType]string
 	noColor          bool
-	// DEPRECATED
-	namespace string
 )
 
 func init() {
@@ -71,47 +50,18 @@ func initializeSession() {
 		wfv1.NodeFailed:    ansiFormat("✖", FgRed),
 		wfv1.NodeError:     ansiFormat("⚠", FgRed),
 	}
+	nodeTypeIconMap = map[wfv1.NodeType]string{
+		wfv1.NodeTypeSuspend: ansiFormat("ǁ", FgCyan),
+	}
 }
 
-// DEPRECATED
-func InitKubeClient() *kubernetes.Clientset {
-	if clientset != nil {
-		return clientset
+func ansiColorCode(s string) int {
+	i := 0
+	for _, c := range s {
+		i += int(c)
 	}
-	var err error
-	restConfig, err = client.Config.ClientConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// create the clientset
-	clientset, err = kubernetes.NewForConfig(restConfig)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return clientset
-}
-
-// InitWorkflowClient creates a new client for the Kubernetes Workflow CRD.
-// DEPRECATED
-func InitWorkflowClient(ns ...string) v1alpha1.WorkflowInterface {
-	if wfClient != nil && (len(ns) == 0 || ns[0] == namespace) {
-		return wfClient
-	}
-	InitKubeClient()
-	var err error
-	if len(ns) > 0 {
-		namespace = ns[0]
-	} else {
-		namespace, _, err = client.Config.Namespace()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-	wfClientset = versioned.NewForConfigOrDie(restConfig)
-	wfClient = wfClientset.ArgoprojV1alpha1().Workflows(namespace)
-	wftmplClient = wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace)
-	return wfClient
+	colors := []int{FgRed, FgGreen, FgYellow, FgBlue, FgMagenta, FgCyan, FgWhite}
+	return colors[i%len(colors)]
 }
 
 // ansiFormat wraps ANSI escape codes to a string to format the string to a desired color.
@@ -131,26 +81,4 @@ func ansiFormat(s string, codes ...int) string {
 	}
 	sequence := strings.Join(codeStrs, ";")
 	return fmt.Sprintf("%s[%sm%s%s[%dm", escape, sequence, s, escape, noFormat)
-}
-
-// LazyWorkflowTemplateGetter is a wrapper of v1alpha1.WorkflowTemplateInterface which
-// supports lazy initialization.
-// DEPRECATED
-type LazyWorkflowTemplateGetter struct{}
-
-// Get initializes it just before it's actually used and returns a retrieved workflow template.
-// DEPRECATED
-func (c LazyWorkflowTemplateGetter) Get(name string) (*wfv1.WorkflowTemplate, error) {
-	if wftmplClient == nil {
-		_ = InitWorkflowClient()
-	}
-	return templateresolution.WrapWorkflowTemplateInterface(wftmplClient).Get(name)
-}
-
-// DEPRECATED
-var _ templateresolution.WorkflowTemplateNamespacedGetter = &LazyWorkflowTemplateGetter{}
-
-// DEPRECATED
-func GetWFApiServerGRPCClient(conn *grpc.ClientConn) (workflow.WorkflowServiceClient, context.Context) {
-	return workflow.NewWorkflowServiceClient(conn), client.GetContext()
 }

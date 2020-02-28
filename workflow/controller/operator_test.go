@@ -773,6 +773,61 @@ func TestSuspendWithDeadline(t *testing.T) {
 
 }
 
+var sequence = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: sequence
+spec:
+  entrypoint: steps
+  templates:
+  - name: steps
+    steps:
+      - - name: step1
+          template: echo
+          arguments:
+            parameters:
+            - name: msg
+              value: "{{item}}"
+          withSequence:
+            start: "100"
+            end: "101"
+
+  - name: echo
+    inputs:
+      parameters:
+      - name: msg
+    container:
+      image: alpine:latest
+      command: [echo, "{{inputs.parameters.msg}}"]
+`
+
+func TestSequence(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := unmarshalWF(sequence)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	updatedWf, err := wfcset.Get(wf.Name, metav1.GetOptions{})
+	assert.NoError(t, err)
+	found100 := false
+	found101 := false
+	for _, node := range updatedWf.Status.Nodes {
+		if node.DisplayName == "step1(0:100)" {
+			assert.Equal(t, "100", *node.Inputs.Parameters[0].Value)
+			found100 = true
+		} else if node.DisplayName == "step1(1:101)" {
+			assert.Equal(t, "101", *node.Inputs.Parameters[0].Value)
+			found101 = true
+		}
+	}
+	assert.Equal(t, true, found100)
+	assert.Equal(t, true, found101)
+}
+
 var inputParametersAsJson = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1857,9 +1912,9 @@ func TestStepWFGetNodeName(t *testing.T) {
 	assert.NoError(t, err)
 	for _, node := range wf.Status.Nodes {
 		if strings.Contains(node.Name, "generate") {
-			assert.True(t, getStepOrDAGTaskName(node.Name, &wf.Spec.Templates[0].RetryStrategy != nil) == "generate")
+			assert.True(t, getStepOrDAGTaskName(node.Name) == "generate")
 		} else if strings.Contains(node.Name, "print-message") {
-			assert.True(t, getStepOrDAGTaskName(node.Name, &wf.Spec.Templates[0].RetryStrategy != nil) == "print-message")
+			assert.True(t, getStepOrDAGTaskName(node.Name) == "print-message")
 		}
 	}
 }
@@ -1881,10 +1936,10 @@ func TestDAGWFGetNodeName(t *testing.T) {
 	assert.NoError(t, err)
 	for _, node := range wf.Status.Nodes {
 		if strings.Contains(node.Name, ".A") {
-			assert.True(t, getStepOrDAGTaskName(node.Name, wf.Spec.Templates[0].RetryStrategy != nil) == "A")
+			assert.True(t, getStepOrDAGTaskName(node.Name) == "A")
 		}
 		if strings.Contains(node.Name, ".B") {
-			assert.True(t, getStepOrDAGTaskName(node.Name, wf.Spec.Templates[0].RetryStrategy != nil) == "B")
+			assert.True(t, getStepOrDAGTaskName(node.Name) == "B")
 		}
 	}
 }
@@ -1988,6 +2043,44 @@ func TestStepsOnExit(t *testing.T) {
 		}
 	}
 	assert.True(t, onExitNodeIsPresent)
+}
+
+var onExitFailures = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: exit-handlers
+spec:
+  entrypoint: intentional-fail
+  onExit: exit-handler
+  templates:
+  - name: intentional-fail
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo intentional failure; exit 1"]
+  - name: exit-handler
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}}. Failed steps {{workflow.failures}}"]
+`
+
+func TestStepsOnExitFailures(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// Test list expansion
+	wf := unmarshalWF(onExitFailures)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	woc.operate()
+
+	fmt.Println(woc.globalParams)
+	assert.Contains(t, woc.globalParams[common.GlobalVarWorkflowFailures], `[{\"displayName\":\"exit-handlers\",\"message\":\"Unexpected pod phase for exit-handlers: \",\"templateName\":\"intentional-fail\",\"phase\":\"Error\",\"podName\":\"exit-handlers\"`)
 }
 
 var invalidSpec = `
@@ -2097,4 +2190,38 @@ func TestEventFailArtifactRepoCm(t *testing.T) {
 	failEvent := events.Items[1]
 	assert.Equal(t, "WorkflowFailed", failEvent.Reason)
 	assert.Equal(t, "Failed to load artifact repository configMap: configmaps \"artifact-repository\" not found", failEvent.Message)
+}
+
+var pdbwf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: artifact-repo-config-ref
+spec:
+  entrypoint: whalesay
+  poddisruptionbudget: 
+    minavailable: 100%
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+`
+
+func TestPDBCreation(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(pdbwf)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pdb, _ := controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
+	assert.NotNil(t, pdb)
+	assert.Equal(t, pdb.Name, wf.Name)
+	woc.markWorkflowSuccess()
+	woc.operate()
+	pdb, _ = controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
+	assert.Nil(t, pdb)
 }

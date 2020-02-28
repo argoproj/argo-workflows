@@ -14,13 +14,13 @@ type OffloadNodeStatusRepo struct {
 	mock.Mock
 }
 
-// Delete provides a mock function with given fields: uid
-func (_m *OffloadNodeStatusRepo) Delete(uid string) error {
-	ret := _m.Called(uid)
+// Delete provides a mock function with given fields: uid, version
+func (_m *OffloadNodeStatusRepo) Delete(uid string, version string) error {
+	ret := _m.Called(uid, version)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(uid)
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(uid, version)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -88,16 +88,16 @@ func (_m *OffloadNodeStatusRepo) List(namespace string) (map[sqldb.UUIDVersion]v
 	return r0, r1
 }
 
-// ListOldUIDs provides a mock function with given fields: namespace
-func (_m *OffloadNodeStatusRepo) ListOldUIDs(namespace string) ([]string, error) {
+// ListOldOffloads provides a mock function with given fields: namespace
+func (_m *OffloadNodeStatusRepo) ListOldOffloads(namespace string) ([]sqldb.UUIDVersion, error) {
 	ret := _m.Called(namespace)
 
-	var r0 []string
-	if rf, ok := ret.Get(0).(func(string) []string); ok {
+	var r0 []sqldb.UUIDVersion
+	if rf, ok := ret.Get(0).(func(string) []sqldb.UUIDVersion); ok {
 		r0 = rf(namespace)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]string)
+			r0 = ret.Get(0).([]sqldb.UUIDVersion)
 		}
 	}
 

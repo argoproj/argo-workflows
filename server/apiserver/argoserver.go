@@ -14,6 +14,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	apiv1 "k8s.io/api/core/v1"
+	apiError "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
@@ -24,6 +25,7 @@ import (
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
+	infopkg "github.com/argoproj/argo/pkg/apiclient/info"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
@@ -105,7 +107,7 @@ func (ao ArgoServerOpts) ValidateOpts() error {
 	return nil
 }
 
-func (as *argoServer) Run(ctx context.Context, port int) {
+func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
 
 	configMap, err := as.rsyncConfig()
 	if err != nil {
@@ -123,10 +125,14 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.WithField("nodeStatusOffload", persistence.NodeStatusOffload).Info("Offload node status")
-		if persistence.NodeStatusOffload {
-			offloadRepo = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+		// we always enable node offload, as this is read-only for the Argo Server, i.e. you can turn it off if you
+		// like and the controller won't offload newly created workflows, but you can still read them
+		offloadRepo, err = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+		if err != nil {
+			log.Fatal(err)
 		}
+		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
+		// disable the archiving - and still read old records
 		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName())
 	}
 	artifactServer := artifacts.NewArtifactServer(as.authenticator, offloadRepo, wfArchive)
@@ -159,6 +165,9 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
 	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
 	log.Infof("Argo Server started successfully on address %s", address)
+
+	browserOpenFunc("http://localhost" + address)
+
 	as.stopCh = make(chan struct{})
 	<-as.stopCh
 }
@@ -189,7 +198,7 @@ func (as *argoServer) newGRPCServer(offloadNodeStatusRepo sqldb.OffloadNodeStatu
 
 	grpcServer := grpc.NewServer(sOpts...)
 
-	info.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace))
+	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace))
 	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(offloadNodeStatusRepo))
 	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer())
 	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer())
@@ -223,7 +232,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	// we use our own Marshaler
 	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.JSONMarshaler))
 	gwmux := runtime.NewServeMux(gwMuxOpts)
-	mustRegisterGWHandler(info.RegisterInfoServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(infopkg.RegisterInfoServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowpkg.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowtemplatepkg.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(cronworkflowpkg.RegisterCronWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
@@ -250,6 +259,9 @@ func (as *argoServer) rsyncConfig() (*config.WorkflowControllerConfig, error) {
 	cm, err := as.kubeClientset.CoreV1().ConfigMaps(as.namespace).
 		Get(as.configName, metav1.GetOptions{})
 	if err != nil {
+		if apiError.IsNotFound(err) {
+			return &config.WorkflowControllerConfig{}, nil
+		}
 		return nil, errors.InternalWrapError(err)
 	}
 	return as.updateConfig(cm)
@@ -272,7 +284,7 @@ func (as *argoServer) restartOnConfigChange(stopCh <-chan struct{}) error {
 			case <-stopCh:
 				return
 			case e := <-w.ResultChan():
-				if e.Type != watch.Added {
+				if e.Type != watch.Added && e.Type != watch.Bookmark {
 					log.WithField("eventType", e.Type).Info("config map event, exiting gracefully")
 					as.stopCh <- struct{}{}
 					return

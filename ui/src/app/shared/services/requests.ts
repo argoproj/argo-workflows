@@ -7,13 +7,6 @@ import {apiUrl, uiUrl} from '../base';
 
 const superagentPromise = require('superagent-promise');
 
-enum ReadyState {
-    CONNECTING = 0,
-    OPEN = 1,
-    CLOSED = 2,
-    DONE = 4
-}
-
 const auth = (req: SuperAgentRequest) => {
     return req.on('error', handle);
 };
@@ -61,7 +54,7 @@ export default {
             };
             eventSource.onmessage = (msg: any) => observer.next(msg.data);
             eventSource.onerror = (e: any) => {
-                if (e.eventPhase === ReadyState.CLOSED || eventSource.readyState === ReadyState.CONNECTING) {
+                if (e.eventPhase === Event.AT_TARGET) {
                     observer.complete();
                 } else {
                     observer.error(e);

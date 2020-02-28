@@ -148,6 +148,14 @@ rules:
   - events
   verbs:
   - create
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets
+  verbs:
+  - create
+  - get
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -459,6 +467,8 @@ spec:
         env:
         - name: ALWAYS_OFFLOAD_NODE_STATUS
           value: "true"
+        - name: OFFLOAD_NODE_STATUS_TTL
+          value: 30s
         - name: WORKFLOW_GC_PERIOD
           value: 30s
         - name: UPPERIO_DB_DEBUG

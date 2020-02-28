@@ -33,6 +33,7 @@ import (
 	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/config"
+	"github.com/argoproj/argo/workflow/cron"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/ttlcontroller"
@@ -62,7 +63,9 @@ type WorkflowController struct {
 	wfclientset   wfclientset.Interface
 
 	// datastructures to support the processing of workflows and workflow pods
-	wfInformer            cache.SharedIndexInformer
+	incompleteWfInformer cache.SharedIndexInformer
+	// only complete (i.e. not running) workflows
+	completedWfInformer   cache.SharedIndexInformer
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
@@ -145,6 +148,11 @@ func (wfc *WorkflowController) RunTTLController(ctx context.Context) {
 	}
 }
 
+func (wfc *WorkflowController) RunCronController(ctx context.Context) {
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID)
+	cronController.Run(ctx)
+}
+
 // Run starts an Workflow resource controller
 func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers int) {
 	defer wfc.wfQueue.ShutDown()
@@ -159,13 +167,15 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 		return
 	}
 
-	wfc.wfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakWorkflowlist)
+	wfc.incompleteWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.incompleteWorkflowTweakListOptions)
+	wfc.completedWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.completedWorkflowTweakListOptions)
 	wfc.wftmplInformer = wfc.newWorkflowTemplateInformer()
 
 	wfc.addWorkflowInformerHandler()
 	wfc.podInformer = wfc.newPodInformer()
 
-	go wfc.wfInformer.Run(ctx.Done())
+	go wfc.incompleteWfInformer.Run(ctx.Done())
+	go wfc.completedWfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
 	go wfc.podLabeler(ctx.Done())
@@ -173,7 +183,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.periodicWorkflowGarbageCollector(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
-	for _, informer := range []cache.SharedIndexInformer{wfc.wfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
+	for _, informer := range []cache.SharedIndexInformer{wfc.incompleteWfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
 		if !cache.WaitForCacheSync(ctx.Done(), informer.HasSynced) {
 			log.Error("Timed out waiting for caches to sync")
 			return
@@ -259,27 +269,37 @@ func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan st
 		case <-ticker.C:
 			if wfc.offloadNodeStatusRepo.IsEnabled() {
 				log.Info("Performing periodic workflow GC")
-				oldUIDs, err := wfc.offloadNodeStatusRepo.ListOldUIDs(wfc.GetManagedNamespace())
+				oldRecords, err := wfc.offloadNodeStatusRepo.ListOldOffloads(wfc.GetManagedNamespace())
 				if err != nil {
-					log.WithField("err", err).Error("Failed to list offloaded nodes")
+					log.WithField("err", err).Error("Failed to list old offloaded nodes")
+					continue
 				}
-				if len(oldUIDs) == 0 {
-					log.Info("Zero old UIDs, nothing to do")
-					return
+				if len(oldRecords) == 0 {
+					log.Info("Zero old offloads, nothing to do")
+					continue
 				}
-				list, err := util.NewWorkflowLister(wfc.wfInformer).List()
+				// get every lives workflow (1000s) into a map
+				liveOffloadNodeStatusVersions := make(map[types.UID]string)
+				incomplete, err := util.NewWorkflowLister(wfc.incompleteWfInformer).List()
 				if err != nil {
-					log.WithField("err", err).Error("Failed to list workflows")
+					log.WithField("err", err).Error("Failed to list incomplete workflows")
+					continue
 				}
-				wfs := make(map[types.UID]bool)
-				for _, wf := range list {
-					wfs[wf.UID] = true
+				completed, err := util.NewWorkflowLister(wfc.completedWfInformer).List()
+				if err != nil {
+					log.WithField("err", err).Error("Failed to list completed workflows")
+					continue
 				}
-				log.WithFields(log.Fields{"len_wfs": len(wfs), "len_old_uids": len(oldUIDs)}).Info("Deleting old UIDs that are not live")
-				for _, uid := range oldUIDs {
-					_, ok := wfs[types.UID(uid)]
-					if !ok {
-						err := wfc.offloadNodeStatusRepo.Delete(uid)
+				for _, wf := range append(completed, incomplete...) {
+					// this could be the empty string - as it is no longer offloaded
+					liveOffloadNodeStatusVersions[wf.UID] = wf.Status.OffloadNodeStatusVersion
+				}
+				log.WithFields(log.Fields{"len_wfs": len(liveOffloadNodeStatusVersions), "len_old_offloads": len(oldRecords)}).Info("Deleting old offloads that are not live")
+				for _, record := range oldRecords {
+					// this could be empty string
+					nodeStatusVersion, ok := liveOffloadNodeStatusVersions[types.UID(record.UID)]
+					if !ok || nodeStatusVersion != record.Version {
+						err := wfc.offloadNodeStatusRepo.Delete(record.UID, record.Version)
 						if err != nil {
 							log.WithField("err", err).Error("Failed to delete offloaded nodes")
 						}
@@ -303,7 +323,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	}
 	defer wfc.wfQueue.Done(key)
 
-	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key.(string))
+	obj, exists, err := wfc.incompleteWfInformer.GetIndexer().GetByKey(key.(string))
 	if err != nil {
 		log.Errorf("Failed to get workflow '%s' from informer index: %+v", key, err)
 		return true
@@ -445,15 +465,22 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 	return true
 }
 
-func (wfc *WorkflowController) tweakWorkflowlist(options *metav1.ListOptions) {
+func (wfc *WorkflowController) incompleteWorkflowTweakListOptions(options *metav1.ListOptions) {
+	wfc.tweakListOptions(selection.NotIn, options)
+}
+
+func (wfc *WorkflowController) completedWorkflowTweakListOptions(options *metav1.ListOptions) {
+	wfc.tweakListOptions(selection.In, options)
+}
+
+func (wfc *WorkflowController) tweakListOptions(completedOp selection.Operator, options *metav1.ListOptions) {
 	options.FieldSelector = fields.Everything().String()
-	// completed notin (true)
-	incompleteReq, err := labels.NewRequirement(common.LabelKeyCompleted, selection.NotIn, []string{"true"})
+	requirement, err := labels.NewRequirement(common.LabelKeyCompleted, completedOp, []string{"true"})
 	if err != nil {
 		panic(err)
 	}
 	labelSelector := labels.NewSelector().
-		Add(*incompleteReq).
+		Add(*requirement).
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 	options.LabelSelector = labelSelector.String()
 }
@@ -481,7 +508,7 @@ func getWfPriority(obj interface{}) (int32, time.Time) {
 }
 
 func (wfc *WorkflowController) addWorkflowInformerHandler() {
-	wfc.wfInformer.AddEventHandler(
+	wfc.incompleteWfInformer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(obj)

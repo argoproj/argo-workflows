@@ -5,10 +5,11 @@ import (
 	"sort"
 	"time"
 
-	"github.com/robfig/cron"
+	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
-	v12 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
@@ -23,21 +24,29 @@ type cronWfOperationCtx struct {
 	cronWf      *v1alpha1.CronWorkflow
 	wfClientset versioned.Interface
 	wfClient    typed.WorkflowInterface
+	wfLister    util.WorkflowLister
 	cronWfIf    typed.CronWorkflowInterface
 }
 
-func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface) (*cronWfOperationCtx, error) {
+func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface, wfLister util.WorkflowLister) (*cronWfOperationCtx, error) {
 	return &cronWfOperationCtx{
 		name:        cronWorkflow.ObjectMeta.Name,
 		cronWf:      cronWorkflow,
 		wfClientset: wfClientset,
 		wfClient:    wfClientset.ArgoprojV1alpha1().Workflows(cronWorkflow.Namespace),
+		wfLister:    wfLister,
 		cronWfIf:    wfClientset.ArgoprojV1alpha1().CronWorkflows(cronWorkflow.Namespace),
 	}, nil
 }
 
 func (woc *cronWfOperationCtx) Run() {
 	log.Infof("Running %s", woc.name)
+
+	err := woc.reconcileDeletedWfs()
+	if err != nil {
+		log.Errorf("could not remove deleted Workflows: %s", err)
+		return
+	}
 
 	proceed, err := woc.enforceRuntimePolicy()
 	if err != nil {
@@ -47,7 +56,7 @@ func (woc *cronWfOperationCtx) Run() {
 		return
 	}
 
-	wf, err := common.ConvertToWorkflow(woc.cronWf)
+	wf, err := common.ConvertCronWorkflowToWorkflow(woc.cronWf)
 	if err != nil {
 		log.Errorf("Unable to create Workflow for CronWorkflow %s", woc.name)
 		return
@@ -67,10 +76,10 @@ func (woc *cronWfOperationCtx) Run() {
 	}
 }
 
-func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow) v12.ObjectReference {
+func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow) corev1.ObjectReference {
 	// This is a bit of a hack. Ideally we'd use ref.GetReference, but for some reason the `runWf` object is coming back
 	// without `Kind` and `APIVersion` set (even though it it set on `wf`). To fix this, we hard code those values.
-	return v12.ObjectReference{
+	return corev1.ObjectReference{
 		Kind:            wf.Kind,
 		APIVersion:      wf.APIVersion,
 		Name:            runWf.GetName(),
@@ -159,26 +168,52 @@ func (woc *cronWfOperationCtx) runOutstandingWorkflows() error {
 	return nil
 }
 
+func (woc *cronWfOperationCtx) reconcileDeletedWfs() error {
+	wfList, err := woc.wfLister.List()
+	if err != nil {
+		return fmt.Errorf("unable to list workflows: %s", err)
+	}
+
+	currentWfs := make(map[types.UID]bool)
+	for _, wf := range wfList {
+		currentWfs[wf.UID] = true
+	}
+
+	for _, objectRef := range woc.cronWf.Status.Active {
+		if found := currentWfs[objectRef.UID]; !found {
+			woc.removeFromActiveList(objectRef.UID)
+		}
+	}
+
+	return nil
+}
+
 func (woc *cronWfOperationCtx) removeActiveWf(wf *v1alpha1.Workflow) {
 	if wf == nil || wf.ObjectMeta.UID == "" {
 		return
 	}
-	for i, objectRef := range woc.cronWf.Status.Active {
-		if objectRef.UID == wf.ObjectMeta.UID {
-			woc.cronWf.Status.Active = append(woc.cronWf.Status.Active[:i], woc.cronWf.Status.Active[i+1:]...)
-			err := woc.persistUpdate()
-			if err != nil {
-				log.Errorf("Unable to update CronWorkflow '%s': %s", woc.cronWf.Name, err)
-			}
+	woc.removeFromActiveList(wf.ObjectMeta.UID)
+	err := woc.persistUpdate()
+	if err != nil {
+		log.Errorf("Unable to update CronWorkflow '%s': %s", woc.cronWf.Name, err)
+	}
+}
+
+func (woc *cronWfOperationCtx) removeFromActiveList(uid types.UID) {
+	var newActive []corev1.ObjectReference
+	for _, ref := range woc.cronWf.Status.Active {
+		if ref.UID != uid {
+			newActive = append(newActive, ref)
 		}
 	}
+	woc.cronWf.Status.Active = newActive
 }
 
 func (woc *cronWfOperationCtx) enforceHistoryLimit() {
 	log.Infof("Enforcing history limit for '%s'", woc.cronWf.Name)
 
 	listOptions := &v1.ListOptions{}
-	wfInformerListOptionsFunc(listOptions)
+	wfInformerListOptionsFunc(listOptions, woc.cronWf.Labels[common.LabelKeyControllerInstanceID])
 	wfList, err := woc.wfClient.List(*listOptions)
 	if err != nil {
 		log.Errorf("Unable to enforce history limit for CronWorkflow '%s': %s", woc.cronWf.Name, err)
@@ -188,7 +223,7 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit() {
 	var successfulWorkflows []v1alpha1.Workflow
 	var failedWorkflows []v1alpha1.Workflow
 	for _, wf := range wfList.Items {
-		if wf.Labels[common.LabelCronWorkflow] != woc.cronWf.Name {
+		if wf.Labels[common.LabelKeyCronWorkflow] != woc.cronWf.Name {
 			continue
 		}
 		if wf.Status.Completed() {

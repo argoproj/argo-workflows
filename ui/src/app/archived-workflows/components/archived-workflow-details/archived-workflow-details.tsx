@@ -212,14 +212,14 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
         }
         services.archivedWorkflows
             .delete(this.uid)
+            .then(() => {
+                document.location.href = uiUrl('archived-workflows');
+            })
             .catch(e => {
                 this.appContext.apis.notifications.show({
                     content: 'Failed to delete archived workflow ' + e,
                     type: NotificationType.Error
                 });
-            })
-            .then(() => {
-                document.location.href = uiUrl('archived-workflows');
             });
     }
 }
