@@ -64,4 +64,3 @@ func GetAuthString() string {
 
 	return authString
 }
-
