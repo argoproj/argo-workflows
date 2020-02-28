@@ -1454,6 +1454,10 @@
           "type": "string",
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of\ncontainer fields which are not strings (e.g. resource limits)."
         },
+        "podDisruptionBudget": {
+          "$ref": "#/definitions/k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec",
+          "title": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.\nController will automatically add the selector with workflow name, if selector is empty.\nOptional: Defaults to empty.\n+optional"
+        },
         "metrics": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metrics"
         }
@@ -3636,6 +3640,24 @@
         }
       },
       "description": "WindowsSecurityContextOptions contain Windows-specific options and credentials."
+    },
+    "k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec": {
+      "type": "object",
+      "properties": {
+        "minAvailable": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.util.intstr.IntOrString",
+          "title": "An eviction is allowed if at least \"minAvailable\" pods selected by\n\"selector\" will still be available after the eviction, i.e. even in the\nabsence of the evicted pod.  So for example you can prevent all voluntary\nevictions by specifying \"100%\".\n+optional"
+        },
+        "selector": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector",
+          "title": "Label query over pods whose evictions are managed by the disruption\nbudget.\n+optional"
+        },
+        "maxUnavailable": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.util.intstr.IntOrString",
+          "title": "An eviction is allowed if at most \"maxUnavailable\" pods selected by\n\"selector\" are unavailable after the eviction, i.e. even in absence of\nthe evicted pod. For example, one can prevent all voluntary evictions\nby specifying 0. This is a mutually exclusive setting with \"minAvailable\".\n+optional"
+        }
+      },
+      "description": "PodDisruptionBudgetSpec is a description of a PodDisruptionBudget."
     },
     "k8s.io.apimachinery.pkg.api.resource.Quantity": {
       "type": "object",

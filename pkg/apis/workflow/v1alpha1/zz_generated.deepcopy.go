@@ -8,6 +8,7 @@ import (
 	json "encoding/json"
 
 	v1 "k8s.io/api/core/v1"
+	v1beta1 "k8s.io/api/policy/v1beta1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -1620,6 +1621,11 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 	if in.SecurityContext != nil {
 		in, out := &in.SecurityContext, &out.SecurityContext
 		*out = new(v1.PodSecurityContext)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.PodDisruptionBudget != nil {
+		in, out := &in.PodDisruptionBudget, &out.PodDisruptionBudget
+		*out = new(v1beta1.PodDisruptionBudgetSpec)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.Metrics != nil {

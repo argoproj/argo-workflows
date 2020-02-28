@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	apiv1 "k8s.io/api/core/v1"
+	policyv1beta "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -277,7 +278,13 @@ type WorkflowSpec struct {
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,27,opt,name=podSpecPatch"`
 
-	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,31,opt,name=metrics"`
+	//PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.
+	//Controller will automatically add the selector with workflow name, if selector is empty.
+	//Optional: Defaults to empty.
+	// +optional
+	PodDisruptionBudget *policyv1beta.PodDisruptionBudgetSpec `json:"podDisruptionBudget,omitempty" protobuf:"bytes,31,opt,name=podDisruptionBudget"`
+
+	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,32,opt,name=metrics"`
 }
 
 type ParallelSteps struct {

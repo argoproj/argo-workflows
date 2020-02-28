@@ -14,18 +14,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/argoproj/argo/workflow/metrics"
-
 	"github.com/argoproj/pkg/humanize"
-	argokubeerr "github.com/argoproj/pkg/kube/errors"
 	"github.com/argoproj/pkg/strftime"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
+	policyv1beta "k8s.io/api/policy/v1beta1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
@@ -38,10 +37,13 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/config"
+	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
+
+	argokubeerr "github.com/argoproj/pkg/kube/errors"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -180,10 +182,17 @@ func (woc *wfOperationCtx) operate() {
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == "" {
 		woc.markWorkflowRunning()
+		err := woc.createPDBResource()
+		if err != nil {
+			msg := fmt.Sprintf("Unable to create PDB resource for workflow, %s error: %s", woc.wf.Name, err)
+			woc.markWorkflowFailed(msg)
+			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg)
+			return
+		}
 		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: argo.EventReasonWorkflowRunning}, "Workflow Running")
 		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.controller.GetContainerRuntimeExecutor()}
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
-		err := validate.ValidateWorkflow(wftmplGetter, woc.wf, validateOpts)
+		err = validate.ValidateWorkflow(wftmplGetter, woc.wf, validateOpts)
 		if err != nil {
 			msg := fmt.Sprintf("invalid spec: %s", err.Error())
 			woc.markWorkflowFailed(msg)
@@ -1452,9 +1461,17 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 				woc.wf.ObjectMeta.Labels = make(map[string]string)
 			}
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
-			err := woc.controller.wfArchive.ArchiveWorkflow(woc.wf)
+			err := woc.deletePDBResource()
+			if err != nil {
+				woc.wf.Status.Phase = wfv1.NodeError
+				woc.wf.ObjectMeta.Labels[common.LabelKeyPhase] = string(wfv1.NodeError)
+				woc.updated = true
+				woc.wf.Status.Message = err.Error()
+			}
+			err = woc.controller.wfArchive.ArchiveWorkflow(woc.wf)
 			if err != nil {
 				woc.log.WithField("err", err).Error("Failed to archive workflow")
+
 			}
 			woc.updated = true
 		}
@@ -2279,4 +2296,68 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			continue
 		}
 	}
+}
+
+func (woc *wfOperationCtx) createPDBResource() error {
+
+	if woc.wf.Spec.PodDisruptionBudget == nil {
+		return nil
+	}
+
+	pdb, err := woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Get(woc.wf.Name, metav1.GetOptions{})
+	if err != nil && !apierr.IsNotFound(err) {
+		return err
+	}
+	if pdb != nil && pdb.Name != "" {
+		return nil
+	}
+
+	pdbSpec := *woc.wf.Spec.PodDisruptionBudget
+	if pdbSpec.Selector == nil {
+		pdbSpec.Selector = &metav1.LabelSelector{
+			MatchLabels: map[string]string{common.LabelKeyWorkflow: woc.wf.Name},
+		}
+	}
+
+	newPDB := policyv1beta.PodDisruptionBudget{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   woc.wf.Name,
+			Labels: map[string]string{common.LabelKeyWorkflow: woc.wf.Name},
+			OwnerReferences: []metav1.OwnerReference{
+				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
+			},
+		},
+		Spec: pdbSpec,
+	}
+	_, err = woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Create(&newPDB)
+	if err != nil {
+		return err
+	}
+	woc.log.Infof("Created PDB resource for workflow.")
+	woc.updated = true
+	return nil
+}
+
+func (woc *wfOperationCtx) deletePDBResource() error {
+	if woc.wf.Spec.PodDisruptionBudget == nil {
+		return nil
+	}
+	var err error
+	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+		err = woc.controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets(woc.wf.Namespace).Delete(woc.wf.Name, &metav1.DeleteOptions{})
+		if err != nil {
+			woc.log.WithField("err", err).Warn("Failed to delete PDB.")
+			if !retry.IsRetryableKubeAPIError(err) {
+				return false, err
+			}
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		woc.log.WithField("err", err).Error("Unable to delete PDB resource for workflow.")
+		return err
+	}
+	woc.log.Infof("Deleted PDB resource for workflow.")
+	return nil
 }

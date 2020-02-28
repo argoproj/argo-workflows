@@ -2692,6 +2692,10 @@
           "format": "int64",
           "title": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow"
         },
+        "podDisruptionBudget": {
+          "title": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.\nController will automatically add the selector with workflow name, if selector is empty.\nOptional: Defaults to empty.\n+optional",
+          "$ref": "#/definitions/k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec"
+        },
         "podGC": {
           "title": "PodGC describes the strategy to use when to deleting completed pods",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PodGC"
@@ -5114,6 +5118,24 @@
         "runAsUserName": {
           "type": "string",
           "title": "The UserName in Windows to run the entrypoint of the container process.\nDefaults to the user specified in image metadata if unspecified.\nMay also be set in PodSecurityContext. If set in both SecurityContext and\nPodSecurityContext, the value specified in SecurityContext takes precedence.\nThis field is alpha-level and it is only honored by servers that enable the WindowsRunAsUserName feature flag.\n+optional"
+        }
+      }
+    },
+    "k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec": {
+      "description": "PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.",
+      "type": "object",
+      "properties": {
+        "maxUnavailable": {
+          "title": "An eviction is allowed if at most \"maxUnavailable\" pods selected by\n\"selector\" are unavailable after the eviction, i.e. even in absence of\nthe evicted pod. For example, one can prevent all voluntary evictions\nby specifying 0. This is a mutually exclusive setting with \"minAvailable\".\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.IntOrString"
+        },
+        "minAvailable": {
+          "title": "An eviction is allowed if at least \"minAvailable\" pods selected by\n\"selector\" will still be available after the eviction, i.e. even in the\nabsence of the evicted pod.  So for example you can prevent all voluntary\nevictions by specifying \"100%\".\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.IntOrString"
+        },
+        "selector": {
+          "title": "Label query over pods whose evictions are managed by the disruption\nbudget.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.LabelSelector"
         }
       }
     },
