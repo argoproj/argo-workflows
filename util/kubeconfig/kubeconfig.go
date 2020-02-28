@@ -147,7 +147,10 @@ func GetBearerToken(in *restclient.Config, explicitKubeConfigPath string) (strin
 	if in.AuthProvider != nil {
 		if in.AuthProvider.Name == "gcp" {
 			token := in.AuthProvider.Config["access-token"]
-			token = RefreshTokenIfExpired(in, explicitKubeConfigPath, token)
+			token, err := RefreshTokenIfExpired(in, explicitKubeConfigPath, token)
+			if err != nil {
+				return "", err
+			}
 			return strings.TrimPrefix(token, "Bearer "), nil
 		}
 	}
@@ -186,20 +189,29 @@ func ReloadKubeConfig(explicitPath string) clientcmd.ClientConfig {
 	return clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
 }
 
-func RefreshTokenIfExpired(restConfig *restclient.Config, explicitPath, curentToken string, ) string {
+func RefreshTokenIfExpired(restConfig *restclient.Config, explicitPath, curentToken string, ) (string, error) {
 	if restConfig.AuthProvider != nil {
 		timestr := restConfig.AuthProvider.Config["expiry"]
 		if timestr != "" {
-			t, _ := time.Parse(time.RFC3339, timestr)
+			t, err := time.Parse(time.RFC3339, timestr)
+			if err != nil {
+				return "", errors.Errorf("Invalid expiry date in Kubeconfig. %v", err)
+			}
 			if time.Now().After(t) {
-				RefreshAuthToken(restConfig)
+				err = RefreshAuthToken(restConfig)
+				if err != nil {
+					return "", err
+				}
 				config := ReloadKubeConfig(explicitPath)
-				restConfig, _ := config.ClientConfig()
-				return restConfig.AuthProvider.Config["access-token"]
+				restConfig, err = config.ClientConfig()
+				if err != nil {
+					return "", err
+				}
+				return restConfig.AuthProvider.Config["access-token"], nil
 			}
 		}
 	}
-	return curentToken
+	return curentToken, nil
 }
 
 func RefreshAuthToken(in *restclient.Config) error {
