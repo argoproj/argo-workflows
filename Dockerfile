@@ -5,7 +5,7 @@
 ####################################################################################################
 FROM golang:1.13.4 as builder
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get --no-install-recommends install -y \
     git \
     make \
     wget \
@@ -37,7 +37,7 @@ FROM debian:9.6-slim as argoexec-base
 ENV KUBECTL_VERSION=1.15.1
 ENV JQ_VERSION=1.6
 RUN apt-get update && \
-    apt-get install -y curl procps git tar mime-support && \
+    apt-get --no-install-recommends install -y curl procps git tar mime-support && \
     rm -rf /var/lib/apt/lists/* && \
     curl -L -o /usr/local/bin/kubectl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl && \
     chmod +x /usr/local/bin/kubectl && \
