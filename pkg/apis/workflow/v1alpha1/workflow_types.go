@@ -875,44 +875,44 @@ type RetryStrategy struct {
 	Backoff *Backoff `json:"backoff,omitempty" protobuf:"bytes,3,opt,name=backoff,casttype=Backoff"`
 }
 
-// An indicator (i.e. indicative but not accurate) amount of resource * time in seconds, e.g.
-// CPU 1000m * 1m = 1m
-// memory 1Gi * 2m = 2Gi
-// this is represented as duration in seconds, so can be converted to and from duration (with loss of precision below seconds)
-type ResourceUsageIndicator int64
+// The amount of requested resource * the duration that request was used.
+// This is represented as duration in seconds, so can be converted to and from
+// duration (with loss of precision).
+type ResourceDuration int64
 
-func NewResourceUsageIndicator(d time.Duration) ResourceUsageIndicator {
-	return ResourceUsageIndicator(d.Seconds())
+func NewResourceDuration(d time.Duration) ResourceDuration {
+	return ResourceDuration(d.Seconds())
 }
 
-func (i ResourceUsageIndicator) Duration() time.Duration {
-	return time.Duration(i) * time.Second
+func (in ResourceDuration) Duration() time.Duration {
+	return time.Duration(in) * time.Second
 }
 
-func (i ResourceUsageIndicator) String() string {
-	return i.Duration().String()
+func (in ResourceDuration) String() string {
+	return in.Duration().String()
 }
 
-// this represents a usage summary by resource (e.g. "memory", "cpu")
-type UsageIndicator map[apiv1.ResourceName]ResourceUsageIndicator
+// This contains each duration by request requested.
+// e.g. 100m CPU * 1h, 1Gi memory * 1h
+type ResourcesDuration map[apiv1.ResourceName]ResourceDuration
 
-func (i UsageIndicator) Add(o UsageIndicator) UsageIndicator {
-	for r, d := range o {
-		i[r] += d
+func (in ResourcesDuration) Add(o ResourcesDuration) ResourcesDuration {
+	for n, d := range o {
+		in[n] += d
 	}
-	return i
+	return in
 }
 
-func (i UsageIndicator) String() string {
+func (in ResourcesDuration) String() string {
 	var parts []string
-	for r, d := range i {
-		parts = append(parts, fmt.Sprintf("%v*%s", d, r))
+	for n, d := range in {
+		parts = append(parts, fmt.Sprintf("%v*%s", d, n))
 	}
 	return strings.Join(parts, ",")
 }
 
-func (i UsageIndicator) IsZero() bool {
-	return len(i) == 0
+func (in ResourcesDuration) IsZero() bool {
+	return len(in) == 0
 }
 
 // NodeStatus contains status information about an individual node in the workflow
@@ -965,8 +965,8 @@ type NodeStatus struct {
 	// Time at which this node completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,11,opt,name=finishedAt"`
 
-	// UsageIndicator is indicative, but not accurate, resource usage. This is populated when the nodes completes.
-	UsageIndicator UsageIndicator `json:"usageIndicator,omitempty" protobuf:"bytes,21,opt,name=usageIndicator"`
+	// ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
+	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,21,opt,name=resourcesDuration"`
 
 	// PodIP captures the IP of the pod for daemoned steps
 	PodIP string `json:"podIP,omitempty" protobuf:"bytes,12,opt,name=podIP"`
@@ -998,10 +998,10 @@ type NodeStatus struct {
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
 }
 
-func (n Nodes) GetUsageIndicator() UsageIndicator {
-	i := UsageIndicator{}
+func (n Nodes) GetResourcesRequested() ResourcesDuration {
+	i := ResourcesDuration{}
 	for _, status := range n {
-		i = i.Add(status.UsageIndicator)
+		i = i.Add(status.ResourcesDuration)
 	}
 	return i
 }

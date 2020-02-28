@@ -5,8 +5,8 @@ import * as React from 'react';
 
 import * as models from '../../../../models';
 import {Timestamp} from '../../../shared/components/timestamp';
+import {formatDuration} from '../../../shared/duration';
 import {services} from '../../../shared/services';
-import {formatUsageIndicator} from '../../../shared/usage';
 import {Utils} from '../../../shared/utils';
 
 require('./workflow-node-info.scss');
@@ -69,14 +69,14 @@ export const WorkflowNodeSummary = (props: Props) => {
             )
         },
         {
-            title: 'USAGEINDICATOR',
+            title: 'RESOURCES DURATION',
             value: (
                 <>
-                    {props.node.usageIndicator &&
-                        Object.entries(props.node.usageIndicator)
-                            .map(([resource, usage]) => formatUsageIndicator(usage) + '*' + resource)
+                    {props.node.RequestedResource &&
+                        Object.entries(props.node.RequestedResource)
+                            .map(([resource, duration]) => formatDuration(duration) + '*' + resource)
                             .join(',')}{' '}
-                    <a href='https://github.com/argoproj/argo/blob/master/docs/usage-indicator.md'>
+                    <a href='https://github.com/argoproj/argo/blob/master/docs/resource-duration.md'>
                         <i className='fa fa-info-circle' />
                     </a>
                 </>

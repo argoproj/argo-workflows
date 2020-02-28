@@ -1,4 +1,4 @@
-package usage
+package resource
 
 import (
 	"time"
@@ -37,7 +37,7 @@ func resourceDenominator(r corev1.ResourceName) *resource.Quantity {
 	return &q
 }
 
-func IndicatorForPod(pod *corev1.Pod, now time.Time) wfv1.UsageIndicator {
+func DurationForPod(pod *corev1.Pod, now time.Time) wfv1.ResourcesDuration {
 	summaries := map[string]containerSummary{}
 	for _, c := range append(pod.Spec.InitContainers, pod.Spec.Containers...) {
 		summaries[c.Name] = containerSummary{ResourceList: map[corev1.ResourceName]resource.Quantity{
@@ -56,11 +56,11 @@ func IndicatorForPod(pod *corev1.Pod, now time.Time) wfv1.UsageIndicator {
 	for _, c := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
 		summaries[c.Name] = containerSummary{ResourceList: summaries[c.Name].ResourceList, ContainerState: c.State}
 	}
-	i := wfv1.UsageIndicator{}
+	i := wfv1.ResourcesDuration{}
 	for _, s := range summaries {
 		duration := s.duration(now)
 		for r, q := range s.ResourceList {
-			i = i.Add(wfv1.UsageIndicator{r: wfv1.NewResourceUsageIndicator(time.Duration(q.Value() * duration.Nanoseconds() / resourceDenominator(r).Value()))})
+			i = i.Add(wfv1.ResourcesDuration{r: wfv1.NewResourceDuration(time.Duration(q.Value() * duration.Nanoseconds() / resourceDenominator(r).Value()))})
 		}
 	}
 	return i

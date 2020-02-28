@@ -107,8 +107,8 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 	if !wf.Status.StartedAt.IsZero() {
 		fmt.Printf(fmtStr, "Duration:", humanize.RelativeDuration(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time))
 	}
-	if !wf.Status.Nodes.GetUsageIndicator().IsZero() {
-		fmt.Printf(fmtStr, "UsageIndicator:", wf.Status.Nodes.GetUsageIndicator())
+	if !wf.Status.Nodes.GetResourcesRequested().IsZero() {
+		fmt.Printf(fmtStr, "ResourcesDuration:", wf.Status.Nodes.GetResourcesRequested())
 	}
 
 	if len(wf.Spec.Arguments.Parameters) > 0 {
@@ -453,10 +453,10 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, get
 	if getArgs.output == "wide" {
 		msg := args[len(args)-1]
 		args[len(args)-1] = getArtifactsString(node)
-		args = append(args, msg, node.UsageIndicator)
+		args = append(args, msg, node.ResourcesDuration)
 		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\n", args...)
 	} else {
-		args = append(args, node.UsageIndicator)
+		args = append(args, node.ResourcesDuration)
 		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\n", args...)
 	}
 }

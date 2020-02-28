@@ -1,4 +1,4 @@
-package usage
+package resource
 
 import (
 	"testing"
@@ -12,16 +12,16 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-func TestIndicatorForPod(t *testing.T) {
+func TestDurationForPod(t *testing.T) {
 	now := time.Now()
 	zero := now.Add(-time.Since(now))
 
 	tests := []struct {
 		name string
 		pod  *corev1.Pod
-		want wfv1.UsageIndicator
+		want wfv1.ResourcesDuration
 	}{
-		{"Empty", &corev1.Pod{}, wfv1.UsageIndicator{}},
+		{"Empty", &corev1.Pod{}, wfv1.ResourcesDuration{}},
 		{"RunningContainerWithCPURequest", &corev1.Pod{
 			Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "main", Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
@@ -42,9 +42,9 @@ func TestIndicatorForPod(t *testing.T) {
 					},
 				},
 			},
-		}, wfv1.UsageIndicator{
-			corev1.ResourceCPU:    wfv1.NewResourceUsageIndicator(2 * time.Minute),
-			corev1.ResourceMemory: wfv1.NewResourceUsageIndicator(5 * time.Second),
+		}, wfv1.ResourcesDuration{
+			corev1.ResourceCPU:    wfv1.NewResourceDuration(2 * time.Minute),
+			corev1.ResourceMemory: wfv1.NewResourceDuration(5 * time.Second),
 		}},
 		{"TerminatedContainerWithCPURequest", &corev1.Pod{
 			Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "main", Resources: corev1.ResourceRequirements{
@@ -69,15 +69,15 @@ func TestIndicatorForPod(t *testing.T) {
 					},
 				},
 			},
-		}, wfv1.UsageIndicator{
-			corev1.ResourceCPU:                    wfv1.NewResourceUsageIndicator(6 * time.Minute),
-			corev1.ResourceMemory:                 wfv1.NewResourceUsageIndicator(0 * time.Second),
-			corev1.ResourceName("nvidia.com/gpu"): wfv1.NewResourceUsageIndicator(3 * time.Minute),
+		}, wfv1.ResourcesDuration{
+			corev1.ResourceCPU:                    wfv1.NewResourceDuration(6 * time.Minute),
+			corev1.ResourceMemory:                 wfv1.NewResourceDuration(0 * time.Second),
+			corev1.ResourceName("nvidia.com/gpu"): wfv1.NewResourceDuration(3 * time.Minute),
 		}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := IndicatorForPod(tt.pod, zero)
+			got := DurationForPod(tt.pod, zero)
 			assert.Equal(t, tt.want, got)
 		})
 	}

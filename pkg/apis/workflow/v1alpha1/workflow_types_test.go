@@ -36,24 +36,24 @@ func TestNodes_Any(t *testing.T) {
 
 func TestUsage(t *testing.T) {
 	t.Run("String", func(t *testing.T) {
-		assert.Equal(t, UsageIndicator{}.String(), "")
-		assert.Equal(t, UsageIndicator{corev1.ResourceMemory: NewResourceUsageIndicator(1 * time.Second)}.String(), "1s*memory")
+		assert.Equal(t, ResourcesDuration{}.String(), "")
+		assert.Equal(t, ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}.String(), "1s*memory")
 	})
 	t.Run("Add", func(t *testing.T) {
-		assert.Equal(t, UsageIndicator{}.Add(UsageIndicator{}).String(), "")
-		assert.Equal(t, UsageIndicator{corev1.ResourceMemory: NewResourceUsageIndicator(1 * time.Second)}.Add(UsageIndicator{corev1.ResourceMemory: NewResourceUsageIndicator(1 * time.Second)}).String(), "2s*memory")
+		assert.Equal(t, ResourcesDuration{}.Add(ResourcesDuration{}).String(), "")
+		assert.Equal(t, ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}.Add(ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}).String(), "2s*memory")
 	})
 }
 
 func TestResourceUsage(t *testing.T) {
-	assert.Equal(t, ResourceUsageIndicator(1), NewResourceUsageIndicator(1*time.Second))
-	assert.Equal(t, "1s", NewResourceUsageIndicator(1*time.Second).String())
+	assert.Equal(t, ResourceDuration(1), NewResourceDuration(1*time.Second))
+	assert.Equal(t, "1s", NewResourceDuration(1*time.Second).String())
 }
 
 func TestNodes_GetUsage(t *testing.T) {
-	assert.Equal(t, UsageIndicator{}, Nodes{}.GetUsageIndicator())
-	assert.Equal(t, UsageIndicator{corev1.ResourceMemory: 3}, Nodes{
-		"foo": NodeStatus{UsageIndicator: UsageIndicator{corev1.ResourceMemory: 1}},
-		"bar": NodeStatus{UsageIndicator: UsageIndicator{corev1.ResourceMemory: 2}},
-	}.GetUsageIndicator())
+	assert.Equal(t, ResourcesDuration{}, Nodes{}.GetResourcesRequested())
+	assert.Equal(t, ResourcesDuration{corev1.ResourceMemory: 3}, Nodes{
+		"foo": NodeStatus{ResourcesDuration: ResourcesDuration{corev1.ResourceMemory: 1}},
+		"bar": NodeStatus{ResourcesDuration: ResourcesDuration{corev1.ResourceMemory: 2}},
+	}.GetResourcesRequested())
 }

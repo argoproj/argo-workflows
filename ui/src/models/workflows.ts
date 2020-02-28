@@ -662,7 +662,7 @@ export interface NodeStatus {
     /**
      * How much resource was used.
      */
-    usageIndicator?: {[resource: string]: number};
+    RequestedResource?: {[resource: string]: number};
 
     /**
      * PodIP captures the IP of the pod for daemoned steps

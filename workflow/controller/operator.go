@@ -35,8 +35,8 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/argo"
+	"github.com/argoproj/argo/util/resource"
 	"github.com/argoproj/argo/util/retry"
-	"github.com/argoproj/argo/util/usage"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/config"
 	"github.com/argoproj/argo/workflow/packer"
@@ -956,7 +956,7 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 			// finishedAt might not have been set.
 			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 		}
-		node.UsageIndicator = usage.IndicatorForPod(pod, time.Now())
+		node.ResourcesDuration = resource.DurationForPod(pod, time.Now())
 	}
 	if updated {
 		return node
