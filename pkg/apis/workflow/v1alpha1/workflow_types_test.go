@@ -34,7 +34,7 @@ func TestNodes_Any(t *testing.T) {
 	assert.True(t, Nodes{"": NodeStatus{Name: "foo"}}.Any(func(node NodeStatus) bool { return node.Name == "foo" }))
 }
 
-func TestUsage(t *testing.T) {
+func TestResourcesDuration(t *testing.T) {
 	t.Run("String", func(t *testing.T) {
 		assert.Equal(t, ResourcesDuration{}.String(), "")
 		assert.Equal(t, ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}.String(), "1s*memory")
@@ -45,12 +45,12 @@ func TestUsage(t *testing.T) {
 	})
 }
 
-func TestResourceUsage(t *testing.T) {
+func TestResourceDuration(t *testing.T) {
 	assert.Equal(t, ResourceDuration(1), NewResourceDuration(1*time.Second))
 	assert.Equal(t, "1s", NewResourceDuration(1*time.Second).String())
 }
 
-func TestNodes_GetUsage(t *testing.T) {
+func TestNodes_GetResourcesRequested(t *testing.T) {
 	assert.Equal(t, ResourcesDuration{}, Nodes{}.GetResourcesRequested())
 	assert.Equal(t, ResourcesDuration{corev1.ResourceMemory: 3}, Nodes{
 		"foo": NodeStatus{ResourcesDuration: ResourcesDuration{corev1.ResourceMemory: 1}},

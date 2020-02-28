@@ -150,9 +150,9 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 		fmt.Println()
 		// apply a dummy FgDefault format to align tab writer with the rest of the columns
 		if getArgs.output == "wide" {
-			_, _ = fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\tUSAGEINDICATOR\n", ansiFormat("STEP", FgDefault))
+			_, _ = fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\tRESOURCESDURATION\n", ansiFormat("STEP", FgDefault))
 		} else {
-			_, _ = fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tMESSAGE\tUSAGEINDICATOR\n", ansiFormat("STEP", FgDefault))
+			_, _ = fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tMESSAGE\tRESOURCESDURATION\n", ansiFormat("STEP", FgDefault))
 		}
 
 		// Convert Nodes to Render Trees

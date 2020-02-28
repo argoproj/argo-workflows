@@ -18,6 +18,6 @@ A pod that runs for 3m, with a CPU limit of 2000m, no memory request and an `nvi
 * Memory: 3 * 60s * 100m / 1Gi = 0s*memory 
 * GPU: 2 * 60s * = 2s*nvidia.com/gpu
 
-## Memory Usage Truncation
+## Rounding Down
 
 For short running pods (<10s), the memory value maybe 0s. This is because the default is 100m, but the denominator is 1000m. 

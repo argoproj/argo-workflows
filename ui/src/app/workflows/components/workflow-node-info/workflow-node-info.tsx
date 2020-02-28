@@ -72,8 +72,8 @@ export const WorkflowNodeSummary = (props: Props) => {
             title: 'RESOURCES DURATION',
             value: (
                 <>
-                    {props.node.RequestedResource &&
-                        Object.entries(props.node.RequestedResource)
+                    {props.node.resourcesDuration &&
+                        Object.entries(props.node.resourcesDuration)
                             .map(([resource, duration]) => formatDuration(duration) + '*' + resource)
                             .join(',')}{' '}
                     <a href='https://github.com/argoproj/argo/blob/master/docs/resource-duration.md'>
