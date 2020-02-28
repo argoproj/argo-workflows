@@ -18,7 +18,7 @@ func Test_getDefaultTokenVersion(t *testing.T) {
 		envToken := os.Getenv("ARGO_TOKEN")
 		os.Unsetenv("ARGO_TOKEN")
 		defer os.Setenv("ARGO_TOKEN", envToken)
-		_, err = GetBearerToken(restConfig,"")
+		_, err = GetBearerToken(restConfig, "")
 		assert.Error(t, err)
 	})
 	t.Run("Existing token", func(t *testing.T) {
