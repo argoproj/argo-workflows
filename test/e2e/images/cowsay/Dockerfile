@@ -1,6 +1,9 @@
 FROM ubuntu:14.04
 
-RUN apt-get update && apt-get install -y cowsay --no-install-recommends && rm -rf /var/lib/apt/lists/* 
+RUN apt-get update && \
+    apt-get install -y cowsay --no-install-recommends && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # "cowsay" installs to /usr/games
 ENV PATH $PATH:/usr/games
