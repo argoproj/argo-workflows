@@ -2,6 +2,8 @@ import {Formik} from 'formik';
 import * as jsYaml from 'js-yaml';
 import * as React from 'react';
 import * as models from '../../../models';
+import {Simulate} from "react-dom/test-utils";
+import error = Simulate.error;
 
 interface ResourceSubmitProps<T> {
     defaultResource: T;
@@ -49,6 +51,7 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                             : this.state.error.message}
                                     </p>
                                 )}
+                                <input type="file" onChange={ (e) => this.readFiles(e.target.files)}  />
                                 <textarea
                                     name={'resourceString'}
                                     className='yaml'
@@ -91,6 +94,20 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                 </Formik>
             </div>
         );
+    }
+
+    private readFile(files: FileList): string {
+        if (files.length != 1) {
+            this.setState({error: {
+                    name: "Must upload exactly one file",
+                    message: "Must upload exactly one file",
+            }})
+        }
+        const fileReader = new FileReader();
+        fileReader.onload = () => {
+            return fileReader.result;
+        };
+        fileReader.readAsText(files.item(0));
     }
 
     private renderParameterFields(sectionTitle: string, path: string, parameters: models.Parameter[], formikApi: any): JSX.Element {
