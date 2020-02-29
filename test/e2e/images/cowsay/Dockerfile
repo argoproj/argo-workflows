@@ -1,7 +1,7 @@
 FROM ubuntu:14.04
 
 RUN apt-get update && \
-    apt-get install -y apt-utils apt-transport-https cowsay --no-install-recommends && \
+    apt-get install -y apt-utils ca-certificates apt-transport-https cowsay --no-install-recommends && \
     apt-get clean \
     && rm -rf \
         /var/lib/apt/lists/* \
