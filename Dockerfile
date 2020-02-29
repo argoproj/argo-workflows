@@ -8,6 +8,8 @@ FROM golang:1.13.4 as builder
 RUN apt-get update && apt-get --no-install-recommends install -y \
     git \
     make \
+    apt-utils \
+    apt-transport-https \
     wget \
     gcc \
     zip && \
@@ -43,7 +45,7 @@ FROM debian:9.6-slim as argoexec-base
 ENV KUBECTL_VERSION=1.15.1
 ENV JQ_VERSION=1.6
 RUN apt-get update && \
-    apt-get --no-install-recommends install -y curl procps git tar mime-support && \
+    apt-get --no-install-recommends install -y curl procps git apt-utils apt-transport-https tar mime-support && \
     apt-get clean \
     && rm -rf \
         /var/lib/apt/lists/* \
