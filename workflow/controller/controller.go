@@ -362,7 +362,11 @@ func (wfc *WorkflowController) processNextItem() bool {
 	}
 	err = wfc.addingWorkflowDefaultValueIfValueNotExist(wf)
 	if err != nil {
-		log.Warnf("Failed to do a strategic merge between default and workflow")
+		log.Warnf("Failed to do a strategic merge between workflow and default spec:s")
+		woc := newWorkflowOperationCtx(wf, wfc)
+		woc.markWorkflowFailed(fmt.Sprintf("failed to merge workflow and default specs: %s", err.Error()))
+		woc.persistUpdates()
+		wfc.throttler.Remove(key)
 		return true
 	}
 
