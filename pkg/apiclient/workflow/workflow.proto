@@ -24,11 +24,15 @@ message WorkflowGetRequest {
     string name = 1;
     string namespace = 2;
     k8s.io.apimachinery.pkg.apis.meta.v1.GetOptions getOptions = 3;
+    // Fields to be included or excluded in the response. e.g. "spec,status.phase", "-status.nodes"
+    string fields = 4;
 }
 
 message WorkflowListRequest {
     string namespace = 1;
     k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
+    // Fields to be included or excluded in the response. e.g. "items.spec,items.status.phase", "-items.status.nodes"
+    string fields = 3;
 }
 
 message WorkflowResubmitRequest {

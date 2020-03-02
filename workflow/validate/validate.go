@@ -459,9 +459,6 @@ func validateNonLeaf(tmpl *wfv1.Template) error {
 	if tmpl.ActiveDeadlineSeconds != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds is only valid for leaf templates", tmpl.Name)
 	}
-	if tmpl.RetryStrategy != nil {
-		return errors.Errorf(errors.CodeBadRequest, "templates.%s.retryStrategy is only valid for container templates", tmpl.Name)
-	}
 	return nil
 }
 

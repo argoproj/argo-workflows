@@ -55,7 +55,9 @@ export default {
             eventSource.onmessage = (msg: any) => observer.next(msg.data);
             eventSource.onerror = (e: any) => {
                 if (e.eventPhase === Event.AT_TARGET) {
-                    observer.complete();
+                    if (!allowAutoRetry) {
+                        observer.complete();
+                    }
                 } else {
                     observer.error(e);
                 }

@@ -3,12 +3,26 @@ import * as dagre from 'dagre';
 import * as React from 'react';
 
 import * as models from '../../../../models';
+import {NODE_PHASE} from '../../../../models';
 import {Utils} from '../../../shared/utils';
+
+export const defaultWorkflowDagRenderOptions: WorkflowDagRenderOptions = {
+    hideSucceeded: false,
+    horizontal: false,
+    zoom: 1
+};
+
+export interface WorkflowDagRenderOptions {
+    horizontal: boolean;
+    zoom: number;
+    hideSucceeded: boolean;
+}
 
 export interface WorkflowDagProps {
     workflow: models.Workflow;
     selectedNodeId?: string;
     nodeClicked?: (node: models.NodeStatus) => any;
+    renderOptions: WorkflowDagRenderOptions;
 }
 
 interface Line {
@@ -21,21 +35,36 @@ interface Line {
 
 require('./workflow-dag.scss');
 
-const NODE_WIDTH = 182;
-const NODE_HEIGHT = 52;
-
 export class WorkflowDag extends React.Component<WorkflowDagProps> {
+    private get zoom() {
+        return this.props.renderOptions.zoom || 1;
+    }
+
+    private get nodeWidth() {
+        return 140 / this.zoom;
+    }
+
+    private get nodeHeight() {
+        return 52 / this.zoom;
+    }
+
     public render() {
         const graph = new dagre.graphlib.Graph();
-        graph.setGraph({});
+        // https://github.com/dagrejs/dagre/wiki
+        graph.setGraph({
+            edgesep: 20 / this.zoom,
+            nodesep: 50 / this.zoom,
+            rankdir: this.props.renderOptions.horizontal ? 'LR' : 'TB',
+            ranksep: 50 / this.zoom
+        });
         graph.setDefaultEdgeLabel(() => ({}));
         const nodes = (this.props.workflow.status && this.props.workflow.status.nodes) || {};
-        Object.keys(nodes).forEach(nodeId => {
-            const node = nodes[nodeId];
-            if (this.isVirtual(node)) {
-                graph.setNode(nodeId, {width: 1, height: 1, ...nodes[nodeId]});
+        Object.values(nodes).forEach(node => {
+            const label = Utils.shortNodeName(node);
+            if (this.isSmall(node)) {
+                graph.setNode(node.id, {label, width: 1, height: 1, ...nodes[node.id]});
             } else {
-                graph.setNode(nodeId, {width: NODE_WIDTH, height: NODE_HEIGHT, ...nodes[nodeId]});
+                graph.setNode(node.id, {label, width: this.nodeWidth, height: this.nodeHeight, ...nodes[node.id]});
             }
         });
         Object.keys(nodes).forEach(nodeId => {
@@ -60,7 +89,13 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
             if (edge.points.length > 1) {
                 for (let i = 1; i < edge.points.length; i++) {
                     const toNode = nodes[edgeInfo.w];
-                    lines.push({x1: edge.points[i - 1].x, y1: edge.points[i - 1].y, x2: edge.points[i].x, y2: edge.points[i].y, noArrow: this.isVirtual(toNode)});
+                    lines.push({
+                        x1: edge.points[i - 1].x,
+                        y1: edge.points[i - 1].y,
+                        x2: edge.points[i].x,
+                        y2: edge.points[i].y,
+                        noArrow: this.isSmall(toNode)
+                    });
                 }
             }
             edges.push({from: edgeInfo.v, to: edgeInfo.w, lines});
@@ -70,19 +105,30 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
             <div className='workflow-dag' style={{width: size.width, height: size.height}}>
                 {graph.nodes().map(id => {
                     const node = graph.node(id) as models.NodeStatus & dagre.Node;
-                    const shortName = Utils.shortNodeName(node);
+                    const statusWidth = 3 / this.zoom;
                     return (
                         <div
                             key={id}
-                            className={classNames('workflow-dag__node', {active: node.id === this.props.selectedNodeId, virtual: this.isVirtual(node)})}
-                            style={{left: node.x - node.width / 2, top: node.y - node.height / 2, width: node.width, height: node.height}}
+                            title={node.label}
+                            className={classNames('workflow-dag__node', {
+                                active: node.id === this.props.selectedNodeId,
+                                virtual: this.isVirtual(node),
+                                small: this.isSmall(node)
+                            })}
+                            style={{
+                                left: node.x - node.width / 2,
+                                top: node.y - node.height / 2,
+                                width: node.width,
+                                height: node.height,
+                                paddingLeft: 0.5 + statusWidth + 'em'
+                            }}
                             onClick={() => this.props.nodeClicked && this.props.nodeClicked(node)}>
                             <div
                                 className={`fas workflow-dag__node-status workflow-dag__node-status--${Utils.isNodeSuspended(node) ? 'suspended' : node.phase.toLocaleLowerCase()}`}
-                                style={{lineHeight: NODE_HEIGHT + 'px'}}
+                                style={{width: statusWidth + 'em', lineHeight: this.nodeHeight + 'px'}}
                             />
-                            <div className='workflow-dag__node-title' style={{lineHeight: NODE_HEIGHT + 'px'}}>
-                                {shortName}
+                            <div className='workflow-dag__node-title' style={{lineHeight: this.nodeHeight + 'px', fontSize: 1 / this.zoom + 'em'}}>
+                                {node.label}
                             </div>
                         </div>
                     );
@@ -98,7 +144,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
                                 <div
                                     className={classNames('workflow-dag__line', {'workflow-dag__line--no-arrow': line.noArrow})}
                                     key={i}
-                                    style={{width: distance, left: xMid - distance / 2, top: yMid, transform: ` rotate(${angle}deg)`}}
+                                    style={{
+                                        width: distance,
+                                        left: xMid - distance / 2,
+                                        top: yMid,
+                                        transform: ` rotate(${angle}deg)`
+                                    }}
                                 />
                             );
                         })}
@@ -106,6 +157,10 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
                 ))}
             </div>
         );
+    }
+
+    private isSmall(node: models.NodeStatus) {
+        return this.isVirtual(node) || (this.props.renderOptions.hideSucceeded && node.phase === NODE_PHASE.SUCCEEDED);
     }
 
     private getOutboundNodes(nodeID: string): string[] {
