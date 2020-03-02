@@ -48,30 +48,38 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                             ? this.state.error.response.body.message
                                             : this.state.error.message}
                                     </p>
-                                ) : <p/> }
-                                <button type="button" className='argo-button argo-button--sm' id="uploadWf"
-                                       onClick={() => document.getElementById('file').click()} >
-                                    Upload Workflow </button>
-                                <input type="file" style={{display: "none"}} id="file" name="file" onChange={ (e) => {
-                                    try {
-                                        this.readFile(e.target.files, (newResource: string) => {
-                                            formikApi.setFieldValue('resource', jsYaml.load(e.currentTarget.value));
-                                            this.setState({
-                                                error: undefined,
-                                                invalid: false
+                                ) : (
+                                    <p />
+                                )}
+                                <button type='button' className='argo-button argo-button--sm' id='uploadWf' onClick={() => document.getElementById('file').click()}>
+                                    Upload Workflow{' '}
+                                </button>
+                                <input
+                                    type='file'
+                                    style={{display: 'none'}}
+                                    id='file'
+                                    name='file'
+                                    onChange={e => {
+                                        try {
+                                            this.readFile(e.target.files, (newResource: string) => {
+                                                formikApi.setFieldValue('resource', jsYaml.load(e.currentTarget.value));
+                                                this.setState({
+                                                    error: undefined,
+                                                    invalid: false
+                                                });
+                                                formikApi.setFieldValue('resourceString', newResource);
                                             });
-                                            formikApi.setFieldValue('resourceString', newResource)
-                                        });
-                                    } catch (e) {
-                                        this.setState({
-                                            error: {
-                                                name: this.props.resourceName + ' is invalid',
-                                                message: this.props.resourceName + ' is invalid' + (e.reason ? ': ' + e.reason : '')
-                                            },
-                                            invalid: true
-                                        });
-                                    }
-                                }}  />
+                                        } catch (e) {
+                                            this.setState({
+                                                error: {
+                                                    name: this.props.resourceName + ' is invalid',
+                                                    message: this.props.resourceName + ' is invalid' + (e.reason ? ': ' + e.reason : '')
+                                                },
+                                                invalid: true
+                                            });
+                                        }
+                                    }}
+                                />
                                 <textarea
                                     name={'resourceString'}
                                     className='yaml'
@@ -116,12 +124,14 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
         );
     }
 
-    private readFile(files: FileList, handleRead: (newResource: string) => void){
-        if (files.length != 1) {
-            this.setState({error: {
-                    name: "Must upload exactly one file",
-                    message: "Must upload exactly one file",
-            }})
+    private readFile(files: FileList, handleRead: (newResource: string) => void) {
+        if (files.length !== 1) {
+            this.setState({
+                error: {
+                    name: 'Must upload exactly one file',
+                    message: 'Must upload exactly one file'
+                }
+            });
         }
         const fileReader = new FileReader();
         fileReader.onload = () => {
