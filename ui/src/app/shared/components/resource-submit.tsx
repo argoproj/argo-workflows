@@ -2,8 +2,6 @@ import {Formik} from 'formik';
 import * as jsYaml from 'js-yaml';
 import * as React from 'react';
 import * as models from '../../../models';
-import {Simulate} from "react-dom/test-utils";
-import error = Simulate.error;
 
 interface ResourceSubmitProps<T> {
     defaultResource: T;
@@ -43,15 +41,37 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                 <button type='submit' className='argo-button argo-button--base' disabled={formikApi.isSubmitting || this.state.invalid}>
                                     Submit
                                 </button>
-                                {this.state.error && (
+                                {this.state.error ? (
                                     <p>
                                         <i className='fa fa-exclamation-triangle status-icon--failed' />
                                         {this.state.error.response && this.state.error.response.body && this.state.error.response.body.message
                                             ? this.state.error.response.body.message
                                             : this.state.error.message}
                                     </p>
-                                )}
-                                <input type="file" onChange={ (e) => this.readFiles(e.target.files)}  />
+                                ) : <p/> }
+                                <button type="button" className='argo-button argo-button--sm' id="uploadWf"
+                                       onClick={() => document.getElementById('file').click()} >
+                                    Upload Workflow </button>
+                                <input type="file" style={{display: "none"}} id="file" name="file" onChange={ (e) => {
+                                    try {
+                                        this.readFile(e.target.files, (newResource: string) => {
+                                            formikApi.setFieldValue('resource', jsYaml.load(e.currentTarget.value));
+                                            this.setState({
+                                                error: undefined,
+                                                invalid: false
+                                            });
+                                            formikApi.setFieldValue('resourceString', newResource)
+                                        });
+                                    } catch (e) {
+                                        this.setState({
+                                            error: {
+                                                name: this.props.resourceName + ' is invalid',
+                                                message: this.props.resourceName + ' is invalid' + (e.reason ? ': ' + e.reason : '')
+                                            },
+                                            invalid: true
+                                        });
+                                    }
+                                }}  />
                                 <textarea
                                     name={'resourceString'}
                                     className='yaml'
@@ -96,7 +116,7 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
         );
     }
 
-    private readFile(files: FileList): string {
+    private readFile(files: FileList, handleRead: (newResource: string) => void){
         if (files.length != 1) {
             this.setState({error: {
                     name: "Must upload exactly one file",
@@ -105,7 +125,7 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
         }
         const fileReader = new FileReader();
         fileReader.onload = () => {
-            return fileReader.result;
+            handleRead(fileReader.result);
         };
         fileReader.readAsText(files.item(0));
     }
