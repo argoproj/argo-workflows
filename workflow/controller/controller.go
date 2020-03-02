@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/imdario/mergo"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -362,12 +361,11 @@ func (wfc *WorkflowController) processNextItem() bool {
 	}
 	err = wfc.addingWorkflowDefaultValueIfValueNotExist(wf)
 	if err != nil {
-		log.Warnf("Failed to do a strategic merge between workflow and default spec:s")
+		log.Warnf("Failed to unmarshal key '%s' to workflow object: %v", key, err)
 		woc := newWorkflowOperationCtx(wf, wfc)
-		woc.markWorkflowFailed(fmt.Sprintf("failed to merge workflow and default specs: %s", err.Error()))
+		woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
 		woc.persistUpdates()
 		wfc.throttler.Remove(key)
-		return true
 	}
 
 	if wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true" {
@@ -376,9 +374,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 		// but we are still draining the controller's workflow workqueue
 		return true
 	}
-
 	woc := newWorkflowOperationCtx(wf, wfc)
-
 	// Loading running workflow from persistence storage if nodeStatusOffload enabled
 	if wf.Status.IsOffloadNodeStatus() {
 		nodes, err := wfc.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
@@ -437,9 +433,12 @@ func (wfc *WorkflowController) addingWorkflowDefaultValueIfValueNotExist(wf *wfv
 		defaults, _ := json.Marshal(*wfc.Config.DefautWorkflowSpec)
 		workflow, _ := json.Marshal(wf.Spec)
 		// https://github.com/kubernetes/apimachinery/blob/2373d029717c4d169463414a6127cd1d0d12680e/pkg/util/strategicpatch/patch.go#L94
-		// Should we have an empty wf spec instead ?? I just dont know
-		strategicpatch.CreateTwoWayMergePatch(workflow, defaults, wf.Spec)
-		if err := mergo.Merge(&wf.Spec, *wfc.Config.DefautWorkflowSpec); err != nil {
+		twoWay, err := strategicpatch.CreateTwoWayMergePatch(workflow, defaults, wf.Spec)
+		if err != nil {
+			return nil
+		}
+		err = json.Unmarshal(twoWay, &wf.Spec)
+		if err != nil {
 			return err
 		}
 	}
