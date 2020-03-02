@@ -305,8 +305,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	node := dagCtx.GetTaskNode(taskName)
 	task := dagCtx.getTask(taskName)
 	if node != nil && node.Completed() {
-		// Run the node's onExit node, if any. Only leaf nodes will have their onExit nodes executed here. Nodes that
-		// have dependencies will have their onExit nodes executed below
+		// Run the node's onExit node, if any.
 		hasOnExitNode, onExitNode, err := woc.runOnExitNode(task.Name, task.OnExit, dagCtx.boundaryID, dagCtx.tmplCtx)
 		if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
 			// The onExit node is either not complete or has errored out, return.
