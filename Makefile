@@ -203,10 +203,17 @@ endif
 .PHONY: codegen
 codegen:
 	# Generate code
+	# We need the vendor folder for compatibility
+	go mod vendor
+
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
 	make api/openapi-spec/swagger.json
 	find . -path '*/mocks/*' -type f -not -path '*/vendor/*' -exec ./hack/update-mocks.sh {} ';'
+
+	rm -rf ./vendor
+	go mod tidy
+
 
 .PHONY: manifests
 manifests: status manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml manifests/quick-start-no-db.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml test/e2e/manifests/no-db.yaml
