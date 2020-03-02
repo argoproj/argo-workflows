@@ -430,10 +430,10 @@ func (wfc *WorkflowController) processNextItem() bool {
 func (wfc *WorkflowController) addingWorkflowDefaultValueIfValueNotExist(wf *wfv1.Workflow) error {
 	//var workflowSpec *wfv1.WorkflowSpec = &wf.Spec
 	if wfc.Config.DefautWorkflowSpec != nil {
-		defaults, _ := json.Marshal(*wfc.Config.DefautWorkflowSpec)
-		workflow, _ := json.Marshal(wf.Spec)
+		defaultsSpec, _ := json.Marshal(*wfc.Config.DefautWorkflowSpec)
+		workflowSpec, _ := json.Marshal(wf.Spec)
 		// https://github.com/kubernetes/apimachinery/blob/2373d029717c4d169463414a6127cd1d0d12680e/pkg/util/strategicpatch/patch.go#L94
-		twoWay, err := strategicpatch.CreateTwoWayMergePatch(workflow, defaults, wf.Spec)
+		twoWay, err := strategicpatch.CreateTwoWayMergePatch(workflowSpec, defaultsSpec, wf.Spec)
 		if err != nil {
 			return nil
 		}
