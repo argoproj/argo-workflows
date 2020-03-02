@@ -29,7 +29,7 @@ spec:
                   help: "Value of the int emitted by random-int at step level"
                   histogram:
                     value: "{{step.outputs.parameters.rand-int-value}}"
-                    bins:
+                    buckets:
                       - 2.01
                       - 4.01
                       - 6.01

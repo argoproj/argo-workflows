@@ -712,7 +712,7 @@
         "value": {
           "type": "string"
         },
-        "bins": {
+        "buckets": {
           "type": "array",
           "items": {
             "type": "number",

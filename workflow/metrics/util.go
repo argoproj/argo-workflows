@@ -94,7 +94,7 @@ func constructOrUpdateHistogramMetric(metric prometheus.Metric, metricSpec *wfv1
 		Name:        metricSpec.Name,
 		Help:        metricSpec.Help,
 		ConstLabels: metricSpec.GetMetricLabels(),
-		Buckets:     metricSpec.Histogram.Bins,
+		Buckets:     metricSpec.Histogram.Buckets,
 	}
 
 	val, err := strconv.ParseFloat(metricSpec.Histogram.Value, 64)

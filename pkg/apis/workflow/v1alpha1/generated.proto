@@ -350,7 +350,7 @@ message HTTPArtifact {
 message Histogram {
   optional string value = 3;
 
-  repeated double bins = 2;
+  repeated double buckets = 4;
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another

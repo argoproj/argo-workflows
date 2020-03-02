@@ -1637,8 +1637,8 @@ type Gauge struct {
 }
 
 type Histogram struct {
-	Value string    `json:"value" protobuf:"bytes,3,opt,name=value"`
-	Bins  []float64 `json:"bins" protobuf:"fixed64,2,rep,name=bins"`
+	Value   string    `json:"value" protobuf:"bytes,3,opt,name=value"`
+	Buckets []float64 `json:"buckets" protobuf:"fixed64,4,rep,name=buckets"`
 }
 
 type Counter struct {

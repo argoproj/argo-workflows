@@ -88,7 +88,7 @@ tracking the duration of model execution over time, a metric descriptor could be
  A metric must also have a type, it can be one of `gauge`, `histogram`, and `counter` ([see below](#metric-spec)). Within
  the metric type a `value` must be specified. This value can be either a literal value of be an [Argo variable](variables.md).
  
- When defining a `histogram`, `bins` must also be provided (see below).
+ When defining a `histogram`, `buckets` must also be provided (see below).
  
  ### Metric Spec
  
@@ -153,10 +153,10 @@ Finally, an example of a `Step`-level Histogram metric that tracks an internal v
                 - name: random_int_step_histogram
                   help: "Value of the int emitted by random-int at step level"
                   histogram:
-                    bins:                                                       # Bins must be defined for histogram metrics
+                    buckets:                                                       # Bins must be defined for histogram metrics
                       - 2.01                                                    # and are part of the metric descriptor.
                       - 4.01                                                    # All metrics in this series MUST have the
-                      - 6.01                                                    # same bins.
+                      - 6.01                                                    # same buckets.
                       - 8.01
                       - 10.01
                     value: "{{task.outputs.parameters.rand-int-value}}"         # References itself for its output (see variables doc)
