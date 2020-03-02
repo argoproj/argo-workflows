@@ -80,7 +80,7 @@ func newControllerWithDefaults() *WorkflowController {
 	return &WorkflowController{
 		Config: config.WorkflowControllerConfig{
 			ExecutorImage: "executor:latest",
-			WorkflowDefaults: &wfv1.WorkflowSpec{
+			DefautWorkflowSpec: &wfv1.WorkflowSpec{
 				HostNetwork: &myBool,
 			},
 		},
@@ -135,9 +135,9 @@ func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
 	assert.Equal(t, workflow, unmarshalWF(helloWorldWf))
 
 	controllerDefaults := newControllerWithDefaults()
-	workflowDefaults := unmarshalWF(helloWorldWf)
-	controllerDefaults.addingWorkflowDefaultValueIfValueNotExist(workflowDefaults)
-	assert.Equal(t, workflowDefaults.Spec.HostNetwork, &ans)
-	assert.NotEqual(t, workflowDefaults, unmarshalWF(helloWorldWf))
-	assert.Equal(t, *workflowDefaults.Spec.HostNetwork, true)
+	defautWorkflowSpec := unmarshalWF(helloWorldWf)
+	controllerDefaults.addingWorkflowDefaultValueIfValueNotExist(defautWorkflowSpec)
+	assert.Equal(t, defautWorkflowSpec.Spec.HostNetwork, &ans)
+	assert.NotEqual(t, defautWorkflowSpec, unmarshalWF(helloWorldWf))
+	assert.Equal(t, *defautWorkflowSpec.Spec.HostNetwork, true)
 }

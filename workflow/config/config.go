@@ -67,7 +67,7 @@ type WorkflowControllerConfig struct {
 
 	// Workflow defaults
 	//[TODO] fix the representation
-	WorkflowDefaults *wfv1.WorkflowSpec `json:"workflowDefaults,omitempty"`
+	DefautWorkflowSpec *wfv1.WorkflowSpec `json:"workflowDefaults,omitempty"`
 }
 
 // KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,

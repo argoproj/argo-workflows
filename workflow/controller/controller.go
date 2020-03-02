@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -18,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -358,7 +360,11 @@ func (wfc *WorkflowController) processNextItem() bool {
 		wfc.throttler.Remove(key)
 		return true
 	}
-	wfc.addingWorkflowDefaultValueIfValueNotExist(wf)
+	err = wfc.addingWorkflowDefaultValueIfValueNotExist(wf)
+	if err != nil {
+		log.Warnf("Failed to do a strategic merge between default and workflow")
+		return true
+	}
 
 	if wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true" {
 		wfc.throttler.Remove(key)
@@ -421,15 +427,19 @@ func (wfc *WorkflowController) processNextItem() bool {
 	return true
 }
 
-func (wfc *WorkflowController) addingWorkflowDefaultValueIfValueNotExist(wf *wfv1.Workflow) {
+func (wfc *WorkflowController) addingWorkflowDefaultValueIfValueNotExist(wf *wfv1.Workflow) error {
 	//var workflowSpec *wfv1.WorkflowSpec = &wf.Spec
-	if wfc.Config.WorkflowDefaults != nil {
-		if err := mergo.Merge(&wf.Spec, *wfc.Config.WorkflowDefaults); err != nil {
-			log.Errorf("Failed to merge defaults and workflow : %+v", err)
-			panic(err)
+	if wfc.Config.DefautWorkflowSpec != nil {
+		defaults, _ := json.Marshal(*wfc.Config.DefautWorkflowSpec)
+		workflow, _ := json.Marshal(wf.Spec)
+		// https://github.com/kubernetes/apimachinery/blob/2373d029717c4d169463414a6127cd1d0d12680e/pkg/util/strategicpatch/patch.go#L94
+		// Should we have an empty wf spec instead ?? I just dont know
+		strategicpatch.CreateTwoWayMergePatch(workflow, defaults, wf.Spec)
+		if err := mergo.Merge(&wf.Spec, *wfc.Config.DefautWorkflowSpec); err != nil {
+			return err
 		}
 	}
-	// customer merger depending on if it is a pointer or not ...
+	return nil
 }
 
 func (wfc *WorkflowController) podWorker() {
