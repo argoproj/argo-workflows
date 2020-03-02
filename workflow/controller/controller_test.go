@@ -2,11 +2,9 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
-	"github.com/imdario/mergo"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -128,15 +126,15 @@ func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
 	ans := true
 	controller := newController()
 	workflow := unmarshalWF(helloWorldWf)
-	if err := mergo.Merge(workflow, workflow); err != nil {
-		fmt.Printf("hello")
-	}
-	controller.addingWorkflowDefaultValueIfValueNotExist(workflow)
+
+	err := controller.addingWorkflowDefaultValueIfValueNotExist(workflow)
+	assert.NoError(t, err)
 	assert.Equal(t, workflow, unmarshalWF(helloWorldWf))
 
 	controllerDefaults := newControllerWithDefaults()
 	defautWorkflowSpec := unmarshalWF(helloWorldWf)
-	controllerDefaults.addingWorkflowDefaultValueIfValueNotExist(defautWorkflowSpec)
+	err = controllerDefaults.addingWorkflowDefaultValueIfValueNotExist(defautWorkflowSpec)
+	assert.NoError(t, err)
 	assert.Equal(t, defautWorkflowSpec.Spec.HostNetwork, &ans)
 	assert.NotEqual(t, defautWorkflowSpec, unmarshalWF(helloWorldWf))
 	assert.Equal(t, *defautWorkflowSpec.Spec.HostNetwork, true)
