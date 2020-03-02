@@ -19,13 +19,16 @@ var ArgoServer string
 // DEPRECATED
 var Config clientcmd.ClientConfig
 
+var ExplicitPath string
+
 func AddKubectlFlagsToCmd(cmd *cobra.Command) {
 	// The "usual" clientcmd/kubectl flags
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
 	overrides := clientcmd.ConfigOverrides{}
 	kflags := clientcmd.RecommendedConfigOverrideFlags("")
-	cmd.PersistentFlags().StringVar(&loadingRules.ExplicitPath, "kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
+	cmd.PersistentFlags().StringVar(&ExplicitPath, "kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
+	loadingRules.ExplicitPath = ExplicitPath
 	clientcmd.BindOverrideFlags(&overrides, cmd.PersistentFlags(), kflags)
 	Config = clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
 }
@@ -71,7 +74,7 @@ func GetAuthString() string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	authString, err := kubeconfig.GetAuthString(restConfig)
+	authString, err := kubeconfig.GetAuthString(restConfig, ExplicitPath)
 	if err != nil {
 		log.Fatal(err)
 	}
