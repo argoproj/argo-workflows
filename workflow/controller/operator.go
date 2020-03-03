@@ -416,6 +416,10 @@ func (woc *wfOperationCtx) setGlobalParameters() {
 		cTimeVar := fmt.Sprintf("%s.%s", common.GlobalVarWorkflowCreationTimestamp, string(char))
 		woc.globalParams[cTimeVar] = strftime.Format("%"+string(char), woc.wf.ObjectMeta.CreationTimestamp.Time)
 	}
+
+	if workflowParameters, err := json.Marshal(woc.wf.Spec.Arguments.Parameters); err == nil {
+		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
+	}
 	for _, param := range woc.wf.Spec.Arguments.Parameters {
 		woc.globalParams["workflow.parameters."+param.Name] = *param.Value
 	}
