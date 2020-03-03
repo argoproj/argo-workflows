@@ -1332,15 +1332,15 @@ type DAGTask struct {
 }
 
 type Depends struct {
-	Succeeded  string    `json:"succeeded" protobuf:"bytes,1,opt,name=succeeded"`
-	Failed     string    `json:"failed" protobuf:"bytes,2,opt,name=failed"`
-	Skipped    string    `json:"skipped" protobuf:"bytes,3,opt,name=skipped"`
-	Completed  string    `json:"completed" protobuf:"bytes,4,opt,name=completed"`
-	Any        string    `json:"any" protobuf:"bytes,5,opt,name=any"`
-	Successful string    `json:"successful" protobuf:"bytes,9,opt,name=successful"`
-	And        []Depends `json:"and" protobuf:"bytes,6,rep,name=and"`
-	Or         []Depends `json:"or" protobuf:"bytes,7,rep,name=or"`
-	Not        *Depends  `json:"not" protobuf:"bytes,8,rep,name=not"`
+	Succeeded  string    `json:"succeeded,omitempty" protobuf:"bytes,1,opt,name=succeeded"`
+	Failed     string    `json:"failed,omitempty" protobuf:"bytes,2,opt,name=failed"`
+	Skipped    string    `json:"skipped,omitempty" protobuf:"bytes,3,opt,name=skipped"`
+	Completed  string    `json:"completed,omitempty" protobuf:"bytes,4,opt,name=completed"`
+	Any        string    `json:"any,omitempty" protobuf:"bytes,5,opt,name=any"`
+	Successful string    `json:"successful,omitempty" protobuf:"bytes,9,opt,name=successful"`
+	And        []Depends `json:"and,omitempty" protobuf:"bytes,6,rep,name=and"`
+	Or         []Depends `json:"or,omitempty" protobuf:"bytes,7,rep,name=or"`
+	Not        *Depends  `json:"not,omitempty" protobuf:"bytes,8,rep,name=not"`
 }
 
 var _ TemplateHolder = &DAGTask{}

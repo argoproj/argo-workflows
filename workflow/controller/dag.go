@@ -339,7 +339,9 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 	// connectDependencies is a helper to connect our dependencies to current task as children
 	connectDependencies := func(taskNodeName string) {
-		if len(task.Dependencies) == 0 || taskGroupNode != nil {
+		taskDependencies := getTaskDependencies(depends, dagCtx)
+		woc.log.Infof("SIMON Task dependencies of '%s' are '%s'", task.Name, taskDependencies)
+		if len(taskDependencies) == 0 || taskGroupNode != nil {
 			// if we had no dependencies, then we are a root task, and we should connect the
 			// boundary node as our parent
 			if taskGroupNode == nil {
@@ -350,7 +352,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 
 		} else {
 			// Otherwise, add all outbound nodes of our dependencies as parents to this node
-			for _, depName := range task.Dependencies {
+			for _, depName := range taskDependencies {
 				depNode := dagCtx.GetTaskNode(depName)
 				outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
 				woc.log.Infof("DAG outbound nodes of %s are %s", depNode, outboundNodeIDs)
@@ -649,4 +651,50 @@ func getTaskDepends(dagTask *wfv1.DAGTask) (*wfv1.Depends, error) {
 	}
 
 	return nil, nil
+}
+
+func getTaskDependencies(logic *wfv1.Depends, dagCtx *dagContext) []string {
+	if logic == nil {
+		return []string{}
+	}
+
+	// Single dependency case (base cases)
+	if logic.Succeeded != "" {
+		return []string{logic.Succeeded}
+	}
+	if logic.Failed != "" {
+		return []string{logic.Failed}
+	}
+	if logic.Skipped != "" {
+		return []string{logic.Skipped}
+	}
+	if logic.Completed != "" {
+		return []string{logic.Completed}
+	}
+	if logic.Any != "" {
+		return []string{logic.Any}
+	}
+	if logic.Successful != "" {
+		return []string{logic.Successful}
+	}
+
+	// Multi-dependency case (recursive cases)
+	if len(logic.And) > 0 {
+		var out []string
+		for _, node := range logic.And {
+			out = append(out, getTaskDependencies(&node, dagCtx)...)
+		}
+		return out
+	}
+	if len(logic.Or) > 0 {
+		var out []string
+		for _, node := range logic.Or {
+			out = append(out, getTaskDependencies(&node, dagCtx)...)
+		}
+		return out
+	}
+	if logic.Not != nil {
+		return getTaskDependencies(logic.Not, dagCtx)
+	}
+	return []string{}
 }
