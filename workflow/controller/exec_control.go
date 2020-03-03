@@ -25,6 +25,24 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 		// Skip any pod which are already completed
 		return nil
 	case apiv1.PodPending:
+		// Check if we are currently shutting down
+		if woc.wf.Spec.Shutdown != "" {
+			// Only delete pods that are not part of an onExit handler if we are "Stopping" or all pods if we are "Terminating"
+			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
+			if woc.wf.Spec.Shutdown == wfv1.ShutdownStrategyTerminate || (woc.wf.Spec.Shutdown == wfv1.ShutdownStrategyStop && !onExitPod) {
+				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.wf.Spec.Shutdown)
+				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
+				if err == nil {
+					wfNodesLock.Lock()
+					defer wfNodesLock.Unlock()
+					node := woc.wf.Status.Nodes[pod.Name]
+					woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("workflow shutdown with strategy:  %s", woc.wf.Spec.Shutdown))
+					return nil
+				}
+				// If we fail to delete the pod, fall back to setting the annotation
+				woc.log.Warnf("Failed to delete %s/%s: %v", pod.Namespace, pod.Name, err)
+			}
+		}
 		// Check if we are past the workflow deadline. If we are, and the pod is still pending
 		// then we should simply delete it and mark the pod as Failed
 		if woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline) {
@@ -34,13 +52,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 				wfNodesLock.Lock()
 				defer wfNodesLock.Unlock()
 				node := woc.wf.Status.Nodes[pod.Name]
-				var message string
-				if woc.workflowDeadline.IsZero() {
-					message = "terminated"
-				} else {
-					message = fmt.Sprintf("step exceeded workflow deadline %s", *woc.workflowDeadline)
-				}
-				woc.markNodePhase(node.Name, wfv1.NodeFailed, message)
+				woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("step exceeded workflow deadline %s", *woc.workflowDeadline))
 				return nil
 			}
 			// If we fail to delete the pod, fall back to setting the annotation

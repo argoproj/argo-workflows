@@ -970,6 +970,9 @@ message WorkflowSpec {
   // Optional: Defaults to empty.
   // +optional
   optional k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec podDisruptionBudget = 31;
+
+  // Shutdown will shutdown the workflow according to its ShutdownStrategy
+  optional string shutdown = 32;
 }
 
 // WorkflowStatus contains overall status information about a workflow

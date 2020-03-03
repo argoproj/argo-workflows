@@ -44,6 +44,10 @@ export class WorkflowsService {
         return requests.put(`api/v1/workflows/${namespace}/${name}/resume`).then(res => res.body as Workflow);
     }
 
+    public stop(name: string, namespace: string) {
+        return requests.put(`api/v1/workflows/${namespace}/${name}/stop`).then(res => res.body as Workflow);
+    }
+
     public terminate(name: string, namespace: string) {
         return requests.put(`api/v1/workflows/${namespace}/${name}/terminate`).then(res => res.body as Workflow);
     }

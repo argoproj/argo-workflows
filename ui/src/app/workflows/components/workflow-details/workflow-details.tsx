@@ -118,6 +118,12 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                         action: () => this.resumeWorkflow(ctx)
                                     },
                                     {
+                                        title: 'Stop',
+                                        iconClassName: 'fa fa-stop-circle',
+                                        disabled: !Utils.isWorkflowRunning(this.state.workflow),
+                                        action: () => this.stopWorkflow(ctx)
+                                    },
+                                    {
                                         title: 'Terminate',
                                         iconClassName: 'fa fa-times-circle',
                                         disabled: !Utils.isWorkflowRunning(this.state.workflow),
@@ -212,6 +218,21 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
             .catch(error => {
                 this.appContext.apis.notifications.show({
                     content: 'Unable to delete workflow',
+                    type: NotificationType.Error
+                });
+            });
+    }
+
+    private stopWorkflow(ctx: ContextApis) {
+        if (!confirm('Are you sure you want to stop this workflow?')) {
+            return;
+        }
+        services.workflows
+            .stop(this.props.match.params.name, this.props.match.params.namespace)
+            .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
+            .catch(error => {
+                this.appContext.apis.notifications.show({
+                    content: 'Unable to terminate workflow',
                     type: NotificationType.Error
                 });
             });

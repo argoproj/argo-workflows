@@ -11,6 +11,7 @@ metadata:
   generateName: dag-diamond-
 spec:
   entrypoint: diamond
+  onExit: exit
   templates:
   - name: diamond
     dag:
@@ -42,3 +43,8 @@ spec:
     container:
       image: alpine:3.7
       command: [echo, "{{inputs.parameters.message}}"]
+
+  - name: exit
+    container:
+      image: alpine:3.7
+      command: [echo, "one exit"]

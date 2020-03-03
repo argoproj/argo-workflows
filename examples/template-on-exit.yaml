@@ -23,7 +23,7 @@ spec:
         - - name: stepA
             onExit: exitContainer
             template: whalesay
-        - - name: stepB
+          - name: stepB
             onExit: exitContainer
             template: whalesay
 
