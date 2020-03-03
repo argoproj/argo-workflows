@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"time"
@@ -70,21 +69,46 @@ func (d *DockerExecutor) CopyFile(containerID string, sourcePath string, destPat
 	return nil
 }
 
+type multiReadCloser struct {
+	io.Reader
+	closers map[string]io.Closer
+}
+
+func (mc *multiReadCloser) Close() error {
+	var lastErr error
+	for name, c := range mc.closers {
+		err := c.Close()
+		if err != nil {
+			log.Errorf("error closing docker logs %s pipe , %v", name, err)
+			lastErr = err
+		}
+	}
+	return lastErr
+}
+
 func (d *DockerExecutor) GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error) {
 	cmd := exec.Command("docker", "logs", containerID)
 	log.Info(cmd.Args)
 
-	reader, err := cmd.StdoutPipe()
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
+
+	reader := stdout
 
 	if combinedOutput {
 		stderr, err := cmd.StderrPipe()
 		if err != nil {
 			return nil, errors.InternalWrapError(err)
 		}
-		reader = ioutil.NopCloser(io.MultiReader(reader, stderr))
+		reader = &multiReadCloser{
+			Reader: io.MultiReader(stdout, stderr),
+			closers: map[string]io.Closer{
+				"stdout": stdout,
+				"stderr": stderr,
+			},
+		}
 	}
 
 	err = cmd.Start()
