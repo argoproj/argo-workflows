@@ -305,8 +305,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	node := dagCtx.GetTaskNode(taskName)
 	task := dagCtx.getTask(taskName)
 	if node != nil && node.Completed() {
-		// Run the node's onExit node, if any. Only leaf nodes will have their onExit nodes executed here. Nodes that
-		// have dependencies will have their onExit nodes executed below
+		// Run the node's onExit node, if any.
 		hasOnExitNode, onExitNode, err := woc.runOnExitNode(task.Name, task.OnExit, dagCtx.boundaryID, dagCtx.tmplCtx)
 		if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
 			// The onExit node is either not complete or has errored out, return.
@@ -320,25 +319,15 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	nodeName := dagCtx.taskNodeName(taskName)
 	for _, depName := range task.Dependencies {
 		depNode := dagCtx.GetTaskNode(depName)
-		if depNode != nil {
-			if depNode.Completed() {
-				depTask := dagCtx.getTask(depName)
-				// Run the node's onExit node, if any. Only nodes that have dependencies will have their onExit nodes
-				// executed here. Leaf nodes will have their onExit nodes executed above
-				hasOnExitNode, onExitNode, err := woc.runOnExitNode(depTask.Name, depTask.OnExit, dagCtx.boundaryID, dagCtx.tmplCtx)
-				if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
-					// The onExit node is either not complete or has errored out, return.
-					return
-				}
-
-				if !depNode.Successful() && !depTask.ContinuesOn(depNode.Phase) {
-					dependenciesSuccessful = false
-				}
-				continue
+		if depNode != nil && depNode.Completed() {
+			depTask := dagCtx.getTask(depName)
+			if !depNode.Successful() && !depTask.ContinuesOn(depNode.Phase) {
+				dependenciesSuccessful = false
 			}
+		} else {
+			dependenciesCompleted = false
+			dependenciesSuccessful = false
 		}
-		dependenciesCompleted = false
-		dependenciesSuccessful = false
 		// recurse our dependency
 		woc.executeDAGTask(dagCtx, depName)
 	}
