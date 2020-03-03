@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"k8s.io/client-go/util/workqueue"
 	"testing"
 	"time"
 
@@ -12,8 +11,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
@@ -60,6 +61,7 @@ func newController() *WorkflowController {
 		completedPods:  make(chan string, 512),
 		wftmplInformer: wftmplInformer,
 		wfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfArchive:      sqldb.NullWorkflowArchive,
 	}
 }
 
@@ -72,13 +74,27 @@ func unmarshalWF(yamlStr string) *wfv1.Workflow {
 	return &wf
 }
 
-// makePodsRunning acts like a pod controller and simulates the transition of pods transitioning into a running state
-func makePodsRunning(t *testing.T, kubeclientset kubernetes.Interface, namespace string) {
+func unmarshalWFTmpl(yamlStr string) *wfv1.WorkflowTemplate {
+	var wftmpl wfv1.WorkflowTemplate
+	err := yaml.Unmarshal([]byte(yamlStr), &wftmpl)
+	if err != nil {
+		panic(err)
+	}
+	return &wftmpl
+}
+
+// makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
+func makePodsPhase(t *testing.T, phase apiv1.PodPhase, kubeclientset kubernetes.Interface, namespace string) {
 	podcs := kubeclientset.CoreV1().Pods(namespace)
 	pods, err := podcs.List(metav1.ListOptions{})
 	assert.NoError(t, err)
 	for _, pod := range pods.Items {
-		pod.Status.Phase = apiv1.PodRunning
-		_, _ = podcs.Update(&pod)
+		if pod.Status.Phase == "" {
+			pod.Status.Phase = phase
+			if phase == apiv1.PodFailed {
+				pod.Status.Message = "Pod failed"
+			}
+			_, _ = podcs.Update(&pod)
+		}
 	}
 }

@@ -1,0 +1,95 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.workflow-details {
+
+    &, & > .row {
+        height: calc(100vh - 2 * #{$top-bar-height});
+    }
+
+    &__content {
+        padding: 1em;
+    }
+
+    &__topbar-buttons {
+        display: inline-block;
+        white-space: nowrap;
+
+        a {
+            vertical-align: middle;
+            text-align: center;
+            line-height: 1em;
+            padding: 0.5em;
+            font-size: 1.1em;
+            border: 1px solid transparent;
+            display: inline-block;
+            width: 2em;
+            margin-right: 0.5em;
+            color: $argo-color-gray-8;
+    
+            &.active {
+                background-color: $argo-color-gray-3;
+                border: 1px solid $argo-color-gray-4;
+                border-radius: 5px;
+                cursor: default;
+            }
+        }
+    }
+
+    &__graph-container {
+        position: relative;
+        overflow: auto;
+        height: calc(100vh - 2 * #{$top-bar-height});
+        width: 100%;
+        transition: width 0.2s;
+        float: left;
+
+        .workflow-dag {
+            margin: 3.5em auto;
+        }
+        .workflow-timeline {
+            min-height: calc(100vh - 2 * #{$top-bar-height});
+        }
+    }
+
+    &__step-info {
+        min-height: calc(100vh - 2 * #{$top-bar-height});
+        border-left: 1px solid $argo-color-gray-4;
+        width: 0;
+        transition: width 0.2s;
+        float: right
+    }
+
+    &__step-info-close {
+        display: block;
+        position: absolute;
+        cursor: pointer;
+        top: 1em;
+        right: -1em;
+        z-index: 8;
+        border-radius: 50%;
+        color: $argo-color-gray-5;
+        font-size: 20px;
+        padding: 5px;
+
+        @media screen and (max-width: $argo-breakpoint-md) {
+            top: 8px;
+        }
+
+        &:hover {
+            background-color: $argo-color-gray-4;
+        }
+    }
+
+    &--step-node-expanded &__graph-container {
+        width: calc(100% - 570px);
+    }
+
+    &--step-node-expanded &__step-info {
+        width: 570px;
+    }
+
+    &--step-node-expanded &__step-info-close {
+        right: 1em;
+    }
+
+}

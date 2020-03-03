@@ -1,13 +1,11 @@
 package commands
 
 import (
-	"log"
-	"os"
-
-	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 )
 
 func NewResubmitCommand() *cobra.Command {
@@ -16,28 +14,23 @@ func NewResubmitCommand() *cobra.Command {
 		cliSubmitOpts cliSubmitOpts
 	)
 	var command = &cobra.Command{
-		Use:   "resubmit WORKFLOW",
-		Short: "resubmit a workflow",
+		Use:   "resubmit [WORKFLOW...]",
+		Short: "resubmit one or more workflows",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
+			ctx, apiClient := client.NewAPIClient()
+			serviceClient := apiClient.NewWorkflowServiceClient()
+			namespace := client.Namespace()
 
-			namespace, _, err := clientConfig.Namespace()
-			if err != nil {
-				log.Fatal(err)
+			for _, name := range args {
+				created, err := serviceClient.ResubmitWorkflow(ctx, &workflowpkg.WorkflowResubmitRequest{
+					Namespace: namespace,
+					Name:      name,
+					Memoized:  memoized,
+				})
+				errors.CheckError(err)
+				printWorkflow(created, cliSubmitOpts.output, DefaultStatus)
+				waitOrWatch([]string{created.Name}, cliSubmitOpts)
 			}
-
-			wfClient := InitWorkflowClient()
-			wf, err := wfClient.Get(args[0], metav1.GetOptions{})
-			errors.CheckError(err)
-			newWF, err := util.FormulateResubmitWorkflow(wf, memoized)
-			errors.CheckError(err)
-			created, err := util.SubmitWorkflow(wfClient, wfClientset, namespace, newWF, nil)
-			errors.CheckError(err)
-			printWorkflow(created, cliSubmitOpts.output, DefaultStatus)
-			waitOrWatch([]string{created.Name}, cliSubmitOpts)
 		},
 	}
 

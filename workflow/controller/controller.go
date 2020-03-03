@@ -3,12 +3,10 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
-	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -18,19 +16,26 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"upper.io/db.v3/lib/sqlbuilder"
 
 	"github.com/argoproj/argo"
+	"github.com/argoproj/argo/persist/sqldb"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
+	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
+	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/config"
+	"github.com/argoproj/argo/workflow/cron"
 	"github.com/argoproj/argo/workflow/metrics"
-	"github.com/argoproj/argo/workflow/persist/sqldb"
+	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/ttlcontroller"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -38,7 +43,8 @@ import (
 // WorkflowController is the controller for workflow resources
 type WorkflowController struct {
 	// namespace of the workflow controller
-	namespace string
+	namespace        string
+	managedNamespace string
 	// configMap is the name of the config map in which to derive configuration of the controller from
 	configMap string
 	// Config is the workflow controller's configuration
@@ -49,6 +55,7 @@ type WorkflowController struct {
 
 	// cliExecutorImagePullPolicy is the executor imagePullPolicy as specified from the command line
 	cliExecutorImagePullPolicy string
+	containerRuntimeExecutor   string
 
 	// restConfig is used by controller to send a SIGUSR1 to the wait sidecar using remotecommand.NewSPDYExecutor().
 	restConfig    *rest.Config
@@ -56,15 +63,19 @@ type WorkflowController struct {
 	wfclientset   wfclientset.Interface
 
 	// datastructures to support the processing of workflows and workflow pods
-	wfInformer     cache.SharedIndexInformer
-	wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer
-	podInformer    cache.SharedIndexInformer
-	wfQueue        workqueue.RateLimitingInterface
-	podQueue       workqueue.RateLimitingInterface
-	completedPods  chan string
-	gcPods         chan string // pods to be deleted depend on GC strategy
-	throttler      Throttler
-	wfDBctx        sqldb.DBRepository
+	incompleteWfInformer cache.SharedIndexInformer
+	// only complete (i.e. not running) workflows
+	completedWfInformer   cache.SharedIndexInformer
+	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
+	podInformer           cache.SharedIndexInformer
+	wfQueue               workqueue.RateLimitingInterface
+	podQueue              workqueue.RateLimitingInterface
+	completedPods         chan string
+	gcPods                chan string // pods to be deleted depend on GC strategy
+	throttler             Throttler
+	session               sqlbuilder.Database
+	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
+	wfArchive             sqldb.WorkflowArchive
 }
 
 const (
@@ -79,9 +90,11 @@ func NewWorkflowController(
 	restConfig *rest.Config,
 	kubeclientset kubernetes.Interface,
 	wfclientset wfclientset.Interface,
-	namespace,
+	namespace string,
+	managedNamespace string,
 	executorImage,
 	executorImagePullPolicy,
+	containerRuntimeExecutor,
 	configMap string,
 ) *WorkflowController {
 	wfc := WorkflowController{
@@ -90,8 +103,10 @@ func NewWorkflowController(
 		wfclientset:                wfclientset,
 		configMap:                  configMap,
 		namespace:                  namespace,
+		managedNamespace:           managedNamespace,
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
+		containerRuntimeExecutor:   containerRuntimeExecutor,
 		wfQueue:                    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:                   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		completedPods:              make(chan string, 512),
@@ -104,7 +119,7 @@ func NewWorkflowController(
 // MetricsServer starts a prometheus metrics server if enabled in the configmap
 func (wfc *WorkflowController) MetricsServer(ctx context.Context) {
 	if wfc.Config.MetricsConfig.Enabled {
-		informer := util.NewWorkflowInformer(wfc.restConfig, wfc.Config.Namespace, workflowMetricsResyncPeriod, wfc.tweakWorkflowMetricslist)
+		informer := util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowMetricsResyncPeriod, wfc.tweakWorkflowMetricslist)
 		go informer.Run(ctx.Done())
 		registry := metrics.NewWorkflowRegistry(informer)
 		metrics.RunServer(ctx, wfc.Config.MetricsConfig, registry)
@@ -124,13 +139,18 @@ func (wfc *WorkflowController) RunTTLController(ctx context.Context) {
 	ttlCtrl := ttlcontroller.NewController(
 		wfc.restConfig,
 		wfc.wfclientset,
-		wfc.Config.Namespace,
+		wfc.GetManagedNamespace(),
 		wfc.Config.InstanceID,
 	)
 	err := ttlCtrl.Run(ctx.Done())
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (wfc *WorkflowController) RunCronController(ctx context.Context) {
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID)
+	cronController.Run(ctx)
 }
 
 // Run starts an Workflow resource controller
@@ -147,20 +167,23 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 		return
 	}
 
-	wfc.wfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.Config.Namespace, workflowResyncPeriod, wfc.tweakWorkflowlist)
+	wfc.incompleteWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.incompleteWorkflowTweakListOptions)
+	wfc.completedWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.completedWorkflowTweakListOptions)
 	wfc.wftmplInformer = wfc.newWorkflowTemplateInformer()
 
 	wfc.addWorkflowInformerHandler()
 	wfc.podInformer = wfc.newPodInformer()
 
-	go wfc.wfInformer.Run(ctx.Done())
+	go wfc.incompleteWfInformer.Run(ctx.Done())
+	go wfc.completedWfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
 	go wfc.podLabeler(ctx.Done())
 	go wfc.podGarbageCollector(ctx.Done())
+	go wfc.periodicWorkflowGarbageCollector(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
-	for _, informer := range []cache.SharedIndexInformer{wfc.wfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
+	for _, informer := range []cache.SharedIndexInformer{wfc.incompleteWfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
 		if !cache.WaitForCacheSync(ctx.Done(), informer.HasSynced) {
 			log.Error("Timed out waiting for caches to sync")
 			return
@@ -226,6 +249,67 @@ func (wfc *WorkflowController) podGarbageCollector(stopCh <-chan struct{}) {
 	}
 }
 
+func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan struct{}) {
+	value, ok := os.LookupEnv("WORKFLOW_GC_PERIOD")
+	periodicity := 5 * time.Minute
+	if ok {
+		var err error
+		periodicity, err = time.ParseDuration(value)
+		if err != nil {
+			log.WithFields(log.Fields{"err": err, "value": value}).Fatal("Failed to parse WORKFLOW_GC_PERIOD")
+		}
+	}
+	log.Infof("Performing periodic GC every %v", periodicity)
+	ticker := time.NewTicker(periodicity)
+	for {
+		select {
+		case <-stopCh:
+			ticker.Stop()
+			return
+		case <-ticker.C:
+			if wfc.offloadNodeStatusRepo.IsEnabled() {
+				log.Info("Performing periodic workflow GC")
+				oldRecords, err := wfc.offloadNodeStatusRepo.ListOldOffloads(wfc.GetManagedNamespace())
+				if err != nil {
+					log.WithField("err", err).Error("Failed to list old offloaded nodes")
+					continue
+				}
+				if len(oldRecords) == 0 {
+					log.Info("Zero old offloads, nothing to do")
+					continue
+				}
+				// get every lives workflow (1000s) into a map
+				liveOffloadNodeStatusVersions := make(map[types.UID]string)
+				incomplete, err := util.NewWorkflowLister(wfc.incompleteWfInformer).List()
+				if err != nil {
+					log.WithField("err", err).Error("Failed to list incomplete workflows")
+					continue
+				}
+				completed, err := util.NewWorkflowLister(wfc.completedWfInformer).List()
+				if err != nil {
+					log.WithField("err", err).Error("Failed to list completed workflows")
+					continue
+				}
+				for _, wf := range append(completed, incomplete...) {
+					// this could be the empty string - as it is no longer offloaded
+					liveOffloadNodeStatusVersions[wf.UID] = wf.Status.OffloadNodeStatusVersion
+				}
+				log.WithFields(log.Fields{"len_wfs": len(liveOffloadNodeStatusVersions), "len_old_offloads": len(oldRecords)}).Info("Deleting old offloads that are not live")
+				for _, record := range oldRecords {
+					// this could be empty string
+					nodeStatusVersion, ok := liveOffloadNodeStatusVersions[types.UID(record.UID)]
+					if !ok || nodeStatusVersion != record.Version {
+						err := wfc.offloadNodeStatusRepo.Delete(record.UID, record.Version)
+						if err != nil {
+							log.WithField("err", err).Error("Failed to delete offloaded nodes")
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 func (wfc *WorkflowController) runWorker() {
 	for wfc.processNextItem() {
 	}
@@ -239,7 +323,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	}
 	defer wfc.wfQueue.Done(key)
 
-	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key.(string))
+	obj, exists, err := wfc.incompleteWfInformer.GetIndexer().GetByKey(key.(string))
 	if err != nil {
 		log.Errorf("Failed to get workflow '%s' from informer index: %+v", key, err)
 		return true
@@ -279,24 +363,26 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	// Loading running workflow from persistence storage if NodeStatusOffload enabled
-	if wfc.wfDBctx != nil && wfc.wfDBctx.IsNodeStatusOffload() {
-		wfDB, err := wfc.wfDBctx.Get(string(wf.UID))
-		if err != nil {
-			log.Warnf("DB get operation failed. %v", err)
-		}
-		if wfDB != nil && wfDB.UID != "" {
-			wf = wfDB
-		}
-	}
-
 	woc := newWorkflowOperationCtx(wf, wfc)
 
+	// Loading running workflow from persistence storage if nodeStatusOffload enabled
+	if wf.Status.IsOffloadNodeStatus() {
+		nodes, err := wfc.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+		if err != nil {
+			woc.log.Errorf("getting offloaded nodes failed: %v", err)
+			woc.markWorkflowError(err, true)
+			woc.persistUpdates()
+			wfc.throttler.Remove(key)
+			return true
+		}
+		woc.wf.Status.Nodes = nodes
+	}
+
 	// Decompress the node if it is compressed
-	err = util.DecompressWorkflow(woc.wf)
+	err = packer.DecompressWorkflow(woc.wf)
 	if err != nil {
-		woc.log.Warnf("workflow decompression failed: %v", err)
-		woc.markWorkflowFailed(fmt.Sprintf("workflow decompression failed: %s", err.Error()))
+		woc.log.Errorf("workflow decompression failed: %v", err)
+		woc.markWorkflowError(err, true)
 		woc.persistUpdates()
 		wfc.throttler.Remove(key)
 		return true
@@ -379,15 +465,22 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 	return true
 }
 
-func (wfc *WorkflowController) tweakWorkflowlist(options *metav1.ListOptions) {
+func (wfc *WorkflowController) incompleteWorkflowTweakListOptions(options *metav1.ListOptions) {
+	wfc.tweakListOptions(selection.NotIn, options)
+}
+
+func (wfc *WorkflowController) completedWorkflowTweakListOptions(options *metav1.ListOptions) {
+	wfc.tweakListOptions(selection.In, options)
+}
+
+func (wfc *WorkflowController) tweakListOptions(completedOp selection.Operator, options *metav1.ListOptions) {
 	options.FieldSelector = fields.Everything().String()
-	// completed notin (true)
-	incompleteReq, err := labels.NewRequirement(common.LabelKeyCompleted, selection.NotIn, []string{"true"})
+	requirement, err := labels.NewRequirement(common.LabelKeyCompleted, completedOp, []string{"true"})
 	if err != nil {
 		panic(err)
 	}
 	labelSelector := labels.NewSelector().
-		Add(*incompleteReq).
+		Add(*requirement).
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 	options.LabelSelector = labelSelector.String()
 }
@@ -415,7 +508,7 @@ func getWfPriority(obj interface{}) (int32, time.Time) {
 }
 
 func (wfc *WorkflowController) addWorkflowInformerHandler() {
-	wfc.wfInformer.AddEventHandler(
+	wfc.incompleteWfInformer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(obj)
@@ -449,7 +542,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 	c := wfc.kubeclientset.CoreV1().RESTClient()
 	resource := "pods"
-	namespace := wfc.Config.Namespace
+	namespace := wfc.GetManagedNamespace()
 	// completed=false
 	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
 	labelSelector := labels.NewSelector().
@@ -507,29 +600,19 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 }
 
 func (wfc *WorkflowController) newWorkflowTemplateInformer() wfextvv1alpha1.WorkflowTemplateInformer {
-	var informerFactory wfextv.SharedInformerFactory
-	if wfc.Config.Namespace != "" {
-		informerFactory = wfextv.NewFilteredSharedInformerFactory(wfc.wfclientset, workflowTemplateResyncPeriod, wfc.Config.Namespace, func(opts *metav1.ListOptions) {})
-	} else {
-		informerFactory = wfextv.NewSharedInformerFactory(wfc.wfclientset, workflowTemplateResyncPeriod)
-	}
-	return informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
+	return wfextv.NewSharedInformerFactoryWithOptions(wfc.wfclientset, workflowTemplateResyncPeriod, wfextv.WithNamespace(wfc.GetManagedNamespace())).Argoproj().V1alpha1().WorkflowTemplates()
 }
 
-func (wfc *WorkflowController) createPersistenceContext() (*sqldb.WorkflowDBContext, error) {
-
-	var wfDBCtx sqldb.WorkflowDBContext
-	var err error
-
-	//wfDBCtx.TableName = wfc.Config.Persistence.TableName
-	wfDBCtx.NodeStatusOffload = wfc.Config.Persistence.NodeStatusOffload
-
-	wfDBCtx.Session, wfDBCtx.TableName, err = sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, wfc.Config.Persistence)
-
-	if err != nil {
-		log.Errorf("Error in createPersistenceContext. %v", err)
-		return nil, err
+func (wfc *WorkflowController) GetManagedNamespace() string {
+	if wfc.managedNamespace != "" {
+		return wfc.managedNamespace
 	}
+	return wfc.Config.Namespace
+}
 
-	return &wfDBCtx, nil
+func (wfc *WorkflowController) GetContainerRuntimeExecutor() string {
+	if wfc.containerRuntimeExecutor != "" {
+		return wfc.containerRuntimeExecutor
+	}
+	return wfc.Config.ContainerRuntimeExecutor
 }

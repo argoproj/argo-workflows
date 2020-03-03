@@ -1,0 +1,41 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "pkg/apiclient/info/info.proto",
+    "version": "version not set"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/v1/info": {
+      "get": {
+        "operationId": "GetInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/info.InfoResponse"
+            }
+          }
+        },
+        "tags": [
+          "InfoService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "info.InfoResponse": {
+      "type": "object",
+      "properties": {
+        "managedNamespace": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

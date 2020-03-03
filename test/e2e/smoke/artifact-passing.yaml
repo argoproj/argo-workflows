@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: artifact-passing
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: artifact-example
+  templates:
+    - name: artifact-example
+      steps:
+        - - name: generate-artifact
+            template: generate-message
+        - - name: consume-artifact
+            template: print-message
+            arguments:
+              artifacts:
+                - name: message
+                  from: "{{steps.generate-artifact.outputs.artifacts.hello-art}}"
+
+    - name: generate-message
+      container:
+        image: cowsay:v1
+        command: [sh, -c]
+        args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+        imagePullPolicy: IfNotPresent
+      outputs:
+        artifacts:
+          - name: hello-art
+            path: /tmp/hello_world.txt
+
+    - name: print-message
+      inputs:
+        artifacts:
+          - name: message
+            path: /tmp/message
+      container:
+        image: cowsay:v1
+        imagePullPolicy: IfNotPresent
+        command: [sh, -c]
+        args: ["cat /tmp/message"]

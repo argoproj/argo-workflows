@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/robfig/cron"
+
 	"github.com/valyala/fasttemplate"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
@@ -49,9 +51,9 @@ type templateValidationCtx struct {
 
 func newTemplateValidationCtx(wf *wfv1.Workflow, opts ValidateOpts) *templateValidationCtx {
 	globalParams := make(map[string]string)
-	globalParams[common.GlobalVarWorkflowName] = placeholderValue
-	globalParams[common.GlobalVarWorkflowNamespace] = placeholderValue
-	globalParams[common.GlobalVarWorkflowUID] = placeholderValue
+	globalParams[common.GlobalVarWorkflowName] = placeholderGenerator.NextPlaceholder()
+	globalParams[common.GlobalVarWorkflowNamespace] = placeholderGenerator.NextPlaceholder()
+	globalParams[common.GlobalVarWorkflowUID] = placeholderGenerator.NextPlaceholder()
 	return &templateValidationCtx{
 		ValidateOpts: opts,
 		globalParams: globalParams,
@@ -61,19 +63,20 @@ func newTemplateValidationCtx(wf *wfv1.Workflow, opts ValidateOpts) *templateVal
 }
 
 const (
-	// placeholderValue is an arbitrary string to perform mock substitution of variables
-	placeholderValue = "placeholder"
-
 	// anyItemMagicValue is a magic value set in addItemsToScope() and checked in
 	// resolveAllVariables() to determine if any {{item.name}} can be accepted during
 	// variable resolution (to support withParam)
 	anyItemMagicValue = "item.*"
 )
 
+var (
+	placeholderGenerator = common.NewPlaceholderGenerator()
+)
+
 type FakeArguments struct{}
 
 func (args *FakeArguments) GetParameterByName(name string) *wfv1.Parameter {
-	s := placeholderValue
+	s := placeholderGenerator.NextPlaceholder()
 	return &wfv1.Parameter{Name: name, Value: &s}
 }
 
@@ -107,16 +110,16 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 			if param.Value != nil {
 				ctx.globalParams["workflow.parameters."+param.Name] = *param.Value
 			} else {
-				ctx.globalParams["workflow.parameters."+param.Name] = placeholderValue
+				ctx.globalParams["workflow.parameters."+param.Name] = placeholderGenerator.NextPlaceholder()
 			}
 		}
 	}
 
 	for k := range wf.ObjectMeta.Annotations {
-		ctx.globalParams["workflow.annotations."+k] = placeholderValue
+		ctx.globalParams["workflow.annotations."+k] = placeholderGenerator.NextPlaceholder()
 	}
 	for k := range wf.ObjectMeta.Labels {
-		ctx.globalParams["workflow.labels."+k] = placeholderValue
+		ctx.globalParams["workflow.labels."+k] = placeholderGenerator.NextPlaceholder()
 	}
 
 	if wf.Spec.Priority != nil {
@@ -132,7 +135,8 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	}
 	if wf.Spec.OnExit != "" {
 		// now when validating onExit, {{workflow.status}} is now available as a global
-		ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderValue
+		ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderGenerator.NextPlaceholder()
+		ctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
 		_, err = ctx.validateTemplateHolder(&wfv1.Template{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
 		if err != nil {
 			return err
@@ -172,6 +176,34 @@ func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNa
 	return nil
 }
 
+// ValidateCronWorkflow validates a CronWorkflow
+func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cronWf *wfv1.CronWorkflow) error {
+	if _, err := cron.ParseStandard(cronWf.Spec.Schedule); err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "cron schedule is malformed: %s", err)
+	}
+
+	switch cronWf.Spec.ConcurrencyPolicy {
+	case wfv1.AllowConcurrent, wfv1.ForbidConcurrent, wfv1.ReplaceConcurrent, "":
+		// Do nothing
+	default:
+		return errors.Errorf(errors.CodeBadRequest, "'%s' is not a valid concurrencyPolicy", cronWf.Spec.ConcurrencyPolicy)
+	}
+
+	if cronWf.Spec.StartingDeadlineSeconds != nil && *cronWf.Spec.StartingDeadlineSeconds < 0 {
+		return errors.Errorf(errors.CodeBadRequest, "startingDeadlineSeconds must be positive")
+	}
+
+	wf, err := common.ConvertCronWorkflowToWorkflow(cronWf)
+	if err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "cannot convert to Workflow: %s", err)
+	}
+	err = ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+	if err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "cannot validate Workflow: %s", err)
+	}
+	return nil
+}
+
 func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider, extraScope map[string]interface{}) error {
 	tmplID := getTemplateID(tmpl)
 	_, ok := ctx.results[tmplID]
@@ -180,10 +212,6 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 		return nil
 	}
 	ctx.results[tmplID] = true
-
-	if hasArguments(tmpl) {
-		return errors.Errorf(errors.CodeBadRequest, "templates.%s.arguments must be used with template or templateRef", tmpl.Name)
-	}
 
 	if err := validateTemplateType(tmpl); err != nil {
 		return err
@@ -195,8 +223,8 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 	}
 	localParams := make(map[string]string)
 	if tmpl.IsPodType() {
-		localParams[common.LocalVarPodName] = placeholderValue
-		scope[common.LocalVarPodName] = placeholderValue
+		localParams[common.LocalVarPodName] = placeholderGenerator.NextPlaceholder()
+		scope[common.LocalVarPodName] = placeholderGenerator.NextPlaceholder()
 	}
 	if tmpl.IsLeaf() {
 		for _, art := range tmpl.Outputs.Artifacts {
@@ -429,9 +457,6 @@ func validateNonLeaf(tmpl *wfv1.Template) error {
 	if tmpl.ActiveDeadlineSeconds != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds is only valid for leaf templates", tmpl.Name)
 	}
-	if tmpl.RetryStrategy != nil {
-		return errors.Errorf(errors.CodeBadRequest, "templates.%s.retryStrategy is only valid for container templates", tmpl.Name)
-	}
 	return nil
 }
 
@@ -461,17 +486,21 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		}
 	}
 	if tmpl.Resource != nil {
-		switch tmpl.Resource.Action {
-		case "get", "create", "apply", "delete", "replace", "patch":
-			// OK
-		default:
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.action must be one of: get, create, apply, delete, replace, patch", tmpl.Name)
+		if !placeholderGenerator.IsPlaceholder(tmpl.Resource.Action) {
+			switch tmpl.Resource.Action {
+			case "get", "create", "apply", "delete", "replace", "patch":
+				// OK
+			default:
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.action must be one of: get, create, apply, delete, replace, patch", tmpl.Name)
+			}
 		}
-		// Try to unmarshal the given manifest.
-		obj := unstructured.Unstructured{}
-		err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)
+		if !placeholderGenerator.IsPlaceholder(tmpl.Resource.Manifest) {
+			// Try to unmarshal the given manifest.
+			obj := unstructured.Unstructured{}
+			err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
+			if err != nil {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)
+			}
 		}
 	}
 	if tmpl.ActiveDeadlineSeconds != nil {
@@ -651,7 +680,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 		if param.GlobalName != "" && !isParameter(param.GlobalName) {
 			globalParamName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
 			scope[globalParamName] = true
-			ctx.globalParams[globalParamName] = placeholderValue
+			ctx.globalParams[globalParamName] = placeholderGenerator.NextPlaceholder()
 		}
 	}
 	for _, art := range tmpl.Outputs.Artifacts {
@@ -659,7 +688,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 		if art.GlobalName != "" && !isParameter(art.GlobalName) {
 			globalArtName := fmt.Sprintf("workflow.outputs.artifacts.%s", art.GlobalName)
 			scope[globalArtName] = true
-			ctx.globalParams[globalArtName] = placeholderValue
+			ctx.globalParams[globalArtName] = placeholderGenerator.NextPlaceholder()
 		}
 	}
 	if aggregate {
@@ -1032,10 +1061,6 @@ func isValidParamOrArtifactName(p string) []string {
 		return append(errs, "Parameter/Artifact name must consist of alpha-numeric characters, '_' or '-' e.g. my_param_1, MY-PARAM-1")
 	}
 	return errs
-}
-
-func hasArguments(tmpl *wfv1.Template) bool {
-	return len(tmpl.Arguments.Parameters) > 0 || len(tmpl.Arguments.Artifacts) > 0
 }
 
 const (

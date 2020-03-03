@@ -1,0 +1,34 @@
+# This is an auto-generated file. DO NOT EDIT
+- op: replace
+  path: /spec/template/spec/containers/0/imagePullPolicy
+  value: Never
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: --loglevel
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: debug
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: --executor-image-pull-policy
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: Never
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: --container-runtime-executor
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: pns
+- op: add
+  path: /spec/template/spec/containers/0/env
+  value:
+    # these are designed to force offloading on and make GC happen regularly so we shake out any bugs
+    - name: ALWAYS_OFFLOAD_NODE_STATUS
+      value: "true"
+    - name: OFFLOAD_NODE_STATUS_TTL
+      value: 30s
+    - name: WORKFLOW_GC_PERIOD
+      value: 30s
+    - name: UPPERIO_DB_DEBUG
+      value: "1"

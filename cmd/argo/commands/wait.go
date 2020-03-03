@@ -1,16 +1,20 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sync"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 func NewWaitCommand() *cobra.Command {
@@ -18,14 +22,9 @@ func NewWaitCommand() *cobra.Command {
 		ignoreNotFound bool
 	)
 	var command = &cobra.Command{
-		Use:   "wait WORKFLOW1 WORKFLOW2..,",
-		Short: "waits for a workflow to complete",
+		Use:   "wait [WORKFLOW...]",
+		Short: "waits for workflows to complete",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
-			InitWorkflowClient()
 			WaitWorkflows(args, ignoreNotFound, false)
 		},
 	}
@@ -37,14 +36,19 @@ func NewWaitCommand() *cobra.Command {
 func WaitWorkflows(workflowNames []string, ignoreNotFound, quiet bool) {
 	var wg sync.WaitGroup
 	wfSuccessStatus := true
-	for _, workflowName := range workflowNames {
+
+	ctx, apiClient := client.NewAPIClient()
+	serviceClient := apiClient.NewWorkflowServiceClient()
+	namespace := client.Namespace()
+
+	for _, name := range workflowNames {
 		wg.Add(1)
 		go func(name string) {
-			if !waitOnOne(name, ignoreNotFound, quiet) {
+			if !waitOnOne(serviceClient, ctx, name, namespace, ignoreNotFound, quiet) {
 				wfSuccessStatus = false
 			}
 			wg.Done()
-		}(workflowName)
+		}(name)
 
 	}
 	wg.Wait()
@@ -54,35 +58,35 @@ func WaitWorkflows(workflowNames []string, ignoreNotFound, quiet bool) {
 	}
 }
 
-func waitOnOne(workflowName string, ignoreNotFound, quiet bool) bool {
-	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", workflowName))
-	opts := metav1.ListOptions{
-		FieldSelector: fieldSelector.String(),
-	}
-
-	_, err := wfClient.Get(workflowName, metav1.GetOptions{})
+func waitOnOne(client workflowpkg.WorkflowServiceClient, ctx context.Context, wfName, namespace string, ignoreNotFound, quiet bool) bool {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	stream, err := client.WatchWorkflows(ctx, &workflowpkg.WatchWorkflowsRequest{
+		Namespace: namespace,
+		ListOptions: &metav1.ListOptions{
+			FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", wfName)).String(),
+		},
+	})
 	if err != nil {
 		if apierr.IsNotFound(err) && ignoreNotFound {
 			return true
 		}
 		errors.CheckError(err)
+		return false
 	}
-
-	watchIf, err := wfClient.Watch(opts)
-	errors.CheckError(err)
-	defer watchIf.Stop()
 	for {
-		next := <-watchIf.ResultChan()
-		wf, _ := next.Object.(*wfv1.Workflow)
-		if wf == nil {
-			watchIf.Stop()
-			watchIf, err = wfClient.Watch(opts)
+		event, err := stream.Recv()
+		if err != nil {
 			errors.CheckError(err)
+			break
+		}
+		wf := event.Object
+		if wf == nil {
 			continue
 		}
 		if !wf.Status.FinishedAt.IsZero() {
 			if !quiet {
-				fmt.Printf("%s %s at %v\n", workflowName, wf.Status.Phase, wf.Status.FinishedAt)
+				fmt.Printf("%s %s at %v\n", wfName, wf.Status.Phase, wf.Status.FinishedAt)
 			}
 			if wf.Status.Phase == wfv1.NodeFailed || wf.Status.Phase == wfv1.NodeError {
 				return false
@@ -90,4 +94,5 @@ func waitOnOne(workflowName string, ignoreNotFound, quiet bool) bool {
 			return true
 		}
 	}
+	return true
 }
