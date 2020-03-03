@@ -571,7 +571,8 @@ func (woc *wfOperationCtx) expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error)
 }
 
 // evaluateDependsLogic returns whether a node should execute and proceed. proceed means that all of its dependencies are
-// completed and execute means that given the results of its dependencies, this node should execute
+// completed and execute means that given the results of its dependencies, this node should execute. Therefore the logic
+// for execution is the material conditional: proceed -> execute
 func evaluateDependsLogic(logic wfv1.Depends, dagCtx *dagContext) (bool, bool) {
 	// Single dependency case (base cases)
 	if logic.Succeeded != "" {
