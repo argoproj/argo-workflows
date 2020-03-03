@@ -20,7 +20,7 @@ brew install argoproj/tap/argo
 And via `curl`
 ```sh
 # Download the binary
-curl -sLO https://github.com/argoproj/argo/releases/download/v2.5.2/argo-darwin-amd64
+curl -sLO https://github.com/argoproj/argo/releases/download/v2.6.0/argo-darwin-amd64
 
 # Make binary executable
 chmod +x argo-darwin-amd64
@@ -37,7 +37,7 @@ argo version
 Available via `curl`
 ```sh
 # Download the binary
-curl -sLO https://github.com/argoproj/argo/releases/download/v2.5.2/argo-linux-amd64
+curl -sLO https://github.com/argoproj/argo/releases/download/v2.6.0/argo-linux-amd64
 
 # Make binary executable
 chmod +x argo-linux-amd64
@@ -57,10 +57,10 @@ You can download the latest and previous Argo binaries from our [releases page](
 
 ```sh
 kubectl create namespace argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/v2.5.2/manifests/install.yaml
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/v2.6.0/manifests/install.yaml
 ```
 
-Namespaced installs as well as installs with MinIO and/or a database built in [are also available](https://github.com/argoproj/argo/tree/v2.5.2/manifests). 
+Namespaced installs as well as installs with MinIO and/or a database built in [are also available](https://github.com/argoproj/argo/tree/v2.6.0/manifests). 
 
 Examples below will assume you've installed argo in the `argo` namespace. If you have not, adjust 
 the commands accordingly.
