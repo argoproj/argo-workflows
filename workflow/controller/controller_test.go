@@ -43,6 +43,29 @@ spec:
       args: ["hello world"]
 `
 
+var testDefaultWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  serviceAccountName: whalesay
+  templates:
+  - name: whalesay
+    metadata:
+      annotations:
+        annotationKey1: "annotationValue1"
+        annotationKey2: "annotationValue2"
+      labels:
+        labelKey1: "labelValue1"
+        labelKey2: "labelValue2"
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
 func newController() *WorkflowController {
 	wfclientset := fakewfclientset.NewSimpleClientset()
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
@@ -80,6 +103,40 @@ func newControllerWithDefaults() *WorkflowController {
 			ExecutorImage: "executor:latest",
 			DefautWorkflowSpec: &wfv1.WorkflowSpec{
 				HostNetwork: &myBool,
+			},
+		},
+		kubeclientset:  fake.NewSimpleClientset(),
+		wfclientset:    wfclientset,
+		completedPods:  make(chan string, 512),
+		wftmplInformer: wftmplInformer,
+		wfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfArchive:      sqldb.NullWorkflowArchive,
+	}
+}
+
+func newControllerWithComplexDefaults() *WorkflowController {
+	wfclientset := fakewfclientset.NewSimpleClientset()
+	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
+	wftmplInformer := informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
+	ctx := context.Background()
+	go wftmplInformer.Informer().Run(ctx.Done())
+	if !cache.WaitForCacheSync(ctx.Done(), wftmplInformer.Informer().HasSynced) {
+		panic("Timed out waiting for caches to sync")
+	}
+	myBool := true
+	var afterTime int32 = 10
+	return &WorkflowController{
+		Config: config.WorkflowControllerConfig{
+			ExecutorImage: "executor:latest",
+			DefautWorkflowSpec: &wfv1.WorkflowSpec{
+				HostNetwork:        &myBool,
+				Entrypoint:         "good_entrypoint",
+				ServiceAccountName: "my_service_account",
+				TTLStrategy: &wfv1.TTLStrategy{
+					SecondsAfterCompletion: &afterTime,
+					SecondsAfterSuccess:    &afterTime,
+					SecondsAfterFailure:    &afterTime,
+				},
 			},
 		},
 		kubeclientset:  fake.NewSimpleClientset(),
@@ -138,4 +195,17 @@ func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
 	assert.Equal(t, defautWorkflowSpec.Spec.HostNetwork, &ans)
 	assert.NotEqual(t, defautWorkflowSpec, unmarshalWF(helloWorldWf))
 	assert.Equal(t, *defautWorkflowSpec.Spec.HostNetwork, true)
+}
+
+func TestAddingWorkflowDefaultComplex(t *testing.T) {
+	assert.Equal(t, "hello", "hello")
+	controller := newControllerWithComplexDefaults()
+	workflow := unmarshalWF(testDefaultWf)
+
+	err := controller.addingWorkflowDefaultValueIfValueNotExist(workflow)
+	assert.NoError(t, err)
+	assert.NotEqual(t, workflow, unmarshalWF(testDefaultWf))
+	// This test is great, but I need to fix this
+	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")
+	assert.Equal(t, workflow.Spec.ServiceAccountName, "whalesay")
 }
