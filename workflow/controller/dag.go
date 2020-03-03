@@ -80,7 +80,7 @@ func (d *dagContext) assertBranchFinished(targetTaskNames []string) bool {
 			if taskObject != nil {
 				// Make sure all the dependency node have one failed
 				// Recursive check until top root node
-				return d.assertBranchFinished(taskObject.Dependencies)
+				return d.assertBranchFinished(common.GetTaskDependencies(common.GetTaskDepends(taskObject)))
 			}
 		} else if !taskNode.Successful() {
 			flag = true
@@ -319,19 +319,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 
 	// Check if our dependencies completed. If not, recurse our parents executing them if necessary
 	nodeName := dagCtx.taskNodeName(taskName)
-	depends, err := getTaskDepends(task)
-	if err != nil {
-		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
-		return
-	}
-	if depends != nil {
-		proceed := evaluateDependsLogic(*depends, dagCtx)
-		if !proceed {
-			return
-		}
-	}
-
-	// All our dependencies were satisfied and successful. It's our turn to run
+	depends := common.GetTaskDepends(task)
 
 	taskGroupNode := woc.getNodeByName(nodeName)
 	if taskGroupNode != nil && taskGroupNode.Type != wfv1.NodeTypeTaskGroup {
@@ -339,7 +327,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 	// connectDependencies is a helper to connect our dependencies to current task as children
 	connectDependencies := func(taskNodeName string) {
-		taskDependencies := getTaskDependencies(depends, dagCtx)
+		taskDependencies := common.GetTaskDependencies(depends)
 		woc.log.Infof("SIMON Task dependencies of '%s' are '%s'", task.Name, taskDependencies)
 		if len(taskDependencies) == 0 || taskGroupNode != nil {
 			// if we had no dependencies, then we are a root task, and we should connect the
@@ -354,6 +342,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			// Otherwise, add all outbound nodes of our dependencies as parents to this node
 			for _, depName := range taskDependencies {
 				depNode := dagCtx.GetTaskNode(depName)
+				woc.log.Infof("SIMON depNode of '%s' is '%v'", depName, depNode)
 				outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
 				woc.log.Infof("DAG outbound nodes of %s are %s", depNode, outboundNodeIDs)
 				for _, outNodeID := range outboundNodeIDs {
@@ -363,7 +352,22 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		}
 	}
 
+	if depends != nil {
+		fmt.Printf("SIMON Evaluating depends logic for '%s'\n", task.Name)
+		execute, proceed := evaluateDependsLogic(*depends, dagCtx)
+		if !proceed {
+			// This node's dependencies are not completed yet, return
+			return
+		}
+		if !execute {
+			// Given the results of this node's dependencies, this node should not be executed. Mark it skipped
+			woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, "depends condition not met")
+			connectDependencies(nodeName)
+			return
+		}
+	}
 
+	// All our dependencies were satisfied and successful. It's our turn to run
 	// First resolve/substitute params/artifacts from our dependencies
 	newTask, err := woc.resolveDependencyReferences(dagCtx, task)
 	if err != nil {
@@ -395,7 +399,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		node = dagCtx.GetTaskNode(t.Name)
 		taskNodeName := dagCtx.taskNodeName(t.Name)
 		if node == nil {
-			woc.log.Infof("All of node %s dependencies %s completed", taskNodeName, task.Dependencies)
+			woc.log.Infof("All of node %s dependencies %s completed", taskNodeName, common.GetTaskDependencies(common.GetTaskDepends(task)))
 			// Add the child relationship from our dependency's outbound nodes to this node.
 			connectDependencies(taskNodeName)
 
@@ -515,7 +519,7 @@ func findLeafTaskNames(tasks []wfv1.DAGTask) []string {
 		if _, ok := taskIsLeaf[task.Name]; !ok {
 			taskIsLeaf[task.Name] = true
 		}
-		for _, dependency := range task.Dependencies {
+		for _, dependency := range common.GetTaskDependencies(common.GetTaskDepends(&task)) {
 			taskIsLeaf[dependency] = false
 		}
 	}
@@ -566,8 +570,9 @@ func (woc *wfOperationCtx) expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error)
 	return expandedTasks, nil
 }
 
-func evaluateDependsLogic(logic wfv1.Depends, dagCtx *dagContext) bool {
-
+// evaluateDependsLogic returns whether a node should execute and proceed. proceed means that all of its dependencies are
+// completed and execute means that given the results of its dependencies, this node should execute
+func evaluateDependsLogic(logic wfv1.Depends, dagCtx *dagContext) (bool, bool) {
 	// Single dependency case (base cases)
 	if logic.Succeeded != "" {
 		return evaluateDependsLeaf(logic.Succeeded, dagCtx, func(status *wfv1.NodeStatus) bool {
@@ -602,99 +607,50 @@ func evaluateDependsLogic(logic wfv1.Depends, dagCtx *dagContext) bool {
 
 	// Multi-dependency case (recursive cases)
 	if len(logic.And) > 0 {
+		fmt.Printf("SIMON Evaluating AND conditions\n")
+		execute := true
 		for _, node := range logic.And {
-			if !evaluateDependsLogic(node, dagCtx) {
-				return false
+			nodeExecute, nodeProceed := evaluateDependsLogic(node, dagCtx)
+			if !nodeProceed {
+				fmt.Printf("SIMON Evaluating AND conditions done: don't proceed\n")
+				return false, false
 			}
+			execute = execute && nodeExecute
 		}
-		return true
+		fmt.Printf("SIMON Evaluating AND conditions done: proceed. Execute: %t\n", execute)
+		return execute, true
 	}
 	if len(logic.Or) > 0 {
+		fmt.Printf("SIMON Evaluating OR conditions\n")
+		execute := false
 		for _, node := range logic.Or {
-			if evaluateDependsLogic(node, dagCtx) {
-				return true
+			fmt.Printf("SIMON Evaluating OR conditions done: don't proceed\n")
+			nodeExecute, nodeProceed := evaluateDependsLogic(node, dagCtx)
+			if !nodeProceed {
+				return false, false
 			}
+			execute = execute || nodeExecute
 		}
-		return false
+		fmt.Printf("SIMON Evaluating OR conditions done: proceed. Execute: %t\n", execute)
+		return execute, true
 	}
 	if logic.Not != nil {
-		return !evaluateDependsLogic(*logic.Not, dagCtx)
+		fmt.Printf("SIMON Evaluating NOT conditions\n")
+		execute, proceed := evaluateDependsLogic(*logic.Not, dagCtx)
+		return !execute, proceed
 	}
-	return false
+	return false, false
 }
 
-func evaluateDependsLeaf(dependencyName string, dagCtx *dagContext, evalFunc func(phase *wfv1.NodeStatus) bool) bool {
+func evaluateDependsLeaf(dependencyName string, dagCtx *dagContext, evalFunc func(phase *wfv1.NodeStatus) bool) (bool, bool) {
+	fmt.Printf("SIMON Evaluating leaf condition '%s'\n", dependencyName)
 	depNode := dagCtx.GetTaskNode(dependencyName)
-	if depNode == nil || depNode.Phase == wfv1.NodeRunning {
-		return false
+	if depNode == nil || !depNode.Completed() {
+		// Node hasn't been run yet, or is still running. Don't execute, but also signify that we're still waiting (don't proceed)
+		fmt.Printf("SIMON Don't proceed\n")
+		return false, false
 	}
-	return evalFunc(depNode)
-}
-
-func getTaskDepends(dagTask *wfv1.DAGTask) (*wfv1.Depends, error) {
-	if len(dagTask.Dependencies) > 0 && dagTask.Depends != nil {
-		return nil, fmt.Errorf("cannot have a task with both 'dependencies' and 'depends'")
-	}
-
-	if dagTask.Depends != nil {
-		return dagTask.Depends, nil
-	}
-
-	if len(dagTask.Dependencies) > 0 {
-		depends := &wfv1.Depends{
-			And: make([]wfv1.Depends, 0),
-		}
-		for _, dependency := range dagTask.Dependencies {
-			depends.And = append(depends.And, wfv1.Depends{Successful: dependency})
-		}
-		return depends, nil
-	}
-
-	return nil, nil
-}
-
-func getTaskDependencies(logic *wfv1.Depends, dagCtx *dagContext) []string {
-	if logic == nil {
-		return []string{}
-	}
-
-	// Single dependency case (base cases)
-	if logic.Succeeded != "" {
-		return []string{logic.Succeeded}
-	}
-	if logic.Failed != "" {
-		return []string{logic.Failed}
-	}
-	if logic.Skipped != "" {
-		return []string{logic.Skipped}
-	}
-	if logic.Completed != "" {
-		return []string{logic.Completed}
-	}
-	if logic.Any != "" {
-		return []string{logic.Any}
-	}
-	if logic.Successful != "" {
-		return []string{logic.Successful}
-	}
-
-	// Multi-dependency case (recursive cases)
-	if len(logic.And) > 0 {
-		var out []string
-		for _, node := range logic.And {
-			out = append(out, getTaskDependencies(&node, dagCtx)...)
-		}
-		return out
-	}
-	if len(logic.Or) > 0 {
-		var out []string
-		for _, node := range logic.Or {
-			out = append(out, getTaskDependencies(&node, dagCtx)...)
-		}
-		return out
-	}
-	if logic.Not != nil {
-		return getTaskDependencies(logic.Not, dagCtx)
-	}
-	return []string{}
+	res := evalFunc(depNode)
+	fmt.Printf("SIMON Proceed. Execute: %t\n", res)
+	return res, true
 }

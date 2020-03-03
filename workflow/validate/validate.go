@@ -923,7 +923,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false, false)
 		resolvedTemplates[task.Name] = resolvedTmpl
 		dupDependencies := make(map[string]bool)
-		for j, depName := range task.Dependencies {
+		for j, depName := range common.GetTaskDependencies(common.GetTaskDepends(&task)) {
 			if _, ok := dupDependencies[depName]; ok {
 				return errors.Errorf(errors.CodeBadRequest,
 					"templates.%s.tasks.%s.dependencies[%d] dependency '%s' duplicated",
@@ -1017,7 +1017,7 @@ func verifyNoCycles(tmpl *wfv1.Template, nameToTask map[string]wfv1.DAGTask) err
 			return nil
 		}
 		task := nameToTask[taskName]
-		for _, depName := range task.Dependencies {
+		for _, depName := range common.GetTaskDependencies(common.GetTaskDepends(&task)) {
 			for _, name := range cycle {
 				if name == depName {
 					return errors.Errorf(errors.CodeBadRequest,
