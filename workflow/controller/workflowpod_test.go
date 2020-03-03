@@ -11,10 +11,10 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/util"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/config"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/test/util"
+	"github.com/argoproj/argo/v2/workflow/common"
+	"github.com/argoproj/argo/v2/workflow/config"
 )
 
 func unmarshalTemplate(yamlStr string) *wfv1.Template {

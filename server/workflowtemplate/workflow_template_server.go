@@ -7,11 +7,11 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/workflow/templateresolution"
-	"github.com/argoproj/argo/workflow/validate"
+	workflowtemplatepkg "github.com/argoproj/argo/v2/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/server/auth"
+	"github.com/argoproj/argo/v2/workflow/templateresolution"
+	"github.com/argoproj/argo/v2/workflow/validate"
 )
 
 type WorkflowTemplateServer struct {

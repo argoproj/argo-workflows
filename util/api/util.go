@@ -3,8 +3,8 @@ package api
 import (
 	"context"
 
-	"github.com/argoproj/argo/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 )
 
 func SubmitWorkflowToAPIServer(apiGRPCClient workflow.WorkflowServiceClient, ctx context.Context, wf *wfv1.Workflow, dryRun bool) (*wfv1.Workflow, error) {

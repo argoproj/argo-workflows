@@ -3,8 +3,8 @@ package config
 import (
 	apiv1 "k8s.io/api/core/v1"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/metrics"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/workflow/metrics"
 )
 
 // WorkflowControllerConfig contain the configuration settings for the workflow controller

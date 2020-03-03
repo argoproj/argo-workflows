@@ -15,10 +15,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/persist/sqldb"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/config"
+	"github.com/argoproj/argo/v2/errors"
+	"github.com/argoproj/argo/v2/persist/sqldb"
+	"github.com/argoproj/argo/v2/workflow/common"
+	"github.com/argoproj/argo/v2/workflow/config"
 )
 
 // ResyncConfig reloads the controller config from the configmap

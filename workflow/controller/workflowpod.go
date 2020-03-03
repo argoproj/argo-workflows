@@ -17,11 +17,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/utils/pointer"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/argo/v2/errors"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/workflow/common"
+	"github.com/argoproj/argo/v2/workflow/util"
 )
 
 // Reusable k8s pod spec portions used in workflow pods

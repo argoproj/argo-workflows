@@ -12,9 +12,9 @@ import (
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/pkg/apiclient/cronworkflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/cmd/argo/commands/client"
+	"github.com/argoproj/argo/v2/pkg/apiclient/cronworkflow"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 )
 
 func NewGetCommand() *cobra.Command {

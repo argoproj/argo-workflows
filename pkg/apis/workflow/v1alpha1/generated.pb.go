@@ -1582,7 +1582,7 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1/generated.proto", fileDescriptor_c23edafa7e7ea072)
+	proto.RegisterFile("github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1/generated.proto", fileDescriptor_c23edafa7e7ea072)
 }
 
 var fileDescriptor_c23edafa7e7ea072 = []byte{

@@ -6,8 +6,8 @@ import (
 	"sigs.k8s.io/yaml"
 	"upper.io/db.v3/lib/sqlbuilder"
 
-	"github.com/argoproj/argo/persist/sqldb"
-	"github.com/argoproj/argo/workflow/config"
+	"github.com/argoproj/argo/v2/persist/sqldb"
+	"github.com/argoproj/argo/v2/workflow/config"
 )
 
 type Persistence struct {

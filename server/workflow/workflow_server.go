@@ -8,16 +8,16 @@ import (
 	"golang.org/x/net/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/persist/sqldb"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/util/logs"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/packer"
-	"github.com/argoproj/argo/workflow/templateresolution"
-	"github.com/argoproj/argo/workflow/util"
-	"github.com/argoproj/argo/workflow/validate"
+	"github.com/argoproj/argo/v2/persist/sqldb"
+	workflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/workflow"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/server/auth"
+	"github.com/argoproj/argo/v2/util/logs"
+	"github.com/argoproj/argo/v2/workflow/common"
+	"github.com/argoproj/argo/v2/workflow/packer"
+	"github.com/argoproj/argo/v2/workflow/templateresolution"
+	"github.com/argoproj/argo/v2/workflow/util"
+	"github.com/argoproj/argo/v2/workflow/validate"
 )
 
 type workflowServer struct {

@@ -8,8 +8,8 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/argoproj/argo/pkg/apiclient"
-	"github.com/argoproj/argo/util/kubeconfig"
+	"github.com/argoproj/argo/v2/pkg/apiclient"
+	"github.com/argoproj/argo/v2/util/kubeconfig"
 )
 
 var argoServer string

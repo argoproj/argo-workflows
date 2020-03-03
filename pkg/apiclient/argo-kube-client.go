@@ -7,17 +7,17 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/argoproj/argo/persist/sqldb"
-	"github.com/argoproj/argo/pkg/apiclient/cronworkflow"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
-	"github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/server/auth"
-	cronworkflowserver "github.com/argoproj/argo/server/cronworkflow"
-	workflowserver "github.com/argoproj/argo/server/workflow"
-	workflowtemplateserver "github.com/argoproj/argo/server/workflowtemplate"
-	"github.com/argoproj/argo/util/help"
+	"github.com/argoproj/argo/v2/persist/sqldb"
+	"github.com/argoproj/argo/v2/pkg/apiclient/cronworkflow"
+	workflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo/v2/pkg/apiclient/workflowarchive"
+	"github.com/argoproj/argo/v2/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo/v2/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/v2/server/auth"
+	cronworkflowserver "github.com/argoproj/argo/v2/server/cronworkflow"
+	workflowserver "github.com/argoproj/argo/v2/server/workflow"
+	workflowtemplateserver "github.com/argoproj/argo/v2/server/workflowtemplate"
+	"github.com/argoproj/argo/v2/util/help"
 )
 
 var argoKubeOffloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo

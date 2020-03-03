@@ -4,7 +4,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/v2/errors"
 )
 
 // GetServiceAccountTokenName returns the name of the first referenced ServiceAccountToken secret of the service account.

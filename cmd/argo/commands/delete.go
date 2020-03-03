@@ -9,9 +9,9 @@ import (
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/v2/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/workflow"
+	"github.com/argoproj/argo/v2/workflow/common"
 )
 
 var (

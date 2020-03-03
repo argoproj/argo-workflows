@@ -3,7 +3,7 @@
 package fake
 
 import (
-	v1alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	v1alpha1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

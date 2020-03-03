@@ -3,7 +3,7 @@ package common
 import (
 	"time"
 
-	"github.com/argoproj/argo/pkg/apis/workflow"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow"
 )
 
 const (

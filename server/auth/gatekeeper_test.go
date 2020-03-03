@@ -10,7 +10,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 
-	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	fakewfclientset "github.com/argoproj/argo/v2/pkg/client/clientset/versioned/fake"
 )
 
 func TestServer_GetWFClient(t *testing.T) {

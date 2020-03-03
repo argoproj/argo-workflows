@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo/v2/pkg/client/clientset/versioned/fake"
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,8 +13,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/argoproj/argo/test"
-	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/argo/v2/test"
+	"github.com/argoproj/argo/v2/workflow/util"
 )
 
 var completedWf = `

@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/e2e/fixtures"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/test/e2e/fixtures"
 )
 
 type CLISuite struct {

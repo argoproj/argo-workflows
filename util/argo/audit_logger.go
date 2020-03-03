@@ -1,7 +1,7 @@
 package argo
 
 import (
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 
 	log "github.com/sirupsen/logrus"
 

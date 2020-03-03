@@ -13,12 +13,12 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
 
-	"github.com/argoproj/argo/persist/sqldb"
-	"github.com/argoproj/argo/persist/sqldb/mocks"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	v1alpha "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/v2/persist/sqldb"
+	"github.com/argoproj/argo/v2/persist/sqldb/mocks"
+	workflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/workflow"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	v1alpha "github.com/argoproj/argo/v2/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/v2/server/auth"
 )
 
 const wf1 = `

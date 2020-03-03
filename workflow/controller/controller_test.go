@@ -14,11 +14,11 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/persist/sqldb"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
-	"github.com/argoproj/argo/workflow/config"
+	"github.com/argoproj/argo/v2/persist/sqldb"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo/v2/pkg/client/clientset/versioned/fake"
+	wfextv "github.com/argoproj/argo/v2/pkg/client/informers/externalversions"
+	"github.com/argoproj/argo/v2/workflow/config"
 )
 
 var helloWorldWf = `

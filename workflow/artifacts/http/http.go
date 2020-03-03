@@ -1,9 +1,9 @@
 package http
 
 import (
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/v2/errors"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/workflow/common"
 )
 
 // HTTPArtifactDriver is the artifact driver for a HTTP URL

@@ -3,7 +3,7 @@ package info
 import (
 	"context"
 
-	infopkg "github.com/argoproj/argo/pkg/apiclient/info"
+	infopkg "github.com/argoproj/argo/v2/pkg/apiclient/info"
 )
 
 type infoServer struct {

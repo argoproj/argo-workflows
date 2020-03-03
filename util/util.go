@@ -9,8 +9,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/util/retry"
+	"github.com/argoproj/argo/v2/errors"
+	"github.com/argoproj/argo/v2/util/retry"
 )
 
 type Closer interface {

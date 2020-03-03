@@ -6,8 +6,8 @@ import (
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
+	"github.com/argoproj/argo/v2/cmd/argo/commands/client"
+	cronworkflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/cronworkflow"
 )
 
 // NewSuspendCommand returns a new instance of an `argo suspend` command

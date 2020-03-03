@@ -12,11 +12,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/argoproj/argo/persist/sqldb"
-	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/v2/persist/sqldb"
+	workflowarchivepkg "github.com/argoproj/argo/v2/pkg/apiclient/workflowarchive"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/server/auth"
 )
 
 type archivedWorkflowServer struct {

@@ -8,8 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	art "github.com/argoproj/argo/workflow/artifacts/artifactory"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	art "github.com/argoproj/argo/v2/workflow/artifacts/artifactory"
 )
 
 const (

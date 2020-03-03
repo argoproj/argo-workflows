@@ -7,7 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/v2/workflow/common"
 )
 
 func NewResourceCommand() *cobra.Command {

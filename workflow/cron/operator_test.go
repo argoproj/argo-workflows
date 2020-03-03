@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 )
 
 var scheduledWf = `

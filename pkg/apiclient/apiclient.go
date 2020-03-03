@@ -5,10 +5,10 @@ import (
 
 	"k8s.io/client-go/tools/clientcmd"
 
-	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
-	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
+	cronworkflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/cronworkflow"
+	workflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo/v2/pkg/apiclient/workflowarchive"
+	workflowtemplatepkg "github.com/argoproj/argo/v2/pkg/apiclient/workflowtemplate"
 )
 
 type Client interface {

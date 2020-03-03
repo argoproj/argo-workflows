@@ -12,8 +12,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	fakeClientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	fakeClientset "github.com/argoproj/argo/v2/pkg/client/clientset/versioned/fake"
 )
 
 // TestSubmitDryRun

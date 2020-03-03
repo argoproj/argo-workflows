@@ -6,7 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	authorizationv1 "k8s.io/api/authorization/v1"
 
-	"github.com/argoproj/argo/pkg/apis/workflow"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow"
 )
 
 func CanI(ctx context.Context, verb, resource, namespace, name string) (bool, error) {

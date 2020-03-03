@@ -3,14 +3,14 @@ package executor
 import (
 	"fmt"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/artifacts/artifactory"
-	"github.com/argoproj/argo/workflow/artifacts/git"
-	"github.com/argoproj/argo/workflow/artifacts/hdfs"
-	"github.com/argoproj/argo/workflow/artifacts/http"
-	"github.com/argoproj/argo/workflow/artifacts/raw"
-	"github.com/argoproj/argo/workflow/artifacts/resource"
-	"github.com/argoproj/argo/workflow/artifacts/s3"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/workflow/artifacts/artifactory"
+	"github.com/argoproj/argo/v2/workflow/artifacts/git"
+	"github.com/argoproj/argo/v2/workflow/artifacts/hdfs"
+	"github.com/argoproj/argo/v2/workflow/artifacts/http"
+	"github.com/argoproj/argo/v2/workflow/artifacts/raw"
+	"github.com/argoproj/argo/v2/workflow/artifacts/resource"
+	"github.com/argoproj/argo/v2/workflow/artifacts/s3"
 )
 
 // ArtifactDriver is the interface for loading and saving of artifacts

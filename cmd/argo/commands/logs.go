@@ -12,8 +12,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
+	"github.com/argoproj/argo/v2/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/workflow"
 )
 
 func NewLogsCommand() *cobra.Command {

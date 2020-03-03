@@ -28,13 +28,13 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/util"
-	"github.com/argoproj/argo/util/archive"
-	"github.com/argoproj/argo/util/retry"
-	artifact "github.com/argoproj/argo/workflow/artifacts"
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/v2/errors"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/util"
+	"github.com/argoproj/argo/v2/util/archive"
+	"github.com/argoproj/argo/v2/util/retry"
+	artifact "github.com/argoproj/argo/v2/workflow/artifacts"
+	"github.com/argoproj/argo/v2/workflow/common"
 )
 
 const (

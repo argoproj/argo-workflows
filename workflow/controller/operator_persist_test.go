@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/persist/sqldb/mocks"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/packer"
+	"github.com/argoproj/argo/v2/errors"
+	"github.com/argoproj/argo/v2/persist/sqldb/mocks"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/workflow/packer"
 )
 
 func getMockDBCtx(expectedError error, largeWfSupport bool) *mocks.OffloadNodeStatusRepo {

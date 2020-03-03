@@ -6,10 +6,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
-	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
+	cronworkflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/cronworkflow"
+	workflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/workflow"
+	workflowarchivepkg "github.com/argoproj/argo/v2/pkg/apiclient/workflowarchive"
+	workflowtemplatepkg "github.com/argoproj/argo/v2/pkg/apiclient/workflowtemplate"
 )
 
 type argoServerClient struct {

@@ -4,14 +4,14 @@ import (
 	"context"
 	"testing"
 
-	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
-	"github.com/argoproj/argo/server/auth"
+	cronworkflowpkg "github.com/argoproj/argo/v2/pkg/apiclient/cronworkflow"
+	"github.com/argoproj/argo/v2/server/auth"
 
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	wftFake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	wftFake "github.com/argoproj/argo/v2/pkg/client/clientset/versioned/fake"
 )
 
 func Test_cronWorkflowServiceServer(t *testing.T) {

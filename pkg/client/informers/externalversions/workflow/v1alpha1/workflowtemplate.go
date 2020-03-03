@@ -5,10 +5,10 @@ package v1alpha1
 import (
 	time "time"
 
-	workflowv1alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	versioned "github.com/argoproj/argo/pkg/client/clientset/versioned"
-	internalinterfaces "github.com/argoproj/argo/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/argoproj/argo/pkg/client/listers/workflow/v1alpha1"
+	workflowv1alpha1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	versioned "github.com/argoproj/argo/v2/pkg/client/clientset/versioned"
+	internalinterfaces "github.com/argoproj/argo/v2/pkg/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/argoproj/argo/v2/pkg/client/listers/workflow/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"

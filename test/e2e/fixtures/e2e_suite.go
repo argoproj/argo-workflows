@@ -16,11 +16,11 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/cmd/argo/commands"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/util/kubeconfig"
-	"github.com/argoproj/argo/workflow/packer"
+	"github.com/argoproj/argo/v2/cmd/argo/commands"
+	"github.com/argoproj/argo/v2/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/v2/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/util/kubeconfig"
+	"github.com/argoproj/argo/v2/workflow/packer"
 )
 
 const Namespace = "argo"

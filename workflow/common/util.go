@@ -24,10 +24,10 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/util"
+	"github.com/argoproj/argo/v2/errors"
+	"github.com/argoproj/argo/v2/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/v2/util"
 )
 
 // FindOverlappingVolume looks an artifact path, checks if it overlaps with any

@@ -12,8 +12,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
+	"github.com/argoproj/argo/v2/cmd/argo/commands/client"
+	workflowarchivepkg "github.com/argoproj/argo/v2/pkg/apiclient/workflowarchive"
 )
 
 func NewListCommand() *cobra.Command {

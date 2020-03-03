@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/v2/pkg/apis/workflow/v1alpha1"
 )
 
 // Global variables
