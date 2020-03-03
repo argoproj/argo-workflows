@@ -105,6 +105,9 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	if err != nil {
 		return err
 	}
+	if len(wf.Spec.Arguments.Parameters) > 0 {
+		ctx.globalParams[common.GlobalVarWorkflowParameters] = placeholderGenerator.NextPlaceholder()
+	}
 	for _, param := range wf.Spec.Arguments.Parameters {
 		if param.Name != "" {
 			if param.Value != nil {
