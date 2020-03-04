@@ -67,23 +67,26 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 			woc.log.Warnf("Failed to unmarshal execution control from pod %s", pod.Name)
 		}
 	}
-	if podExecCtl.Deadline == nil && woc.workflowDeadline == nil {
-		return nil
-	} else if podExecCtl.Deadline != nil && woc.workflowDeadline != nil {
-		if podExecCtl.Deadline.Equal(*woc.workflowDeadline) {
+
+	var newDeadline *time.Time
+	if woc.wf.Spec.Shutdown != "" {
+		// Signal termination by setting a Zero deadline
+		newDeadline = &time.Time{}
+	} else {
+		if podExecCtl.Deadline == nil && woc.workflowDeadline == nil {
+			return nil
+		} else if podExecCtl.Deadline != nil && woc.workflowDeadline != nil && podExecCtl.Deadline.Equal(*woc.workflowDeadline) {
+			return nil
+		} else if podExecCtl.Deadline != nil && podExecCtl.Deadline.IsZero() {
+			// If the pod has already been explicitly signaled to terminate, then do nothing.
+			// This can happen when daemon steps are terminated.
+			woc.log.Infof("Skipping sync of execution control of pod %s. pod has been signaled to terminate", pod.Name)
 			return nil
 		}
+		newDeadline = woc.workflowDeadline
 	}
-
-	if podExecCtl.Deadline != nil && podExecCtl.Deadline.IsZero() {
-		// If the pod has already been explicitly signaled to terminate, then do nothing.
-		// This can happen when daemon steps are terminated.
-		woc.log.Infof("Skipping sync of execution control of pod %s. pod has been signaled to terminate", pod.Name)
-		return nil
-	}
-
 	// Assign new deadline value to PodExeCtl
-	podExecCtl.Deadline = woc.workflowDeadline
+	podExecCtl.Deadline = newDeadline
 
 	woc.log.Infof("Execution control for pod %s out-of-sync desired: %v, actual: %v", pod.Name, woc.workflowDeadline, podExecCtl.Deadline)
 	return woc.updateExecutionControl(pod.Name, podExecCtl)
