@@ -66,6 +66,32 @@ spec:
       args: ["hello world"]
 `
 
+var testDefaultWfTTL = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  serviceAccountName: whalesay
+  ttlSecondsAfterFinished: 7
+  ttlStrategy:
+    secondsAfterCompletion: 5
+  templates:
+  - name: whalesay
+    metadata:
+      annotations:
+        annotationKey1: "annotationValue1"
+        annotationKey2: "annotationValue2"
+      labels:
+        labelKey1: "labelValue1"
+        labelKey2: "labelValue2"
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
 func newController() *WorkflowController {
 	wfclientset := fakewfclientset.NewSimpleClientset()
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
@@ -124,7 +150,8 @@ func newControllerWithComplexDefaults() *WorkflowController {
 		panic("Timed out waiting for caches to sync")
 	}
 	myBool := true
-	var afterTime int32 = 10
+	var ten int32 = 10
+	var seven int32 = 10
 	return &WorkflowController{
 		Config: config.WorkflowControllerConfig{
 			ExecutorImage: "executor:latest",
@@ -133,10 +160,11 @@ func newControllerWithComplexDefaults() *WorkflowController {
 				Entrypoint:         "good_entrypoint",
 				ServiceAccountName: "my_service_account",
 				TTLStrategy: &wfv1.TTLStrategy{
-					SecondsAfterCompletion: &afterTime,
-					SecondsAfterSuccess:    &afterTime,
-					SecondsAfterFailure:    &afterTime,
+					SecondsAfterCompletion: &ten,
+					SecondsAfterSuccess:    &ten,
+					SecondsAfterFailure:    &ten,
 				},
+				TTLSecondsAfterFinished: &seven,
 			},
 		},
 		kubeclientset:  fake.NewSimpleClientset(),
@@ -178,16 +206,13 @@ func makePodsRunning(t *testing.T, kubeclientset kubernetes.Interface, namespace
 }
 
 func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
-	// Run it here
 	assert.Equal(t, "hello", "hello")
 	ans := true
 	controller := newController()
 	workflow := unmarshalWF(helloWorldWf)
-
 	err := controller.addingWorkflowDefaultValueIfValueNotExist(workflow)
 	assert.NoError(t, err)
 	assert.Equal(t, workflow, unmarshalWF(helloWorldWf))
-
 	controllerDefaults := newControllerWithDefaults()
 	defautWorkflowSpec := unmarshalWF(helloWorldWf)
 	err = controllerDefaults.addingWorkflowDefaultValueIfValueNotExist(defautWorkflowSpec)
@@ -201,11 +226,30 @@ func TestAddingWorkflowDefaultComplex(t *testing.T) {
 	assert.Equal(t, "hello", "hello")
 	controller := newControllerWithComplexDefaults()
 	workflow := unmarshalWF(testDefaultWf)
-
+	var ten int32 = 10
+	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")
+	assert.Nil(t, workflow.Spec.TTLStrategy)
 	err := controller.addingWorkflowDefaultValueIfValueNotExist(workflow)
 	assert.NoError(t, err)
 	assert.NotEqual(t, workflow, unmarshalWF(testDefaultWf))
-	// This test is great, but I need to fix this
 	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")
 	assert.Equal(t, workflow.Spec.ServiceAccountName, "whalesay")
+	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterFailure, ten)
+}
+
+func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
+	assert.Equal(t, "hello", "hello")
+	controller := newControllerWithComplexDefaults()
+	workflow := unmarshalWF(testDefaultWfTTL)
+	var ten int32 = 10
+	var seven int32 = 7
+	var five int32 = 5
+	err := controller.addingWorkflowDefaultValueIfValueNotExist(workflow)
+	assert.NoError(t, err)
+	assert.NotEqual(t, workflow, unmarshalWF(testDefaultWfTTL))
+	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")
+	assert.Equal(t, workflow.Spec.ServiceAccountName, "whalesay")
+	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterCompletion, five)
+	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterFailure, ten)
+	assert.Equal(t, *workflow.Spec.TTLSecondsAfterFinished, seven)
 }
