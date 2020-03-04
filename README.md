@@ -110,6 +110,7 @@ Currently **officially** using Argo:
 1. [OVH](https://www.ovh.com/)
 1. [Peak AI](https://www.peak.ai/)
 1. [Preferred Networks](https://www.preferred-networks.jp/en/)
+1. [Prudential](https://www.prudential.com.sg/)
 1. [Quantibio](http://quantibio.com/us/en/)
 1. [Ramboll Shair](https://ramboll-shair.com/)
 1. [Red Hat](https://www.redhat.com/en)
