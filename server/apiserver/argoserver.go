@@ -284,7 +284,7 @@ func (as *argoServer) restartOnConfigChange(stopCh <-chan struct{}) error {
 			case <-stopCh:
 				return
 			case e := <-w.ResultChan():
-				if e.Type != watch.Added && e.Type != watch.Bookmark {
+				if e.Type != watch.Added && e.Type != watch.Bookmark && e.Type != "" {
 					log.WithField("eventType", e.Type).Info("config map event, exiting gracefully")
 					as.stopCh <- struct{}{}
 					return
