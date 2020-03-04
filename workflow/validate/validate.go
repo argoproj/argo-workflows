@@ -205,14 +205,6 @@ func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamesp
 }
 
 func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider, extraScope map[string]interface{}) error {
-	tmplID := getTemplateID(tmpl)
-	_, ok := ctx.results[tmplID]
-	if ok {
-		// we already processed this template
-		return nil
-	}
-	ctx.results[tmplID] = true
-
 	if err := validateTemplateType(tmpl); err != nil {
 		return err
 	}
@@ -243,6 +235,15 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
 	}
+
+	tmplID := getTemplateID(tmpl)
+	_, ok := ctx.results[tmplID]
+	if ok {
+		// we can skip the rest since it has been validated.
+		return nil
+	}
+	ctx.results[tmplID] = true
+
 	for globalVar, val := range ctx.globalParams {
 		scope[globalVar] = val
 	}
