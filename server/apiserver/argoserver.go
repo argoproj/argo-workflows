@@ -89,10 +89,6 @@ var backoff = wait.Backoff{
 	Jitter:   0.1,
 }
 
-const (
-	configMapResyncPeriod = 20 * time.Minute
-)
-
 func (ao ArgoServerOpts) ValidateOpts() error {
 	validate := false
 	for _, item := range []string{
@@ -287,14 +283,13 @@ func (as *argoServer) restartOnConfigChange(stopCh <-chan struct{}) {
 				// normal exit, e.g. due to user interrupt
 				case <-stopCh:
 					return
-				case e, _ := <-w.ResultChan():
-					if e.Type != watch.Added {
-						log.WithField("eventType", e.Type).Info("simulating closing channel")
+				case e, open := <-w.ResultChan():
+					if !open {
 						// The channel is closed, reopen it
 						continue main
 					}
 					if e.Type == watch.Modified || e.Type == watch.Deleted {
-						log.WithField("eventType", e.Type).Info("config map event, exiting gracefully SIMON")
+						log.WithField("eventType", e.Type).Info("config map event, exiting gracefully")
 						as.stopCh <- struct{}{}
 						return
 					}
