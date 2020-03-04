@@ -832,7 +832,7 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 	var needLocation bool
 
 	if tmpl.ArchiveLocation != nil {
-		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil ||tmpl.ArchiveLocation.OSS != nil {
+		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil || tmpl.ArchiveLocation.OSS != nil {
 			// User explicitly set the location. nothing else to do.
 			return nil
 		}
@@ -893,9 +893,9 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 		artLocationKey := ossLocation.KeyFormat
 		tmpl.ArchiveLocation.OSS = &wfv1.OSSArtifact{
 			OSSBucket: wfv1.OSSBucket{
-				Endpoint:ossLocation.Endpoint,
-				AccessKeySecret:ossLocation.AccessKeySecret,
-				SecretKeySecret:ossLocation.SecretKeySecret,
+				Endpoint:        ossLocation.Endpoint,
+				AccessKeySecret: ossLocation.AccessKeySecret,
+				SecretKeySecret: ossLocation.SecretKeySecret,
 			},
 			Key: artLocationKey,
 		}
