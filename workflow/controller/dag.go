@@ -320,6 +320,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	// Check if our dependencies completed. If not, recurse our parents executing them if necessary
 	nodeName := dagCtx.taskNodeName(taskName)
 	depends := common.GetTaskDepends(task)
+	taskDependencies := common.GetTaskDependencies(depends)
 
 	taskGroupNode := woc.getNodeByName(nodeName)
 	if taskGroupNode != nil && taskGroupNode.Type != wfv1.NodeTypeTaskGroup {
@@ -327,7 +328,6 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 	// connectDependencies is a helper to connect our dependencies to current task as children
 	connectDependencies := func(taskNodeName string) {
-		taskDependencies := common.GetTaskDependencies(depends)
 		woc.log.Infof("SIMON Task dependencies of '%s' are '%s'", task.Name, taskDependencies)
 		if len(taskDependencies) == 0 || taskGroupNode != nil {
 			// if we had no dependencies, then we are a root task, and we should connect the
@@ -356,7 +356,10 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		fmt.Printf("SIMON Evaluating depends logic for '%s'\n", task.Name)
 		execute, proceed := evaluateDependsLogic(*depends, dagCtx)
 		if !proceed {
-			// This node's dependencies are not completed yet, return
+			// This node's dependencies are not completed yet, recurse into them, then return
+			for _, dep := range taskDependencies {
+				woc.executeDAGTask(dagCtx, dep)
+			}
 			return
 		}
 		if !execute {
