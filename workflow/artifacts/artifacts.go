@@ -2,6 +2,7 @@ package executor
 
 import (
 	"fmt"
+
 	"github.com/argoproj/argo/workflow/artifacts/oss"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
