@@ -639,6 +639,9 @@ type ArtifactLocation struct {
 
 	// Raw contains raw artifact location details
 	Raw *RawArtifact `json:"raw,omitempty" protobuf:"bytes,7,opt,name=raw"`
+
+	// OSS contains OSS artifact location details
+	OSS *OSSArtifact `json:"oss,omitempty" protobuf:"bytes,8,opt,name=oss"`
 }
 
 type ArtifactRepositoryRef struct {
@@ -1203,6 +1206,38 @@ func (h *HTTPArtifact) HasLocation() bool {
 	return h != nil && h.URL != ""
 }
 
+// OSSBucket contains the access information required for interfacing with an OSS bucket
+type OSSBucket struct {
+	// Endpoint is the hostname of the bucket endpoint
+	Endpoint string `json:"endpoint"`
+
+	// Bucket is the name of the bucket
+	Bucket string `json:"bucket"`
+
+	// AccessKeySecret is the secret selector to the bucket's access key
+	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret"`
+
+	// SecretKeySecret is the secret selector to the bucket's secret key
+	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret"`
+}
+
+// OSSArtifact is the location of an OSS artifact
+type OSSArtifact struct {
+	OSSBucket `json:",inline"`
+
+	// Key is the path in the bucket where the artifact resides
+	Key string `json:"key"`
+}
+
+func (o *OSSArtifact) String() string {
+	protocol := "https"
+	return fmt.Sprintf("%s://%s/%s/%s", protocol, o.Endpoint, o.Bucket, o.Key)
+}
+
+func (o *OSSArtifact) HasLocation() bool {
+	return o != nil && o.Bucket != "" && o.Endpoint != "" && o.Key != ""
+}
+
 // ExecutorConfig holds configurations of an executor container.
 type ExecutorConfig struct {
 	// ServiceAccountName specifies the service account name of the executor container.
@@ -1428,7 +1463,8 @@ func (a *Artifact) HasLocation() bool {
 		a.HTTP.HasLocation() ||
 		a.Artifactory.HasLocation() ||
 		a.Raw.HasLocation() ||
-		a.HDFS.HasLocation()
+		a.HDFS.HasLocation() ||
+		a.OSS.HasLocation()
 }
 
 // GetTemplateByName retrieves a defined template by its name

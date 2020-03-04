@@ -1507,6 +1507,10 @@
           "title": "HTTP contains HTTP artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPArtifact"
         },
+        "oss": {
+          "title": "OSS contains OSS artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSArtifact"
+        },
         "raw": {
           "title": "Raw contains raw artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RawArtifact"
@@ -2082,6 +2086,41 @@
     "io.argoproj.workflow.v1alpha1.NoneStrategy": {
       "description": "NoneStrategy indicates to skip tar process and upload the files or directory tree as independent\nfiles. Note that if the artifact is a directory, the artifact driver must support the ability to\nsave/load the directory appropriately.",
       "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.OSSArtifact": {
+      "type": "object",
+      "title": "OSSArtifact is the location of an OSS artifact",
+      "properties": {
+        "key": {
+          "type": "string",
+          "title": "Key is the path in the bucket where the artifact resides"
+        },
+        "oSSBucket": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSBucket"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.OSSBucket": {
+      "type": "object",
+      "title": "OSSBucket contains the access information required for interfacing with an OSS bucket",
+      "properties": {
+        "accessKeySecret": {
+          "title": "AccessKeySecret is the secret selector to the bucket's access key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "bucket": {
+          "type": "string",
+          "title": "Bucket is the name of the bucket"
+        },
+        "endpoint": {
+          "type": "string",
+          "title": "Endpoint is the hostname of the bucket endpoint"
+        },
+        "secretKeySecret": {
+          "title": "SecretKeySecret is the secret selector to the bucket's secret key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
     },
     "io.argoproj.workflow.v1alpha1.Outputs": {
       "type": "object",
