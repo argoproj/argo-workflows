@@ -433,11 +433,11 @@ func (wfc *WorkflowController) addingWorkflowDefaultValueIfValueNotExist(wf *wfv
 		defaultsSpec, _ := json.Marshal(*wfc.Config.DefautWorkflowSpec)
 		workflowSpec, _ := json.Marshal(wf.Spec)
 		// https://github.com/kubernetes/apimachinery/blob/2373d029717c4d169463414a6127cd1d0d12680e/pkg/util/strategicpatch/patch.go#L94
-		twoWay, err := strategicpatch.CreateTwoWayMergePatch(workflowSpec, defaultsSpec, wf.Spec)
+		new, err := strategicpatch.StrategicMergePatch(defaultsSpec, workflowSpec, wfv1.WorkflowSpec{})
 		if err != nil {
 			return nil
 		}
-		err = json.Unmarshal(twoWay, &wf.Spec)
+		err = json.Unmarshal(new, &wf.Spec)
 		if err != nil {
 			return err
 		}
