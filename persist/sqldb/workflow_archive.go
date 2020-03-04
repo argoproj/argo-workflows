@@ -21,6 +21,7 @@ const archiveLabelsTableName = archiveTableName + "_labels"
 
 type archivedWorkflowMetadata struct {
 	ClusterName string         `db:"clustername"`
+	InstanceID  string         `db:"instanceid"`
 	UID         string         `db:"uid"`
 	Name        string         `db:"name"`
 	Namespace   string         `db:"namespace"`
@@ -36,6 +37,7 @@ type archivedWorkflowRecord struct {
 
 type archivedWorkflowLabelRecord struct {
 	ClusterName string `db:"clustername"`
+	InstanceID  string `db:"instanceid"`
 	UID         string `db:"uid"`
 	// Why is this called "name" not "key"? Key is an SQL reserved word.
 	Key   string `db:"name"`
@@ -52,11 +54,13 @@ type WorkflowArchive interface {
 type workflowArchive struct {
 	session     sqlbuilder.Database
 	clusterName string
+	instanceID  string
 	dbType      dbType
 }
 
-func NewWorkflowArchive(session sqlbuilder.Database, clusterName string) WorkflowArchive {
-	return &workflowArchive{session: session, clusterName: clusterName, dbType: dbTypeFor(session)}
+// NewWorkflowArchive returns a new workflowArchive
+func NewWorkflowArchive(session sqlbuilder.Database, clusterName string, instanceID string) WorkflowArchive {
+	return &workflowArchive{session: session, clusterName: clusterName, instanceID: instanceID, dbType: dbTypeFor(session)}
 }
 
 func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
@@ -74,6 +78,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 			Insert(&archivedWorkflowRecord{
 				archivedWorkflowMetadata: archivedWorkflowMetadata{
 					ClusterName: r.clusterName,
+					InstanceID:  r.instanceID,
 					UID:         string(wf.UID),
 					Name:        wf.Name,
 					Namespace:   wf.Namespace,
@@ -92,6 +97,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 					Set("startedat", wf.Status.StartedAt.Time).
 					Set("finishedat", wf.Status.FinishedAt.Time).
 					Where(db.Cond{"clustername": r.clusterName}).
+					And(db.Cond{"instanceid": r.instanceID}).
 					And(db.Cond{"uid": wf.UID}).
 					Exec()
 				if err != nil {
@@ -114,6 +120,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 			_, err := sess.Collection(archiveLabelsTableName).
 				Insert(&archivedWorkflowLabelRecord{
 					ClusterName: r.clusterName,
+					InstanceID:  r.instanceID,
 					UID:         string(wf.UID),
 					Key:         key,
 					Value:       value,
@@ -124,6 +131,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 						Update(archiveLabelsTableName).
 						Set("value", value).
 						Where(db.Cond{"clustername": r.clusterName}).
+						And(db.Cond{"instanceid": r.instanceID}).
 						And(db.Cond{"uid": wf.UID}).
 						And(db.Cond{"name": key}).
 						Exec()
@@ -150,6 +158,7 @@ func (r *workflowArchive) ListWorkflows(namespace string, labelRequirements labe
 		Select("name", "namespace", "uid", "phase", "startedat", "finishedat").
 		From(archiveTableName).
 		Where(db.Cond{"clustername": r.clusterName}).
+		And(db.Cond{"instanceid": r.instanceID}).
 		And(namespaceEqual(namespace)).
 		And(clause).
 		OrderBy("-startedat").
@@ -192,6 +201,7 @@ func (r *workflowArchive) GetWorkflow(uid string) (*wfv1.Workflow, error) {
 		Select("workflow").
 		From(archiveTableName).
 		Where(db.Cond{"clustername": r.clusterName}).
+		And(db.Cond{"instanceid": r.instanceID}).
 		And(db.Cond{"uid": uid}).
 		One(archivedWf)
 	if err != nil {
@@ -212,6 +222,7 @@ func (r *workflowArchive) DeleteWorkflow(uid string) error {
 	rs, err := r.session.
 		DeleteFrom(archiveTableName).
 		Where(db.Cond{"clustername": r.clusterName}).
+		And(db.Cond{"instanceid": r.instanceID}).
 		And(db.Cond{"uid": uid}).
 		Exec()
 	if err != nil {
