@@ -18,21 +18,25 @@ spec:
       tasks:
       - name: A
         template: echo
+        onExit: exit
         arguments:
           parameters: [{name: message, value: A}]
       - name: B
         dependencies: [A]
         template: echo
+        onExit: exit
         arguments:
           parameters: [{name: message, value: B}]
       - name: C
         dependencies: [A]
         template: echo
+        onExit: exit
         arguments:
           parameters: [{name: message, value: C}]
       - name: D
         dependencies: [B, C]
         template: echo
+        onExit: exit
         arguments:
           parameters: [{name: message, value: D}]
 
@@ -42,7 +46,7 @@ spec:
       - name: message
     container:
       image: alpine:3.7
-      command: [echo, "{{inputs.parameters.message}}"]
+      command: [sleep, "10"]
 
   - name: exit
     container:
