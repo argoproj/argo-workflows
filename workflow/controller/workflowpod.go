@@ -832,7 +832,7 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 	var needLocation bool
 
 	if tmpl.ArchiveLocation != nil {
-		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil {
+		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil ||tmpl.ArchiveLocation.OSS != nil {
 			// User explicitly set the location. nothing else to do.
 			return nil
 		}
@@ -887,6 +887,17 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 			HDFSConfig: hdfsLocation.HDFSConfig,
 			Path:       hdfsLocation.PathFormat,
 			Force:      hdfsLocation.Force,
+		}
+	} else if ossLocation := woc.artifactRepository.OSS; ossLocation != nil {
+		woc.log.Debugf("Setting OSS artifact repository information")
+		artLocationKey := ossLocation.KeyFormat
+		tmpl.ArchiveLocation.OSS = &wfv1.OSSArtifact{
+			OSSBucket: wfv1.OSSBucket{
+				Endpoint:ossLocation.Endpoint,
+				AccessKeySecret:ossLocation.AccessKeySecret,
+				SecretKeySecret:ossLocation.SecretKeySecret,
+			},
+			Key: artLocationKey,
 		}
 	} else {
 		return errors.Errorf(errors.CodeBadRequest, "controller is not configured with a default archive location")
@@ -1078,6 +1089,9 @@ func createArchiveLocationSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Vo
 		createSecretVal(volMap, gitRepo.UsernameSecret, uniqueKeyMap)
 		createSecretVal(volMap, gitRepo.PasswordSecret, uniqueKeyMap)
 		createSecretVal(volMap, gitRepo.SSHPrivateKeySecret, uniqueKeyMap)
+	} else if ossRepo := tmpl.ArchiveLocation.OSS; ossRepo != nil {
+		createSecretVal(volMap, &ossRepo.AccessKeySecret, uniqueKeyMap)
+		createSecretVal(volMap, &ossRepo.SecretKeySecret, uniqueKeyMap)
 	}
 }
 
@@ -1095,6 +1109,9 @@ func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMa
 	} else if art.HDFS != nil {
 		createSecretVal(volMap, art.HDFS.KrbCCacheSecret, keyMap)
 		createSecretVal(volMap, art.HDFS.KrbKeytabSecret, keyMap)
+	} else if art.OSS != nil {
+		createSecretVal(volMap, &art.OSS.AccessKeySecret, keyMap)
+		createSecretVal(volMap, &art.OSS.SecretKeySecret, keyMap)
 	}
 }
 
