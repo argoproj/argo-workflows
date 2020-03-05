@@ -1219,11 +1219,6 @@ type OSSArtifact struct {
 	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
 }
 
-func (o *OSSArtifact) String() string {
-	protocol := "https"
-	return fmt.Sprintf("%s://%s/%s/%s", protocol, o.Endpoint, o.Bucket, o.Key)
-}
-
 func (o *OSSArtifact) HasLocation() bool {
 	return o != nil && o.Bucket != "" && o.Endpoint != "" && o.Key != ""
 }
