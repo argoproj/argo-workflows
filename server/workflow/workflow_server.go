@@ -7,7 +7,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/persist/sqldb"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
@@ -347,7 +346,7 @@ func (s *workflowServer) withInstanceID(opt metav1.ListOptions) metav1.ListOptio
 	return opt
 }
 
-func (s *workflowServer) getWorkflow(ctx context.Context, namespace string, name string, options v1.GetOptions) (*v1alpha1.Workflow, error) {
+func (s *workflowServer) getWorkflow(ctx context.Context, namespace string, name string, options metav1.GetOptions) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(name, options)
 	if err != nil {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -95,7 +94,7 @@ func (c *cronWorkflowServiceServer) withInstanceID(opt metav1.ListOptions) metav
 	return opt
 }
 
-func (c *cronWorkflowServiceServer) getCronWorkflow(ctx context.Context, namespace string, name string, options v1.GetOptions) (*v1alpha1.CronWorkflow, error) {
+func (c *cronWorkflowServiceServer) getCronWorkflow(ctx context.Context, namespace string, name string, options metav1.GetOptions) (*v1alpha1.CronWorkflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	cronWf, err := wfClient.ArgoprojV1alpha1().CronWorkflows(namespace).Get(name, options)
 	if err != nil {
