@@ -1199,29 +1199,24 @@ func (h *HTTPArtifact) HasLocation() bool {
 // OSSBucket contains the access information required for interfacing with an OSS bucket
 type OSSBucket struct {
 	// Endpoint is the hostname of the bucket endpoint
-	Endpoint string `json:"endpoint"`
+	Endpoint string `json:"endpoint" protobuf:"bytes,1,opt,name=endpoint"`
 
 	// Bucket is the name of the bucket
-	Bucket string `json:"bucket"`
+	Bucket string `json:"bucket" protobuf:"bytes,2,opt,name=bucket"`
 
 	// AccessKeySecret is the secret selector to the bucket's access key
-	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret"`
+	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret" protobuf:"bytes,3,opt,name=accessKeySecret"`
 
 	// SecretKeySecret is the secret selector to the bucket's secret key
-	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret"`
+	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret" protobuf:"bytes,4,opt,name=secretKeySecret"`
 }
 
 // OSSArtifact is the location of an OSS artifact
 type OSSArtifact struct {
-	OSSBucket `json:",inline"`
+	OSSBucket `json:",inline" protobuf:"bytes,1,opt,name=oSSBucket"`
 
 	// Key is the path in the bucket where the artifact resides
-	Key string `json:"key"`
-}
-
-func (o *OSSArtifact) String() string {
-	protocol := "https"
-	return fmt.Sprintf("%s://%s/%s/%s", protocol, o.Endpoint, o.Bucket, o.Key)
+	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
 }
 
 func (o *OSSArtifact) HasLocation() bool {
