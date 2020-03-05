@@ -1288,7 +1288,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, err), err
 	}
 
-
 	localParams := make(map[string]string)
 	// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
 	// is determined
@@ -1508,14 +1507,6 @@ func (woc *wfOperationCtx) initializeNodeOrMarkError(node *wfv1.NodeStatus, node
 		return woc.markNodeError(nodeName, err)
 	}
 	return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeError, err.Error())
-}
-
-// initializeNodeOrMarkError initializes an error node or mark a node if it already exists.
-func (woc *wfOperationCtx) initializeNodeOrMarkFailed(node *wfv1.NodeStatus, nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateHolder, boundaryID string, message string) *wfv1.NodeStatus {
-	if node != nil {
-		return woc.markNodePhase(nodeName, wfv1.NodeFailed, message)
-	}
-	return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeFailed, message)
 }
 
 func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
