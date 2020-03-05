@@ -178,7 +178,7 @@ func (s *FunctionalSuite) TestLoopEmptyParam() {
 		})
 }
 
-func (s *FunctionalSuite) TestparameterAggregation() {
+func (s *FunctionalSuite) TestParameterAggregation() {
 	s.Given().
 		Workflow("@functional/param-aggregation.yaml").
 		When().
@@ -189,6 +189,70 @@ func (s *FunctionalSuite) TestparameterAggregation() {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("print(0:1)")
 			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestStopBehavior() {
+	s.Given().
+		Workflow("@functional/stop-terminate.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflowToStart(5*time.Second).
+		Wait(5*time.Second).
+		RunCli([]string{"stop", "stop-terminate"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+			assert.Contains(t, output, "workflow stop-terminate stopped")
+		}).
+		WaitForWorkflow(20 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			nodeStatus := status.Nodes.FindByDisplayName("A.onExit")
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			nodeStatus = status.Nodes.FindByDisplayName("stop-terminate.onExit")
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+		})
+
+	s.Given().
+		Workflow("@functional/stop-terminate.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflowToStart(5*time.Second).
+		Wait(5*time.Second).
+		RunCli([]string{"terminate", "stop-terminate"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+			assert.Contains(t, output, "workflow stop-terminate terminated")
+		}).
+		WaitForWorkflow(20 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			nodeStatus := status.Nodes.FindByDisplayName("A.onExit")
+			assert.Nil(t, nodeStatus)
+			nodeStatus = status.Nodes.FindByDisplayName("stop-terminate.onExit")
+			assert.Nil(t, nodeStatus)
+		})
+}
+
+func (s *FunctionalSuite) TestTerminateBehavior() {
+	s.Given().
+		Workflow("@functional/stop-terminate.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflowToStart(5*time.Second).
+		Wait(5*time.Second).
+		RunCli([]string{"terminate", "stop-terminate"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+			assert.Contains(t, output, "workflow stop-terminate terminated")
+		}).
+		WaitForWorkflow(20 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			nodeStatus := status.Nodes.FindByDisplayName("A.onExit")
+			assert.Nil(t, nodeStatus)
+			nodeStatus = status.Nodes.FindByDisplayName("stop-terminate.onExit")
+			assert.Nil(t, nodeStatus)
 		})
 }
 

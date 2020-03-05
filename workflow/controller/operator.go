@@ -40,7 +40,6 @@ import (
 	"github.com/argoproj/argo/workflow/config"
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/templateresolution"
-	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
 
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
@@ -247,8 +246,6 @@ func (woc *wfOperationCtx) operate() {
 	// Create a starting template context.
 	tmplCtx := woc.createTemplateContext("")
 
-	var workflowStatus wfv1.NodePhase
-	var workflowMessage string
 	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.Template{Template: woc.wf.Spec.Entrypoint}, tmplCtx, woc.wf.Spec.Arguments, &executeTemplateOpts{})
 	if err != nil {
 		msg := fmt.Sprintf("%s error in entry template execution: %+v", woc.wf.Name, err)
@@ -268,15 +265,9 @@ func (woc *wfOperationCtx) operate() {
 		return
 	}
 
-	workflowStatus = node.Phase
-	if !node.Successful() && util.IsWorkflowTerminated(woc.wf) {
-		workflowMessage = "terminated"
-	} else {
-		workflowMessage = node.Message
-	}
-
+	workflowStatus := node.Phase
 	var onExitNode *wfv1.NodeStatus
-	if woc.wf.Spec.OnExit != "" {
+	if woc.wf.Spec.OnExit != "" && woc.wf.Spec.Shutdown != wfv1.ShutdownStrategyTerminate {
 		if workflowStatus == wfv1.NodeSkipped {
 			// treat skipped the same as Succeeded for workflow.status
 			woc.globalParams[common.GlobalVarWorkflowStatus] = string(wfv1.NodeSucceeded)
@@ -329,6 +320,13 @@ func (woc *wfOperationCtx) operate() {
 		woc.markWorkflowError(err, false)
 		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg)
 		return
+	}
+
+	var workflowMessage string
+	if !node.Successful() && woc.wf.Spec.Shutdown != "" {
+		workflowMessage = fmt.Sprintf("Stopped with strategy '%s'", woc.wf.Spec.Shutdown)
+	} else {
+		workflowMessage = node.Message
 	}
 
 	// If we get here, the workflow completed, all PVCs were deleted successfully, and
@@ -1290,6 +1288,24 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, err), err
 	}
 
+	// Check if we are shutting down. If we are, only execute non-leaf templates, or leaf templates from onExit handlers
+	// if we are in a "Stop" shutdown. We want to execute non-leaf templates to resolve all virtual nodes (including the
+	// main workflow).
+	switch woc.wf.Spec.Shutdown {
+	case wfv1.ShutdownStrategyTerminate:
+		if resolvedTmpl.IsLeaf() {
+			woc.requeue(0)
+			return woc.initializeNodeOrMarkFailed(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, "workflow terminated"), nil
+		}
+	case wfv1.ShutdownStrategyStop:
+		if resolvedTmpl.IsLeaf() && !opts.onExitTemplate {
+			woc.requeue(0)
+			return woc.initializeNodeOrMarkFailed(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, "workflow stopped"), nil
+		}
+	default:
+		// Do nothing
+	}
+
 	localParams := make(map[string]string)
 	// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
 	// is determined
@@ -1509,6 +1525,14 @@ func (woc *wfOperationCtx) initializeNodeOrMarkError(node *wfv1.NodeStatus, node
 		return woc.markNodeError(nodeName, err)
 	}
 	return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeError, err.Error())
+}
+
+// initializeNodeOrMarkError initializes an error node or mark a node if it already exists.
+func (woc *wfOperationCtx) initializeNodeOrMarkFailed(node *wfv1.NodeStatus, nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateHolder, boundaryID string, message string) *wfv1.NodeStatus {
+	if node != nil {
+		return woc.markNodePhase(nodeName, wfv1.NodeFailed, message)
+	}
+	return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeFailed, message)
 }
 
 func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {

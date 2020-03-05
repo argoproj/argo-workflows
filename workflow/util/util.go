@@ -594,14 +594,6 @@ func IsWorkflowSuspended(wf *wfv1.Workflow) bool {
 	return false
 }
 
-// IsWorkflowTerminated returns whether or not a workflow is considered terminated
-func IsWorkflowTerminated(wf *wfv1.Workflow) bool {
-	if wf.Spec.ActiveDeadlineSeconds != nil && *wf.Spec.ActiveDeadlineSeconds == 0 {
-		return true
-	}
-	return false
-}
-
 // TerminateWorkflow terminates a workflow by setting its spec.shutdown to ShutdownStrategyTerminate
 func TerminateWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
 	patchObj := map[string]interface{}{
