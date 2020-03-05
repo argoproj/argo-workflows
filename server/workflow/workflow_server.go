@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/persist/sqldb"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
@@ -83,18 +84,11 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 }
 
 func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.WorkflowGetRequest) (*v1alpha1.Workflow, error) {
-	wfClient := auth.GetWfClient(ctx)
-
 	wfGetOption := metav1.GetOptions{}
 	if req.GetOptions != nil {
 		wfGetOption = *req.GetOptions
 	}
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, wfGetOption)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.validateInstanceID(wf)
+	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, wfGetOption)
 	if err != nil {
 		return nil, err
 	}
@@ -206,18 +200,12 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 }
 
 func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *workflowpkg.WorkflowDeleteRequest) (*workflowpkg.WorkflowDeleteResponse, error) {
-	wfClient := auth.GetWfClient(ctx)
-
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	err = s.validateInstanceID(wf)
+	_, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Delete(req.Name, &metav1.DeleteOptions{})
+	err = auth.GetWfClient(ctx).ArgoprojV1alpha1().Workflows(req.Namespace).Delete(req.Name, &metav1.DeleteOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -228,11 +216,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 	wfClient := auth.GetWfClient(ctx)
 	kubeClient := auth.GetKubeClient(ctx)
 
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	err = s.validateInstanceID(wf)
+	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -246,11 +230,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 
 func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.WorkflowResubmitRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	err = s.validateInstanceID(wf)
+	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -270,11 +250,7 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.WorkflowResumeRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	err = s.validateInstanceID(wf)
+	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -296,11 +272,7 @@ func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.Wo
 func (s *workflowServer) SuspendWorkflow(ctx context.Context, req *workflowpkg.WorkflowSuspendRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	err = s.validateInstanceID(wf)
+	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -321,11 +293,7 @@ func (s *workflowServer) SuspendWorkflow(ctx context.Context, req *workflowpkg.W
 func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *workflowpkg.WorkflowTerminateRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	err = s.validateInstanceID(wf)
+	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -377,6 +345,19 @@ func (s *workflowServer) withInstanceID(opt metav1.ListOptions) metav1.ListOptio
 	}
 	opt.LabelSelector += fmt.Sprintf("%s=%s", common.LabelKeyControllerInstanceID, s.instanceID)
 	return opt
+}
+
+func (s *workflowServer) getWorkflow(ctx context.Context, namespace string, name string, options v1.GetOptions) (*v1alpha1.Workflow, error) {
+	wfClient := auth.GetWfClient(ctx)
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(name, options)
+	if err != nil {
+		return nil, err
+	}
+	err = s.validateInstanceID(wf)
+	if err != nil {
+		return nil, err
+	}
+	return wf, nil
 }
 
 func (s *workflowServer) validateInstanceID(wf *v1alpha1.Workflow) error {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -59,45 +60,23 @@ func (c *cronWorkflowServiceServer) GetCronWorkflow(ctx context.Context, req *cr
 	if req.GetOptions != nil {
 		options = *req.GetOptions
 	}
-	cronWf, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).Get(req.Name, options)
-	if err != nil {
-		return nil, err
-	}
-	err = c.validateInstanceID(cronWf)
-	if err != nil {
-		return nil, err
-	}
-	return cronWf, nil
+	return c.getCronWorkflow(ctx, req.Namespace, req.Name, options)
 }
 
 func (c *cronWorkflowServiceServer) UpdateCronWorkflow(ctx context.Context, req *cronworkflowpkg.UpdateCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
-	wfClient := auth.GetWfClient(ctx)
-	cronWf, err := wfClient.ArgoprojV1alpha1().CronWorkflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
+	_, err := c.getCronWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	err = c.validateInstanceID(cronWf)
-	if err != nil {
-		return nil, err
-	}
-	cronWf, err = wfClient.ArgoprojV1alpha1().CronWorkflows(req.Namespace).Update(req.CronWorkflow)
-	if err != nil {
-		return nil, err
-	}
-	return cronWf, nil
+	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).Update(req.CronWorkflow)
 }
 
 func (c *cronWorkflowServiceServer) DeleteCronWorkflow(ctx context.Context, req *cronworkflowpkg.DeleteCronWorkflowRequest) (*cronworkflowpkg.CronWorkflowDeletedResponse, error) {
-	wfClient := auth.GetWfClient(ctx)
-	cronWf, err := wfClient.ArgoprojV1alpha1().CronWorkflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
+	_, err := c.getCronWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	err = c.validateInstanceID(cronWf)
-	if err != nil {
-		return nil, err
-	}
-	err = wfClient.ArgoprojV1alpha1().CronWorkflows(req.Namespace).Delete(req.Name, req.DeleteOptions)
+	err = auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).Delete(req.Name, req.DeleteOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -114,6 +93,19 @@ func (c *cronWorkflowServiceServer) withInstanceID(opt metav1.ListOptions) metav
 	}
 	opt.LabelSelector += fmt.Sprintf("%s=%s", common.LabelKeyControllerInstanceID, c.instanceID)
 	return opt
+}
+
+func (c *cronWorkflowServiceServer) getCronWorkflow(ctx context.Context, namespace string, name string, options v1.GetOptions) (*v1alpha1.CronWorkflow, error) {
+	wfClient := auth.GetWfClient(ctx)
+	cronWf, err := wfClient.ArgoprojV1alpha1().CronWorkflows(namespace).Get(name, options)
+	if err != nil {
+		return nil, err
+	}
+	err = c.validateInstanceID(cronWf)
+	if err != nil {
+		return nil, err
+	}
+	return cronWf, nil
 }
 
 func (c *cronWorkflowServiceServer) validateInstanceID(cronWf *v1alpha1.CronWorkflow) error {
