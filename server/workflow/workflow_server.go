@@ -249,7 +249,7 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.WorkflowResumeRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	_, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +260,7 @@ func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return nil, err
 	}
 
-	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +271,7 @@ func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.Wo
 func (s *workflowServer) SuspendWorkflow(ctx context.Context, req *workflowpkg.WorkflowSuspendRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	_, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +281,7 @@ func (s *workflowServer) SuspendWorkflow(ctx context.Context, req *workflowpkg.W
 		return nil, err
 	}
 
-	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +292,7 @@ func (s *workflowServer) SuspendWorkflow(ctx context.Context, req *workflowpkg.W
 func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *workflowpkg.WorkflowTerminateRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	_, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -302,7 +302,7 @@ func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *workflowpkg
 		return nil, err
 	}
 
-	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
