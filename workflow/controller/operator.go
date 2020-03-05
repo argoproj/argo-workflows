@@ -1288,23 +1288,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, err), err
 	}
 
-	// Check if we are shutting down. If we are, only execute non-leaf templates, or leaf templates from onExit handlers
-	// if we are in a "Stop" shutdown. We want to execute non-leaf templates to resolve all virtual nodes (including the
-	// main workflow).
-	switch woc.wf.Spec.Shutdown {
-	case wfv1.ShutdownStrategyTerminate:
-		if resolvedTmpl.IsLeaf() {
-			woc.requeue(0)
-			return woc.initializeNodeOrMarkFailed(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, "workflow terminated"), nil
-		}
-	case wfv1.ShutdownStrategyStop:
-		if resolvedTmpl.IsLeaf() && !opts.onExitTemplate {
-			woc.requeue(0)
-			return woc.initializeNodeOrMarkFailed(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, "workflow stopped"), nil
-		}
-	default:
-		// Do nothing
-	}
 
 	localParams := make(map[string]string)
 	// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
@@ -2232,7 +2215,7 @@ func (woc *wfOperationCtx) createTemplateContext(templateScope string) *template
 }
 
 func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID string, tmplCtx *templateresolution.Context) (bool, *wfv1.NodeStatus, error) {
-	if templateRef != "" {
+	if templateRef != "" && woc.wf.Spec.Shutdown != wfv1.ShutdownStrategyTerminate {
 		woc.log.Infof("Running OnExit handler: %s", templateRef)
 		onExitNodeName := parentName + ".onExit"
 		onExitNode, err := woc.executeTemplate(onExitNodeName, &wfv1.Template{Template: templateRef}, tmplCtx, woc.wf.Spec.Arguments, &executeTemplateOpts{

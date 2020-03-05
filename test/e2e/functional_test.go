@@ -208,11 +208,11 @@ func (s *FunctionalSuite) TestStopBehavior() {
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeFailed, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("A.onExit")
-			if assert.Nil(t, nodeStatus) {
+			if assert.NotNil(t, nodeStatus) {
 				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
 			}
 			nodeStatus = status.Nodes.FindByDisplayName("stop-terminate.onExit")
-			if assert.Nil(t, nodeStatus) {
+			if assert.NotNil(t, nodeStatus) {
 				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
 			}
 		})
