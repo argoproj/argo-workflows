@@ -91,6 +91,8 @@ type ArtifactRepository struct {
 	Artifactory *ArtifactoryArtifactRepository `json:"artifactory,omitempty"`
 	// HDFS stores artifacts in HDFS
 	HDFS *HDFSArtifactRepository `json:"hdfs,omitempty"`
+	// OSS stores artifact in a OSS-compliant object store
+	OSS *OSSArtifactRepository `json:"oss,omitempty"`
 }
 
 func (a *ArtifactRepository) IsArchiveLogs() bool {
@@ -148,6 +150,14 @@ type S3ArtifactRepository struct {
 	// KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
 	// DEPRECATED. Use KeyFormat instead
 	KeyPrefix string `json:"keyPrefix,omitempty"`
+}
+
+// OSSArtifactRepository defines the controller configuration for an OSS artifact repository
+type OSSArtifactRepository struct {
+	wfv1.OSSBucket `json:",inline"`
+
+	// KeyFormat is defines the format of how to store keys. Can reference workflow variables
+	KeyFormat string `json:"keyFormat,omitempty"`
 }
 
 // ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository

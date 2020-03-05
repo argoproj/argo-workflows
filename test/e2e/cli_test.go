@@ -327,6 +327,20 @@ func (s *CLISuite) TestWorkflowLint() {
 			}
 		})
 	})
+	s.Run("LintFileEmptyParamDAG", func() {
+		s.Given().RunCli([]string{"lint", "expectedfailures/empty-parameter-dag.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.Error(t, err, "exit status 1") {
+				assert.Contains(t, output, "templates.abc.tasks.a templates.whalesay inputs.parameters.message was not supplied")
+			}
+		})
+	})
+	s.Run("LintFileEmptyParamSteps", func() {
+		s.Given().RunCli([]string{"lint", "expectedfailures/empty-parameter-steps.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.Error(t, err, "exit status 1") {
+				assert.Contains(t, output, "templates.abc.steps[0].a templates.whalesay inputs.parameters.message was not supplied")
+			}
+		})
+	})
 	s.Run("LintFileWithTemplate", func() {
 		s.Given().
 			WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").

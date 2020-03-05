@@ -88,6 +88,9 @@ message ArtifactLocation {
 
   // Raw contains raw artifact location details
   optional RawArtifact raw = 7;
+
+  // OSS contains OSS artifact location details
+  optional OSSArtifact oss = 8;
 }
 
 message ArtifactRepositoryRef {
@@ -499,6 +502,29 @@ message NodeStatus {
 // files. Note that if the artifact is a directory, the artifact driver must support the ability to
 // save/load the directory appropriately.
 message NoneStrategy {
+}
+
+// OSSArtifact is the location of an OSS artifact
+message OSSArtifact {
+  optional OSSBucket oSSBucket = 1;
+
+  // Key is the path in the bucket where the artifact resides
+  optional string key = 2;
+}
+
+// OSSBucket contains the access information required for interfacing with an OSS bucket
+message OSSBucket {
+  // Endpoint is the hostname of the bucket endpoint
+  optional string endpoint = 1;
+
+  // Bucket is the name of the bucket
+  optional string bucket = 2;
+
+  // AccessKeySecret is the secret selector to the bucket's access key
+  optional k8s.io.api.core.v1.SecretKeySelector accessKeySecret = 3;
+
+  // SecretKeySecret is the secret selector to the bucket's secret key
+  optional k8s.io.api.core.v1.SecretKeySelector secretKeySecret = 4;
 }
 
 // Outputs hold parameters, artifacts, and results from a step
