@@ -117,9 +117,8 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	if req.ListOptions != nil {
 		listOption = *req.ListOptions
 	}
-	listOption = s.withInstanceID(listOption)
 
-	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).List(listOption)
+	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).List(s.withInstanceID(listOption))
 	if err != nil {
 		return nil, err
 	}
@@ -148,8 +147,7 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 	if req.ListOptions != nil {
 		opts = *req.ListOptions
 	}
-	opts = s.withInstanceID(opts)
-	watch, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Watch(opts)
+	watch, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Watch(s.withInstanceID(opts))
 	if err != nil {
 		return err
 	}

@@ -38,8 +38,7 @@ func (c *cronWorkflowServiceServer) ListCronWorkflows(ctx context.Context, req *
 	if req.ListOptions != nil {
 		options = *req.ListOptions
 	}
-	options = c.withInstanceID(options)
-	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).List(options)
+	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).List(c.withInstanceID(options))
 }
 
 func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req *cronworkflowpkg.CreateCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
