@@ -240,6 +240,10 @@
         "raw": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.RawArtifact",
           "title": "Raw contains raw artifact location details"
+        },
+        "oss": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSArtifact",
+          "title": "OSS contains OSS artifact location details"
         }
       },
       "description": "ArtifactLocation describes a location for a single or multiple artifacts.\nIt is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).\nIt is also used to describe the location of multiple artifacts such as the archive location\nof a single workflow step, which the executor will use as a default location to store its files."
@@ -782,6 +786,41 @@
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.NoneStrategy": {
       "type": "object",
       "description": "NoneStrategy indicates to skip tar process and upload the files or directory tree as independent\nfiles. Note that if the artifact is a directory, the artifact driver must support the ability to\nsave/load the directory appropriately."
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSArtifact": {
+      "type": "object",
+      "properties": {
+        "oSSBucket": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSBucket"
+        },
+        "key": {
+          "type": "string",
+          "title": "Key is the path in the bucket where the artifact resides"
+        }
+      },
+      "title": "OSSArtifact is the location of an OSS artifact"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSBucket": {
+      "type": "object",
+      "properties": {
+        "endpoint": {
+          "type": "string",
+          "title": "Endpoint is the hostname of the bucket endpoint"
+        },
+        "bucket": {
+          "type": "string",
+          "title": "Bucket is the name of the bucket"
+        },
+        "accessKeySecret": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",
+          "title": "AccessKeySecret is the secret selector to the bucket's access key"
+        },
+        "secretKeySecret": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",
+          "title": "SecretKeySecret is the secret selector to the bucket's secret key"
+        }
+      },
+      "title": "OSSBucket contains the access information required for interfacing with an OSS bucket"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Outputs": {
       "type": "object",
