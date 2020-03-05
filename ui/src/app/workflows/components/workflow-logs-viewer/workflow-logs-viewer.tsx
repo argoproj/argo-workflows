@@ -68,9 +68,14 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                             <i className='fa fa-exclamation-triangle status-icon--failed' /> Failed to load logs: {this.state.error.message}
                         </p>
                     )}
-                    {!this.state.error && this.state.lines.length === 0 && (
+                    {!this.state.error && this.state.lines.length === 0 && this.isCurrentNodeRunningOrPending() && (
                         <p>
                             <i className='fa fa-circle-notch fa-spin' /> Waiting for data...
+                        </p>
+                    )}
+                    {!this.state.error && this.state.lines.length === 0 && !this.isCurrentNodeRunningOrPending() && (
+                        <p>
+                            Pod did not output any logs.
                         </p>
                     )}
                     {this.state.lines.length > 0 && (
@@ -99,5 +104,11 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                 )}
             </div>
         );
+    }
+
+    private isCurrentNodeRunningOrPending(): boolean {
+        console.log('Lines: ', this.state.lines.length);
+        console.log(this.props.nodeId + 'is ' + this.props.workflow.status.nodes[this.props.nodeId].phase);
+        return this.props.workflow.status.nodes[this.props.nodeId].phase == 'Running' || this.props.workflow.status.nodes[this.props.nodeId].phase == 'Pending';
     }
 }
