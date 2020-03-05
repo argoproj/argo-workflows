@@ -544,7 +544,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			Status(200).
 			JSON().
 			Path("$.status.message").
-			Equal("terminated")
+			Equal("Stopped with strategy 'Terminate'")
 	})
 
 	s.Run("Delete", func() {
