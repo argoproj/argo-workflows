@@ -427,6 +427,9 @@ func (wfc *WorkflowController) processNextItem() bool {
 	return true
 }
 
+// addingWorkflowDefaultValueIfValueNotExist sets values in the workflow.Spec with defaults from the
+// workflowController. Values in the workflow will be given the upper hand over the defaults.
+// The defaults for the workflow controller is set in the WorkflowController.Config.DefautWorkflowSpec
 func (wfc *WorkflowController) addingWorkflowDefaultValueIfValueNotExist(wf *wfv1.Workflow) error {
 	//var workflowSpec *wfv1.WorkflowSpec = &wf.Spec
 	if wfc.Config.DefautWorkflowSpec != nil {
