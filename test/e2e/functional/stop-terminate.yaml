@@ -23,7 +23,7 @@ spec:
           - name: message
       container:
         image: alpine:3.7
-        command: [sleep, "15"]
+        command: [sleep, "10"]
 
     - name: exit
       container:
