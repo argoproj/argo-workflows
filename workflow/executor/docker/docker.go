@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -69,21 +70,17 @@ func (d *DockerExecutor) CopyFile(containerID string, sourcePath string, destPat
 	return nil
 }
 
-type multiReadCloser struct {
+type cmdCloser struct {
 	io.Reader
-	closers map[string]io.Closer
+	cmd *exec.Cmd
 }
 
-func (mc *multiReadCloser) Close() error {
-	var lastErr error
-	for name, c := range mc.closers {
-		err := c.Close()
-		if err != nil {
-			log.Errorf("error closing docker logs %s pipe , %v", name, err)
-			lastErr = err
-		}
+func (c *cmdCloser) Close() error {
+	err := c.cmd.Wait()
+	if err != nil {
+		return errors.InternalWrapError(err)
 	}
-	return lastErr
+	return nil
 }
 
 func (d *DockerExecutor) GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error) {
@@ -95,27 +92,42 @@ func (d *DockerExecutor) GetOutputStream(containerID string, combinedOutput bool
 		return nil, errors.InternalWrapError(err)
 	}
 
-	reader := stdout
-
-	if combinedOutput {
-		stderr, err := cmd.StderrPipe()
+	if !combinedOutput {
+		err = cmd.Start()
 		if err != nil {
 			return nil, errors.InternalWrapError(err)
 		}
-		reader = &multiReadCloser{
-			Reader: io.MultiReader(stdout, stderr),
-			closers: map[string]io.Closer{
-				"stdout": stdout,
-				"stderr": stderr,
-			},
-		}
+		return stdout, nil
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
 	}
 
 	err = cmd.Start()
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	return reader, nil
+
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+	reader, writer := io.Pipe()
+	go func() {
+		defer wg.Done()
+		_, _ = io.Copy(writer, stdout)
+	}()
+	go func() {
+		defer wg.Done()
+		_, _ = io.Copy(writer, stderr)
+	}()
+
+	go func() {
+		defer writer.Close()
+		wg.Wait()
+	}()
+
+	return &cmdCloser{Reader: reader, cmd: cmd}, nil
 }
 
 func (d *DockerExecutor) WaitInit() error {
