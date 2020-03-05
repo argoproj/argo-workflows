@@ -65,8 +65,6 @@ type WorkflowControllerConfig struct {
 	// Config customized Docker Sock path
 	DockerSockPath string `json:"dockerSockPath,omitempty"`
 
-	// Workflow defaults
-	//[TODO] fix the representation
 	DefautWorkflowSpec *wfv1.WorkflowSpec `json:"workflowDefaults,omitempty"`
 }
 
