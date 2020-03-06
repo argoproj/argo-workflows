@@ -68,11 +68,12 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                             <i className='fa fa-exclamation-triangle status-icon--failed' /> Failed to load logs: {this.state.error.message}
                         </p>
                     )}
-                    {!this.state.error && this.state.lines.length === 0 && (
+                    {!this.state.error && this.state.lines.length === 0 && this.isCurrentNodeRunningOrPending() && (
                         <p>
                             <i className='fa fa-circle-notch fa-spin' /> Waiting for data...
                         </p>
                     )}
+                    {!this.state.error && this.state.lines.length === 0 && !this.isCurrentNodeRunningOrPending() && <p>Pod did not output any logs.</p>}
                     {this.state.lines.length > 0 && (
                         <div className='log-box'>
                             <i className='fa fa-chevron-down' />
@@ -88,7 +89,20 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                         </div>
                     )}
                 </div>
+                {this.state.lines.length === 0 && (
+                    <p>
+                        Still waiting for data or an error? Try getting{' '}
+                        <a href={services.workflows.getArtifactLogsUrl(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived)}>
+                            logs from the artifacts
+                        </a>
+                        .
+                    </p>
+                )}
             </div>
         );
+    }
+
+    private isCurrentNodeRunningOrPending(): boolean {
+        return this.props.workflow.status.nodes[this.props.nodeId].phase === 'Running' || this.props.workflow.status.nodes[this.props.nodeId].phase === 'Pending';
     }
 }

@@ -16,7 +16,7 @@ Argoproj is a collection of tools for getting work done with Kubernetes.
 * [Argo Workflows](https://github.com/argoproj/argo) - Container-native Workflow Engine
 * [Argo CD](https://github.com/argoproj/argo-cd) - Declarative GitOps Continuous Delivery
 * [Argo Events](https://github.com/argoproj/argo-events) - Event-based Dependency Manager
-* [Argo Rollouts](https://github.com/argoproj/argo-rollouts) - Deployment CR with support for Canary and Blue Green deployment strategies
+* [Argo Rollouts](https://github.com/argoproj/argo-rollouts) - Progressive Delivery with support for Canary and Blue Green deployment strategies
 
 Also argoproj-labs is a separate GitHub org that we setup for community contributions related to the Argoproj ecosystem. Repos in argoproj-labs are administered by the owners of each project. Please reach out to us on the Argo slack channel if you have a project that you would like to add to the org to make it easier to others in the Argo community to find, use, and contribute back.
 * https://github.com/argoproj-labs
@@ -72,10 +72,12 @@ Currently **officially** using Argo:
 1. [Adobe](https://www.adobe.com/)
 1. [Alibaba Cloud](https://www.alibabacloud.com/about)
 1. [Ant Financial](https://www.antfin.com/)
+1. [BasisAI](https://basis-ai.com/)
 1. [BioBox Analytics](https://biobox.io)
 1. [BlackRock](https://www.blackrock.com/)
 1. [Canva](https://www.canva.com/)
 1. [Capital One](https://www.capitalone.com/tech/)
+1. [CarTrack](https://www.cartrack.com/)
 1. [CCRi](https://www.ccri.com/)
 1. [Codec](https://www.codec.ai/)
 1. [Commodus Tech](https://www.commodus.tech)
@@ -108,6 +110,7 @@ Currently **officially** using Argo:
 1. [OVH](https://www.ovh.com/)
 1. [Peak AI](https://www.peak.ai/)
 1. [Preferred Networks](https://www.preferred-networks.jp/en/)
+1. [Prudential](https://www.prudential.com.sg/)
 1. [Quantibio](http://quantibio.com/us/en/)
 1. [Ramboll Shair](https://ramboll-shair.com/)
 1. [Red Hat](https://www.redhat.com/en)

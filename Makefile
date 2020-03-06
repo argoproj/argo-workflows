@@ -1,6 +1,7 @@
 
 BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
+GIT_REMOTE             = origin
 GIT_BRANCH             = $(shell git rev-parse --abbrev-ref=loose HEAD | sed 's/heads\///')
 GIT_TAG                = $(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
@@ -50,17 +51,17 @@ K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-
 ARGO_TOKEN            = $(shell kubectl -n argo get secret -o name | grep argo-server | xargs kubectl -n argo get -o jsonpath='{.data.token}' | base64 --decode)
 
 override LDFLAGS += \
-  -X ${PACKAGE}.version=$(VERSION) \
-  -X ${PACKAGE}.buildDate=${BUILD_DATE} \
-  -X ${PACKAGE}.gitCommit=${GIT_COMMIT} \
-  -X ${PACKAGE}.gitTreeState=${GIT_TREE_STATE}
+  -X github.com/argoproj/argo.version=$(VERSION) \
+  -X github.com/argoproj/argo.buildDate=${BUILD_DATE} \
+  -X github.com/argoproj/argo.gitCommit=${GIT_COMMIT} \
+  -X github.com/argoproj/argo.gitTreeState=${GIT_TREE_STATE}
 
 ifeq ($(STATIC_BUILD), true)
 override LDFLAGS += -extldflags "-static"
 endif
 
 ifneq ($(GIT_TAG),)
-override LDFLAGS += -X ${PACKAGE}.gitTag=${GIT_TAG}
+override LDFLAGS += -X github.com/argoproj/argo.gitTag=${GIT_TAG}
 endif
 
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | cut -c 26-)
@@ -69,6 +70,8 @@ CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join 
 MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
+# the sort puts _.primary first in the list
+SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json' | sort)
 
 .PHONY: build
 build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
@@ -200,17 +203,24 @@ endif
 .PHONY: codegen
 codegen:
 	# Generate code
+	# We need the vendor folder for compatibility
+	go mod vendor
+
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
-	./hack/update-openapigen.sh
-	go run ./hack/gen-openapi-spec/main.go $(MANIFESTS_VERSION) > ./api/openapi-spec/swagger.json
+	make api/openapi-spec/swagger.json
 	find . -path '*/mocks/*' -type f -not -path '*/vendor/*' -exec ./hack/update-mocks.sh {} ';'
+
+	rm -rf ./vendor
+	go mod tidy
+
 
 .PHONY: manifests
 manifests: status manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml manifests/quick-start-no-db.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml test/e2e/manifests/no-db.yaml
 
 # we use a different file to ./VERSION to force updating manifests after a `make clean`
 dist/MANIFESTS_VERSION:
+	mkdir -p dist
 	echo $(MANIFESTS_VERSION) > dist/MANIFESTS_VERSION
 
 manifests/install.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
@@ -416,24 +426,34 @@ clean:
 	# Delete build files
 	rm -Rf dist ui/dist
 
+# swagger
+
+$(HOME)/go/bin/swagger:
+	go get github.com/go-swagger/go-swagger/cmd/swagger
+
+api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) dist/MANIFESTS_VERSION hack/swaggify.sh
+	swagger mixin -c 412 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
+
 # pre-push
 
 .PHONY: pre-commit
 pre-commit: test lint codegen manifests start pf-bg smoke test-api test-cli
 
-# release
+# release - targets only available on release branch
+ifneq ($(findstring release,$(GIT_BRANCH)),)
 
 .PHONY: prepare-release
-prepare-release: manifests codegen
+prepare-release: clean codegen manifests
 	# Commit if any changes
 	git diff --quiet || git commit -am "Update manifests to $(VERSION)"
 	git tag $(VERSION)
 
 .PHONY: publish-release
-publish-release:
+publish-release: build
 	# Push images to Docker Hub
 	docker push $(IMAGE_NAMESPACE)/argocli:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
-	git push --follow-tags
-
+	git push
+	git push $(GIT_REMOTE) $(VERSION)
+endif

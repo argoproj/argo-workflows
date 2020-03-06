@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 
+	"github.com/argoproj/pkg/cli"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/auth"
@@ -45,7 +46,7 @@ If you're using the Argo Server (e.g. because you need large workflow support or
 	command.AddCommand(NewSubmitCommand())
 	command.AddCommand(NewSuspendCommand())
 	command.AddCommand(auth.NewAuthCommand())
-	command.AddCommand(NewWatchCommand())
+	command.AddCommand(NewWaitCommand())
 	command.AddCommand(NewWatchCommand())
 	command.AddCommand(NewTerminateCommand())
 	command.AddCommand(archive.NewArchiveCommand())
@@ -54,5 +55,13 @@ If you're using the Argo Server (e.g. because you need large workflow support or
 	command.AddCommand(cron.NewCronWorkflowCommand())
 	client.AddKubectlFlagsToCmd(command)
 	client.AddArgoServerFlagsToCmd(command)
+
+	// global log level
+	var logLevel string
+	command.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		cli.SetLogLevel(logLevel)
+	}
+	command.PersistentFlags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
+
 	return command
 }

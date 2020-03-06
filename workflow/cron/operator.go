@@ -5,10 +5,11 @@ import (
 	"sort"
 	"time"
 
-	cron "github.com/robfig/cron/v3"
+	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
-	v12 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
@@ -23,21 +24,29 @@ type cronWfOperationCtx struct {
 	cronWf      *v1alpha1.CronWorkflow
 	wfClientset versioned.Interface
 	wfClient    typed.WorkflowInterface
+	wfLister    util.WorkflowLister
 	cronWfIf    typed.CronWorkflowInterface
 }
 
-func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface) (*cronWfOperationCtx, error) {
+func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface, wfLister util.WorkflowLister) (*cronWfOperationCtx, error) {
 	return &cronWfOperationCtx{
 		name:        cronWorkflow.ObjectMeta.Name,
 		cronWf:      cronWorkflow,
 		wfClientset: wfClientset,
 		wfClient:    wfClientset.ArgoprojV1alpha1().Workflows(cronWorkflow.Namespace),
+		wfLister:    wfLister,
 		cronWfIf:    wfClientset.ArgoprojV1alpha1().CronWorkflows(cronWorkflow.Namespace),
 	}, nil
 }
 
 func (woc *cronWfOperationCtx) Run() {
 	log.Infof("Running %s", woc.name)
+
+	err := woc.reconcileDeletedWfs()
+	if err != nil {
+		log.Errorf("could not remove deleted Workflows: %s", err)
+		return
+	}
 
 	proceed, err := woc.enforceRuntimePolicy()
 	if err != nil {
@@ -63,10 +72,10 @@ func (woc *cronWfOperationCtx) Run() {
 	}
 }
 
-func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow) v12.ObjectReference {
+func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow) corev1.ObjectReference {
 	// This is a bit of a hack. Ideally we'd use ref.GetReference, but for some reason the `runWf` object is coming back
 	// without `Kind` and `APIVersion` set (even though it it set on `wf`). To fix this, we hard code those values.
-	return v12.ObjectReference{
+	return corev1.ObjectReference{
 		Kind:            wf.Kind,
 		APIVersion:      wf.APIVersion,
 		Name:            runWf.GetName(),
@@ -126,16 +135,43 @@ func (woc *cronWfOperationCtx) terminateOutstandingWorkflows() error {
 }
 
 func (woc *cronWfOperationCtx) runOutstandingWorkflows() error {
+	proceed, err := woc.shouldOutstandingWorkflowsBeRun()
+	if err != nil {
+		return err
+	}
+	if proceed {
+		woc.Run()
+	}
+	return nil
+}
 
+func (woc *cronWfOperationCtx) shouldOutstandingWorkflowsBeRun() (bool, error) {
 	// If this CronWorkflow has been run before, check if we have missed any scheduled executions
 	if woc.cronWf.Status.LastScheduledTime != nil {
-		now := time.Now()
-		var missedExecutionTime time.Time
-		cronSchedule, err := cron.ParseStandard(woc.cronWf.Spec.Schedule)
-		if err != nil {
-			return err
+		var now time.Time
+		var cronSchedule cron.Schedule
+		if woc.cronWf.Spec.Timezone != "" {
+			loc, err := time.LoadLocation(woc.cronWf.Spec.Timezone)
+			if err != nil {
+				return false, fmt.Errorf("invalid timezone '%s': %s", woc.cronWf.Spec.Timezone, err)
+			}
+			now = time.Now().In(loc)
+
+			cronScheduleString := "CRON_TZ=" + woc.cronWf.Spec.Timezone + " " + woc.cronWf.Spec.Schedule
+			cronSchedule, err = cron.ParseStandard(cronScheduleString)
+			if err != nil {
+				return false, fmt.Errorf("unable to form timezone schedule '%s': %s", cronScheduleString, err)
+			}
+		} else {
+			var err error
+			now = time.Now()
+			cronSchedule, err = cron.ParseStandard(woc.cronWf.Spec.Schedule)
+			if err != nil {
+				return false, err
+			}
 		}
 
+		var missedExecutionTime time.Time
 		nextScheduledRunTime := cronSchedule.Next(woc.cronWf.Status.LastScheduledTime.Time)
 		// Workflow should have ran
 		for nextScheduledRunTime.Before(now) {
@@ -148,10 +184,30 @@ func (woc *cronWfOperationCtx) runOutstandingWorkflows() error {
 			// If StartingDeadlineSeconds is not set, or we are still within the deadline window, run the Workflow
 			if woc.cronWf.Spec.StartingDeadlineSeconds == nil || now.Before(missedExecutionTime.Add(time.Duration(*woc.cronWf.Spec.StartingDeadlineSeconds)*time.Second)) {
 				log.Infof("%s missed an execution at %s and is within StartingDeadline", woc.cronWf.Name, missedExecutionTime.Format("Mon Jan _2 15:04:05 2006"))
-				woc.Run()
+				return true, nil
 			}
 		}
 	}
+	return false, nil
+}
+
+func (woc *cronWfOperationCtx) reconcileDeletedWfs() error {
+	wfList, err := woc.wfLister.List()
+	if err != nil {
+		return fmt.Errorf("unable to list workflows: %s", err)
+	}
+
+	currentWfs := make(map[types.UID]bool)
+	for _, wf := range wfList {
+		currentWfs[wf.UID] = true
+	}
+
+	for _, objectRef := range woc.cronWf.Status.Active {
+		if found := currentWfs[objectRef.UID]; !found {
+			woc.removeFromActiveList(objectRef.UID)
+		}
+	}
+
 	return nil
 }
 
@@ -159,15 +215,21 @@ func (woc *cronWfOperationCtx) removeActiveWf(wf *v1alpha1.Workflow) {
 	if wf == nil || wf.ObjectMeta.UID == "" {
 		return
 	}
-	for i, objectRef := range woc.cronWf.Status.Active {
-		if objectRef.UID == wf.ObjectMeta.UID {
-			woc.cronWf.Status.Active = append(woc.cronWf.Status.Active[:i], woc.cronWf.Status.Active[i+1:]...)
-			err := woc.persistUpdate()
-			if err != nil {
-				log.Errorf("Unable to update CronWorkflow '%s': %s", woc.cronWf.Name, err)
-			}
+	woc.removeFromActiveList(wf.ObjectMeta.UID)
+	err := woc.persistUpdate()
+	if err != nil {
+		log.Errorf("Unable to update CronWorkflow '%s': %s", woc.cronWf.Name, err)
+	}
+}
+
+func (woc *cronWfOperationCtx) removeFromActiveList(uid types.UID) {
+	var newActive []corev1.ObjectReference
+	for _, ref := range woc.cronWf.Status.Active {
+		if ref.UID != uid {
+			newActive = append(newActive, ref)
 		}
 	}
+	woc.cronWf.Status.Active = newActive
 }
 
 func (woc *cronWfOperationCtx) enforceHistoryLimit() {

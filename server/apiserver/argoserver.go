@@ -14,6 +14,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	apiv1 "k8s.io/api/core/v1"
+	apiError "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
@@ -21,6 +22,7 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
@@ -107,15 +109,12 @@ func (ao ArgoServerOpts) ValidateOpts() error {
 }
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
-
+	log.WithField("version", argo.GetVersion()).Info("Starting Argo Server")
 	configMap, err := as.rsyncConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = as.restartOnConfigChange(ctx.Done())
-	if err != nil {
-		log.Fatal(err)
-	}
+	as.restartOnConfigChange(ctx.Done())
 	var offloadRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	var wfArchive = sqldb.NullWorkflowArchive
 	persistence := configMap.Persistence
@@ -124,10 +123,14 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.WithField("nodeStatusOffload", persistence.NodeStatusOffload).Info("Offload node status")
-		if persistence.NodeStatusOffload {
-			offloadRepo = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+		// we always enable node offload, as this is read-only for the Argo Server, i.e. you can turn it off if you
+		// like and the controller won't offload newly created workflows, but you can still read them
+		offloadRepo, err = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+		if err != nil {
+			log.Fatal(err)
 		}
+		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
+		// disable the archiving - and still read old records
 		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName())
 	}
 	artifactServer := artifacts.NewArtifactServer(as.authenticator, offloadRepo, wfArchive)
@@ -254,6 +257,9 @@ func (as *argoServer) rsyncConfig() (*config.WorkflowControllerConfig, error) {
 	cm, err := as.kubeClientset.CoreV1().ConfigMaps(as.namespace).
 		Get(as.configName, metav1.GetOptions{})
 	if err != nil {
+		if apiError.IsNotFound(err) {
+			return &config.WorkflowControllerConfig{}, nil
+		}
 		return nil, errors.InternalWrapError(err)
 	}
 	return as.updateConfig(cm)
@@ -262,29 +268,36 @@ func (as *argoServer) rsyncConfig() (*config.WorkflowControllerConfig, error) {
 // Unlike the controller, the server creates object based on the config map at init time, and will not pick-up on
 // changes unless we restart.
 // Instead of opting to re-write the server, instead we'll just listen for any old change and restart.
-func (as *argoServer) restartOnConfigChange(stopCh <-chan struct{}) error {
-	w, err := as.kubeClientset.CoreV1().ConfigMaps(as.namespace).
-		Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + as.configName})
-	if err != nil {
-		return err
-	}
+func (as *argoServer) restartOnConfigChange(stopCh <-chan struct{}) {
 	go func() {
-		defer w.Stop()
+	main:
 		for {
-			select {
-			// normal exit, e.g. due to user interupt
-			case <-stopCh:
-				return
-			case e := <-w.ResultChan():
-				if e.Type != watch.Added {
-					log.WithField("eventType", e.Type).Info("config map event, exiting gracefully")
-					as.stopCh <- struct{}{}
+			log.Info("establishing configmap watch")
+			w, err := as.kubeClientset.CoreV1().ConfigMaps(as.namespace).
+				Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + as.configName})
+			if err != nil {
+				log.Fatalf("error establishing watch: %s", err)
+			}
+			log.Info("configmap watch established")
+			for {
+				select {
+				// normal exit, e.g. due to user interrupt
+				case <-stopCh:
 					return
+				case e, open := <-w.ResultChan():
+					if !open {
+						// The channel is closed, reopen it
+						continue main
+					}
+					if e.Type == watch.Modified || e.Type == watch.Deleted {
+						log.WithField("eventType", e.Type).Info("config map event, exiting gracefully")
+						as.stopCh <- struct{}{}
+						return
+					}
 				}
 			}
 		}
 	}()
-	return nil
 }
 
 func (as *argoServer) updateConfig(cm *apiv1.ConfigMap) (*config.WorkflowControllerConfig, error) {

@@ -14,10 +14,6 @@ data:
     # controller watches workflows and pods that *are not* labeled with an instance id.
     instanceID: my-ci-controller
 
-    # namespace limits the controller's watch/queries to a specific namespace. This allows the
-    # controller to run with namespace scope (Role), instead of cluster scope (ClusterRole).
-    namespace: argo
-
     # Parallelism limits the max total parallel workflows that can execute at the same time
     # (available since Argo v2.3)
     parallelism: 10

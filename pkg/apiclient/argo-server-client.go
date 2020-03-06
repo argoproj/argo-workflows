@@ -48,11 +48,6 @@ func NewClientConn(argoServer string) (*grpc.ClientConn, error) {
 	return conn, nil
 }
 
-// DEPRECATED
-func NewContext(auth string) context.Context {
-	return newContext(auth)
-}
-
 func newContext(auth string) context.Context {
 	if auth == "" {
 		return context.Background()

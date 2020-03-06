@@ -5,14 +5,23 @@
 ####################################################################################################
 FROM golang:1.13.4 as builder
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get --no-install-recommends install -y \
     git \
     make \
+    apt-utils \
+    apt-transport-https \
+    ca-certificates \
     wget \
     gcc \
     zip && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    apt-get clean \
+    && rm -rf \
+        /var/lib/apt/lists/* \
+        /tmp/* \
+        /var/tmp/* \
+        /usr/share/man \
+        /usr/share/doc \
+        /usr/share/doc-base
 
 WORKDIR /tmp
 
@@ -37,8 +46,15 @@ FROM debian:9.6-slim as argoexec-base
 ENV KUBECTL_VERSION=1.15.1
 ENV JQ_VERSION=1.6
 RUN apt-get update && \
-    apt-get install -y curl procps git tar mime-support && \
-    rm -rf /var/lib/apt/lists/* && \
+    apt-get --no-install-recommends install -y curl ca-certificates apt-utils apt-transport-https procps git tar mime-support && \
+    apt-get clean \
+    && rm -rf \
+        /var/lib/apt/lists/* \
+        /tmp/* \
+        /var/tmp/* \
+        /usr/share/man \
+        /usr/share/doc \
+        /usr/share/doc-base && \
     curl -L -o /usr/local/bin/kubectl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl && \
     chmod +x /usr/local/bin/kubectl && \
     curl -L -o /usr/local/bin/jq -LO https://github.com/stedolan/jq/releases/download/jq-${JQ_VERSION}/jq-linux64 && \

@@ -6,6 +6,7 @@ syntax = 'proto2';
 package github.com.argoproj.argo.pkg.apis.workflow.v1alpha1;
 
 import "k8s.io/api/core/v1/generated.proto";
+import "k8s.io/api/policy/v1beta1/generated.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
@@ -87,6 +88,9 @@ message ArtifactLocation {
 
   // Raw contains raw artifact location details
   optional RawArtifact raw = 7;
+
+  // OSS contains OSS artifact location details
+  optional OSSArtifact oss = 8;
 }
 
 message ArtifactRepositoryRef {
@@ -477,6 +481,29 @@ message NodeStatus {
 message NoneStrategy {
 }
 
+// OSSArtifact is the location of an OSS artifact
+message OSSArtifact {
+  optional OSSBucket oSSBucket = 1;
+
+  // Key is the path in the bucket where the artifact resides
+  optional string key = 2;
+}
+
+// OSSBucket contains the access information required for interfacing with an OSS bucket
+message OSSBucket {
+  // Endpoint is the hostname of the bucket endpoint
+  optional string endpoint = 1;
+
+  // Bucket is the name of the bucket
+  optional string bucket = 2;
+
+  // AccessKeySecret is the secret selector to the bucket's access key
+  optional k8s.io.api.core.v1.SecretKeySelector accessKeySecret = 3;
+
+  // SecretKeySecret is the secret selector to the bucket's secret key
+  optional k8s.io.api.core.v1.SecretKeySelector secretKeySecret = 4;
+}
+
 // Outputs hold parameters, artifacts, and results from a step
 message Outputs {
   // Parameters holds the list of output parameters produced by a step
@@ -647,9 +674,6 @@ message Template {
 
   // Template is the name of the template which is used as the base of this template.
   optional string template = 2;
-
-  // Arguments hold arguments to the template.
-  optional Arguments arguments = 3;
 
   // TemplateRef is the reference to the template resource which is used as the base of this template.
   optional TemplateRef templateRef = 4;
@@ -967,6 +991,12 @@ message WorkflowSpec {
   // PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
   // container fields which are not strings (e.g. resource limits).
   optional string podSpecPatch = 27;
+
+  // PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.
+  // Controller will automatically add the selector with workflow name, if selector is empty.
+  // Optional: Defaults to empty.
+  // +optional
+  optional k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec podDisruptionBudget = 31;
 }
 
 // WorkflowStatus contains overall status information about a workflow

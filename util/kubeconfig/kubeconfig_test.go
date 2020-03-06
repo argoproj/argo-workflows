@@ -41,7 +41,7 @@ func Test_BasicAuthString(t *testing.T) {
 
 		restConfig, err := clientcmd.RESTConfigFromKubeConfig([]byte(config))
 		assert.NoError(t, err)
-		authString, err := GetAuthString(restConfig)
+		authString, err := GetAuthString(restConfig, "")
 		assert.NoError(t, err)
 		assert.True(t, IsBasicAuthScheme(authString))
 		token := strings.TrimSpace(strings.TrimPrefix(authString, BasicAuthScheme))
@@ -72,7 +72,7 @@ func Test_BearerAuthString(t *testing.T) {
 
 	t.Run("Bearer Auth", func(t *testing.T) {
 		os.Setenv("ARGO_TOKEN", bearerToken)
-		authString, err := GetAuthString(&restConfig)
+		authString, err := GetAuthString(&restConfig, "")
 		assert.NoError(t, err)
 		assert.True(t, IsBearerAuthScheme(authString))
 		config, err := GetRestConfig(authString)

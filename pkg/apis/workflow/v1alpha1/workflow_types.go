@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	apiv1 "k8s.io/api/core/v1"
+	policyv1beta "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -276,6 +277,12 @@ type WorkflowSpec struct {
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,27,opt,name=podSpecPatch"`
+
+	//PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.
+	//Controller will automatically add the selector with workflow name, if selector is empty.
+	//Optional: Defaults to empty.
+	// +optional
+	PodDisruptionBudget *policyv1beta.PodDisruptionBudgetSpec `json:"podDisruptionBudget,omitempty" protobuf:"bytes,31,opt,name=podDisruptionBudget"`
 }
 
 type ParallelSteps struct {
@@ -335,9 +342,6 @@ type Template struct {
 
 	// Template is the name of the template which is used as the base of this template.
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
-
-	// Arguments hold arguments to the template.
-	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
 
 	// TemplateRef is the reference to the template resource which is used as the base of this template.
 	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,4,opt,name=templateRef"`
@@ -626,6 +630,9 @@ type ArtifactLocation struct {
 
 	// Raw contains raw artifact location details
 	Raw *RawArtifact `json:"raw,omitempty" protobuf:"bytes,7,opt,name=raw"`
+
+	// OSS contains OSS artifact location details
+	OSS *OSSArtifact `json:"oss,omitempty" protobuf:"bytes,8,opt,name=oss"`
 }
 
 type ArtifactRepositoryRef struct {
@@ -776,6 +783,15 @@ func (n Nodes) FindByDisplayName(name string) *NodeStatus {
 		}
 	}
 	return nil
+}
+
+func (in Nodes) Any(f func(node NodeStatus) bool) bool {
+	for _, i := range in {
+		if f(i) {
+			return true
+		}
+	}
+	return false
 }
 
 // UserContainer is a container specified by a user.
@@ -968,6 +984,10 @@ func (ws *WorkflowStatus) Failed() bool {
 	return ws.Phase == NodeFailed
 }
 
+func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
+	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
+}
+
 // Remove returns whether or not the node has completed execution
 func (n NodeStatus) Completed() bool {
 	return isCompletedPhase(n.Phase) || n.IsDaemoned() && n.Phase != NodePending
@@ -1004,6 +1024,11 @@ func (n *NodeStatus) GetTemplateRef() *TemplateRef {
 
 func (n *NodeStatus) IsResolvable() bool {
 	return true
+}
+
+// IsActiveSuspendNode returns whether this node is an active suspend node
+func (n *NodeStatus) IsActiveSuspendNode() bool {
+	return n.Type == NodeTypeSuspend && n.Phase == NodeRunning
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket
@@ -1170,6 +1195,33 @@ type HTTPArtifact struct {
 
 func (h *HTTPArtifact) HasLocation() bool {
 	return h != nil && h.URL != ""
+}
+
+// OSSBucket contains the access information required for interfacing with an OSS bucket
+type OSSBucket struct {
+	// Endpoint is the hostname of the bucket endpoint
+	Endpoint string `json:"endpoint" protobuf:"bytes,1,opt,name=endpoint"`
+
+	// Bucket is the name of the bucket
+	Bucket string `json:"bucket" protobuf:"bytes,2,opt,name=bucket"`
+
+	// AccessKeySecret is the secret selector to the bucket's access key
+	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret" protobuf:"bytes,3,opt,name=accessKeySecret"`
+
+	// SecretKeySecret is the secret selector to the bucket's secret key
+	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret" protobuf:"bytes,4,opt,name=secretKeySecret"`
+}
+
+// OSSArtifact is the location of an OSS artifact
+type OSSArtifact struct {
+	OSSBucket `json:",inline" protobuf:"bytes,1,opt,name=oSSBucket"`
+
+	// Key is the path in the bucket where the artifact resides
+	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+}
+
+func (o *OSSArtifact) HasLocation() bool {
+	return o != nil && o.Bucket != "" && o.Endpoint != "" && o.Key != ""
 }
 
 // ExecutorConfig holds configurations of an executor container.
@@ -1397,7 +1449,8 @@ func (a *Artifact) HasLocation() bool {
 		a.HTTP.HasLocation() ||
 		a.Artifactory.HasLocation() ||
 		a.Raw.HasLocation() ||
-		a.HDFS.HasLocation()
+		a.HDFS.HasLocation() ||
+		a.OSS.HasLocation()
 }
 
 // GetTemplateByName retrieves a defined template by its name
