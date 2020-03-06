@@ -5,9 +5,9 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -70,28 +70,64 @@ func (d *DockerExecutor) CopyFile(containerID string, sourcePath string, destPat
 	return nil
 }
 
+type cmdCloser struct {
+	io.Reader
+	cmd *exec.Cmd
+}
+
+func (c *cmdCloser) Close() error {
+	err := c.cmd.Wait()
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	return nil
+}
+
 func (d *DockerExecutor) GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error) {
 	cmd := exec.Command("docker", "logs", containerID)
 	log.Info(cmd.Args)
 
-	reader, err := cmd.StdoutPipe()
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
 
-	if combinedOutput {
-		stderr, err := cmd.StderrPipe()
+	if !combinedOutput {
+		err = cmd.Start()
 		if err != nil {
 			return nil, errors.InternalWrapError(err)
 		}
-		reader = ioutil.NopCloser(io.MultiReader(reader, stderr))
+		return stdout, nil
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
 	}
 
 	err = cmd.Start()
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	return reader, nil
+
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+	reader, writer := io.Pipe()
+	go func() {
+		defer wg.Done()
+		_, _ = io.Copy(writer, stdout)
+	}()
+	go func() {
+		defer wg.Done()
+		_, _ = io.Copy(writer, stderr)
+	}()
+
+	go func() {
+		defer writer.Close()
+		wg.Wait()
+	}()
+
+	return &cmdCloser{Reader: reader, cmd: cmd}, nil
 }
 
 func (d *DockerExecutor) WaitInit() error {

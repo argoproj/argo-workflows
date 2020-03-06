@@ -769,7 +769,7 @@ spec:
       limit: 10
       retryOn: "Always"
       backoff:
-        duration: 1         # Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
+        duration: "1m"         # Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
         factor: 2
         maxDuration: "1m"   # Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
     container:

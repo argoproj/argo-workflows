@@ -9,7 +9,7 @@
 #   ├---✔ stepB (whalesay)                     container-on-exit-m6wq5-2803967195  5s
 #   └-✔ stepB.onExit (exitContainer)           container-on-exit-m6wq5-22494146    4s
 #
-# Template onExit containers work for all templates: DAG, Steps, Container, Script, Suspend, and Resource.
+# Template onExit containers work for DAG Tasks and Steps.
 
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
