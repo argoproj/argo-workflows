@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -17,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -45,8 +47,10 @@ type WorkflowController struct {
 	// namespace of the workflow controller
 	namespace        string
 	managedNamespace string
+
 	// configMap is the name of the config map in which to derive configuration of the controller from
 	configMap string
+
 	// Config is the workflow controller's configuration
 	Config config.WorkflowControllerConfig
 
@@ -355,6 +359,14 @@ func (wfc *WorkflowController) processNextItem() bool {
 		wfc.throttler.Remove(key)
 		return true
 	}
+	err = wfc.addingWorkflowDefaultValueIfValueNotExist(wf)
+	if err != nil {
+		log.Warnf("Failed to unmarshal key '%s' to workflow object: %v", key, err)
+		woc := newWorkflowOperationCtx(wf, wfc)
+		woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
+		woc.persistUpdates()
+		wfc.throttler.Remove(key)
+	}
 
 	if wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true" {
 		wfc.throttler.Remove(key)
@@ -362,9 +374,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 		// but we are still draining the controller's workflow workqueue
 		return true
 	}
-
 	woc := newWorkflowOperationCtx(wf, wfc)
-
 	// Loading running workflow from persistence storage if nodeStatusOffload enabled
 	if wf.Status.IsOffloadNodeStatus() {
 		nodes, err := wfc.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
@@ -415,6 +425,33 @@ func (wfc *WorkflowController) processNextItem() bool {
 	// See: https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go
 	//c.handleErr(err, key)
 	return true
+}
+
+// addingWorkflowDefaultValueIfValueNotExist sets values in the workflow.Spec with defaults from the
+// workflowController. Values in the workflow will be given the upper hand over the defaults.
+// The defaults for the workflow controller is set in the WorkflowController.Config.DefautWorkflowSpec
+func (wfc *WorkflowController) addingWorkflowDefaultValueIfValueNotExist(wf *wfv1.Workflow) error {
+	//var workflowSpec *wfv1.WorkflowSpec = &wf.Spec
+	if wfc.Config.DefautWorkflowSpec != nil {
+		defaultsSpec, err := json.Marshal(*wfc.Config.DefautWorkflowSpec)
+		if err != nil {
+			return err
+		}
+		workflowSpec, err := json.Marshal(wf.Spec)
+		if err != nil {
+			return err
+		}
+		// https://github.com/kubernetes/apimachinery/blob/2373d029717c4d169463414a6127cd1d0d12680e/pkg/util/strategicpatch/patch.go#L94
+		new, err := strategicpatch.StrategicMergePatch(defaultsSpec, workflowSpec, wfv1.WorkflowSpec{})
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(new, &wf.Spec)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (wfc *WorkflowController) podWorker() {
