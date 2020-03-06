@@ -158,7 +158,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	defer wfc.wfQueue.ShutDown()
 	defer wfc.podQueue.ShutDown()
 
-	log.Infof("Workflow Controller (version: %s) starting", argo.GetVersion())
+	log.WithField("version", argo.GetVersion()).Info("Starting Workflow Controller")
 	log.Infof("Workers: workflow: %d, pod: %d", wfWorkers, podWorkers)
 	log.Info("Watch Workflow controller config map updates")
 	_, err := wfc.watchControllerConfigMap(ctx)

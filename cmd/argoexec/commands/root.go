@@ -67,6 +67,7 @@ func NewRootCommand() *cobra.Command {
 }
 
 func initExecutor() *executor.WorkflowExecutor {
+	log.WithField("version", argo.GetVersion()).Info("Starting Workflow Executor")
 	config, err := clientConfig.ClientConfig()
 	checkErr(err)
 
