@@ -35,7 +35,7 @@ func (c classicWorkflowTemplateServiceClient) UpdateWorkflowTemplate(_ context.C
 	panic("implement me")
 }
 
-func (c classicWorkflowTemplateServiceClient) DeleteWorkflowTemplate(_ context.Context, _ *workflowtemplate.WorkflowTemplateDeleteRequest, _ ...grpc.CallOption) (*workflowtemplate.WorkflowDeleteResponse, error) {
+func (c classicWorkflowTemplateServiceClient) DeleteWorkflowTemplate(_ context.Context, _ *workflowtemplate.WorkflowTemplateDeleteRequest, _ ...grpc.CallOption) (*workflowtemplate.WorkflowTemplateDeleteResponse, error) {
 	panic("implement me")
 }
 
