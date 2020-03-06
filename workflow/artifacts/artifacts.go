@@ -3,6 +3,8 @@ package executor
 import (
 	"fmt"
 
+	"github.com/argoproj/argo/workflow/artifacts/oss"
+
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/artifacts/artifactory"
 	"github.com/argoproj/argo/workflow/artifacts/git"
@@ -105,6 +107,31 @@ func NewDriver(art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error
 	}
 	if art.Raw != nil {
 		return &raw.RawArtifactDriver{}, nil
+	}
+
+	if art.OSS != nil {
+		var accessKey string
+		var secretKey string
+
+		if art.OSS.AccessKeySecret.Name != "" {
+			accessKeyBytes, err := ri.GetSecret(art.OSS.AccessKeySecret.Name, art.OSS.AccessKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			accessKey = string(accessKeyBytes)
+			secretKeyBytes, err := ri.GetSecret(art.OSS.SecretKeySecret.Name, art.OSS.SecretKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			secretKey = string(secretKeyBytes)
+		}
+
+		driver := oss.OSSArtifactDriver{
+			Endpoint:  art.OSS.Endpoint,
+			AccessKey: accessKey,
+			SecretKey: secretKey,
+		}
+		return &driver, nil
 	}
 
 	return nil, ErrUnsupportedDriver

@@ -915,21 +915,20 @@ spec:
     parameters:
     - name: parameter1
       value: value1
-    - name: parameter2
-      value: value2
   templates:
   - name: steps
     inputs:
       parameters:
       - name: parameter1
       - name: parameter2
+        value: template2
     steps:
       - - name: step1
           template: whalesay
           arguments:
             parameters:
             - name: json
-              value: "{{inputs.parameters}}"
+              value: "Workflow: {{workflow.parameters}}. Template: {{inputs.parameters}}"
 
   - name: whalesay
     inputs:
@@ -954,7 +953,7 @@ func TestInputParametersAsJson(t *testing.T) {
 	found := false
 	for _, node := range updatedWf.Status.Nodes {
 		if node.Type == wfv1.NodeTypePod {
-			expectedJson := `[{"name":"parameter1","value":"value1"},{"name":"parameter2","value":"value2"}]`
+			expectedJson := `Workflow: [{"name":"parameter1","value":"value1"}]. Template: [{"name":"parameter1","value":"value1"},{"name":"parameter2","value":"template2"}]`
 			assert.Equal(t, expectedJson, *node.Inputs.Parameters[0].Value)
 			found = true
 		}
