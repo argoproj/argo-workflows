@@ -198,9 +198,9 @@ func (s *FunctionalSuite) TestStopBehavior() {
 		When().
 		SubmitWorkflow().
 		WaitForWorkflowToStart(5*time.Second).
-		RunCli([]string{"stop", "stop-terminate"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"fail", "stop-terminate"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
-			assert.Contains(t, output, "workflow stop-terminate stopped")
+			assert.Contains(t, output, "workflow stop-terminate failed")
 		}).
 		WaitForWorkflow(20 * time.Second).
 		Then().

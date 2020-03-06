@@ -620,11 +620,11 @@ func TerminateWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
 	return err
 }
 
-// StopWorkflow terminates a workflow by setting its spec.shutdown to ShutdownStrategyStop
-func StopWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
+// FailWorkflow terminates a workflow by setting its spec.shutdown to ShutdownStrategyFail
+func FailWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
 	patchObj := map[string]interface{}{
 		"spec": map[string]interface{}{
-			"shutdown": wfv1.ShutdownStrategyStop,
+			"shutdown": wfv1.ShutdownStrategyFail,
 		},
 	}
 	var err error

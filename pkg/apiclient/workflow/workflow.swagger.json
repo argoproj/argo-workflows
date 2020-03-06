@@ -369,6 +369,44 @@
         ]
       }
     },
+    "/api/v1/workflows/{namespace}/{name}/fail": {
+      "put": {
+        "operationId": "FailWorkflow",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workflow.WorkflowFailRequest"
+            }
+          }
+        ],
+        "tags": [
+          "WorkflowService"
+        ]
+      }
+    },
     "/api/v1/workflows/{namespace}/{name}/resubmit": {
       "put": {
         "operationId": "ResubmitWorkflow",
@@ -475,44 +513,6 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/workflow.WorkflowRetryRequest"
-            }
-          }
-        ],
-        "tags": [
-          "WorkflowService"
-        ]
-      }
-    },
-    "/api/v1/workflows/{namespace}/{name}/stop": {
-      "put": {
-        "operationId": "StopWorkflow",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "name",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workflow.WorkflowStopRequest"
             }
           }
         ],
@@ -4673,6 +4673,17 @@
     "workflow.WorkflowDeleteResponse": {
       "type": "object"
     },
+    "workflow.WorkflowFailRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      }
+    },
     "workflow.WorkflowLintRequest": {
       "type": "object",
       "properties": {
@@ -4711,17 +4722,6 @@
       }
     },
     "workflow.WorkflowRetryRequest": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        }
-      }
-    },
-    "workflow.WorkflowStopRequest": {
       "type": "object",
       "properties": {
         "name": {

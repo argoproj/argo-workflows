@@ -60,8 +60,8 @@ func (c argoKubeWorkflowServiceClient) SuspendWorkflow(ctx context.Context, req 
 	return c.delegate.SuspendWorkflow(ctx, req)
 }
 
-func (c argoKubeWorkflowServiceClient) StopWorkflow(ctx context.Context, req *workflowpkg.WorkflowStopRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
-	return c.delegate.StopWorkflow(ctx, req)
+func (c argoKubeWorkflowServiceClient) FailWorkflow(ctx context.Context, req *workflowpkg.WorkflowFailRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+	return c.delegate.FailWorkflow(ctx, req)
 }
 
 func (c argoKubeWorkflowServiceClient) TerminateWorkflow(ctx context.Context, req *workflowpkg.WorkflowTerminateRequest, _ ...grpc.CallOption) (*v1alpha1.Workflow, error) {

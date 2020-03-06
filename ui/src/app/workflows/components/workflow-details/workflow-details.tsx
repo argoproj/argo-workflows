@@ -118,10 +118,10 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                         action: () => this.resumeWorkflow(ctx)
                                     },
                                     {
-                                        title: 'Stop',
+                                        title: 'Fail',
                                         iconClassName: 'fa fa-stop-circle',
                                         disabled: !Utils.isWorkflowRunning(this.state.workflow),
-                                        action: () => this.stopWorkflow(ctx)
+                                        action: () => this.failWorkflow(ctx)
                                     },
                                     {
                                         title: 'Terminate',
@@ -223,12 +223,12 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
             });
     }
 
-    private stopWorkflow(ctx: ContextApis) {
-        if (!confirm('Are you sure you want to stop this workflow?')) {
+    private failWorkflow(ctx: ContextApis) {
+        if (!confirm('Are you sure you want to fail this workflow?')) {
             return;
         }
         services.workflows
-            .stop(this.props.match.params.name, this.props.match.params.namespace)
+            .fail(this.props.match.params.name, this.props.match.params.namespace)
             .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
             .catch(error => {
                 this.appContext.apis.notifications.show({
