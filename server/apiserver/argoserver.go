@@ -22,6 +22,7 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
@@ -108,7 +109,7 @@ func (ao ArgoServerOpts) ValidateOpts() error {
 }
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
-
+	log.WithField("version", argo.GetVersion()).Info("Starting Argo Server")
 	configMap, err := as.rsyncConfig()
 	if err != nil {
 		log.Fatal(err)
