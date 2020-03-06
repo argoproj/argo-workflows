@@ -19,8 +19,8 @@ type RunningMode string
 
 // Running modes
 const (
-	KubeClient RunningMode = "KubeClient"
-	GRPCServer RunningMode = "GRPCServer"
+	KubeClientMode RunningMode = "KubeClient"
+	GRPCServerMode RunningMode = "GRPCServer"
 )
 
 type cronWorkflowServiceServer struct {
@@ -92,7 +92,7 @@ func (c *cronWorkflowServiceServer) DeleteCronWorkflow(ctx context.Context, req 
 }
 
 func (c *cronWorkflowServiceServer) withInstanceID(opt metav1.ListOptions) metav1.ListOptions {
-	if c.mode == KubeClient {
+	if c.mode == KubeClientMode {
 		return opt
 	}
 	if len(opt.LabelSelector) > 0 {
@@ -112,7 +112,7 @@ func (c *cronWorkflowServiceServer) getCronWorkflow(ctx context.Context, namespa
 	if err != nil {
 		return nil, err
 	}
-	if c.mode == KubeClient {
+	if c.mode == KubeClientMode {
 		return cronWf, nil
 	}
 	err = c.validateInstanceID(cronWf)

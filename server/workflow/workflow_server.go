@@ -25,8 +25,8 @@ type RunningMode string
 
 // Running modes
 const (
-	KubeClient RunningMode = "KubeClient"
-	GRPCServer RunningMode = "GRPCServer"
+	KubeClientMode RunningMode = "KubeClient"
+	GRPCServerMode RunningMode = "GRPCServer"
 )
 
 type workflowServer struct {
@@ -344,7 +344,7 @@ func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflo
 }
 
 func (s *workflowServer) withInstanceID(opt metav1.ListOptions) metav1.ListOptions {
-	if s.mode == KubeClient {
+	if s.mode == KubeClientMode {
 		return opt
 	}
 	if len(opt.LabelSelector) > 0 {
@@ -364,7 +364,7 @@ func (s *workflowServer) getWorkflow(ctx context.Context, namespace string, name
 	if err != nil {
 		return nil, err
 	}
-	if s.mode == KubeClient {
+	if s.mode == KubeClientMode {
 		return wf, nil
 	}
 	err = s.validateInstanceID(wf)

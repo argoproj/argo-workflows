@@ -368,7 +368,7 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
 	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
 	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.UUIDVersion]v1alpha1.Nodes{}, nil)
-	server := NewWorkflowServer(GRPCServer, "", offloadNodeStatusRepo)
+	server := NewWorkflowServer(GRPCServerMode, "", offloadNodeStatusRepo)
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := v1alpha.NewSimpleClientset(&wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
