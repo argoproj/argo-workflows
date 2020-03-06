@@ -14,43 +14,43 @@ var (
 
 	descWorkflowInfo = prometheus.NewDesc(
 		"argo_workflow_info",
-		"Information about workflow.",
+		"Information about workflow. This metric is deprecated: turn off by setting `disableLegacy: true` under `metricsConfig`",
 		append(descWorkflowDefaultLabels, "service_account_name", "templates"),
 		nil,
 	)
 	descWorkflowStartedAt = prometheus.NewDesc(
 		"argo_workflow_start_time",
-		"Start time in unix timestamp for a workflow.",
+		"Start time in unix timestamp for a workflow. This metric is deprecated: turn off by setting `disableLegacy: true` under `metricsConfig`",
 		descWorkflowDefaultLabels,
 		nil,
 	)
 	descWorkflowFinishedAt = prometheus.NewDesc(
 		"argo_workflow_completion_time",
-		"Completion time in unix timestamp for a workflow.",
+		"Completion time in unix timestamp for a workflow. This metric is deprecated: turn off by setting `disableLegacy: true` under `metricsConfig`",
 		descWorkflowDefaultLabels,
 		nil,
 	)
 	descWorkflowCreated = prometheus.NewDesc(
 		"argo_workflow_created_time",
-		"Creation time in unix timestamp for a workflow.",
+		"Creation time in unix timestamp for a workflow. This metric is deprecated: turn off by setting `disableLegacy: true` under `metricsConfig`",
 		descWorkflowDefaultLabels,
 		nil,
 	)
 	descWorkflowStatusPhase = prometheus.NewDesc(
 		"argo_workflow_status_phase",
-		"The workflow current phase.",
+		"The workflow current phase. This metric is deprecated: turn off by setting `disableLegacy: true` under `metricsConfig`",
 		append(descWorkflowDefaultLabels, "phase"),
 		nil,
 	)
 )
 
-// workflowCollector collects metrics about all workflows in the cluster
-type workflowCollector struct {
+// legacyWorkflowCollector collects metrics about all workflows in the cluster
+type legacyWorkflowCollector struct {
 	store util.WorkflowLister
 }
 
 // Describe implements the prometheus.Collector interface
-func (wc *workflowCollector) Describe(ch chan<- *prometheus.Desc) {
+func (wc *legacyWorkflowCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descWorkflowInfo
 	ch <- descWorkflowStartedAt
 	ch <- descWorkflowFinishedAt
@@ -59,7 +59,7 @@ func (wc *workflowCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 // Collect implements the prometheus.Collector interface
-func (wc *workflowCollector) Collect(ch chan<- prometheus.Metric) {
+func (wc *legacyWorkflowCollector) Collect(ch chan<- prometheus.Metric) {
 	workflows, err := wc.store.List()
 	if err != nil {
 		return
@@ -69,7 +69,7 @@ func (wc *workflowCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func (wc *workflowCollector) collectWorkflow(ch chan<- prometheus.Metric, wf wfv1.Workflow) {
+func (wc *legacyWorkflowCollector) collectWorkflow(ch chan<- prometheus.Metric, wf wfv1.Workflow) {
 	addConstMetric := func(desc *prometheus.Desc, t prometheus.ValueType, v float64, lv ...string) {
 		lv = append([]string{wf.Namespace, wf.Name, wf.Spec.Entrypoint}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, t, v, lv...)

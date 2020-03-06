@@ -13,13 +13,13 @@ type MetricsProvider interface {
 	GetMetrics() map[string]prometheus.Metric
 }
 
-func NewMetricsRegistry(metricsProvider MetricsProvider, informer cache.SharedIndexInformer, includeLegacyMetrics bool) *prometheus.Registry {
+func NewMetricsRegistry(metricsProvider MetricsProvider, informer cache.SharedIndexInformer, disableLegacyMetrics bool) *prometheus.Registry {
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(&customMetricsCollector{provider: metricsProvider})
 
-	if includeLegacyMetrics {
+	if !disableLegacyMetrics {
 		workflowLister := util.NewWorkflowLister(informer)
-		registry.MustRegister(&workflowCollector{store: workflowLister})
+		registry.MustRegister(&legacyWorkflowCollector{store: workflowLister})
 	}
 
 	return registry
