@@ -10,7 +10,6 @@
   ],
   "swagger": "2.0",
   "info": {
-    "description": "Workflow Service API performs CRUD actions against application resources",
     "title": "Argo",
     "version": "latest"
   },
@@ -2125,7 +2124,7 @@
       "properties": {
         "default": {
           "type": "string",
-          "title": "Default is the default value to use for an input parameter if a value was not supplied"
+          "title": "Default is the default value to use for an input parameter if a value was not supplied\nDEPRECATED: This field is not used"
         },
         "globalName": {
           "type": "string",
@@ -2609,8 +2608,8 @@
           "type": "string"
         },
         "entrypoint": {
-          "type": "string",
-          "title": "Entrypoint is a template reference to the starting point of the workflow"
+          "description": "Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.",
+          "type": "string"
         },
         "executor": {
           "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.",
@@ -2868,16 +2867,8 @@
       "description": "WorkflowTemplateSpec is a spec of WorkflowTemplate.",
       "type": "object",
       "properties": {
-        "arguments": {
-          "description": "Arguments hold arguments to the template.",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
-        },
-        "templates": {
-          "description": "Templates is a list of workflow templates.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
-          }
+        "workflowSpec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"
         }
       }
     },
@@ -5653,32 +5644,6 @@
     "HTTPBasic": {
       "description": "HTTP Basic authentication",
       "type": "basic"
-    }
-  },
-  "x-stream-definitions": {
-    "io.argoproj.workflow.v1alpha1.LogEntry": {
-      "properties": {
-        "error": {
-          "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
-        },
-        "result": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LogEntry"
-        }
-      },
-      "title": "Stream result of io.argoproj.workflow.v1alpha1.LogEntry",
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowWatchEvent": {
-      "properties": {
-        "error": {
-          "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
-        },
-        "result": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowWatchEvent"
-        }
-      },
-      "title": "Stream result of io.argoproj.workflow.v1alpha1.WorkflowWatchEvent",
-      "type": "object"
     }
   }
 }

@@ -1093,3 +1093,4 @@ message WorkflowTemplateList {
 message WorkflowTemplateSpec {
   optional WorkflowSpec workflowSpec = 1;
 }
+
