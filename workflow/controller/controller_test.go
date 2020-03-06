@@ -43,6 +43,55 @@ spec:
       args: ["hello world"]
 `
 
+var testDefaultWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  serviceAccountName: whalesay
+  templates:
+  - name: whalesay
+    metadata:
+      annotations:
+        annotationKey1: "annotationValue1"
+        annotationKey2: "annotationValue2"
+      labels:
+        labelKey1: "labelValue1"
+        labelKey2: "labelValue2"
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+var testDefaultWfTTL = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  serviceAccountName: whalesay
+  ttlSecondsAfterFinished: 7
+  ttlStrategy:
+    secondsAfterCompletion: 5
+  templates:
+  - name: whalesay
+    metadata:
+      annotations:
+        annotationKey1: "annotationValue1"
+        annotationKey2: "annotationValue2"
+      labels:
+        labelKey1: "labelValue1"
+        labelKey2: "labelValue2"
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
 func newController() *WorkflowController {
 	wfclientset := fakewfclientset.NewSimpleClientset()
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
@@ -55,6 +104,68 @@ func newController() *WorkflowController {
 	return &WorkflowController{
 		Config: config.WorkflowControllerConfig{
 			ExecutorImage: "executor:latest",
+		},
+		kubeclientset:  fake.NewSimpleClientset(),
+		wfclientset:    wfclientset,
+		completedPods:  make(chan string, 512),
+		wftmplInformer: wftmplInformer,
+		wfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfArchive:      sqldb.NullWorkflowArchive,
+	}
+}
+
+func newControllerWithDefaults() *WorkflowController {
+	wfclientset := fakewfclientset.NewSimpleClientset()
+	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
+	wftmplInformer := informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
+	ctx := context.Background()
+	go wftmplInformer.Informer().Run(ctx.Done())
+	if !cache.WaitForCacheSync(ctx.Done(), wftmplInformer.Informer().HasSynced) {
+		panic("Timed out waiting for caches to sync")
+	}
+	myBool := true
+	return &WorkflowController{
+		Config: config.WorkflowControllerConfig{
+			ExecutorImage: "executor:latest",
+			DefautWorkflowSpec: &wfv1.WorkflowSpec{
+				HostNetwork: &myBool,
+			},
+		},
+		kubeclientset:  fake.NewSimpleClientset(),
+		wfclientset:    wfclientset,
+		completedPods:  make(chan string, 512),
+		wftmplInformer: wftmplInformer,
+		wfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfArchive:      sqldb.NullWorkflowArchive,
+	}
+}
+
+func newControllerWithComplexDefaults() *WorkflowController {
+	wfclientset := fakewfclientset.NewSimpleClientset()
+	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
+	wftmplInformer := informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
+	ctx := context.Background()
+	go wftmplInformer.Informer().Run(ctx.Done())
+	if !cache.WaitForCacheSync(ctx.Done(), wftmplInformer.Informer().HasSynced) {
+		panic("Timed out waiting for caches to sync")
+	}
+	myBool := true
+	var ten int32 = 10
+	var seven int32 = 10
+	return &WorkflowController{
+		Config: config.WorkflowControllerConfig{
+			ExecutorImage: "executor:latest",
+			DefautWorkflowSpec: &wfv1.WorkflowSpec{
+				HostNetwork:        &myBool,
+				Entrypoint:         "good_entrypoint",
+				ServiceAccountName: "my_service_account",
+				TTLStrategy: &wfv1.TTLStrategy{
+					SecondsAfterCompletion: &ten,
+					SecondsAfterSuccess:    &ten,
+					SecondsAfterFailure:    &ten,
+				},
+				TTLSecondsAfterFinished: &seven,
+			},
 		},
 		kubeclientset:  fake.NewSimpleClientset(),
 		wfclientset:    wfclientset,
@@ -97,4 +208,53 @@ func makePodsPhase(t *testing.T, phase apiv1.PodPhase, kubeclientset kubernetes.
 			_, _ = podcs.Update(&pod)
 		}
 	}
+}
+
+func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
+	assert.Equal(t, "hello", "hello")
+	ans := true
+	controller := newController()
+	workflow := unmarshalWF(helloWorldWf)
+	err := controller.addingWorkflowDefaultValueIfValueNotExist(workflow)
+	assert.NoError(t, err)
+	assert.Equal(t, workflow, unmarshalWF(helloWorldWf))
+	controllerDefaults := newControllerWithDefaults()
+	defautWorkflowSpec := unmarshalWF(helloWorldWf)
+	err = controllerDefaults.addingWorkflowDefaultValueIfValueNotExist(defautWorkflowSpec)
+	assert.NoError(t, err)
+	assert.Equal(t, defautWorkflowSpec.Spec.HostNetwork, &ans)
+	assert.NotEqual(t, defautWorkflowSpec, unmarshalWF(helloWorldWf))
+	assert.Equal(t, *defautWorkflowSpec.Spec.HostNetwork, true)
+}
+
+func TestAddingWorkflowDefaultComplex(t *testing.T) {
+	assert.Equal(t, "hello", "hello")
+	controller := newControllerWithComplexDefaults()
+	workflow := unmarshalWF(testDefaultWf)
+	var ten int32 = 10
+	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")
+	assert.Nil(t, workflow.Spec.TTLStrategy)
+	err := controller.addingWorkflowDefaultValueIfValueNotExist(workflow)
+	assert.NoError(t, err)
+	assert.NotEqual(t, workflow, unmarshalWF(testDefaultWf))
+	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")
+	assert.Equal(t, workflow.Spec.ServiceAccountName, "whalesay")
+	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterFailure, ten)
+}
+
+func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
+	assert.Equal(t, "hello", "hello")
+	controller := newControllerWithComplexDefaults()
+	workflow := unmarshalWF(testDefaultWfTTL)
+	var ten int32 = 10
+	var seven int32 = 7
+	var five int32 = 5
+	err := controller.addingWorkflowDefaultValueIfValueNotExist(workflow)
+	assert.NoError(t, err)
+	assert.NotEqual(t, workflow, unmarshalWF(testDefaultWfTTL))
+	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")
+	assert.Equal(t, workflow.Spec.ServiceAccountName, "whalesay")
+	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterCompletion, five)
+	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterFailure, ten)
+	assert.Equal(t, *workflow.Spec.TTLSecondsAfterFinished, seven)
 }
