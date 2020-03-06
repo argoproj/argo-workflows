@@ -567,6 +567,98 @@ func (s *CLISuite) TestCron() {
 	})
 }
 
+func (s *CLISuite) TestInstanceID() {
+	argoServer := os.Getenv("ARGO_SERVER")
+	if argoServer == "" {
+		s.T().SkipNow()
+	}
+	defer func() { os.Setenv("ARGO_SERVER", argoServer) }()
+
+	testInstanceID := "testindstanceid001"
+
+	os.Setenv("ARGO_SERVER", "")
+	s.Run("SubmitWfWithInstanceID", func() {
+		s.Given().
+			RunCli([]string{"submit", "smoke/basic.yaml", "--instanceid=" + testInstanceID}, func(t *testing.T, output string, err error) {
+				assert.NoError(t, err)
+			})
+	})
+	s.Run("ListWfWithKubeServer", func() {
+		s.Given().
+			RunCli([]string{"list"}, func(t *testing.T, output string, err error) {
+				assert.Contains(t, output, "basic")
+			})
+	})
+	s.Run("CreateCronWfWithInstanceID", func() {
+		s.Given().
+			RunCli([]string{"cron", "create", "testdata/basic.yaml", "--instanceid=" + testInstanceID}, func(t *testing.T, output string, err error) {
+				assert.NoError(t, err)
+			})
+	})
+	s.Run("ListCronWfWithKubeServer", func() {
+		s.Given().
+			RunCli([]string{"cron", "list"}, func(t *testing.T, output string, err error) {
+				assert.Contains(t, output, "test-cron-wf-basic")
+			})
+	})
+
+	os.Setenv("ARGO_SERVER", argoServer)
+	s.Run("ListWfWithArgoServer", func() {
+		s.Given().
+			RunCli([]string{"list"}, func(t *testing.T, output string, err error) {
+				assert.NotContains(t, output, "basic")
+			})
+	})
+	s.Run("GetWfWithArgoServer", func() {
+		s.Given().
+			RunCli([]string{"get", "basic"}, func(t *testing.T, output string, err error) {
+				assert.Error(t, err)
+				assert.Contains(t, output, "not managed by current Argo server")
+			})
+	})
+	s.Run("ListCronWfWithArgoServer", func() {
+		s.Given().
+			RunCli([]string{"cron", "list"}, func(t *testing.T, output string, err error) {
+				assert.NotContains(t, output, "test-cron-wf-basic")
+			})
+	})
+	s.Run("GetCronWfWithArgoServer", func() {
+		s.Given().
+			RunCli([]string{"cron", "get", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
+				assert.Error(t, err)
+				assert.Contains(t, output, "not managed by current Argo server")
+			})
+	})
+	s.Run("DelWfWithArgoServer", func() {
+		s.Given().
+			RunCli([]string{"delete", "basic"}, func(t *testing.T, output string, err error) {
+				assert.Error(t, err)
+				assert.Contains(t, output, "not managed by current Argo server")
+			})
+	})
+	s.Run("GetCronWfWithArgoServer", func() {
+		s.Given().
+			RunCli([]string{"cron", "delete", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
+				assert.Error(t, err)
+				assert.Contains(t, output, "not managed by current Argo server")
+			})
+	})
+	// delete through kube server
+	os.Setenv("ARGO_SERVER", "")
+	s.Run("DelWfWithKubeServer", func() {
+		s.Given().
+			RunCli([]string{"delete", "basic"}, func(t *testing.T, output string, err error) {
+				assert.NoError(t, err)
+			})
+	})
+	s.Run("DelCronWfWithKubeServer", func() {
+		s.Given().
+			RunCli([]string{"cron", "delete", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
+				assert.NoError(t, err)
+			})
+	})
+}
+
 func TestCLISuite(t *testing.T) {
 	suite.Run(t, new(CLISuite))
 }
