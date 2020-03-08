@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -18,6 +19,11 @@ import (
 
 type FunctionalSuite struct {
 	fixtures.E2ESuite
+}
+
+func (s *FunctionalSuite) TearDownSuite() {
+	s.E2ESuite.DeleteResources(fixtures.Label)
+	s.Persistence.Close()
 }
 
 func (s *FunctionalSuite) TestContinueOnFail() {
@@ -176,6 +182,56 @@ func (s *FunctionalSuite) TestLoopEmptyParam() {
 			assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
 			assert.Equal(t, "Skipped, empty params", nodeStatus.Message)
 		})
+}
+
+// 128M is for argo executor
+func (s *FunctionalSuite) TestPendingWorkflow() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-limited-noretry
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: dag
+  templates:
+  - name: cowsay
+    container:
+      image: cowsay:v1
+      command: [sh, -c]
+      args: ["cowsay a"]
+      resources:
+        limits:
+          memory: 128M
+  - name: dag
+    dag:
+      tasks:
+      - name: a
+        template: cowsay
+      - name: b
+        template: cowsay
+`).
+		When().
+		MemoryQuota("130M").
+		SubmitWorkflow().
+		WaitForWorkflowToStart(5*time.Second).
+		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+			a := wf.Status.Nodes.FindByDisplayName("a")
+			b := wf.Status.Nodes.FindByDisplayName("b")
+			return wfv1.NodePending == a.Phase &&
+				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(a.Message) &&
+				wfv1.NodePending == b.Phase &&
+				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(b.Message)
+		}, "pods pending", 10*time.Second).
+		DeleteQuota().
+		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+			a := wf.Status.Nodes.FindByDisplayName("a")
+			b := wf.Status.Nodes.FindByDisplayName("b")
+			return wfv1.NodeSucceeded == a.Phase && wfv1.NodeSucceeded == b.Phase
+		}, "pods succeeded", 10*time.Second)
+	s.TearDownSuite()
 }
 
 func (s *FunctionalSuite) TestparameterAggregation() {
