@@ -440,7 +440,7 @@ func (wfc *WorkflowController) addingWorkflowDefaultValueIfValueNotExist(wf *wfv
 		if err != nil {
 			return err
 		}
-	// https: //godoc.org/k8s.io/apimachinery/pkg/util/strategicpatch#StrategicMergePatch
+		// https: //godoc.org/k8s.io/apimachinery/pkg/util/strategicpatch#StrategicMergePatch
 		new, err := strategicpatch.StrategicMergePatch(defaultsSpec, workflowSpec, wfv1.WorkflowSpec{})
 		if err != nil {
 			return err
