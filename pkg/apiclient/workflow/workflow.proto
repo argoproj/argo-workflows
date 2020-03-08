@@ -55,7 +55,7 @@ message WorkflowTerminateRequest {
     string namespace = 2;
 }
 
-message WorkflowFailRequest {
+message WorkflowStopRequest {
      string name = 1;
      string namespace = 2;
 }
@@ -162,9 +162,9 @@ service WorkflowService {
 		};
     }
 
-    rpc FailWorkflow (WorkflowFailRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+    rpc StopWorkflow (WorkflowStopRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
-			put: "/api/v1/workflows/{namespace}/{name}/fail"
+			put: "/api/v1/workflows/{namespace}/{name}/stop"
 			body: "*"
 		};
     }

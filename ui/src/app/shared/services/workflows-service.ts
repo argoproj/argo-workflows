@@ -44,8 +44,8 @@ export class WorkflowsService {
         return requests.put(`api/v1/workflows/${namespace}/${name}/resume`).then(res => res.body as Workflow);
     }
 
-    public fail(name: string, namespace: string) {
-        return requests.put(`api/v1/workflows/${namespace}/${name}/fail`).then(res => res.body as Workflow);
+    public stop(name: string, namespace: string) {
+        return requests.put(`api/v1/workflows/${namespace}/${name}/stop`).then(res => res.body as Workflow);
     }
 
     public terminate(name: string, namespace: string) {
@@ -71,7 +71,8 @@ export class WorkflowsService {
         });
         return requests
             .loadEventSource(
-                `api/v1/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/log` + `?logOptions.container=${container}&logOptions.follow=true`
+                `api/v1/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/log` +
+                    `?logOptions.container=${container}&logOptions.follow=true`
             )
             .pipe(
                 map(line => JSON.parse(line).result.content),

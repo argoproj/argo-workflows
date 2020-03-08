@@ -292,7 +292,7 @@ type ShutdownStrategy string
 
 const (
 	ShutdownStrategyTerminate ShutdownStrategy = "Terminate"
-	ShutdownStrategyFail      ShutdownStrategy = "Fail"
+	ShutdownStrategyStop      ShutdownStrategy = "Stop"
 )
 
 type ParallelSteps struct {

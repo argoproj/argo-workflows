@@ -281,9 +281,9 @@ func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *workflowpkg
 	return wf, nil
 }
 
-func (s *workflowServer) FailWorkflow(ctx context.Context, req *workflowpkg.WorkflowFailRequest) (*v1alpha1.Workflow, error) {
+func (s *workflowServer) StopWorkflow(ctx context.Context, req *workflowpkg.WorkflowStopRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	err := util.FailWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), req.Name)
+	err := util.StopWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), req.Name)
 	if err != nil {
 		return nil, err
 	}
