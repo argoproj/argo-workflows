@@ -1370,11 +1370,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	switch processedTmpl.GetType() {
 	case wfv1.TemplateTypeContainer:
-		if node != nil && node.Pending() {
-			_, err = woc.createWorkflowPod(node.Name, *processedTmpl.Container, processedTmpl, false)
-		} else {
-			node, err = woc.executeContainer(nodeName, templateScope, processedTmpl, orgTmpl, boundaryID)
-		}
+		node, err = woc.executeContainer(nodeName, templateScope, processedTmpl, orgTmpl, boundaryID)
 	case wfv1.TemplateTypeSteps:
 		node, err = woc.executeSteps(nodeName, newTmplCtx, templateScope, processedTmpl, orgTmpl, boundaryID)
 	case wfv1.TemplateTypeScript:
@@ -1662,6 +1658,10 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
+		if node.Pending() {
+			_, err := woc.createWorkflowPod(node.Name, *tmpl.Container, tmpl, false)
+			return node, err
+		}
 		return node, nil
 	}
 	node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, boundaryID, wfv1.NodePending)
