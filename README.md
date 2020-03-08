@@ -36,7 +36,7 @@ Argo Workflows is an open source container-native workflow engine for orchestrat
 * Argo Workflows puts a cloud-scale supercomputer at your fingertips!
 
 ## Who uses Argo Workflows?
-[Offcial Argo Workflows user list](USERS.md)
+[Official Argo Workflows user list](USERS.md)
 
 ## Documentation
 * [Get started here](docs/getting-started.md)
