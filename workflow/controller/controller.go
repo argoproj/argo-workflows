@@ -431,7 +431,6 @@ func (wfc *WorkflowController) processNextItem() bool {
 // workflowController. Values in the workflow will be given the upper hand over the defaults.
 // The defaults for the workflow controller is set in the WorkflowController.Config.DefautWorkflowSpec
 func (wfc *WorkflowController) addingWorkflowDefaultValueIfValueNotExist(wf *wfv1.Workflow) error {
-	//var workflowSpec *wfv1.WorkflowSpec = &wf.Spec
 	if wfc.Config.DefautWorkflowSpec != nil {
 		defaultsSpec, err := json.Marshal(*wfc.Config.DefautWorkflowSpec)
 		if err != nil {
@@ -441,7 +440,7 @@ func (wfc *WorkflowController) addingWorkflowDefaultValueIfValueNotExist(wf *wfv
 		if err != nil {
 			return err
 		}
-		// https://github.com/kubernetes/apimachinery/blob/2373d029717c4d169463414a6127cd1d0d12680e/pkg/util/strategicpatch/patch.go#L94
+		// https://godoc.org/k8s.io/apimachinery/pkg/util/strategicpatch#StrategicMergePatch
 		new, err := strategicpatch.StrategicMergePatch(defaultsSpec, workflowSpec, wfv1.WorkflowSpec{})
 		if err != nil {
 			return err
