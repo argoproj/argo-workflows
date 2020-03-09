@@ -33,7 +33,7 @@ data:
 
     featureFlags:
       # Enable resource duration
-      resourcesDuration: true
+      resourcesDuration: false
 
     # artifactRepository defines the default location to be used as the artifact repository for
     # container artifacts.
