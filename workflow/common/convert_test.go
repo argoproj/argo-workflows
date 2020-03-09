@@ -17,7 +17,7 @@ metadata:
   name: hello-world
 spec:
   schedule: "* * * * *"
-  workflowMeta:
+  workflowMetadata:
     labels:
       label1: value1
     annotations:
