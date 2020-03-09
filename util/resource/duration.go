@@ -40,12 +40,14 @@ func resourceDenominator(r corev1.ResourceName) *resource.Quantity {
 func DurationForPod(pod *corev1.Pod, now time.Time) wfv1.ResourcesDuration {
 	summaries := map[string]containerSummary{}
 	for _, c := range append(pod.Spec.InitContainers, pod.Spec.Containers...) {
+		// Initialize summaries with default limits for CPU and memory.
 		summaries[c.Name] = containerSummary{ResourceList: map[corev1.ResourceName]resource.Quantity{
 			// https://medium.com/@betz.mark/understanding-resource-limits-in-kubernetes-cpu-time-9eff74d3161b
 			corev1.ResourceCPU: resource.MustParse("100m"),
 			// https://medium.com/@betz.mark/understanding-resource-limits-in-kubernetes-memory-6b41e9a955f9
 			corev1.ResourceMemory: resource.MustParse("100Mi"),
 		}}
+		// Update with user-configured resources (falls back to limits as == requests, same as Kubernetes).
 		for name, quantity := range c.Resources.Limits {
 			summaries[c.Name].ResourceList[name] = quantity
 		}
@@ -53,6 +55,7 @@ func DurationForPod(pod *corev1.Pod, now time.Time) wfv1.ResourcesDuration {
 			summaries[c.Name].ResourceList[name] = quantity
 		}
 	}
+	// Add container states.
 	for _, c := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
 		summaries[c.Name] = containerSummary{ResourceList: summaries[c.Name].ResourceList, ContainerState: c.State}
 	}
