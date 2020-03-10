@@ -5,6 +5,7 @@
 * Golang
 * Yarn. `brew install yarn`
 * Docker
+* [Kustomize](https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md)
 * Kubernetes Cluster (we recommend Docker for Desktop + K3D, as this will allow you to test RBAC set-up, and is also fast)
 
 Useful:
