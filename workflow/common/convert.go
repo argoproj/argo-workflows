@@ -22,6 +22,19 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) (*wfv1.Workflow, e
 		newObjectMeta.Labels[LabelKeyControllerInstanceID] = instanceId
 	}
 
+	if cronWf.Spec.WorkflowMetadata != nil {
+		for key, label := range cronWf.Spec.WorkflowMetadata.Labels {
+			newObjectMeta.Labels[key] = label
+		}
+
+		if len(cronWf.Spec.WorkflowMetadata.Annotations) > 0 {
+			newObjectMeta.Annotations = make(map[string]string)
+			for key, label := range cronWf.Spec.WorkflowMetadata.Annotations {
+				newObjectMeta.Annotations[key] = label
+			}
+		}
+	}
+
 	wf := &wfv1.Workflow{
 		TypeMeta:   newTypeMeta,
 		ObjectMeta: newObjectMeta,
