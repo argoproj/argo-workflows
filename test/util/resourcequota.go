@@ -19,5 +19,8 @@ func CreateHardMemoryQuota(clientset kubernetes.Interface, namespace, name, memo
 }
 
 func DeleteQuota(clientset kubernetes.Interface, quota *corev1.ResourceQuota) error {
+	if quota == nil {
+		return nil
+	}
 	return clientset.CoreV1().ResourceQuotas(quota.Namespace).Delete(quota.Name, &metav1.DeleteOptions{})
 }
