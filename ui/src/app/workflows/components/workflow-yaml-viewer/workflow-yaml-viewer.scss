@@ -1,7 +1,7 @@
 @import 'node_modules/argo-ui/src/styles/config';
 
 .workflow-yaml-viewer {
-  font: normal 13px/1.2 'Courier', sans-serif;
+  font: normal 13px/1.2 'Courier New', monospace;
   color: $argo-color-gray-7;
   overflow-y: scroll;
 
@@ -12,6 +12,10 @@
     &:last-child {
       margin-bottom: 0;
     }
+  }
+
+  .yaml-box {
+    background-color: white;
   }
 
   ol {

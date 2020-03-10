@@ -1,51 +1,50 @@
-import * as _superagent from 'superagent';
-const superagentPromise = require('superagent-promise');
+// @ts-ignore
+import {EventSourcePolyfill} from 'event-source-polyfill';
 import {Observable, Observer} from 'rxjs';
+import * as _superagent from 'superagent';
+import {SuperAgentRequest} from 'superagent';
+import {apiUrl, uiUrl} from '../base';
 
-import {apiUrl} from '../base';
+const superagentPromise = require('superagent-promise');
 
-type Callback = (data: any) => void;
+const auth = (req: SuperAgentRequest) => {
+    return req.on('error', handle);
+};
 
-declare class EventSource {
-    public onopen: Callback;
-    public onmessage: Callback;
-    public onerror: Callback;
-    public readyState: number;
-    constructor(url: string);
-    public close(): void;
-}
-
-enum ReadyState {
-    CONNECTING = 0,
-    OPEN = 1,
-    CLOSED = 2,
-    DONE = 4
-}
+const handle = (err: any) => {
+    if (err.status === 401) {
+        document.location.href = uiUrl('login');
+    }
+};
 
 const superagent: _superagent.SuperAgentStatic = superagentPromise(_superagent, global.Promise);
 
 export default {
     get(url: string) {
-        return superagent.get(apiUrl(url));
+        return auth(superagent.get(apiUrl(url)));
     },
 
     post(url: string) {
-        return superagent.post(apiUrl(url));
+        return auth(superagent.post(apiUrl(url)));
     },
 
     put(url: string) {
-        return superagent.put(apiUrl(url));
+        return auth(superagent.put(apiUrl(url)));
     },
 
     patch(url: string) {
-        return superagent.patch(apiUrl(url));
+        return auth(superagent.patch(apiUrl(url)));
+    },
+
+    delete(url: string) {
+        return auth(superagent.del(apiUrl(url)));
     },
 
     loadEventSource(url: string, allowAutoRetry = false): Observable<string> {
         return Observable.create((observer: Observer<any>) => {
-            const eventSource = new EventSource(apiUrl(url));
+            const eventSource = new EventSource(url);
             let opened = false;
-            eventSource.onopen = msg => {
+            eventSource.onopen = (msg: any) => {
                 if (!opened) {
                     opened = true;
                 } else if (!allowAutoRetry) {
@@ -53,10 +52,12 @@ export default {
                     observer.complete();
                 }
             };
-            eventSource.onmessage = msg => observer.next(msg.data);
-            eventSource.onerror = e => () => {
-                if (e.eventPhase === ReadyState.CLOSED || eventSource.readyState === ReadyState.CONNECTING) {
-                    observer.complete();
+            eventSource.onmessage = (msg: any) => observer.next(msg.data);
+            eventSource.onerror = (e: any) => {
+                if (e.eventPhase === Event.AT_TARGET) {
+                    if (!allowAutoRetry) {
+                        observer.complete();
+                    }
                 } else {
                     observer.error(e);
                 }

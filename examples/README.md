@@ -317,7 +317,7 @@ The [FailFast](./dag-disable-failFast.yaml) flag default is `true`,  if set to `
 
 **Note:**
 You will need to configure an artifact repository to run this example.
-[Configuring an artifact repository here](configure-artifact-repository.md).
+[Configuring an artifact repository here](../docs/configure-artifact-repository.md).
 
 When running workflows, it is very common to have steps that generate or consume artifacts. Often, the output artifacts of one step may be used as input artifacts to a subsequent step.
 
@@ -390,7 +390,7 @@ We now know enough about the basic components of a workflow spec to review its b
 
 To summarize, workflow specs are composed of a set of Argo templates where each template consists of an optional input section, an optional output section and either a container invocation or a list of steps where each step invokes another template.
 
-Note that the controller section of the workflow spec will accept the same options as the controller section of a pod spec, including but not limited to environment variables, secrets, and volume mounts. Similarly, for volume claims and volumes.
+Note that the container section of the workflow spec will accept the same options as the container section of a pod spec, including but not limited to environment variables, secrets, and volume mounts. Similarly, for volume claims and volumes.
 
 ## Secrets
 
@@ -769,7 +769,7 @@ spec:
       limit: 10
       retryOn: "Always"
       backoff:
-        duration: 1         # Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
+        duration: "1m"         # Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
         factor: 2
         maxDuration: "1m"   # Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
     container:

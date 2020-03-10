@@ -2,84 +2,210 @@ package fixtures
 
 import (
 	"bufio"
+	"encoding/base64"
 	"fmt"
-	alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"os"
-	"path/filepath"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/argo/commands"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/kubeconfig"
+	"github.com/argoproj/argo/workflow/packer"
 )
 
-var kubeConfig = os.Getenv("KUBECONFIG")
+const Namespace = "argo"
+const Label = "argo-e2e"
 
-const namespace = "argo"
-const label = "argo-e2e"
+// Cron tests run in parallel, so use a different label so they are not deleted when a new test runs
+const LabelCron = Label + "-cron"
 
 func init() {
-	if kubeConfig == "" {
-		kubeConfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
-	}
 	_ = commands.NewCommand()
 }
 
 type E2ESuite struct {
 	suite.Suite
-	client     v1alpha1.WorkflowInterface
-	kubeClient kubernetes.Interface
+	Diagnostics      *Diagnostics
+	Persistence      *Persistence
+	RestConfig       *rest.Config
+	wfClient         v1alpha1.WorkflowInterface
+	wfTemplateClient v1alpha1.WorkflowTemplateInterface
+	cronClient       v1alpha1.CronWorkflowInterface
+	KubeClient       kubernetes.Interface
 }
 
 func (s *E2ESuite) SetupSuite() {
-	_, err := os.Stat(kubeConfig)
-	if os.IsNotExist(err) {
-		s.T().Skip("Skipping test: " + err.Error())
+	var err error
+	s.RestConfig, err = kubeconfig.DefaultRestConfig()
+	if err != nil {
+		panic(err)
 	}
+	s.KubeClient, err = kubernetes.NewForConfig(s.RestConfig)
+	if err != nil {
+		panic(err)
+	}
+
+	s.wfClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().Workflows(Namespace)
+	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
+	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
+	s.Persistence = newPersistence(s.KubeClient)
+}
+
+func (s *E2ESuite) TearDownSuite() {
+	s.Persistence.Close()
 }
 
 func (s *E2ESuite) BeforeTest(_, _ string) {
-	config, err := clientcmd.BuildConfigFromFlags("", kubeConfig)
+	s.Diagnostics = &Diagnostics{}
+
+	s.DeleteResources(Label)
+}
+
+func (s *E2ESuite) DeleteResources(label string) {
+	// delete all cron workflows
+	cronList, err := s.cronClient.List(metav1.ListOptions{LabelSelector: label})
 	if err != nil {
 		panic(err)
 	}
-	s.kubeClient, err = kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err)
-	}
-	s.client = commands.InitWorkflowClient()
-	// delete all workflows
-	list, err := s.client.List(metav1.ListOptions{LabelSelector: label})
-	if err != nil {
-		panic(err)
-	}
-	for _, wf := range list.Items {
-		logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": wf.Name})
-		logCtx.Infof("Deleting workflow")
-		err = s.client.Delete(wf.Name, nil)
+	for _, cronWf := range cronList.Items {
+		log.WithFields(log.Fields{"cronWorkflow": cronWf.Name}).Info("Deleting cron workflow")
+		err = s.cronClient.Delete(cronWf.Name, nil)
 		if err != nil {
 			panic(err)
 		}
-		// wait for workflow pods to be deleted
-		for {
-			pods, err := s.kubeClient.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow=" + wf.Name})
+	}
+
+	// It is possible for a pod to become orphaned. This means that it's parent workflow
+	// (as set in the  "workflows.argoproj.io/workflow" label) does not exist.
+	// We need to delete orphans as well as test pods.
+	// Get a list of all workflows.
+	// if absent from this this it has been delete - so any associated pods are orphaned
+	// if in the list it is either a test wf or not
+	isTestWf := make(map[string]bool)
+	{
+		list, err := s.wfClient.List(metav1.ListOptions{})
+		if err != nil {
+			panic(err)
+		}
+		for _, wf := range list.Items {
+			isTestWf[wf.Name] = false
+			if s.Persistence.IsEnabled() && wf.Status.IsOffloadNodeStatus() {
+				// TODO - may make tests flakey
+				err := s.Persistence.offloadNodeStatusRepo.Delete(string(wf.UID), wf.Status.OffloadNodeStatusVersion)
+				if err != nil {
+					panic(err)
+				}
+				err = s.Persistence.workflowArchive.DeleteWorkflow(string(wf.UID))
+				if err != nil {
+					panic(err)
+				}
+			}
+		}
+	}
+
+	// delete all workflows
+	{
+		list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: label})
+		if err != nil {
+			panic(err)
+		}
+		for _, wf := range list.Items {
+			logCtx := log.WithFields(log.Fields{"workflow": wf.Name})
+			logCtx.Infof("Deleting workflow")
+			err = s.wfClient.Delete(wf.Name, &metav1.DeleteOptions{})
 			if err != nil {
 				panic(err)
 			}
-			if len(pods.Items) == 0 {
-				break
+			isTestWf[wf.Name] = true
+			for {
+				_, err := s.wfClient.Get(wf.Name, metav1.GetOptions{})
+				if errors.IsNotFound(err) {
+					break
+				}
+				logCtx.Info("Waiting for workflow to be deleted")
+				time.Sleep(1 * time.Second)
 			}
-			logCtx.WithField("num", len(pods.Items)).Info("Waiting for workflow pods to go away")
-			time.Sleep(1 * time.Second)
 		}
 	}
+
+	// delete workflow pods
+	{
+		podInterface := s.KubeClient.CoreV1().Pods(Namespace)
+		// it seems "argo delete" can leave pods behind
+		pods, err := podInterface.List(metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow"})
+		if err != nil {
+			panic(err)
+		}
+		for _, pod := range pods.Items {
+			workflow := pod.GetLabels()["workflows.argoproj.io/workflow"]
+			testPod, owned := isTestWf[workflow]
+			if testPod || !owned {
+				logCtx := log.WithFields(log.Fields{"workflow": workflow, "podName": pod.Name, "testPod": testPod, "owned": owned})
+				logCtx.Info("Deleting pod")
+				err := podInterface.Delete(pod.Name, nil)
+				if !errors.IsNotFound(err) {
+					panic(err)
+				}
+				for {
+					_, err := podInterface.Get(pod.Name, metav1.GetOptions{})
+					if errors.IsNotFound(err) {
+						break
+					}
+					logCtx.Info("Waiting for pod to be deleted")
+					time.Sleep(1 * time.Second)
+				}
+			}
+		}
+	}
+
+	// delete all workflow templates
+	wfTmpl, err := s.wfTemplateClient.List(metav1.ListOptions{LabelSelector: label})
+	if err != nil {
+		panic(err)
+	}
+	for _, wfTmpl := range wfTmpl.Items {
+		log.WithField("template", wfTmpl.Name).Info("Deleting workflow template")
+		err = s.wfTemplateClient.Delete(wfTmpl.Name, nil)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func (s *E2ESuite) GetBasicAuthToken() string {
+	if s.RestConfig.Username == "" {
+		return ""
+	}
+	auth := s.RestConfig.Username + ":" + s.RestConfig.Password
+	return base64.StdEncoding.EncodeToString([]byte(auth))
+}
+
+func (s *E2ESuite) GetServiceAccountToken() (string, error) {
+	// create the clientset
+	clientset, err := kubernetes.NewForConfig(s.RestConfig)
+	if err != nil {
+		return "", err
+	}
+	secretList, err := clientset.CoreV1().Secrets("argo").List(metav1.ListOptions{})
+	if err != nil {
+		return "", err
+	}
+	for _, sec := range secretList.Items {
+		if strings.HasPrefix(sec.Name, "argo-server-token") {
+			return string(sec.Data["token"]), nil
+		}
+	}
+	return "", nil
 }
 
 func (s *E2ESuite) AfterTest(_, _ string) {
@@ -89,30 +215,44 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 }
 
 func (s *E2ESuite) printDiagnostics() {
-	wfs, err := s.client.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + namespace})
+	s.Diagnostics.Print()
+	wfs, err := s.wfClient.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + Namespace, LabelSelector: Label})
 	if err != nil {
 		s.T().Fatal(err)
 	}
 	for _, wf := range wfs.Items {
-		s.printWorkflowDiagnostics(wf)
+		s.printWorkflowDiagnostics(wf.GetName())
 	}
 }
 
-func (s *E2ESuite) printWorkflowDiagnostics(wf alpha1.Workflow) {
-	logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": wf.Name})
-	logCtx.Info("Workflow status:")
-	printJSON(wf.Status)
+func (s *E2ESuite) printWorkflowDiagnostics(name string) {
+	logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": name})
 	// print logs
-	workflow, err := s.client.Get(wf.Name, metav1.GetOptions{})
+	wf, err := s.wfClient.Get(name, metav1.GetOptions{})
 	if err != nil {
 		s.T().Fatal(err)
 	}
-	for _, node := range workflow.Status.Nodes {
+	err = packer.DecompressWorkflow(wf)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	if wf.Status.IsOffloadNodeStatus() {
+		offloaded, err := s.Persistence.offloadNodeStatusRepo.Get(string(wf.UID), wf.Status.OffloadNodeStatusVersion)
+		if err != nil {
+			s.T().Fatal(err)
+		}
+		wf.Status.Nodes = offloaded
+	}
+	logCtx.Info("Workflow metadata:")
+	printJSON(wf.ObjectMeta)
+	logCtx.Info("Workflow status:")
+	printJSON(wf.Status)
+	for _, node := range wf.Status.Nodes {
 		if node.Type != "Pod" {
 			continue
 		}
 		logCtx := logCtx.WithFields(log.Fields{"node": node.DisplayName})
-		s.printPodDiagnostics(logCtx, workflow.Namespace, node.ID)
+		s.printPodDiagnostics(logCtx, wf.Namespace, node.ID)
 	}
 }
 
@@ -129,7 +269,7 @@ func printJSON(obj interface{}) {
 
 func (s *E2ESuite) printPodDiagnostics(logCtx *log.Entry, namespace string, podName string) {
 	logCtx = logCtx.WithFields(log.Fields{"pod": podName})
-	pod, err := s.kubeClient.CoreV1().Pods(namespace).Get(podName, metav1.GetOptions{})
+	pod, err := s.KubeClient.CoreV1().Pods(namespace).Get(podName, metav1.GetOptions{})
 	if err != nil {
 		logCtx.Error("Cannot get pod")
 		return
@@ -145,7 +285,7 @@ func (s *E2ESuite) printPodDiagnostics(logCtx *log.Entry, namespace string, podN
 }
 
 func (s *E2ESuite) printPodLogs(logCtx *log.Entry, namespace, pod, container string) {
-	stream, err := s.kubeClient.CoreV1().Pods(namespace).GetLogs(pod, &v1.PodLogOptions{Container: container}).Stream()
+	stream, err := s.KubeClient.CoreV1().Pods(namespace).GetLogs(pod, &v1.PodLogOptions{Container: container}).Stream()
 	if err != nil {
 		logCtx.WithField("err", err).Error("Cannot get logs")
 		return
@@ -162,7 +302,12 @@ func (s *E2ESuite) printPodLogs(logCtx *log.Entry, namespace, pod, container str
 
 func (s *E2ESuite) Given() *Given {
 	return &Given{
-		t:      s.T(),
-		client: s.client,
+		t:                     s.T(),
+		diagnostics:           s.Diagnostics,
+		client:                s.wfClient,
+		wfTemplateClient:      s.wfTemplateClient,
+		cronClient:            s.cronClient,
+		offloadNodeStatusRepo: s.Persistence.offloadNodeStatusRepo,
+		kubeClient:            s.KubeClient,
 	}
 }

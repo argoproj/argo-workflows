@@ -1,9 +1,10 @@
 package config
 
 import (
+	apiv1 "k8s.io/api/core/v1"
+
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/metrics"
-	apiv1 "k8s.io/api/core/v1"
 )
 
 // WorkflowControllerConfig contain the configuration settings for the workflow controller
@@ -39,6 +40,7 @@ type WorkflowControllerConfig struct {
 	ArtifactRepository ArtifactRepository `json:"artifactRepository,omitempty"`
 
 	// Namespace is a label selector filter to limit the controller's watch to a specific namespace
+	// DEPRECATED: support will be remove in a future release
 	Namespace string `json:"namespace,omitempty"`
 
 	// InstanceID is a label selector to limit the controller's watch to a specific instance. It
@@ -62,6 +64,9 @@ type WorkflowControllerConfig struct {
 
 	// Config customized Docker Sock path
 	DockerSockPath string `json:"dockerSockPath,omitempty"`
+
+	// Default workflow spec, will be adde to workflow if the parameters are not set in the workflow
+	DefautWorkflowSpec *wfv1.WorkflowSpec `json:"workflowDefaults,omitempty"`
 }
 
 // KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,
@@ -89,6 +94,8 @@ type ArtifactRepository struct {
 	Artifactory *ArtifactoryArtifactRepository `json:"artifactory,omitempty"`
 	// HDFS stores artifacts in HDFS
 	HDFS *HDFSArtifactRepository `json:"hdfs,omitempty"`
+	// OSS stores artifact in a OSS-compliant object store
+	OSS *OSSArtifactRepository `json:"oss,omitempty"`
 }
 
 func (a *ArtifactRepository) IsArchiveLogs() bool {
@@ -96,11 +103,22 @@ func (a *ArtifactRepository) IsArchiveLogs() bool {
 }
 
 type PersistConfig struct {
-	NodeStatusOffload bool              `json:"nodeStatusOffLoad"`
-	ConnectionPool    *ConnectionPool   `json:"connectionPool"`
-	PostgreSQL        *PostgreSQLConfig `json:"postgresql,omitempty"`
-	MySQL             *MySQLConfig      `json:"mysql,omitempty"`
+	NodeStatusOffload bool `json:"nodeStatusOffLoad,omitempty"`
+	// Archive workflows to persistence.
+	Archive        bool              `json:"archive,omitempty"`
+	ClusterName    string            `json:"clusterName,omitempty"`
+	ConnectionPool *ConnectionPool   `json:"connectionPool"`
+	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
+	MySQL          *MySQLConfig      `json:"mysql,omitempty"`
 }
+
+func (c PersistConfig) GetClusterName() string {
+	if c.ClusterName != "" {
+		return c.ClusterName
+	}
+	return "default"
+}
+
 type ConnectionPool struct {
 	MaxIdleConns int `json:"maxIdleConns"`
 	MaxOpenConns int `json:"maxOpenConns"`
@@ -135,6 +153,14 @@ type S3ArtifactRepository struct {
 	// KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
 	// DEPRECATED. Use KeyFormat instead
 	KeyPrefix string `json:"keyPrefix,omitempty"`
+}
+
+// OSSArtifactRepository defines the controller configuration for an OSS artifact repository
+type OSSArtifactRepository struct {
+	wfv1.OSSBucket `json:",inline"`
+
+	// KeyFormat is defines the format of how to store keys. Can reference workflow variables
+	KeyFormat string `json:"keyFormat,omitempty"`
 }
 
 // ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository

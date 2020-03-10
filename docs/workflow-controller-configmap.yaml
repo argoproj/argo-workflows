@@ -14,10 +14,6 @@ data:
     # controller watches workflows and pods that *are not* labeled with an instance id.
     instanceID: my-ci-controller
 
-    # namespace limits the controller's watch/queries to a specific namespace. This allows the
-    # controller to run with namespace scope (Role), instead of cluster scope (ClusterRole).
-    namespace: argo
-
     # Parallelism limits the max total parallel workflows that can execute at the same time
     # (available since Argo v2.3)
     parallelism: 10
@@ -108,7 +104,9 @@ data:
       - --gloglevel
       - "6"
       env:
-      - name: SOME_ENV_VAR
+      # ARGO_TRACE enables some tracing information for debugging purposes. Currently it enables
+      # logging of S3 request/response payloads (including auth headers)
+      - name: ARGO_TRACE
         value: "1"
 
     # metricsConfig controls the path and port for prometheus metrics
@@ -128,8 +126,12 @@ data:
       connectionPool:
         maxIdleConns: 100
         maxOpenConns: 0
-      # save the entire workflow into etcd and DB
+      #  if true node status is only saved to the persistence DB to avoid the 1MB limit in etcd
       nodeStatusOffLoad: false
+      # save completed workloads to the workflow archive
+      archive: false
+      # Optional name of the cluster I'm running in. This must be unique for your cluster.
+      clusterName: default
       postgresql:
         host: localhost
         port: 5432

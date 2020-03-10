@@ -39,7 +39,14 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}}"]
+      # Tip: {{workflow.failures}} is a JSON list. If you're using bash to read it, we recommend using jq to manipulate
+      # it. For example:
+      #
+      # echo "{{workflow.failures}}" | jq -r '.[] | "Failed Step: \(.displayName)\tMessage: \(.message)"'
+      #
+      # Will print a list of all the failed steps and their messages. For more info look up the jq docs.
+      # Note: jq is not installed by default on the "alpine:latest" image, however it can be installed with "apk add jq"
+      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}}. Failed steps {{workflow.failures}}"]
   - name: celebrate
     container:
       image: alpine:latest

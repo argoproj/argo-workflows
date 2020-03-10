@@ -8,11 +8,10 @@ import (
 
 	"github.com/spf13/cobra"
 	apiv1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
 
 type listFlags struct {
@@ -28,20 +27,18 @@ func NewListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "list workflow templates",
 		Run: func(cmd *cobra.Command, args []string) {
-			var wftmplClient v1alpha1.WorkflowTemplateInterface
+			ctx, apiClient := client.NewAPIClient()
+			serviceClient := apiClient.NewWorkflowTemplateServiceClient()
+			namespace := client.Namespace()
 			if listArgs.allNamespaces {
-				wftmplClient = InitWorkflowTemplateClient(apiv1.NamespaceAll)
-			} else {
-				wftmplClient = InitWorkflowTemplateClient()
+				namespace = apiv1.NamespaceAll
 			}
-			listOpts := metav1.ListOptions{}
-			labelSelector := labels.NewSelector()
-			listOpts.LabelSelector = labelSelector.String()
-			wftmplList, err := wftmplClient.List(listOpts)
+			wftmplList, err := serviceClient.ListWorkflowTemplates(ctx, &workflowtemplatepkg.WorkflowTemplateListRequest{
+				Namespace: namespace,
+			})
 			if err != nil {
 				log.Fatal(err)
 			}
-
 			switch listArgs.output {
 			case "", "wide":
 				printTable(wftmplList.Items, &listArgs)
@@ -52,6 +49,7 @@ func NewListCommand() *cobra.Command {
 			default:
 				log.Fatalf("Unknown output mode: %s", listArgs.output)
 			}
+
 		},
 	}
 	command.Flags().BoolVar(&listArgs.allNamespaces, "all-namespaces", false, "Show workflows from all namespaces")
@@ -62,16 +60,16 @@ func NewListCommand() *cobra.Command {
 func printTable(wfList []wfv1.WorkflowTemplate, listArgs *listFlags) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 	if listArgs.allNamespaces {
-		fmt.Fprint(w, "NAMESPACE\t")
+		_, _ = fmt.Fprint(w, "NAMESPACE\t")
 	}
-	fmt.Fprint(w, "NAME")
-	fmt.Fprint(w, "\n")
+	_, _ = fmt.Fprint(w, "NAME")
+	_, _ = fmt.Fprint(w, "\n")
 	for _, wf := range wfList {
 		if listArgs.allNamespaces {
-			fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Namespace)
+			_, _ = fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Namespace)
 		}
-		fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Name)
-		fmt.Fprintf(w, "\n")
+		_, _ = fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Name)
+		_, _ = fmt.Fprintf(w, "\n")
 	}
 	_ = w.Flush()
 }

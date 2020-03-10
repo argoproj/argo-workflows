@@ -7,12 +7,8 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"time"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
@@ -20,6 +16,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/utils/pointer"
+
+	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 // Reusable k8s pod spec portions used in workflow pods
@@ -92,6 +94,22 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	wfSpec := woc.wf.Spec.DeepCopy()
 
 	mainCtr.Name = common.MainContainerName
+
+	var activeDeadlineSeconds *int64
+	wfDeadline := woc.getWorkflowDeadline()
+	if wfDeadline == nil {
+		activeDeadlineSeconds = tmpl.ActiveDeadlineSeconds
+	} else {
+		wfActiveDeadlineSeconds := int64((*wfDeadline).Sub(time.Now().UTC()).Seconds())
+		if wfActiveDeadlineSeconds < 0 {
+			return nil, nil
+		} else if tmpl.ActiveDeadlineSeconds == nil || wfActiveDeadlineSeconds < *tmpl.ActiveDeadlineSeconds {
+			activeDeadlineSeconds = &wfActiveDeadlineSeconds
+		} else {
+			activeDeadlineSeconds = tmpl.ActiveDeadlineSeconds
+		}
+	}
+
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nodeID,
@@ -110,7 +128,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		Spec: apiv1.PodSpec{
 			RestartPolicy:         apiv1.RestartPolicyNever,
 			Volumes:               woc.createVolumes(),
-			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
+			ActiveDeadlineSeconds: activeDeadlineSeconds,
 			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
 		},
 	}
@@ -130,7 +148,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
-	if woc.controller.Config.ContainerRuntimeExecutor == common.ContainerRuntimeExecutorPNS {
+	if woc.controller.GetContainerRuntimeExecutor() == common.ContainerRuntimeExecutorPNS {
 		pod.Spec.ShareProcessNamespace = pointer.BoolPtr(true)
 	}
 
@@ -318,7 +336,7 @@ func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Container, error) {
 	ctr := woc.newExecContainer(common.WaitContainerName, tmpl)
 	ctr.Command = []string{"argoexec", "wait"}
-	switch woc.controller.Config.ContainerRuntimeExecutor {
+	switch woc.controller.GetContainerRuntimeExecutor() {
 	case common.ContainerRuntimeExecutorPNS:
 		ctr.SecurityContext = &apiv1.SecurityContext{
 			Capabilities: &apiv1.Capabilities{
@@ -373,19 +391,19 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 	if woc.controller.Config.Executor != nil {
 		execEnvVars = append(execEnvVars, woc.controller.Config.Executor.Env...)
 	}
-	switch woc.controller.Config.ContainerRuntimeExecutor {
+	switch woc.controller.GetContainerRuntimeExecutor() {
 	case common.ContainerRuntimeExecutorK8sAPI:
 		execEnvVars = append(execEnvVars,
 			apiv1.EnvVar{
 				Name:  common.EnvVarContainerRuntimeExecutor,
-				Value: woc.controller.Config.ContainerRuntimeExecutor,
+				Value: woc.controller.GetContainerRuntimeExecutor(),
 			},
 		)
 	case common.ContainerRuntimeExecutorKubelet:
 		execEnvVars = append(execEnvVars,
 			apiv1.EnvVar{
 				Name:  common.EnvVarContainerRuntimeExecutor,
-				Value: woc.controller.Config.ContainerRuntimeExecutor,
+				Value: woc.controller.GetContainerRuntimeExecutor(),
 			},
 			apiv1.EnvVar{
 				Name: common.EnvVarDownwardAPINodeIP,
@@ -408,7 +426,7 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 		execEnvVars = append(execEnvVars,
 			apiv1.EnvVar{
 				Name:  common.EnvVarContainerRuntimeExecutor,
-				Value: woc.controller.Config.ContainerRuntimeExecutor,
+				Value: woc.controller.GetContainerRuntimeExecutor(),
 			},
 		)
 	}
@@ -433,7 +451,7 @@ func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 			},
 		})
 	}
-	switch woc.controller.Config.ContainerRuntimeExecutor {
+	switch woc.controller.GetContainerRuntimeExecutor() {
 	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorPNS:
 		return volumes
 	default:
@@ -714,12 +732,17 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 			// We also add the user supplied mount paths to the init container,
 			// in case the executor needs to load artifacts to this volume
 			// instead of the artifacts volume
+			tmplVolumeMounts := []apiv1.VolumeMount{}
 			if tmpl.Container != nil {
-				for _, mnt := range tmpl.Container.VolumeMounts {
-					mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)
-					initCtr.VolumeMounts = append(initCtr.VolumeMounts, mnt)
-				}
+				tmplVolumeMounts = tmpl.Container.VolumeMounts
+			} else if tmpl.Script != nil {
+				tmplVolumeMounts = tmpl.Script.Container.VolumeMounts
 			}
+			for _, mnt := range tmplVolumeMounts {
+				mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)
+				initCtr.VolumeMounts = append(initCtr.VolumeMounts, mnt)
+			}
+
 			pod.Spec.InitContainers[i] = initCtr
 			break
 		}
@@ -814,7 +837,7 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 	var needLocation bool
 
 	if tmpl.ArchiveLocation != nil {
-		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil {
+		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil || tmpl.ArchiveLocation.OSS != nil {
 			// User explicitly set the location. nothing else to do.
 			return nil
 		}
@@ -869,6 +892,17 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 			HDFSConfig: hdfsLocation.HDFSConfig,
 			Path:       hdfsLocation.PathFormat,
 			Force:      hdfsLocation.Force,
+		}
+	} else if ossLocation := woc.artifactRepository.OSS; ossLocation != nil {
+		woc.log.Debugf("Setting OSS artifact repository information")
+		artLocationKey := ossLocation.KeyFormat
+		tmpl.ArchiveLocation.OSS = &wfv1.OSSArtifact{
+			OSSBucket: wfv1.OSSBucket{
+				Endpoint:        ossLocation.Endpoint,
+				AccessKeySecret: ossLocation.AccessKeySecret,
+				SecretKeySecret: ossLocation.SecretKeySecret,
+			},
+			Key: artLocationKey,
 		}
 	} else {
 		return errors.Errorf(errors.CodeBadRequest, "controller is not configured with a default archive location")
@@ -1060,6 +1094,9 @@ func createArchiveLocationSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Vo
 		createSecretVal(volMap, gitRepo.UsernameSecret, uniqueKeyMap)
 		createSecretVal(volMap, gitRepo.PasswordSecret, uniqueKeyMap)
 		createSecretVal(volMap, gitRepo.SSHPrivateKeySecret, uniqueKeyMap)
+	} else if ossRepo := tmpl.ArchiveLocation.OSS; ossRepo != nil {
+		createSecretVal(volMap, &ossRepo.AccessKeySecret, uniqueKeyMap)
+		createSecretVal(volMap, &ossRepo.SecretKeySecret, uniqueKeyMap)
 	}
 }
 
@@ -1077,6 +1114,9 @@ func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMa
 	} else if art.HDFS != nil {
 		createSecretVal(volMap, art.HDFS.KrbCCacheSecret, keyMap)
 		createSecretVal(volMap, art.HDFS.KrbKeytabSecret, keyMap)
+	} else if art.OSS != nil {
+		createSecretVal(volMap, &art.OSS.AccessKeySecret, keyMap)
+		createSecretVal(volMap, &art.OSS.SecretKeySecret, keyMap)
 	}
 }
 

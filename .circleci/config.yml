@@ -1,116 +1,70 @@
 version: 2.1
 commands:
-  dep_ensure:
+  install_kustomize:
     steps:
       - run:
-          name: Install Dep v0.5.3
-          command: DEP_RELEASE_TAG=v0.5.3 curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+          name: Install Kustomize
+          command: cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
+  restore_go_mod:
+    steps:
       - restore_cache:
-          name: Restore vendor cache
+          name: Restore go mod cache
           keys:
-            - vendor-v2-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
-            - vendor-v1-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
-      - run:
-          name: Ensure dependencies
-          command: dep ensure -v
+            -  go-mod-v1-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
+  save_go_mod:
+    steps:
       - save_cache:
-          name: Save vendor cache
-          key: vendor-v2-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
+          name: Save go mod cache
+          key:  go-mod-v1-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
           paths:
-            - vendor
+            - /home/circleci/.go_workspace/go/pkg/mod
+          when: always
   install_golang:
     steps:
       - run:
-          name: Install Golang v1.12.6
+          name: Install Golang v1.13.4
           command: |
-            go get golang.org/dl/go1.12.6
-            [ -e /home/circleci/sdk/go1.12.6 ] || go1.12.6 download
+            go get golang.org/dl/go1.13.4
+            [ -e /home/circleci/sdk/go1.13.4 ] || go1.13.4 download
             echo "export GOPATH=/home/circleci/.go_workspace" | tee -a $BASH_ENV
-            echo "export PATH=/home/circleci/sdk/go1.12.6/bin:\$PATH" | tee -a $BASH_ENV
+            echo "export PATH=/home/circleci/sdk/go1.13.4/bin:\$PATH" | tee -a $BASH_ENV
   save_go_cache:
     steps:
       - save_cache:
           name: Save Golang cache
-          key: go-v1-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
-          # https://circleci.com/docs/2.0/language-go/
+          key: go-v5-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - /home/circleci/.cache/go-build
-            - /home/circleci/sdk/go1.12.6
+            - /home/circleci/sdk/go1.13.4
+          when: always
   restore_go_cache:
     steps:
       - restore_cache:
           name: Restore Golang cache
           keys:
-            - go-v1-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
-            - go-v1-master-{{ .Environment.CIRCLE_JOB }}
-  go_junit_report:
-    steps:
-      - run:
-          name: Install Go test report to Junit test report
-          command: go get github.com/jstemmer/go-junit-report
-jobs:
-  test:
-    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
-    machine:
-      image: circleci/classic:201808-01
-    steps:
-      - restore_go_cache
-      - install_golang
-      - go_junit_report
-      - checkout
-      - dep_ensure
-      - run:
-          name: Run tests
-          command: |
-            mkdir -p test-results
-            trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
-            make test 2>&1 | tee test-results/test.out
-      - run:
-          name: Verify code generation
-          command: make verify-codegen
-      - save_go_cache
-      - run:
-          name: Uploading code coverage
-          command: bash <(curl -s https://codecov.io/bash) -f coverage.out
-      - store_test_results:
-          path: test-results
-      - store_artifacts:
-          path: test-results
-          destination: .
+            - go-v5-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+            - go-v5-master-{{ .Environment.CIRCLE_JOB }}
   e2e:
-    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
-    machine:
-      image: circleci/classic:201808-01
     steps:
+      - install_kustomize
       - run:
           name: Install and start K3S v1.0.0
           command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.0 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
           background: true
-      - run:
-          name: Pull some Docker images now, to save time later
-          command: |
-            docker pull golang:1.11.5
-            docker pull minio/minio
-            docker pull docker/whalesay:latest
-            docker pull bitnami/kubectl
-          background: true
       - restore_go_cache
       - install_golang
       - go_junit_report
       - checkout
-      - dep_ensure
+      - restore_go_mod
       - run:
           name: Create KUBECONFIG
+          # Copy kubeconfig file, and add a fake user for "argo --token xxx" testing
           command: |
             mkdir -p ~/.kube
-            cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
-      - run: KUBECONFIG=~/.kube/config make start-e2e
-      - run:
-          name: Follow controller logs, to help diagnose failures
-          command: |
-            sleep 10
-            make logs-e2e
-          background: true
+            cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
+            echo "- name: fake_token_user" >> ~/.kube/config
+            echo "  user:" >> ~/.kube/config
+            echo "    token: xxxxxx" >> ~/.kube/config
       - run:
           name: Watch Docker events, to help diagnose failures
           command: docker events
@@ -120,17 +74,103 @@ jobs:
           command: kubectl -n argo get events --watch
           background: true
       - run:
+          name: Start Argo
+          command: mkdir dist && KUBECONFIG=~/.kube/config make start DB=$DB E2E_EXECUTOR=docker DEV_IMAGE=true
+      - run:
+          name: Establish port forward
+          command: make pf
+          background: true
+      - run:
+          name: Sleep for short while
+          command: sleep 10s
+      - run:
+          name: Watch Kubernetes events, to help diagnose failures
+          command: kubectl -n argo get events --watch
+          background: true
+      - run:
+          name: Follow logs, to help diagnose failures
+          command: make logs
+          background: true
+      - run:
+          name: Run smoke tests
+          command: make smoke
+      - run:
           name: Run tests
           command: |
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
             make test-e2e 2>&1 | tee test-results/test.out
+      - save_go_mod
       - save_go_cache
       - store_test_results:
           path: test-results
       - store_artifacts:
           path: test-results
           destination: .
+  go_junit_report:
+    steps:
+      - run:
+          name: Install Go test report to Junit test report
+          command: go get github.com/jstemmer/go-junit-report
+jobs:
+  test:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    machine:
+      image: ubuntu-1604:201903-01
+    steps:
+      - install_kustomize
+      - restore_go_cache
+      - install_golang
+      - go_junit_report
+      - checkout
+      - restore_go_mod
+      - run:
+          name: Run tests
+          command: |
+            mkdir -p test-results
+            trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
+            make test 2>&1 | tee test-results/test.out
+      - save_go_cache
+      - save_go_mod
+      - run:
+          name: Uploading code coverage
+          command: bash <(curl -s https://codecov.io/bash) -f coverage.out
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+          destination: .
+  e2e-no-db:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    machine:
+      image: ubuntu-1604:201903-01
+    environment:
+      DB: no-db
+    steps:
+      - e2e
+  e2e-postgres:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    machine:
+      image: ubuntu-1604:201903-01
+    environment:
+      DB: postgres
+    steps:
+      - e2e
+  e2e-mysql:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    machine:
+      image: ubuntu-1604:201903-01
+    environment:
+      DB: mysql
+    steps:
+      - e2e
+  docker-build:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    machine:
+      image: ubuntu-1604:201903-01
+    steps:
+      - checkout
+      - run: docker build .
   ui:
     docker:
       - image: node:11.15.0
@@ -153,7 +193,7 @@ jobs:
       # - run: ./node_modules/.bin/codecov -p ..
       - run:
           name: Build
-          command: NODE_ENV='production' yarn build
+          command: yarn build
       - run:
           name: Lint
           command: yarn lint
@@ -163,4 +203,7 @@ workflows:
     jobs:
       - test
       - ui
-      - e2e
+      - e2e-no-db
+      - e2e-postgres
+      - e2e-mysql
+      - docker-build

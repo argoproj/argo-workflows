@@ -2,8 +2,12 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: artifact-passing
+  labels:
+    argo-e2e: true
 spec:
   entrypoint: artifact-example
+  volumes:
+    - name: test-volume
   templates:
     - name: artifact-example
       steps:
@@ -15,12 +19,19 @@ spec:
               artifacts:
                 - name: message
                   from: "{{steps.generate-artifact.outputs.artifacts.hello-art}}"
+          - name: consume-artifact-2
+            template: print-message-with-volume
+            arguments:
+              artifacts:
+                - name: message
+                  from: "{{steps.generate-artifact.outputs.artifacts.hello-art}}"
 
     - name: generate-message
       container:
-        image: docker/whalesay:latest
+        image: cowsay:v1
         command: [sh, -c]
         args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+        imagePullPolicy: IfNotPresent
       outputs:
         artifacts:
           - name: hello-art
@@ -32,6 +43,21 @@ spec:
           - name: message
             path: /tmp/message
       container:
-        image: docker/whalesay:latest
+        image: cowsay:v1
+        imagePullPolicy: IfNotPresent
         command: [sh, -c]
         args: ["cat /tmp/message"]
+
+    - name: print-message-with-volume
+      inputs:
+        artifacts:
+          - name: message
+            path: /test-volume/message
+      script:
+        volumeMounts:
+        - mountPath: /test-volume
+          name: test-volume
+        image: cowsay:v1
+        imagePullPolicy: IfNotPresent
+        command: [sh, -c]
+        args: ["cat /test-volume/message"]

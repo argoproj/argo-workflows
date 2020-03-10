@@ -9,16 +9,17 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
 	argotime "github.com/argoproj/pkg/time"
 	"github.com/spf13/cobra"
-	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -43,13 +44,7 @@ func NewListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "list workflows",
 		Run: func(cmd *cobra.Command, args []string) {
-			var wfClient v1alpha1.WorkflowInterface
 
-			if listArgs.allNamespaces {
-				wfClient = InitWorkflowClient(apiv1.NamespaceAll)
-			} else {
-				wfClient = InitWorkflowClient()
-			}
 			listOpts := metav1.ListOptions{}
 			labelSelector := labels.NewSelector()
 			if len(listArgs.status) != 0 {
@@ -70,15 +65,27 @@ func NewListCommand() *cobra.Command {
 			if listArgs.chunkSize != 0 {
 				listOpts.Limit = listArgs.chunkSize
 			}
-			wfList, err := wfClient.List(listOpts)
-			if err != nil {
-				log.Fatal(err)
+
+			ctx, apiClient := client.NewAPIClient()
+			serviceClient := apiClient.NewWorkflowServiceClient()
+			namespace := client.Namespace()
+			if listArgs.allNamespaces {
+				namespace = ""
 			}
+
+			wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
+				Namespace:   namespace,
+				ListOptions: &listOpts,
+			})
+			errors.CheckError(err)
 
 			tmpWorkFlows := wfList.Items
 			for wfList.ListMeta.Continue != "" {
 				listOpts.Continue = wfList.ListMeta.Continue
-				wfList, err = wfClient.List(listOpts)
+				wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
+					Namespace:   namespace,
+					ListOptions: &listOpts,
+				})
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -97,11 +104,11 @@ func NewListCommand() *cobra.Command {
 				}
 			}
 
-			var workflows []wfv1.Workflow
+			var workflows wfv1.Workflows
 			if listArgs.since == "" {
 				workflows = tmpWorkFlowsSelected
 			} else {
-				workflows = make([]wfv1.Workflow, 0)
+				workflows = make(wfv1.Workflows, 0)
 				minTime, err := argotime.ParseSince(listArgs.since)
 				if err != nil {
 					log.Fatal(err)
@@ -112,7 +119,7 @@ func NewListCommand() *cobra.Command {
 					}
 				}
 			}
-			sort.Sort(ByFinishedAt(workflows))
+			sort.Sort(workflows)
 
 			switch listArgs.output {
 			case "", "wide":
@@ -175,10 +182,6 @@ func countPendingRunningCompleted(wf *wfv1.Workflow) (int, int, int) {
 	pending := 0
 	running := 0
 	completed := 0
-	err := util.DecompressWorkflow(wf)
-	if err != nil {
-		log.Fatal(err)
-	}
 	for _, node := range wf.Status.Nodes {
 		tmpl := wf.GetTemplateByName(node.TemplateName)
 		if tmpl == nil || !tmpl.IsPodType() {
@@ -216,28 +219,6 @@ func parameterString(params []wfv1.Parameter) string {
 		}
 	}
 	return strings.Join(pStrs, ",")
-}
-
-// ByFinishedAt is a sort interface which sorts running jobs earlier before considering FinishedAt
-type ByFinishedAt []wfv1.Workflow
-
-func (f ByFinishedAt) Len() int      { return len(f) }
-func (f ByFinishedAt) Swap(i, j int) { f[i], f[j] = f[j], f[i] }
-func (f ByFinishedAt) Less(i, j int) bool {
-	iStart := f[i].ObjectMeta.CreationTimestamp
-	iFinish := f[i].Status.FinishedAt
-	jStart := f[j].ObjectMeta.CreationTimestamp
-	jFinish := f[j].Status.FinishedAt
-	if iFinish.IsZero() && jFinish.IsZero() {
-		return !iStart.Before(&jStart)
-	}
-	if iFinish.IsZero() && !jFinish.IsZero() {
-		return true
-	}
-	if !iFinish.IsZero() && jFinish.IsZero() {
-		return false
-	}
-	return jFinish.Before(&iFinish)
 }
 
 // workflowStatus returns a human readable inferred workflow status based on workflow phase and conditions

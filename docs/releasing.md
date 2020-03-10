@@ -1,64 +1,49 @@
 # Release Instructions
 
-1. Update CHANGELOG.md with changes in the release
+Allow 1h to do a release.
 
-2. Update VERSION with new tag
+## Preparation
 
-3. Update codegen, manifests with new tag
+Cherry-pick your changes from master onto the release branch.
 
-```bash
-make codegen manifests IMAGE_NAMESPACE=argoproj IMAGE_TAG=vX.Y.Z
-```
+Mandatory: the release branch must be green [in CircleCI](https://app.circleci.com/github/argoproj/argo/pipelines).
 
-4. Commit VERSION and manifest changes
+It is a very good idea to clean up before you start:
 
-```bash
-git add .
-git commit -m "Update version to vX.Y.Z"
-```
+    make clean
+    kubectl delete ns argo
 
-5. git tag the release
+## Release
 
-```bash
-git tag vX.Y.Z
-```
+To generate new manifests and perform basic checks:
 
-6. Build both the controller and UI release
+    make prepare-release VERSION=v2.5.0-rc6
 
-In argo repo:
-```bash
-make release IMAGE_NAMESPACE=argoproj IMAGE_TAG=vX.Y.Z
-```
+Next, build everything:
 
-In argo-ui repo:
-```bash
-IMAGE_NAMESPACE=argoproj IMAGE_TAG=vX.Y.Z yarn docker
-```
+    make build
 
-8. If successful, publish the release:
-```bash
-export ARGO_RELEASE=vX.Y.Z
-docker push argoproj/workflow-controller:${ARGO_RELEASE}
-docker push argoproj/argoexec:${ARGO_RELEASE}
-docker push argoproj/argocli:${ARGO_RELEASE}
-docker push argoproj/argoui:${ARGO_RELEASE}
-```
+Publish the images and local Git changes:
 
-9. Push commits and tags to git. Run the following in both the argo and argo-ui repos:
+    make publish-release
 
-In argo repo:
-```bash
-git push upstream
-git push upstream ${ARGO_RELEASE}
-git tag stable
-git push upstream stable
-```
+Create [the release](https://github.com/argoproj/argo/releases) in Github. You can get some text for this using [Github Toolkit](https://github.com/alexec/github-toolkit):
 
-In argo-ui repo:
-```bash
-git push upstream ${ARGO_RELEASE}
-```
+    ght relnote v2.5.0-rc5..v2.5.0-rc6
 
-10. Draft GitHub release with the content from CHANGELOG.md, and CLI binaries produced in the `dist` directory
+    
+## Validation
 
-* https://github.com/argoproj/argo/releases/new
+K3D tip: you'll need to import the images:
+
+    k3d import-images argoproj/argocli:v2.5.0-rc6 argoproj/argoexec:v2.5.0-rc6 argoproj/workflow-controller:v2.5.0-rc6
+
+Install Argo locally:
+
+    kubectl create ns argo
+    kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/v2.5.0-rc6/manifests/quick-start-postgres.yaml
+    make pf-bg 
+
+Maybe run e2e tests?
+
+    make test-e2e
