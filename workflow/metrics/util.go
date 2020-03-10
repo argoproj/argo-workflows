@@ -9,11 +9,6 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-const (
-	argoNamespace      = "argo"
-	workflowsSubsystem = "workflows"
-)
-
 type RealTimeMetric struct {
 	Func func() float64
 }

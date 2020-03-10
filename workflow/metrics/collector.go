@@ -9,6 +9,11 @@ import (
 	"github.com/argoproj/argo/workflow/util"
 )
 
+const (
+	argoNamespace      = "argo"
+	workflowsSubsystem = "workflows"
+)
+
 type MetricsProvider interface {
 	GetMetrics() map[string]prometheus.Metric
 }
@@ -16,9 +21,9 @@ type MetricsProvider interface {
 func NewMetricsRegistry(metricsProvider MetricsProvider, informer cache.SharedIndexInformer, disableLegacyMetrics bool) *prometheus.Registry {
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(&customMetricsCollector{provider: metricsProvider})
-
+	workflowLister := util.NewWorkflowLister(informer)
+	registry.MustRegister(&controllerCollector{store: workflowLister})
 	if !disableLegacyMetrics {
-		workflowLister := util.NewWorkflowLister(informer)
 		registry.MustRegister(&legacyWorkflowCollector{store: workflowLister})
 	}
 
