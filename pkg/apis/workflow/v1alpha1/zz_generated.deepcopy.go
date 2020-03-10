@@ -9,6 +9,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	v1beta1 "k8s.io/api/policy/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -343,6 +344,11 @@ func (in *CronWorkflowSpec) DeepCopyInto(out *CronWorkflowSpec) {
 		in, out := &in.FailedJobsHistoryLimit, &out.FailedJobsHistoryLimit
 		*out = new(int32)
 		**out = **in
+	}
+	if in.WorkflowMetadata != nil {
+		in, out := &in.WorkflowMetadata, &out.WorkflowMetadata
+		*out = new(metav1.ObjectMeta)
+		(*in).DeepCopyInto(*out)
 	}
 	return
 }
