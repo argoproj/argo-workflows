@@ -20,25 +20,14 @@ import (
 	"github.com/argoproj/argo/workflow/validate"
 )
 
-// RunningMode is the way that workflowServer is used, GRPC server side or kube client.
-type RunningMode string
-
-// Running modes
-const (
-	KubeClientMode RunningMode = "KubeClient"
-	GRPCServerMode RunningMode = "GRPCServer"
-)
-
 type workflowServer struct {
-	mode                  RunningMode
 	instanceID            string
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 }
 
 // NewWorkflowServer returns a new workflowServer
-func NewWorkflowServer(mode RunningMode, instanceID string, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) workflowpkg.WorkflowServiceServer {
+func NewWorkflowServer(instanceID string, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) workflowpkg.WorkflowServiceServer {
 	return &workflowServer{
-		mode:                  mode,
 		instanceID:            instanceID,
 		offloadNodeStatusRepo: offloadNodeStatusRepo,
 	}
@@ -67,6 +56,8 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 		}
 		req.Workflow.SetLabels(labels)
 	}
+
+	fmt.Printf("labels: %v\n", req.Workflow.Labels)
 
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 
@@ -344,9 +335,6 @@ func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflo
 }
 
 func (s *workflowServer) withInstanceID(opt metav1.ListOptions) metav1.ListOptions {
-	if s.mode == KubeClientMode {
-		return opt
-	}
 	if len(opt.LabelSelector) > 0 {
 		opt.LabelSelector += ","
 	}
@@ -363,9 +351,6 @@ func (s *workflowServer) getWorkflow(ctx context.Context, namespace string, name
 	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(name, options)
 	if err != nil {
 		return nil, err
-	}
-	if s.mode == KubeClientMode {
-		return wf, nil
 	}
 	err = s.validateInstanceID(wf)
 	if err != nil {

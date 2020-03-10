@@ -14,23 +14,13 @@ import (
 	"github.com/argoproj/argo/workflow/validate"
 )
 
-// RunningMode is the way that cronWorkflowServiceServer is used, GRPC server side or kube client.
-type RunningMode string
-
-// Running modes
-const (
-	KubeClientMode RunningMode = "KubeClient"
-	GRPCServerMode RunningMode = "GRPCServer"
-)
-
 type cronWorkflowServiceServer struct {
-	mode       RunningMode
 	instanceID string
 }
 
 // NewCronWorkflowServer returns a new cronWorkflowServiceServer
-func NewCronWorkflowServer(mode RunningMode, instanceID string) cronworkflowpkg.CronWorkflowServiceServer {
-	return &cronWorkflowServiceServer{mode: mode, instanceID: instanceID}
+func NewCronWorkflowServer(instanceID string) cronworkflowpkg.CronWorkflowServiceServer {
+	return &cronWorkflowServiceServer{instanceID: instanceID}
 }
 
 func (c *cronWorkflowServiceServer) LintCronWorkflow(ctx context.Context, req *cronworkflowpkg.LintCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
@@ -92,9 +82,6 @@ func (c *cronWorkflowServiceServer) DeleteCronWorkflow(ctx context.Context, req 
 }
 
 func (c *cronWorkflowServiceServer) withInstanceID(opt metav1.ListOptions) metav1.ListOptions {
-	if c.mode == KubeClientMode {
-		return opt
-	}
 	if len(opt.LabelSelector) > 0 {
 		opt.LabelSelector += ","
 	}
@@ -111,9 +98,6 @@ func (c *cronWorkflowServiceServer) getCronWorkflow(ctx context.Context, namespa
 	cronWf, err := wfClient.ArgoprojV1alpha1().CronWorkflows(namespace).Get(name, options)
 	if err != nil {
 		return nil, err
-	}
-	if c.mode == KubeClientMode {
-		return cronWf, nil
 	}
 	err = c.validateInstanceID(cronWf)
 	if err != nil {
