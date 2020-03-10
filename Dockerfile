@@ -79,10 +79,8 @@ FROM builder as argo-build
 # Perform the build
 WORKDIR /go/src/github.com/argoproj/argo
 COPY . .
-# stop the annoying git related error messages
-RUN git init
-RUN git remote add origin https://github.com/argoproj/argo.git
-RUN git fetch --no-tags --depth=1  origin
+# check we can use Git
+RUN git rev-parse HEAD
 COPY --from=argo-ui node_modules ui/node_modules
 RUN mkdir -p ui/dist
 COPY --from=argo-ui dist/app ui/dist/app
