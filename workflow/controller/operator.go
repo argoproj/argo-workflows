@@ -1341,12 +1341,12 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		if lastChildNode != nil && lastChildNode.Pending() && processedTmpl.GetType() == wfv1.TemplateTypeContainer {
 			_, err := woc.createWorkflowPod(lastChildNode.Name, *processedTmpl.Container, processedTmpl, false)
 			if apierr.IsForbidden(err) {
-				return woc.markNodePending(lastChildNode.Name, err), nil
+				return woc.markNodePending(retryParentNode.Name, err), nil
 			}
 			if err != nil {
-				return woc.markNodeError(lastChildNode.Name, err), err
+				return woc.markNodeError(retryParentNode.Name, err), err
 			}
-			return woc.markNodePhase(lastChildNode.Name, wfv1.NodeRunning), nil
+			return woc.markNodePhase(retryParentNode.Name, wfv1.NodeRunning), nil
 		}
 		if lastChildNode != nil && !lastChildNode.Completed() {
 			// Last child node is still running.
