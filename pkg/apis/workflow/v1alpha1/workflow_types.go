@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/argoproj/argo/util"
+
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -321,9 +323,21 @@ func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
 	// Finally, attempt to fully unmarshal the struct
 	err = json.Unmarshal(value, &p.Steps)
 	if err != nil {
-		return err
+		// Unmarshalling might have failed because step.arguments.parameters.value is a number instead of a string.
+		// We want to support backwards-compatibility in that case, so we will manually attempt to replace numbers with
+		// strings
+		castCandidate, castErr := util.MustCastParameterValuesToString(candidate)
+		if castErr != nil {
+			// Cast attempt failed, return original error
+			return err
+		}
+		castErr = json.Unmarshal(castCandidate, &p.Steps)
+		if castErr != nil {
+			// Cast attempt failed, return original error
+			return err
+		}
+		// Cast attempt succeeded
 	}
-
 	return nil
 }
 

@@ -1,6 +1,8 @@
 package util
 
 import (
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 
 	log "github.com/sirupsen/logrus"
@@ -56,4 +58,61 @@ func WriteTeriminateMessage(message string) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// In versions <v2.5.0 we allowed the step.arguments.parameters.value field to be a number as well as a string.
+// In version >=v2.5.0 a custom unmarshaller was implemented that enforced stricter type checking, but we still want to
+// add backwards-compatibility to workflows. Here we manually attempt to convert a number to a string field
+func MustCastParameterValuesToString(candidate []map[string]interface{}) ([]byte, error) {
+	type replaceMapEntry struct {
+		stepIndex  int
+		paramIndex int
+		value      string
+	}
+	var replaceMap []replaceMapEntry
+
+	// See if any step.arguments.parameters.value are present
+	for stepIndex, step := range candidate {
+		if args, ok := step["arguments"]; ok {
+			if params, ok := args.(map[string]interface{})["parameters"]; ok {
+				parameters := params.([]interface{})
+				for paramIndex, parameter := range parameters {
+					if value, ok := parameter.(map[string]interface{})["value"]; ok {
+						// Value is present, attempt to cast it
+						switch value.(type) {
+						case int, float32, float64:
+							// Cast successful
+							replaceMap = append(replaceMap, replaceMapEntry{
+								stepIndex:  stepIndex,
+								paramIndex: paramIndex,
+								value:      fmt.Sprint(value),
+							})
+						case string:
+							// Do nothing, value is already string
+						default:
+							// Forbidden value type. This should be unreachable at this point
+							return nil, fmt.Errorf("invalid value type")
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if len(replaceMap) == 0 {
+		// No replacements were found. Return early
+		return nil, fmt.Errorf("no replacements were made")
+	}
+
+	// Make replacements
+	for _, replace := range replaceMap {
+		candidate[replace.stepIndex]["arguments"].(map[string]interface{})["parameters"].([]interface{})[replace.paramIndex].(map[string]interface{})["value"] = replace.value
+	}
+
+	strCandidate, innerErr := json.Marshal(candidate)
+	if innerErr != nil {
+		return nil, innerErr
+	}
+
+	return strCandidate, nil
 }
