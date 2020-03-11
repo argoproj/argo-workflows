@@ -44,7 +44,7 @@ You need the token to access the CLI or UI:
 
     eval $(make env)
 
-    ./dist/argo token
+    ./dist/argo auth token
 
 At this point you’ll have everything you need to use the CLI and UI.
 
