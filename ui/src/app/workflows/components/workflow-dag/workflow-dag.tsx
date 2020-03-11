@@ -118,7 +118,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
                                     'workflow-dag__node-status--' + (Utils.isNodeSuspended(node) ? 'suspended' : node.phase.toLocaleLowerCase()),
                                     {
                                         active: node.id === this.props.selectedNodeId,
-                                        virtual: this.isVirtual(node),
+                                        virtual: this.filterNode(node),
                                         small
                                     }
                                 )}
@@ -178,7 +178,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
     }
 
     private isSmall(node: models.NodeStatus) {
-        return this.isVirtual(node) || (this.props.renderOptions.hideSucceeded && node.phase === NODE_PHASE.SUCCEEDED);
+        return this.filterNode(node) || (this.props.renderOptions.hideSucceeded && node.phase === NODE_PHASE.SUCCEEDED);
     }
 
     private getOutboundNodes(nodeID: string): string[] {
@@ -200,6 +200,11 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
 
     private isVirtual(node: models.NodeStatus) {
         return (node.type === 'StepGroup' || node.type === 'DAG' || node.type === 'TaskGroup') && !!node.boundaryID;
+    }
+
+    private filterNode(node: models.NodeStatus) {
+        // Filter the node if it is a virtual node or a Retry node with one child
+        return this.isVirtual(node) || (node.type === 'Retry' && node.children.length === 1);
     }
 
     private getGraphSize(nodes: dagre.Node[]): {width: number; height: number} {
