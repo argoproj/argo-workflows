@@ -6,6 +6,8 @@ metadata:
     argo-e2e: true
 spec:
   entrypoint: artifact-example
+  volumes:
+    - name: test-volume
   templates:
     - name: artifact-example
       steps:
@@ -13,6 +15,12 @@ spec:
             template: generate-message
         - - name: consume-artifact
             template: print-message
+            arguments:
+              artifacts:
+                - name: message
+                  from: "{{steps.generate-artifact.outputs.artifacts.hello-art}}"
+          - name: consume-artifact-2
+            template: print-message-with-volume
             arguments:
               artifacts:
                 - name: message
@@ -39,3 +47,17 @@ spec:
         imagePullPolicy: IfNotPresent
         command: [sh, -c]
         args: ["cat /tmp/message"]
+
+    - name: print-message-with-volume
+      inputs:
+        artifacts:
+          - name: message
+            path: /test-volume/message
+      script:
+        volumeMounts:
+        - mountPath: /test-volume
+          name: test-volume
+        image: cowsay:v1
+        imagePullPolicy: IfNotPresent
+        command: [sh, -c]
+        args: ["cat /test-volume/message"]
