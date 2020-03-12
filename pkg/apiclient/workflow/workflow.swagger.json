@@ -1419,6 +1419,11 @@
         "backoff": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Backoff",
           "title": "Backoff is a backoff strategy"
+        },
+        "resubmit": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Resubmit is set to enable Pending pod resubmission"
         }
       },
       "title": "RetryStrategy provides controls on how to retry a workflow step"
