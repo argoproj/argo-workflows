@@ -85,7 +85,7 @@ build: status clis executor-image controller-image manifests/install.yaml manife
 
 .PHONY: status
 status:
-	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE)
+	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), GIT_TREE_STATE=$(GIT_TREE_STATE), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE)
 
 .PHONY: vendor
 vendor: go.mod go.sum
