@@ -1262,6 +1262,7 @@ func isResubmitAllowed(tmpl *wfv1.Template) bool {
 	if tmpl.RetryStrategy == nil {
 		return false
 	}
+	fmt.Printf("FLAG: %v", *tmpl.RetryStrategy.Resubmit)
 	if tmpl.RetryStrategy.Resubmit == nil {
 		return false
 	}
@@ -1401,13 +1402,14 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeError, err.Error()), err
 	}
-	if isResubmitAllowed(processedTmpl) {
-		if apierr.IsForbidden(err) {
+	if apierr.IsForbidden(err) {
+		if isResubmitAllowed(processedTmpl) {
 			return woc.markNodePending(node.Name, err), nil
+		} else {
+			return nil, errors.InternalWrapError(err)
 		}
-	} else {
-		return nil, errors.InternalWrapError(err)
 	}
+
 	if err != nil {
 		node = woc.markNodeError(node.Name, err)
 		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container
