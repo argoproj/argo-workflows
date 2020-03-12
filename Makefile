@@ -3,7 +3,7 @@ BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_REMOTE             = origin
 GIT_BRANCH             = $(shell git rev-parse --abbrev-ref=loose HEAD | sed 's/heads\///')
-GIT_TAG                = $(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
+GIT_TAG                = $(shell git describe --exact-match --tags HEAD 2>/dev/null)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
 export DOCKER_BUILDKIT = 1
@@ -14,8 +14,9 @@ IMAGE_NAMESPACE       ?= argoproj
 # The rules for what version are, in order of precedence
 # 1. If anything passed at the command line (e.g. make release VERSION=...)
 # 2. If on master, it must be "latest".
-# 3. If on a release branch, the most recent tag that contain the major minor on that branch,
-# 4. Otherwise, the branch.
+# 3. If on tag, must be tag.
+# 4. If on a release branch, the most recent tag that contain the major minor on that branch,
+# 5. Otherwise, the branch.
 #
 VERSION := $(subst /,-,$(GIT_BRANCH))
 
@@ -33,14 +34,20 @@ VERSION := $(GIT_LATEST_TAG)
 endif
 endif
 
-
 # MANIFESTS_VERSION is the version to be used for files in manifests and should always be latests unles we are releasing
+# we assume HEAD means you are on a tag
+ifeq ($(GIT_BRANCH),HEAD)
+VERSION               := $(GIT_TAG)
+MANIFESTS_VERSION     := $(VERSION)
+DEV_IMAGE             := false
+else
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
 MANIFESTS_VERSION     := $(VERSION)
 DEV_IMAGE             := false
 else
 MANIFESTS_VERSION     := latest
 DEV_IMAGE             := true
+endif
 endif
 
 # perform static compilation
@@ -78,7 +85,7 @@ build: status clis executor-image controller-image manifests/install.yaml manife
 
 .PHONY: status
 status:
-	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE)
+	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), GIT_TREE_STATE=$(GIT_TREE_STATE), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE)
 
 .PHONY: vendor
 vendor: go.mod go.sum
