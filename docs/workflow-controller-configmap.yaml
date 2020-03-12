@@ -157,3 +157,7 @@ data:
       #   passwordSecret:
       #     name: argo-mysql-config
       #     key: password
+      
+    workflowDefaults:
+      ttlStrategy:
+        secondsAfterCompletion: 10

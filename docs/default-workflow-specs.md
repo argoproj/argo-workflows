@@ -67,61 +67,7 @@ metadata:
   selfLink: /api/v1/namespaces/argo/configmaps/workflow-controller-configmap
   uid: 05f70535-22db-49ca-a4a9-afd513b49737
 ```
-As an example the time for a argo workflow to live after Finish will be set, in the spec this filed is known as ```secondsAfterCompletion``` in the ```ttlStrategy```. The updated configMap will then look like this: 
-
-
-``` yaml 
-# Please edit the object below. Lines beginning with a '#' will be ignored,
-# and an empty file will abort the edit. If an error occurs while saving this file will be
-# reopened with the relevant failures.
-#
-apiVersion: v1
-data:
-  config: |
-    artifactRepository:
-      archiveLogs: true
-      s3:
-        bucket: my-bucket
-        endpoint: minio:9000
-        insecure: true
-        accessKeySecret:
-          name: my-minio-cred
-          key: accesskey
-        secretKeySecret:
-          name: my-minio-cred
-          key: secretkey
-    persistence:
-      connectionPool:
-        maxIdleConns: 100
-        maxOpenConns: 0
-      nodeStatusOffLoad: true
-      archive: true
-      postgresql:
-        host: postgres
-        port: 5432
-        database: postgres
-        tableName: argo_workflows
-        userNameSecret:
-          name: argo-postgres-config
-          key: username
-        passwordSecret:
-          name: argo-postgres-config
-          key: password
-    workflowDefaults:
-      ttlStrategy:
-        secondsAfterCompletion: 10
-kind: ConfigMap
-metadata:
-  annotations:
-    kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"v1","data":{"config":"artifactRepository:\n  archiveLogs: true\n  s3:\n    bucket: my-bucket\n    endpoint: minio:9000\n    insecure: true\n    accessKeySecret:\n      name: my-minio$
-  creationTimestamp: "2020-03-11T13:28:31Z"
-  name: workflow-controller-configmap
-  namespace: argo
-  resourceVersion: "23964"
-  selfLink: /api/v1/namespaces/argo/configmaps/workflow-controller-configmap
-  uid: 05f70535-22db-49ca-a4a9-afd513b49737
-```
+As an example the time for a argo workflow to live after Finish will be set, in the spec this filed is known as ```secondsAfterCompletion``` in the ```ttlStrategy```. The updated configMap will then look like [this](https://github.com/argoproj/argo/blob/master/docs/workflow-controller-configmap.yaml).
 
 In order to test it a example workflow can be submited, in this case the [coinflip example](https://github.com/argoproj/argo/blob/master/examples/coinflip.yaml). 
 
