@@ -7,8 +7,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/argoproj/argo/util"
-
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -323,20 +321,7 @@ func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
 	// Finally, attempt to fully unmarshal the struct
 	err = json.Unmarshal(value, &p.Steps)
 	if err != nil {
-		// Unmarshalling might have failed because step.arguments.parameters.value is a number instead of a string.
-		// We want to support backwards-compatibility in that case, so we will manually attempt to replace numbers with
-		// strings
-		castCandidate, castErr := util.MustCastParameterValuesToString(candidate)
-		if castErr != nil {
-			// Cast attempt failed, return original error
-			return err
-		}
-		castErr = json.Unmarshal(castCandidate, &p.Steps)
-		if castErr != nil {
-			// Cast attempt failed, return original error
-			return err
-		}
-		// Cast attempt succeeded
+		return err
 	}
 	return nil
 }
@@ -552,6 +537,39 @@ type Parameter struct {
 	// GlobalName exports an output parameter to the global scope, making it available as
 	// '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,5,opt,name=globalName"`
+}
+
+func (p *Parameter) UnmarshalJSON(value []byte) error {
+	var candidate map[string]interface{}
+	err := json.Unmarshal(value, &candidate)
+	if err != nil {
+		return err
+	}
+	if val, ok := candidate["name"]; ok {
+		p.Name = fmt.Sprint(val)
+	}
+	if val, ok := candidate["default"]; ok {
+		stringVal := fmt.Sprint(val)
+		p.Default = &stringVal
+	}
+	if val, ok := candidate["value"]; ok {
+		stringVal := fmt.Sprint(val)
+		p.Value = &stringVal
+	}
+	if val, ok := candidate["valueFrom"]; ok {
+		strVal, err := json.Marshal(val)
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(strVal, &p.ValueFrom)
+		if err != nil {
+			return err
+		}
+	}
+	if val, ok := candidate["globalName"]; ok {
+		p.Name = fmt.Sprint(val)
+	}
+	return nil
 }
 
 // ValueFrom describes a location in which to obtain the value to a parameter
