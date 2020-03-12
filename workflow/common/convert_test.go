@@ -23,30 +23,6 @@ spec:
     annotations:
       annotation2: value2
   workflowSpec:
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"sigs.k8s.io/yaml"
-
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-)
-
-const cronWorkflow = `
-apiVersion: argoproj.io/v1alpha1
-kind: CronWorkflow
-metadata:
-  name: test-cron-wf-basic
-  labels:
-    argo-e2e-cron: true
-spec:
-  schedule: "* * * * *"
-  concurrencyPolicy: "Allow"
-  startingDeadlineSeconds: 0
-  successfulJobsHistoryLimit: 4
-  failedJobsHistoryLimit: 2
-  workflowSpec:
-    podGC:
-      strategy: OnPodCompletion
     entrypoint: whalesay
     templates:
       - name: whalesay
@@ -97,30 +73,10 @@ status:
 	err := yaml.Unmarshal([]byte(cronWfString), &cronWf)
 	assert.NoError(t, err)
 	fmt.Println(cronWf)
-	wf, err := ConvertCronWorkflowToWorkflow(&cronWf)
-	assert.NoError(t, err)
+	wf := ConvertCronWorkflowToWorkflow(&cronWf)
 	wfString, err := yaml.Marshal(wf)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedWf, string(wfString))
-          image: python:alpine3.6
-          imagePullPolicy: IfNotPresent
-          command: ["sh", -c]
-          args: ["echo hello"]
-`
-
-func TestConvertCronWorkflowToWorkflow(t *testing.T) {
-
-	var cronWf wfv1.CronWorkflow
-	err := yaml.Unmarshal([]byte(cronWorkflow), &cronWf)
-	if err != nil {
-		panic(err)
-	}
-	wf := ConvertCronWorkflowToWorkflow(&cronWf)
-	assert.NotNil(t, wf)
-	assert.Equal(t, wf.Labels[LabelKeyCronWorkflow], cronWf.Name)
-	assert.Equal(t, wf.GenerateName, cronWf.Name+"-")
-	assert.Equal(t, wf.OwnerReferences[0].Name, cronWf.Name)
-
 }
 
 const workflowTmpl = `
@@ -149,7 +105,7 @@ spec:
 `
 
 func TestConvertWorkflowTemplateToWorkflow(t *testing.T) {
-	var wfTmpl wfv1.WorkflowTemplate
+	var wfTmpl v1alpha1.WorkflowTemplate
 	err := yaml.Unmarshal([]byte(workflowTmpl), &wfTmpl)
 	if err != nil {
 		panic(err)
