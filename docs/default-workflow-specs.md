@@ -1,11 +1,11 @@
-# Default Workflow Specs
+# Default Workflow Spec
 
 ![alpha](assets/alpha.svg)
 
-> v2.X and after
+> v2.7 and after
 
-It is possible to set default workfllw specs which will be written to all workflows if the spec of interest is not set. This can be configurated through the 
-workflow controller config [map](https://github.com/argoproj/argo/blob/f2ca045e1cad03d5ec7566ff7200fd8ca575ec5d/workflow/config/config.go#L11) and the field [DefaultWorkflowSpec](https://github.com/argoproj/argo/blob/f2ca045e1cad03d5ec7566ff7200fd8ca575ec5d/workflow/config/config.go#L69). 
+It's possible to set default workflow specs which will be written to all workflows if the spec of interest is not set. This can be configurated through the 
+workflow controller config [map](https://github.com/argoproj/argo/blob/master/workflow/config/config.go#L11) and the field [DefaultWorkflowSpec](https://github.com/argoproj/argo/blob/master/workflow/config/config.go#L69). 
 
 
 In order to edit the Default workflow spec for a controller, edit the workflow config map: 
@@ -67,18 +67,19 @@ metadata:
   selfLink: /api/v1/namespaces/argo/configmaps/workflow-controller-configmap
   uid: 05f70535-22db-49ca-a4a9-afd513b49737
 ```
+
 As an example the time for a argo workflow to live after Finish will be set, in the spec this filed is known as ```secondsAfterCompletion``` in the ```ttlStrategy```. The updated configMap will then look like [this](https://github.com/argoproj/argo/blob/master/docs/workflow-controller-configmap.yaml).
 
 In order to test it a example workflow can be submited, in this case the [coinflip example](https://github.com/argoproj/argo/blob/master/examples/coinflip.yaml). 
 
 ```bash 
-kubectl create -f examples/coinflip.yaml 
+argo submit ./examples/coinflip.yaml
 ```
 
 to verify that the the defaultd are set run 
 
 ```bash
-kubectl -n argo describe workflow.argoproj.io/[YOUR_ARGO_WORKFLOW_NAME]
+argo get [YOUR_ARGO_WORKFLOW_NAME]
 ```
 
 You should then see the filed, Ttl Strategy populated

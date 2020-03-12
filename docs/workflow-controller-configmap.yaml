@@ -157,7 +157,8 @@ data:
       #   passwordSecret:
       #     name: argo-mysql-config
       #     key: password
-      
+
+    # default workflow spec, follow the workflow spec, more info: https://github.com/argoproj/argo/blob/master/examples/README.md#the-structure-of-workflow-specs
     workflowDefaults:
       ttlStrategy:
         secondsAfterCompletion: 10
