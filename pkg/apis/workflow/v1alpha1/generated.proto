@@ -179,6 +179,9 @@ message CronWorkflowSpec {
 
   // Timezone is the timezone against which the cron schedule will be calculated, e.g. "Asia/Tokyo". Default is machine's local time.
   optional string timezone = 8;
+
+  // WorkflowMetadata contains some metadata of the workflow to be run
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 9;
 }
 
 message CronWorkflowStatus {

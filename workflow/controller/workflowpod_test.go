@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -82,6 +83,25 @@ script:
     ls -al
 `
 
+var scriptTemplateWithOptionalInputArtifactProvidedAndOverlappedPath = `
+name: script-with-input-artifact
+inputs:
+  artifacts:
+  - name: manifest
+    path: /manifest
+    optional: true
+    http:
+        url: https://raw.githubusercontent.com/argoproj/argo/stable/manifests/install.yaml
+script:
+  volumeMounts:
+  - mountPath: /manifest
+    name: my-mount
+  image: alpine:latest
+  command: [sh]
+  source: |
+    ls -al
+`
+
 var scriptTemplateWithOptionalInputArtifactNotProvided = `
 name: script-with-input-artifact
 inputs:
@@ -107,6 +127,24 @@ func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 		SubPathExpr:      "",
 	}
 
+	customVolumeMount := apiv1.VolumeMount{
+		Name:             "my-mount",
+		ReadOnly:         false,
+		MountPath:        "/manifest",
+		SubPath:          "",
+		MountPropagation: nil,
+		SubPathExpr:      "",
+	}
+
+	customVolumeMountForInit := apiv1.VolumeMount{
+		Name:             "my-mount",
+		ReadOnly:         false,
+		MountPath:        filepath.Join(common.ExecutorMainFilesystemDir, "/manifest"),
+		SubPath:          "",
+		MountPropagation: nil,
+		SubPathExpr:      "",
+	}
+
 	// Ensure that volume mount is added when artifact is provided
 	tmpl := unmarshalTemplate(scriptTemplateWithOptionalInputArtifactProvided)
 	woc := newWoc()
@@ -114,7 +152,24 @@ func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
 	pod, err := woc.createWorkflowPod(tmpl.Name, mainCtr, tmpl, &createWorkflowPodOpts{})
 	assert.NoError(t, err)
+	// Note: pod.Spec.Containers[0] is wait
 	assert.Contains(t, pod.Spec.Containers[1].VolumeMounts, volumeMount)
+	assert.NotContains(t, pod.Spec.Containers[1].VolumeMounts, customVolumeMount)
+	assert.NotContains(t, pod.Spec.InitContainers[0].VolumeMounts, customVolumeMountForInit)
+
+	// Ensure that volume mount is added to initContainer when artifact is provided
+	// and the volume is mounted manually in the template
+	tmpl = unmarshalTemplate(scriptTemplateWithOptionalInputArtifactProvidedAndOverlappedPath)
+	wf := unmarshalWF(helloWorldWf)
+	wf.Spec.Volumes = append(wf.Spec.Volumes, apiv1.Volume{Name: "my-mount"})
+	woc = newWoc(*wf)
+	mainCtr = tmpl.Script.Container
+	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
+	pod, err = woc.createWorkflowPod(tmpl.Name, mainCtr, tmpl, true)
+	assert.NoError(t, err)
+	assert.NotContains(t, pod.Spec.Containers[1].VolumeMounts, volumeMount)
+	assert.Contains(t, pod.Spec.Containers[1].VolumeMounts, customVolumeMount)
+	assert.Contains(t, pod.Spec.InitContainers[0].VolumeMounts, customVolumeMountForInit)
 
 	// Ensure that volume mount is not created when artifact is not provided
 	tmpl = unmarshalTemplate(scriptTemplateWithOptionalInputArtifactNotProvided)
