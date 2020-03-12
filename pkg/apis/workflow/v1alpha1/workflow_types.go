@@ -697,6 +697,9 @@ type ArtifactLocation struct {
 
 	// OSS contains OSS artifact location details
 	OSS *OSSArtifact `json:"oss,omitempty" protobuf:"bytes,8,opt,name=oss"`
+
+	// GCS contains GCS artifact location details
+	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 }
 
 type ArtifactRepositoryRef struct {
@@ -1298,6 +1301,28 @@ func (h *HTTPArtifact) HasLocation() bool {
 	return h != nil && h.URL != ""
 }
 
+// GCSBucket contains the access information for  interfacring with a GCS bucket
+type GCSBucket struct {
+
+	// Bucket is the name of the bucket
+	Bucket string `json:"bucket" protobuf:"bytes,1,opt,name=bucket"`
+
+	// ServiceAccountKeySecret is the secret selector to the bucket's service account key
+	ServiceAccountKeySecret apiv1.SecretKeySelector `json:"serviceAccountKeySecret" protobuf:"bytes,2,opt,name=serviceAccountKeySecret"`
+}
+
+// GCSArtifact is the location of a GCS artifact
+type GCSArtifact struct {
+	GCSBucket `json:",inline" protobuf:"bytes,1,opt,name=gCSBucket"`
+
+	// Key is the path in the bucket where the artifact resides
+	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+}
+
+func (g *GCSArtifact) HasLocation() bool {
+	return g != nil && g.Bucket != "" && g.Key != ""
+}
+
 // OSSBucket contains the access information required for interfacing with an OSS bucket
 type OSSBucket struct {
 	// Endpoint is the hostname of the bucket endpoint
@@ -1551,7 +1576,8 @@ func (a *Artifact) HasLocation() bool {
 		a.Artifactory.HasLocation() ||
 		a.Raw.HasLocation() ||
 		a.HDFS.HasLocation() ||
-		a.OSS.HasLocation()
+		a.OSS.HasLocation() ||
+		a.GCS.HasLocation()
 }
 
 // GetTemplateByName retrieves a defined template by its name
