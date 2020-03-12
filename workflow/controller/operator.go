@@ -1255,6 +1255,19 @@ func (woc *wfOperationCtx) getFirstChildNode(node *wfv1.NodeStatus) (*wfv1.NodeS
 	return &firstChildNode, nil
 }
 
+func isResubmitAllowed(tmpl *wfv1.Template) bool {
+	if tmpl == nil {
+		return false
+	}
+	if tmpl.RetryStrategy == nil {
+		return false
+	}
+	if tmpl.RetryStrategy.Resubmit == nil {
+		return false
+	}
+	return *tmpl.RetryStrategy.Resubmit
+}
+
 // executeTemplate executes the template with the given arguments and returns the created NodeStatus
 // for the created node (if created). Nodes may not be created if parallelism or deadline exceeded.
 // nodeName is the name to be used as the name of the node, and boundaryID indicates which template
@@ -1341,12 +1354,15 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		if lastChildNode != nil && lastChildNode.Pending() && processedTmpl.GetType() == wfv1.TemplateTypeContainer {
 			_, err := woc.createWorkflowPod(lastChildNode.Name, *processedTmpl.Container, processedTmpl, false)
 			if apierr.IsForbidden(err) {
-				return woc.markNodePending(retryParentNode.Name, err), nil
+				woc.markNodePending(lastChildNode.Name, err)
+				return retryParentNode, nil
 			}
 			if err != nil {
-				return woc.markNodeError(retryParentNode.Name, err), err
+				woc.markNodePending(lastChildNode.Name, err)
+				return retryParentNode, nil
 			}
-			return woc.markNodePhase(retryParentNode.Name, wfv1.NodeRunning), nil
+			woc.markNodePhase(lastChildNode.Name, wfv1.NodeRunning)
+			return retryParentNode, nil
 		}
 		if lastChildNode != nil && !lastChildNode.Completed() {
 			// Last child node is still running.
@@ -1385,8 +1401,12 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeError, err.Error()), err
 	}
-	if apierr.IsForbidden(err) {
-		return woc.markNodePending(node.Name, err), nil
+	if isResubmitAllowed(processedTmpl) {
+		if apierr.IsForbidden(err) {
+			return woc.markNodePending(node.Name, err), nil
+		}
+	} else {
+		return nil, errors.InternalWrapError(err)
 	}
 	if err != nil {
 		node = woc.markNodeError(node.Name, err)
