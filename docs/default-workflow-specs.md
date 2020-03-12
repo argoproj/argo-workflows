@@ -2,7 +2,7 @@
 
 ![alpha](assets/alpha.svg)
 
-> v2.X and after
+> v2.7 and after
 
 It's possible to set default workflow specs which will be written to all workflows if the spec of interest is not set. This can be configurated through the 
 workflow controller config [map](https://github.com/argoproj/argo/blob/f2ca045e1cad03d5ec7566ff7200fd8ca575ec5d/workflow/config/config.go#L11) and the field [DefaultWorkflowSpec](https://github.com/argoproj/argo/blob/f2ca045e1cad03d5ec7566ff7200fd8ca575ec5d/workflow/config/config.go#L69). 
