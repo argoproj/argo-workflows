@@ -1262,7 +1262,6 @@ func isResubmitAllowed(tmpl *wfv1.Template) bool {
 	if tmpl.RetryStrategy == nil {
 		return false
 	}
-	fmt.Printf("FLAG: %v", *tmpl.RetryStrategy.Resubmit)
 	if tmpl.RetryStrategy.Resubmit == nil {
 		return false
 	}
