@@ -244,7 +244,13 @@ func (woc *wfOperationCtx) operate() {
 	}
 
 	// Create a starting template context.
-	tmplCtx := woc.createTemplateContext("")
+	tmplCtx, err := woc.createTemplateContext("")
+	if err != nil {
+		msg := fmt.Sprintf("Failed to create a template context: %+v", err)
+		woc.log.Errorf(msg)
+		woc.markWorkflowError(err, true)
+		return
+	}
 
 	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.Template{Template: woc.wf.Spec.Entrypoint}, tmplCtx, woc.wf.Spec.Arguments, &executeTemplateOpts{})
 	if err != nil {
@@ -1612,7 +1618,10 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 			if !ok {
 				return errors.InternalError("boundaryNode not found")
 			}
-			tmplCtx := woc.createTemplateContext(boundaryNode.TemplateScope)
+			tmplCtx, err := woc.createTemplateContext(boundaryNode.TemplateScope)
+			if err != nil {
+				return err
+			}
 			_, boundaryTemplate, err := tmplCtx.ResolveTemplate(&boundaryNode)
 			if err != nil {
 				return err
@@ -1750,7 +1759,10 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 
 	includeScriptOutput := false
 	if boundaryNode, ok := woc.wf.Status.Nodes[opts.boundaryID]; ok {
-		tmplCtx := woc.createTemplateContext(boundaryNode.TemplateScope)
+		tmplCtx, err := woc.createTemplateContext(boundaryNode.TemplateScope)
+		if err != nil {
+			return node, err
+		}
 		_, parentTemplate, err := tmplCtx.ResolveTemplate(&boundaryNode)
 		if err != nil {
 			return node, err
@@ -2197,12 +2209,14 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 }
 
 // createTemplateContext creates a new template context.
-func (woc *wfOperationCtx) createTemplateContext(templateScope string) *templateresolution.Context {
+func (woc *wfOperationCtx) createTemplateContext(templateScope string) (*templateresolution.Context, error) {
 	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), woc.wf, woc)
 	if templateScope != "" {
-		ctx = ctx.WithLazyWorkflowTemplate(woc.wf.Namespace, templateScope)
+		fmt.Printf("templateScope: %s\n", templateScope)
+		// ctx = ctx.WithLazyWorkflowTemplate(woc.wf.Namespace, templateScope)
+		return ctx.WithWorkflowTemplate(templateScope)
 	}
-	return ctx
+	return ctx, nil
 }
 
 func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID string, tmplCtx *templateresolution.Context) (bool, *wfv1.NodeStatus, error) {

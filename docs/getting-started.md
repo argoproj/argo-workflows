@@ -166,6 +166,9 @@ kubectl -n argo port-forward deployment/argo-server 2746:2746
 
 Then visit: http://127.0.0.1:2746
 
+See the [Argo Server documentation](./argo-server.md) for config options, authentication,
+managed namespaces, etc.
+
 > v2.4 and before
 
 By default, the Argo UI service is not exposed with an external IP. To access the UI, use one of the

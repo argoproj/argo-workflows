@@ -1,3 +1,6 @@
+## Argo Workflows User Community Surveys & Feedback
+Please find [here](community/ArgoWorkflows2020SurveySummary.pdf) Argo Workflows user community 2020 survey results.
+
 ## Who uses Argo Workflows?
 As the Argo Community grows, we'd like to keep track of our users. Please send a PR with your organization name.
 
