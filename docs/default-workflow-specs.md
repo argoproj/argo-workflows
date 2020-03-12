@@ -1,4 +1,4 @@
-# Default Workflow Specs
+# Default Workflow Spec
 
 ![alpha](assets/alpha.svg)
 
