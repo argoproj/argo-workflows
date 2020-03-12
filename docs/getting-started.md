@@ -166,7 +166,8 @@ kubectl -n argo port-forward deployment/argo-server 2746:2746
 
 Then visit: http://127.0.0.1:2746
 
-See the [Argo Server documentation](./argo-server.md) for config options.
+See the [Argo Server documentation](./argo-server.md) for config options for authentication,
+managed namespaces, etc.
 
 > v2.4 and before
 
