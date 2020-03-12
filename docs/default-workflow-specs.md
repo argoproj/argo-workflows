@@ -126,13 +126,13 @@ metadata:
 In order to test it a example workflow can be submited, in this case the [coinflip example](https://github.com/argoproj/argo/blob/master/examples/coinflip.yaml). 
 
 ```bash 
-kubectl create -f examples/coinflip.yaml 
+argo submit ./examples/coinflip.yaml
 ```
 
 to verify that the the defaultd are set run 
 
 ```bash
-kubectl -n argo describe workflow.argoproj.io/[YOUR_ARGO_WORKFLOW_NAME]
+argo get [YOUR_ARGO_WORKFLOW_NAME]
 ```
 
 You should then see the filed, Ttl Strategy populated
