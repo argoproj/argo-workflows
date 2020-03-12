@@ -68,7 +68,7 @@ metadata:
   uid: 05f70535-22db-49ca-a4a9-afd513b49737
 ```
 
-As an example the time for a argo workflow to live after Finish will be set, in the spec this filed is known as ```secondsAfterCompletion``` in the ```ttlStrategy```. The updated configMap will then look like [this](https://github.com/argoproj/argo/blob/master/docs/workflow-controller-configmap.yaml).
+As an example the time for a argo workflow to live after Finish will be set, in the spec this field is known as ```secondsAfterCompletion``` in the ```ttlStrategy```. The updated configMap will then look like [this](https://github.com/argoproj/argo/blob/master/docs/workflow-controller-configmap.yaml).
 
 In order to test it a example workflow can be submited, in this case the [coinflip example](https://github.com/argoproj/argo/blob/master/examples/coinflip.yaml). 
 
