@@ -9,7 +9,10 @@ import (
 
 func CreateHardMemoryQuota(clientset kubernetes.Interface, namespace, name, memoryLimit string) (*corev1.ResourceQuota, error) {
 	return clientset.CoreV1().ResourceQuotas(namespace).Create(&corev1.ResourceQuota{
-		ObjectMeta: metav1.ObjectMeta{Name: name},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   name,
+			Labels: map[string]string{"argo-e2e": "true"},
+		},
 		Spec: corev1.ResourceQuotaSpec{
 			Hard: corev1.ResourceList{
 				corev1.ResourceLimitsMemory: resource.MustParse(memoryLimit),
