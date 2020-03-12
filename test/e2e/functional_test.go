@@ -224,13 +224,13 @@ spec:
 				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(a.Message) &&
 				wfv1.NodePending == b.Phase &&
 				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(b.Message)
-		}, "pods pending", 10*time.Second).
+		}, "pods pending", 20*time.Second).
 		DeleteQuota().
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			a := wf.Status.Nodes.FindByDisplayName("a")
 			b := wf.Status.Nodes.FindByDisplayName("b")
 			return wfv1.NodeSucceeded == a.Phase && wfv1.NodeSucceeded == b.Phase
-		}, "pods succeeded", 10*time.Second)
+		}, "pods succeeded", 20*time.Second)
 	s.TearDownSuite()
 }
 
@@ -275,13 +275,13 @@ spec:
 				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(a.Message) &&
 				wfv1.NodePending == b.Phase &&
 				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(b.Message)
-		}, "pods pending", 10*time.Second).
+		}, "pods pending", 20*time.Second).
 		DeleteQuota().
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			a := wf.Status.Nodes.FindByDisplayName("a(0)")
 			b := wf.Status.Nodes.FindByDisplayName("b(0)")
 			return wfv1.NodeSucceeded == a.Phase && wfv1.NodeSucceeded == b.Phase
-		}, "pods succeeded", 10*time.Second)
+		}, "pods succeeded", 20*time.Second)
 	s.TearDownSuite()
 }
 
