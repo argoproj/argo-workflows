@@ -67,7 +67,7 @@ metadata:
   selfLink: /api/v1/namespaces/argo/configmaps/workflow-controller-configmap
   uid: 05f70535-22db-49ca-a4a9-afd513b49737
 ```
-As an example the time for a argo workflow to live after Finish will be set, in the spec this filed is known as ```secondsAfterCompletion``` in the ```ttlStrategy```. The updated configMap will then look like this: 
+As an example the time for a argo workflow to live after Finish will be set in the spec, this filed is known as ```secondsAfterCompletion``` in the ```ttlStrategy```. The updated configMap will then look like this: 
 
 
 ``` yaml 
