@@ -43,8 +43,8 @@ func (wc *controllerCollector) collectWorkflowStatuses(wfs []*wfv1.Workflow) []p
 		return prometheus.GaugeOpts{
 			Namespace:   argoNamespace,
 			Subsystem:   workflowsSubsystem,
-			Name:        "workflows_by_status_count",
-			Help:        "Number of Workflows currently accesible by the controller by status",
+			Name:        "count",
+			Help:        "Number of Workflows currently accessible by the controller by status",
 			ConstLabels: map[string]string{"status": string(phase)},
 		}
 	}

@@ -62,35 +62,37 @@ tracking the duration of model execution over time, a metric descriptor could be
 
 `argo_workflows_model_exec_time{model_name="model_a",phase="validation"}`
 
- This metric then represents the amount of time that "Model A" took to train in the phase "Validation". It is important
- to understand that the metric name _and_ its labels form the descriptor: `argo_workflows_model_exec_time{model_name="model_b",phase="validation"}`
- is a different metric (and will track a different "series" altogether).
- 
- Now, whenever we run our first workflow that validates "Model A" a metric with the amount of time it took it to do so will
- be created and emitted. For each subsequent time that this happens, no new metrics will be emitted and the _same_ metric
- will be updated with the new value. Since, in effect, we are interested on the execution time of "validation" of "Model A"
- over time, we are no longer interested in the previous metric and can assume it has already been scraped.
- 
- In summary, whenever you want to track a particular metric over time, you should use the same metric name _and_ metric
- labels wherever it is emitted. This is how these metrics are "linked" as belonging to the same series.
- 
- ## Defining metrics
- 
- Metrics are defined in-place on the Workflow/Step/Task where they are emitted from. Metrics are always processed _after_
- the Workflow/Step/Task completes, with the exception of [realtime metrics](#realtime-metrics).
- 
- Metric definitions **must** include a `name` and a `help` doc string. They can also include any number of `labels` (when
- defining labels avoid cardinality explosion).
- 
- All metrics can also be conditionally emitted by defining a `when` clause. This `when` clause works the same as elsewhere
- in a workflow.
- 
- A metric must also have a type, it can be one of `gauge`, `histogram`, and `counter` ([see below](#metric-spec)). Within
- the metric type a `value` must be specified. This value can be either a literal value of be an [Argo variable](variables.md).
- 
- When defining a `histogram`, `buckets` must also be provided (see below).
- 
- ### Metric Spec
+This metric then represents the amount of time that "Model A" took to train in the phase "Validation". It is important
+to understand that the metric name _and_ its labels form the descriptor: `argo_workflows_model_exec_time{model_name="model_b",phase="validation"}`
+is a different metric (and will track a different "series" altogether).
+
+Now, whenever we run our first workflow that validates "Model A" a metric with the amount of time it took it to do so will
+be created and emitted. For each subsequent time that this happens, no new metrics will be emitted and the _same_ metric
+will be updated with the new value. Since, in effect, we are interested on the execution time of "validation" of "Model A"
+over time, we are no longer interested in the previous metric and can assume it has already been scraped.
+
+In summary, whenever you want to track a particular metric over time, you should use the same metric name _and_ metric
+labels wherever it is emitted. This is how these metrics are "linked" as belonging to the same series.
+
+## Defining metrics
+
+Metrics are defined in-place on the Workflow/Step/Task where they are emitted from. Metrics are always processed _after_
+the Workflow/Step/Task completes, with the exception of [realtime metrics](#realtime-metrics).
+
+Metric definitions **must** include a `name` and a `help` doc string. They can also include any number of `labels` (when
+defining labels avoid cardinality explosion).
+
+All metrics can also be conditionally emitted by defining a `when` clause. This `when` clause works the same as elsewhere
+in a workflow.
+
+A metric must also have a type, it can be one of `gauge`, `histogram`, and `counter` ([see below](#metric-spec)). Within
+the metric type a `value` must be specified. This value can be either a literal value of be an [Argo variable](variables.md).
+
+When defining a `histogram`, `buckets` must also be provided (see below).
+
+[Argo variables](variables.md) can be included anywhere in the metric spec, such as in `labels`, `name`, `help`, `when`, etc.
+
+### Metric Spec
  
  In Argo you can define a metric on the `Workflow` level or on the `Step/Task` level. Here is an example of a `Workflow`
  level Gauge metric that will report the Workflow duration time:
@@ -115,7 +117,7 @@ spec:
 ... 
 ```
 
-And example of a `Task`-level Counter metric that will increase a counter every time the step fails:
+An example of a `Task`-level Counter metric that will increase a counter every time the step fails:
 
 ```yaml
 ...
@@ -137,6 +139,30 @@ And example of a `Task`-level Counter metric that will increase a counter every 
                 counter:
                   value: "1"                            # This increments the counter by 1
 ...
+```
+
+A similar example of such a Counter metric that will increase for every step status
+
+```yaml
+...
+  templates:
+    - name: dag
+      dag:
+        tasks:
+        - name: flakey
+          template: flakey
+          dependencies: [random-int]
+          metrics:
+            prometheus:
+              - name: result_counter
+                help: "Count of step execution by result status"
+                labels:
+                  - key: name
+                    value: flakey
+                  - key: status
+                    value: "{{step.result}}"    # Argo variable in `labels`
+                counter:
+                  value: "1"
 ```
 
 Finally, an example of a `Step`-level Histogram metric that tracks an internal value:

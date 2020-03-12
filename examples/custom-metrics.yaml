@@ -36,6 +36,7 @@ spec:
                       - 8.01
                       - 10.01
                 - name: duration_gauge
+                  when: "{{step.status}} == Succeeded"    # Only emit metric when step succeeds
                   labels:
                     - key: name
                       value: random-int
@@ -47,19 +48,13 @@ spec:
             template: flakey
             metrics:
               prometheus:
-                - name: execution_counter
-                  help: "How many times a step has executed"
+                - name: result_counter
+                  help: "Count of step execution by result status"
                   labels:
                     - key: name
                       value: flakey
-                  counter:
-                    value: "1"
-                - name: failure_counter
-                  help: "How many times a step has failed"
-                  labels:
-                    - key: name
-                      value: flakey
-                  when: "{{step.status}} == Failed"
+                    - key: status
+                      value: "{{step.status}}"
                   counter:
                     value: "1"
 

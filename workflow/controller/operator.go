@@ -2248,19 +2248,38 @@ func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID str
 func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localScope map[string]string, realTimeScope map[string]func() float64, realTimeOnly bool) {
 	for _, metricTmpl := range metricList {
 
+		// Don't process real time metrics after execution
 		if realTimeOnly && !metricTmpl.IsRealtime() {
 			continue
 		}
 
-		// Substitute when expression
-		fstTmpl := fasttemplate.New(metricTmpl.When, "{{", "}}")
-		when, err := common.Replace(fstTmpl, localScope, false)
+		// Substitute parameters in non-value fields of the template to support variables in places such as labels,
+		// name, and help. We do not substitute value fields here (i.e. gauge, histogram, counter) here because they
+		// might be realtime ({{workflow.duration}} will not be substituted the same way if it's realtime or if it isn't).
+		metricTmplBytes, err := json.Marshal(metricTmpl)
 		if err != nil {
-			woc.log.Errorf("unable to substitute parameters for 'when' clause in metric '%s': %s", metricTmpl.Name, err)
+			woc.log.Errorf("unable to substitute parameters for metric '%s' (marshal): %s", metricTmpl.Name, err)
 			continue
 		}
+		fstTmpl := fasttemplate.New(string(metricTmplBytes), "{{", "}}")
+		replacedValue, err := common.Replace(fstTmpl, localScope, false)
+		if err != nil {
+			woc.log.Errorf("unable to substitute parameters for metric '%s': %s", metricTmpl.Name, err)
+			continue
+		}
+		var metricTmplSubstituted wfv1.Prometheus
+		err = json.Unmarshal([]byte(replacedValue), &metricTmplSubstituted)
+		if err != nil {
+			woc.log.Errorf("unable to substitute parameters for metric '%s' (unmarshal): %s", metricTmpl.Name, err)
+			continue
+		}
+		// Only substitute non-value fields here. Value field substitution happens below
+		metricTmpl.Name = metricTmplSubstituted.Name
+		metricTmpl.Help = metricTmplSubstituted.Help
+		metricTmpl.Labels = metricTmplSubstituted.Labels
+		metricTmpl.When = metricTmplSubstituted.When
 
-		proceed, err := shouldExecute(when)
+		proceed, err := shouldExecute(metricTmpl.When)
 		if err != nil {
 			woc.log.Errorf("unable to compute 'when' clause for metric '%s': %s", woc.wf.ObjectMeta.Name, err)
 			continue
@@ -2270,6 +2289,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 		}
 
 		if metricTmpl.IsRealtime() {
+			// Finally substitute value parameters
 			value := metricTmpl.Gauge.Value
 			if !(strings.HasPrefix(value, "{{") && strings.HasSuffix(value, "}}")) {
 				woc.log.Errorf("real time metrics can only be used with metric variables")
@@ -2287,7 +2307,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 		} else {
 			metricSpec := metricTmpl.DeepCopy()
 
-			// Substitute parameters
+			// Finally substitute value parameters
 			fstTmpl = fasttemplate.New(metricSpec.GetValueString(), "{{", "}}")
 			replacedValue, err := common.Replace(fstTmpl, localScope, false)
 			if err != nil {
