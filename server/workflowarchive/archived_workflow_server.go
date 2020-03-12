@@ -57,7 +57,6 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	}
 
 	items := make(wfv1.Workflows, 0)
-	authorizer := auth.NewAuthorizer(ctx)
 	hasMore := true
 	// keep trying until we have enough
 	for len(items) < limit {
@@ -70,7 +69,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 				break
 			}
 			// TODO second pass filtering?
-			allowed, err := authorizer.CanI("get", workflow.WorkflowPlural, wf.Namespace, wf.Name)
+			allowed, err := auth.CanI(ctx, "get", workflow.WorkflowPlural, wf.Namespace, wf.Name)
 			if err != nil {
 				return nil, err
 			}
