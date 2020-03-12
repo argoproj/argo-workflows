@@ -26,21 +26,4 @@ func TestAuthorizer_CanI(t *testing.T) {
 			assert.True(t, allowed)
 		}
 	})
-	kubeClient.AddReactor("create", "selfsubjectrulesreviews", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-		return true, &authorizationv1.SelfSubjectRulesReview{
-			Status: authorizationv1.SubjectRulesReviewStatus{
-				ResourceRules: []authorizationv1.ResourceRule{{
-					Verbs:         []string{"*"},
-					ResourceNames: []string{"my-name"},
-				}},
-			},
-		}, nil
-	})
-	t.Run("Authorizer.CanI", func(t *testing.T) {
-		authorizer := NewAuthorizer(ctx)
-		allowed, err := authorizer.CanI("", "", "", "my-name")
-		if assert.NoError(t, err) {
-			assert.True(t, allowed)
-		}
-	})
 }
