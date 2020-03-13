@@ -567,7 +567,7 @@ func (p *Parameter) UnmarshalJSON(value []byte) error {
 		}
 	}
 	if val, ok := candidate["globalName"]; ok {
-		p.Name = fmt.Sprint(val)
+		p.GlobalName = fmt.Sprint(val)
 	}
 	return nil
 }
