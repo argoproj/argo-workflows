@@ -67,7 +67,12 @@ func (s workflowTemplateNamespaceLister) List(selector labels.Selector) (ret []*
 
 // Get retrieves the WorkflowTemplate from the indexer for a given namespace and name.
 func (s workflowTemplateNamespaceLister) Get(name string) (*v1alpha1.WorkflowTemplate, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
+	// Fix to handle the empty namespace.
+	key := name
+	if s.namespace != "" {
+		key = s.namespace + "/" + name
+	}
+	obj, exists, err := s.indexer.GetByKey(key)
 	if err != nil {
 		return nil, err
 	}
