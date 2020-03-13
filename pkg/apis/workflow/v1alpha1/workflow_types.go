@@ -458,6 +458,9 @@ type Template struct {
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,31,opt,name=podSpecPatch"`
+
+	// ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
+	ResubmitPendingPods *bool `json:"resubmitPendingPods,omitempty" protobuf:"varint,34,opt,name=resubmitPendingPods"`
 }
 
 var _ TemplateHolder = &Template{}
@@ -1019,9 +1022,14 @@ func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
 	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
 }
 
-// Remove returns whether or not the node has completed execution
+// Completed returns whether or not the node has completed execution
 func (n NodeStatus) Completed() bool {
 	return isCompletedPhase(n.Phase) || n.IsDaemoned() && n.Phase != NodePending
+}
+
+// Pending returns whether or not the node is in pending state
+func (n NodeStatus) Pending() bool {
+	return n.Phase == NodePending
 }
 
 // IsDaemoned returns whether or not the node is deamoned
