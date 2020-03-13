@@ -6,11 +6,11 @@
 
 ## Introduction
 
-Custom prometheus metrics can be defined to be emitted on a `Workflow`- and `Step/Task`-level basis. These can be useful
+Custom prometheus metrics can be defined to be emitted on a `Workflow`- and `Template`-level basis. These can be useful
 for many cases; some examples:
 
-- Keeping track of the duration of a `Workflow` or `Step/Task` over time, and setting an alert if it goes beyond a threshold
-- Keeping track of the number of times a `Workflow` or `Step/Task` fails over time
+- Keeping track of the duration of a `Workflow` or `Template` over time, and setting an alert if it goes beyond a threshold
+- Keeping track of the number of times a `Workflow` or `Template` fails over time
 - Reporting an important internal metric, such as a model training score or an internal error rate
 
 Emitting custom metrics with Argo is easy, but it's important to understand what makes a good Prometheus metric and the
@@ -94,7 +94,7 @@ When defining a `histogram`, `buckets` must also be provided (see below).
 
 ### Metric Spec
  
- In Argo you can define a metric on the `Workflow` level or on the `Step/Task` level. Here is an example of a `Workflow`
+ In Argo you can define a metric on the `Workflow` level or on the `Template` level. Here is an example of a `Workflow`
  level Gauge metric that will report the Workflow duration time:
  
  ```yaml
@@ -117,27 +117,27 @@ spec:
 ... 
 ```
 
-An example of a `Task`-level Counter metric that will increase a counter every time the step fails:
+An example of a `Template`-level Counter metric that will increase a counter every time the step fails:
 
 ```yaml
 ...
   templates:
-    - name: dag
-      dag:
-        tasks:
-        - name: flakey
-          template: flakey
-          dependencies: [random-int]
-          metrics:
-            prometheus:
-              - name: failure_counter
-                help: "How many times a step has failed"
-                labels:
-                  - key: taks_name
-                    value: flakey
-                when: "{{task.status}} == Failed"       # Emit the metric conditionally. Works the same as normal "when"
-                counter:
-                  value: "1"                            # This increments the counter by 1
+    - name: flakey
+      metrics:
+        prometheus:
+          - name: result_counter
+            help: "Count of step execution by result status"
+            labels:
+              - key: name
+                value: flakey
+            when: "{{task.status}} == Failed"       # Emit the metric conditionally. Works the same as normal "when"
+            counter:
+              value: "1"                            # This increments the counter by 1
+      container:
+        image: python:alpine3.6
+        command: ["python", -c]
+        # fail with a 66% probability
+        args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]
 ...
 ```
 
@@ -146,60 +146,54 @@ A similar example of such a Counter metric that will increase for every step sta
 ```yaml
 ...
   templates:
-    - name: dag
-      dag:
-        tasks:
-        - name: flakey
-          template: flakey
-          dependencies: [random-int]
-          metrics:
-            prometheus:
-              - name: result_counter
-                help: "Count of step execution by result status"
-                labels:
-                  - key: name
-                    value: flakey
-                  - key: status
-                    value: "{{step.result}}"    # Argo variable in `labels`
-                counter:
-                  value: "1"
+    - name: flakey
+      metrics:
+        prometheus:
+          - name: result_counter
+            help: "Count of step execution by result status"
+            labels:
+              - key: name
+                value: flakey
+              - key: status
+                value: "{{self.status}}"    # Argo variable in `labels`
+            counter:
+              value: "1"
+      container:
+        image: python:alpine3.6
+        command: ["python", -c]
+        # fail with a 66% probability
+        args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]
 ```
 
-Finally, an example of a `Step`-level Histogram metric that tracks an internal value:
+Finally, an example of a `Template`-level Histogram metric that tracks an internal value:
 
 ```yaml
 ...
   templates:
-    - name: steps
-      steps:
-        - - name: random-int
-            template: random-int
-            metrics:
-              prometheus:
-                - name: random_int_step_histogram
-                  help: "Value of the int emitted by random-int at step level"
-                  histogram:
-                    buckets:                                                       # Bins must be defined for histogram metrics
-                      - 2.01                                                    # and are part of the metric descriptor.
-                      - 4.01                                                    # All metrics in this series MUST have the
-                      - 6.01                                                    # same buckets.
-                      - 8.01
-                      - 10.01
-                    value: "{{task.outputs.parameters.rand-int-value}}"         # References itself for its output (see variables doc)
-
-...
-
     - name: random-int
+      metrics:
+        prometheus:
+          - name: random_int_step_histogram
+            help: "Value of the int emitted by random-int at step level"
+            when: "{{self.status}} == Succeeded"    # Only emit metric when step succeeds
+            histogram:
+              buckets:                              # Bins must be defined for histogram metrics
+                - 2.01                              # and are part of the metric descriptor.
+                - 4.01                              # All metrics in this series MUST have the
+                - 6.01                              # same buckets.
+                - 8.01
+                - 10.01
+              value: "{{task.outputs.parameters.rand-int-value}}"         # References itself for its output (see variables doc)
       outputs:
         parameters:
           - name: rand-int-value
+            globalName: rand-int-value
             valueFrom:
               path: /tmp/rand_int.txt
       container:
         image: alpine:latest
         command: [sh, -c]
         args: ["RAND_INT=$((1 + RANDOM % 10)); echo $RAND_INT; echo $RAND_INT > /tmp/rand_int.txt"]
-
 ...
 ```
 

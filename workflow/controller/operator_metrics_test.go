@@ -18,23 +18,18 @@ kind: Workflow
 metadata:
   generateName: hello-world-
 spec:
-  entrypoint: steps
+  entrypoint: random-int
   templates:
-    - name: steps
-      steps:
-        - - name: random-int
-            template: random-int
-            metrics:
-              prometheus:
-                - name: duration_gauge
-                  labels:
-                    - key: name
-                      value: workflow
-                  help: "Duration gauge by name"
-                  gauge:
-                    value: "{{workflow.duration}}"
-
     - name: random-int
+      metrics:
+        prometheus:
+          - name: duration_gauge
+            labels:
+              - key: name
+                value: random-int
+            help: "Duration gauge by name"
+            gauge:
+              value: "{{self.duration}}"
       outputs:
         parameters:
           - name: rand-int-value
@@ -45,13 +40,6 @@ spec:
         image: alpine:latest
         command: [sh, -c]
         args: ["RAND_INT=$((1 + RANDOM % 10)); echo $RAND_INT; echo $RAND_INT > /tmp/rand_int.txt"]
-
-    - name: flakey
-      container:
-        image: python:alpine3.6
-        command: ["python", -c]
-        # fail with a 66% probability
-        args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]
 `
 
 func TestBasicMetric(t *testing.T) {
@@ -70,12 +58,12 @@ func TestBasicMetric(t *testing.T) {
 	// Process first metrics
 	woc.operate()
 
-	metricDesc := wf.Spec.Templates[0].Steps[0].Steps[0].Metrics.Prometheus[0].GetDesc()
+	metricDesc := wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
 	assert.Contains(t, controller.Metrics, metricDesc)
 	metric := controller.Metrics[metricDesc].(prometheus.Gauge)
 	metrtcString, err := getMetricStringValue(metric)
 	assert.NoError(t, err)
-	assert.Contains(t, metrtcString, `label:<name:"name" value:"workflow" > gauge:<value:`)
+	assert.Contains(t, metrtcString, `label:<name:"name" value:"random-int" > gauge:<value:`)
 }
 
 var counterMetric = `
@@ -84,30 +72,26 @@ kind: Workflow
 metadata:
   generateName: hello-world-
 spec:
-  entrypoint: steps
+  entrypoint: whalesay
   templates:
-    - name: steps
-      steps:
-        - - name: whalesay
-            template: whalesay
-            metrics:
-              prometheus:
-                - name: execution_counter
-                  help: "How many times a step has executed"
-                  labels:
-                    - key: name
-                      value: flakey
-                  counter:
-                    value: "1"
-                - name: failure_counter
-                  help: "How many times a step has failed"
-                  labels:
-                    - key: name
-                      value: flakey
-                  when: "{{step.status}} == Error"
-                  counter:
-                    value: "1"
     - name: whalesay
+      metrics:
+        prometheus:
+          - name: execution_counter
+            help: "How many times a step has executed"
+            labels:
+              - key: name
+                value: flakey
+            counter:
+              value: "1"
+          - name: failure_counter
+            help: "How many times a step has failed"
+            labels:
+              - key: name
+                value: flakey
+            when: "{{self.status}} == Error"
+            counter:
+              value: "1"
       container:
         image: docker/whalesay:latest
         command: [cowsay]
@@ -129,9 +113,9 @@ func TestCounterMetric(t *testing.T) {
 	// Process first metrics
 	woc.operate()
 
-	metricTotalDesc := wf.Spec.Templates[0].Steps[0].Steps[0].Metrics.Prometheus[0].GetDesc()
+	metricTotalDesc := wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
 	assert.Contains(t, controller.Metrics, metricTotalDesc)
-	metricErrorDesc := wf.Spec.Templates[0].Steps[0].Steps[0].Metrics.Prometheus[1].GetDesc()
+	metricErrorDesc := wf.Spec.Templates[0].Metrics.Prometheus[1].GetDesc()
 	assert.Contains(t, controller.Metrics, metricErrorDesc)
 
 	metricTotalCounter := controller.Metrics[metricTotalDesc].(prometheus.Counter)

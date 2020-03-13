@@ -1291,9 +1291,25 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	node := woc.getNodeByName(nodeName)
 
+	// Set templateScope from which the template resolution starts.
+	templateScope := tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+	newTmplCtx, resolvedTmpl, err := tmplCtx.ResolveTemplate(orgTmpl)
+	if err != nil {
+		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, err), err
+	}
+
 	if node != nil {
 		if node.Completed() {
 			woc.log.Debugf("Node %s already completed", nodeName)
+			if resolvedTmpl.Metrics != nil {
+				// Check if this node completed between executions. If it did, emit metrics. If a node completes within
+				// the same execution, its metrics are emitted below.
+				// We can infer that this node completed during the current operation, emit metrics
+				if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Completed() {
+					localScope, realTimeScope := woc.prepareMetricScope(node, "self")
+					woc.computeMetrics(resolvedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
+				}
+			}
 			return node, nil
 		}
 		woc.log.Debugf("Executing node %s of %s is %s", nodeName, node.Type, node.Phase)
@@ -1310,14 +1326,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		woc.log.Warnf("Deadline exceeded")
 		woc.requeue(0)
 		return node, ErrDeadlineExceeded
-	}
-
-	// Set templateScope from which the template resolution starts.
-	templateScope := tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
-
-	newTmplCtx, resolvedTmpl, err := tmplCtx.ResolveTemplate(orgTmpl)
-	if err != nil {
-		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, err), err
 	}
 
 	localParams := make(map[string]string)
@@ -1412,6 +1420,25 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			return node, err
 		}
 	}
+
+	if resolvedTmpl.Metrics != nil {
+		// Check if the node was just created, if it was emit realtime metrics.
+		// If the node did not previously exist, we can infer that it was created during the current operation, emit real time metrics.
+		if _, ok := woc.preExecutionNodePhases[node.ID]; !ok {
+			woc.log.Infof("SIMON emitting: %v", resolvedTmpl.Metrics)
+			localScope, realTimeScope := woc.prepareMetricScope(node, "self")
+			woc.computeMetrics(resolvedTmpl.Metrics.Prometheus, localScope, realTimeScope, true)
+		} else
+		// Check if the node completed during this execution, if it did emit metrics
+		// This check is necessary because sometimes a node will be marked completed during the current execution and will
+		// not be considered again. The best example of this is the entrypoint steps/dag template (once completed, the
+		// workflow ends and it's not reconsidered). This checks makes sure that its metrics also get emitted.
+		if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Completed() && node.Completed() {
+			localScope, realTimeScope := woc.prepareMetricScope(node, "self")
+			woc.computeMetrics(resolvedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
+		}
+	}
+
 	node = woc.getNodeByName(node.Name)
 
 	// Swap the node back to retry node
@@ -2253,6 +2280,9 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			continue
 		}
 
+		// For consistency, get the metric desc (equivalent to its hash for this purpose) before any substitution happens
+		metricDesc := metricTmpl.GetDesc()
+
 		// Substitute parameters in non-value fields of the template to support variables in places such as labels,
 		// name, and help. We do not substitute value fields here (i.e. gauge, histogram, counter) here because they
 		// might be realtime ({{workflow.duration}} will not be substituted the same way if it's realtime or if it isn't).
@@ -2267,6 +2297,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			woc.log.Errorf("unable to substitute parameters for metric '%s': %s", metricTmpl.Name, err)
 			continue
 		}
+
 		var metricTmplSubstituted wfv1.Prometheus
 		err = json.Unmarshal([]byte(replacedValue), &metricTmplSubstituted)
 		if err != nil {
@@ -2302,7 +2333,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 				continue
 			}
 			updatedMetric := metrics.ConstructRealTimeGaugeMetric(metricTmpl, valueFunc)
-			woc.controller.Metrics[metricTmpl.GetDesc()] = updatedMetric
+			woc.controller.Metrics[metricDesc] = updatedMetric
 			continue
 		} else {
 			metricSpec := metricTmpl.DeepCopy()
@@ -2323,7 +2354,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 				woc.log.Errorf("could not compute metric '%s': %s", metricSpec.Name, err)
 				continue
 			}
-			woc.controller.Metrics[metricSpec.GetDesc()] = updatedMetric
+			woc.controller.Metrics[metricDesc] = updatedMetric
 			continue
 		}
 	}

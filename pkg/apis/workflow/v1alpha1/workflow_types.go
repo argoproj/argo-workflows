@@ -461,6 +461,8 @@ type Template struct {
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,31,opt,name=podSpecPatch"`
+
+	Metrics *Metrics `json:"metrics" protobuf:"bytes,34,opt,name=metrics"`
 }
 
 var _ TemplateHolder = &Template{}
@@ -692,8 +694,6 @@ type WorkflowStep struct {
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
-
-	Metrics *Metrics `json:"metrics" protobuf:"bytes,12,opt,name=metrics"`
 }
 
 var _ TemplateHolder = &WorkflowStep{}
@@ -1380,8 +1380,6 @@ type DAGTask struct {
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
-
-	Metrics *Metrics `json:"metrics" protobuf:"bytes,12,opt,name=metrics"`
 }
 
 var _ TemplateHolder = &DAGTask{}

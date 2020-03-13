@@ -23,6 +23,7 @@ func NewMetricsRegistry(metricsProvider MetricsProvider, informer cache.SharedIn
 	registry.MustRegister(&customMetricsCollector{provider: metricsProvider})
 	workflowLister := util.NewWorkflowLister(informer)
 	registry.MustRegister(&controllerCollector{store: workflowLister})
+
 	if !disableLegacyMetrics {
 		registry.MustRegister(&legacyWorkflowCollector{store: workflowLister})
 	}

@@ -234,8 +234,6 @@ message DAGTask {
   // template, irrespective of the success, failure, or error of the
   // primary template.
   optional string onExit = 11;
-
-  optional Metrics metrics = 12;
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -837,6 +835,8 @@ message Template {
   // PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
   // container fields which are not strings (e.g. resource limits).
   optional string podSpecPatch = 31;
+
+  optional Metrics metrics = 34;
 }
 
 // TemplateRef is a reference of template resource.
@@ -1117,8 +1117,6 @@ message WorkflowStep {
   // template, irrespective of the success, failure, or error of the
   // primary template.
   optional string onExit = 11;
-
-  optional Metrics metrics = 12;
 }
 
 // WorkflowTemplate is the definition of a workflow template resource

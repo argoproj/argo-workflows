@@ -538,9 +538,6 @@
         "onExit": {
           "type": "string",
           "description": "OnExit is a template reference which is invoked at the end of the\ntemplate, irrespective of the success, failure, or error of the\nprimary template."
-        },
-        "metrics": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metrics"
         }
       },
       "title": "DAGTask represents a node in the graph during DAG execution"
@@ -1293,6 +1290,9 @@
         "podSpecPatch": {
           "type": "string",
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of\ncontainer fields which are not strings (e.g. resource limits)."
+        },
+        "metrics": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metrics"
         }
       },
       "title": "Template is a reusable and composable unit of execution in a workflow"
@@ -1397,9 +1397,6 @@
         "onExit": {
           "type": "string",
           "description": "OnExit is a template reference which is invoked at the end of the\ntemplate, irrespective of the success, failure, or error of the\nprimary template."
-        },
-        "metrics": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metrics"
         }
       },
       "title": "WorkflowStep is a reference to a template to execute in a series of step"

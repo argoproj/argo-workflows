@@ -42,24 +42,15 @@ The following variables are made available to reference various metadata of a wo
 | `item.<FIELDNAME>` | Field value of the item in a list of maps |
 
 ## Metrics
-When emitting custom metrics in a `step` or `task` template, special variables are available that allow self-reference to the current
-step. Here, "step" refers to the step emitting the metrics.
+When emitting custom metrics in a `template`, special variables are available that allow self-reference to the current
+step. Here, "self" refers to the step emitting the metrics.
 
 | Variable | Description|
 |----------|------------|
-| `step.status` | Phase status of the step |
-| `step.duration` | Duration of the step in seconds |
-| `step.outputs.result` | Output result of the step |
-| `step.outputs.parameters.<NAME>` | Output parameter the step |
-
-Similarly, for a `task` template:
-
-| Variable | Description|
-|----------|------------|
-| `task.status` | Phase status of the task |
-| `task.duration` | Duration of the task in seconds |
-| `task.outputs.result` | Output result of the task |
-| `task.outputs.parameters.<NAME>` | Output parameter the task |
+| `self.status` | Phase status of the step |
+| `self.duration` | Duration of the step in seconds |
+| `self.outputs.result` | Output result of the step |
+| `self.outputs.parameters.<NAME>` | Output parameter the step |
 
 ### Realtime Metrics
 
@@ -70,11 +61,8 @@ currently available for real time emission:
 For `Workflow`-level metrics:
 * `workflow.duration`
 
-For `step`-level metrics:
-* `step.duration`
-
-For `task`-level metrics:
-* `task.duration`
+For `Template`-level metrics:
+* `self.duration`
 
 ## Global
 | Variable | Description|

@@ -435,11 +435,6 @@ func (in *DAGTask) DeepCopyInto(out *DAGTask) {
 		*out = new(ContinueOn)
 		**out = **in
 	}
-	if in.Metrics != nil {
-		in, out := &in.Metrics, &out.Metrics
-		*out = new(Metrics)
-		(*in).DeepCopyInto(*out)
-	}
 	return
 }
 
@@ -1410,6 +1405,11 @@ func (in *Template) DeepCopyInto(out *Template) {
 		*out = new(v1.PodSecurityContext)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.Metrics != nil {
+		in, out := &in.Metrics, &out.Metrics
+		*out = new(Metrics)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 
@@ -1761,11 +1761,6 @@ func (in *WorkflowStep) DeepCopyInto(out *WorkflowStep) {
 		in, out := &in.ContinueOn, &out.ContinueOn
 		*out = new(ContinueOn)
 		**out = **in
-	}
-	if in.Metrics != nil {
-		in, out := &in.Metrics, &out.Metrics
-		*out = new(Metrics)
-		(*in).DeepCopyInto(*out)
 	}
 	return
 }

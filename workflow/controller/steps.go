@@ -141,8 +141,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 		node.Outputs = outputs
 		woc.wf.Status.Nodes[node.ID] = *node
 	}
-	_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
-	return node, nil
+	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded), nil
 }
 
 // updateOutboundNodes set the outbound nodes from the last step group
@@ -237,14 +236,6 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		if childNode != nil {
 			nodeSteps[childNodeName] = step
 			woc.addChildNode(sgNodeName, childNodeName)
-
-			if step.Metrics != nil {
-				// If the node did not previously exist, we can infer that it was just created
-				if _, ok := woc.preExecutionNodePhases[childNode.ID]; !ok {
-					localScope, realTimeScope := woc.prepareMetricScope(childNode, stepsCtx.scope, "step")
-					woc.computeMetrics(step.Metrics.Prometheus, localScope, realTimeScope, true)
-				}
-			}
 		}
 	}
 
@@ -261,14 +252,6 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
 				completed = false
-			}
-
-			if step.Metrics != nil && (!hasOnExitNode || onExitNode.Completed()) {
-				// We can infer that this node completed during the current operation, emit metrics
-				if prevNodeStatus, ok := woc.preExecutionNodePhases[childNode.ID]; ok && !prevNodeStatus.Completed() {
-					localScope, realTimeScope := woc.prepareMetricScope(&childNode, stepsCtx.scope, "step")
-					woc.computeMetrics(step.Metrics.Prometheus, localScope, realTimeScope, false)
-				}
 			}
 		}
 	}
@@ -448,16 +431,11 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	return expandedStep, nil
 }
 
-func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus, scope *wfScope, prefix string) (map[string]string, map[string]func() float64) {
+func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus, prefix string) (map[string]string, map[string]func() float64) {
 	realTimeScope := make(map[string]func() float64)
 	localScope := make(map[string]string)
 	for key, val := range woc.globalParams {
 		localScope[key] = val
-	}
-	for key, val := range scope.scope {
-		if stringVal, ok := val.(string); ok {
-			localScope[key] = stringVal
-		}
 	}
 
 	durationKey := fmt.Sprintf("%s.duration", prefix)

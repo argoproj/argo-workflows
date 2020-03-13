@@ -20,45 +20,44 @@ spec:
 
   templates:
     - name: steps
+      metrics:
+        prometheus:
+          - name: duration_gauge
+            labels:
+              - key: name
+                value: steps
+            help: "Duration gauge by name"
+            gauge:
+              realtime: true
+              value: "{{self.duration}}"
       steps:
         - - name: random-int
             template: random-int
-            metrics:
-              prometheus:
-                - name: random_int_step_histogram
-                  help: "Value of the int emitted by random-int at step level"
-                  histogram:
-                    value: "{{step.outputs.parameters.rand-int-value}}"
-                    buckets:
-                      - 2.01
-                      - 4.01
-                      - 6.01
-                      - 8.01
-                      - 10.01
-                - name: duration_gauge
-                  when: "{{step.status}} == Succeeded"    # Only emit metric when step succeeds
-                  labels:
-                    - key: name
-                      value: random-int
-                  help: "Duration gauge by name"
-                  gauge:
-                    realtime: true
-                    value: "{{step.duration}}"
         - - name: flakey
             template: flakey
-            metrics:
-              prometheus:
-                - name: result_counter
-                  help: "Count of step execution by result status"
-                  labels:
-                    - key: name
-                      value: flakey
-                    - key: status
-                      value: "{{step.status}}"
-                  counter:
-                    value: "1"
 
     - name: random-int
+      metrics:
+        prometheus:
+          - name: random_int_step_histogram
+            help: "Value of the int emitted by random-int at step level"
+            when: "{{self.status}} == Succeeded"    # Only emit metric when step succeeds
+            histogram:
+              buckets:
+                - 2.01
+                - 4.01
+                - 6.01
+                - 8.01
+                - 10.01
+              value: "{{self.outputs.parameters.rand-int-value}}"
+          - name: duration_gauge
+            labels:
+              - key: name
+                value: random-int
+            help: "Duration gauge by name"
+            gauge:
+              realtime: true
+              value: "{{self.duration}}"
       outputs:
         parameters:
           - name: rand-int-value
@@ -71,6 +70,17 @@ spec:
         args: ["RAND_INT=$((1 + RANDOM % 10)); echo $RAND_INT; echo $RAND_INT > /tmp/rand_int.txt"]
 
     - name: flakey
+      metrics:
+        prometheus:
+          - name: result_counter
+            help: "Count of step execution by result status"
+            labels:
+              - key: name
+                value: flakey
+              - key: status
+                value: "{{self.status}}"
+            counter:
+              value: "1"
       container:
         image: python:alpine3.6
         command: ["python", -c]

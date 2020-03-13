@@ -1670,9 +1670,6 @@
             "type": "string"
           }
         },
-        "metrics": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metrics"
-        },
         "name": {
           "type": "string",
           "title": "Name is the name of the target"
@@ -2483,6 +2480,9 @@
           "title": "Metdata sets the pods's metadata, i.e. annotations and labels",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata"
         },
+        "metrics": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metrics"
+        },
         "name": {
           "type": "string",
           "title": "Name is the name of the template"
@@ -2895,9 +2895,6 @@
         "continueOn": {
           "title": "ContinueOn makes argo to proceed with the following step even if this step fails.\nErrors and Failed states can be specified",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ContinueOn"
-        },
-        "metrics": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metrics"
         },
         "name": {
           "type": "string",

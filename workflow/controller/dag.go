@@ -273,8 +273,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 
 	woc.updateOutboundNodesForTargetTasks(dagCtx, targetTasks, nodeName)
 
-	_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
-	return node, nil
+	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded), nil
 }
 
 func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(dagCtx *dagContext, targetTasks []string, nodeName string) {
@@ -311,20 +310,6 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			// The onExit node is either not complete or has errored out, return.
 			return
 		}
-
-		if task.Metrics != nil && (!hasOnExitNode || onExitNode.Completed()) {
-			// We can infer that this node completed during the current operation, emit metrics
-			if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Completed() {
-				dagScope, err := woc.buildLocalScopeFromTask(dagCtx, task)
-				if err != nil {
-					woc.log.Error(err)
-					return
-				}
-				localScope, realTimeScope := woc.prepareMetricScope(node, dagScope, "task")
-				woc.computeMetrics(task.Metrics.Prometheus, localScope, realTimeScope, false)
-			}
-		}
-
 		return
 	}
 	// Check if our dependencies completed. If not, recurse our parents executing them if necessary
@@ -438,19 +423,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		}
 
 		// Finally execute the template
-		executedNode, _ := woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, dagCtx.boundaryID)
-
-		if task.Metrics != nil {
-			// If the node did not previously exist, we can infer that it was just created
-			if _, ok := woc.preExecutionNodePhases[executedNode.ID]; !ok {
-				dagScope, err := woc.buildLocalScopeFromTask(dagCtx, task)
-				if err != nil {
-					woc.log.Error(err)
-				}
-				localScope, realTimeScope := woc.prepareMetricScope(executedNode, dagScope, "task")
-				woc.computeMetrics(task.Metrics.Prometheus, localScope, realTimeScope, true)
-			}
-		}
+		_, _ = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, dagCtx.boundaryID)
 	}
 
 	if taskGroupNode != nil {
