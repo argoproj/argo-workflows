@@ -29,11 +29,36 @@
     }
   },
   "definitions": {
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.LoggingFacility": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "templates": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Templates"
+        }
+      }
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Templates": {
+      "type": "object",
+      "properties": {
+        "workflow": {
+          "type": "string"
+        },
+        "pod": {
+          "type": "string"
+        }
+      }
+    },
     "info.InfoResponse": {
       "type": "object",
       "properties": {
         "managedNamespace": {
           "type": "string"
+        },
+        "loggingFacility": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.LoggingFacility"
         }
       }
     }

@@ -341,6 +341,12 @@ spec:
         - client
         - --loglevel
         - debug
+        - --logging-facility-name
+        - Logging Facility
+        - --logging-facility-templates-workflow
+        - http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}
+        - --logging-facility-templates-pod
+        - http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
         env:
         - name: ARGO_TOKEN
           value: password

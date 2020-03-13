@@ -1,8 +1,19 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
 import * as moment from 'moment';
 
+export interface Templates {
+    workflow?: string;
+    pod?: string;
+}
+
+export interface LoggingFacility {
+    name?: string;
+    templates: Templates;
+}
+
 export interface Info {
     managedNamespace?: string;
+    loggingFacility?: LoggingFacility;
 }
 
 /**

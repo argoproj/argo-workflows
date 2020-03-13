@@ -1938,6 +1938,17 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.LoggingFacility": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "templates": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Templates"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Metadata": {
       "type": "object",
       "title": "Pod metdata",
@@ -2512,6 +2523,17 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Templates": {
+      "type": "object",
+      "properties": {
+        "pod": {
+          "type": "string"
+        },
+        "workflow": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.UserContainer": {
       "description": "UserContainer is a container specified by a user.",
       "type": "object",
@@ -2925,6 +2947,9 @@
     "io.argoproj.workflow.v1alpha1.InfoResponse": {
       "type": "object",
       "properties": {
+        "loggingFacility": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LoggingFacility"
+        },
         "managedNamespace": {
           "type": "string"
         }

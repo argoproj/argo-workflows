@@ -30,6 +30,7 @@ import (
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/artifacts"
 	"github.com/argoproj/argo/server/auth"
@@ -54,6 +55,7 @@ type argoServer struct {
 	baseHRef         string
 	namespace        string
 	managedNamespace string
+	loggingFacility  wfv1.LoggingFacility
 	kubeClientset    *kubernetes.Clientset
 	authenticator    auth.Gatekeeper
 	configName       string
@@ -70,6 +72,7 @@ type ArgoServerOpts struct {
 	// config map name
 	ConfigName       string
 	ManagedNamespace string
+	LoggingFacility  wfv1.LoggingFacility
 }
 
 func NewArgoServer(opts ArgoServerOpts) *argoServer {
@@ -77,6 +80,7 @@ func NewArgoServer(opts ArgoServerOpts) *argoServer {
 		baseHRef:         opts.BaseHRef,
 		namespace:        opts.Namespace,
 		managedNamespace: opts.ManagedNamespace,
+		loggingFacility:  opts.LoggingFacility,
 		kubeClientset:    opts.KubeClientset,
 		authenticator:    auth.NewGatekeeper(opts.AuthMode, opts.WfClientSet, opts.KubeClientset, opts.RestConfig),
 		configName:       opts.ConfigName,
@@ -196,7 +200,7 @@ func (as *argoServer) newGRPCServer(instanceID string, offloadNodeStatusRepo sql
 
 	grpcServer := grpc.NewServer(sOpts...)
 
-	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace))
+	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace, as.loggingFacility))
 	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(instanceID, offloadNodeStatusRepo))
 	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer())
 	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer(instanceID))

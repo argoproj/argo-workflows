@@ -2,7 +2,7 @@ import {NotificationType, Page, SlidingPanel} from 'argo-ui';
 import * as classNames from 'classnames';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
-import {Workflow} from '../../../../models';
+import {LoggingFacility, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
@@ -27,6 +27,7 @@ require('../../../workflows/components/workflow-details/workflow-details.scss');
 interface State {
     workflowDagRenderOptions: WorkflowDagRenderOptions;
     workflow?: Workflow;
+    loggingFacility?: LoggingFacility;
     error?: Error;
 }
 
@@ -73,6 +74,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
             .get(this.uid)
             .then(workflow => this.setState({workflow}))
             .catch(error => this.setState({error}));
+        services.info.get().then(info => this.setState({loggingFacility: info.loggingFacility}));
     }
 
     public render() {
@@ -171,6 +173,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                                 <WorkflowNodeInfo
                                     node={this.node}
                                     workflow={this.state.workflow}
+                                    loggingFacility={this.state.loggingFacility}
                                     onShowYaml={nodeId =>
                                         this.setQueryParams({
                                             sidePanel: 'yaml',

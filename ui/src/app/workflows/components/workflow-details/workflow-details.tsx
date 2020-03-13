@@ -6,7 +6,7 @@ import {RouteComponentProps} from 'react-router';
 import {Subscription} from 'rxjs';
 
 import * as models from '../../../../models';
-import {NodePhase} from '../../../../models';
+import {LoggingFacility, NodePhase} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {services} from '../../../shared/services';
 
@@ -26,7 +26,10 @@ function parseSidePanelParam(param: string) {
     return null;
 }
 
-export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {workflowDagRenderOptions: WorkflowDagRenderOptions; workflow: models.Workflow}> {
+export class WorkflowDetails extends React.Component<
+    RouteComponentProps<any>,
+    {workflowDagRenderOptions: WorkflowDagRenderOptions; workflow: models.Workflow; loggingFacility: LoggingFacility}
+> {
     public static contextTypes = {
         router: PropTypes.object,
         apis: PropTypes.object
@@ -49,11 +52,12 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
 
     constructor(props: RouteComponentProps<any>) {
         super(props);
-        this.state = {workflowDagRenderOptions: {horizontal: false, zoom: 1, hideSucceeded: false}, workflow: null};
+        this.state = {workflowDagRenderOptions: {horizontal: false, zoom: 1, hideSucceeded: false}, workflow: null, loggingFacility: null};
     }
 
     public componentDidMount() {
         this.loadWorkflow(this.props.match.params.namespace, this.props.match.params.name);
+        services.info.get().then(info => this.setState({loggingFacility: info.loggingFacility}));
     }
 
     public componentWillReceiveProps(nextProps: RouteComponentProps<any>) {
@@ -127,6 +131,12 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                         title: 'Delete',
                                         iconClassName: 'fa fa-trash',
                                         action: () => this.deleteWorkflow(ctx)
+                                    },
+                                    {
+                                        title: (this.state.loggingFacility && this.state.loggingFacility.name) || 'Logging Facility',
+                                        disabled: !(this.state.loggingFacility && this.state.loggingFacility.templates && this.state.loggingFacility.templates.workflow),
+                                        iconClassName: 'fa fa-file-alt',
+                                        action: () => this.openLogs()
                                     }
                                 ]
                             },
@@ -179,6 +189,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                                 <WorkflowNodeInfo
                                                     node={selectedNode}
                                                     workflow={this.state.workflow}
+                                                    loggingFacility={this.state.loggingFacility}
                                                     onShowContainerLogs={(nodeId, container) => this.openContainerLogsPanel(nodeId, container)}
                                                     onShowYaml={nodeId => this.openNodeYaml(nodeId)}
                                                     archived={false}
@@ -365,5 +376,11 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
 
     private get appContext(): AppContext {
         return this.context as AppContext;
+    }
+
+    private openLogs() {
+        document.location.href = this.state.loggingFacility.templates.workflow
+            .replace('${metadata.namespace}', this.state.workflow.metadata.namespace)
+            .replace('${metadata.name}', this.state.workflow.metadata.name);
     }
 }

@@ -1,23 +1,29 @@
 # This is an auto-generated file. DO NOT EDIT
-- op: replace
-  path: /spec/template/spec/containers/0/imagePullPolicy
-  value: Never
-- op: add
-  path: /spec/template/spec/containers/0/args/-
-  value: --auth-mode
-- op: add
-  path: /spec/template/spec/containers/0/args/-
-  value: client
-- op: add
-  path: /spec/template/spec/containers/0/args/-
-  value: --loglevel
-- op: add
-  path: /spec/template/spec/containers/0/args/-
-  value: debug
-- op: add
-  path: /spec/template/spec/containers/0/env
-  value:
-    - name: ARGO_TOKEN
-      value: password
-    - name: UPPERIO_DB_DEBUG
-      value: "1"
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-server
+spec:
+  template:
+    spec:
+      containers:
+        - name: argo-server
+          args:
+            - server
+            - --namespaced
+            - --auth-mode
+            - client
+            - --loglevel
+            - debug
+            - --logging-facility-name
+            - Logging Facility
+            - --logging-facility-templates-workflow
+            - http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}
+            - --logging-facility-templates-pod
+            - http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
+          imagePullPolicy:  Never
+          env:
+            - name: ARGO_TOKEN
+              value: password
+            - name: UPPERIO_DB_DEBUG
+              value: "1"

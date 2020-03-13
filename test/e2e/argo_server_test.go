@@ -56,12 +56,22 @@ func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 
 func (s *ArgoServerSuite) TestInfo() {
 	s.Run("Get", func() {
-		s.e(s.T()).GET("/api/v1/info").
+		json := s.e(s.T()).GET("/api/v1/info").
 			Expect().
 			Status(200).
-			JSON().
+			JSON()
+		json.
 			Path("$.managedNamespace").
 			Equal("argo")
+		json.
+			Path("$.loggingFacility.name").
+			Equal("Logging Facility")
+		json.
+			Path("$.loggingFacility.templates.workflow").
+			Equal("ttp://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}")
+		json.
+			Path("$.loggingFacility.templates.pod").
+			Equal("ttp://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}")
 	})
 }
 
