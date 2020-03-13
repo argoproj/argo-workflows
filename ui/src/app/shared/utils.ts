@@ -120,5 +120,13 @@ export const Utils = {
             return false;
         }
         return wf.status.phase === 'Running';
+    },
+
+    setCurrentNamespace(value: string): void {
+        localStorage.setItem('current_namespace', value);
+    },
+
+    getCurrentNamespace(): string {
+        return localStorage.getItem('current_namespace');
     }
 };

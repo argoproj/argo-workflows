@@ -46,7 +46,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             loading: true,
             initialized: false,
             managedNamespace: false,
-            namespace: this.props.match.params.namespace || '',
+            namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || '',
             selectedPhases: this.queryParams('phase'),
             selectedLabels: this.queryParams('label')
         };
@@ -143,7 +143,10 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         workflowList
             .then(list => list.items)
             .then(list => list || [])
-            .then(workflows => this.setState({workflows, namespace: newNamespace, selectedPhases, selectedLabels}))
+            .then(workflows => {
+                this.setState({workflows, namespace: newNamespace, selectedPhases, selectedLabels});
+                Utils.setCurrentNamespace(newNamespace);
+            })
             .then(() => {
                 this.subscription = services.workflows
                     .watch({namespace: newNamespace, phases: selectedPhases, labels: selectedLabels})
