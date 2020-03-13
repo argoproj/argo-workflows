@@ -19,7 +19,7 @@ export class NamespaceFilter extends React.Component<Props, State> {
         super(props);
         this.state = {
             editable: false,
-            namespace: props.value
+            namespace: props.value || localStorage.getItem('cached_namespace')
         };
     }
 
@@ -53,10 +53,15 @@ export class NamespaceFilter extends React.Component<Props, State> {
                 placeholder='Namespace'
                 name='ns'
                 onChange={ns => {
-                    this.setState({namespace: ns});
+                    this.setNamespaceAndCache(ns);
                     this.props.onChange(ns);
                 }}
             />
         );
+    }
+
+    private setNamespaceAndCache(value: string) {
+        localStorage.setItem('cached_namespace', value);
+        this.setState({namespace: value});
     }
 }
