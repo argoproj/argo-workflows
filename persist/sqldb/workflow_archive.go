@@ -73,7 +73,6 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 		_, err := sess.
 			DeleteFrom(archiveTableName).
 			Where(db.Cond{"clustername": r.clusterName}).
-			And(db.Cond{"instanceid": r.instanceID}).
 			And(db.Cond{"uid": wf.UID}).
 			Exec()
 		if err != nil {
