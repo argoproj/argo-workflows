@@ -2212,11 +2212,6 @@
           "format": "int32",
           "title": "Limit is the maximum number of attempts when retrying a container"
         },
-        "resubmit": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "Resubmit is set to enable Pending pod resubmission"
-        },
         "retryPolicy": {
           "type": "string",
           "title": "RetryPolicy is a policy of NodePhase statuses that will be retried"
@@ -2435,6 +2430,11 @@
         "resource": {
           "title": "Resource template subtype which can run k8s resources",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ResourceTemplate"
+        },
+        "resubmitPendingPods": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission"
         },
         "retryStrategy": {
           "title": "RetryStrategy describes how to retry a template when it fails",

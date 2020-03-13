@@ -459,6 +459,9 @@ type Template struct {
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,31,opt,name=podSpecPatch"`
+
+	// ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
+	ResubmitPendingPods *bool `json:"resubmitPendingPods,omitempty" protobuf:"varint,34,opt,name=resubmitPendingPods"`
 }
 
 var _ TemplateHolder = &Template{}
@@ -875,9 +878,6 @@ type RetryStrategy struct {
 
 	// Backoff is a backoff strategy
 	Backoff *Backoff `json:"backoff,omitempty" protobuf:"bytes,3,opt,name=backoff,casttype=Backoff"`
-
-	// Resubmit is set to enable Pending pod resubmission
-	Resubmit *bool `json:"resubmit,omitempty" protobuf:"varint,4,opt,name=resubmit"`
 }
 
 // NodeStatus contains status information about an individual node in the workflow

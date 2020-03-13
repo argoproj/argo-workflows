@@ -21,11 +21,6 @@ type FunctionalSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *FunctionalSuite) TearDownSuite() {
-	s.E2ESuite.DeleteResources(fixtures.Label)
-	s.Persistence.Close()
-}
-
 func (s *FunctionalSuite) TestContinueOnFail() {
 	s.Given().
 		Workflow(`
@@ -198,9 +193,7 @@ spec:
   entrypoint: dag
   templates:
   - name: cowsay
-    retryStrategy:
-      limit: 1
-      resubmit: true
+    resubmitPendingPods: true
     container:
       image: cowsay:v1
       command: [sh, -c]
@@ -221,8 +214,8 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflowToStart(5*time.Second).
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
-			a := wf.Status.Nodes.FindByDisplayName("a(0)")
-			b := wf.Status.Nodes.FindByDisplayName("b(0)")
+			a := wf.Status.Nodes.FindByDisplayName("a")
+			b := wf.Status.Nodes.FindByDisplayName("b")
 			return wfv1.NodePending == a.Phase &&
 				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(a.Message) &&
 				wfv1.NodePending == b.Phase &&
@@ -230,8 +223,8 @@ spec:
 		}, "pods pending", 20*time.Second).
 		DeleteQuota().
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
-			a := wf.Status.Nodes.FindByDisplayName("a(0)")
-			b := wf.Status.Nodes.FindByDisplayName("b(0)")
+			a := wf.Status.Nodes.FindByDisplayName("a")
+			b := wf.Status.Nodes.FindByDisplayName("b")
 			return wfv1.NodeSucceeded == a.Phase && wfv1.NodeSucceeded == b.Phase
 		}, "pods succeeded", 20*time.Second)
 	s.TearDownSuite()

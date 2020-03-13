@@ -888,11 +888,6 @@
         "backoff": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Backoff",
           "title": "Backoff is a backoff strategy"
-        },
-        "resubmit": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "Resubmit is set to enable Pending pod resubmission"
         }
       },
       "title": "RetryStrategy provides controls on how to retry a workflow step"
@@ -1168,6 +1163,11 @@
         "podSpecPatch": {
           "type": "string",
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of\ncontainer fields which are not strings (e.g. resource limits)."
+        },
+        "resubmitPendingPods": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission"
         }
       },
       "title": "Template is a reusable and composable unit of execution in a workflow"

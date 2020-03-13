@@ -1262,16 +1262,10 @@ func (woc *wfOperationCtx) getFirstChildNode(node *wfv1.NodeStatus) (*wfv1.NodeS
 }
 
 func isResubmitAllowed(tmpl *wfv1.Template) bool {
-	if tmpl == nil {
+	if tmpl.ResubmitPendingPods == nil {
 		return false
 	}
-	if tmpl.RetryStrategy == nil {
-		return false
-	}
-	if tmpl.RetryStrategy.Resubmit == nil {
-		return false
-	}
-	return *tmpl.RetryStrategy.Resubmit
+	return *tmpl.ResubmitPendingPods
 }
 
 // executeTemplate executes the template with the given arguments and returns the created NodeStatus
@@ -1357,19 +1351,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		if err != nil {
 			return woc.markNodeError(retryNodeName, err), err
 		}
-		if lastChildNode != nil && lastChildNode.Pending() && processedTmpl.GetType() == wfv1.TemplateTypeContainer {
-			_, err := woc.createWorkflowPod(lastChildNode.Name, *processedTmpl.Container, processedTmpl, false)
-			if apierr.IsForbidden(err) {
-				woc.markNodePending(lastChildNode.Name, err)
-				return retryParentNode, nil
-			}
-			if err != nil {
-				woc.markNodePending(lastChildNode.Name, err)
-				return retryParentNode, nil
-			}
-			woc.markNodePhase(lastChildNode.Name, wfv1.NodeRunning)
-			return retryParentNode, nil
-		}
 		if lastChildNode != nil && !lastChildNode.Completed() {
 			// Last child node is still running.
 			nodeName = lastChildNode.Name
@@ -1407,14 +1388,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, boundaryID, wfv1.NodeError, err.Error()), err
 	}
-	if apierr.IsForbidden(err) {
-		if isResubmitAllowed(processedTmpl) {
-			return woc.markNodePending(node.Name, err), nil
-		} else {
-			return nil, errors.InternalWrapError(err)
-		}
-	}
-
 	if err != nil {
 		node = woc.markNodeError(node.Name, err)
 		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container
@@ -1687,17 +1660,22 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 
 func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
-	if node != nil {
-		if node.Pending() {
-			_, err := woc.createWorkflowPod(node.Name, *tmpl.Container, tmpl, false)
-			return node, err
-		}
+	if node == nil {
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, boundaryID, wfv1.NodePending)
+	} else if !isResubmitAllowed(tmpl) || !node.Pending() {
+		// This is not our first time executing this node.
+		// We will retry to resubmit the pod if it is allowed and if the node is pending. If either of these two are
+		// false, return.
 		return node, nil
 	}
-	node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, boundaryID, wfv1.NodePending)
 
 	woc.log.Debugf("Executing node %s with container template: %v\n", nodeName, tmpl)
 	_, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl, false)
+
+	if apierr.IsForbidden(err) && isResubmitAllowed(tmpl) {
+		// Our error was most likely caused by a lack of resources. If pod resubmission is allowed, keep the node pending
+		return woc.markNodePending(node.Name, err), nil
+	}
 	return node, err
 }
 
