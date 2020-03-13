@@ -49,3 +49,9 @@ By default, the server will start with auth mode of "server".
 ### Managed Namespace
 
 See [managed namespace](managed-namespace.md).
+
+### Base href
+
+If the server is running behind reverse proxy with a subpath different from `/` (for example, 
+`/argo`), you can set an alternative subpath with the `--base-href` flag or the `BASE_HREF` 
+environment variable.
