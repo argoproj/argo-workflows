@@ -134,7 +134,9 @@ message ContinueOn {
   optional bool failed = 2;
 }
 
+// Counter is a Counter prometheus metric
 message Counter {
+  // Value is the value of the metric
   optional string value = 1;
 }
 
@@ -261,9 +263,12 @@ message ExecutorConfig {
   optional string serviceAccountName = 1;
 }
 
+// Gauge is a Gauge prometheus metric
 message Gauge {
+  // Value is the value of the metric
   optional string value = 1;
 
+  // Realtime emits this metric in real time if applicable
   optional bool realtime = 2;
 }
 
@@ -351,9 +356,12 @@ message HTTPArtifact {
   optional string url = 1;
 }
 
+// Histogram is a Histogram prometheus metric
 message Histogram {
+  // Value is the value of the metric
   optional string value = 3;
 
+  // Buckets is a list of bucket divisors for the histogram
   repeated double buckets = 4;
 }
 
@@ -414,13 +422,16 @@ message Metadata {
   map<string, string> labels = 2;
 }
 
-message MetricLabels {
+// MetricLabel is a single label for a prometheus metric
+message MetricLabel {
   optional string key = 1;
 
   optional string value = 2;
 }
 
+// Metrics are a list of metrics emitted from a Workflow/Template
 message Metrics {
+  // Prometheus is a list of prometheus metrics to be emitted
   repeated Prometheus prometheus = 1;
 }
 
@@ -578,19 +589,27 @@ message PodGC {
   optional string strategy = 1;
 }
 
+// Prometheus is a prometheus metric to be emitted
 message Prometheus {
+  // Name is the name of the metric
   optional string name = 1;
 
-  repeated MetricLabels labels = 2;
+  // Labels is a list of metric labels
+  repeated MetricLabel labels = 2;
 
+  // Help is a string that describes the metric
   optional string help = 3;
 
+  // When is a conditional statement that decides when to emit the metric
   optional string when = 4;
 
+  // Gauge is a gauge metric
   optional Gauge gauge = 5;
 
+  // Histogram is a histogram metric
   optional Histogram histogram = 6;
 
+  // Counter is a counter metric
   optional Counter counter = 7;
 }
 
@@ -836,6 +855,7 @@ message Template {
   // container fields which are not strings (e.g. resource limits).
   optional string podSpecPatch = 31;
 
+  // Metrics are a list of metrics emitted from this template
   optional Metrics metrics = 34;
 }
 
@@ -1044,6 +1064,7 @@ message WorkflowSpec {
   // +optional
   optional k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec podDisruptionBudget = 31;
 
+  // Metrics are a list of metrics emitted from this Workflow
   optional Metrics metrics = 32;
 }
 

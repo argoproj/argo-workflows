@@ -1554,9 +1554,11 @@
     },
     "io.argoproj.workflow.v1alpha1.Counter": {
       "type": "object",
+      "title": "Counter is a Counter prometheus metric",
       "properties": {
         "value": {
-          "type": "string"
+          "type": "string",
+          "title": "Value is the value of the metric"
         }
       }
     },
@@ -1741,13 +1743,16 @@
     },
     "io.argoproj.workflow.v1alpha1.Gauge": {
       "type": "object",
+      "title": "Gauge is a Gauge prometheus metric",
       "properties": {
         "realtime": {
           "type": "boolean",
-          "format": "boolean"
+          "format": "boolean",
+          "title": "Realtime emits this metric in real time if applicable"
         },
         "value": {
-          "type": "string"
+          "type": "string",
+          "title": "Value is the value of the metric"
         }
       }
     },
@@ -1874,16 +1879,19 @@
     },
     "io.argoproj.workflow.v1alpha1.Histogram": {
       "type": "object",
+      "title": "Histogram is a Histogram prometheus metric",
       "properties": {
         "buckets": {
           "type": "array",
+          "title": "Buckets is a list of bucket divisors for the histogram",
           "items": {
             "type": "number",
             "format": "double"
           }
         },
         "value": {
-          "type": "string"
+          "type": "string",
+          "title": "Value is the value of the metric"
         }
       }
     },
@@ -1991,8 +1999,9 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.MetricLabels": {
+    "io.argoproj.workflow.v1alpha1.MetricLabel": {
       "type": "object",
+      "title": "MetricLabel is a single label for a prometheus metric",
       "properties": {
         "key": {
           "type": "string"
@@ -2004,9 +2013,11 @@
     },
     "io.argoproj.workflow.v1alpha1.Metrics": {
       "type": "object",
+      "title": "Metrics are a list of metrics emitted from a Workflow/Template",
       "properties": {
         "prometheus": {
           "type": "array",
+          "title": "Prometheus is a list of prometheus metrics to be emitted",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Prometheus"
           }
@@ -2217,30 +2228,38 @@
     },
     "io.argoproj.workflow.v1alpha1.Prometheus": {
       "type": "object",
+      "title": "Prometheus is a prometheus metric to be emitted",
       "properties": {
         "counter": {
+          "title": "Counter is a counter metric",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Counter"
         },
         "gauge": {
+          "title": "Gauge is a gauge metric",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Gauge"
         },
         "help": {
-          "type": "string"
+          "type": "string",
+          "title": "Help is a string that describes the metric"
         },
         "histogram": {
+          "title": "Histogram is a histogram metric",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Histogram"
         },
         "labels": {
           "type": "array",
+          "title": "Labels is a list of metric labels",
           "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MetricLabels"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MetricLabel"
           }
         },
         "name": {
-          "type": "string"
+          "type": "string",
+          "title": "Name is the name of the metric"
         },
         "when": {
-          "type": "string"
+          "type": "string",
+          "title": "When is a conditional statement that decides when to emit the metric"
         }
       }
     },
@@ -2481,6 +2500,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata"
         },
         "metrics": {
+          "title": "Metrics are a list of metrics emitted from this template",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metrics"
         },
         "name": {
@@ -2729,6 +2749,7 @@
           }
         },
         "metrics": {
+          "title": "Metrics are a list of metrics emitted from this Workflow",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metrics"
         },
         "nodeSelector": {

@@ -482,9 +482,11 @@
       "type": "object",
       "properties": {
         "value": {
-          "type": "string"
+          "type": "string",
+          "title": "Value is the value of the metric"
         }
-      }
+      },
+      "title": "Counter is a Counter prometheus metric"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.DAGTask": {
       "type": "object",
@@ -578,13 +580,16 @@
       "type": "object",
       "properties": {
         "value": {
-          "type": "string"
+          "type": "string",
+          "title": "Value is the value of the metric"
         },
         "realtime": {
           "type": "boolean",
-          "format": "boolean"
+          "format": "boolean",
+          "title": "Realtime emits this metric in real time if applicable"
         }
-      }
+      },
+      "title": "Gauge is a Gauge prometheus metric"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GitArtifact": {
       "type": "object",
@@ -711,16 +716,19 @@
       "type": "object",
       "properties": {
         "value": {
-          "type": "string"
+          "type": "string",
+          "title": "Value is the value of the metric"
         },
         "buckets": {
           "type": "array",
           "items": {
             "type": "number",
             "format": "double"
-          }
+          },
+          "title": "Buckets is a list of bucket divisors for the histogram"
         }
-      }
+      },
+      "title": "Histogram is a Histogram prometheus metric"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Inputs": {
       "type": "object",
@@ -826,7 +834,7 @@
       },
       "title": "Pod metdata"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.MetricLabels": {
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.MetricLabel": {
       "type": "object",
       "properties": {
         "key": {
@@ -835,7 +843,8 @@
         "value": {
           "type": "string"
         }
-      }
+      },
+      "title": "MetricLabel is a single label for a prometheus metric"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metrics": {
       "type": "object",
@@ -844,9 +853,11 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Prometheus"
-          }
+          },
+          "title": "Prometheus is a list of prometheus metrics to be emitted"
         }
-      }
+      },
+      "title": "Metrics are a list of metrics emitted from a Workflow/Template"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.NoneStrategy": {
       "type": "object",
@@ -952,30 +963,38 @@
       "type": "object",
       "properties": {
         "name": {
-          "type": "string"
+          "type": "string",
+          "title": "Name is the name of the metric"
         },
         "labels": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.MetricLabels"
-          }
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.MetricLabel"
+          },
+          "title": "Labels is a list of metric labels"
         },
         "help": {
-          "type": "string"
+          "type": "string",
+          "title": "Help is a string that describes the metric"
         },
         "when": {
-          "type": "string"
+          "type": "string",
+          "title": "When is a conditional statement that decides when to emit the metric"
         },
         "gauge": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Gauge"
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Gauge",
+          "title": "Gauge is a gauge metric"
         },
         "histogram": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Histogram"
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Histogram",
+          "title": "Histogram is a histogram metric"
         },
         "counter": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Counter"
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Counter",
+          "title": "Counter is a counter metric"
         }
-      }
+      },
+      "title": "Prometheus is a prometheus metric to be emitted"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.RawArtifact": {
       "type": "object",
@@ -1292,7 +1311,8 @@
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of\ncontainer fields which are not strings (e.g. resource limits)."
         },
         "metrics": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metrics"
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metrics",
+          "title": "Metrics are a list of metrics emitted from this template"
         }
       },
       "title": "Template is a reusable and composable unit of execution in a workflow"

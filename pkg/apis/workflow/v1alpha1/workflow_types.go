@@ -284,6 +284,7 @@ type WorkflowSpec struct {
 	// +optional
 	PodDisruptionBudget *policyv1beta.PodDisruptionBudgetSpec `json:"podDisruptionBudget,omitempty" protobuf:"bytes,31,opt,name=podDisruptionBudget"`
 
+	// Metrics are a list of metrics emitted from this Workflow
 	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,32,opt,name=metrics"`
 }
 
@@ -461,7 +462,8 @@ type Template struct {
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,31,opt,name=podSpecPatch"`
 
-	Metrics *Metrics `json:"metrics" protobuf:"bytes,34,opt,name=metrics"`
+	// Metrics are a list of metrics emitted from this template
+	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,34,opt,name=metrics"`
 }
 
 var _ TemplateHolder = &Template{}
@@ -1613,18 +1615,28 @@ const (
 	MetricTypeUnknown   MetricType = "Unknown"
 )
 
+// Metrics are a list of metrics emitted from a Workflow/Template
 type Metrics struct {
+	// Prometheus is a list of prometheus metrics to be emitted
 	Prometheus []*Prometheus `json:"prometheus" protobuf:"bytes,1,rep,name=prometheus"`
 }
 
+// Prometheus is a prometheus metric to be emitted
 type Prometheus struct {
-	Name      string          `json:"name" protobuf:"bytes,1,opt,name=name"`
-	Labels    []*MetricLabels `json:"labels" protobuf:"bytes,2,rep,name=labels"`
-	Help      string          `json:"help" protobuf:"bytes,3,opt,name=help"`
-	When      string          `json:"when" protobuf:"bytes,4,opt,name=when"`
-	Gauge     *Gauge          `json:"gauge" protobuf:"bytes,5,opt,name=gauge"`
-	Histogram *Histogram      `json:"histogram" protobuf:"bytes,6,opt,name=histogram"`
-	Counter   *Counter        `json:"counter" protobuf:"bytes,7,opt,name=counter"`
+	// Name is the name of the metric
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+	// Labels is a list of metric labels
+	Labels []*MetricLabel `json:"labels" protobuf:"bytes,2,rep,name=labels"`
+	// Help is a string that describes the metric
+	Help string `json:"help" protobuf:"bytes,3,opt,name=help"`
+	// When is a conditional statement that decides when to emit the metric
+	When string `json:"when" protobuf:"bytes,4,opt,name=when"`
+	// Gauge is a gauge metric
+	Gauge *Gauge `json:"gauge" protobuf:"bytes,5,opt,name=gauge"`
+	// Histogram is a histogram metric
+	Histogram *Histogram `json:"histogram" protobuf:"bytes,6,opt,name=histogram"`
+	// Counter is a counter metric
+	Counter *Counter `json:"counter" protobuf:"bytes,7,opt,name=counter"`
 }
 
 func (p *Prometheus) GetMetricLabels() map[string]string {
@@ -1687,21 +1699,30 @@ func (p *Prometheus) IsRealtime() bool {
 	return p.GetMetricType() == MetricTypeGauge && p.Gauge.Realtime != nil && *p.Gauge.Realtime
 }
 
-type MetricLabels struct {
+// MetricLabel is a single label for a prometheus metric
+type MetricLabel struct {
 	Key   string `json:"key" protobuf:"bytes,1,opt,name=key"`
 	Value string `json:"value" protobuf:"bytes,2,opt,name=value"`
 }
 
+// Gauge is a Gauge prometheus metric
 type Gauge struct {
-	Value    string `json:"value" protobuf:"bytes,1,opt,name=value"`
-	Realtime *bool  `json:"realtime" protobuf:"varint,2,opt,name=realtime"`
+	// Value is the value of the metric
+	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
+	// Realtime emits this metric in real time if applicable
+	Realtime *bool `json:"realtime" protobuf:"varint,2,opt,name=realtime"`
 }
 
+// Histogram is a Histogram prometheus metric
 type Histogram struct {
-	Value   string    `json:"value" protobuf:"bytes,3,opt,name=value"`
+	// Value is the value of the metric
+	Value string `json:"value" protobuf:"bytes,3,opt,name=value"`
+	// Buckets is a list of bucket divisors for the histogram
 	Buckets []float64 `json:"buckets" protobuf:"fixed64,4,rep,name=buckets"`
 }
 
+// Counter is a Counter prometheus metric
 type Counter struct {
+	// Value is the value of the metric
 	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
 }
