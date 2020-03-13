@@ -23,6 +23,7 @@ type archivedWorkflowServer struct {
 	wfArchive sqldb.WorkflowArchive
 }
 
+// NewWorkflowArchiveServer returns a new archivedWorkflowServer
 func NewWorkflowArchiveServer(wfArchive sqldb.WorkflowArchive) workflowarchivepkg.ArchivedWorkflowServiceServer {
 	return &archivedWorkflowServer{wfArchive: wfArchive}
 }
