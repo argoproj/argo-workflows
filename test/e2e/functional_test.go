@@ -283,7 +283,7 @@ spec:
 	s.TearDownSuite()
 }
 
-func (s *FunctionalSuite) TestparameterAggregation() {
+func (s *FunctionalSuite) TestParameterAggregation() {
 	s.Given().
 		Workflow("@functional/param-aggregation.yaml").
 		When().
@@ -292,8 +292,10 @@ func (s *FunctionalSuite) TestparameterAggregation() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-			nodeStatus := status.Nodes.FindByDisplayName("print(0:1)")
-			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			nodeStatus := status.Nodes.FindByDisplayName("print(0:res:1)")
+			if assert.NotNil(t, nodeStatus) {
+				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			}
 		})
 }
 
