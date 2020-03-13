@@ -70,9 +70,14 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 		return err
 	}
 	return r.session.Tx(context.Background(), func(sess sqlbuilder.Tx) error {
-		// We assume that we're much more likely to be inserting rows that updating them, so we try and insert,
-		// and if that fails, then we update.
-		// There is no check for race condition here, last writer wins.
+		_, err := sess.
+			DeleteFrom(archiveTableName).
+			Where(db.Cond{"clustername": r.clusterName}).
+			And(db.Cond{"uid": wf.UID}).
+			Exec()
+		if err != nil {
+			return err
+		}
 		_, err = sess.Collection(archiveTableName).
 			Insert(&archivedWorkflowRecord{
 				archivedWorkflowMetadata: archivedWorkflowMetadata{
@@ -88,30 +93,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 				Workflow: string(workflow),
 			})
 		if err != nil {
-			if isDuplicateKeyError(err) {
-				res, err := sess.
-					Update(archiveTableName).
-					Set("workflow", string(workflow)).
-					Set("phase", wf.Status.Phase).
-					Set("startedat", wf.Status.StartedAt.Time).
-					Set("finishedat", wf.Status.FinishedAt.Time).
-					Where(db.Cond{"clustername": r.clusterName}).
-					And(db.Cond{"instanceid": r.instanceID}).
-					And(db.Cond{"uid": wf.UID}).
-					Exec()
-				if err != nil {
-					return err
-				}
-				rowsAffected, err := res.RowsAffected()
-				if err != nil {
-					return err
-				}
-				if rowsAffected != 1 {
-					logCtx.WithField("rowsAffected", rowsAffected).Warn("Expected exactly one row affected")
-				}
-			} else {
-				return err
-			}
+			return err
 		}
 
 		// insert the labels
@@ -124,22 +106,8 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 					Value:       value,
 				})
 			if err != nil {
-				if isDuplicateKeyError(err) {
-					_, err = sess.
-						Update(archiveLabelsTableName).
-						Set("value", value).
-						Where(db.Cond{"clustername": r.clusterName}).
-						And(db.Cond{"uid": wf.UID}).
-						And(db.Cond{"name": key}).
-						Exec()
-					if err != nil {
-						return err
-					}
-				} else {
-					return err
-				}
+				return err
 			}
-
 		}
 		return nil
 	})
