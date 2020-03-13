@@ -131,10 +131,10 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		}
 		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
 		// disable the archiving - and still read old records
-		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName())
+		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), configMap.InstanceID)
 	}
 	artifactServer := artifacts.NewArtifactServer(as.authenticator, offloadRepo, wfArchive)
-	grpcServer := as.newGRPCServer(offloadRepo, wfArchive)
+	grpcServer := as.newGRPCServer(configMap.InstanceID, offloadRepo, wfArchive)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
 	// Start listener
@@ -170,7 +170,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	<-as.stopCh
 }
 
-func (as *argoServer) newGRPCServer(offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *grpc.Server {
+func (as *argoServer) newGRPCServer(instanceID string, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
 
 	sOpts := []grpc.ServerOption{
@@ -197,9 +197,9 @@ func (as *argoServer) newGRPCServer(offloadNodeStatusRepo sqldb.OffloadNodeStatu
 	grpcServer := grpc.NewServer(sOpts...)
 
 	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace))
-	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(offloadNodeStatusRepo))
+	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(instanceID, offloadNodeStatusRepo))
 	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer())
-	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer())
+	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer(instanceID))
 	workflowarchivepkg.RegisterArchivedWorkflowServiceServer(grpcServer, workflowarchive.NewWorkflowArchiveServer(wfArchive))
 
 	return grpcServer
