@@ -32,7 +32,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
         this.setState({namespace});
         history.pushState(null, '', uiUrl('cron-workflows/' + namespace));
         this.fetchCronWorkflows();
-        Utils.setCachedNamespace(namespace);
+        Utils.setCurrentNamespace(namespace);
     }
 
     private get sidePanel() {
@@ -44,7 +44,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
     }
     constructor(props: any) {
         super(props);
-        this.state = {loading: true, namespace: this.props.match.params.namespace || Utils.getCachedNamespace() || ''};
+        this.state = {loading: true, namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || ''};
     }
 
     public componentDidMount(): void {

@@ -122,11 +122,11 @@ export const Utils = {
         return wf.status.phase === 'Running';
     },
 
-    setCachedNamespace(value: string): void {
-        localStorage.setItem('cached_namespace', value);
+    setCurrentNamespace(value: string): void {
+        localStorage.setItem('current_namespace', value);
     },
 
-    getCachedNamespace(): string {
-        return localStorage.getItem('cached_namespace');
+    getCurrentNamespace(): string {
+        return localStorage.getItem('current_namespace');
     }
 };
