@@ -186,7 +186,7 @@ func (s *FunctionalSuite) TestPendingRetryWorkflow() {
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-limited
+  name: dag-limited-1
   labels:
     argo-e2e: true
 spec:
@@ -225,6 +225,59 @@ spec:
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			a := wf.Status.Nodes.FindByDisplayName("a")
 			b := wf.Status.Nodes.FindByDisplayName("b")
+			return wfv1.NodeSucceeded == a.Phase && wfv1.NodeSucceeded == b.Phase
+		}, "pods succeeded", 20*time.Second)
+	s.TearDownSuite()
+}
+
+// 128M is for argo executor
+func (s *FunctionalSuite) TestPendingRetryWorkflowWithRetryStrategy() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-limited-2
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: dag
+  templates:
+  - name: cowsay
+    resubmitPendingPods: true
+    retryStrategy:
+      limit: 1
+    container:
+      image: cowsay:v1
+      command: [sh, -c]
+      args: ["cowsay a"]
+      resources:
+        limits:
+          memory: 128M
+  - name: dag
+    dag:
+      tasks:
+      - name: a
+        template: cowsay
+      - name: b
+        template: cowsay
+`).
+		When().
+		MemoryQuota("130M").
+		SubmitWorkflow().
+		WaitForWorkflowToStart(5*time.Second).
+		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+			a := wf.Status.Nodes.FindByDisplayName("a(0)")
+			b := wf.Status.Nodes.FindByDisplayName("b(0)")
+			return wfv1.NodePending == a.Phase &&
+				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(a.Message) &&
+				wfv1.NodePending == b.Phase &&
+				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(b.Message)
+		}, "pods pending", 20*time.Second).
+		DeleteQuota().
+		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+			a := wf.Status.Nodes.FindByDisplayName("a(0)")
+			b := wf.Status.Nodes.FindByDisplayName("b(0)")
 			return wfv1.NodeSucceeded == a.Phase && wfv1.NodeSucceeded == b.Phase
 		}, "pods succeeded", 20*time.Second)
 	s.TearDownSuite()

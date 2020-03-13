@@ -1674,6 +1674,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope strin
 
 	if apierr.IsForbidden(err) && isResubmitAllowed(tmpl) {
 		// Our error was most likely caused by a lack of resources. If pod resubmission is allowed, keep the node pending
+		woc.requeue(0)
 		return woc.markNodePending(node.Name, err), nil
 	}
 	return node, err
