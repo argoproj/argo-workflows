@@ -597,6 +597,17 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return node, true, nil
 	}
 
+	if !lastChildNode.Completed() {
+		// last child node is still running.
+		return node, true, nil
+	}
+
+	if lastChildNode.Successful() {
+		node.Outputs = lastChildNode.Outputs.DeepCopy()
+		woc.wf.Status.Nodes[node.ID] = *node
+		return woc.markNodePhase(node.Name, wfv1.NodeSucceeded), true, nil
+	}
+
 	if retryStrategy.Backoff != nil {
 		// Process max duration limit
 		if retryStrategy.Backoff.MaxDuration != "" && len(node.Children) > 0 {
@@ -652,17 +663,6 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		retryOnError = false
 	default:
 		return nil, false, fmt.Errorf("%s is not a valid RetryPolicy", retryStrategy.RetryPolicy)
-	}
-
-	if !lastChildNode.Completed() {
-		// last child node is still running.
-		return node, true, nil
-	}
-
-	if lastChildNode.Successful() {
-		node.Outputs = lastChildNode.Outputs.DeepCopy()
-		woc.wf.Status.Nodes[node.ID] = *node
-		return woc.markNodePhase(node.Name, wfv1.NodeSucceeded), true, nil
 	}
 
 	if (lastChildNode.Phase == wfv1.NodeFailed && !retryOnFailed) || (lastChildNode.Phase == wfv1.NodeError && !retryOnError) {
