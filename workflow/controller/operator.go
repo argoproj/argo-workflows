@@ -1428,7 +1428,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			woc.log.Infof("SIMON emitting: %v", resolvedTmpl.Metrics)
 			localScope, realTimeScope := woc.prepareMetricScope(node, "self")
 			woc.computeMetrics(resolvedTmpl.Metrics.Prometheus, localScope, realTimeScope, true)
-		} else
+		}
 		// Check if the node completed during this execution, if it did emit metrics
 		// This check is necessary because sometimes a node will be marked completed during the current execution and will
 		// not be considered again. The best example of this is the entrypoint steps/dag template (once completed, the
