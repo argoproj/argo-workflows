@@ -30,7 +30,7 @@ const wf1 = `
         "generateName": "hello-world-",
         "generation": 5,
         "labels": {
-			"workflows.argoproj.io/controller-instanceid": "testinstanceid001",
+            "workflows.argoproj.io/controller-instanceid": "testinstanceid001",
             "workflows.argoproj.io/completed": "true",
             "workflows.argoproj.io/phase": "Succeeded"
         },
@@ -92,7 +92,7 @@ const wf2 = `
         "generateName": "hello-world-",
         "generation": 5,
         "labels": {
-			"workflows.argoproj.io/controller-instanceid": "testinstanceid001",
+            "workflows.argoproj.io/controller-instanceid": "testinstanceid001",
             "workflows.argoproj.io/completed": "true",
             "workflows.argoproj.io/phase": "Succeeded"
         },
@@ -154,7 +154,7 @@ const wf3 = `
         "generateName": "hello-world-",
         "generation": 5,
         "labels": {
-			"workflows.argoproj.io/controller-instanceid": "testinstanceid001",
+            "workflows.argoproj.io/controller-instanceid": "testinstanceid001",
             "workflows.argoproj.io/completed": "true",
             "workflows.argoproj.io/phase": "Succeeded"
         },
@@ -216,7 +216,7 @@ const wf4 = `
         "generateName": "hello-world-",
         "generation": 5,
         "labels": {
-			"workflows.argoproj.io/controller-instanceid": "testinstanceid001",
+            "workflows.argoproj.io/controller-instanceid": "testinstanceid001",
             "workflows.argoproj.io/completed": "true",
             "workflows.argoproj.io/phase": "Succeeded"
         },
@@ -278,7 +278,7 @@ const wf5 = `
         "generateName": "hello-world-",
         "generation": 5,
         "labels": {
-			"workflows.argoproj.io/controller-instanceid": "testinstanceid001",
+            "workflows.argoproj.io/controller-instanceid": "testinstanceid001",
             "workflows.argoproj.io/completed": "false",
             "workflows.argoproj.io/phase": "Running"
         },
@@ -341,7 +341,7 @@ const workflow = `
     "metadata": {
 	  "generateName": "hello-world-",
 	  "labels": {
-		"workflows.argoproj.io/controller-instanceid": "testinstanceid001"
+        "workflows.argoproj.io/controller-instanceid": "testinstanceid001"
 	  }
     },
     "spec": {

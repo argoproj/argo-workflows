@@ -222,34 +222,6 @@ func (m migrate) Exec(ctx context.Context) error {
 			ansiSQLChange(`alter table argo_archived_workflows modify column instanceid varchar(64) not null`),
 			ansiSQLChange(`alter table argo_archived_workflows alter column instanceid set not null`),
 		),
-		// add instanceid column to table argo_archived_workflows_labels
-		ansiSQLChange(`alter table argo_archived_workflows_labels add column instanceid varchar(64)`),
-		ansiSQLChange(`update argo_archived_workflows_labels set instanceid = '' where instanceid is null`),
-		ternary(dbType == MySQL,
-			ansiSQLChange(`alter table argo_archived_workflows_labels modify column instanceid varchar(64) not null`),
-			ansiSQLChange(`alter table argo_archived_workflows_labels alter column instanceid set not null`),
-		),
-		// drop argo_archived_workflows_labels fk
-		ternary(dbType == MySQL,
-			ansiSQLChange(`alter table argo_archived_workflows_labels drop foreign key argo_archived_workflows_labels_ibfk_1`),
-			ansiSQLChange(`alter table argo_archived_workflows_labels drop constraint argo_archived_workflows_labels_clustername_uid_fkey`),
-		),
-		// drop argo_archived_workflows pk
-		ternary(dbType == MySQL,
-			ansiSQLChange(`alter table argo_archived_workflows drop primary key`),
-			ansiSQLChange(`alter table argo_archived_workflows drop constraint argo_archived_workflows_pkey`),
-		),
-		// add argo_archived_workflows pk
-		ansiSQLChange(`alter table argo_archived_workflows add primary key(clustername,instanceid,uid)`),
-		// drop argo_archived_workflows_labels pk
-		ternary(dbType == MySQL,
-			ansiSQLChange(`alter table argo_archived_workflows_labels drop primary key`),
-			ansiSQLChange(`alter table argo_archived_workflows_labels drop constraint argo_archived_workflows_labels_pkey`),
-		),
-		// add argo_archived_workflows_labels pk
-		ansiSQLChange(`alter table argo_archived_workflows_labels add primary key(clustername,instanceid,uid,name)`),
-		// add argo_archived_workflows_labels fk
-		ansiSQLChange(`alter table argo_archived_workflows_labels add constraint argo_archived_workflows_labels_fk1 foreign key (clustername,instanceid,uid) references argo_archived_workflows(clustername, instanceid, uid) on delete cascade`),
 		// drop argo_archived_workflows index
 		ternary(dbType == MySQL,
 			ansiSQLChange(`drop index argo_archived_workflows_i1 on argo_archived_workflows`),
@@ -257,14 +229,8 @@ func (m migrate) Exec(ctx context.Context) error {
 		),
 		// add argo_archived_workflows index
 		ansiSQLChange(`create index argo_archived_workflows_i1 on argo_archived_workflows (clustername,instanceid,namespace)`),
-		// add instanceid column to m.tableName
-		ansiSQLChange(`alter table ` + m.tableName + ` add column instanceid varchar(64)`),
-		ansiSQLChange(`update ` + m.tableName + ` set instanceid = '' where instanceid is null`),
-		ternary(dbType == MySQL,
-			ansiSQLChange(`alter table `+m.tableName+` modify column instanceid varchar(64) not null`),
-			ansiSQLChange(`alter table `+m.tableName+` alter column instanceid set not null`),
-		),
 		// drop m.tableName indexes
+		// xxx_i1 is not needed because xxx_i2 already covers it, drop both and recreat an index named xxx_i1
 		ternary(dbType == MySQL,
 			ansiSQLChange(`drop index `+m.tableName+`_i1 on `+m.tableName),
 			ansiSQLChange(`drop index `+m.tableName+`_i1`),
@@ -273,15 +239,8 @@ func (m migrate) Exec(ctx context.Context) error {
 			ansiSQLChange(`drop index `+m.tableName+`_i2 on `+m.tableName),
 			ansiSQLChange(`drop index `+m.tableName+`_i2`),
 		),
-		// drop m.tableName pk
-		ternary(dbType == MySQL,
-			ansiSQLChange(`alter table `+m.tableName+` drop primary key`),
-			ansiSQLChange(`alter table `+m.tableName+` drop constraint `+m.tableName+`_pkey`),
-		),
-		// add m.tableName pk
-		ansiSQLChange(`alter table ` + m.tableName + ` add primary key(clustername,instanceid,uid,version)`),
 		// add m.tableName index
-		ansiSQLChange(`create index ` + m.tableName + `_i1 on ` + m.tableName + ` (clustername,instanceid,namespace,updatedat)`),
+		ansiSQLChange(`create index ` + m.tableName + `_i1 on ` + m.tableName + ` (clustername,namespace,updatedat)`),
 	} {
 		err := m.applyChange(ctx, changeSchemaVersion, change)
 		if err != nil {

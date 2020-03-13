@@ -31,7 +31,7 @@ type OffloadNodeStatusRepo interface {
 	IsEnabled() bool
 }
 
-func NewOffloadNodeStatusRepo(session sqlbuilder.Database, clusterName, instanceID, tableName string) (OffloadNodeStatusRepo, error) {
+func NewOffloadNodeStatusRepo(session sqlbuilder.Database, clusterName, tableName string) (OffloadNodeStatusRepo, error) {
 	// this environment variable allows you to make Argo Workflows delete offloaded data more or less aggressively,
 	// useful for testing
 	text, ok := os.LookupEnv("OFFLOAD_NODE_STATUS_TTL")
@@ -43,12 +43,11 @@ func NewOffloadNodeStatusRepo(session sqlbuilder.Database, clusterName, instance
 		return nil, err
 	}
 	log.WithField("ttl", ttl).Info("Node status offloading config")
-	return &nodeOffloadRepo{session: session, clusterName: clusterName, instanceID: instanceID, tableName: tableName, ttl: ttl}, nil
+	return &nodeOffloadRepo{session: session, clusterName: clusterName, tableName: tableName, ttl: ttl}, nil
 }
 
 type nodesRecord struct {
 	ClusterName string `db:"clustername"`
-	InstanceID  string `db:"instanceid"`
 	UUIDVersion
 	Namespace string `db:"namespace"`
 	Nodes     string `db:"nodes"`
@@ -57,7 +56,6 @@ type nodesRecord struct {
 type nodeOffloadRepo struct {
 	session     sqlbuilder.Database
 	clusterName string
-	instanceID  string
 	tableName   string
 	// time to live - at what ttl an offload becomes old
 	ttl time.Duration
@@ -87,7 +85,6 @@ func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (strin
 
 	record := &nodesRecord{
 		ClusterName: wdc.clusterName,
-		InstanceID:  wdc.instanceID,
 		UUIDVersion: UUIDVersion{
 			UID:     uid,
 			Version: version,
@@ -116,7 +113,6 @@ func (wdc *nodeOffloadRepo) Save(uid, namespace string, nodes wfv1.Nodes) (strin
 	rs, err := wdc.session.
 		DeleteFrom(wdc.tableName).
 		Where(db.Cond{"clustername": wdc.clusterName}).
-		And(db.Cond{"instanceid": wdc.instanceID}).
 		And(db.Cond{"uid": uid}).
 		And(db.Cond{"version <>": version}).
 		And(wdc.oldOffload()).
@@ -150,7 +146,6 @@ func (wdc *nodeOffloadRepo) Get(uid, version string) (wfv1.Nodes, error) {
 	err := wdc.session.
 		SelectFrom(wdc.tableName).
 		Where(db.Cond{"clustername": wdc.clusterName}).
-		And(db.Cond{"instanceid": wdc.instanceID}).
 		And(db.Cond{"uid": uid}).
 		And(db.Cond{"version": version}).
 		One(r)
@@ -172,7 +167,6 @@ func (wdc *nodeOffloadRepo) List(namespace string) (map[UUIDVersion]wfv1.Nodes, 
 		Select("uid", "version", "nodes").
 		From(wdc.tableName).
 		Where(db.Cond{"clustername": wdc.clusterName}).
-		And(db.Cond{"instanceid": wdc.instanceID}).
 		And(namespaceEqual(namespace)).
 		All(&records)
 	if err != nil {
@@ -199,7 +193,6 @@ func (wdc *nodeOffloadRepo) ListOldOffloads(namespace string) ([]UUIDVersion, er
 		Select("uid", "version").
 		From(wdc.tableName).
 		Where(db.Cond{"clustername": wdc.clusterName}).
-		And(db.Cond{"instanceid": wdc.instanceID}).
 		And(namespaceEqual(namespace)).
 		And(wdc.oldOffload()).
 		All(&records)
@@ -221,7 +214,6 @@ func (wdc *nodeOffloadRepo) Delete(uid, version string) error {
 	rs, err := wdc.session.
 		DeleteFrom(wdc.tableName).
 		Where(db.Cond{"clustername": wdc.clusterName}).
-		And(db.Cond{"instanceid": wdc.instanceID}).
 		And(db.Cond{"uid": uid}).
 		And(db.Cond{"version": version}).
 		Exec()

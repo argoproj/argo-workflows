@@ -72,7 +72,7 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 
 		wfc.session = session
 		if persistence.NodeStatusOffload {
-			wfc.offloadNodeStatusRepo, err = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), wfc.Config.InstanceID, tableName)
+			wfc.offloadNodeStatusRepo, err = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
 			if err != nil {
 				return err
 			}

@@ -38,7 +38,7 @@ func newPersistence(kubeClient kubernetes.Interface) *Persistence {
 		if err != nil {
 			panic(err)
 		}
-		offloadNodeStatusRepo, err := sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), wcConfig.InstanceID, tableName)
+		offloadNodeStatusRepo, err := sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
 		if err != nil {
 			panic(err)
 		}

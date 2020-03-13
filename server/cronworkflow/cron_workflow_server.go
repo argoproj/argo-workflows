@@ -42,6 +42,11 @@ func (c *cronWorkflowServiceServer) ListCronWorkflows(ctx context.Context, req *
 }
 
 func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req *cronworkflowpkg.CreateCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
+	c.setInstanceID(req)
+	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).Create(req.CronWorkflow)
+}
+
+func (c *cronWorkflowServiceServer) setInstanceID(req *cronworkflowpkg.CreateCronWorkflowRequest) {
 	if len(c.instanceID) > 0 {
 		labels := req.CronWorkflow.GetLabels()
 		if labels == nil {
@@ -50,7 +55,6 @@ func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req 
 		labels[common.LabelKeyControllerInstanceID] = c.instanceID
 		req.CronWorkflow.SetLabels(labels)
 	}
-	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).Create(req.CronWorkflow)
 }
 
 func (c *cronWorkflowServiceServer) GetCronWorkflow(ctx context.Context, req *cronworkflowpkg.GetCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
