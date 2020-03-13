@@ -62,11 +62,11 @@ func (c *cronWorkflowServiceServer) GetCronWorkflow(ctx context.Context, req *cr
 	if req.GetOptions != nil {
 		options = *req.GetOptions
 	}
-	return c.getCronWorkflow(ctx, req.Namespace, req.Name, options)
+	return c.getAndValidateCronWorkflow(ctx, req.Namespace, req.Name, options)
 }
 
 func (c *cronWorkflowServiceServer) UpdateCronWorkflow(ctx context.Context, req *cronworkflowpkg.UpdateCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
-	_, err := c.getCronWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	_, err := c.getAndValidateCronWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (c *cronWorkflowServiceServer) UpdateCronWorkflow(ctx context.Context, req 
 }
 
 func (c *cronWorkflowServiceServer) DeleteCronWorkflow(ctx context.Context, req *cronworkflowpkg.DeleteCronWorkflowRequest) (*cronworkflowpkg.CronWorkflowDeletedResponse, error) {
-	_, err := c.getCronWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	_, err := c.getAndValidateCronWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (c *cronWorkflowServiceServer) withInstanceID(opt metav1.ListOptions) metav
 	return opt
 }
 
-func (c *cronWorkflowServiceServer) getCronWorkflow(ctx context.Context, namespace string, name string, options metav1.GetOptions) (*v1alpha1.CronWorkflow, error) {
+func (c *cronWorkflowServiceServer) getAndValidateCronWorkflow(ctx context.Context, namespace string, name string, options metav1.GetOptions) (*v1alpha1.CronWorkflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	cronWf, err := wfClient.ArgoprojV1alpha1().CronWorkflows(namespace).Get(name, options)
 	if err != nil {
