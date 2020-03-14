@@ -22,7 +22,7 @@ func GetTaskAncestry(ctx Context, taskName string, tasks []wfv1.DAGTask) []strin
 	visited := make(map[string]time.Time)
 	var getAncestry func(s string)
 	getAncestry = func(currTask string) {
-		if !visitedFlag[currTask]{
+		if !visitedFlag[currTask] {
 			task := taskByName[currTask]
 			for _, depTask := range task.Dependencies {
 				getAncestry(depTask)
