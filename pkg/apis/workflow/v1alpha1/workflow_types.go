@@ -462,8 +462,11 @@ type Template struct {
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,31,opt,name=podSpecPatch"`
 
+	// ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
+	ResubmitPendingPods *bool `json:"resubmitPendingPods,omitempty" protobuf:"varint,34,opt,name=resubmitPendingPods"`
+
 	// Metrics are a list of metrics emitted from this template
-	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,34,opt,name=metrics"`
+	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,35,opt,name=metrics"`
 }
 
 var _ TemplateHolder = &Template{}
@@ -1025,13 +1028,18 @@ func (ws WorkflowStatus) FinishTime() *metav1.Time {
 	return &ws.FinishedAt
 }
 
-// Remove returns whether or not the node has completed execution
+// Completed returns whether or not the node has completed execution
 func (n NodeStatus) Completed() bool {
 	return n.Phase.Completed() || n.IsDaemoned() && n.Phase != NodePending
 }
 
 func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
 	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
+}
+
+// Pending returns whether or not the node is in pending state
+func (n NodeStatus) Pending() bool {
+	return n.Phase == NodePending
 }
 
 // IsDaemoned returns whether or not the node is deamoned

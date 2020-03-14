@@ -1405,6 +1405,11 @@ func (in *Template) DeepCopyInto(out *Template) {
 		*out = new(v1.PodSecurityContext)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ResubmitPendingPods != nil {
+		in, out := &in.ResubmitPendingPods, &out.ResubmitPendingPods
+		*out = new(bool)
+		**out = **in
+	}
 	if in.Metrics != nil {
 		in, out := &in.Metrics, &out.Metrics
 		*out = new(Metrics)

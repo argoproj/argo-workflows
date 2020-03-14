@@ -781,7 +781,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	// It is now impossible to infer pod status. The only thing we can do at this point is to mark
 	// the node with Error.
 	for nodeID, node := range woc.wf.Status.Nodes {
-		if node.Type != wfv1.NodeTypePod || node.Completed() || node.StartedAt.IsZero() {
+		if node.Type != wfv1.NodeTypePod || node.Completed() || node.StartedAt.IsZero() || node.Pending() {
 			// node is not a pod, it is already complete, or it can be re-run.
 			continue
 		}
@@ -1288,6 +1288,13 @@ func (woc *wfOperationCtx) getFirstChildNode(node *wfv1.NodeStatus) (*wfv1.NodeS
 	return &firstChildNode, nil
 }
 
+func isResubmitAllowed(tmpl *wfv1.Template) bool {
+	if tmpl.ResubmitPendingPods == nil {
+		return false
+	}
+	return *tmpl.ResubmitPendingPods
+}
+
 // executeTemplate executes the template with the given arguments and returns the created NodeStatus
 // for the created node (if created). Nodes may not be created if parallelism or deadline exceeded.
 // nodeName is the name to be used as the name of the node, and boundaryID indicates which template
@@ -1653,6 +1660,13 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 	return woc.markNodePhase(nodeName, wfv1.NodeError, err.Error())
 }
 
+// markNodePending is a convenience method to mark a node and set the message from the error
+func (woc *wfOperationCtx) markNodePending(nodeName string, err error) *wfv1.NodeStatus {
+	woc.log.Infof("Mark node %s as Pending, due to: %+v", nodeName, err)
+	node := woc.getNodeByName(nodeName)
+	return woc.markNodePhase(nodeName, wfv1.NodePending, fmt.Sprintf("Pending %s", time.Since(node.StartedAt.Time)))
+}
+
 // checkParallelism checks if the given template is able to be executed, considering the current active pods and workflow/template parallelism
 func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string) error {
 	if woc.wf.Spec.Parallelism != nil && woc.activePods >= *woc.wf.Spec.Parallelism {
@@ -1701,13 +1715,23 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 
 func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
-	if node != nil {
+	if node == nil {
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, boundaryID, wfv1.NodePending)
+	} else if !isResubmitAllowed(tmpl) || !node.Pending() {
+		// This is not our first time executing this node.
+		// We will retry to resubmit the pod if it is allowed and if the node is pending. If either of these two are
+		// false, return.
 		return node, nil
 	}
-	node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, boundaryID, wfv1.NodePending)
 
 	woc.log.Debugf("Executing node %s with container template: %v\n", nodeName, tmpl)
 	_, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl, false)
+
+	if apierr.IsForbidden(err) && isResubmitAllowed(tmpl) {
+		// Our error was most likely caused by a lack of resources. If pod resubmission is allowed, keep the node pending
+		woc.requeue(0)
+		return woc.markNodePending(node.Name, err), nil
+	}
 	return node, err
 }
 

@@ -44,7 +44,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             nextOffset: 0,
             initialized: false,
             managedNamespace: false,
-            namespace: this.props.match.params.namespace || '',
+            namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || '',
             selectedPhases: this.queryParams('phase'),
             selectedLabels: this.queryParams('label')
         };
@@ -166,6 +166,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                     nextOffset: this.parseOffset(list.metadata.continue || ''),
                     loading: false
                 });
+                Utils.setCurrentNamespace(newNamespace);
             })
             .catch(error => this.setState({error, loading: false}));
     }
