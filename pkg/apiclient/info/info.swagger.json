@@ -36,11 +36,11 @@
           "type": "string"
         },
         "templates": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Templates"
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.LoggingFacilityTemplates"
         }
       }
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Templates": {
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.LoggingFacilityTemplates": {
       "type": "object",
       "properties": {
         "workflow": {

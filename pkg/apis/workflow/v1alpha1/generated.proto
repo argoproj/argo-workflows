@@ -394,7 +394,13 @@ message ItemValue {
 message LoggingFacility {
   optional string name = 1;
 
-  optional Templates templates = 2;
+  optional LoggingFacilityTemplates templates = 2;
+}
+
+message LoggingFacilityTemplates {
+  optional string workflow = 1;
+
+  optional string pod = 2;
 }
 
 // Pod metdata
@@ -815,12 +821,6 @@ message TemplateRef {
   // RuntimeResolution skips validation at creation time.
   // By enabling this option, you can create the referred workflow template before the actual runtime.
   optional bool runtimeResolution = 3;
-}
-
-message Templates {
-  optional string workflow = 1;
-
-  optional string pod = 2;
 }
 
 // UserContainer is a container specified by a user.

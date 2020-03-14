@@ -1945,7 +1945,18 @@
           "type": "string"
         },
         "templates": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Templates"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LoggingFacilityTemplates"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.LoggingFacilityTemplates": {
+      "type": "object",
+      "properties": {
+        "pod": {
+          "type": "string"
+        },
+        "workflow": {
+          "type": "string"
         }
       }
     },
@@ -2524,17 +2535,6 @@
         },
         "template": {
           "description": "Template is the name of referred template in the resource.",
-          "type": "string"
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.Templates": {
-      "type": "object",
-      "properties": {
-        "pod": {
-          "type": "string"
-        },
-        "workflow": {
           "type": "string"
         }
       }
