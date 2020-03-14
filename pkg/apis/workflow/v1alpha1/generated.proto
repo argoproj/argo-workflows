@@ -793,6 +793,9 @@ message Template {
   // PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
   // container fields which are not strings (e.g. resource limits).
   optional string podSpecPatch = 31;
+
+  // ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
+  optional bool resubmitPendingPods = 34;
 }
 
 // TemplateRef is a reference of template resource.
