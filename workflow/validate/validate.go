@@ -161,7 +161,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 			logrus.Warn(getTemplateRefHelpString(&template))
 		}
 		if template.Template != "" {
-			logrus.Warn("template.template is deprecated and its contents are ignored")
+			logrus.Warn(getTemplateRefHelpString(&template))
 		}
 		if !template.Arguments.IsEmpty() {
 			logrus.Warn("template.arguments is deprecated and its contents are ignored")
@@ -222,17 +222,25 @@ Templates can be referenced from within a "steps" or a "dag" template:
 
 - name: %s
   steps:
-    - - name: call-%s
+    - - name: call-%s`
+
+	if tmpl.TemplateRef != nil {
+		out += `
         templateRef:
           name: %s
           template: %s`
 
-	out = fmt.Sprintf(out, tmpl.Name, tmpl.TemplateRef.Template, tmpl.TemplateRef.Name, tmpl.TemplateRef.Template)
-
-	if tmpl.TemplateRef.RuntimeResolution {
-		out += `
+		out = fmt.Sprintf(out, tmpl.Name, tmpl.TemplateRef.Template, tmpl.TemplateRef.Name, tmpl.TemplateRef.Template)
+		if tmpl.TemplateRef.RuntimeResolution {
+			out += `
           runtimeResolution: %t`
-		out = fmt.Sprintf(out, tmpl.TemplateRef.RuntimeResolution)
+			out = fmt.Sprintf(out, tmpl.TemplateRef.RuntimeResolution)
+		}
+	} else if tmpl.Template != "" {
+		out += `
+        template: %s`
+
+		out = fmt.Sprintf(out, tmpl.Name, tmpl.Template, tmpl.Template)
 	}
 
 	if !tmpl.Inputs.IsEmpty() {
