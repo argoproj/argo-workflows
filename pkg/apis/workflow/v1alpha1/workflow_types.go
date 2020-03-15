@@ -1529,7 +1529,6 @@ func (wf *Workflow) NodeID(name string) string {
 // GetStoredTemplate retrieves a template from stored templates of the workflow.
 func (wf *Workflow) GetStoredTemplate(templateScope string, holder TemplateHolder) *Template {
 	tmplID := wf.getStoredTemplateName(templateScope, holder)
-	fmt.Printf("Template ID %s \n",tmplID )
 	if tmplID == "" {
 		return nil
 	}
@@ -1561,13 +1560,7 @@ func (wf *Workflow) SetStoredTemplate(templateScope string, holder TemplateHolde
 func (wf *Workflow) getStoredTemplateName(templateScope string, holder TemplateHolder) string {
 	tmplRef := holder.GetTemplateRef()
 	if tmplRef != nil {
-		tmplName := fmt.Sprintf("%s/%s", tmplRef.Name, tmplRef.Template)
-		if tmplRef.ClusterScope {
-			tmplName = "cluster/" + tmplName
-		}else{
-			//tmplName = "namespaced/" + tmplName
-		}
-		return tmplName
+		return fmt.Sprintf("%s/%s", tmplRef.Name, tmplRef.Template)
 	} else if templateScope != "" {
 		return fmt.Sprintf("%s/%s", templateScope, holder.GetTemplateName())
 	} else {

@@ -1301,7 +1301,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	// Set templateScope from which the template resolution starts.
 	templateScope := tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
-	fmt.Println(templateScope)
 
 	newTmplCtx, resolvedTmpl, err := tmplCtx.ResolveTemplate(orgTmpl)
 	if err != nil {
@@ -1557,7 +1556,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 	} else {
 		node.DisplayName = nodeName
 	}
-	fmt.Println(orgTmpl.GetTemplateRef())
+
 	node.TemplateScope = templateScope
 
 	if node.Completed() && node.FinishedAt.IsZero() {

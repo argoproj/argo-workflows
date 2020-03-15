@@ -250,7 +250,7 @@ func (ctx *Context) WithTemplateHolder(tmplHolder wfv1.TemplateHolder) (*Context
 		if tmplRef.ClusterScope {
 			tmplName = "cluster/"+tmplName
 		}else{
-			//tmplName = "namespaced/"+tmplName
+			tmplName = "namespaced/"+tmplName
 		}
 		return ctx.WithWorkflowTemplate(tmplName)
 	}
@@ -271,12 +271,14 @@ func (ctx *Context) WithWorkflowTemplate(name string) (*Context, error) {
 			return nil, err
 		}
 		return ctx.WithTemplateBase(cwftmpl), nil
-	}else {
-		wftmpl, err := ctx.wftmplGetter.Get(names[0])
+	}
+	if names[0] == "namespaced" {
+		wftmpl, err := ctx.wftmplGetter.Get(names[1])
 		if err != nil {
 			return nil, err
 		}
 		return ctx.WithTemplateBase(wftmpl), nil
 	}
+	return ctx, nil
 }
 
