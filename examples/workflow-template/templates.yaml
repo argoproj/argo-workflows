@@ -16,27 +16,6 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: workflow-template-nested-template
-spec:
-  templates:
-  - name: whalesay-inner-template
-    steps:
-      - - name: call-whalesay-template
-          templateRef:
-            name: workflow-template-whalesay-template
-            template: whalesay-template
-          arguments:
-            parameters:
-            - name: message
-  - name: whalesay-template
-    template: whalesay-inner-template
-    inputs:
-      parameters:
-      - name: message
----
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
   name: workflow-template-random-fail-template
 spec:
   templates:

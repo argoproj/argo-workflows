@@ -217,17 +217,17 @@ func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamesp
 }
 
 func getTemplateRefHelpString(tmpl *wfv1.Template) string {
-	out := `Template to template referencing is deprecated and will be removed in a future version.
-Other templates can be referenced from within a "steps" or a "dag" template:
+	out := `Template to template referencing is deprecated, no longer supported, and will be removed in a future version.
+Templates can be referenced from within a "steps" or a "dag" template:
 
-- name: call-%s
+- name: %s
   steps:
     - - name: call-%s
         templateRef:
           name: %s
           template: %s`
 
-	out = fmt.Sprintf(out, tmpl.TemplateRef.Template, tmpl.TemplateRef.Template, tmpl.TemplateRef.Name, tmpl.TemplateRef.Template)
+	out = fmt.Sprintf(out, tmpl.Name, tmpl.TemplateRef.Template, tmpl.TemplateRef.Name, tmpl.TemplateRef.Template)
 
 	if tmpl.TemplateRef.RuntimeResolution {
 		out += `
