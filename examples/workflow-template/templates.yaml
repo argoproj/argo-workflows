@@ -20,12 +20,14 @@ metadata:
 spec:
   templates:
   - name: whalesay-inner-template
-    templateRef:
-      name: workflow-template-whalesay-template
-      template: whalesay-template
-    inputs:
-      parameters:
-      - name: message
+    steps:
+      - - name: call-whalesay-template
+          templateRef:
+            name: workflow-template-whalesay-template
+            template: whalesay-template
+          arguments:
+            parameters:
+            - name: message
   - name: whalesay-template
     template: whalesay-inner-template
     inputs:
