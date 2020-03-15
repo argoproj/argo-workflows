@@ -107,13 +107,6 @@ func (ctx *Context) GetTemplate(tmplHolder wfv1.TemplateHolder) (*wfv1.Template,
 		return ctx.GetTemplateFromRef(tmplRef)
 	} else if tmplName != "" {
 		return ctx.GetTemplateByName(tmplName)
-	} else {
-		if tmpl, ok := tmplHolder.(*wfv1.Template); ok {
-			if tmpl.GetType() != wfv1.TemplateTypeUnknown {
-				return tmpl.DeepCopy(), nil
-			}
-			return nil, errors.Errorf(errors.CodeNotFound, "template %s is not a concrete template", tmpl.Name)
-		}
 	}
 	return nil, errors.Errorf(errors.CodeInternal, "failed to get a template")
 }

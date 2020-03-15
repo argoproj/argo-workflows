@@ -676,9 +676,15 @@ message Template {
   optional string name = 1;
 
   // Template is the name of the template which is used as the base of this template.
+  // DEPRECATED: This field is not used.
   optional string template = 2;
 
+  // Arguments hold arguments to the template.
+  // DEPRECATED: This field is not used.
+  optional Arguments arguments = 3;
+
   // TemplateRef is the reference to the template resource which is used as the base of this template.
+  // DEPRECATED: This field is not used.
   optional TemplateRef templateRef = 4;
 
   // Inputs describe what inputs parameters and artifacts are supplied to this template

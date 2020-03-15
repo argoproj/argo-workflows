@@ -10,6 +10,7 @@
   ],
   "swagger": "2.0",
   "info": {
+    "description": "Workflow Service API performs CRUD actions against application resources",
     "title": "Argo",
     "version": "latest"
   },
@@ -2349,6 +2350,10 @@
           "description": "Location in which all files related to the step will be stored (logs, artifacts, etc...).\nCan be overridden by individual items in Outputs. If omitted, will use the default\nartifact repository location configured in the controller, appended with the\n\u003cworkflowname\u003e/\u003cnodename\u003e in the key.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactLocation"
         },
+        "arguments": {
+          "description": "Arguments hold arguments to the template.\nDEPRECATED: This field is not used.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
+        },
         "automountServiceAccountToken": {
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.\nServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean",
@@ -2474,11 +2479,11 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SuspendTemplate"
         },
         "template": {
-          "description": "Template is the name of the template which is used as the base of this template.",
+          "description": "Template is the name of the template which is used as the base of this template.\nDEPRECATED: This field is not used.",
           "type": "string"
         },
         "templateRef": {
-          "description": "TemplateRef is the reference to the template resource which is used as the base of this template.",
+          "description": "TemplateRef is the reference to the template resource which is used as the base of this template.\nDEPRECATED: This field is not used.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TemplateRef"
         },
         "tolerations": {
@@ -5653,6 +5658,32 @@
     "HTTPBasic": {
       "description": "HTTP Basic authentication",
       "type": "basic"
+    }
+  },
+  "x-stream-definitions": {
+    "io.argoproj.workflow.v1alpha1.LogEntry": {
+      "properties": {
+        "error": {
+          "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+        },
+        "result": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LogEntry"
+        }
+      },
+      "title": "Stream result of io.argoproj.workflow.v1alpha1.LogEntry",
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowWatchEvent": {
+      "properties": {
+        "error": {
+          "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+        },
+        "result": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowWatchEvent"
+        }
+      },
+      "title": "Stream result of io.argoproj.workflow.v1alpha1.WorkflowWatchEvent",
+      "type": "object"
     }
   }
 }

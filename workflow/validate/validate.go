@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/robfig/cron"
-
+	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
@@ -132,7 +132,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	if wf.Spec.Entrypoint == "" {
 		return errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
 	}
-	_, err = ctx.validateTemplateHolder(&wfv1.Template{Template: wf.Spec.Entrypoint}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
+	_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.Entrypoint}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
 	if err != nil {
 		return err
 	}
@@ -140,7 +140,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		// now when validating onExit, {{workflow.status}} is now available as a global
 		ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderGenerator.NextPlaceholder()
 		ctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
-		_, err = ctx.validateTemplateHolder(&wfv1.Template{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
+		_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
 		if err != nil {
 			return err
 		}
@@ -156,7 +156,18 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 
 	// Check if all templates can be resolved.
 	for _, template := range wf.Spec.Templates {
-		_, err := ctx.validateTemplateHolder(&wfv1.Template{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})
+
+		if template.TemplateRef != nil {
+			logrus.Warn(getTemplateRefHelpString(&template))
+		}
+		if template.Template != "" {
+			logrus.Warn("template.template is deprecated and its contents are ignored")
+		}
+		if !template.Arguments.IsEmpty() {
+			logrus.Warn("template.arguments is deprecated and its contents are ignored")
+		}
+
+		_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
 		}
@@ -171,7 +182,7 @@ func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNa
 
 	// Check if all templates can be resolved.
 	for _, template := range wftmpl.Spec.Templates {
-		_, err := ctx.validateTemplateHolder(&wfv1.Template{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})
+		_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
 		}
@@ -203,6 +214,40 @@ func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamesp
 		return errors.Errorf(errors.CodeBadRequest, "cannot validate Workflow: %s", err)
 	}
 	return nil
+}
+
+func getTemplateRefHelpString(tmpl *wfv1.Template) string {
+	out := `Template to template referencing is deprecated and will be removed in a future version.
+Other templates can be referenced from within a "steps" or a "dag" template:
+
+- name: call-%s
+  steps:
+    - - name: call-%s
+        templateRef:
+          name: %s
+          template: %s`
+
+	out = fmt.Sprintf(out, tmpl.TemplateRef.Template, tmpl.TemplateRef.Template, tmpl.TemplateRef.Name, tmpl.TemplateRef.Template)
+
+	if tmpl.TemplateRef.RuntimeResolution {
+		out += `
+          runtimeResolution: %t`
+		out = fmt.Sprintf(out, tmpl.TemplateRef.RuntimeResolution)
+	}
+
+	if !tmpl.Inputs.IsEmpty() {
+		out += `
+        arguments:    # Inputs should be converted to arguments`
+		inputBytes, err := yaml.Marshal(tmpl.Inputs)
+		if err != nil {
+			panic(err)
+		}
+		for _, line := range strings.Split(string(inputBytes), "\n") {
+			out += `
+          ` + line
+		}
+	}
+	return out
 }
 
 func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider, extraScope map[string]interface{}) error {
@@ -1087,5 +1132,5 @@ func isValidWorkflowFieldName(name string) []string {
 }
 
 func getTemplateID(tmpl *wfv1.Template) string {
-	return fmt.Sprintf("%s %v", tmpl.Name, tmpl.TemplateRef)
+	return tmpl.Name
 }
