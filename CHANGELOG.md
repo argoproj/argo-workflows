@@ -1,5 +1,9 @@
 # Changelog
 
+THIS IS NO LONGER UPDATED AND ONLY KEPT FOR HISTORICAL REASONS
+
+See [releases](https://github.com/argoproj/argo/releases).
+
 ## 2.4.0 (2019-10-02)
 
 ### New Features
