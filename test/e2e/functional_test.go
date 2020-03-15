@@ -232,6 +232,7 @@ spec:
 
 // 128M is for argo executor
 func (s *FunctionalSuite) TestPendingRetryWorkflowWithRetryStrategy() {
+	s.T().SkipNow()
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
