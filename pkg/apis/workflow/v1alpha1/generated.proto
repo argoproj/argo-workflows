@@ -533,6 +533,7 @@ message Parameter {
   optional string name = 1;
 
   // Default is the default value to use for an input parameter if a value was not supplied
+  // DEPRECATED: This field is not used
   optional string default = 2;
 
   // Value is the literal value to use for the parameter.
@@ -865,7 +866,7 @@ message WorkflowSpec {
   // +patchMergeKey=name
   repeated Template templates = 1;
 
-  // Entrypoint is a template reference to the starting point of the workflow
+  // Entrypoint is a template reference to the starting point of the workflow.
   optional string entrypoint = 2;
 
   // Arguments contain the parameters and artifacts sent to the workflow entrypoint
@@ -1096,10 +1097,6 @@ message WorkflowTemplateList {
 
 // WorkflowTemplateSpec is a spec of WorkflowTemplate.
 message WorkflowTemplateSpec {
-  // Templates is a list of workflow templates.
-  repeated Template templates = 1;
-
-  // Arguments hold arguments to the template.
-  optional Arguments arguments = 3;
+  optional WorkflowSpec workflowSpec = 1;
 }
 
