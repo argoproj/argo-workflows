@@ -1375,7 +1375,7 @@
         },
         "default": {
           "type": "string",
-          "title": "Default is the default value to use for an input parameter if a value was not supplied"
+          "title": "Default is the default value to use for an input parameter if a value was not supplied\nDEPRECATED: This field is not used"
         },
         "value": {
           "type": "string",
@@ -1838,7 +1838,7 @@
         },
         "entrypoint": {
           "type": "string",
-          "title": "Entrypoint is a template reference to the starting point of the workflow"
+          "description": "Entrypoint is a template reference to the starting point of the workflow."
         },
         "arguments": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Arguments",
