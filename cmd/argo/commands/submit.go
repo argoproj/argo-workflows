@@ -11,8 +11,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/pkg/apiclient/cronworkflow"
+	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
+	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
@@ -109,23 +110,30 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *util.Subm
 	name := parts[1]
 
 	ctx, apiClient := client.NewAPIClient()
-	serviceClient := apiClient.NewCronWorkflowServiceClient()
 	namespace := client.Namespace()
 
 	var workflowToSubmit *wfv1.Workflow
 	switch kind {
 	case workflow.CronWorkflowKind, workflow.CronWorkflowSingular, workflow.CronWorkflowPlural, workflow.CronWorkflowShortName:
-		cronWf, err := serviceClient.GetCronWorkflow(ctx, &cronworkflow.GetCronWorkflowRequest{
+		serviceClient := apiClient.NewCronWorkflowServiceClient()
+		cronWf, err := serviceClient.GetCronWorkflow(ctx, &cronworkflowpkg.GetCronWorkflowRequest{
 			Name:      name,
 			Namespace: namespace,
 		})
 		if err != nil {
-			log.Fatalf("Unable to get CronWorkflow '%s': %s", name, err)
+			log.Fatalf("Unable to get cron workflow '%s': %s", name, err)
 		}
-		workflowToSubmit, err = common.ConvertCronWorkflowToWorkflow(cronWf)
+		workflowToSubmit = common.ConvertCronWorkflowToWorkflow(cronWf)
+	case workflow.WorkflowTemplateKind, workflow.WorkflowTemplateSingular, workflow.WorkflowTemplatePlural, workflow.WorkflowTemplateShortName:
+		serviceClient := apiClient.NewWorkflowTemplateServiceClient()
+		template, err := serviceClient.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{
+			Name:      name,
+			Namespace: namespace,
+		})
 		if err != nil {
-			log.Fatalf("Unable to create Workflow from CronWorkflow '%s': %s", name, err)
+			log.Fatalf("Unable to get workflow template '%s': %s", name, err)
 		}
+		workflowToSubmit = common.ConvertWorkflowTemplateToWorkflow(template)
 	default:
 		log.Fatalf("Resource kind '%s' is not supported with --from", kind)
 	}

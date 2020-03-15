@@ -5714,7 +5714,7 @@ func (m *WorkflowTemplateSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	{
-		size, err := m.Arguments.MarshalToSizedBuffer(dAtA[:i])
+		size, err := m.WorkflowSpec.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
 			return 0, err
 		}
@@ -5722,21 +5722,7 @@ func (m *WorkflowTemplateSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
 	i--
-	dAtA[i] = 0x1a
-	if len(m.Templates) > 0 {
-		for iNdEx := len(m.Templates) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Templates[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintGenerated(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -7087,13 +7073,7 @@ func (m *WorkflowTemplateSpec) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if len(m.Templates) > 0 {
-		for _, e := range m.Templates {
-			l = e.Size()
-			n += 1 + l + sovGenerated(uint64(l))
-		}
-	}
-	l = m.Arguments.Size()
+	l = m.WorkflowSpec.Size()
 	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
@@ -8025,14 +8005,8 @@ func (this *WorkflowTemplateSpec) String() string {
 	if this == nil {
 		return "nil"
 	}
-	repeatedStringForTemplates := "[]Template{"
-	for _, f := range this.Templates {
-		repeatedStringForTemplates += strings.Replace(strings.Replace(f.String(), "Template", "Template", 1), `&`, ``, 1) + ","
-	}
-	repeatedStringForTemplates += "}"
 	s := strings.Join([]string{`&WorkflowTemplateSpec{`,
-		`Templates:` + repeatedStringForTemplates + `,`,
-		`Arguments:` + strings.Replace(strings.Replace(this.Arguments.String(), "Arguments", "Arguments", 1), `&`, ``, 1) + `,`,
+		`WorkflowSpec:` + strings.Replace(strings.Replace(this.WorkflowSpec.String(), "WorkflowSpec", "WorkflowSpec", 1), `&`, ``, 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -20030,7 +20004,7 @@ func (m *WorkflowTemplateSpec) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Templates", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field WorkflowSpec", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -20057,41 +20031,7 @@ func (m *WorkflowTemplateSpec) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Templates = append(m.Templates, Template{})
-			if err := m.Templates[len(m.Templates)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Arguments", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Arguments.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.WorkflowSpec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
