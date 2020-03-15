@@ -146,8 +146,8 @@ type WorkflowSpec struct {
 	// +patchMergeKey=name
 	Templates []Template `json:"templates" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,1,opt,name=templates"`
 
-	// Entrypoint is a template reference to the starting point of the workflow
-	Entrypoint string `json:"entrypoint" protobuf:"bytes,2,opt,name=entrypoint"`
+	// Entrypoint is a template reference to the starting point of the workflow.
+	Entrypoint string `json:"entrypoint,omitempty" protobuf:"bytes,2,opt,name=entrypoint"`
 
 	// Arguments contain the parameters and artifacts sent to the workflow entrypoint
 	// Parameters are referencable globally using the 'workflow' variable prefix.
@@ -534,6 +534,7 @@ type Parameter struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Default is the default value to use for an input parameter if a value was not supplied
+	// DEPRECATED: This field is not used
 	Default *string `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
 
 	// Value is the literal value to use for the parameter.

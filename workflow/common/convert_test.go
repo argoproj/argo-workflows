@@ -73,9 +73,45 @@ status:
 	err := yaml.Unmarshal([]byte(cronWfString), &cronWf)
 	assert.NoError(t, err)
 	fmt.Println(cronWf)
-	wf, err := ConvertCronWorkflowToWorkflow(&cronWf)
-	assert.NoError(t, err)
+	wf := ConvertCronWorkflowToWorkflow(&cronWf)
 	wfString, err := yaml.Marshal(wf)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedWf, string(wfString))
+}
+
+const workflowTmpl = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-whalesay-template
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: whalesay-template
+  arguments:
+    parameters:
+      - name: message
+        value: hello world
+  templates:
+    - name: whalesay-template
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: cowsay:v1
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]
+        imagePullPolicy: IfNotPresent
+`
+
+func TestConvertWorkflowTemplateToWorkflow(t *testing.T) {
+	var wfTmpl v1alpha1.WorkflowTemplate
+	err := yaml.Unmarshal([]byte(workflowTmpl), &wfTmpl)
+	if err != nil {
+		panic(err)
+	}
+	wf := ConvertWorkflowTemplateToWorkflow(&wfTmpl)
+	assert.NotNil(t, wf)
+	assert.Equal(t, wf.Labels[LabelKeyWorkflowTemplate], wfTmpl.Name)
+	assert.Equal(t, wf.GenerateName, wfTmpl.Name+"-")
 }
