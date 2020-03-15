@@ -2430,6 +2430,11 @@
           "title": "Resource template subtype which can run k8s resources",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ResourceTemplate"
         },
+        "resubmitPendingPods": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission"
+        },
         "retryStrategy": {
           "title": "RetryStrategy describes how to retry a template when it fails",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RetryStrategy"

@@ -292,6 +292,9 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			woc.log.Infof("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
 			return created, nil
 		}
+		if apierr.IsForbidden(err) {
+			return nil, err
+		}
 		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
 		return nil, errors.InternalWrapError(err)
 	}
