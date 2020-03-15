@@ -19,7 +19,7 @@ func Test_cronWorkflowServiceServer(t *testing.T) {
 		ObjectMeta: v1.ObjectMeta{Namespace: "my-ns", Name: "my-name"},
 	}
 	wfClientset := wftFake.NewSimpleClientset()
-	server := NewCronWorkflowServer()
+	server := NewCronWorkflowServer("testinstanceid001")
 	ctx := context.WithValue(context.TODO(), auth.WfKey, wfClientset)
 
 	t.Run("CreateCronWorkflow", func(t *testing.T) {

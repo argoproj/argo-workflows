@@ -201,6 +201,7 @@ rules:
   - get
   - list
   - watch
+  - delete
 - apiGroups:
   - ""
   resources:
@@ -282,6 +283,15 @@ subjects:
 apiVersion: v1
 data:
   config: |
+    executor:
+      imagePullPolicy: IfNotPresent
+      resources:
+        requests:
+          cpu: 0.1
+          memory: 64Mi
+        limits:
+          cpu: 0.5
+          memory: 128Mi
     artifactRepository:
       archiveLogs: true
       s3:

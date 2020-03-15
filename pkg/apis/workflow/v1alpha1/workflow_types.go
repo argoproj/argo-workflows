@@ -324,7 +324,6 @@ func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -460,6 +459,9 @@ type Template struct {
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,31,opt,name=podSpecPatch"`
+
+	// ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
+	ResubmitPendingPods *bool `json:"resubmitPendingPods,omitempty" protobuf:"varint,34,opt,name=resubmitPendingPods"`
 }
 
 var _ TemplateHolder = &Template{}
@@ -548,9 +550,30 @@ func (p *Parameter) UnmarshalJSON(value []byte) error {
 	if err != nil {
 		return err
 	}
-	p.Name = fmt.Sprint(candidate["name"])
-	itemValue := fmt.Sprint(candidate["value"])
-	p.Value = &itemValue
+	if val, ok := candidate["name"]; ok {
+		p.Name = fmt.Sprint(val)
+	}
+	if val, ok := candidate["default"]; ok {
+		stringVal := fmt.Sprint(val)
+		p.Default = &stringVal
+	}
+	if val, ok := candidate["value"]; ok {
+		stringVal := fmt.Sprint(val)
+		p.Value = &stringVal
+	}
+	if val, ok := candidate["valueFrom"]; ok {
+		strVal, err := json.Marshal(val)
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(strVal, &p.ValueFrom)
+		if err != nil {
+			return err
+		}
+	}
+	if val, ok := candidate["globalName"]; ok {
+		p.GlobalName = fmt.Sprint(val)
+	}
 	return nil
 }
 
@@ -1003,9 +1026,14 @@ func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
 	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
 }
 
-// Remove returns whether or not the node has completed execution
+// Completed returns whether or not the node has completed execution
 func (n NodeStatus) Completed() bool {
 	return isCompletedPhase(n.Phase) || n.IsDaemoned() && n.Phase != NodePending
+}
+
+// Pending returns whether or not the node is in pending state
+func (n NodeStatus) Pending() bool {
+	return n.Phase == NodePending
 }
 
 // IsDaemoned returns whether or not the node is deamoned
