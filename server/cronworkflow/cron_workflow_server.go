@@ -22,7 +22,8 @@ func NewCronWorkflowServer() cronworkflowpkg.CronWorkflowServiceServer {
 func (c *cronWorkflowServiceServer) LintCronWorkflow(ctx context.Context, req *cronworkflowpkg.LintCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
-	err := validate.ValidateCronWorkflow(wftmplGetter, req.CronWorkflow)
+	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface( wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+	err := validate.ValidateCronWorkflow(wftmplGetter, cwftmplGetter, req.CronWorkflow)
 	if err != nil {
 		return nil, err
 	}

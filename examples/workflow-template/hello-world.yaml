@@ -9,6 +9,7 @@ spec:
     templateRef:
       name: workflow-template-whalesay-template
       template: whalesay-template
+      clusterscope: true
     inputs:
       parameters:
       - name: message

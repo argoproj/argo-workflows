@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"fmt"
+	"github.com/go-yaml/yaml"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -68,24 +70,27 @@ spec:
 func TestTemplateScope(t *testing.T) {
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("")
+	 //wfctmplset := controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates()
+	wftmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("")
 
 	wf := unmarshalWF(testTemplateScopeWorkflowYaml)
 	_, err := wfcset.Create(wf)
 	assert.NoError(t, err)
-	wftmpl := unmarshalWFTmpl(testTemplateScopeWorkflowTemplateYaml1)
-	_, err = wfctmplset.Create(wftmpl)
+	cwftmpl := unmarshalWFTmpl(testTemplateScopeWorkflowTemplateYaml1)
+	//_, err = controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates().Create(cwftmpl)
+	_, err = wftmplset.Create(cwftmpl)
 	assert.NoError(t, err)
-	wftmpl = unmarshalWFTmpl(testTemplateScopeWorkflowTemplateYaml2)
-	_, err = wfctmplset.Create(wftmpl)
+	wftmpl := unmarshalWFTmpl(testTemplateScopeWorkflowTemplateYaml2)
+	//_, err = controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates().Create(wftmpl)
+	_, err = wftmplset.Create(wftmpl)
 	assert.NoError(t, err)
+
 
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
-
-	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
-
+	tmplwf, err := wfcset.Get(wf.Name, metav1.GetOptions{})
+	s, err := yaml.Marshal(tmplwf)
+	fmt.Println(string(s))
 	node := findNodeByName(wf.Status.Nodes, "test-template-scope")
 	if assert.NotNil(t, node, "Node %s not found", "test-templte-scope") {
 		assert.Equal(t, wfv1.NodeTypeSteps, node.Type)
@@ -95,31 +100,31 @@ func TestTemplateScope(t *testing.T) {
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0]")
 	if assert.NotNil(t, node, "Node %s not found", "test-templte-scope[0]") {
 		assert.Equal(t, wfv1.NodeTypeStepGroup, node.Type)
-		assert.Equal(t, "test-template-scope-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].hello")
 	if assert.NotNil(t, node, "Node %s not found", "test-templte-scope[0].hello") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].other-wftmpl")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope[0].other-wftmpl") {
 		assert.Equal(t, wfv1.NodeTypeSteps, node.Type)
-		assert.Equal(t, "test-template-scope-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].other-wftmpl[0]")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope[0].other-wftmpl[0]") {
 		assert.Equal(t, wfv1.NodeTypeStepGroup, node.Type)
-		assert.Equal(t, "test-template-scope-2", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-2", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].other-wftmpl[0].hello")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope[0].other-wftmpl[0].hello") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-2", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-2", node.TemplateScope)
 	}
 }
 

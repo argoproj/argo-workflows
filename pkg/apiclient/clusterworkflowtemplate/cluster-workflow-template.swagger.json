@@ -12,108 +12,18 @@
     "application/json"
   ],
   "paths": {
-    "/api/v1/workflow-events/{namespace}": {
+    "/api/v1/cluster-workflow-templates": {
       "get": {
-        "operationId": "WatchWorkflows",
-        "responses": {
-          "200": {
-            "description": "A successful response.(streaming responses)",
-            "schema": {
-              "$ref": "#/x-stream-definitions/workflow.WorkflowWatchEvent"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "listOptions.labelSelector",
-            "description": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "listOptions.fieldSelector",
-            "description": "A selector to restrict the list of returned objects by their fields.\nDefaults to everything.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "listOptions.watch",
-            "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "boolean",
-            "format": "boolean"
-          },
-          {
-            "name": "listOptions.allowWatchBookmarks",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional",
-            "in": "query",
-            "required": false,
-            "type": "boolean",
-            "format": "boolean"
-          },
-          {
-            "name": "listOptions.resourceVersion",
-            "description": "When specified with a watch call, shows changes that occur after that particular version of a resource.\nDefaults to changes from the beginning of history.\nWhen specified for list:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "listOptions.timeoutSeconds",
-            "description": "Timeout for the list/watch call.\nThis limits the duration of the call, regardless of any activity or inactivity.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "listOptions.limit",
-            "description": "limit is a maximum number of responses to return for a list call. If more items exist, the\nserver will set the `continue` field on the list metadata to a value that can be used with the\nsame initial query to retrieve the next set of results. Setting a limit may return fewer than\nthe requested amount of items (up to zero items) in the event all requested objects are\nfiltered out and clients should only use the presence of the continue field to determine whether\nmore results are available. Servers may choose not to support the limit argument and will return\nall of the available results. If limit is specified and the continue field is empty, clients may\nassume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing\na single list call without a limit - that is, no objects created, modified, or deleted after the\nfirst request is issued will be included in any subsequent continued requests. This is sometimes\nreferred to as a consistent snapshot, and ensures that a client that is using limit to receive\nsmaller chunks of a very large result can ensure they see all possible objects. If objects are\nupdated during a chunked list the version of the object that was present at the time the first list\nresult was calculated is returned.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "listOptions.continue",
-            "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "WorkflowService"
-        ]
-      }
-    },
-    "/api/v1/workflows/{namespace}": {
-      "get": {
-        "operationId": "ListWorkflows",
+        "operationId": "ListClusterWorkflowTemplates",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowList"
+              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplateList"
             }
           }
         },
         "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
           {
             "name": "listOptions.labelSelector",
             "description": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional.",
@@ -173,100 +83,75 @@
             "in": "query",
             "required": false,
             "type": "string"
-          },
-          {
-            "name": "fields",
-            "description": "Fields to be included or excluded in the response. e.g. \"items.spec,items.status.phase\", \"-items.status.nodes\".",
-            "in": "query",
-            "required": false,
-            "type": "string"
           }
         ],
         "tags": [
-          "WorkflowService"
+          "ClusterWorkflowTemplateService"
         ]
       },
       "post": {
-        "operationId": "CreateWorkflow",
+        "operationId": "CreateClusterWorkflowTemplate",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate"
             }
           }
         },
         "parameters": [
           {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/workflow.WorkflowCreateRequest"
+              "$ref": "#/definitions/clusterworkflowtemplate.ClusterWorkflowTemplateCreateRequest"
             }
           }
         ],
         "tags": [
-          "WorkflowService"
+          "ClusterWorkflowTemplateService"
         ]
       }
     },
-    "/api/v1/workflows/{namespace}/lint": {
+    "/api/v1/cluster-workflow-templates/lint": {
       "post": {
-        "operationId": "LintWorkflow",
+        "operationId": "LintClusterWorkflowTemplate",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate"
             }
           }
         },
         "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
           {
             "name": "body",
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/workflow.WorkflowLintRequest"
+              "$ref": "#/definitions/clusterworkflowtemplate.ClusterWorkflowTemplateLintRequest"
             }
           }
         ],
         "tags": [
-          "WorkflowService"
+          "ClusterWorkflowTemplateService"
         ]
       }
     },
-    "/api/v1/workflows/{namespace}/{name}": {
+    "/api/v1/cluster-workflow-templates/{name}": {
       "get": {
-        "operationId": "GetWorkflow",
+        "operationId": "GetClusterWorkflowTemplate",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate"
             }
           }
         },
         "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
           {
             "name": "name",
             "in": "path",
@@ -279,36 +164,23 @@
             "in": "query",
             "required": false,
             "type": "string"
-          },
-          {
-            "name": "fields",
-            "description": "Fields to be included or excluded in the response. e.g. \"spec,status.phase\", \"-status.nodes\".",
-            "in": "query",
-            "required": false,
-            "type": "string"
           }
         ],
         "tags": [
-          "WorkflowService"
+          "ClusterWorkflowTemplateService"
         ]
       },
       "delete": {
-        "operationId": "DeleteWorkflow",
+        "operationId": "DeleteClusterWorkflowTemplate",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/workflow.WorkflowDeleteResponse"
+              "$ref": "#/definitions/clusterworkflowtemplate.ClusterWorkflowTemplateDeleteResponse"
             }
           }
         },
         "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
           {
             "name": "name",
             "in": "path",
@@ -365,28 +237,20 @@
           }
         ],
         "tags": [
-          "WorkflowService"
+          "ClusterWorkflowTemplateService"
         ]
-      }
-    },
-    "/api/v1/workflows/{namespace}/{name}/resubmit": {
+      },
       "put": {
-        "operationId": "ResubmitWorkflow",
+        "operationId": "UpdateClusterWorkflowTemplate",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate"
             }
           }
         },
         "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
           {
             "name": "name",
             "in": "path",
@@ -398,276 +262,53 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/workflow.WorkflowResubmitRequest"
+              "$ref": "#/definitions/clusterworkflowtemplate.ClusterWorkflowTemplateUpdateRequest"
             }
           }
         ],
         "tags": [
-          "WorkflowService"
-        ]
-      }
-    },
-    "/api/v1/workflows/{namespace}/{name}/resume": {
-      "put": {
-        "operationId": "ResumeWorkflow",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "name",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workflow.WorkflowResumeRequest"
-            }
-          }
-        ],
-        "tags": [
-          "WorkflowService"
-        ]
-      }
-    },
-    "/api/v1/workflows/{namespace}/{name}/retry": {
-      "put": {
-        "operationId": "RetryWorkflow",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "name",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workflow.WorkflowRetryRequest"
-            }
-          }
-        ],
-        "tags": [
-          "WorkflowService"
-        ]
-      }
-    },
-    "/api/v1/workflows/{namespace}/{name}/suspend": {
-      "put": {
-        "operationId": "SuspendWorkflow",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "name",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workflow.WorkflowSuspendRequest"
-            }
-          }
-        ],
-        "tags": [
-          "WorkflowService"
-        ]
-      }
-    },
-    "/api/v1/workflows/{namespace}/{name}/terminate": {
-      "put": {
-        "operationId": "TerminateWorkflow",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "name",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workflow.WorkflowTerminateRequest"
-            }
-          }
-        ],
-        "tags": [
-          "WorkflowService"
-        ]
-      }
-    },
-    "/api/v1/workflows/{namespace}/{name}/{podName}/log": {
-      "get": {
-        "operationId": "PodLogs",
-        "responses": {
-          "200": {
-            "description": "A successful response.(streaming responses)",
-            "schema": {
-              "$ref": "#/x-stream-definitions/workflow.LogEntry"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "name",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "podName",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "logOptions.container",
-            "description": "The container for which to stream logs. Defaults to only container if there is one container in the pod.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "logOptions.follow",
-            "description": "Follow the log stream of the pod. Defaults to false.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "boolean",
-            "format": "boolean"
-          },
-          {
-            "name": "logOptions.previous",
-            "description": "Return previous terminated container logs. Defaults to false.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "boolean",
-            "format": "boolean"
-          },
-          {
-            "name": "logOptions.sinceSeconds",
-            "description": "A relative time in seconds before the current time from which to show logs. If this value\nprecedes the time a pod was started, only logs since the pod start will be returned.\nIf this value is in the future, no logs will be returned.\nOnly one of sinceSeconds or sinceTime may be specified.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "logOptions.sinceTime.seconds",
-            "description": "Represents seconds of UTC time since Unix epoch\n1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to\n9999-12-31T23:59:59Z inclusive.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "logOptions.sinceTime.nanos",
-            "description": "Non-negative fractions of a second at nanosecond resolution. Negative\nsecond values with fractions must still have non-negative nanos values\nthat count forward in time. Must be from 0 to 999,999,999\ninclusive. This field may be limited in precision depending on context.",
-            "in": "query",
-            "required": false,
-            "type": "integer",
-            "format": "int32"
-          },
-          {
-            "name": "logOptions.timestamps",
-            "description": "If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line\nof log output. Defaults to false.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "boolean",
-            "format": "boolean"
-          },
-          {
-            "name": "logOptions.tailLines",
-            "description": "If set, the number of lines from the end of the logs to show. If not specified,\nlogs are shown from the creation of the container or sinceSeconds or sinceTime\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "logOptions.limitBytes",
-            "description": "If set, the number of bytes to read from the server before terminating the\nlog output. This may not display a complete final line of logging, and may return\nslightly more or slightly less than the specified limit.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          }
-        ],
-        "tags": [
-          "WorkflowService"
+          "ClusterWorkflowTemplateService"
         ]
       }
     }
   },
   "definitions": {
+    "clusterworkflowtemplate.ClusterWorkflowTemplateCreateRequest": {
+      "type": "object",
+      "properties": {
+        "template": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate"
+        },
+        "createOptions": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions"
+        }
+      }
+    },
+    "clusterworkflowtemplate.ClusterWorkflowTemplateDeleteResponse": {
+      "type": "object"
+    },
+    "clusterworkflowtemplate.ClusterWorkflowTemplateLintRequest": {
+      "type": "object",
+      "properties": {
+        "template": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate"
+        },
+        "createOptions": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions"
+        }
+      }
+    },
+    "clusterworkflowtemplate.ClusterWorkflowTemplateUpdateRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "template": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate"
+        }
+      }
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArchiveStrategy": {
       "type": "object",
       "properties": {
@@ -831,6 +472,33 @@
           "type": "string"
         }
       }
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateSpec"
+        }
+      },
+      "title": "ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope\n+genclient\n+genclient:noStatus\n+genclient:nonNamespaced\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplateList": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate"
+          }
+        }
+      },
+      "title": "WorkflowTemplateList is list of WorkflowTemplate resources\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ContinueOn": {
       "type": "object",
@@ -1160,99 +828,6 @@
         }
       },
       "title": "Pod metdata"
-    },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.NodeStatus": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "title": "ID is a unique identifier of a node within the worklow\nIt is implemented as a hash of the node name, which makes the ID deterministic"
-        },
-        "name": {
-          "type": "string",
-          "title": "Name is unique name in the node tree used to generate the node ID"
-        },
-        "displayName": {
-          "type": "string",
-          "title": "DisplayName is a human readable representation of the node. Unique within a template boundary"
-        },
-        "type": {
-          "type": "string",
-          "title": "Type indicates type of node"
-        },
-        "templateName": {
-          "type": "string",
-          "title": "TemplateName is the template name which this node corresponds to.\nNot applicable to virtual nodes (e.g. Retry, StepGroup)"
-        },
-        "templateRef": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TemplateRef",
-          "title": "TemplateRef is the reference to the template resource which this node corresponds to.\nNot applicable to virtual nodes (e.g. Retry, StepGroup)"
-        },
-        "storedTemplateID": {
-          "type": "string",
-          "description": "StoredTemplateID is the ID of stored template.\nDEPRECATED: This value is not used anymore."
-        },
-        "workflowTemplateName": {
-          "type": "string",
-          "description": "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.\nDEPRECATED: This value is not used anymore."
-        },
-        "templateScope": {
-          "type": "string",
-          "description": "TemplateScope is the template scope in which the template of this node was retrieved."
-        },
-        "phase": {
-          "type": "string",
-          "description": "Phase a simple, high-level summary of where the node is in its lifecycle.\nCan be used as a state machine."
-        },
-        "boundaryID": {
-          "type": "string",
-          "title": "BoundaryID indicates the node ID of the associated template root node in which this node belongs to"
-        },
-        "message": {
-          "type": "string",
-          "description": "A human readable message indicating details about why the node is in this condition."
-        },
-        "startedAt": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
-          "title": "Time at which this node started"
-        },
-        "finishedAt": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
-          "title": "Time at which this node completed"
-        },
-        "podIP": {
-          "type": "string",
-          "title": "PodIP captures the IP of the pod for daemoned steps"
-        },
-        "daemoned": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "Daemoned tracks whether or not this node was daemoned and need to be terminated"
-        },
-        "inputs": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Inputs",
-          "title": "Inputs captures input parameter values and artifact locations supplied to this template invocation"
-        },
-        "outputs": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Outputs",
-          "title": "Outputs captures output parameter values and artifact locations produced by this template invocation"
-        },
-        "children": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "title": "Children is a list of child node IDs"
-        },
-        "outboundNodes": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "OutboundNodes tracks the node IDs which are considered \"outbound\" nodes to a template invocation.\nFor every invocation of a template, there are nodes which we considered as \"outbound\". Essentially,\nthese are last nodes in the execution sequence to run, before the template is considered completed.\nThese nodes are then connected as parents to a following step.\n\nIn the case of single pod steps (i.e. container, script, resource templates), this list will be nil\nsince the pod itself is already considered the \"outbound\" node.\nIn the case of DAGs, outbound nodes are the \"target\" tasks (tasks with no children).\nIn the case of steps, outbound nodes are all the containers involved in the last step group.\nNOTE: since templates are composable, the list of outbound nodes are carried upwards when\na DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of\na template, will be a superset of the outbound nodes of its last children."
-        }
-      },
-      "title": "NodeStatus contains status information about an individual node in the workflow"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.NoneStrategy": {
       "type": "object",
@@ -1758,36 +1333,6 @@
       },
       "title": "ValueFrom describes a location in which to obtain the value to a parameter"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow": {
-      "type": "object",
-      "properties": {
-        "metadata": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta"
-        },
-        "spec": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowSpec"
-        },
-        "status": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowStatus"
-        }
-      },
-      "title": "Workflow is the definition of a workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
-    },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowList": {
-      "type": "object",
-      "properties": {
-        "metadata": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta"
-        },
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
-          }
-        }
-      },
-      "title": "WorkflowList is list of Workflow resources\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
-    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowSpec": {
       "type": "object",
       "properties": {
@@ -1947,61 +1492,6 @@
       },
       "description": "WorkflowSpec is the specification of a Workflow."
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowStatus": {
-      "type": "object",
-      "properties": {
-        "phase": {
-          "type": "string",
-          "description": "Phase a simple, high-level summary of where the workflow is in its lifecycle."
-        },
-        "startedAt": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
-          "title": "Time at which this workflow started"
-        },
-        "finishedAt": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
-          "title": "Time at which this workflow completed"
-        },
-        "message": {
-          "type": "string",
-          "description": "A human readable message indicating details about why the workflow is in this condition."
-        },
-        "compressedNodes": {
-          "type": "string",
-          "title": "Compressed and base64 decoded Nodes map"
-        },
-        "nodes": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.NodeStatus"
-          },
-          "description": "Nodes is a mapping between a node ID and the node's status."
-        },
-        "offloadNodeStatusVersion": {
-          "type": "string",
-          "description": "Whether on not node status has been offloaded to a database. If exists, then Nodes and CompressedNodes will be empty.\nThis will actually be populated with a hash of the offloaded data."
-        },
-        "storedTemplates": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Template"
-          },
-          "description": "StoredTemplates is a mapping between a template ref and the node's status."
-        },
-        "persistentVolumeClaims": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/k8s.io.api.core.v1.Volume"
-          },
-          "description": "PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.\nThe contents of this list are drained at the end of the workflow."
-        },
-        "outputs": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Outputs",
-          "title": "Outputs captures output values and artifact locations produced by the workflow via global outputs"
-        }
-      },
-      "title": "WorkflowStatus contains overall status information about a workflow"
-    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowStep": {
       "type": "object",
       "properties": {
@@ -2051,42 +1541,14 @@
       },
       "title": "WorkflowStep is a reference to a template to execute in a series of step"
     },
-    "google.protobuf.Any": {
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateSpec": {
       "type": "object",
       "properties": {
-        "type_url": {
-          "type": "string"
-        },
-        "value": {
-          "type": "string",
-          "format": "byte"
+        "workflowSpec": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowSpec"
         }
-      }
-    },
-    "grpc.gateway.runtime.StreamError": {
-      "type": "object",
-      "properties": {
-        "grpc_code": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "http_code": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "message": {
-          "type": "string"
-        },
-        "http_status": {
-          "type": "string"
-        },
-        "details": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/google.protobuf.Any"
-          }
-        }
-      }
+      },
+      "description": "WorkflowTemplateSpec is a spec of WorkflowTemplate."
     },
     "k8s.io.api.core.v1.AWSElasticBlockStoreVolumeSource": {
       "type": "object",
@@ -3333,50 +2795,6 @@
       },
       "description": "PodDNSConfigOption defines DNS resolver options of a pod."
     },
-    "k8s.io.api.core.v1.PodLogOptions": {
-      "type": "object",
-      "properties": {
-        "container": {
-          "type": "string",
-          "title": "The container for which to stream logs. Defaults to only container if there is one container in the pod.\n+optional"
-        },
-        "follow": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "Follow the log stream of the pod. Defaults to false.\n+optional"
-        },
-        "previous": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "Return previous terminated container logs. Defaults to false.\n+optional"
-        },
-        "sinceSeconds": {
-          "type": "string",
-          "format": "int64",
-          "title": "A relative time in seconds before the current time from which to show logs. If this value\nprecedes the time a pod was started, only logs since the pod start will be returned.\nIf this value is in the future, no logs will be returned.\nOnly one of sinceSeconds or sinceTime may be specified.\n+optional"
-        },
-        "sinceTime": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
-          "title": "An RFC3339 timestamp from which to show logs. If this value\nprecedes the time a pod was started, only logs since the pod start will be returned.\nIf this value is in the future, no logs will be returned.\nOnly one of sinceSeconds or sinceTime may be specified.\n+optional"
-        },
-        "timestamps": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line\nof log output. Defaults to false.\n+optional"
-        },
-        "tailLines": {
-          "type": "string",
-          "format": "int64",
-          "title": "If set, the number of lines from the end of the logs to show. If not specified,\nlogs are shown from the creation of the container or sinceSeconds or sinceTime\n+optional"
-        },
-        "limitBytes": {
-          "type": "string",
-          "format": "int64",
-          "title": "If set, the number of bytes to read from the server before terminating the\nlog output. This may not display a complete final line of logging, and may return\nslightly more or slightly less than the specified limit.\n+optional"
-        }
-      },
-      "description": "PodLogOptions is the query options for a Pod's logs REST call."
-    },
     "k8s.io.api.core.v1.PodSecurityContext": {
       "type": "object",
       "properties": {
@@ -4600,150 +4018,6 @@
       },
       "description": "+protobuf=true\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:openapi-gen=true",
       "title": "IntOrString is a type that can hold an int32 or a string.  When used in\nJSON or YAML marshalling and unmarshalling, it produces or consumes the\ninner type.  This allows you to have, for example, a JSON field that can\naccept a name or number.\nTODO: Rename to Int32OrString"
-    },
-    "workflow.LogEntry": {
-      "type": "object",
-      "properties": {
-        "content": {
-          "type": "string"
-        },
-        "podName": {
-          "type": "string"
-        }
-      }
-    },
-    "workflow.WorkflowCreateRequest": {
-      "type": "object",
-      "properties": {
-        "namespace": {
-          "type": "string"
-        },
-        "workflow": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
-        },
-        "instanceID": {
-          "type": "string"
-        },
-        "serverDryRun": {
-          "type": "boolean",
-          "format": "boolean"
-        },
-        "createOptions": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions"
-        }
-      }
-    },
-    "workflow.WorkflowDeleteResponse": {
-      "type": "object"
-    },
-    "workflow.WorkflowLintRequest": {
-      "type": "object",
-      "properties": {
-        "namespace": {
-          "type": "string"
-        },
-        "workflow": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
-        }
-      }
-    },
-    "workflow.WorkflowResubmitRequest": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "memoized": {
-          "type": "boolean",
-          "format": "boolean"
-        }
-      }
-    },
-    "workflow.WorkflowResumeRequest": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        }
-      }
-    },
-    "workflow.WorkflowRetryRequest": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        }
-      }
-    },
-    "workflow.WorkflowSuspendRequest": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        }
-      }
-    },
-    "workflow.WorkflowTerminateRequest": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        }
-      }
-    },
-    "workflow.WorkflowWatchEvent": {
-      "type": "object",
-      "properties": {
-        "type": {
-          "type": "string",
-          "title": "the type of change"
-        },
-        "object": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow",
-          "title": "the workflow"
-        }
-      }
-    }
-  },
-  "x-stream-definitions": {
-    "workflow.LogEntry": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "$ref": "#/definitions/workflow.LogEntry"
-        },
-        "error": {
-          "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
-        }
-      },
-      "title": "Stream result of workflow.LogEntry"
-    },
-    "workflow.WorkflowWatchEvent": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "$ref": "#/definitions/workflow.WorkflowWatchEvent"
-        },
-        "error": {
-          "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
-        }
-      },
-      "title": "Stream result of workflow.WorkflowWatchEvent"
     }
   }
 }

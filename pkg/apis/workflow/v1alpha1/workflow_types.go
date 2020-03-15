@@ -73,6 +73,7 @@ type TemplateGetter interface {
 	GroupVersionKind() schema.GroupVersionKind
 	GetTemplateByName(name string) *Template
 	GetTemplateScope() string
+	GetAllTemplates() []Template
 }
 
 // TemplateHolder is an interface for holders of templates.
@@ -541,6 +542,18 @@ type Parameter struct {
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,5,opt,name=globalName"`
 }
 
+func (p *Parameter) UnmarshalJSON(value []byte) error {
+	var candidate map[string]interface{}
+	err := json.Unmarshal(value, &candidate)
+	if err != nil {
+		return err
+	}
+	p.Name = fmt.Sprint(candidate["name"])
+	itemValue := fmt.Sprint(candidate["value"])
+	p.Value = &itemValue
+	return nil
+}
+
 // ValueFrom describes a location in which to obtain the value to a parameter
 type ValueFrom struct {
 	// Path in the container to retrieve an output parameter value from in container templates
@@ -752,6 +765,8 @@ type TemplateRef struct {
 	// RuntimeResolution skips validation at creation time.
 	// By enabling this option, you can create the referred workflow template before the actual runtime.
 	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
+	// ClusterScope indicates the referred template is cluster scoped clusterworkflowtemplate.
+	ClusterScope bool `json:"clusterscope,omitempty" protobuf:"varint,4,opt,name=clusterscope"`
 }
 
 type ArgumentsProvider interface {
@@ -1468,6 +1483,11 @@ func (wf *Workflow) GetTemplateScope() string {
 	return ""
 }
 
+// GetAllTemplates returns the list of templates of workflow.
+func (wf *Workflow) GetAllTemplates() []Template {
+	return wf.Spec.Templates
+}
+
 // NodeID creates a deterministic node ID based on a node name
 func (wf *Workflow) NodeID(name string) string {
 	if name == wf.ObjectMeta.Name {
@@ -1481,6 +1501,7 @@ func (wf *Workflow) NodeID(name string) string {
 // GetStoredTemplate retrieves a template from stored templates of the workflow.
 func (wf *Workflow) GetStoredTemplate(templateScope string, holder TemplateHolder) *Template {
 	tmplID := wf.getStoredTemplateName(templateScope, holder)
+	fmt.Printf("Template ID %s \n",tmplID )
 	if tmplID == "" {
 		return nil
 	}
@@ -1512,7 +1533,13 @@ func (wf *Workflow) SetStoredTemplate(templateScope string, holder TemplateHolde
 func (wf *Workflow) getStoredTemplateName(templateScope string, holder TemplateHolder) string {
 	tmplRef := holder.GetTemplateRef()
 	if tmplRef != nil {
-		return fmt.Sprintf("%s/%s", tmplRef.Name, tmplRef.Template)
+		tmplName := fmt.Sprintf("%s/%s", tmplRef.Name, tmplRef.Template)
+		if tmplRef.ClusterScope {
+			tmplName = "cluster/" + tmplName
+		}else{
+			//tmplName = "namespaced/" + tmplName
+		}
+		return tmplName
 	} else if templateScope != "" {
 		return fmt.Sprintf("%s/%s", templateScope, holder.GetTemplateName())
 	} else {

@@ -73,7 +73,7 @@ status:
 	err := yaml.Unmarshal([]byte(cronWfString), &cronWf)
 	assert.NoError(t, err)
 	fmt.Println(cronWf)
-	wf, err := ConvertCronWorkflowToWorkflow(&cronWf)
+	wf := ConvertCronWorkflowToWorkflow(&cronWf)
 	assert.NoError(t, err)
 	wfString, err := yaml.Marshal(wf)
 	assert.NoError(t, err)

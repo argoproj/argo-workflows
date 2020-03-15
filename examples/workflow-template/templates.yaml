@@ -1,5 +1,5 @@
 apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
+kind: ClusterWorkflowTemplate
 metadata:
   name: workflow-template-whalesay-template
 spec:
@@ -14,7 +14,7 @@ spec:
       args: ["{{inputs.parameters.message}}"]
 ---
 apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
+kind: ClusterWorkflowTemplate
 metadata:
   name: workflow-template-nested-template
 spec:
@@ -23,6 +23,7 @@ spec:
     templateRef:
       name: workflow-template-whalesay-template
       template: whalesay-template
+      clusterscope: true
     inputs:
       parameters:
       - name: message
@@ -48,7 +49,7 @@ spec:
       args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]
 ---
 apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
+kind: ClusterWorkflowTemplate
 metadata:
   name: workflow-template-inner-steps
 spec:
@@ -67,6 +68,7 @@ spec:
         templateRef:
           name: workflow-template-whalesay-template
           template: whalesay-template
+          clusterscope: true
         arguments:
           parameters:
           - name: message
@@ -75,12 +77,16 @@ spec:
         templateRef:
           name: workflow-template-whalesay-template
           template: whalesay-template
+          clusterscope: true
         arguments:
           parameters:
           - name: message
             value: "inner-hello2a"
       - name: inner-hello2b
-        template: whalesay-template
+        templateRef:
+          name: workflow-template-whalesay-template
+          template: whalesay-template
+          clusterscope: true
         arguments:
           parameters:
           - name: message
@@ -94,7 +100,7 @@ spec:
 #  \ /
 #   D
 apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
+kind: ClusterWorkflowTemplate
 metadata:
   name: workflow-template-inner-dag
 spec:
@@ -114,6 +120,7 @@ spec:
         templateRef:
           name: workflow-template-whalesay-template
           template: whalesay-template
+          clusterscope: true
         arguments:
           parameters:
           - name: message
@@ -137,13 +144,14 @@ spec:
         templateRef:
           name: workflow-template-whalesay-template
           template: whalesay-template
+          clusterscope: true
         arguments:
           parameters:
           - name: message
             value: inner-D
 ---
 apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
+kind: ClusterWorkflowTemplate
 metadata:
   name: workflow-template-submittable
 spec:

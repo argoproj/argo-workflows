@@ -94,10 +94,13 @@ spec:
 
 func newController() *WorkflowController {
 	wfclientset := fakewfclientset.NewSimpleClientset()
-	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
+	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 1*time.Microsecond)
+
 	wftmplInformer := informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
+	cwftmplInformer := informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 	ctx := context.Background()
 	go wftmplInformer.Informer().Run(ctx.Done())
+	go cwftmplInformer.Informer().Run(ctx.Done())
 	if !cache.WaitForCacheSync(ctx.Done(), wftmplInformer.Informer().HasSynced) {
 		panic("Timed out waiting for caches to sync")
 	}
@@ -109,6 +112,7 @@ func newController() *WorkflowController {
 		wfclientset:    wfclientset,
 		completedPods:  make(chan string, 512),
 		wftmplInformer: wftmplInformer,
+		cwftmplInformer: cwftmplInformer,
 		wfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		wfArchive:      sqldb.NullWorkflowArchive,
 	}
@@ -192,6 +196,15 @@ func unmarshalWFTmpl(yamlStr string) *wfv1.WorkflowTemplate {
 		panic(err)
 	}
 	return &wftmpl
+}
+
+func unmarshalCWFTmpl(yamlStr string) *wfv1.ClusterWorkflowTemplate {
+	var cwftmpl wfv1.ClusterWorkflowTemplate
+	err := yaml.Unmarshal([]byte(yamlStr), &cwftmpl)
+	if err != nil {
+		panic(err)
+	}
+	return &cwftmpl
 }
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
