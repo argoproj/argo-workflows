@@ -226,7 +226,7 @@ spec:
 			a := wf.Status.Nodes.FindByDisplayName("a")
 			b := wf.Status.Nodes.FindByDisplayName("b")
 			return wfv1.NodeSucceeded == a.Phase && wfv1.NodeSucceeded == b.Phase
-		}, "pods succeeded", 20*time.Second
+		}, "pods succeeded", 20*time.Second)
 	s.TearDownSuite()
 }
 
