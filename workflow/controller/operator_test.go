@@ -2353,3 +2353,61 @@ func TestPDBCreation(t *testing.T) {
 	pdb, _ = controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
 	assert.Nil(t, pdb)
 }
+
+var nestedOptionalOutputArtifacts = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-passing-
+spec:
+  entrypoint: artifact-example
+  templates:
+  - name: artifact-example
+    steps:
+    - - name: skip-artifact-generation
+        template: conditional-whalesay
+        arguments:
+          parameters:
+          - name: proceed
+            value: false
+
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["sleep 1; cowsay hello world | tee /tmp/hello_world.txt"]
+    outputs:
+      artifacts:
+      - name: hello-art
+        path: /tmp/hello_world.txt
+
+  - name: conditional-whalesay
+    inputs:
+      parameters:
+      - name: proceed
+    steps:
+    - - name: whalesay
+        template: whalesay
+        when: "{{inputs.parameters.proceed}}"
+    outputs:
+      artifacts:
+      - name: hello-art
+        from: "{{steps.whalesay.outputs.artifacts.hello-art}}"
+        optional: true
+`
+
+func TestNestedOptionalOutputArtifacts(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// Test list expansion
+	wf := unmarshalWF(nestedOptionalOutputArtifacts)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	woc.operate()
+
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+}

@@ -1734,6 +1734,11 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 		for _, art := range tmpl.Outputs.Artifacts {
 			resolvedArt, err := scope.resolveArtifact(art.From)
 			if err != nil {
+				// If the artifact was not found and is optional, don't mark an error
+				if strings.Contains(err.Error(), "Unable to resolve") && art.Optional {
+					log.Warnf("Optional artifact '%s' was not found; it won't be available as an output", art.Name)
+					continue
+				}
 				return nil, err
 			}
 			resolvedArt.Name = art.Name
