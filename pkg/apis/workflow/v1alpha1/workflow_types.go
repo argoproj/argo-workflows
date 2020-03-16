@@ -146,8 +146,8 @@ type WorkflowSpec struct {
 	// +patchMergeKey=name
 	Templates []Template `json:"templates" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,1,opt,name=templates"`
 
-	// Entrypoint is a template reference to the starting point of the workflow
-	Entrypoint string `json:"entrypoint" protobuf:"bytes,2,opt,name=entrypoint"`
+	// Entrypoint is a template reference to the starting point of the workflow.
+	Entrypoint string `json:"entrypoint,omitempty" protobuf:"bytes,2,opt,name=entrypoint"`
 
 	// Arguments contain the parameters and artifacts sent to the workflow entrypoint
 	// Parameters are referencable globally using the 'workflow' variable prefix.
@@ -323,7 +323,6 @@ func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -459,6 +458,9 @@ type Template struct {
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,31,opt,name=podSpecPatch"`
+
+	// ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
+	ResubmitPendingPods *bool `json:"resubmitPendingPods,omitempty" protobuf:"varint,34,opt,name=resubmitPendingPods"`
 }
 
 var _ TemplateHolder = &Template{}
@@ -526,6 +528,7 @@ type Parameter struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Default is the default value to use for an input parameter if a value was not supplied
+	// DEPRECATED: This field is not used
 	Default *string `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
 
 	// Value is the literal value to use for the parameter.
@@ -538,6 +541,39 @@ type Parameter struct {
 	// GlobalName exports an output parameter to the global scope, making it available as
 	// '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,5,opt,name=globalName"`
+}
+
+func (p *Parameter) UnmarshalJSON(value []byte) error {
+	var candidate map[string]interface{}
+	err := json.Unmarshal(value, &candidate)
+	if err != nil {
+		return err
+	}
+	if val, ok := candidate["name"]; ok {
+		p.Name = fmt.Sprint(val)
+	}
+	if val, ok := candidate["default"]; ok {
+		stringVal := fmt.Sprint(val)
+		p.Default = &stringVal
+	}
+	if val, ok := candidate["value"]; ok {
+		stringVal := fmt.Sprint(val)
+		p.Value = &stringVal
+	}
+	if val, ok := candidate["valueFrom"]; ok {
+		strVal, err := json.Marshal(val)
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(strVal, &p.ValueFrom)
+		if err != nil {
+			return err
+		}
+	}
+	if val, ok := candidate["globalName"]; ok {
+		p.GlobalName = fmt.Sprint(val)
+	}
+	return nil
 }
 
 // ValueFrom describes a location in which to obtain the value to a parameter
@@ -996,9 +1032,14 @@ func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
 	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
 }
 
-// Remove returns whether or not the node has completed execution
+// Completed returns whether or not the node has completed execution
 func (n NodeStatus) Completed() bool {
 	return isCompletedPhase(n.Phase) || n.IsDaemoned() && n.Phase != NodePending
+}
+
+// Pending returns whether or not the node is in pending state
+func (n NodeStatus) Pending() bool {
+	return n.Phase == NodePending
 }
 
 // IsDaemoned returns whether or not the node is deamoned

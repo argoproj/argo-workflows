@@ -180,6 +180,19 @@ func (s *E2ESuite) DeleteResources(label string) {
 			panic(err)
 		}
 	}
+
+	// Delete all resourcequotas
+	rqList, err := s.KubeClient.CoreV1().ResourceQuotas(Namespace).List(metav1.ListOptions{LabelSelector: label})
+	if err != nil {
+		panic(err)
+	}
+	for _, rq := range rqList.Items {
+		log.WithField("resourcequota", rq.Name).Info("Deleting resource quota")
+		err = s.KubeClient.CoreV1().ResourceQuotas(Namespace).Delete(rq.Name, nil)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 func (s *E2ESuite) GetBasicAuthToken() string {

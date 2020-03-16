@@ -179,6 +179,9 @@ message CronWorkflowSpec {
 
   // Timezone is the timezone against which the cron schedule will be calculated, e.g. "Asia/Tokyo". Default is machine's local time.
   optional string timezone = 8;
+
+  // WorkflowMetadata contains some metadata of the workflow to be run
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 9;
 }
 
 message CronWorkflowStatus {
@@ -530,6 +533,7 @@ message Parameter {
   optional string name = 1;
 
   // Default is the default value to use for an input parameter if a value was not supplied
+  // DEPRECATED: This field is not used
   optional string default = 2;
 
   // Value is the literal value to use for the parameter.
@@ -790,6 +794,9 @@ message Template {
   // PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
   // container fields which are not strings (e.g. resource limits).
   optional string podSpecPatch = 31;
+
+  // ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
+  optional bool resubmitPendingPods = 34;
 }
 
 // TemplateRef is a reference of template resource.
@@ -859,7 +866,7 @@ message WorkflowSpec {
   // +patchMergeKey=name
   repeated Template templates = 1;
 
-  // Entrypoint is a template reference to the starting point of the workflow
+  // Entrypoint is a template reference to the starting point of the workflow.
   optional string entrypoint = 2;
 
   // Arguments contain the parameters and artifacts sent to the workflow entrypoint
@@ -1090,10 +1097,6 @@ message WorkflowTemplateList {
 
 // WorkflowTemplateSpec is a spec of WorkflowTemplate.
 message WorkflowTemplateSpec {
-  // Templates is a list of workflow templates.
-  repeated Template templates = 1;
-
-  // Arguments hold arguments to the template.
-  optional Arguments arguments = 3;
+  optional WorkflowSpec workflowSpec = 1;
 }
 

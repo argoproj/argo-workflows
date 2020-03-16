@@ -254,6 +254,61 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	assert.Equal(t, n.Phase, wfv1.NodeError)
 }
 
+func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
+	controller := newController()
+	assert.NotNil(t, controller)
+	wf := unmarshalWF(helloWorldWf)
+	assert.NotNil(t, wf)
+	woc := newWorkflowOperationCtx(wf, controller)
+	assert.NotNil(t, woc)
+
+	// Verify that there are no nodes in the wf status.
+	assert.Zero(t, len(woc.wf.Status.Nodes))
+
+	// Add the parent node for retries.
+	nodeName := "test-node"
+	nodeID := woc.wf.NodeID(nodeName)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+	retries := wfv1.RetryStrategy{}
+	retryLimit := int32(2)
+	retries.Limit = &retryLimit
+	retries.Backoff = &wfv1.Backoff{
+		Duration:    "10s",
+		Factor:      2,
+		MaxDuration: "10m",
+	}
+	retries.RetryPolicy = wfv1.RetryPolicyAlways
+	woc.wf.Status.Nodes[nodeID] = *node
+
+	assert.Equal(t, node.Phase, wfv1.NodeRunning)
+
+	// Ensure there are no child nodes yet.
+	lastChild, err := woc.getLastChildNode(node)
+	assert.Nil(t, err)
+	assert.Nil(t, lastChild)
+
+	woc.initializeNode("child-node-1", wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeRunning)
+	woc.addChildNode(nodeName, "child-node-1")
+
+	n := woc.getNodeByName(nodeName)
+	lastChild, err = woc.getLastChildNode(n)
+	assert.Nil(t, err)
+	assert.NotNil(t, lastChild)
+
+	// Last child is still running. processNodesWithRetries() should return false since
+	// there should be no retries at this point.
+	n, _, err = woc.processNodeRetries(n, retries)
+	assert.Nil(t, err)
+	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+
+	// Mark lastChild as successful.
+	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
+	n, _, err = woc.processNodeRetries(n, retries)
+	assert.Nil(t, err)
+	// The parent node also gets marked as Succeeded.
+	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
+}
+
 // TestProcessNodesWithRetries tests retrying when RetryOn.Error is disabled
 func TestProcessNodesNoRetryWithError(t *testing.T) {
 	controller := newController()
@@ -2297,4 +2352,62 @@ func TestPDBCreation(t *testing.T) {
 	woc.operate()
 	pdb, _ = controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
 	assert.Nil(t, pdb)
+}
+
+var nestedOptionalOutputArtifacts = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-passing-
+spec:
+  entrypoint: artifact-example
+  templates:
+  - name: artifact-example
+    steps:
+    - - name: skip-artifact-generation
+        template: conditional-whalesay
+        arguments:
+          parameters:
+          - name: proceed
+            value: false
+
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["sleep 1; cowsay hello world | tee /tmp/hello_world.txt"]
+    outputs:
+      artifacts:
+      - name: hello-art
+        path: /tmp/hello_world.txt
+
+  - name: conditional-whalesay
+    inputs:
+      parameters:
+      - name: proceed
+    steps:
+    - - name: whalesay
+        template: whalesay
+        when: "{{inputs.parameters.proceed}}"
+    outputs:
+      artifacts:
+      - name: hello-art
+        from: "{{steps.whalesay.outputs.artifacts.hello-art}}"
+        optional: true
+`
+
+func TestNestedOptionalOutputArtifacts(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// Test list expansion
+	wf := unmarshalWF(nestedOptionalOutputArtifacts)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	woc.operate()
+
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
