@@ -2117,7 +2117,7 @@
       "additionalProperties": {
         "type": "array",
         "items": {
-          "ef": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStep"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStep"
         }
       }
     },
