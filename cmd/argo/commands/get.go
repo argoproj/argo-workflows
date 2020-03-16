@@ -23,7 +23,8 @@ const onExitSuffix = "onExit"
 
 type getFlags struct {
 	output string
-	status string
+	status []string
+	hide   []string
 }
 
 func NewGetCommand() *cobra.Command {
@@ -55,19 +56,16 @@ func NewGetCommand() *cobra.Command {
 
 	command.Flags().StringVarP(&getArgs.output, "output", "o", "", "Output format. One of: json|yaml|wide")
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
-	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
+	command.Flags().StringArrayVarP(&getArgs.status, "status", "", []string{}, "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
+	command.Flags().StringArrayVarP(&getArgs.hide, "hide", "", []string{}, "Hide statuses from being shown (Pending, Running, Succeeded, Skipped, Failed, Error)")
 	return command
 }
 
 func outputWorkflow(wf *wfv1.Workflow, getArgs getFlags) {
-	printWorkflow(wf, getArgs.output, getArgs.status)
+	printWorkflow(wf, getArgs)
 }
 
-func printWorkflow(wf *wfv1.Workflow, output, status string) {
-	getArgs := getFlags{
-		output: output,
-		status: status,
-	}
+func printWorkflow(wf *wfv1.Workflow, getArgs getFlags) {
 	switch getArgs.output {
 	case "name":
 		fmt.Println(wf.ObjectMeta.Name)
@@ -428,7 +426,10 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 
 // Main method to print information of node in get
 func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, getArgs getFlags) {
-	if getArgs.status != "" && string(node.Phase) != getArgs.status {
+	if len(getArgs.status) > 0 && !contains(getArgs.status, string(node.Phase)) {
+		return
+	}
+	if len(getArgs.hide) > 0 && contains(getArgs.hide, string(node.Phase)) {
 		return
 	}
 	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], node.DisplayName)
@@ -501,4 +502,13 @@ func getArtifactsString(node wfv1.NodeStatus) string {
 		artNames = append(artNames, art.Name)
 	}
 	return strings.Join(artNames, ",")
+}
+
+func contains(list []string, val string) bool {
+	for _, str := range list {
+		if str == val {
+			return true
+		}
+	}
+	return false
 }

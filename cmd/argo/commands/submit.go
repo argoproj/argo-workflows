@@ -7,6 +7,7 @@ import (
 
 	"github.com/argoproj/pkg/errors"
 	argoJson "github.com/argoproj/pkg/json"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -27,6 +28,7 @@ type cliSubmitOpts struct {
 	watch    bool   // --watch
 	strict   bool   // --strict
 	priority *int32 // --priority
+	getArgs  getFlags
 }
 
 func NewSubmitCommand() *cobra.Command {
@@ -50,6 +52,10 @@ func NewSubmitCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			if cmd.Flag("priority").Changed {
 				cliSubmitOpts.priority = &priority
+			}
+
+			if !cliSubmitOpts.watch && (len(cliSubmitOpts.getArgs.hide) > 0 || len(cliSubmitOpts.getArgs.status) > 0) {
+				logrus.Warn("--hide and --status should only be used with --watch")
 			}
 
 			if from != "" {
@@ -79,6 +85,8 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringVarP(&submitOpts.ParameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
 	command.Flags().StringVarP(&submitOpts.Labels, "labels", "l", "", "Comma separated labels to apply to the workflow. Will override previous values.")
 	command.Flags().StringVar(&from, "from", "", "Submit from an existing `kind/name` E.g., --from=cronwf/hello-world-cwf")
+	command.Flags().StringArrayVarP(&cliSubmitOpts.getArgs.status, "status", "", []string{}, "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error). Should only be used with --watch.")
+	command.Flags().StringArrayVarP(&cliSubmitOpts.getArgs.hide, "hide", "", []string{}, "Hide statuses from being shown (Pending, Running, Succeeded, Skipped, Failed, Error). Should only be used with --watch.")
 	// Only complete files with appropriate extension.
 	err := command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})
 	if err != nil {
@@ -215,7 +223,8 @@ func submitWorkflows(workflows []wfv1.Workflow, submitOpts *util.SubmitOpts, cli
 		if err != nil {
 			log.Fatalf("Failed to submit workflow: %v", err)
 		}
-		printWorkflow(created, cliOpts.output, DefaultStatus)
+
+		printWorkflow(created, getFlags{output: cliOpts.output, status: cliOpts.getArgs.status, hide: cliOpts.getArgs.hide})
 		workflowNames = append(workflowNames, created.Name)
 	}
 
@@ -245,6 +254,6 @@ func waitOrWatch(workflowNames []string, cliSubmitOpts cliSubmitOpts) {
 	if cliSubmitOpts.wait {
 		WaitWorkflows(workflowNames, false, !(cliSubmitOpts.output == "" || cliSubmitOpts.output == "wide"))
 	} else if cliSubmitOpts.watch {
-		watchWorkflow(workflowNames[0])
+		watchWorkflow(workflowNames[0], cliSubmitOpts.getArgs)
 	}
 }

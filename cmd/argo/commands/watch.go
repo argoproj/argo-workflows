@@ -18,6 +18,10 @@ import (
 )
 
 func NewWatchCommand() *cobra.Command {
+	var (
+		getArgs getFlags
+	)
+
 	var command = &cobra.Command{
 		Use:   "watch WORKFLOW",
 		Short: "watch a workflow until it completes",
@@ -26,14 +30,16 @@ func NewWatchCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			watchWorkflow(args[0])
+			watchWorkflow(args[0], getArgs)
 
 		},
 	}
+	command.Flags().StringArrayVarP(&getArgs.status, "status", "", []string{}, "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
+	command.Flags().StringArrayVarP(&getArgs.hide, "hide", "", []string{}, "Hide statuses from being shown (Pending, Running, Succeeded, Skipped, Failed, Error)")
 	return command
 }
 
-func watchWorkflow(wfName string) {
+func watchWorkflow(wfName string, getArgs getFlags) {
 
 	ctx, apiClient := client.NewAPIClient()
 	serviceClient := apiClient.NewWorkflowServiceClient()
@@ -54,17 +60,17 @@ func watchWorkflow(wfName string) {
 		if wf == nil {
 			break
 		}
-		printWorkflowStatus(wf)
+		printWorkflowStatus(wf, getArgs)
 		if !wf.Status.FinishedAt.IsZero() {
 			break
 		}
 	}
 }
 
-func printWorkflowStatus(wf *wfv1.Workflow) {
+func printWorkflowStatus(wf *wfv1.Workflow, getArgs getFlags) {
 	err := packer.DecompressWorkflow(wf)
 	errors.CheckError(err)
 	print("\033[H\033[2J")
 	print("\033[0;0H")
-	printWorkflowHelper(wf, getFlags{})
+	printWorkflowHelper(wf, getArgs)
 }

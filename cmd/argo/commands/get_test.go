@@ -31,7 +31,6 @@ func TestPrintNode(t *testing.T) {
 	nodeMessage := "test"
 	getArgs := getFlags{
 		output: "",
-		status: "",
 	}
 	timestamp := metav1.Time{
 		Time: time.Now(),
@@ -48,6 +47,22 @@ func TestPrintNode(t *testing.T) {
 	}
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
 
+	getArgs.status = []string{"Running"}
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
+
+	getArgs.hide = []string{"foobar"}
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
+
+	getArgs.hide = []string{"Running"}
+	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
+
+	getArgs.status = []string{"foobar"}
+	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
+
+	getArgs = getFlags{
+		output: "",
+	}
+
 	node.TemplateName = nodeTemplateName
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s (%s)\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
 
@@ -62,7 +77,4 @@ func TestPrintNode(t *testing.T) {
 
 	getArgs.output = "wide"
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s (%s/%s)\t%s\t%s\t%s\t%s\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateRefName, nodeTemplateRefName, "", "", getArtifactsString(node), nodeMessage), node, nodePrefix, getArgs)
-
-	getArgs.status = "foobar"
-	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
 }
