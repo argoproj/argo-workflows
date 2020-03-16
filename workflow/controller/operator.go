@@ -1457,7 +1457,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 				woc.wf.ObjectMeta.Labels = make(map[string]string)
 			}
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
-			conditions := []wfv1.ConditionStruct{wfv1.ConditionStruct{
+			conditions := []wfv1.ConditionStruct{wfv1.Condition{
 				Status: metav1.ConditionStatus("True"),
 				Type:   "completed"}}
 			woc.wf.Status.Condition = conditions

@@ -875,7 +875,7 @@ type WorkflowStatus struct {
 	Outputs *Outputs `json:"outputs,omitempty" protobuf:"bytes,8,opt,name=outputs"`
 
 	// Condition for k8s conditions https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
-	Condition []Condition `json:"condition,omitempty" protobuf:"bytes,11,opt,name=condition"`
+	Conditions []Condition `json:"condition,omitempty" protobuf:"bytes,11,opt,name=condition"`
 }
 
 type Condition struct {
