@@ -227,7 +227,6 @@ spec:
 			b := wf.Status.Nodes.FindByDisplayName("b")
 			return wfv1.NodeSucceeded == a.Phase && wfv1.NodeSucceeded == b.Phase
 		}, "pods succeeded", 20*time.Second)
-	s.TearDownSuite()
 }
 
 // 128M is for argo executor
@@ -280,7 +279,6 @@ spec:
 			b := wf.Status.Nodes.FindByDisplayName("b(0)")
 			return wfv1.NodeSucceeded == a.Phase && wfv1.NodeSucceeded == b.Phase
 		}, "pods succeeded", 20*time.Second)
-	s.TearDownSuite()
 }
 
 func (s *FunctionalSuite) TestParameterAggregation() {

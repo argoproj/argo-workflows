@@ -809,7 +809,7 @@ export interface WorkflowSpec {
     /**
      * Entrypoint is a template reference to the starting point of the workflow
      */
-    entrypoint: string;
+    entrypoint?: string;
     /**
      * ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images in pods that reference this ServiceAccount.
      * ImagePullSecrets are distinct from Secrets because Secrets can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet.

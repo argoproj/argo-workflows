@@ -470,6 +470,31 @@ func (s *CLISuite) TestTemplate() {
 			}
 		})
 	})
+	s.Run("Submittable-Template", func() {
+		s.Given().RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
+		var templateWorkflowName string
+		s.Given().RunCli([]string{"list"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				r := regexp.MustCompile(`\s+?(workflow-template-whalesay-template-[a-z0-9]+)`)
+				res := r.FindStringSubmatch(output)
+				if len(res) != 2 {
+					assert.Fail(t, "Internal test error, please report a bug")
+				}
+				templateWorkflowName = res[1]
+			}
+		}).When().Wait(20*time.Second).RunCli([]string{"get", templateWorkflowName}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, templateWorkflowName)
+				assert.Contains(t, output, "Succeeded")
+			}
+		})
+	})
 	s.Run("Delete", func() {
 		s.Given().RunCli([]string{"template", "delete", "workflow-template-whalesay-template"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
