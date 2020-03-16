@@ -439,7 +439,10 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus, prefix stri
 	}
 
 	key := fmt.Sprintf("%s.displayName", prefix)
-	localScope[key] = string(node.DisplayName)
+	localScope[key] = node.DisplayName
+
+	key = fmt.Sprintf("%s.templateName", prefix)
+	localScope[key] = node.TemplateName
 
 	durationKey := fmt.Sprintf("%s.duration", prefix)
 	if node.Completed() {

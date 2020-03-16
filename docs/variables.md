@@ -48,6 +48,8 @@ step. Here, "self" refers to the step emitting the metrics.
 | Variable | Description|
 |----------|------------|
 | `self.status` | Phase status of the step |
+| `self.displayName` | Display name of the task, i.e. the name given in `template.steps.name` |
+| `self.templateName` | Name of the template being run. |
 | `self.duration` | Duration of the step in seconds |
 | `self.outputs.result` | Output result of the step |
 | `self.outputs.parameters.<NAME>` | Output parameter the step |
