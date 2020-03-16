@@ -135,7 +135,7 @@ message ClusterWorkflowTemplate {
   optional WorkflowTemplateSpec spec = 2;
 }
 
-// WorkflowTemplateList is list of WorkflowTemplate resources
+// ClusterWorkflowTemplateList is list of ClusterWorkflowTemplate resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message ClusterWorkflowTemplateList {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;

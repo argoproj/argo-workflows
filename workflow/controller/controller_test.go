@@ -108,13 +108,13 @@ func newController() *WorkflowController {
 		Config: config.WorkflowControllerConfig{
 			ExecutorImage: "executor:latest",
 		},
-		kubeclientset:  fake.NewSimpleClientset(),
-		wfclientset:    wfclientset,
-		completedPods:  make(chan string, 512),
-		wftmplInformer: wftmplInformer,
+		kubeclientset:   fake.NewSimpleClientset(),
+		wfclientset:     wfclientset,
+		completedPods:   make(chan string, 512),
+		wftmplInformer:  wftmplInformer,
 		cwftmplInformer: cwftmplInformer,
-		wfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		wfArchive:      sqldb.NullWorkflowArchive,
+		wfQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfArchive:       sqldb.NullWorkflowArchive,
 	}
 }
 

@@ -80,7 +80,7 @@ func ParseWfTmplFromFile(filePath string, strict bool) ([]wfv1.WorkflowTemplate,
 }
 
 // LintWorkflowTemplateDir validates all workflow manifests in a directory. Ignores non-workflow template manifests
-func LintWorkflowTemplateDir(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter,  dirPath string, strict bool) error {
+func LintWorkflowTemplateDir(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, dirPath string, strict bool) error {
 	walkFunc := func(path string, info os.FileInfo, err error) error {
 		if info == nil || info.IsDir() {
 			return nil

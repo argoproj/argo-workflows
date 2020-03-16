@@ -180,7 +180,7 @@ func (woc *wfOperationCtx) operate() {
 		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: argo.EventReasonWorkflowRunning}, "Workflow Running")
 		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.controller.GetContainerRuntimeExecutor()}
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
-		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface( woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 		err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, validateOpts)
 		if err != nil {
 			msg := fmt.Sprintf("invalid spec: %s", err.Error())
@@ -2237,7 +2237,7 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 
 // createTemplateContext creates a new template context.
 func (woc *wfOperationCtx) createTemplateContext(templateScope string) (*templateresolution.Context, error) {
-	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace),woc.controller.cwftmplInformer.Lister(), woc.wf, woc)
+	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), woc.controller.cwftmplInformer.Lister(), woc.wf, woc)
 	if templateScope != "" {
 		return ctx.WithWorkflowTemplate(templateScope)
 	}

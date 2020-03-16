@@ -31,7 +31,7 @@ func (w ClusterWorkflowTemplates) Swap(i, j int) {
 	w[i], w[j] = w[j], w[i]
 }
 
-// WorkflowTemplateList is list of WorkflowTemplate resources
+// ClusterWorkflowTemplateList is list of ClusterWorkflowTemplate resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type ClusterWorkflowTemplateList struct {
 	metav1.TypeMeta `json:",inline"`

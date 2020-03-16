@@ -71,7 +71,7 @@ type WorkflowController struct {
 	// only complete (i.e. not running) workflows
 	completedWfInformer   cache.SharedIndexInformer
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
-	cwftmplInformer	      wfextvv1alpha1.ClusterWorkflowTemplateInformer
+	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
 	podQueue              workqueue.RateLimitingInterface
@@ -84,10 +84,10 @@ type WorkflowController struct {
 }
 
 const (
-	workflowResyncPeriod         = 20 * time.Minute
-	workflowTemplateResyncPeriod = 20 * time.Minute
-	workflowMetricsResyncPeriod  = 1 * time.Minute
-	podResyncPeriod              = 30 * time.Minute
+	workflowResyncPeriod                = 20 * time.Minute
+	workflowTemplateResyncPeriod        = 20 * time.Minute
+	workflowMetricsResyncPeriod         = 1 * time.Minute
+	podResyncPeriod                     = 30 * time.Minute
 	clusterWorkflowTemplateResyncPeriod = 20 * time.Minute
 )
 

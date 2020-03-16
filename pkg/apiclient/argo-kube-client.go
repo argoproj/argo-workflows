@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -14,6 +16,7 @@ import (
 	"github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/auth"
+	clusterworkflowtmplserver "github.com/argoproj/argo/server/clusterworkflowtemplate"
 	cronworkflowserver "github.com/argoproj/argo/server/cronworkflow"
 	workflowserver "github.com/argoproj/argo/server/workflow"
 	workflowtemplateserver "github.com/argoproj/argo/server/workflowtemplate"
@@ -59,4 +62,8 @@ func (a *argoKubeClient) NewWorkflowTemplateServiceClient() workflowtemplate.Wor
 
 func (a *argoKubeClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {
 	return nil, fmt.Errorf("it is impossible to interact with the workflow archive if you are not using the Argo Server, see " + help.CLI)
+}
+
+func (a *argoKubeClient) NewClusterWorkflowTemplateServiceClient() clusterworkflowtemplate.ClusterWorkflowTemplateServiceClient {
+	return &argoKubeWorkflowClusterTemplateServiceClient{clusterworkflowtmplserver.NewClusterWorkflowTemplateServer()}
 }

@@ -167,7 +167,7 @@ func TestWorkflowTemplateServer_CreateClusterWorkflowTemplate(t *testing.T) {
 func TestWorkflowTemplateServer_GetClusterWorkflowTemplate(t *testing.T) {
 	server, ctx := getClusterWorkflowTemplateServer()
 	cwftReq := clusterwftmplpkg.ClusterWorkflowTemplateGetRequest{
-		Name:      "cluster-workflow-template-whalesay-template2",
+		Name: "cluster-workflow-template-whalesay-template2",
 	}
 	cwftRsp, err := server.GetClusterWorkflowTemplate(ctx, &cwftReq)
 	if assert.NoError(t, err) {
@@ -178,8 +178,7 @@ func TestWorkflowTemplateServer_GetClusterWorkflowTemplate(t *testing.T) {
 
 func TestWorkflowTemplateServer_ListClusterWorkflowTemplates(t *testing.T) {
 	server, ctx := getClusterWorkflowTemplateServer()
-	cwftReq := clusterwftmplpkg.ClusterWorkflowTemplateListRequest{
-	}
+	cwftReq := clusterwftmplpkg.ClusterWorkflowTemplateListRequest{}
 	cwftRsp, err := server.ListClusterWorkflowTemplates(ctx, &cwftReq)
 	if assert.NoError(t, err) {
 		assert.Len(t, cwftRsp.Items, 2)
@@ -205,8 +204,8 @@ func TestWorkflowTemplateServer_UpdateClusterWorkflowTemplate(t *testing.T) {
 	}
 	cwftObj1.Spec.Templates[0].Container.Image = "alpine:latest"
 	cwftReq := clusterwftmplpkg.ClusterWorkflowTemplateUpdateRequest{
-		Name:      "cluster-workflow-template-whalesay-template2",
-		Template:  &cwftObj1,
+		Name:     "cluster-workflow-template-whalesay-template2",
+		Template: &cwftObj1,
 	}
 	cwftRsp, err := server.UpdateClusterWorkflowTemplate(ctx, &cwftReq)
 

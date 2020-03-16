@@ -1,8 +1,6 @@
 package controller
 
 import (
-	"fmt"
-	"github.com/go-yaml/yaml"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -435,7 +433,6 @@ func findNodeByName(nodes map[string]wfv1.NodeStatus, name string) *wfv1.NodeSta
 	return nil
 }
 
-
 var testTemplateClusterScopeWorkflowYaml = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -475,7 +472,6 @@ spec:
         print("hello world")
 `
 
-
 func TestTemplateClusterScope(t *testing.T) {
 	//t.SkipNow()
 	controller := newController()
@@ -493,12 +489,10 @@ func TestTemplateClusterScope(t *testing.T) {
 	_, err = wftmplset.Create(wftmpl)
 	assert.NoError(t, err)
 
-
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
-	s, err := yaml.Marshal(wf)
-	fmt.Println(string(s))
+	assert.NoError(t, err)
 
 	node := findNodeByName(wf.Status.Nodes, "test-template-scope")
 	if assert.NotNil(t, node, "Node %s not found", "test-templte-scope") {
