@@ -441,7 +441,7 @@ $(HOME)/go/bin/swagger:
 api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) dist/MANIFESTS_VERSION hack/swaggify.sh
 	swagger mixin -c 412 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
 	# Override ParallelSteps definition to match overridden serialization/deserialization logic.  https://github.com/argoproj/argo/issues/2454
-	cat api/openapi-spec/swagger.json | jq '.definitions["io.argoproj.workflow.v1alpha1.ParallelSteps"] = { "type": "object", "additionalProperties": { "type": "array", "items": { "$$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStep" } } }' > api/openapi-spec/swagger.json.tweaked
+	cat api/openapi-spec/swagger.json | jq '.definitions["io.argoproj.workflow.v1alpha1.ParallelSteps"] = { "type": "array", "items": { "$$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStep" } }' > api/openapi-spec/swagger.json.tweaked
 	mv api/openapi-spec/swagger.json.tweaked api/openapi-spec/swagger.json
 
 # pre-push
