@@ -15,8 +15,8 @@ spec:
             value: workflow
         help: "Duration gauge by name"
         gauge:
-          realtime: true  # This metric will be emitted in real time. For more info see: docs/metrics.md
-          value: "{{workflow.duration}}"
+          realtime: true                  # This metric will be emitted in real time. For more info see: docs/metrics.md
+          value: "{{workflow.duration}}"  # Use {{workflow.duration}} in workflow-level and {{duration}} in template-level
 
   templates:
     - name: steps
@@ -29,7 +29,7 @@ spec:
             help: "Duration gauge by name"
             gauge:
               realtime: true
-              value: "{{self.duration}}"
+              value: "{{duration}}"       # Use {{duration}} in template-level and {{workflow.duration}} in workflow-level
       steps:
         - - name: random-int
             template: random-int
@@ -41,7 +41,7 @@ spec:
         prometheus:
           - name: random_int_step_histogram
             help: "Value of the int emitted by random-int at step level"
-            when: "{{self.status}} == Succeeded"    # Only emit metric when step succeeds
+            when: "{{status}} == Succeeded"    # Only emit metric when step succeeds
             histogram:
               buckets:
                 - 2.01
@@ -57,7 +57,7 @@ spec:
             help: "Duration gauge by name"
             gauge:
               realtime: true
-              value: "{{self.duration}}"
+              value: "{{duration}}"
       outputs:
         parameters:
           - name: rand-int-value
@@ -78,7 +78,7 @@ spec:
               - key: name
                 value: flakey
               - key: status
-                value: "{{self.status}}"
+                value: "{{status}}"
             counter:
               value: "1"
       container:
