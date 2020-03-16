@@ -1177,7 +1177,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 }
 
 func (woc *wfOperationCtx) deletePVCs() error {
-	if woc.wf.Status.Phase != wfv1.NodeSucceeded {
+	if woc.wf.Status.Phase == wfv1.NodeError || woc.wf.Status.Phase == wfv1.NodeFailed {
 		// Skip deleting PVCs to reuse them for retried failed/error workflows.
 		// PVCs are automatically deleted when corresponded owner workflows get deleted.
 		return nil
