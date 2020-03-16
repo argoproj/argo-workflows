@@ -9,8 +9,8 @@ spec:
     kind: ClusterWorkflowTemplate
     plural: clusterworkflowtemplates
     shortNames:
-    - clusterwftmpl
-    - cwft
+      - clusterwftmpl
+      - cwft
   scope: Cluster
   version: v1alpha1
 ---
@@ -128,6 +128,8 @@ rules:
   resources:
   - workflowtemplates
   - workflowtemplates/finalizers
+  - clusterworkflowtemplates
+  - clusterworkflowtemplates/finalizers
   verbs:
   - get
   - list

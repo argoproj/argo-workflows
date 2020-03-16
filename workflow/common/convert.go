@@ -40,6 +40,18 @@ func ConvertWorkflowTemplateToWorkflow(template *wfv1.WorkflowTemplate) *wfv1.Wo
 	return wf
 }
 
+func ConvertClusterWorkflowTemplateToWorkflow(template *wfv1.ClusterWorkflowTemplate) *wfv1.Workflow {
+	wf := toWorkflow(template.TypeMeta, template.ObjectMeta, template.Spec.WorkflowSpec)
+	wfLabel := wf.ObjectMeta.GetLabels()
+	if wfLabel == nil {
+		wf.Labels = make(map[string]string)
+	}
+	wf.Labels[LabelKeyClusterWorkflowTemplate] = template.ObjectMeta.Name
+
+	return wf
+}
+
+
 func toWorkflow(typeMeta metav1.TypeMeta, objectMeta metav1.ObjectMeta, spec wfv1.WorkflowSpec) *wfv1.Workflow {
 	wf := &wfv1.Workflow{
 		TypeMeta: metav1.TypeMeta{
