@@ -3,6 +3,7 @@ package clustertemplate
 import (
 	"context"
 	"fmt"
+	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	"os"
 	"path/filepath"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/validate"
@@ -22,13 +22,13 @@ func NewLintCommand() *cobra.Command {
 	)
 	var command = &cobra.Command{
 		Use:   "lint (DIRECTORY | FILE1 FILE2 FILE3...)",
-		Short: "validate a file or directory of workflow template manifests",
+		Short: "validate a file or directory of cluster workflow template manifests",
 		Run: func(cmd *cobra.Command, args []string) {
 			err := ServerSideLint(args, strict)
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("WorkflowTemplate manifests validated\n")
+			fmt.Printf("ClusterWorkflowTemplate manifests validated\n")
 		},
 	}
 	command.Flags().BoolVar(&strict, "strict", true, "perform strict workflow validation")
@@ -39,8 +39,7 @@ func ServerSideLint(args []string, strict bool) error {
 	validateDir := cmdutil.MustIsDir(args[0])
 
 	ctx, apiClient := client.NewAPIClient()
-	serviceClient := apiClient.NewWorkflowTemplateServiceClient()
-	namespace := client.Namespace()
+	serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
 
 	if validateDir {
 		if len(args) > 1 {
@@ -60,12 +59,12 @@ func ServerSideLint(args []string, strict bool) error {
 			default:
 				return nil
 			}
-			wfTmpls, err := validate.ParseWfTmplFromFile(path, strict)
+			cwfTmpls, err := validate.ParseCWfTmplFromFile(path, strict)
 			if err != nil {
 				log.Error(err)
 			}
-			for _, wfTmpl := range wfTmpls {
-				err := ServerLintValidation(ctx, serviceClient, wfTmpl, namespace)
+			for _, cwfTmpl := range cwfTmpls {
+				err := ServerLintValidation(ctx, serviceClient, cwfTmpl)
 				if err != nil {
 					log.Error(err)
 				}
@@ -75,12 +74,12 @@ func ServerSideLint(args []string, strict bool) error {
 		return filepath.Walk(args[0], walkFunc)
 	} else {
 		for _, arg := range args {
-			wfTmpls, err := validate.ParseWfTmplFromFile(arg, strict)
+			cwfTmpls, err := validate.ParseCWfTmplFromFile(arg, strict)
 			if err != nil {
 				log.Error(err)
 			}
-			for _, wfTmpl := range wfTmpls {
-				err := ServerLintValidation(ctx, serviceClient, wfTmpl, namespace)
+			for _, cwfTmpl := range cwfTmpls {
+				err := ServerLintValidation(ctx, serviceClient, cwfTmpl)
 				if err != nil {
 					log.Error(err)
 				}
@@ -90,11 +89,10 @@ func ServerSideLint(args []string, strict bool) error {
 	return nil
 }
 
-func ServerLintValidation(ctx context.Context, client workflowtemplatepkg.WorkflowTemplateServiceClient, wfTmpl wfv1.WorkflowTemplate, ns string) error {
-	wfTmplReq := workflowtemplatepkg.WorkflowTemplateLintRequest{
-		Namespace: ns,
-		Template:  &wfTmpl,
+func ServerLintValidation(ctx context.Context, client clusterworkflowtemplate.ClusterWorkflowTemplateServiceClient, cwfTmpl wfv1.ClusterWorkflowTemplate) error {
+	cwfTmplReq := clusterworkflowtemplate.ClusterWorkflowTemplateLintRequest{
+		Template:  &cwfTmpl,
 	}
-	_, err := client.LintWorkflowTemplate(ctx, &wfTmplReq)
+	_, err := client.LintClusterWorkflowTemplate(ctx, &cwfTmplReq)
 	return err
 }

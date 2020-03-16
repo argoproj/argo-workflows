@@ -25,7 +25,7 @@ func NewCreateCommand() *cobra.Command {
 	)
 	var command = &cobra.Command{
 		Use:   "create FILE1 FILE2...",
-		Short: "create a workflow template",
+		Short: "create a cluster workflow template",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
@@ -89,6 +89,6 @@ func unmarshalClusterWorkflowTemplates(wfBytes []byte, strict bool) []wfv1.Clust
 	if err == nil {
 		return yamlWfs
 	}
-	log.Fatalf("Failed to parse workflow template: %v", err)
+	log.Fatalf("Failed to parse cluster workflow template: %v", err)
 	return nil
 }
