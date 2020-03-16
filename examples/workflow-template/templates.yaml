@@ -151,7 +151,7 @@ spec:
             value: inner-D
 ---
 apiVersion: argoproj.io/v1alpha1
-kind: ClusterWorkflowTemplate
+kind: WorkflowTemplate
 metadata:
   name: workflow-template-submittable
 spec:

@@ -41,7 +41,6 @@ func ConvertWorkflowTemplateToWorkflow(template *wfv1.WorkflowTemplate) *wfv1.Wo
 }
 
 func toWorkflow(typeMeta metav1.TypeMeta, objectMeta metav1.ObjectMeta, spec wfv1.WorkflowSpec) *wfv1.Workflow {
-
 	wf := &wfv1.Workflow{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       workflow.WorkflowKind,
