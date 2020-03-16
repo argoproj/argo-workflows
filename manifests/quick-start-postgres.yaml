@@ -371,7 +371,7 @@ spec:
       - args:
         - server
         - --namespaced
-        image: argoproj/argocli:v2.6.2
+        image: argoproj/argocli:v2.6.3
         name: argo-server
         ports:
         - containerPort: 2746
@@ -437,11 +437,11 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:v2.6.2
+        - argoproj/argoexec:v2.6.3
         - --namespaced
         command:
         - workflow-controller
-        image: argoproj/workflow-controller:v2.6.2
+        image: argoproj/workflow-controller:v2.6.3
         name: workflow-controller
       serviceAccountName: argo
 ---
