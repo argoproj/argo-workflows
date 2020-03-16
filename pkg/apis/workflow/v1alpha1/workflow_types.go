@@ -1700,6 +1700,11 @@ func (p *Prometheus) GetDesc() string {
 	for key, val := range p.GetMetricLabels() {
 		desc += key + "=" + val + ","
 	}
+	if p.Histogram != nil {
+		for _, bucket := range p.Histogram.Buckets {
+			desc += "bucket=" + fmt.Sprint(bucket) + ","
+		}
+	}
 	desc += "}"
 	return desc
 }

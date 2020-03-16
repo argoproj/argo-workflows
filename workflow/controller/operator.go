@@ -1794,11 +1794,6 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 		for _, art := range tmpl.Outputs.Artifacts {
 			resolvedArt, err := scope.resolveArtifact(art.From)
 			if err != nil {
-				// If the artifact was not found and is optional, don't mark an error
-				if strings.Contains(err.Error(), "Unable to resolve") && art.Optional {
-					log.Warnf("Optional artifact '%s' was not found; it won't be available as an output", art.Name)
-					continue
-				}
 				return nil, err
 			}
 			resolvedArt.Name = art.Name
@@ -2323,9 +2318,6 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			continue
 		}
 
-		// For consistency, get the metric desc (equivalent to its hash for this purpose) before any substitution happens
-		metricDesc := metricTmpl.GetDesc()
-
 		// Substitute parameters in non-value fields of the template to support variables in places such as labels,
 		// name, and help. We do not substitute value fields here (i.e. gauge, histogram, counter) here because they
 		// might be realtime ({{workflow.duration}} will not be substituted the same way if it's realtime or if it isn't).
@@ -2376,7 +2368,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 				continue
 			}
 			updatedMetric := metrics.ConstructRealTimeGaugeMetric(metricTmpl, valueFunc)
-			woc.controller.Metrics[metricDesc] = updatedMetric
+			woc.controller.Metrics[metricTmpl.GetDesc()] = updatedMetric
 			continue
 		} else {
 			metricSpec := metricTmpl.DeepCopy()
@@ -2397,7 +2389,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 				woc.log.Errorf("could not compute metric '%s': %s", metricSpec.Name, err)
 				continue
 			}
-			woc.controller.Metrics[metricDesc] = updatedMetric
+			woc.controller.Metrics[metricSpec.GetDesc()] = updatedMetric
 			continue
 		}
 	}
