@@ -431,44 +431,35 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	return expandedStep, nil
 }
 
-func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus, prefix string) (map[string]string, map[string]func() float64) {
+func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string]string, map[string]func() float64) {
 	realTimeScope := make(map[string]func() float64)
 	localScope := make(map[string]string)
 	for key, val := range woc.globalParams {
 		localScope[key] = val
 	}
 
-	key := fmt.Sprintf("%s.displayName", prefix)
-	localScope[key] = node.DisplayName
-
-	key = fmt.Sprintf("%s.templateName", prefix)
-	localScope[key] = node.TemplateName
-
-	durationKey := fmt.Sprintf("%s.duration", prefix)
 	if node.Completed() {
-		localScope[durationKey] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())
-		realTimeScope[durationKey] = func() float64 {
+		localScope["duration"] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())
+		realTimeScope["duration"] = func() float64 {
 			return node.FinishedAt.Sub(node.StartedAt.Time).Seconds()
 		}
 	} else {
-		localScope[durationKey] = fmt.Sprintf("%f", time.Since(node.StartedAt.Time).Seconds())
-		realTimeScope[durationKey] = func() float64 {
+		localScope["duration"] = fmt.Sprintf("%f", time.Since(node.StartedAt.Time).Seconds())
+		realTimeScope["duration"] = func() float64 {
 			return time.Since(node.StartedAt.Time).Seconds()
 		}
 	}
 
 	if node.Phase != "" {
-		key := fmt.Sprintf("%s.status", prefix)
-		localScope[key] = string(node.Phase)
+		localScope["status"] = string(node.Phase)
 	}
 
 	if node.Outputs != nil {
 		if node.Outputs.Result != nil {
-			key := fmt.Sprintf("%s.outputs.result", prefix)
-			localScope[key] = *node.Outputs.Result
+			localScope["outputs.result"] = *node.Outputs.Result
 		}
 		for _, param := range node.Outputs.Parameters {
-			key := fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)
+			key := fmt.Sprintf("outputs.parameters.%s", param.Name)
 			localScope[key] = *param.Value
 		}
 	}

@@ -130,7 +130,7 @@ An example of a `Template`-level Counter metric that will increase a counter eve
             labels:
               - key: name
                 value: flakey
-            when: "{{task.status}} == Failed"       # Emit the metric conditionally. Works the same as normal "when"
+            when: "{{status}} == Failed"       # Emit the metric conditionally. Works the same as normal "when"
             counter:
               value: "1"                            # This increments the counter by 1
       container:
@@ -155,7 +155,7 @@ A similar example of such a Counter metric that will increase for every step sta
               - key: name
                 value: flakey
               - key: status
-                value: "{{self.status}}"    # Argo variable in `labels`
+                value: "{{status}}"    # Argo variable in `labels`
             counter:
               value: "1"
       container:
@@ -175,7 +175,7 @@ Finally, an example of a `Template`-level Histogram metric that tracks an intern
         prometheus:
           - name: random_int_step_histogram
             help: "Value of the int emitted by random-int at step level"
-            when: "{{self.status}} == Succeeded"    # Only emit metric when step succeeds
+            when: "{{status}} == Succeeded"    # Only emit metric when step succeeds
             histogram:
               buckets:                              # Bins must be defined for histogram metrics
                 - 2.01                              # and are part of the metric descriptor.
@@ -183,7 +183,7 @@ Finally, an example of a `Template`-level Histogram metric that tracks an intern
                 - 6.01                              # same buckets.
                 - 8.01
                 - 10.01
-              value: "{{task.outputs.parameters.rand-int-value}}"         # References itself for its output (see variables doc)
+              value: "{{outputs.parameters.rand-int-value}}"         # References itself for its output (see variables doc)
       outputs:
         parameters:
           - name: rand-int-value
@@ -207,5 +207,5 @@ To define a realtime metric simply add `realtime: true` to a gauge metric with a
 ```yaml
   gauge:
     realtime: true
-    value: "{{step.duration}}"
+    value: "{{duration}}"
 ```

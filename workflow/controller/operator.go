@@ -1319,7 +1319,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 				// the same execution, its metrics are emitted below.
 				// We can infer that this node completed during the current operation, emit metrics
 				if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Completed() {
-					localScope, realTimeScope := woc.prepareMetricScope(node, "self")
+					localScope, realTimeScope := woc.prepareMetricScope(node)
 					woc.computeMetrics(resolvedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 				}
 			}
@@ -1438,7 +1438,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		// Check if the node was just created, if it was emit realtime metrics.
 		// If the node did not previously exist, we can infer that it was created during the current operation, emit real time metrics.
 		if _, ok := woc.preExecutionNodePhases[node.ID]; !ok {
-			localScope, realTimeScope := woc.prepareMetricScope(node, "self")
+			localScope, realTimeScope := woc.prepareMetricScope(node)
 			woc.computeMetrics(resolvedTmpl.Metrics.Prometheus, localScope, realTimeScope, true)
 		}
 		// Check if the node completed during this execution, if it did emit metrics
@@ -1446,7 +1446,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		// not be considered again. The best example of this is the entrypoint steps/dag template (once completed, the
 		// workflow ends and it's not reconsidered). This checks makes sure that its metrics also get emitted.
 		if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Completed() && node.Completed() {
-			localScope, realTimeScope := woc.prepareMetricScope(node, "self")
+			localScope, realTimeScope := woc.prepareMetricScope(node)
 			woc.computeMetrics(resolvedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 		}
 	}

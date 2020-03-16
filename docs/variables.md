@@ -43,16 +43,14 @@ The following variables are made available to reference various metadata of a wo
 
 ## Metrics
 When emitting custom metrics in a `template`, special variables are available that allow self-reference to the current
-step. Here, "self" refers to the step emitting the metrics.
+step.
 
 | Variable | Description|
 |----------|------------|
-| `self.status` | Phase status of the step |
-| `self.displayName` | Display name of the task, i.e. the name given in `template.steps.name` |
-| `self.templateName` | Name of the template being run. |
-| `self.duration` | Duration of the step in seconds |
-| `self.outputs.result` | Output result of the step |
-| `self.outputs.parameters.<NAME>` | Output parameter the step |
+| `status` | Phase status of the metric-emitting template |
+| `duration` | Duration of the metric-emitting template in seconds (only applicable in `Template`-level metrics, for `Workflow`-level use `workflow.duration`) |
+| `outputs.result` | Output result of the metric-emitting template |
+| `outputs.parameters.<NAME>` | Output parameter of the metric-emitting template |
 
 ### Realtime Metrics
 
@@ -64,7 +62,7 @@ For `Workflow`-level metrics:
 * `workflow.duration`
 
 For `Template`-level metrics:
-* `self.duration`
+* `duration`
 
 ## Global
 | Variable | Description|
