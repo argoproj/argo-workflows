@@ -29,7 +29,7 @@ spec:
                 value: random-int
             help: "Duration gauge by name"
             gauge:
-              value: "{{self.duration}}"
+              value: "{{duration}}"
       outputs:
         parameters:
           - name: rand-int-value
@@ -89,7 +89,7 @@ spec:
             labels:
               - key: name
                 value: flakey
-            when: "{{self.status}} == Error"
+            when: "{{status}} == Error"
             counter:
               value: "1"
       container:
