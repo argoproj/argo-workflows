@@ -598,6 +598,10 @@
         "timezone": {
           "type": "string",
           "description": "Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\". Default is machine's local time."
+        },
+        "workflowMeta": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta",
+          "title": "WorkflowMetadata contains some metadata of the workflow to be run"
         }
       }
     },
@@ -1013,7 +1017,7 @@
         },
         "default": {
           "type": "string",
-          "title": "Default is the default value to use for an input parameter if a value was not supplied"
+          "title": "Default is the default value to use for an input parameter if a value was not supplied\nDEPRECATED: This field is not used"
         },
         "value": {
           "type": "string",
@@ -1370,6 +1374,11 @@
         "podSpecPatch": {
           "type": "string",
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of\ncontainer fields which are not strings (e.g. resource limits)."
+        },
+        "resubmitPendingPods": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission"
         }
       },
       "title": "Template is a reusable and composable unit of execution in a workflow"
@@ -1441,7 +1450,7 @@
         },
         "entrypoint": {
           "type": "string",
-          "title": "Entrypoint is a template reference to the starting point of the workflow"
+          "description": "Entrypoint is a template reference to the starting point of the workflow."
         },
         "arguments": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Arguments",

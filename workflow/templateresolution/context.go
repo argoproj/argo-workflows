@@ -173,7 +173,10 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth in
 	}
 
 	// Update the template base of the context.
-	newTmplCtx := ctx.WithTemplateHolder(tmplHolder)
+	newTmplCtx, err := ctx.WithTemplateHolder(tmplHolder)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	// Return a concrete template without digging into it.
 	if tmpl.GetType() != wfv1.TemplateTypeUnknown {
@@ -196,13 +199,12 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth in
 }
 
 // WithTemplateHolder creates new context with a template base of a given template holder.
-func (ctx *Context) WithTemplateHolder(tmplHolder wfv1.TemplateHolder) *Context {
+func (ctx *Context) WithTemplateHolder(tmplHolder wfv1.TemplateHolder) (*Context, error) {
 	tmplRef := tmplHolder.GetTemplateRef()
 	if tmplRef != nil {
-		return ctx.WithLazyWorkflowTemplate(ctx.tmplBase.GetNamespace(), tmplRef.Name)
-	} else {
-		return ctx.WithTemplateBase(ctx.tmplBase)
+		return ctx.WithWorkflowTemplate(tmplRef.Name)
 	}
+	return ctx.WithTemplateBase(ctx.tmplBase), nil
 }
 
 // WithTemplateBase creates new context with a wfv1.TemplateGetter.
@@ -210,7 +212,11 @@ func (ctx *Context) WithTemplateBase(tmplBase wfv1.TemplateGetter) *Context {
 	return NewContext(ctx.wftmplGetter, tmplBase, ctx.storage)
 }
 
-// WithLazyWorkflowTemplate creates new context with the wfv1.WorkflowTemplate of the given name with lazy loading.
-func (ctx *Context) WithLazyWorkflowTemplate(namespace, name string) *Context {
-	return NewContext(ctx.wftmplGetter, NewLazyWorkflowTemplate(ctx.wftmplGetter, namespace, name), ctx.storage)
+// WithWorkflowTemplate creates new context with a wfv1.TemplateGetter.
+func (ctx *Context) WithWorkflowTemplate(name string) (*Context, error) {
+	wftmpl, err := ctx.wftmplGetter.Get(name)
+	if err != nil {
+		return nil, err
+	}
+	return ctx.WithTemplateBase(wftmpl), nil
 }
