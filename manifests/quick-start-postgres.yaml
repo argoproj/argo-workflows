@@ -9,8 +9,8 @@ spec:
     kind: ClusterWorkflowTemplate
     plural: clusterworkflowtemplates
     shortNames:
-      - clusterwftmpl
-      - cwft
+    - clusterwftmpl
+    - cwft
   scope: Cluster
   version: v1alpha1
 ---
@@ -224,6 +224,14 @@ rules:
   - update
   - patch
   - delete
+- apiGroups:
+  - argoproj.io
+  resources:
+  - clusterworkflowtemplates
+  verbs:
+  - get
+  - list
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role

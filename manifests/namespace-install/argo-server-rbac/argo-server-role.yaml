@@ -48,3 +48,11 @@ rules:
       - update
       - patch
       - delete
+  - apiGroups:
+      - argoproj.io
+    resources:
+      - clusterworkflowtemplates
+    verbs:
+      - get
+      - list
+      - watch

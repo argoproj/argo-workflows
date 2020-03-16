@@ -105,6 +105,8 @@ rules:
   - workflowtemplates/finalizers
   - cronworkflows
   - cronworkflows/finalizers
+  - clusterworkflowtemplates
+  - clusterworkflowtemplates/finalizers
   verbs:
   - create
   - delete
@@ -131,6 +133,8 @@ rules:
   - workflowtemplates/finalizers
   - cronworkflows
   - cronworkflows/finalizers
+  - clusterworkflowtemplates
+  - clusterworkflowtemplates/finalizers
   verbs:
   - create
   - delete
@@ -157,6 +161,8 @@ rules:
   - workflowtemplates/finalizers
   - cronworkflows
   - cronworkflows/finalizers
+  - clusterworkflowtemplates
+  - clusterworkflowtemplates/finalizers
   verbs:
   - get
   - list
@@ -213,6 +219,8 @@ rules:
   resources:
   - workflowtemplates
   - workflowtemplates/finalizers
+  - clusterworkflowtemplates
+  - clusterworkflowtemplates/finalizers
   verbs:
   - get
   - list
@@ -293,6 +301,7 @@ rules:
   - workflows
   - workflowtemplates
   - cronworkflows
+  - clusterworkflows
   verbs:
   - create
   - get
