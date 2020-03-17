@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/argoproj/argo/util/help"
-
 	"github.com/robfig/cron"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
