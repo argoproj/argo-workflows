@@ -395,6 +395,8 @@ spec:
     spec:
       containers:
       - args:
+        - --executor-image
+        - argoproj/argoexec:latest
         - --loglevel
         - debug
         - --namespaced
