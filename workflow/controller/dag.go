@@ -273,8 +273,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 
 	woc.updateOutboundNodesForTargetTasks(dagCtx, targetTasks, nodeName)
 
-	_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
-	return node, nil
+	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded), nil
 }
 
 func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(dagCtx *dagContext, targetTasks []string, nodeName string) {
@@ -443,9 +442,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 }
 
-// resolveDependencyReferences replaces any references to outputs of task dependencies, or artifacts in the inputs
-// NOTE: by now, input parameters should have been substituted throughout the template
-func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task *wfv1.DAGTask) (*wfv1.DAGTask, error) {
+func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv1.DAGTask) (*wfScope, error) {
 	// build up the scope
 	scope := wfScope{
 		tmpl:  dagCtx.tmpl,
@@ -479,10 +476,21 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 			woc.processNodeOutputs(&scope, prefix, ancestorNode)
 		}
 	}
+	return &scope, nil
+}
+
+// resolveDependencyReferences replaces any references to outputs of task dependencies, or artifacts in the inputs
+// NOTE: by now, input parameters should have been substituted throughout the template
+func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task *wfv1.DAGTask) (*wfv1.DAGTask, error) {
+
+	scope, err := woc.buildLocalScopeFromTask(dagCtx, task)
+	if err != nil {
+		return nil, err
+	}
 
 	// Perform replacement
 	// Replace woc.volumes
-	err := woc.substituteParamsInVolumes(scope.replaceMap())
+	err = woc.substituteParamsInVolumes(scope.replaceMap())
 	if err != nil {
 		return nil, err
 	}

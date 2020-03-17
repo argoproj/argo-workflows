@@ -301,6 +301,17 @@
         }
       }
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Condition": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ContinueOn": {
       "type": "object",
       "properties": {
@@ -316,6 +327,16 @@
         }
       },
       "description": "ContinueOn defines if a workflow should continue even if a task or step fails/errors.\nIt can be specified if the workflow should continue when the pod errors, fails or both."
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Counter": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "title": "Value is the value of the metric"
+        }
+      },
+      "title": "Counter is a Counter prometheus metric"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.DAGTask": {
       "type": "object",
@@ -404,6 +425,21 @@
         }
       },
       "description": "ExecutorConfig holds configurations of an executor container."
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Gauge": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "title": "Value is the value of the metric"
+        },
+        "realtime": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Realtime emits this metric in real time if applicable"
+        }
+      },
+      "title": "Gauge is a Gauge prometheus metric"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GitArtifact": {
       "type": "object",
@@ -526,6 +562,24 @@
       },
       "title": "HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container"
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Histogram": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "title": "Value is the value of the metric"
+        },
+        "buckets": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "format": "double"
+          },
+          "title": "Buckets is a list of bucket divisors for the histogram"
+        }
+      },
+      "title": "Histogram is a Histogram prometheus metric"
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Inputs": {
       "type": "object",
       "properties": {
@@ -629,6 +683,31 @@
         }
       },
       "title": "Pod metdata"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.MetricLabel": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "title": "MetricLabel is a single label for a prometheus metric"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metrics": {
+      "type": "object",
+      "properties": {
+        "prometheus": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Prometheus"
+          },
+          "title": "Prometheus is a list of prometheus metrics to be emitted"
+        }
+      },
+      "title": "Metrics are a list of metrics emitted from a Workflow/Template"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.NodeStatus": {
       "type": "object",
@@ -832,6 +911,43 @@
       },
       "title": "PodGC describes how to delete completed pods as they complete"
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Prometheus": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Name is the name of the metric"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.MetricLabel"
+          },
+          "title": "Labels is a list of metric labels"
+        },
+        "help": {
+          "type": "string",
+          "title": "Help is a string that describes the metric"
+        },
+        "when": {
+          "type": "string",
+          "title": "When is a conditional statement that decides when to emit the metric"
+        },
+        "gauge": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Gauge",
+          "title": "Gauge is a gauge metric"
+        },
+        "histogram": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Histogram",
+          "title": "Histogram is a histogram metric"
+        },
+        "counter": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Counter",
+          "title": "Counter is a counter metric"
+        }
+      },
+      "title": "Prometheus is a prometheus metric to be emitted"
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.RawArtifact": {
       "type": "object",
       "properties": {
@@ -1016,11 +1132,15 @@
         },
         "template": {
           "type": "string",
-          "description": "Template is the name of the template which is used as the base of this template."
+          "description": "Template is the name of the template which is used as the base of this template.\nDEPRECATED: This field is not used."
+        },
+        "arguments": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Arguments",
+          "description": "Arguments hold arguments to the template.\nDEPRECATED: This field is not used."
         },
         "templateRef": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TemplateRef",
-          "description": "TemplateRef is the reference to the template resource which is used as the base of this template."
+          "description": "TemplateRef is the reference to the template resource which is used as the base of this template.\nDEPRECATED: This field is not used."
         },
         "inputs": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Inputs",
@@ -1168,6 +1288,10 @@
           "type": "boolean",
           "format": "boolean",
           "title": "ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission"
+        },
+        "metrics": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metrics",
+          "title": "Metrics are a list of metrics emitted from this template"
         }
       },
       "title": "Template is a reusable and composable unit of execution in a workflow"
@@ -1413,6 +1537,10 @@
           "$ref": "#/definitions/k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec",
           "title": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.\nController will automatically add the selector with workflow name, if selector is empty.\nOptional: Defaults to empty.\n+optional"
         },
+        "metrics": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metrics",
+          "title": "Metrics are a list of metrics emitted from this Workflow"
+        },
         "shutdown": {
           "type": "string",
           "title": "Shutdown will shutdown the workflow according to its ShutdownStrategy"
@@ -1471,6 +1599,13 @@
         "outputs": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Outputs",
           "title": "Outputs captures output values and artifact locations produced by the workflow via global outputs"
+        },
+        "condition": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Condition"
+          },
+          "title": "Condition for k8s conditions https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties"
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"
