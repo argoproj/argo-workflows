@@ -279,7 +279,7 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  containerRuntimeExecuter: pns
+  containerRuntimeExecutor: pns
   executor: |
     imagePullPolicy: Never
     resources:
@@ -397,9 +397,9 @@ spec:
       - args:
         - --executor-image
         - argoproj/argoexec:latest
+        - --namespaced
         - --loglevel
         - debug
-        - --namespaced
         command:
         - workflow-controller
         env:

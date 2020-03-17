@@ -29,6 +29,7 @@ type controller struct {
 }
 
 func NewController(namespace, name string, kubeclientset kubernetes.Interface) Controller {
+	log.WithField("name", name).Info("config map")
 	return &controller{
 		namespace:     namespace,
 		configMap:     name,
@@ -41,7 +42,6 @@ func (cc *controller) updateConfig(cm *apiv1.ConfigMap, onChange func(config Con
 	if err != nil {
 		return err
 	}
-	log.Infof("workflow controller configuration from %s", cc.configMap)
 	return onChange(c)
 }
 

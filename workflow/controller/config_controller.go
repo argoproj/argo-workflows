@@ -18,6 +18,8 @@ func (wfc *WorkflowController) updateConfig(config config.Config) error {
 	if wfc.cliExecutorImage == "" && config.ExecutorImage == "" {
 		return errors.Errorf(errors.CodeBadRequest, "ConfigMap does not have executorImage")
 	}
+	wfc.Config = config
+
 	if wfc.session != nil {
 		err := wfc.session.Close()
 		if err != nil {

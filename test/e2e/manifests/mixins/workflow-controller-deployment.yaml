@@ -11,9 +11,9 @@ spec:
           args:
             - --executor-image
             - argoproj/argoexec:latest
+            - --namespaced
             - --loglevel
             - debug
-            - --namespaced
           env:
             # these are designed to force offloading on and make GC happen regularly so we shake out any bugs
             - name: ALWAYS_OFFLOAD_NODE_STATUS
