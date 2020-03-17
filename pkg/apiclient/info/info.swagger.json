@@ -45,7 +45,7 @@
           "description": "The URL. May contain \"${metadata.namespace}\" and \"${metadata.name}\"."
         }
       },
-      "title": "A link to another app\n+patchStrategy=merge\n+patchMergeKey=name"
+      "title": "A link to another app.\n+patchStrategy=merge\n+patchMergeKey=name"
     },
     "info.InfoResponse": {
       "type": "object",
