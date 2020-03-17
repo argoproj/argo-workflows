@@ -12,7 +12,7 @@
   "info": {
     "description": "Workflow Service API performs CRUD actions against application resources",
     "title": "Argo",
-    "version": "latest"
+    "version": ""
   },
   "host": "localhost:2746",
   "paths": {
@@ -1563,6 +1563,16 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Counter": {
+      "type": "object",
+      "title": "Counter is a Counter prometheus metric",
+      "properties": {
+        "value": {
+          "type": "string",
+          "title": "Value is the value of the metric"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.CronWorkflow": {
       "type": "object",
       "title": "CronWorkflow is the definition of a scheduled workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
@@ -1742,6 +1752,21 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Gauge": {
+      "type": "object",
+      "title": "Gauge is a Gauge prometheus metric",
+      "properties": {
+        "realtime": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Realtime emits this metric in real time if applicable"
+        },
+        "value": {
+          "type": "string",
+          "title": "Value is the value of the metric"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.GitArtifact": {
       "type": "object",
       "title": "GitArtifact is the location of an git artifact",
@@ -1863,6 +1888,24 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Histogram": {
+      "type": "object",
+      "title": "Histogram is a Histogram prometheus metric",
+      "properties": {
+        "buckets": {
+          "type": "array",
+          "title": "Buckets is a list of bucket divisors for the histogram",
+          "items": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "value": {
+          "type": "string",
+          "title": "Value is the value of the metric"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Inputs": {
       "type": "object",
       "title": "Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another",
@@ -1981,6 +2024,31 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
+          }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.MetricLabel": {
+      "type": "object",
+      "title": "MetricLabel is a single label for a prometheus metric",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Metrics": {
+      "type": "object",
+      "title": "Metrics are a list of metrics emitted from a Workflow/Template",
+      "properties": {
+        "prometheus": {
+          "type": "array",
+          "title": "Prometheus is a list of prometheus metrics to be emitted",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Prometheus"
           }
         }
       }
@@ -2184,6 +2252,43 @@
       "properties": {
         "strategy": {
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Prometheus": {
+      "type": "object",
+      "title": "Prometheus is a prometheus metric to be emitted",
+      "properties": {
+        "counter": {
+          "title": "Counter is a counter metric",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Counter"
+        },
+        "gauge": {
+          "title": "Gauge is a gauge metric",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Gauge"
+        },
+        "help": {
+          "type": "string",
+          "title": "Help is a string that describes the metric"
+        },
+        "histogram": {
+          "title": "Histogram is a histogram metric",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Histogram"
+        },
+        "labels": {
+          "type": "array",
+          "title": "Labels is a list of metric labels",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MetricLabel"
+          }
+        },
+        "name": {
+          "type": "string",
+          "title": "Name is the name of the metric"
+        },
+        "when": {
+          "type": "string",
+          "title": "When is a conditional statement that decides when to emit the metric"
         }
       }
     },
@@ -2426,6 +2531,10 @@
         "metadata": {
           "title": "Metdata sets the pods's metadata, i.e. annotations and labels",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata"
+        },
+        "metrics": {
+          "title": "Metrics are a list of metrics emitted from this template",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metrics"
         },
         "name": {
           "type": "string",
@@ -2676,6 +2785,10 @@
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
           }
+        },
+        "metrics": {
+          "title": "Metrics are a list of metrics emitted from this Workflow",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metrics"
         },
         "nodeSelector": {
           "description": "NodeSelector is a selector which will result in all pods of the workflow\nto be scheduled on the selected node(s). This is able to be overridden by\na nodeSelector specified in the template.",

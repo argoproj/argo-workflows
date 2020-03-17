@@ -3,7 +3,6 @@ package validate
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo/util/help"
 	"io"
 	"reflect"
 	"regexp"
@@ -19,6 +18,7 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/help"
 	"github.com/argoproj/argo/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/templateresolution"
@@ -501,6 +501,8 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 			if (tag == "item" || strings.HasPrefix(tag, "item.")) && allowAllItemRefs {
 				// we are *probably* referencing a undetermined item using withParam
 				// NOTE: this is far from foolproof.
+			} else if strings.HasPrefix(tag, "outputs.") {
+				// We are self referencing for metric emission, allow it.
 			} else if strings.HasPrefix(tag, common.GlobalVarWorkflowCreationTimestamp) {
 			} else {
 				unresolvedErr = fmt.Errorf("failed to resolve {{%s}}", tag)
