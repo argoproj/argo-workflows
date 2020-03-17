@@ -6,7 +6,7 @@ import {RouteComponentProps} from 'react-router';
 import {Subscription} from 'rxjs';
 
 import * as models from '../../../../models';
-import {NodePhase} from '../../../../models';
+import {Link, NodePhase} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {services} from '../../../shared/services';
 
@@ -26,7 +26,7 @@ function parseSidePanelParam(param: string) {
     return null;
 }
 
-export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {workflowDagRenderOptions: WorkflowDagRenderOptions; workflow: models.Workflow}> {
+export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {workflowDagRenderOptions: WorkflowDagRenderOptions; workflow: models.Workflow; links: Link[]}> {
     public static contextTypes = {
         router: PropTypes.object,
         apis: PropTypes.object
@@ -49,11 +49,12 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
 
     constructor(props: RouteComponentProps<any>) {
         super(props);
-        this.state = {workflowDagRenderOptions: {horizontal: false, zoom: 1, hideSucceeded: false}, workflow: null};
+        this.state = {workflowDagRenderOptions: {horizontal: false, zoom: 1, hideSucceeded: false}, workflow: null, links: null};
     }
 
     public componentDidMount() {
         this.loadWorkflow(this.props.match.params.namespace, this.props.match.params.name);
+        services.info.get().then(info => this.setState({links: info.links}));
     }
 
     public componentWillReceiveProps(nextProps: RouteComponentProps<any>) {
@@ -93,42 +94,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                 {title: this.props.match.params.name}
                             ],
                             actionMenu: {
-                                items: [
-                                    {
-                                        title: 'Retry',
-                                        iconClassName: 'fa fa-undo',
-                                        disabled: workflowPhase === undefined || !(workflowPhase === 'Failed' || workflowPhase === 'Error'),
-                                        action: () => this.retryWorkflow(ctx)
-                                    },
-                                    {
-                                        title: 'Resubmit',
-                                        iconClassName: 'fa fa-plus-circle ',
-                                        action: () => this.resubmitWorkflow(ctx)
-                                    },
-                                    {
-                                        title: 'Suspend',
-                                        iconClassName: 'fa fa-pause',
-                                        disabled: !Utils.isWorkflowRunning(this.state.workflow) || Utils.isWorkflowSuspended(this.state.workflow),
-                                        action: () => this.suspendWorkflow(ctx)
-                                    },
-                                    {
-                                        title: 'Resume',
-                                        iconClassName: 'fa fa-play',
-                                        disabled: !Utils.isWorkflowSuspended(this.state.workflow),
-                                        action: () => this.resumeWorkflow(ctx)
-                                    },
-                                    {
-                                        title: 'Terminate',
-                                        iconClassName: 'fa fa-times-circle',
-                                        disabled: !Utils.isWorkflowRunning(this.state.workflow),
-                                        action: () => this.terminateWorkflow(ctx)
-                                    },
-                                    {
-                                        title: 'Delete',
-                                        iconClassName: 'fa fa-trash',
-                                        action: () => this.deleteWorkflow(ctx)
-                                    }
-                                ]
+                                items: this.getItems(workflowPhase, ctx)
                             },
                             tools: (
                                 <div className='workflow-details__topbar-buttons'>
@@ -179,6 +145,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                                 <WorkflowNodeInfo
                                                     node={selectedNode}
                                                     workflow={this.state.workflow}
+                                                    links={this.state.links}
                                                     onShowContainerLogs={(nodeId, container) => this.openContainerLogsPanel(nodeId, container)}
                                                     onShowYaml={nodeId => this.openNodeYaml(nodeId)}
                                                     archived={false}
@@ -200,6 +167,57 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                 )}
             </Consumer>
         );
+    }
+
+    private getItems(workflowPhase: 'Pending' | 'Running' | 'Succeeded' | 'Skipped' | 'Failed' | 'Error', ctx: any) {
+        const items = [
+            {
+                title: 'Retry',
+                iconClassName: 'fa fa-undo',
+                disabled: workflowPhase === undefined || !(workflowPhase === 'Failed' || workflowPhase === 'Error'),
+                action: () => this.retryWorkflow(ctx)
+            },
+            {
+                title: 'Resubmit',
+                iconClassName: 'fa fa-plus-circle ',
+                action: () => this.resubmitWorkflow(ctx)
+            },
+            {
+                title: 'Suspend',
+                iconClassName: 'fa fa-pause',
+                disabled: !Utils.isWorkflowRunning(this.state.workflow) || Utils.isWorkflowSuspended(this.state.workflow),
+                action: () => this.suspendWorkflow(ctx)
+            },
+            {
+                title: 'Resume',
+                iconClassName: 'fa fa-play',
+                disabled: !Utils.isWorkflowSuspended(this.state.workflow),
+                action: () => this.resumeWorkflow(ctx)
+            },
+            {
+                title: 'Terminate',
+                iconClassName: 'fa fa-times-circle',
+                disabled: !Utils.isWorkflowRunning(this.state.workflow),
+                action: () => this.terminateWorkflow(ctx)
+            },
+            {
+                title: 'Delete',
+                iconClassName: 'fa fa-trash',
+                action: () => this.deleteWorkflow(ctx)
+            }
+        ];
+        if (this.state.links) {
+            this.state.links
+                .filter(link => link.scope === 'workflow')
+                .forEach(link => {
+                    items.push({
+                        title: link.name,
+                        iconClassName: 'fa fa-link',
+                        action: () => this.openLink(link)
+                    });
+                });
+        }
+        return items;
     }
 
     private deleteWorkflow(ctx: ContextApis) {
@@ -365,5 +383,9 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
 
     private get appContext(): AppContext {
         return this.context as AppContext;
+    }
+
+    private openLink(link: Link) {
+        document.location.href = link.url.replace('${metadata.namespace}', this.state.workflow.metadata.namespace).replace('${metadata.name}', this.state.workflow.metadata.name);
     }
 }
