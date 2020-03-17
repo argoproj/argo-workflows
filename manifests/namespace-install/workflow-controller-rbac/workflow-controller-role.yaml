@@ -101,8 +101,8 @@ rules:
 - apiGroups:
     - argoproj.io
   resources:
-    - workflowtemplates
-    - workflowtemplates/finalizers
+    - clusterworkflowtemplates
+    - clusterworkflowtemplates/finalizers
   verbs:
     - get
     - list
