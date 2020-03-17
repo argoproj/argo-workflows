@@ -3,7 +3,7 @@ package clustertemplate
 import (
 	"context"
 	"fmt"
-	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
+
 	"os"
 	"path/filepath"
 
@@ -14,6 +14,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/validate"
+	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 )
 
 func NewLintCommand() *cobra.Command {

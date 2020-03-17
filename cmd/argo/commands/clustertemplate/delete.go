@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/argoproj/pkg/errors"
-
 	"github.com/spf13/cobra"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 )
 
 // NewDeleteCommand returns a new instance of an `argo delete` command
@@ -33,35 +32,33 @@ func NewDeleteCommand() *cobra.Command {
 
 func apiServerDeleteWorkflowTemplates(allWFs bool, wfTmplNames []string) {
 	ctx, apiClient := client.NewAPIClient()
-	serviceClient := apiClient.NewWorkflowTemplateServiceClient()
-	namespace := client.Namespace()
+	serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
 	var delWFTmplNames []string
 	if allWFs {
-		wftmplList, err := serviceClient.ListWorkflowTemplates(ctx, &workflowtemplatepkg.WorkflowTemplateListRequest{
-			Namespace: namespace,
+		cwftmplList, err := serviceClient.ListClusterWorkflowTemplates(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateListRequest{
+
 		})
 		if err != nil {
 			log.Fatal(err)
 		}
-		for _, wfTmpl := range wftmplList.Items {
-			delWFTmplNames = append(delWFTmplNames, wfTmpl.Name)
+		for _, cwfTmpl := range cwftmplList.Items {
+			delWFTmplNames = append(delWFTmplNames, cwfTmpl.Name)
 		}
 
 	} else {
 		delWFTmplNames = wfTmplNames
 	}
 	for _, wfTmplNames := range delWFTmplNames {
-		apiServerDeleteWorkflowTemplate(serviceClient, ctx, namespace, wfTmplNames)
+		apiServerDeleteClusterWorkflowTemplate(serviceClient, ctx, wfTmplNames)
 	}
 }
 
-func apiServerDeleteWorkflowTemplate(client workflowtemplatepkg.WorkflowTemplateServiceClient, ctx context.Context, namespace, wftmplName string) {
-	_, err := client.DeleteWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateDeleteRequest{
-		Name:      wftmplName,
-		Namespace: namespace,
+func apiServerDeleteClusterWorkflowTemplate(client clusterworkflowtemplate.ClusterWorkflowTemplateServiceClient, ctx context.Context, cwftmplName string) {
+	_, err := client.DeleteClusterWorkflowTemplate(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateDeleteRequest{
+		Name:      cwftmplName,
 	})
 	if err != nil {
 		errors.CheckError(err)
 	}
-	fmt.Printf("ClusterWorkflowTemplate '%s' deleted\n", wftmplName)
+	fmt.Printf("ClusterWorkflowTemplate '%s' deleted\n", cwftmplName)
 }

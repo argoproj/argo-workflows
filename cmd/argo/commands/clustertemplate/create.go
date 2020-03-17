@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	clusterworkflowtmplpkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
+	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
@@ -64,7 +64,7 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 	}
 
 	for _, wftmpl := range clusterWorkflowTemplates {
-		created, err := serviceClient.CreateClusterWorkflowTemplate(ctx, &clusterworkflowtmplpkg.ClusterWorkflowTemplateCreateRequest{
+		created, err := serviceClient.CreateClusterWorkflowTemplate(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateCreateRequest{
 			Template: &wftmpl,
 		})
 		if err != nil {

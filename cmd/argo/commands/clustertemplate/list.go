@@ -2,14 +2,15 @@ package clustertemplate
 
 import (
 	"fmt"
-	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	"log"
 	"os"
 	"text/tabwriter"
 
+	"github.com/spf13/cobra"
+
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/spf13/cobra"
+	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 )
 
 type listFlags struct {
