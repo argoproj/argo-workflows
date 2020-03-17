@@ -166,6 +166,12 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	log.WithField("version", argo.GetVersion()).Info("Starting Workflow Controller")
 	log.Infof("Workers: workflow: %d, pod: %d", wfWorkers, podWorkers)
 
+	var err error
+	wfc.Config, err = wfc.configController.Get()
+	if err != nil {
+		log.Fatalf("Failed to register watch for controller config map: %v", err)
+	}
+
 	wfc.incompleteWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.incompleteWorkflowTweakListOptions)
 	wfc.completedWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.completedWorkflowTweakListOptions)
 	wfc.wftmplInformer = wfc.newWorkflowTemplateInformer()

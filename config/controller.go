@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,8 +14,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
-
-	"github.com/argoproj/argo/workflow/common"
 )
 
 type Controller interface {
@@ -38,7 +37,7 @@ func NewController(namespace, name string, kubeclientset kubernetes.Interface) C
 }
 
 func (cc *controller) updateConfig(cm *apiv1.ConfigMap, onChange func(config Config) error) error {
-	c, err := cc.parseConfigMap(cm)
+	c, err := parseConfigMap(cm)
 	if err != nil {
 		return err
 	}
@@ -46,19 +45,23 @@ func (cc *controller) updateConfig(cm *apiv1.ConfigMap, onChange func(config Con
 	return onChange(c)
 }
 
-func (cc *controller) parseConfigMap(cm *apiv1.ConfigMap) (Config, error) {
-	config, ok := cm.Data[common.WorkflowControllerConfigMapKey]
+func parseConfigMap(cm *apiv1.ConfigMap) (Config, error) {
+	// The key in the configmap to retrieve workflow configuration from.
+	// Content encoding is expected to be YAML.
+	config, ok := cm.Data["config"]
 	var c Config
+	// if we don't have /config field, then we iterate over the data and build up a new YAML block to use instead
 	if !ok {
-		log.Warnf("ConfigMap '%s' does not have key '%s'", cc.configMap, common.WorkflowControllerConfigMapKey)
-		data, err := yaml.Marshal(cm.Data)
-		if err != nil {
-			return c, err
+		config = ""
+		for name, value := range cm.Data {
+			if strings.Contains(value, "\n") {
+				config = config + name + ":\n" + strings.Trim(value, "\n") + "\n"
+			} else {
+				config = config + name + ": " + value + "\n"
+			}
 		}
-		return c, yaml.Unmarshal(data, &c)
-	} else {
-		return c, yaml.Unmarshal([]byte(config), &c)
 	}
+	return c, yaml.Unmarshal([]byte(config), &c)
 }
 
 func (cc *controller) Run(stopCh <-chan struct{}, onChange func(config Config) error) {
@@ -88,15 +91,6 @@ func (cc *controller) Run(stopCh <-chan struct{}, onChange func(config Config) e
 		&apiv1.ConfigMap{},
 		0,
 		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				if cm, ok := obj.(*apiv1.ConfigMap); ok {
-					log.Infof("Detected ConfigMap update. Updating the controller config.")
-					err := cc.updateConfig(cm, onChange)
-					if err != nil {
-						log.Errorf("Update of config failed due to: %v", err)
-					}
-				}
-			},
 			UpdateFunc: func(old, new interface{}) {
 				oldCM := old.(*apiv1.ConfigMap)
 				newCM := new.(*apiv1.ConfigMap)
@@ -104,7 +98,7 @@ func (cc *controller) Run(stopCh <-chan struct{}, onChange func(config Config) e
 					return
 				}
 				if newCm, ok := new.(*apiv1.ConfigMap); ok {
-					log.Infof("Detected ConfigMap update. Updating the controller config.")
+					log.Infof("Detected ConfigMap update.")
 					err := cc.updateConfig(newCm, onChange)
 					if err != nil {
 						log.Errorf("Update of config failed due to: %v", err)
@@ -112,8 +106,8 @@ func (cc *controller) Run(stopCh <-chan struct{}, onChange func(config Config) e
 				}
 			},
 		})
-	log.Info("Watch Workflow controller config map updates")
 	controller.Run(stopCh)
+	log.Info("Watching config map updates")
 }
 
 func (cc *controller) Get() (Config, error) {
@@ -122,5 +116,5 @@ func (cc *controller) Get() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	return cc.parseConfigMap(cm)
+	return parseConfigMap(cm)
 }
