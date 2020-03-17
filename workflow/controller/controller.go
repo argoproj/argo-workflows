@@ -42,7 +42,7 @@ import (
 	"github.com/argoproj/argo/workflow/util"
 )
 
-// ConfigController is the controller for workflow resources
+// WorkflowController is the controller for workflow resources
 type WorkflowController struct {
 	// namespace of the workflow controller
 	namespace        string
@@ -87,7 +87,7 @@ const (
 	podResyncPeriod              = 30 * time.Minute
 )
 
-// NewWorkflowController instantiates a new ConfigController
+// NewWorkflowController instantiates a new WorkflowController
 func NewWorkflowController(
 	restConfig *rest.Config,
 	kubeclientset kubernetes.Interface,
@@ -422,7 +422,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 
 // addingWorkflowDefaultValueIfValueNotExist sets values in the workflow.Spec with defaults from the
 // workflowController. Values in the workflow will be given the upper hand over the defaults.
-// The defaults for the workflow controller is set in the ConfigController.Config.DefautWorkflowSpec
+// The defaults for the workflow controller is set in the WorkflowController.Config.DefautWorkflowSpec
 func (wfc *WorkflowController) addingWorkflowDefaultValueIfValueNotExist(wf *wfv1.Workflow) error {
 	if wfc.Config.DefautWorkflowSpec != nil {
 		defaultsSpec, err := json.Marshal(*wfc.Config.DefautWorkflowSpec)

@@ -74,6 +74,7 @@ func NewArgoServer(opts ArgoServerOpts) *argoServer {
 		kubeClientset:    opts.KubeClientset,
 		authenticator:    auth.NewGatekeeper(opts.AuthMode, opts.WfClientSet, opts.KubeClientset, opts.RestConfig),
 		configController: config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset),
+		stopCh:           make(chan struct{}),
 	}
 }
 
@@ -153,6 +154,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	httpL := tcpm.Match(cmux.HTTP1Fast())
 	grpcL := tcpm.Match(cmux.Any())
 
+	go as.configController.Run(as.stopCh, as.restartOnConfigChange)
 	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
 	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
 	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
@@ -160,8 +162,6 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 
 	browserOpenFunc("http://localhost" + address)
 
-	as.stopCh = make(chan struct{})
-	as.configController.Run(as.stopCh, as.restartOnConfigChange)
 	<-as.stopCh
 }
 
