@@ -42,7 +42,7 @@ import (
 	grpcutil "github.com/argoproj/argo/util/grpc"
 	"github.com/argoproj/argo/util/json"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/config"
+	"github.com/argoproj/argo/config"
 )
 
 const (

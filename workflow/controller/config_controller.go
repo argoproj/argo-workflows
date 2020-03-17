@@ -18,7 +18,7 @@ import (
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/config"
+	"github.com/argoproj/argo/config"
 )
 
 // ResyncConfig reloads the controller config from the configmap

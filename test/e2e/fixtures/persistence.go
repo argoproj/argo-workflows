@@ -7,7 +7,7 @@ import (
 	"upper.io/db.v3/lib/sqlbuilder"
 
 	"github.com/argoproj/argo/persist/sqldb"
-	"github.com/argoproj/argo/workflow/config"
+	"github.com/argoproj/argo/config"
 )
 
 type Persistence struct {

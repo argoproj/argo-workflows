@@ -11,7 +11,7 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/util"
-	"github.com/argoproj/argo/workflow/config"
+	"github.com/argoproj/argo/config"
 )
 
 // CreateDBSession creates the dB session
