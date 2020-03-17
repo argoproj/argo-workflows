@@ -255,7 +255,7 @@ func (woc *wfOperationCtx) operate() {
 
 	var workflowStatus wfv1.NodePhase
 	var workflowMessage string
-	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.Template{Template: woc.wf.Spec.Entrypoint}, tmplCtx, woc.wf.Spec.Arguments, "")
+	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{Template: woc.wf.Spec.Entrypoint}, tmplCtx, woc.wf.Spec.Arguments, "")
 	if err != nil {
 		msg := fmt.Sprintf("%s error in entry template execution: %+v", woc.wf.Name, err)
 		// the error are handled in the callee so just log it.
@@ -314,7 +314,7 @@ func (woc *wfOperationCtx) operate() {
 
 		woc.log.Infof("Running OnExit handler: %s", woc.wf.Spec.OnExit)
 		onExitNodeName := woc.wf.ObjectMeta.Name + ".onExit"
-		onExitNode, err = woc.executeTemplate(onExitNodeName, &wfv1.Template{Template: woc.wf.Spec.OnExit}, tmplCtx, woc.wf.Spec.Arguments, "")
+		onExitNode, err = woc.executeTemplate(onExitNodeName, &wfv1.WorkflowStep{Template: woc.wf.Spec.OnExit}, tmplCtx, woc.wf.Spec.Arguments, "")
 		if err != nil {
 			// the error are handled in the callee so just log it.
 			woc.log.Errorf("%s error in exit template execution: %+v", woc.wf.Name, err)
@@ -1457,6 +1457,11 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 				woc.wf.ObjectMeta.Labels = make(map[string]string)
 			}
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
+			conditions := []wfv1.Condition{wfv1.Condition{
+				Status: metav1.ConditionStatus("True"),
+				Type:   "completed"}}
+			woc.wf.Status.Conditions = conditions
+
 			err := woc.deletePDBResource()
 			if err != nil {
 				woc.wf.Status.Phase = wfv1.NodeError
@@ -2254,7 +2259,7 @@ func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID str
 	if templateRef != "" {
 		woc.log.Infof("Running OnExit handler: %s", templateRef)
 		onExitNodeName := parentName + ".onExit"
-		onExitNode, err := woc.executeTemplate(onExitNodeName, &wfv1.Template{Template: templateRef}, tmplCtx, woc.wf.Spec.Arguments, boundaryID)
+		onExitNode, err := woc.executeTemplate(onExitNodeName, &wfv1.WorkflowStep{Template: templateRef}, tmplCtx, woc.wf.Spec.Arguments, boundaryID)
 		return true, onExitNode, err
 	}
 	return false, nil, nil

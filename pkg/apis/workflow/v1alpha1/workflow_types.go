@@ -340,9 +340,15 @@ type Template struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Template is the name of the template which is used as the base of this template.
+	// DEPRECATED: This field is not used.
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
+	// Arguments hold arguments to the template.
+	// DEPRECATED: This field is not used.
+	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
+
 	// TemplateRef is the reference to the template resource which is used as the base of this template.
+	// DEPRECATED: This field is not used.
 	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,4,opt,name=templateRef"`
 
 	// Inputs describe what inputs parameters and artifacts are supplied to this template
@@ -465,6 +471,7 @@ type Template struct {
 
 var _ TemplateHolder = &Template{}
 
+// DEPRECATED: Templates should not be used at TemplateHolders
 func (tmpl *Template) GetTemplateName() string {
 	if tmpl.Template != "" {
 		return tmpl.Template
@@ -473,10 +480,12 @@ func (tmpl *Template) GetTemplateName() string {
 	}
 }
 
+// DEPRECATED: Templates should not be used at TemplateHolders
 func (tmpl *Template) GetTemplateRef() *TemplateRef {
 	return tmpl.TemplateRef
 }
 
+// DEPRECATED: Templates should not be used at TemplateHolders
 func (tmpl *Template) IsResolvable() bool {
 	return tmpl.Template != "" || tmpl.TemplateRef != nil
 }
@@ -514,6 +523,10 @@ type Inputs struct {
 	// +patchStrategy=merge
 	// +patchMergeKey=name
 	Artifacts Artifacts `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,opt,name=artifacts"`
+}
+
+func (in Inputs) IsEmpty() bool {
+	return len(in.Parameters) == 0 && len(in.Artifacts) == 0
 }
 
 // Pod metdata
@@ -807,6 +820,10 @@ type Arguments struct {
 	Artifacts Artifacts `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
 }
 
+func (a Arguments) IsEmpty() bool {
+	return len(a.Parameters) == 0 && len(a.Artifacts) == 0
+}
+
 var _ ArgumentsProvider = &Arguments{}
 
 type Nodes map[string]NodeStatus
@@ -873,6 +890,15 @@ type WorkflowStatus struct {
 
 	// Outputs captures output values and artifact locations produced by the workflow via global outputs
 	Outputs *Outputs `json:"outputs,omitempty" protobuf:"bytes,8,opt,name=outputs"`
+
+	// Condition for k8s conditions https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
+	Conditions []Condition `json:"condition,omitempty" protobuf:"bytes,11,opt,name=condition"`
+}
+
+type Condition struct {
+	Status metav1.ConditionStatus `json:"status,omitempty" protobuf:"varint,1,opt,name=status"`
+
+	Type string `json:"type,omitempty" protobuf:"varint,2,opt,name=type"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
