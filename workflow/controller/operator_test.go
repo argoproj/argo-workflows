@@ -894,7 +894,7 @@ func TestSuspendWithDeadline(t *testing.T) {
 	for _, node := range updatedWf.Status.Nodes {
 		if node.Type == wfv1.NodeTypeSuspend {
 			assert.Equal(t, node.Phase, wfv1.NodeFailed)
-			assert.Equal(t, node.Message, "terminated")
+			assert.Contains(t, node.Message, "step exceeded workflow deadline")
 			found = true
 		}
 	}
