@@ -2030,6 +2030,24 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Link": {
+      "type": "object",
+      "title": "A link to another app.\n+patchStrategy=merge\n+patchMergeKey=name",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "The name of the link, E.g. \"Workflow Logs\" or \"Pod Logs\""
+        },
+        "scope": {
+          "type": "string",
+          "title": "Either \"workflow\" or \"pod\""
+        },
+        "url": {
+          "description": "The URL. May contain \"${metadata.namespace}\" and \"${metadata.name}\".",
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Metadata": {
       "type": "object",
       "title": "Pod metdata",
@@ -3099,6 +3117,12 @@
     "io.argoproj.workflow.v1alpha1.InfoResponse": {
       "type": "object",
       "properties": {
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Link"
+          }
+        },
         "managedNamespace": {
           "type": "string"
         }

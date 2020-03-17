@@ -421,6 +421,20 @@ message ItemValue {
   repeated bytes listVal = 6;
 }
 
+// A link to another app.
+// +patchStrategy=merge
+// +patchMergeKey=name
+message Link {
+  // The name of the link, E.g. "Workflow Logs" or "Pod Logs"
+  optional string name = 1;
+
+  // Either "workflow" or "pod"
+  optional string scope = 2;
+
+  // The URL. May contain "${metadata.namespace}" and "${metadata.name}".
+  optional string url = 3;
+}
+
 // Pod metdata
 message Metadata {
   map<string, string> annotations = 1;
