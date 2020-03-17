@@ -130,6 +130,7 @@ type PostgreSQLConfig struct {
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret"`
 	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret"`
 	SSL            bool                    `json:"ssl,omitempty"`
+	SSLMode        string                  `json:"sslMode,omitempty"`
 }
 
 type MySQLConfig struct {

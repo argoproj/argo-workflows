@@ -1511,6 +1511,11 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 				woc.wf.ObjectMeta.Labels = make(map[string]string)
 			}
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
+			conditions := []wfv1.Condition{wfv1.Condition{
+				Status: metav1.ConditionStatus("True"),
+				Type:   "completed"}}
+			woc.wf.Status.Conditions = conditions
+
 			err := woc.deletePDBResource()
 			if err != nil {
 				woc.wf.Status.Phase = wfv1.NodeError
