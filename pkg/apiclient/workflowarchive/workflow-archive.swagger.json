@@ -301,6 +301,17 @@
         }
       }
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Condition": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ContinueOn": {
       "type": "object",
       "properties": {
@@ -1121,11 +1132,15 @@
         },
         "template": {
           "type": "string",
-          "description": "Template is the name of the template which is used as the base of this template."
+          "description": "Template is the name of the template which is used as the base of this template.\nDEPRECATED: This field is not used."
+        },
+        "arguments": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Arguments",
+          "description": "Arguments hold arguments to the template.\nDEPRECATED: This field is not used."
         },
         "templateRef": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TemplateRef",
-          "description": "TemplateRef is the reference to the template resource which is used as the base of this template."
+          "description": "TemplateRef is the reference to the template resource which is used as the base of this template.\nDEPRECATED: This field is not used."
         },
         "inputs": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Inputs",
@@ -1580,6 +1595,13 @@
         "outputs": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Outputs",
           "title": "Outputs captures output values and artifact locations produced by the workflow via global outputs"
+        },
+        "condition": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Condition"
+          },
+          "title": "Condition for k8s conditions https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties"
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"
