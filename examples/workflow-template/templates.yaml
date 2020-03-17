@@ -128,7 +128,7 @@ kind: WorkflowTemplate
 metadata:
   name: workflow-template-submittable
 spec:
-  entryPoint: whalesay-template
+  entrypoint: whalesay-template
   arguments:
     parameters:
       - name: message
