@@ -3,8 +3,9 @@ kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
 data:
+  containerRuntimeExecuter: pns
   executor: |
-    imagePullPolicy: IfNotPresent
+    imagePullPolicy: Never
     resources:
       requests:
         cpu: 0.1

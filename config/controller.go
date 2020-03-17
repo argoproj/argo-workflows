@@ -48,11 +48,13 @@ func (cc *controller) updateConfig(cm *apiv1.ConfigMap, onChange func(config Con
 func parseConfigMap(cm *apiv1.ConfigMap) (Config, error) {
 	// The key in the configmap to retrieve workflow configuration from.
 	// Content encoding is expected to be YAML.
-	config, ok := cm.Data["config"]
 	var c Config
-	// if we don't have /config field, then we iterate over the data and build up a new YAML block to use instead
+	config, ok := cm.Data["config"]
+	if ok && len(cm.Data) != 1 {
+		return c, fmt.Errorf("if you have an item in your config map named 'config', you must only have one item")
+	}
+
 	if !ok {
-		config = ""
 		for name, value := range cm.Data {
 			if strings.Contains(value, "\n") {
 				config = config + name + ":\n" + strings.Trim(value, "\n") + "\n"

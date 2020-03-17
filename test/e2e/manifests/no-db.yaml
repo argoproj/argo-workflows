@@ -279,8 +279,9 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
+  containerRuntimeExecuter: pns
   executor: |
-    imagePullPolicy: IfNotPresent
+    imagePullPolicy: Never
     resources:
       requests:
         cpu: 0.1
@@ -288,6 +289,13 @@ data:
       limits:
         cpu: 0.5
         memory: 128Mi
+  links: |
+    - name: Example Workflow Link
+      scope: workflow
+      url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}
+    - name: Example Pod Link
+      scope: pod
+      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
   metricsConfig: |
     enabled: true
     path: /metrics
@@ -387,17 +395,9 @@ spec:
     spec:
       containers:
       - args:
-        - --configmap
-        - workflow-controller-configmap
-        - --executor-image
-        - argoproj/argoexec:latest
-        - --namespaced
         - --loglevel
         - debug
-        - --executor-image-pull-policy
-        - Never
-        - --container-runtime-executor
-        - pns
+        - --namespaced
         command:
         - workflow-controller
         env:

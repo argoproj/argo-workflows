@@ -279,15 +279,6 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  executor: |
-    imagePullPolicy: IfNotPresent
-    resources:
-      requests:
-        cpu: 0.1
-        memory: 64Mi
-      limits:
-        cpu: 0.5
-        memory: 128Mi
   links: |
     - name: Example Workflow Link
       scope: workflow
