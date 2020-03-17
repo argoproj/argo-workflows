@@ -154,7 +154,7 @@ func TestGetTemplate(t *testing.T) {
 	ctx := NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wftmpl, nil)
 
 	// Get the template of existing template name.
-	tmplHolder := wfv1.Template{Template: "whalesay"}
+	tmplHolder := wfv1.WorkflowStep{Template: "whalesay"}
 	tmpl, err := ctx.GetTemplate(&tmplHolder)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
@@ -163,17 +163,17 @@ func TestGetTemplate(t *testing.T) {
 	assert.NotNil(t, tmpl.Container)
 
 	// Get a non-concrete template.
-	tmplHolder = wfv1.Template{}
-	_, err = ctx.GetTemplate(&tmplHolder)
+	tmplHolderTemplate := wfv1.Template{}
+	_, err = ctx.GetTemplate(&tmplHolderTemplate)
 	assert.EqualError(t, err, "template  is not a concrete template")
 
 	// Get the template of unexisting template name.
-	tmplHolder = wfv1.Template{Template: "unexisting"}
+	tmplHolder = wfv1.WorkflowStep{Template: "unexisting"}
 	_, err = ctx.GetTemplate(&tmplHolder)
 	assert.EqualError(t, err, "template unexisting not found")
 
 	// Get the template of existing template reference.
-	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay"}}
+	tmplHolder = wfv1.WorkflowStep{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay"}}
 	tmpl, err = ctx.GetTemplate(&tmplHolder)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
@@ -182,7 +182,7 @@ func TestGetTemplate(t *testing.T) {
 	assert.NotNil(t, tmpl.Container)
 
 	// Get the template of unexisting template reference.
-	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "unknown-workflow-template", Template: "whalesay"}}
+	tmplHolder = wfv1.WorkflowStep{TemplateRef: &wfv1.TemplateRef{Name: "unknown-workflow-template", Template: "whalesay"}}
 	_, err = ctx.GetTemplate(&tmplHolder)
 	assert.EqualError(t, err, "workflow template unknown-workflow-template not found")
 }
@@ -216,7 +216,7 @@ func TestWithTemplateHolder(t *testing.T) {
 
 	var tmplGetter wfv1.TemplateGetter
 	// Get the template base of existing template name.
-	tmplHolder := wfv1.Template{Template: "whalesay"}
+	tmplHolder := wfv1.WorkflowStep{Template: "whalesay"}
 	newCtx, err := ctx.WithTemplateHolder(&tmplHolder)
 	assert.NoError(t, err)
 	tmplGetter, ok := newCtx.GetCurrentTemplateBase().(*wfv1.WorkflowTemplate)
@@ -226,7 +226,7 @@ func TestWithTemplateHolder(t *testing.T) {
 	assert.Equal(t, "base-workflow-template", tmplGetter.GetName())
 
 	// Get the template base of unexisting template name.
-	tmplHolder = wfv1.Template{Template: "unknown"}
+	tmplHolder = wfv1.WorkflowStep{Template: "unknown"}
 	newCtx, err = ctx.WithTemplateHolder(&tmplHolder)
 	assert.NoError(t, err)
 	tmplGetter, ok = newCtx.GetCurrentTemplateBase().(*wfv1.WorkflowTemplate)
@@ -236,7 +236,7 @@ func TestWithTemplateHolder(t *testing.T) {
 	assert.Equal(t, "base-workflow-template", tmplGetter.GetName())
 
 	// Get the template base of existing template reference.
-	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay"}}
+	tmplHolder = wfv1.WorkflowStep{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay"}}
 	newCtx, err = ctx.WithTemplateHolder(&tmplHolder)
 	assert.NoError(t, err)
 	tmplGetter, ok = newCtx.GetCurrentTemplateBase().(*wfv1.WorkflowTemplate)
@@ -246,7 +246,7 @@ func TestWithTemplateHolder(t *testing.T) {
 	assert.Equal(t, "some-workflow-template", tmplGetter.GetName())
 
 	// Get the template base of unexisting template reference.
-	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "unknown-workflow-template", Template: "whalesay"}}
+	tmplHolder = wfv1.WorkflowStep{TemplateRef: &wfv1.TemplateRef{Name: "unknown-workflow-template", Template: "whalesay"}}
 	_, err = ctx.WithTemplateHolder(&tmplHolder)
 	assert.EqualError(t, err, "workflowtemplates.argoproj.io \"unknown-workflow-template\" not found")
 }
@@ -265,7 +265,7 @@ func TestResolveTemplate(t *testing.T) {
 	ctx := NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wftmpl, nil)
 
 	// Get the template of template name.
-	tmplHolder := wfv1.Template{Template: "whalesay"}
+	tmplHolder := wfv1.WorkflowStep{Template: "whalesay"}
 	ctx, tmpl, err := ctx.ResolveTemplate(&tmplHolder)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
@@ -279,7 +279,7 @@ func TestResolveTemplate(t *testing.T) {
 
 	var tmplGetter wfv1.TemplateGetter
 	// Get the template of template reference.
-	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay"}}
+	tmplHolder = wfv1.WorkflowStep{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay"}}
 	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
@@ -293,7 +293,7 @@ func TestResolveTemplate(t *testing.T) {
 	assert.NotNil(t, tmpl.Container)
 
 	// Get the template of local nested template reference.
-	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "local-whalesay"}}
+	tmplHolder = wfv1.WorkflowStep{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "local-whalesay"}}
 	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
@@ -307,7 +307,7 @@ func TestResolveTemplate(t *testing.T) {
 	assert.NotNil(t, tmpl.Container)
 
 	// Get the template of nested template reference.
-	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "another-whalesay"}}
+	tmplHolder = wfv1.WorkflowStep{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "another-whalesay"}}
 	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
@@ -321,7 +321,7 @@ func TestResolveTemplate(t *testing.T) {
 	assert.NotNil(t, tmpl.Container)
 
 	// Get the template of template reference with arguments.
-	tmplHolder = wfv1.Template{
+	tmplHolder = wfv1.WorkflowStep{
 		TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay-with-arguments"},
 	}
 	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder)
@@ -338,7 +338,7 @@ func TestResolveTemplate(t *testing.T) {
 	assert.Equal(t, []string{"{{inputs.parameters.message}}"}, tmpl.Container.Args)
 
 	// Get the template of nested template reference with arguments.
-	tmplHolder = wfv1.Template{
+	tmplHolder = wfv1.WorkflowStep{
 		TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "nested-whalesay-with-arguments"},
 	}
 	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder)
@@ -355,12 +355,12 @@ func TestResolveTemplate(t *testing.T) {
 	assert.Equal(t, []string{"{{inputs.parameters.message}}"}, tmpl.Container.Args)
 
 	// Get the template of infinite loop template reference.
-	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "infinite-loop-whalesay"}}
+	tmplHolder = wfv1.WorkflowStep{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "infinite-loop-whalesay"}}
 	_, _, err = ctx.ResolveTemplate(&tmplHolder)
 	assert.EqualError(t, err, "template reference exceeded max depth (10)")
 
 	// Get the template of local infinite loop template.
-	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "infinite-local-loop-whalesay"}}
+	tmplHolder = wfv1.WorkflowStep{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "infinite-local-loop-whalesay"}}
 	_, _, err = ctx.ResolveTemplate(&tmplHolder)
 	assert.EqualError(t, err, "template reference exceeded max depth (10)")
 }

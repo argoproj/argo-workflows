@@ -1016,11 +1016,15 @@
         },
         "template": {
           "type": "string",
-          "description": "Template is the name of the template which is used as the base of this template."
+          "description": "Template is the name of the template which is used as the base of this template.\nDEPRECATED: This field is not used."
+        },
+        "arguments": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Arguments",
+          "description": "Arguments hold arguments to the template.\nDEPRECATED: This field is not used."
         },
         "templateRef": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TemplateRef",
-          "description": "TemplateRef is the reference to the template resource which is used as the base of this template."
+          "description": "TemplateRef is the reference to the template resource which is used as the base of this template.\nDEPRECATED: This field is not used."
         },
         "inputs": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Inputs",
