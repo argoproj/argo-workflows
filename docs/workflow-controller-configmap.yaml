@@ -111,6 +111,7 @@ data:
 
     # metricsConfig controls the path and port for prometheus metrics
     metricsConfig:
+      disableLegacy: false  # Switch to "true" to disable legacy metrics. "false" by default
       enabled: true
       path: /metrics
       port: 8080

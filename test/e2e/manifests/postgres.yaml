@@ -289,6 +289,10 @@ data:
         secretKeySecret:
           name: my-minio-cred
           key: secretkey
+    metricsConfig:
+      enabled: true
+      path: /metrics
+      port: 8080
     persistence:
       connectionPool:
         maxIdleConns: 100
