@@ -301,6 +301,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: argo-server
+  namespace: argo
 ---
 apiVersion: v1
 kind: ConfigMap
