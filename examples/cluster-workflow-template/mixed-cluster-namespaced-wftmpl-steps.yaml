@@ -17,8 +17,9 @@ spec:
             value: "hello1"
     - - name: hello2a
         templateRef:
-          name: workflow-template-inner-steps
+          name: cluster-workflow-template-inner-steps
           template: inner-steps
+          clusterscope: true
         arguments:
           parameters:
           - name: message

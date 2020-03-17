@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
+kind: ClusterWorkflowTemplate
 metadata:
-  name: workflow-template-whalesay-template
+  name: cluster-workflow-template-whalesay-template
 spec:
   templates:
   - name: whalesay-template
@@ -14,14 +14,14 @@ spec:
       args: ["{{inputs.parameters.message}}"]
 ---
 apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
+kind: ClusterWorkflowTemplate
 metadata:
-  name: workflow-template-nested-template
+  name: cluster-workflow-template-nested-template
 spec:
   templates:
   - name: whalesay-inner-template
     templateRef:
-      name: workflow-template-whalesay-template
+      name: cluster-workflow-template-whalesay-template
       template: whalesay-template
       clusterscope: true
     inputs:
@@ -34,9 +34,9 @@ spec:
       - name: message
 ---
 apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
+kind: ClusterWorkflowTemplate
 metadata:
-  name: workflow-template-random-fail-template
+  name: cluster-workflow-template-random-fail-template
 spec:
   templates:
   - name: random-fail-template
@@ -49,9 +49,9 @@ spec:
       args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]
 ---
 apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
+kind: ClusterWorkflowTemplate
 metadata:
-  name: workflow-template-inner-steps
+  name: cluster-workflow-template-inner-steps
 spec:
   templates:
   - name: whalesay-template
@@ -66,7 +66,7 @@ spec:
     steps:
     - - name: inner-hello1
         templateRef:
-          name: workflow-template-whalesay-template
+          name: cluster-workflow-template-whalesay-template
           template: whalesay-template
           clusterscope: true
         arguments:
@@ -75,7 +75,7 @@ spec:
             value: "inner-hello1"
     - - name: inner-hello2a
         templateRef:
-          name: workflow-template-whalesay-template
+          name: cluster-workflow-template-whalesay-template
           template: whalesay-template
           clusterscope: true
         arguments:
@@ -84,7 +84,7 @@ spec:
             value: "inner-hello2a"
       - name: inner-hello2b
         templateRef:
-          name: workflow-template-whalesay-template
+          name: cluster-workflow-template-whalesay-template
           template: whalesay-template
           clusterscope: true
         arguments:
@@ -100,9 +100,9 @@ spec:
 #  \ /
 #   D
 apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
+kind: ClusterWorkflowTemplate
 metadata:
-  name: workflow-template-inner-dag
+  name: cluster-workflow-template-inner-dag
 spec:
   templates:
   - name: whalesay-template
@@ -118,7 +118,7 @@ spec:
       tasks:
       - name: inner-A
         templateRef:
-          name: workflow-template-whalesay-template
+          name: cluster-workflow-template-whalesay-template
           template: whalesay-template
           clusterscope: true
         arguments:
@@ -142,7 +142,7 @@ spec:
       - name: inner-D
         dependencies: [inner-B, inner-C]
         templateRef:
-          name: workflow-template-whalesay-template
+          name: cluster-workflow-template-whalesay-template
           template: whalesay-template
           clusterscope: true
         arguments:
@@ -151,9 +151,9 @@ spec:
             value: inner-D
 ---
 apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
+kind: ClusterWorkflowTemplate
 metadata:
-  name: workflow-template-submittable
+  name: cluster-workflow-template-submittable
 spec:
   entryPoint: whalesay-template
   arguments:
