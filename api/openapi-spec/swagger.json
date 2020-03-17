@@ -1938,24 +1938,20 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.LoggingFacility": {
+    "io.argoproj.workflow.v1alpha1.Link": {
       "type": "object",
+      "title": "A link to another app\n+patchStrategy=merge\n+patchMergeKey=name",
       "properties": {
         "name": {
-          "type": "string"
+          "type": "string",
+          "title": "The name of the link, E.g. \"Workflow Logs\" or \"Pod Logs\""
         },
-        "templates": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LoggingFacilityTemplates"
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.LoggingFacilityTemplates": {
-      "type": "object",
-      "properties": {
-        "pod": {
-          "type": "string"
+        "scope": {
+          "type": "string",
+          "title": "Either \"workflow\" or \"pod\""
         },
-        "workflow": {
+        "url": {
+          "description": "The URL. May contain \"${metadata.namespace}\" and \"${metadata.name}\".",
           "type": "string"
         }
       }
@@ -2944,8 +2940,11 @@
     "io.argoproj.workflow.v1alpha1.InfoResponse": {
       "type": "object",
       "properties": {
-        "loggingFacility": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LoggingFacility"
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Link"
+          }
         },
         "managedNamespace": {
           "type": "string"

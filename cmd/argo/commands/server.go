@@ -14,7 +14,6 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/apiserver"
 	"github.com/argoproj/argo/util/help"
@@ -28,7 +27,6 @@ func NewServerCommand() *cobra.Command {
 		baseHRef          string
 		namespaced        bool   // --namespaced
 		managedNamespace  string // --managed-namespace
-		loggingFacility   wfv1.LoggingFacility
 		enableOpenBrowser bool
 	)
 
@@ -68,7 +66,6 @@ See %s`, help.ArgoSever),
 				"authMode":         authMode,
 				"namespace":        namespace,
 				"managedNamespace": managedNamespace,
-				"logginFacility":   loggingFacility,
 				"baseHRef":         baseHRef}).
 				Info()
 
@@ -80,7 +77,6 @@ See %s`, help.ArgoSever),
 				RestConfig:       config,
 				AuthMode:         authMode,
 				ManagedNamespace: managedNamespace,
-				LoggingFacility:  loggingFacility,
 				ConfigName:       configMap,
 			}
 			err = opts.ValidateOpts()
@@ -112,9 +108,6 @@ See %s`, help.ArgoSever),
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that watches, default to the installation namespace")
-	command.Flags().StringVar(&loggingFacility.Name, "logging-facility-name", "", "The name of your logging facility")
-	command.Flags().StringVar(&loggingFacility.Templates.Workflow, "logging-facility-templates-workflow", "", "The templates for your logging facility for workflows")
-	command.Flags().StringVar(&loggingFacility.Templates.Pod, "logging-facility-templates-pod", "", "The templates for your logging facility for pods")
 	command.Flags().BoolVarP(&enableOpenBrowser, "browser", "b", false, "enable automatic launching of the browser [local mode]")
 	return &command
 }

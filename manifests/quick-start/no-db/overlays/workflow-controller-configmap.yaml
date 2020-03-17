@@ -22,6 +22,13 @@ data:
         secretKeySecret:
           name: my-minio-cred
           key: secretkey
+    links:
+      - name: Example Workflow Link
+        scope: workflow
+        url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}
+      - name: Example Pod Link
+        scope: pod
+        url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

@@ -391,16 +391,18 @@ message ItemValue {
   repeated bytes listVal = 6;
 }
 
-message LoggingFacility {
+// A link to another app
+// +patchStrategy=merge
+// +patchMergeKey=name
+message Link {
+  // The name of the link, E.g. "Workflow Logs" or "Pod Logs"
   optional string name = 1;
 
-  optional LoggingFacilityTemplates templates = 2;
-}
+  // Either "workflow" or "pod"
+  optional string scope = 2;
 
-message LoggingFacilityTemplates {
-  optional string workflow = 1;
-
-  optional string pod = 2;
+  // The URL. May contain "${metadata.namespace}" and "${metadata.name}".
+  optional string url = 3;
 }
 
 // Pod metdata

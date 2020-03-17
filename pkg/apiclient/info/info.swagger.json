@@ -29,27 +29,23 @@
     }
   },
   "definitions": {
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.LoggingFacility": {
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Link": {
       "type": "object",
       "properties": {
         "name": {
-          "type": "string"
+          "type": "string",
+          "title": "The name of the link, E.g. \"Workflow Logs\" or \"Pod Logs\""
         },
-        "templates": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.LoggingFacilityTemplates"
-        }
-      }
-    },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.LoggingFacilityTemplates": {
-      "type": "object",
-      "properties": {
-        "workflow": {
-          "type": "string"
+        "scope": {
+          "type": "string",
+          "title": "Either \"workflow\" or \"pod\""
         },
-        "pod": {
-          "type": "string"
+        "url": {
+          "type": "string",
+          "description": "The URL. May contain \"${metadata.namespace}\" and \"${metadata.name}\"."
         }
-      }
+      },
+      "title": "A link to another app\n+patchStrategy=merge\n+patchMergeKey=name"
     },
     "info.InfoResponse": {
       "type": "object",
@@ -57,8 +53,11 @@
         "managedNamespace": {
           "type": "string"
         },
-        "loggingFacility": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.LoggingFacility"
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Link"
+          }
         }
       }
     }

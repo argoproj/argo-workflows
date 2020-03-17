@@ -64,13 +64,10 @@ func (s *ArgoServerSuite) TestInfo() {
 			Path("$.managedNamespace").
 			Equal("argo")
 		json.
-			Path("$.loggingFacility.name").
-			Equal("Logging Facility")
-		json.
-			Path("$.loggingFacility.templates.workflow").
+			Path("$.links['Example Link'].workflow").
 			Equal("ttp://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}")
 		json.
-			Path("$.loggingFacility.templates.pod").
+			Path("$.links['Example Link'].pod").
 			Equal("ttp://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}")
 	})
 }

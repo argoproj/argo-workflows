@@ -9,16 +9,13 @@ import (
 
 type infoServer struct {
 	managedNamespace string
-	loggingFacility  wfv1.LoggingFacility
+	links            []*wfv1.Link
 }
 
 func (i *infoServer) GetInfo(context.Context, *infopkg.GetInfoRequest) (*infopkg.InfoResponse, error) {
-	return &infopkg.InfoResponse{
-		ManagedNamespace: i.managedNamespace,
-		LoggingFacility:  &i.loggingFacility,
-	}, nil
+	return &infopkg.InfoResponse{ManagedNamespace: i.managedNamespace, Links: i.links}, nil
 }
 
-func NewInfoServer(managedNamespace string, loggingFacility wfv1.LoggingFacility) infopkg.InfoServiceServer {
-	return &infoServer{managedNamespace, loggingFacility}
+func NewInfoServer(managedNamespace string, links []*wfv1.Link) infopkg.InfoServiceServer {
+	return &infoServer{managedNamespace, links}
 }

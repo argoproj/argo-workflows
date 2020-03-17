@@ -18,7 +18,7 @@ function nodeDuration(node: models.NodeStatus, now: moment.Moment) {
 interface Props {
     node: models.NodeStatus;
     workflow: models.Workflow;
-    loggingFacility: models.LoggingFacility;
+    links: models.Link[];
     archived: boolean;
     onShowContainerLogs: (nodeId: string, container: string) => any;
     onShowYaml?: (nodeId: string) => any;
@@ -85,13 +85,16 @@ export const WorkflowNodeSummary = (props: Props) => {
                         LOGS
                     </button>
                 )}
-                {props.loggingFacility && props.loggingFacility.templates && props.loggingFacility.templates.pod && (
-                    <a
-                        className='argo-button argo-button--base-o'
-                        href={props.loggingFacility.templates.pod.replace('${metadata.namespace}', props.workflow.metadata.namespace).replace('${metadata.name}', props.node.id)}>
-                        <i className='fa fa-file-alt' /> {props.loggingFacility.name || 'Logging Facility'}
-                    </a>
-                )}
+                {props.links &&
+                    props.links
+                        .filter(link => link.scope === 'pod')
+                        .map(link => (
+                            <a
+                                className='argo-button argo-button--base-o'
+                                href={link.url.replace('${metadata.namespace}', props.workflow.metadata.namespace).replace('${metadata.name}', props.node.id)}>
+                                <i className='fa fa-link' /> {link.name}
+                            </a>
+                        ))}
             </div>
         </div>
     );

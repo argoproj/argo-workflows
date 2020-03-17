@@ -2,7 +2,7 @@ import {NotificationType, Page, SlidingPanel} from 'argo-ui';
 import * as classNames from 'classnames';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
-import {LoggingFacility, Workflow} from '../../../../models';
+import {Link, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
@@ -27,7 +27,7 @@ require('../../../workflows/components/workflow-details/workflow-details.scss');
 interface State {
     workflowDagRenderOptions: WorkflowDagRenderOptions;
     workflow?: Workflow;
-    loggingFacility?: LoggingFacility;
+    links?: Link[];
     error?: Error;
 }
 
@@ -74,30 +74,42 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
             .get(this.uid)
             .then(workflow => this.setState({workflow}))
             .catch(error => this.setState({error}));
-        services.info.get().then(info => this.setState({loggingFacility: info.loggingFacility}));
+        services.info.get().then(info => this.setState({links: info.links}));
     }
 
     public render() {
         if (this.state.error) {
             throw this.state.error;
         }
+        const items = [
+            {
+                title: 'Resubmit',
+                iconClassName: 'fa fa-redo',
+                action: () => (this.sidePanel = 'resubmit')
+            },
+            {
+                title: 'Delete',
+                iconClassName: 'fa fa-trash',
+                action: () => this.deleteArchivedWorkflow()
+            }
+        ];
+        if (this.state.links) {
+            this.state.links
+                .filter(link => link.scope === 'workflow')
+                .forEach(link =>
+                    items.push({
+                        title: link.name,
+                        iconClassName: 'fa fa-link',
+                        action: () => this.openLink(link)
+                    })
+                );
+        }
         return (
             <Page
                 title='Archived Workflow Details'
                 toolbar={{
                     actionMenu: {
-                        items: [
-                            {
-                                title: 'Resubmit',
-                                iconClassName: 'fa fa-redo',
-                                action: () => (this.sidePanel = 'resubmit')
-                            },
-                            {
-                                title: 'Delete',
-                                iconClassName: 'fa fa-trash',
-                                action: () => this.deleteArchivedWorkflow()
-                            }
-                        ]
+                        items
                     },
                     breadcrumbs: [
                         {
@@ -173,7 +185,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                                 <WorkflowNodeInfo
                                     node={this.node}
                                     workflow={this.state.workflow}
-                                    loggingFacility={this.state.loggingFacility}
+                                    links={this.state.links}
                                     onShowYaml={nodeId =>
                                         this.setQueryParams({
                                             sidePanel: 'yaml',
@@ -239,5 +251,9 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                     type: NotificationType.Error
                 });
             });
+    }
+
+    private openLink(link: Link) {
+        document.location.href = link.url.replace('${metadata.namespace}', this.state.workflow.metadata.namespace).replace('${metadata.name}', this.state.workflow.metadata.name);
     }
 }
