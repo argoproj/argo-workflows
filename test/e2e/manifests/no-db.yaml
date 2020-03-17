@@ -290,10 +290,9 @@ data:
           name: my-minio-cred
           key: secretkey
     metricsConfig:
-      disableLegacy: true
       enabled: true
       path: /metrics
-      port: 9090
+      port: 8080
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

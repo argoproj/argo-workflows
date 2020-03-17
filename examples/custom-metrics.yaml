@@ -49,7 +49,7 @@ spec:
                 - 6.01
                 - 8.01
                 - 10.01
-              value: "{{self.outputs.parameters.rand-int-value}}"
+              value: "{{outputs.parameters.rand-int-value}}"
           - name: duration_gauge
             labels:
               - key: name
