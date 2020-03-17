@@ -307,7 +307,7 @@ func (s *FunctionalSuite) TestStopBehavior() {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow stop-terminate stopped")
 		}).
-		WaitForWorkflow(20 * time.Second).
+		WaitForWorkflow(30 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeFailed, status.Phase)
@@ -332,7 +332,7 @@ func (s *FunctionalSuite) TestTerminateBehavior() {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow stop-terminate terminated")
 		}).
-		WaitForWorkflow(20 * time.Second).
+		WaitForWorkflow(30 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeFailed, status.Phase)

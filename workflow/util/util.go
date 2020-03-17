@@ -606,17 +606,16 @@ func TerminateWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	for attempt := 0; attempt < 10; attempt++ {
+	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		_, err = wfClient.Patch(name, types.MergePatchType, patch)
 		if err != nil {
 			if !apierr.IsConflict(err) {
-				return err
+				return false, err
 			}
-		} else {
-			break
+			return false, nil
 		}
-		time.Sleep(100 * time.Millisecond)
-	}
+		return true, nil
+	})
 	return err
 }
 
