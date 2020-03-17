@@ -110,7 +110,7 @@ func NewWorkflowController(
 		containerRuntimeExecutor:   containerRuntimeExecutor,
 		wfQueue:                    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:                   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		configController:config.NewController(namespace, configMap, kubeclientset),
+		configController:           config.NewController(namespace, configMap, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 	}

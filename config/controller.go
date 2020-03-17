@@ -47,16 +47,18 @@ func (cc *controller) updateConfig(cm *apiv1.ConfigMap, onChange func(config Con
 }
 
 func (cc *controller) parseConfigMap(cm *apiv1.ConfigMap) (Config, error) {
-	configStr, ok := cm.Data[common.WorkflowControllerConfigMapKey]
+	config, ok := cm.Data[common.WorkflowControllerConfigMapKey]
+	var c Config
 	if !ok {
 		log.Warnf("ConfigMap '%s' does not have key '%s'", cc.configMap, common.WorkflowControllerConfigMapKey)
+		data, err := yaml.Marshal(cm.Data)
+		if err != nil {
+			return c, err
+		}
+		return c, yaml.Unmarshal(data, &c)
+	} else {
+		return c, yaml.Unmarshal([]byte(config), &c)
 	}
-	var c Config
-	err := yaml.Unmarshal([]byte(configStr), &cc)
-	if err != nil {
-		return Config{}, err
-	}
-	return c, nil
 }
 
 func (cc *controller) Run(stopCh <-chan struct{}, onChange func(config Config) error) {
