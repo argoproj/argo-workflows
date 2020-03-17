@@ -5,6 +5,6 @@ bases:
   - ../../../../manifests/quick-start/mysql
 
 patchesStrategicMerge:
-  - ../mixins/overlays/argo-server-deployment.yaml
-  - ../mixins/overlays/workflow-controller-configmap.yaml
-  - ../mixins/overlays/workflow-controller-deployment.yaml
+  - ../mixins/argo-server-deployment.yaml
+  - ../mixins/workflow-controller-configmap.yaml
+  - ../mixins/workflow-controller-deployment.yaml
