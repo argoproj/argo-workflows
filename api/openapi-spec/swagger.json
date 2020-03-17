@@ -1154,6 +1154,44 @@
         }
       }
     },
+    "/api/v1/workflows/{namespace}/{name}/stop": {
+      "put": {
+        "tags": [
+          "WorkflowService"
+        ],
+        "operationId": "StopWorkflow",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStopRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/workflows/{namespace}/{name}/suspend": {
       "put": {
         "tags": [
@@ -2843,6 +2881,10 @@
         "serviceAccountName": {
           "description": "ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.",
           "type": "string"
+        },
+        "shutdown": {
+          "type": "string",
+          "title": "Shutdown will shutdown the workflow according to its ShutdownStrategy"
         },
         "suspend": {
           "type": "boolean",
@@ -5709,6 +5751,17 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.WorkflowRetryRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowStopRequest": {
       "type": "object",
       "properties": {
         "name": {

@@ -286,7 +286,17 @@ type WorkflowSpec struct {
 
 	// Metrics are a list of metrics emitted from this Workflow
 	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,32,opt,name=metrics"`
+
+	// Shutdown will shutdown the workflow according to its ShutdownStrategy
+	Shutdown ShutdownStrategy `json:"shutdown,omitempty" protobuf:"bytes,33,opt,name=shutdown,casttype=ShutdownStrategy"`
 }
+
+type ShutdownStrategy string
+
+const (
+	ShutdownStrategyTerminate ShutdownStrategy = "Terminate"
+	ShutdownStrategyStop      ShutdownStrategy = "Stop"
+)
 
 type ParallelSteps struct {
 	Steps []WorkflowStep `protobuf:"bytes,1,rep,name=steps"`
