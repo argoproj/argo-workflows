@@ -1197,7 +1197,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 }
 
 func (woc *wfOperationCtx) deletePVCs() error {
-	if woc.wf.Status.Phase != wfv1.NodeSucceeded {
+	if woc.wf.Status.Phase == wfv1.NodeError || woc.wf.Status.Phase == wfv1.NodeFailed {
 		// Skip deleting PVCs to reuse them for retried failed/error workflows.
 		// PVCs are automatically deleted when corresponded owner workflows get deleted.
 		return nil
@@ -1457,6 +1457,11 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 				woc.wf.ObjectMeta.Labels = make(map[string]string)
 			}
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
+			conditions := []wfv1.Condition{wfv1.Condition{
+				Status: metav1.ConditionStatus("True"),
+				Type:   "completed"}}
+			woc.wf.Status.Conditions = conditions
+
 			err := woc.deletePDBResource()
 			if err != nil {
 				woc.wf.Status.Phase = wfv1.NodeError
@@ -1739,6 +1744,11 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 		for _, art := range tmpl.Outputs.Artifacts {
 			resolvedArt, err := scope.resolveArtifact(art.From)
 			if err != nil {
+				// If the artifact was not found and is optional, don't mark an error
+				if strings.Contains(err.Error(), "Unable to resolve") && art.Optional {
+					log.Warnf("Optional artifact '%s' was not found; it won't be available as an output", art.Name)
+					continue
+				}
 				return nil, err
 			}
 			resolvedArt.Name = art.Name

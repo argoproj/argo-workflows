@@ -890,6 +890,15 @@ type WorkflowStatus struct {
 
 	// Outputs captures output values and artifact locations produced by the workflow via global outputs
 	Outputs *Outputs `json:"outputs,omitempty" protobuf:"bytes,8,opt,name=outputs"`
+
+	// Condition for k8s conditions https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
+	Conditions []Condition `json:"condition,omitempty" protobuf:"bytes,11,opt,name=condition"`
+}
+
+type Condition struct {
+	Status metav1.ConditionStatus `json:"status,omitempty" protobuf:"varint,1,opt,name=status"`
+
+	Type string `json:"type,omitempty" protobuf:"varint,2,opt,name=type"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
