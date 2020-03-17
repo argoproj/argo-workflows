@@ -1617,6 +1617,10 @@
           "description": "Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\". Default is machine's local time.",
           "type": "string"
         },
+        "workflowMeta": {
+          "title": "WorkflowMetadata contains some metadata of the workflow to be run",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectMeta"
+        },
         "workflowSpec": {
           "title": "WorkflowSpec is the spec of the workflow to be run",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"
@@ -2133,7 +2137,7 @@
       "properties": {
         "default": {
           "type": "string",
-          "title": "Default is the default value to use for an input parameter if a value was not supplied"
+          "title": "Default is the default value to use for an input parameter if a value was not supplied\nDEPRECATED: This field is not used"
         },
         "globalName": {
           "type": "string",
@@ -2435,6 +2439,11 @@
           "title": "Resource template subtype which can run k8s resources",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ResourceTemplate"
         },
+        "resubmitPendingPods": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission"
+        },
         "retryStrategy": {
           "title": "RetryStrategy describes how to retry a template when it fails",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RetryStrategy"
@@ -2617,8 +2626,8 @@
           "type": "string"
         },
         "entrypoint": {
-          "type": "string",
-          "title": "Entrypoint is a template reference to the starting point of the workflow"
+          "description": "Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.",
+          "type": "string"
         },
         "executor": {
           "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.",
@@ -2876,16 +2885,8 @@
       "description": "WorkflowTemplateSpec is a spec of WorkflowTemplate.",
       "type": "object",
       "properties": {
-        "arguments": {
-          "description": "Arguments hold arguments to the template.",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
-        },
-        "templates": {
-          "description": "Templates is a list of workflow templates.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
-          }
+        "workflowSpec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"
         }
       }
     },

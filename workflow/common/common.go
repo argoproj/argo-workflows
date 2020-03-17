@@ -59,6 +59,8 @@ const (
 	LabelKeyPhase = workflow.WorkflowFullName + "/phase"
 	// LabelKeyCronWorkflow is a label applied to Workflows that are started by a CronWorkflow
 	LabelKeyCronWorkflow = workflow.WorkflowFullName + "/cron-workflow"
+	// LabelKeyWorkflowTemplate is a label applied to Workflows that are submitted from Workflowtemplate
+	LabelKeyWorkflowTemplate = workflow.WorkflowFullName + "/workflow-template"
 
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)
