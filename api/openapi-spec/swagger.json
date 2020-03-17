@@ -12,7 +12,7 @@
   "info": {
     "description": "Workflow Service API performs CRUD actions against application resources",
     "title": "Argo",
-    "version": ""
+    "version": "latest"
   },
   "host": "localhost:2746",
   "paths": {
@@ -1154,6 +1154,44 @@
         }
       }
     },
+    "/api/v1/workflows/{namespace}/{name}/stop": {
+      "put": {
+        "tags": [
+          "WorkflowService"
+        ],
+        "operationId": "StopWorkflow",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStopRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/workflows/{namespace}/{name}/suspend": {
       "put": {
         "tags": [
@@ -1992,6 +2030,24 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Link": {
+      "type": "object",
+      "title": "A link to another app.\n+patchStrategy=merge\n+patchMergeKey=name",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "The name of the link, E.g. \"Workflow Logs\" or \"Pod Logs\""
+        },
+        "scope": {
+          "type": "string",
+          "title": "Either \"workflow\" or \"pod\""
+        },
+        "url": {
+          "description": "The URL. May contain \"${metadata.namespace}\" and \"${metadata.name}\".",
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Metadata": {
       "type": "object",
       "title": "Pod metdata",
@@ -2826,6 +2882,10 @@
           "description": "ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.",
           "type": "string"
         },
+        "shutdown": {
+          "type": "string",
+          "title": "Shutdown will shutdown the workflow according to its ShutdownStrategy"
+        },
         "suspend": {
           "type": "boolean",
           "format": "boolean",
@@ -3057,6 +3117,12 @@
     "io.argoproj.workflow.v1alpha1.InfoResponse": {
       "type": "object",
       "properties": {
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Link"
+          }
+        },
         "managedNamespace": {
           "type": "string"
         }
@@ -5685,6 +5751,17 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.WorkflowRetryRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowStopRequest": {
       "type": "object",
       "properties": {
         "name": {

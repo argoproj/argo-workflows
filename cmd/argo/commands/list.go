@@ -230,7 +230,7 @@ func workflowStatus(wf *wfv1.Workflow) wfv1.NodePhase {
 		}
 		return wf.Status.Phase
 	case wfv1.NodeFailed:
-		if util.IsWorkflowTerminated(wf) {
+		if wf.Spec.Shutdown != "" {
 			return "Failed (Terminated)"
 		}
 		return wf.Status.Phase

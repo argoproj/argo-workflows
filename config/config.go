@@ -61,6 +61,9 @@ type Config struct {
 	// Persistence contains the workflow persistence DB configuration
 	Persistence *PersistConfig `json:"persistence,omitempty"`
 
+	// Links to related apps.
+	Links []*wfv1.Link `json:"links,omitempty"`
+
 	// Config customized Docker Sock path
 	DockerSockPath string `json:"dockerSockPath,omitempty"`
 
