@@ -13,16 +13,12 @@ import (
 	"github.com/soheilhy/cmux"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	apiv1 "k8s.io/api/core/v1"
-	apiError "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo"
+	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
@@ -41,8 +37,6 @@ import (
 	"github.com/argoproj/argo/server/workflowtemplate"
 	grpcutil "github.com/argoproj/argo/util/grpc"
 	"github.com/argoproj/argo/util/json"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/config"
 )
 
 const (
@@ -56,7 +50,7 @@ type argoServer struct {
 	managedNamespace string
 	kubeClientset    *kubernetes.Clientset
 	authenticator    auth.Gatekeeper
-	configName       string
+	configController config.Controller
 	stopCh           chan struct{}
 }
 
@@ -79,7 +73,7 @@ func NewArgoServer(opts ArgoServerOpts) *argoServer {
 		managedNamespace: opts.ManagedNamespace,
 		kubeClientset:    opts.KubeClientset,
 		authenticator:    auth.NewGatekeeper(opts.AuthMode, opts.WfClientSet, opts.KubeClientset, opts.RestConfig),
-		configName:       opts.ConfigName,
+		configController: config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset),
 	}
 }
 
@@ -110,11 +104,11 @@ func (ao ArgoServerOpts) ValidateOpts() error {
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
 	log.WithField("version", argo.GetVersion()).Info("Starting Argo Server")
-	configMap, err := as.rsyncConfig()
+
+	configMap, err := as.configController.Get()
 	if err != nil {
 		log.Fatal(err)
 	}
-	as.restartOnConfigChange(ctx.Done())
 	var offloadRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	var wfArchive = sqldb.NullWorkflowArchive
 	persistence := configMap.Persistence
@@ -167,6 +161,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	browserOpenFunc("http://localhost" + address)
 
 	as.stopCh = make(chan struct{})
+	as.configController.Run(as.stopCh, as.restartOnConfigChange)
 	<-as.stopCh
 }
 
@@ -252,68 +247,13 @@ func mustRegisterGWHandler(register registerFunc, ctx context.Context, mux *runt
 	}
 }
 
-// ResyncConfig reloads the controller config from the configmap
-func (as *argoServer) rsyncConfig() (*config.WorkflowControllerConfig, error) {
-	cm, err := as.kubeClientset.CoreV1().ConfigMaps(as.namespace).
-		Get(as.configName, metav1.GetOptions{})
-	if err != nil {
-		if apiError.IsNotFound(err) {
-			return &config.WorkflowControllerConfig{}, nil
-		}
-		return nil, errors.InternalWrapError(err)
-	}
-	return as.updateConfig(cm)
-}
-
 // Unlike the controller, the server creates object based on the config map at init time, and will not pick-up on
 // changes unless we restart.
 // Instead of opting to re-write the server, instead we'll just listen for any old change and restart.
-func (as *argoServer) restartOnConfigChange(stopCh <-chan struct{}) {
-	go func() {
-	main:
-		for {
-			log.Info("establishing configmap watch")
-			w, err := as.kubeClientset.CoreV1().ConfigMaps(as.namespace).
-				Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + as.configName})
-			if err != nil {
-				log.Fatalf("error establishing watch: %s", err)
-			}
-			log.Info("configmap watch established")
-			for {
-				select {
-				// normal exit, e.g. due to user interrupt
-				case <-stopCh:
-					return
-				case e, open := <-w.ResultChan():
-					if !open {
-						// The channel is closed, reopen it
-						continue main
-					}
-					if e.Type == watch.Modified || e.Type == watch.Deleted {
-						log.WithField("eventType", e.Type).Info("config map event, exiting gracefully")
-						as.stopCh <- struct{}{}
-						return
-					}
-				}
-			}
-		}
-	}()
-}
-
-func (as *argoServer) updateConfig(cm *apiv1.ConfigMap) (*config.WorkflowControllerConfig, error) {
-
-	configStr, ok := cm.Data[common.WorkflowControllerConfigMapKey]
-	if !ok {
-		log.Warnf("ConfigMap '%s' does not have key '%s'", as.configName, common.WorkflowControllerConfigMapKey)
-		configStr = ""
-	}
-	var config config.WorkflowControllerConfig
-	log.Infof("Config Map: %s", configStr)
-	err := yaml.Unmarshal([]byte(configStr), &config)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-	return &config, nil
+func (as *argoServer) restartOnConfigChange(config.Config) error {
+	log.Info("config map event, exiting gracefully")
+	as.stopCh <- struct{}{}
+	return nil
 }
 
 // checkServeErr checks the error from a .Serve() call to decide if it was a graceful shutdown

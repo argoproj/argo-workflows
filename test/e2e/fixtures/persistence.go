@@ -6,8 +6,8 @@ import (
 	"sigs.k8s.io/yaml"
 	"upper.io/db.v3/lib/sqlbuilder"
 
-	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/config"
+	"github.com/argoproj/argo/persist/sqldb"
 )
 
 type Persistence struct {
@@ -21,7 +21,7 @@ func newPersistence(kubeClient kubernetes.Interface) *Persistence {
 	if err != nil {
 		panic(err)
 	}
-	wcConfig := &config.WorkflowControllerConfig{}
+	wcConfig := &config.Config{}
 	err = yaml.Unmarshal([]byte(cm.Data["config"]), wcConfig)
 	if err != nil {
 		panic(err)
