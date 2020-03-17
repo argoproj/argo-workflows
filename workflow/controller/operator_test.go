@@ -2354,6 +2354,19 @@ func TestPDBCreation(t *testing.T) {
 	assert.Nil(t, pdb)
 }
 
+func TestStatusConditions(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(pdbwf)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	//woc.operate()
+	assert.Equal(t, len(woc.wf.Status.Conditions), 0)
+	woc.markWorkflowSuccess()
+	assert.Equal(t, woc.wf.Status.Conditions[0].Status, metav1.ConditionStatus("True"))
+}
+
 var nestedOptionalOutputArtifacts = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
