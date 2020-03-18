@@ -1078,6 +1078,7 @@ type NodeStatus struct {
 	// a template, will be a superset of the outbound nodes of its last children.
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
 }
+
 func (n Nodes) GetResourcesRequested() ResourcesDuration {
 	i := ResourcesDuration{}
 	for _, status := range n {
