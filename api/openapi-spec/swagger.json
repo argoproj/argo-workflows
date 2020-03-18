@@ -1853,6 +1853,33 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate": {
+      "type": "object",
+      "title": "ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope\n+genclient\n+genclient:noStatus\n+genclient:nonNamespaced\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateList": {
+      "type": "object",
+      "title": "ClusterWorkflowTemplateList is list of ClusterWorkflowTemplate resources\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
+          }
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ListMeta"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Condition": {
       "type": "object",
       "properties": {

@@ -124,6 +124,25 @@ message Backoff {
   optional string maxDuration = 3;
 }
 
+// ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope
+// +genclient
+// +genclient:noStatus
+// +genclient:nonNamespaced
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message ClusterWorkflowTemplate {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional WorkflowTemplateSpec spec = 2;
+}
+
+// ClusterWorkflowTemplateList is list of ClusterWorkflowTemplate resources
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message ClusterWorkflowTemplateList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated ClusterWorkflowTemplate items = 2;
+}
+
 message Condition {
   optional string status = 1;
 
@@ -1201,3 +1220,4 @@ message WorkflowTemplateList {
 message WorkflowTemplateSpec {
   optional WorkflowSpec workflowSpec = 1;
 }
+
