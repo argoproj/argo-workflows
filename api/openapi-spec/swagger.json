@@ -2248,14 +2248,9 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.ParallelSteps": {
-      "type": "object",
-      "properties": {
-        "steps": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStep"
-          }
-        }
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/io.argoproj.io.argoproj.workflow.v1alpha1.v1alpha1.WorkflowStep"
       }
     },
     "io.argoproj.workflow.v1alpha1.Parameter": {
