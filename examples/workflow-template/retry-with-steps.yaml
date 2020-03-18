@@ -20,11 +20,3 @@ spec:
         templateRef:
           name: workflow-template-random-fail-template
           template: random-fail-template
-      - name: hello2a1
-        templateRef:
-          name: workflow-template-inner-steps
-          template: inner-steps
-        arguments:
-          parameters:
-            - name: message
-              value: "hello2a"

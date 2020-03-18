@@ -11,5 +11,5 @@ spec:
       - name: message
         value: hello from nested
     templateRef:
-      name: workflow-template-whalesay-template
+      name: workflow-template-nested-template
       template: whalesay-template

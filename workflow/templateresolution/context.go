@@ -18,7 +18,7 @@ import (
 // maxResolveDepth is the limit of template reference resolution.
 const maxResolveDepth int = 10
 
-// workflowTemplateInterfaceWrapper is an internal struct to wrap nsClientset.
+// workflowTemplateInterfaceWrapper is an internal struct to wrap clientset.
 type workflowTemplateInterfaceWrapper struct {
 	clientset typed.WorkflowTemplateInterface
 }
@@ -38,7 +38,7 @@ type WorkflowTemplateNamespacedGetter interface {
 	Get(name string) (*wfv1.WorkflowTemplate, error)
 }
 
-// clusterWorkflowTemplateInterfaceWrapper is an internal struct to wrap nsClientset.
+// clusterWorkflowTemplateInterfaceWrapper is an internal struct to wrap clientset.
 type clusterWorkflowTemplateInterfaceWrapper struct {
 	clientset typed.ClusterWorkflowTemplateInterface
 }

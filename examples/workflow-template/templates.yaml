@@ -23,7 +23,6 @@ spec:
     templateRef:
       name: workflow-template-whalesay-template
       template: whalesay-template
-      clusterscope: true
     inputs:
       parameters:
       - name: message
@@ -68,7 +67,6 @@ spec:
         templateRef:
           name: workflow-template-whalesay-template
           template: whalesay-template
-          clusterscope: true
         arguments:
           parameters:
           - name: message
@@ -77,16 +75,12 @@ spec:
         templateRef:
           name: workflow-template-whalesay-template
           template: whalesay-template
-          clusterscope: true
         arguments:
           parameters:
           - name: message
             value: "inner-hello2a"
       - name: inner-hello2b
-        templateRef:
-          name: workflow-template-whalesay-template
-          template: whalesay-template
-          clusterscope: true
+        template: whalesay-template
         arguments:
           parameters:
           - name: message
@@ -120,7 +114,6 @@ spec:
         templateRef:
           name: workflow-template-whalesay-template
           template: whalesay-template
-          clusterscope: true
         arguments:
           parameters:
           - name: message
@@ -144,7 +137,6 @@ spec:
         templateRef:
           name: workflow-template-whalesay-template
           template: whalesay-template
-          clusterscope: true
         arguments:
           parameters:
           - name: message
