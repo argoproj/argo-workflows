@@ -35,7 +35,7 @@ func (s3Driver *S3ArtifactDriver) newS3Client() (argos3.S3Client, error) {
 		SecretKey:   s3Driver.SecretKey,
 		RoleARN:     s3Driver.RoleARN,
 		Trace:       os.Getenv(common.EnvVarArgoTrace) == "1",
-		UseSDKCreds: s3Driver.UseIRSA,
+		UseSDKCreds: s3Driver.UseSDKCreds,
 	}
 	return argos3.NewS3Client(opts)
 }
