@@ -243,8 +243,11 @@ manifests/quick-start-postgres.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
 
 # lint/test/etc
 
+$(HOME)/go/bin/golangci-lint:
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s --
+
 .PHONY: lint
-lint: server/static/files.go
+lint: server/static/files.go $(HOME)/go/bin/golangci-lint
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
