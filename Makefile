@@ -203,8 +203,11 @@ endif
 
 # generation
 
+$(HOME)/go/bin/mockery:
+	go get github.com/vektra/mockery/.../
+
 .PHONY: codegen
-codegen:
+codegen: $(HOME)/go/bin/mockery
 	# Generate code
 	# We need the folder for compatibility
 	go mod vendor
