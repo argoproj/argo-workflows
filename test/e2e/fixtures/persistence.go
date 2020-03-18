@@ -1,9 +1,7 @@
 package fixtures
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/yaml"
 	"upper.io/db.v3/lib/sqlbuilder"
 
 	"github.com/argoproj/argo/config"
@@ -17,12 +15,8 @@ type Persistence struct {
 }
 
 func newPersistence(kubeClient kubernetes.Interface) *Persistence {
-	cm, err := kubeClient.CoreV1().ConfigMaps(Namespace).Get("workflow-controller-configmap", metav1.GetOptions{})
-	if err != nil {
-		panic(err)
-	}
-	wcConfig := &config.Config{}
-	err = yaml.Unmarshal([]byte(cm.Data["config"]), wcConfig)
+	configController := config.NewController(Namespace, "workflow-controller-configmap", kubeClient)
+	wcConfig, err := configController.Get()
 	if err != nil {
 		panic(err)
 	}

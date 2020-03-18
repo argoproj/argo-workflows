@@ -53,11 +53,11 @@ func parseConfigMap(cm *apiv1.ConfigMap) (Config, error) {
 	if ok && len(cm.Data) != 1 {
 		return c, fmt.Errorf("if you have an item in your config map named 'config', you must only have one item")
 	}
-
 	if !ok {
 		for name, value := range cm.Data {
 			if strings.Contains(value, "\n") {
-				config = config + name + ":\n" + strings.Trim(value, "\n") + "\n"
+				// this mucky code indents with two spaces
+				config = config + name + ":\n  " + strings.Join(strings.Split(strings.Trim(value, "\n"), "\n"), "\n  ") + "\n"
 			} else {
 				config = config + name + ": " + value + "\n"
 			}
