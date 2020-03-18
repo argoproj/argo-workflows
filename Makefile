@@ -251,6 +251,8 @@ lint: server/static/files.go $(HOME)/go/bin/golangci-lint
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
+	pwd
+	ls
 	golangci-lint run --fix --verbose --concurrency 4
 ifeq ($(CI),false)
 	# Lint UI files
