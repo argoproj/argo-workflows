@@ -11,8 +11,8 @@
   "swagger": "2.0",
   "info": {
     "description": "Workflow Service API performs CRUD actions against application resources",
-    "title": "pkg/apiclient/cronworkflow/cron-io.argoproj.workflow.v1alpha1.proto",
-    "version": "version not set"
+    "title": "Argo",
+    "version": "latest"
   },
   "host": "localhost:2746",
   "paths": {
@@ -2212,7 +2212,7 @@
     "io.argoproj.workflow.v1alpha1.ParallelSteps": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStep"
+        "$ref": "#/definitions/io.argoproj.io.argoproj.workflow.v1alpha1.v1alpha1.WorkflowStep"
       }
     },
     "io.argoproj.workflow.v1alpha1.Parameter": {
@@ -2476,7 +2476,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity"
         },
         "archiveLocation": {
-          "description": "Location in which all files related to the step will be stored (logs, artifacts, etc...).\nCan be overridden by individual items in Outputs. If omitted, will use the default\nartifact repository location configured in the controller, appended with the\n<workflowname>/<nodename> in the key.",
+          "description": "Location in which all files related to the step will be stored (logs, artifacts, etc...).\nCan be overridden by individual items in Outputs. If omitted, will use the default\nartifact repository location configured in the controller, appended with the\n\u003cworkflowname\u003e/\u003cnodename\u003e in the key.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactLocation"
         },
         "arguments": {
@@ -3487,7 +3487,7 @@
       "type": "object",
       "properties": {
         "containerPort": {
-          "description": "Number of port to expose on the pod's IP address.\nThis must be a valid port number, 0 < x < 65536.",
+          "description": "Number of port to expose on the pod's IP address.\nThis must be a valid port number, 0 \u003c x \u003c 65536.",
           "type": "integer",
           "format": "int32"
         },
@@ -3498,7 +3498,7 @@
         "hostPort": {
           "type": "integer",
           "format": "int32",
-          "title": "Number of port to expose on the host.\nIf specified, this must be a valid port number, 0 < x < 65536.\nIf HostNetwork is specified, this must match ContainerPort.\nMost containers do not need this.\n+optional"
+          "title": "Number of port to expose on the host.\nIf specified, this must be a valid port number, 0 \u003c x \u003c 65536.\nIf HostNetwork is specified, this must match ContainerPort.\nMost containers do not need this.\n+optional"
         },
         "name": {
           "type": "string",
@@ -3719,7 +3719,7 @@
       "properties": {
         "datasetName": {
           "type": "string",
-          "title": "Name of the dataset stored as metadata -> name on the dataset for Flocker\nshould be considered as deprecated\n+optional"
+          "title": "Name of the dataset stored as metadata -\u003e name on the dataset for Flocker\nshould be considered as deprecated\n+optional"
         },
         "datasetUUID": {
           "type": "string",
@@ -3900,7 +3900,7 @@
         },
         "initiatorName": {
           "type": "string",
-          "title": "Custom iSCSI Initiator Name.\nIf initiatorName is specified with iscsiInterface simultaneously, new iSCSI interface\n<target portal>:<volume name> will be created for the connection.\n+optional"
+          "title": "Custom iSCSI Initiator Name.\nIf initiatorName is specified with iscsiInterface simultaneously, new iSCSI interface\n\u003ctarget portal\u003e:\u003cvolume name\u003e will be created for the connection.\n+optional"
         },
         "iqn": {
           "description": "Target iSCSI Qualified Name.",
@@ -4283,7 +4283,7 @@
     },
     "io.k8s.api.core.v1.PodAffinityTerm": {
       "type": "object",
-      "title": "Defines a set of pods (namely those matching the labelSelector\nrelative to the given namespace(s)) that this pod should be\nco-located (affinity) or not co-located (anti-affinity) with,\nwhere co-located is defined as running on a node whose value of\nthe label with key <topologyKey> matches that of any node on which\na pod of the set of pods is running",
+      "title": "Defines a set of pods (namely those matching the labelSelector\nrelative to the given namespace(s)) that this pod should be\nco-located (affinity) or not co-located (anti-affinity) with,\nwhere co-located is defined as running on a node whose value of\nthe label with key \u003ctopologyKey\u003e matches that of any node on which\na pod of the set of pods is running",
       "properties": {
         "labelSelector": {
           "title": "A label query over a set of resources, in this case pods.\n+optional",
@@ -4934,7 +4934,7 @@
       }
     },
     "io.k8s.api.core.v1.Toleration": {
-      "description": "The pod this Toleration is attached to tolerates any taint that matches\nthe triple <key,value,effect> using the matching operator <operator>.",
+      "description": "The pod this Toleration is attached to tolerates any taint that matches\nthe triple \u003ckey,value,effect\u003e using the matching operator \u003coperator\u003e.",
       "type": "object",
       "properties": {
         "effect": {
@@ -5251,7 +5251,7 @@
       }
     },
     "io.k8s.api.core.v1.Quantity": {
-      "description": "Quantity is a fixed-point representation of a number.\nIt provides convenient marshaling/unmarshaling in JSON and YAML,\nin addition to String() and AsInt64() accessors.\n\nThe serialization format is:\n\n<quantity>        ::= <signedNumber><suffix>\n  (Note that <suffix> may be empty, from the \"\" case in <decimalSI>.)\n<digit>           ::= 0 | 1 | ... | 9\n<digits>          ::= <digit> | <digit><digits>\n<number>          ::= <digits> | <digits>.<digits> | <digits>. | .<digits>\n<sign>            ::= \"+\" | \"-\"\n<signedNumber>    ::= <number> | <sign><number>\n<suffix>          ::= <binarySI> | <decimalExponent> | <decimalSI>\n<binarySI>        ::= Ki | Mi | Gi | Ti | Pi | Ei\n  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)\n<decimalSI>       ::= m | \"\" | k | M | G | T | P | E\n  (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)\n<decimalExponent> ::= \"e\" <signedNumber> | \"E\" <signedNumber>\n\nNo matter which of the three exponent forms is used, no quantity may represent\na number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal\nplaces. Numbers larger or more precise will be capped or rounded up.\n(E.g.: 0.1m will rounded up to 1m.)\nThis may be extended in the future if we require larger or smaller quantities.\n\nWhen a Quantity is parsed from a string, it will remember the type of suffix\nit had, and will use the same type again when it is serialized.\n\nBefore serializing, Quantity will be put in \"canonical form\".\nThis means that Exponent/suffix will be adjusted up or down (with a\ncorresponding increase or decrease in Mantissa) such that:\n  a. No precision is lost\n  b. No fractional digits will be emitted\n  c. The exponent (or suffix) is as large as possible.\nThe sign will be omitted unless the number is negative.\n\nExamples:\n  1.5 will be serialized as \"1500m\"\n  1.5Gi will be serialized as \"1536Mi\"\n\nNote that the quantity will NEVER be internally represented by a\nfloating point number. That is the whole point of this exercise.\n\nNon-canonical values will still parse as long as they are well formed,\nbut will be re-emitted in their canonical form. (So always use canonical\nform, or don't diff.)\n\nThis format is intended to make it difficult to use these numbers without\nwriting some sort of special handling code in the hopes that that will\ncause implementors to also use a fixed point implementation.\n\n+protobuf=true\n+protobuf.embed=string\n+protobuf.options.marshal=false\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:deepcopy-gen=true\n+k8s:openapi-gen=true",
+      "description": "Quantity is a fixed-point representation of a number.\nIt provides convenient marshaling/unmarshaling in JSON and YAML,\nin addition to String() and AsInt64() accessors.\n\nThe serialization format is:\n\n\u003cquantity\u003e        ::= \u003csignedNumber\u003e\u003csuffix\u003e\n  (Note that \u003csuffix\u003e may be empty, from the \"\" case in \u003cdecimalSI\u003e.)\n\u003cdigit\u003e           ::= 0 | 1 | ... | 9\n\u003cdigits\u003e          ::= \u003cdigit\u003e | \u003cdigit\u003e\u003cdigits\u003e\n\u003cnumber\u003e          ::= \u003cdigits\u003e | \u003cdigits\u003e.\u003cdigits\u003e | \u003cdigits\u003e. | .\u003cdigits\u003e\n\u003csign\u003e            ::= \"+\" | \"-\"\n\u003csignedNumber\u003e    ::= \u003cnumber\u003e | \u003csign\u003e\u003cnumber\u003e\n\u003csuffix\u003e          ::= \u003cbinarySI\u003e | \u003cdecimalExponent\u003e | \u003cdecimalSI\u003e\n\u003cbinarySI\u003e        ::= Ki | Mi | Gi | Ti | Pi | Ei\n  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)\n\u003cdecimalSI\u003e       ::= m | \"\" | k | M | G | T | P | E\n  (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)\n\u003cdecimalExponent\u003e ::= \"e\" \u003csignedNumber\u003e | \"E\" \u003csignedNumber\u003e\n\nNo matter which of the three exponent forms is used, no quantity may represent\na number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal\nplaces. Numbers larger or more precise will be capped or rounded up.\n(E.g.: 0.1m will rounded up to 1m.)\nThis may be extended in the future if we require larger or smaller quantities.\n\nWhen a Quantity is parsed from a string, it will remember the type of suffix\nit had, and will use the same type again when it is serialized.\n\nBefore serializing, Quantity will be put in \"canonical form\".\nThis means that Exponent/suffix will be adjusted up or down (with a\ncorresponding increase or decrease in Mantissa) such that:\n  a. No precision is lost\n  b. No fractional digits will be emitted\n  c. The exponent (or suffix) is as large as possible.\nThe sign will be omitted unless the number is negative.\n\nExamples:\n  1.5 will be serialized as \"1500m\"\n  1.5Gi will be serialized as \"1536Mi\"\n\nNote that the quantity will NEVER be internally represented by a\nfloating point number. That is the whole point of this exercise.\n\nNon-canonical values will still parse as long as they are well formed,\nbut will be re-emitted in their canonical form. (So always use canonical\nform, or don't diff.)\n\nThis format is intended to make it difficult to use these numbers without\nwriting some sort of special handling code in the hopes that that will\ncause implementors to also use a fixed point implementation.\n\n+protobuf=true\n+protobuf.embed=string\n+protobuf.options.marshal=false\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:deepcopy-gen=true\n+k8s:openapi-gen=true",
       "type": "object",
       "properties": {
         "string": {
@@ -5308,7 +5308,7 @@
       }
     },
     "io.k8s.api.core.v1.FieldsV1": {
-      "description": "FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format.\n\nEach key is either a '.' representing the field itself, and will always map to an empty set,\nor a string representing a sub-field or item. The string will follow one of these four formats:\n'f:<name>', where <name> is the name of a field in a struct, or key in a map\n'v:<value>', where <value> is the exact json formatted value of a list item\n'i:<index>', where <index> is position of a item in a list\n'k:<keys>', where <keys> is a map of  a list item's key fields to their unique values\nIf a key maps to an empty Fields value, the field that key represents is part of the set.\n\nThe exact format is defined in sigs.k8s.io/structured-merge-diff",
+      "description": "FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format.\n\nEach key is either a '.' representing the field itself, and will always map to an empty set,\nor a string representing a sub-field or item. The string will follow one of these four formats:\n'f:\u003cname\u003e', where \u003cname\u003e is the name of a field in a struct, or key in a map\n'v:\u003cvalue\u003e', where \u003cvalue\u003e is the exact json formatted value of a list item\n'i:\u003cindex\u003e', where \u003cindex\u003e is position of a item in a list\n'k:\u003ckeys\u003e', where \u003ckeys\u003e is a map of  a list item's key fields to their unique values\nIf a key maps to an empty Fields value, the field that key represents is part of the set.\n\nThe exact format is defined in sigs.k8s.io/structured-merge-diff",
       "type": "object",
       "properties": {
         "Raw": {

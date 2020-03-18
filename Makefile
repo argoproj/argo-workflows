@@ -77,8 +77,8 @@ CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join 
 MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
-# the sort puts _.primary first in the list
-SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json' | sort)
+# The sort puts _.primary first in the list. 'env LC_COLLATE=C' makes sure underscore comes first in both Mac and Linux.
+SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json' | env LC_COLLATE=C sort)
 
 .PHONY: build
 build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
@@ -433,9 +433,6 @@ $(HOME)/go/bin/swagger:
 
 api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) dist/MANIFESTS_VERSION hack/swaggify.sh
 	swagger mixin -c 412 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
-	# Override ParallelSteps definition to match overridden serialization/deserialization logic.  https://github.com/argoproj/argo/issues/2454
-	cat api/openapi-spec/swagger.json | jq '.definitions["io.argoproj.workflow.v1alpha1.ParallelSteps"] = { "type": "array", "items": { "$$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStep" } }' > api/openapi-spec/swagger.json.tweaked
-	mv api/openapi-spec/swagger.json.tweaked api/openapi-spec/swagger.json
 
 # pre-push
 
