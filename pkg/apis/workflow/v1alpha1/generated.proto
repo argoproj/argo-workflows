@@ -124,6 +124,12 @@ message Backoff {
   optional string maxDuration = 3;
 }
 
+message Condition {
+  optional string status = 1;
+
+  optional string type = 2;
+}
+
 // ContinueOn defines if a workflow should continue even if a task or step fails/errors.
 // It can be specified if the workflow should continue when the pod errors, fails or both.
 message ContinueOn {
@@ -132,6 +138,12 @@ message ContinueOn {
 
   // +optional
   optional bool failed = 2;
+}
+
+// Counter is a Counter prometheus metric
+message Counter {
+  // Value is the value of the metric
+  optional string value = 1;
 }
 
 // CronWorkflow is the definition of a scheduled workflow resource
@@ -257,6 +269,15 @@ message ExecutorConfig {
   optional string serviceAccountName = 1;
 }
 
+// Gauge is a Gauge prometheus metric
+message Gauge {
+  // Value is the value of the metric
+  optional string value = 1;
+
+  // Realtime emits this metric in real time if applicable
+  optional bool realtime = 2;
+}
+
 // GitArtifact is the location of an git artifact
 message GitArtifact {
   // Repo is the git repository
@@ -341,6 +362,15 @@ message HTTPArtifact {
   optional string url = 1;
 }
 
+// Histogram is a Histogram prometheus metric
+message Histogram {
+  // Value is the value of the metric
+  optional string value = 3;
+
+  // Buckets is a list of bucket divisors for the histogram
+  repeated double buckets = 4;
+}
+
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 message Inputs {
   // Parameters are a list of parameters passed as inputs
@@ -391,11 +421,38 @@ message ItemValue {
   repeated bytes listVal = 6;
 }
 
+// A link to another app.
+// +patchStrategy=merge
+// +patchMergeKey=name
+message Link {
+  // The name of the link, E.g. "Workflow Logs" or "Pod Logs"
+  optional string name = 1;
+
+  // Either "workflow" or "pod"
+  optional string scope = 2;
+
+  // The URL. May contain "${metadata.namespace}" and "${metadata.name}".
+  optional string url = 3;
+}
+
 // Pod metdata
 message Metadata {
   map<string, string> annotations = 1;
 
   map<string, string> labels = 2;
+}
+
+// MetricLabel is a single label for a prometheus metric
+message MetricLabel {
+  optional string key = 1;
+
+  optional string value = 2;
+}
+
+// Metrics are a list of metrics emitted from a Workflow/Template
+message Metrics {
+  // Prometheus is a list of prometheus metrics to be emitted
+  repeated Prometheus prometheus = 1;
 }
 
 // NodeStatus contains status information about an individual node in the workflow
@@ -553,6 +610,30 @@ message PodGC {
   optional string strategy = 1;
 }
 
+// Prometheus is a prometheus metric to be emitted
+message Prometheus {
+  // Name is the name of the metric
+  optional string name = 1;
+
+  // Labels is a list of metric labels
+  repeated MetricLabel labels = 2;
+
+  // Help is a string that describes the metric
+  optional string help = 3;
+
+  // When is a conditional statement that decides when to emit the metric
+  optional string when = 4;
+
+  // Gauge is a gauge metric
+  optional Gauge gauge = 5;
+
+  // Histogram is a histogram metric
+  optional Histogram histogram = 6;
+
+  // Counter is a counter metric
+  optional Counter counter = 7;
+}
+
 // RawArtifact allows raw string content to be placed as an artifact in a container
 message RawArtifact {
   // Data is the string contents of the artifact
@@ -676,9 +757,15 @@ message Template {
   optional string name = 1;
 
   // Template is the name of the template which is used as the base of this template.
+  // DEPRECATED: This field is not used.
   optional string template = 2;
 
+  // Arguments hold arguments to the template.
+  // DEPRECATED: This field is not used.
+  optional Arguments arguments = 3;
+
   // TemplateRef is the reference to the template resource which is used as the base of this template.
+  // DEPRECATED: This field is not used.
   optional TemplateRef templateRef = 4;
 
   // Inputs describe what inputs parameters and artifacts are supplied to this template
@@ -797,6 +884,9 @@ message Template {
 
   // ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
   optional bool resubmitPendingPods = 34;
+
+  // Metrics are a list of metrics emitted from this template
+  optional Metrics metrics = 35;
 }
 
 // TemplateRef is a reference of template resource.
@@ -1003,6 +1093,12 @@ message WorkflowSpec {
   // Optional: Defaults to empty.
   // +optional
   optional k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec podDisruptionBudget = 31;
+
+  // Metrics are a list of metrics emitted from this Workflow
+  optional Metrics metrics = 32;
+
+  // Shutdown will shutdown the workflow according to its ShutdownStrategy
+  optional string shutdown = 33;
 }
 
 // WorkflowStatus contains overall status information about a workflow
@@ -1038,6 +1134,9 @@ message WorkflowStatus {
 
   // Outputs captures output values and artifact locations produced by the workflow via global outputs
   optional Outputs outputs = 8;
+
+  // Condition for k8s conditions https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
+  repeated Condition condition = 11;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

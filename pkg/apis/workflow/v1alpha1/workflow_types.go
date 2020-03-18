@@ -283,7 +283,20 @@ type WorkflowSpec struct {
 	//Optional: Defaults to empty.
 	// +optional
 	PodDisruptionBudget *policyv1beta.PodDisruptionBudgetSpec `json:"podDisruptionBudget,omitempty" protobuf:"bytes,31,opt,name=podDisruptionBudget"`
+
+	// Metrics are a list of metrics emitted from this Workflow
+	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,32,opt,name=metrics"`
+
+	// Shutdown will shutdown the workflow according to its ShutdownStrategy
+	Shutdown ShutdownStrategy `json:"shutdown,omitempty" protobuf:"bytes,33,opt,name=shutdown,casttype=ShutdownStrategy"`
 }
+
+type ShutdownStrategy string
+
+const (
+	ShutdownStrategyTerminate ShutdownStrategy = "Terminate"
+	ShutdownStrategyStop      ShutdownStrategy = "Stop"
+)
 
 type ParallelSteps struct {
 	Steps []WorkflowStep `protobuf:"bytes,1,rep,name=steps"`
@@ -340,9 +353,15 @@ type Template struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Template is the name of the template which is used as the base of this template.
+	// DEPRECATED: This field is not used.
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
+	// Arguments hold arguments to the template.
+	// DEPRECATED: This field is not used.
+	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
+
 	// TemplateRef is the reference to the template resource which is used as the base of this template.
+	// DEPRECATED: This field is not used.
 	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,4,opt,name=templateRef"`
 
 	// Inputs describe what inputs parameters and artifacts are supplied to this template
@@ -461,10 +480,14 @@ type Template struct {
 
 	// ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
 	ResubmitPendingPods *bool `json:"resubmitPendingPods,omitempty" protobuf:"varint,34,opt,name=resubmitPendingPods"`
+
+	// Metrics are a list of metrics emitted from this template
+	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,35,opt,name=metrics"`
 }
 
 var _ TemplateHolder = &Template{}
 
+// DEPRECATED: Templates should not be used at TemplateHolders
 func (tmpl *Template) GetTemplateName() string {
 	if tmpl.Template != "" {
 		return tmpl.Template
@@ -473,10 +496,12 @@ func (tmpl *Template) GetTemplateName() string {
 	}
 }
 
+// DEPRECATED: Templates should not be used at TemplateHolders
 func (tmpl *Template) GetTemplateRef() *TemplateRef {
 	return tmpl.TemplateRef
 }
 
+// DEPRECATED: Templates should not be used at TemplateHolders
 func (tmpl *Template) IsResolvable() bool {
 	return tmpl.Template != "" || tmpl.TemplateRef != nil
 }
@@ -514,6 +539,10 @@ type Inputs struct {
 	// +patchStrategy=merge
 	// +patchMergeKey=name
 	Artifacts Artifacts `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,opt,name=artifacts"`
+}
+
+func (in Inputs) IsEmpty() bool {
+	return len(in.Parameters) == 0 && len(in.Artifacts) == 0
 }
 
 // Pod metdata
@@ -807,6 +836,10 @@ type Arguments struct {
 	Artifacts Artifacts `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
 }
 
+func (a Arguments) IsEmpty() bool {
+	return len(a.Parameters) == 0 && len(a.Artifacts) == 0
+}
+
 var _ ArgumentsProvider = &Arguments{}
 
 type Nodes map[string]NodeStatus
@@ -873,6 +906,15 @@ type WorkflowStatus struct {
 
 	// Outputs captures output values and artifact locations produced by the workflow via global outputs
 	Outputs *Outputs `json:"outputs,omitempty" protobuf:"bytes,8,opt,name=outputs"`
+
+	// Condition for k8s conditions https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
+	Conditions []Condition `json:"condition,omitempty" protobuf:"bytes,11,opt,name=condition"`
+}
+
+type Condition struct {
+	Status metav1.ConditionStatus `json:"status,omitempty" protobuf:"varint,1,opt,name=status"`
+
+	Type string `json:"type,omitempty" protobuf:"varint,2,opt,name=type"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -993,11 +1035,7 @@ type NodeStatus struct {
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
 }
 
-//func (n NodeStatus) String() string {
-//	return fmt.Sprintf("%s (%s)", n.Name, n.ID)
-//}
-
-func isCompletedPhase(phase NodePhase) bool {
+func (phase NodePhase) Completed() bool {
 	return phase == NodeSucceeded ||
 		phase == NodeFailed ||
 		phase == NodeError ||
@@ -1005,27 +1043,35 @@ func isCompletedPhase(phase NodePhase) bool {
 }
 
 // Completed returns whether or not the workflow has completed execution
-func (ws *WorkflowStatus) Completed() bool {
-	return isCompletedPhase(ws.Phase)
+func (ws WorkflowStatus) Completed() bool {
+	return ws.Phase.Completed()
 }
 
 // Successful return whether or not the workflow has succeeded
-func (ws *WorkflowStatus) Successful() bool {
+func (ws WorkflowStatus) Successful() bool {
 	return ws.Phase == NodeSucceeded
 }
 
 // Failed return whether or not the workflow has failed
-func (ws *WorkflowStatus) Failed() bool {
+func (ws WorkflowStatus) Failed() bool {
 	return ws.Phase == NodeFailed
 }
 
-func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
-	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
+func (ws WorkflowStatus) StartTime() *metav1.Time {
+	return &ws.StartedAt
+}
+
+func (ws WorkflowStatus) FinishTime() *metav1.Time {
+	return &ws.FinishedAt
 }
 
 // Completed returns whether or not the node has completed execution
 func (n NodeStatus) Completed() bool {
-	return isCompletedPhase(n.Phase) || n.IsDaemoned() && n.Phase != NodePending
+	return n.Phase.Completed() || n.IsDaemoned() && n.Phase != NodePending
+}
+
+func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
+	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
 }
 
 // Pending returns whether or not the node is in pending state
@@ -1044,6 +1090,18 @@ func (n NodeStatus) IsDaemoned() bool {
 // Successful returns whether or not this node completed successfully
 func (n NodeStatus) Successful() bool {
 	return n.Phase == NodeSucceeded || n.Phase == NodeSkipped || n.IsDaemoned() && n.Phase != NodePending
+}
+
+func (n NodeStatus) Failed() bool {
+	return !n.Successful()
+}
+
+func (n NodeStatus) StartTime() *metav1.Time {
+	return &n.StartedAt
+}
+
+func (n NodeStatus) FinishTime() *metav1.Time {
+	return &n.FinishedAt
 }
 
 // CanRetry returns whether the node should be retried or not.
@@ -1591,4 +1649,130 @@ func (t *DAGTask) ContinuesOn(phase NodePhase) bool {
 // ContinuesOn returns whether the StepGroup should be proceeded if the task fails or errors.
 func (s *WorkflowStep) ContinuesOn(phase NodePhase) bool {
 	return continues(s.ContinueOn, phase)
+}
+
+type MetricType string
+
+const (
+	MetricTypeGauge     MetricType = "Gauge"
+	MetricTypeHistogram MetricType = "Histogram"
+	MetricTypeCounter   MetricType = "Counter"
+	MetricTypeUnknown   MetricType = "Unknown"
+)
+
+// Metrics are a list of metrics emitted from a Workflow/Template
+type Metrics struct {
+	// Prometheus is a list of prometheus metrics to be emitted
+	Prometheus []*Prometheus `json:"prometheus" protobuf:"bytes,1,rep,name=prometheus"`
+}
+
+// Prometheus is a prometheus metric to be emitted
+type Prometheus struct {
+	// Name is the name of the metric
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+	// Labels is a list of metric labels
+	Labels []*MetricLabel `json:"labels" protobuf:"bytes,2,rep,name=labels"`
+	// Help is a string that describes the metric
+	Help string `json:"help" protobuf:"bytes,3,opt,name=help"`
+	// When is a conditional statement that decides when to emit the metric
+	When string `json:"when" protobuf:"bytes,4,opt,name=when"`
+	// Gauge is a gauge metric
+	Gauge *Gauge `json:"gauge" protobuf:"bytes,5,opt,name=gauge"`
+	// Histogram is a histogram metric
+	Histogram *Histogram `json:"histogram" protobuf:"bytes,6,opt,name=histogram"`
+	// Counter is a counter metric
+	Counter *Counter `json:"counter" protobuf:"bytes,7,opt,name=counter"`
+}
+
+func (p *Prometheus) GetMetricLabels() map[string]string {
+	labels := make(map[string]string)
+	for _, label := range p.Labels {
+		labels[label.Key] = label.Value
+	}
+	return labels
+}
+
+func (p *Prometheus) GetMetricType() MetricType {
+	if p.Gauge != nil {
+		return MetricTypeGauge
+	}
+	if p.Histogram != nil {
+		return MetricTypeHistogram
+	}
+	if p.Counter != nil {
+		return MetricTypeCounter
+	}
+	return MetricTypeUnknown
+}
+
+func (p *Prometheus) GetValueString() string {
+	switch p.GetMetricType() {
+	case MetricTypeGauge:
+		return p.Gauge.Value
+	case MetricTypeCounter:
+		return p.Counter.Value
+	case MetricTypeHistogram:
+		return p.Histogram.Value
+	default:
+		return ""
+	}
+}
+
+func (p *Prometheus) SetValueString(val string) {
+	switch p.GetMetricType() {
+	case MetricTypeGauge:
+		p.Gauge.Value = val
+	case MetricTypeCounter:
+		p.Counter.Value = val
+	case MetricTypeHistogram:
+		p.Histogram.Value = val
+	}
+}
+
+func (p *Prometheus) GetDesc() string {
+	// This serves as a hash for the metric
+	// TODO: Make sure this is what we want to use as the hash
+	desc := p.Name + "{"
+	for key, val := range p.GetMetricLabels() {
+		desc += key + "=" + val + ","
+	}
+	if p.Histogram != nil {
+		for _, bucket := range p.Histogram.Buckets {
+			desc += "bucket=" + fmt.Sprint(bucket) + ","
+		}
+	}
+	desc += "}"
+	return desc
+}
+
+func (p *Prometheus) IsRealtime() bool {
+	return p.GetMetricType() == MetricTypeGauge && p.Gauge.Realtime != nil && *p.Gauge.Realtime
+}
+
+// MetricLabel is a single label for a prometheus metric
+type MetricLabel struct {
+	Key   string `json:"key" protobuf:"bytes,1,opt,name=key"`
+	Value string `json:"value" protobuf:"bytes,2,opt,name=value"`
+}
+
+// Gauge is a Gauge prometheus metric
+type Gauge struct {
+	// Value is the value of the metric
+	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
+	// Realtime emits this metric in real time if applicable
+	Realtime *bool `json:"realtime" protobuf:"varint,2,opt,name=realtime"`
+}
+
+// Histogram is a Histogram prometheus metric
+type Histogram struct {
+	// Value is the value of the metric
+	Value string `json:"value" protobuf:"bytes,3,opt,name=value"`
+	// Buckets is a list of bucket divisors for the histogram
+	Buckets []float64 `json:"buckets" protobuf:"fixed64,4,rep,name=buckets"`
+}
+
+// Counter is a Counter prometheus metric
+type Counter struct {
+	// Value is the value of the metric
+	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
 }

@@ -537,7 +537,7 @@ func TestTerminateWorkflow(t *testing.T) {
 	}
 	wf, err = server.TerminateWorkflow(ctx, &rsmWfReq)
 	assert.NotNil(t, wf)
-	assert.Equal(t, int64(0), *wf.Spec.ActiveDeadlineSeconds)
+	assert.Equal(t, v1alpha1.ShutdownStrategyTerminate, wf.Spec.Shutdown)
 	assert.Nil(t, err)
 
 	rsmWfReq = workflowpkg.WorkflowTerminateRequest{

@@ -6,7 +6,6 @@ metadata:
   generateName: steps-
 spec:
   entrypoint: hello-hello-hello
-
   templates:
   - name: hello-hello-hello
     steps:

@@ -31,6 +31,14 @@ data:
     #   # volume name when mounting the secret, default to kubeconfig
     #   volumeName: kube-config-volume
 
+    links:
+      - name: Example Workflow Link
+        scope: workflow
+        url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}
+      - name: Example Pod Link
+        scope: pod
+        url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
+
     # artifactRepository defines the default location to be used as the artifact repository for
     # container artifacts.
     artifactRepository:
@@ -111,6 +119,7 @@ data:
 
     # metricsConfig controls the path and port for prometheus metrics
     metricsConfig:
+      disableLegacy: false  # Switch to "true" to disable legacy metrics. "false" by default
       enabled: true
       path: /metrics
       port: 8080

@@ -894,7 +894,7 @@ func TestSuspendWithDeadline(t *testing.T) {
 	for _, node := range updatedWf.Status.Nodes {
 		if node.Type == wfv1.NodeTypeSuspend {
 			assert.Equal(t, node.Phase, wfv1.NodeFailed)
-			assert.Equal(t, node.Message, "terminated")
+			assert.Contains(t, node.Message, "step exceeded workflow deadline")
 			found = true
 		}
 	}
@@ -2352,6 +2352,19 @@ func TestPDBCreation(t *testing.T) {
 	woc.operate()
 	pdb, _ = controller.kubeclientset.PolicyV1beta1().PodDisruptionBudgets("").Get(woc.wf.Name, metav1.GetOptions{})
 	assert.Nil(t, pdb)
+}
+
+func TestStatusConditions(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(pdbwf)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	//woc.operate()
+	assert.Equal(t, len(woc.wf.Status.Conditions), 0)
+	woc.markWorkflowSuccess()
+	assert.Equal(t, woc.wf.Status.Conditions[0].Status, metav1.ConditionStatus("True"))
 }
 
 var nestedOptionalOutputArtifacts = `

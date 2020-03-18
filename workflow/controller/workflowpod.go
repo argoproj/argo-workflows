@@ -87,7 +87,12 @@ func (woc *wfOperationCtx) hasPodSpecPatch(tmpl *wfv1.Template) bool {
 	return woc.wf.Spec.HasPodSpecPatch() || tmpl.HasPodSpecPatch()
 }
 
-func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, includeScriptOutput bool) (*apiv1.Pod, error) {
+type createWorkflowPodOpts struct {
+	includeScriptOutput bool
+	onExitPod           bool
+}
+
+func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 	tmpl = tmpl.DeepCopy()
@@ -131,6 +136,11 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			ActiveDeadlineSeconds: activeDeadlineSeconds,
 			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
 		},
+	}
+
+	if opts.onExitPod {
+		// This pod is part of an onExit handler, label it so
+		pod.ObjectMeta.Labels[common.LabelKeyOnExit] = "true"
 	}
 
 	if woc.wf.Spec.HostNetwork != nil {
@@ -186,7 +196,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	}
 
 	addSchedulingConstraints(pod, wfSpec, tmpl)
-	woc.addMetadata(pod, tmpl, includeScriptOutput)
+	woc.addMetadata(pod, tmpl, opts.includeScriptOutput)
 
 	err = addVolumeReferences(pod, woc.volumes, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {

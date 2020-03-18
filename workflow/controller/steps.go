@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Knetic/govaluate"
 	"github.com/valyala/fasttemplate"
@@ -26,10 +27,10 @@ type stepsContext struct {
 	tmplCtx *templateresolution.Context
 }
 
-func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
-		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSteps, templateScope, tmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSteps, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
 	}
 
 	defer func() {
@@ -140,8 +141,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 		node.Outputs = outputs
 		woc.wf.Status.Nodes[node.ID] = *node
 	}
-	_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
-	return node, nil
+	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded), nil
 }
 
 // updateOutboundNodes set the outbound nodes from the last step group
@@ -219,7 +219,8 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			}
 			continue
 		}
-		childNode, err := woc.executeTemplate(childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, stepsCtx.boundaryID)
+
+		childNode, err := woc.executeTemplate(childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, &executeTemplateOpts{boundaryID: stepsCtx.boundaryID})
 		if err != nil {
 			switch err {
 			case ErrDeadlineExceeded:
@@ -428,4 +429,40 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 		expandedStep = append(expandedStep, newStep)
 	}
 	return expandedStep, nil
+}
+
+func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string]string, map[string]func() float64) {
+	realTimeScope := make(map[string]func() float64)
+	localScope := make(map[string]string)
+	for key, val := range woc.globalParams {
+		localScope[key] = val
+	}
+
+	if node.Completed() {
+		localScope["duration"] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())
+		realTimeScope["duration"] = func() float64 {
+			return node.FinishedAt.Sub(node.StartedAt.Time).Seconds()
+		}
+	} else {
+		localScope["duration"] = fmt.Sprintf("%f", time.Since(node.StartedAt.Time).Seconds())
+		realTimeScope["duration"] = func() float64 {
+			return time.Since(node.StartedAt.Time).Seconds()
+		}
+	}
+
+	if node.Phase != "" {
+		localScope["status"] = string(node.Phase)
+	}
+
+	if node.Outputs != nil {
+		if node.Outputs.Result != nil {
+			localScope["outputs.result"] = *node.Outputs.Result
+		}
+		for _, param := range node.Outputs.Parameters {
+			key := fmt.Sprintf("outputs.parameters.%s", param.Name)
+			localScope[key] = *param.Value
+		}
+	}
+
+	return localScope, realTimeScope
 }

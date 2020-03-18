@@ -10,6 +10,9 @@ info() {
 info "MinIO on http://localhost:9000"
 kubectl -n argo port-forward pod/minio 9000:9000 &
 
+info "Metrics server on http://localhost:8080"
+kubectl -n argo port-forward deploy/workflow-controller 8080:8080 &
+
 argo_server=$(kubectl -n argo get pod -l app=argo-server -o name)
 if [[ "$argo_server" != "" ]]; then
   info "Argo Server on http://localhost:2746"
