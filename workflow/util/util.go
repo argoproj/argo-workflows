@@ -423,6 +423,8 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 		newWF.Spec.ActiveDeadlineSeconds = nil
 	}
 
+	newWF.Spec.Shutdown = ""
+
 	// carry over user labels and annotations from previous workflow.
 	// skip any argoproj.io labels except for the controller instanceID label.
 	for key, val := range wf.ObjectMeta.Labels {
@@ -593,19 +595,36 @@ func IsWorkflowSuspended(wf *wfv1.Workflow) bool {
 	return false
 }
 
-// IsWorkflowTerminated returns whether or not a workflow is considered terminated
-func IsWorkflowTerminated(wf *wfv1.Workflow) bool {
-	if wf.Spec.ActiveDeadlineSeconds != nil && *wf.Spec.ActiveDeadlineSeconds == 0 {
-		return true
-	}
-	return false
-}
-
-// TerminateWorkflow terminates a workflow by setting its activeDeadlineSeconds to 0
+// TerminateWorkflow terminates a workflow by setting its spec.shutdown to ShutdownStrategyTerminate
 func TerminateWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
 	patchObj := map[string]interface{}{
 		"spec": map[string]interface{}{
-			"activeDeadlineSeconds": 0,
+			"shutdown": wfv1.ShutdownStrategyTerminate,
+		},
+	}
+	var err error
+	patch, err := json.Marshal(patchObj)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+		_, err = wfClient.Patch(name, types.MergePatchType, patch)
+		if err != nil {
+			if !apierr.IsConflict(err) {
+				return false, err
+			}
+			return false, nil
+		}
+		return true, nil
+	})
+	return err
+}
+
+// StopWorkflow terminates a workflow by setting its spec.shutdown to ShutdownStrategyStop
+func StopWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
+	patchObj := map[string]interface{}{
+		"spec": map[string]interface{}{
+			"shutdown": wfv1.ShutdownStrategyStop,
 		},
 	}
 	var err error

@@ -312,6 +312,20 @@ func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *workflowpkg
 	return wf, nil
 }
 
+func (s *workflowServer) StopWorkflow(ctx context.Context, req *workflowpkg.WorkflowStopRequest) (*v1alpha1.Workflow, error) {
+	wfClient := auth.GetWfClient(ctx)
+	err := util.StopWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), req.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return wf, nil
+}
+
 func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.WorkflowLintRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 

@@ -55,6 +55,11 @@ message WorkflowTerminateRequest {
     string namespace = 2;
 }
 
+message WorkflowStopRequest {
+     string name = 1;
+     string namespace = 2;
+}
+
 message WorkflowSuspendRequest {
     string name = 1;
     string namespace = 2;
@@ -153,6 +158,13 @@ service WorkflowService {
     rpc TerminateWorkflow (WorkflowTerminateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
 			put: "/api/v1/workflows/{namespace}/{name}/terminate"
+			body: "*"
+		};
+    }
+
+    rpc StopWorkflow (WorkflowStopRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+        option (google.api.http) = {
+			put: "/api/v1/workflows/{namespace}/{name}/stop"
 			body: "*"
 		};
     }
