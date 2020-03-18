@@ -2436,10 +2436,10 @@
           "title": "SecretKeySecret is the secret selector to the bucket's secret key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
-        "useIRSA": {
+        "useSDKCreds": {
+          "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
           "type": "boolean",
-          "format": "boolean",
-          "title": "UseIRSA tells the driver to enable IAM Roles for Service Accounts (IRSA)"
+          "format": "boolean"
         }
       }
     },

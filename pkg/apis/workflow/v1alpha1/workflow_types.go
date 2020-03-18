@@ -1152,8 +1152,8 @@ type S3Bucket struct {
 	// RoleARN is the Amazon Resource Name (ARN) of the role to assume.
 	RoleARN string `json:"roleARN,omitempty" protobuf:"bytes,7,opt,name=roleARN"`
 
-	// UseIRSA tells the driver to enable IAM Roles for Service Accounts (IRSA)
-	UseIRSA bool `json:"useIRSA,omitempty" protobuf:"varint,8,opt,name=useIRSA"`
+	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
+	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
 }
 
 // S3Artifact is the location of an S3 artifact
