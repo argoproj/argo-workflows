@@ -77,8 +77,8 @@ CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join 
 MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
-# the sort puts _.primary first in the list
-SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json' | sort)
+# The sort puts _.primary first in the list. 'env LC_COLLATE=C' makes sure underscore comes first in both Mac and Linux.
+SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json' | env LC_COLLATE=C sort)
 
 .PHONY: build
 build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
@@ -86,10 +86,6 @@ build: status clis executor-image controller-image manifests/install.yaml manife
 .PHONY: status
 status:
 	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), GIT_TREE_STATE=$(GIT_TREE_STATE), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE)
-
-.PHONY: vendor
-vendor: go.mod go.sum
-	go mod download
 
 # cli
 
@@ -123,22 +119,22 @@ server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/app
 	# Pack UI into a Go file.
 	staticfiles -o server/static/files.go ui/dist/app
 
-dist/argo: vendor server/static/files.go $(CLI_PKGS)
+dist/argo: server/static/files.go $(CLI_PKGS)
 	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
 
-dist/argo-linux-amd64: vendor server/static/files.go $(CLI_PKGS)
+dist/argo-linux-amd64: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-amd64 ./cmd/argo
 
-dist/argo-linux-ppc64le: vendor server/static/files.go $(CLI_PKGS)
+dist/argo-linux-ppc64le: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-ppc64le ./cmd/argo
 
-dist/argo-linux-s390x: vendor server/static/files.go $(CLI_PKGS)
+dist/argo-linux-s390x: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-s390x ./cmd/argo
 
-dist/argo-darwin-amd64: vendor server/static/files.go $(CLI_PKGS)
+dist/argo-darwin-amd64: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-darwin-amd64 ./cmd/argo
 
-dist/argo-windows-amd64: vendor server/static/files.go $(CLI_PKGS)
+dist/argo-windows-amd64: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-windows-amd64 ./cmd/argo
 
 .PHONY: cli-image
@@ -163,7 +159,7 @@ clis: dist/argo-linux-amd64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/a
 
 # controller
 
-dist/workflow-controller-linux-amd64: vendor $(CONTROLLER_PKGS)
+dist/workflow-controller-linux-amd64: $(CONTROLLER_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/workflow-controller-linux-amd64 ./cmd/workflow-controller
 
 .PHONY: controller-image
@@ -185,7 +181,7 @@ endif
 
 # argoexec
 
-dist/argoexec-linux-amd64: vendor $(ARGOEXEC_PKGS)
+dist/argoexec-linux-amd64: $(ARGOEXEC_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argoexec-linux-amd64 ./cmd/argoexec
 
 .PHONY: executor-image
@@ -207,10 +203,13 @@ endif
 
 # generation
 
+$(HOME)/go/bin/mockery:
+	go get github.com/vektra/mockery/.../
+
 .PHONY: codegen
-codegen:
+codegen: $(HOME)/go/bin/mockery
 	# Generate code
-	# We need the vendor folder for compatibility
+	# We need the folder for compatibility
 	go mod vendor
 
 	./hack/generate-proto.sh
@@ -259,7 +258,7 @@ ifeq ($(CI),false)
 endif
 
 .PHONY: test
-test: server/static/files.go vendor
+test: server/static/files.go
 	# Run unit tests
 ifeq ($(CI),false)
 	go test `go list ./... | grep -v 'test/e2e'`
@@ -341,14 +340,7 @@ dist/python-alpine3.6:
 	touch dist/python-alpine3.6
 
 .PHONY: start
-start: status controller-image cli-image executor-image install
-	# Start development environment
-ifeq ($(CI),false)
-	make down
-endif
-	make up
-	# Make the CLI
-	make cli
+start: status install down controller-image cli-image executor-image wait-down up cli wait-up env
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 
@@ -357,6 +349,9 @@ down:
 	# Scale down
 	kubectl -n argo scale deployment/argo-server --replicas 0
 	kubectl -n argo scale deployment/workflow-controller --replicas 0
+
+.PHONY: wait-down
+wait-down:
 	# Wait for pods to go away, so we don't wait for them to be ready later.
 	[ "`kubectl -n argo get pod -l app=argo-server -o name`" = "" ] || kubectl -n argo wait --for=delete pod -l app=argo-server  --timeout 30s
 	[ "`kubectl -n argo get pod -l app=workflow-controller -o name`" = "" ] || kubectl -n argo wait --for=delete pod -l app=workflow-controller  --timeout 2m
@@ -366,10 +361,11 @@ up:
 	# Scale up
 	kubectl -n argo scale deployment/workflow-controller --replicas 1
 	kubectl -n argo scale deployment/argo-server --replicas 1
+
+.PHONY: wait-up
+wait-up:
 	# Wait for pods to be ready
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
-	# Token
-	make env
 
 # this is a convenience to get the login token, you can use it as follows
 #   eval $(make env)

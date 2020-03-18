@@ -4,7 +4,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/metrics"
 )
 
 // WorkflowControllerConfig contain the configuration settings for the workflow controller
@@ -52,18 +51,21 @@ type WorkflowControllerConfig struct {
 	// controller watches workflows and pods that *are not* labeled with an instance id.
 	InstanceID string `json:"instanceID,omitempty"`
 
+	MetricsConfig PrometheusConfig `json:"metricsConfig,omitempty"`
+
 	// FeatureFlags for general/experimental features
 	FeatureFlags FeatureFlags `json:"featureFlags,omitempty"`
 
-	MetricsConfig metrics.PrometheusConfig `json:"metricsConfig,omitempty"`
-
-	TelemetryConfig metrics.PrometheusConfig `json:"telemetryConfig,omitempty"`
+	TelemetryConfig PrometheusConfig `json:"telemetryConfig,omitempty"`
 
 	// Parallelism limits the max total parallel workflows that can execute at the same time
 	Parallelism int `json:"parallelism,omitempty"`
 
 	// Persistence contains the workflow persistence DB configuration
 	Persistence *PersistConfig `json:"persistence,omitempty"`
+
+	// Links to related apps.
+	Links []*wfv1.Link `json:"links,omitempty"`
 
 	// Config customized Docker Sock path
 	DockerSockPath string `json:"dockerSockPath,omitempty"`
@@ -140,6 +142,7 @@ type PostgreSQLConfig struct {
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret"`
 	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret"`
 	SSL            bool                    `json:"ssl,omitempty"`
+	SSLMode        string                  `json:"sslMode,omitempty"`
 }
 
 type MySQLConfig struct {
@@ -188,4 +191,12 @@ type HDFSArtifactRepository struct {
 
 	// Force copies a file forcibly even if it exists (default: false)
 	Force bool `json:"force,omitempty"`
+}
+
+// PrometheusConfig defines a config for a metrics server
+type PrometheusConfig struct {
+	Enabled       bool   `json:"enabled,omitempty"`
+	DisableLegacy bool   `json:"disableLegacy"`
+	Path          string `json:"path,omitempty"`
+	Port          string `json:"port,omitempty"`
 }

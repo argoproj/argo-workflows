@@ -1,10 +1,6 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
 import * as moment from 'moment';
 
-export interface Info {
-    managedNamespace?: string;
-}
-
 /**
  * Arguments to a template
  */
