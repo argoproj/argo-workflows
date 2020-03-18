@@ -113,12 +113,11 @@ commands:
           name: Install Go test report to Junit test report
           command: go get github.com/jstemmer/go-junit-report
 jobs:
-  codegen:
+  lint:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
       image: ubuntu-1604:201903-01
     steps:
-      - install_kustomize
       - restore_go_cache
       - install_golang
       - checkout
@@ -131,7 +130,6 @@ jobs:
     machine:
       image: ubuntu-1604:201903-01
     steps:
-      - install_kustomize
       - restore_go_cache
       - install_golang
       - go_junit_report
