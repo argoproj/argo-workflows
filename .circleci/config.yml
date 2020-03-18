@@ -125,6 +125,15 @@ jobs:
       - checkout
       - restore_go_mod
       - run:
+          name: Code gen
+          command: make codegen
+      - run:
+          name: Make manifests
+          command: make manifests
+      - run:
+          name: Check nothing needs commiting
+          command: git diff --exit-code
+      - run:
           name: Run tests
           command: |
             mkdir -p test-results
