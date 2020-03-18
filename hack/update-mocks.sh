@@ -9,6 +9,5 @@ CURR_DIR=$(pwd)
 MOCK_DIR=$(echo "$1" | sed 's|/mocks/|;|g' | cut -d';' -f1)
 MOCK_NAME=$(echo "$1" | sed 's|/mocks/|;|g' | cut -d';' -f2 | sed 's/.go//g')
 
-go get github.com/vektra/mockery/.../
 cd "$MOCK_DIR" && mockery -name=$"$MOCK_NAME"
 cd "$CURR_DIR"
