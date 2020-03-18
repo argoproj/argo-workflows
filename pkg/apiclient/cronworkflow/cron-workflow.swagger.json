@@ -1252,6 +1252,11 @@
         "roleARN": {
           "type": "string",
           "description": "RoleARN is the Amazon Resource Name (ARN) of the role to assume."
+        },
+        "useIRSA": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "UseIRSA tells the driver to enable IAM Roles for Service Accounts (IRSA)"
         }
       },
       "title": "S3Bucket contains the access information required for interfacing with an S3 bucket"

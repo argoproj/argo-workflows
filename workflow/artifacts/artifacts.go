@@ -52,6 +52,7 @@ func NewDriver(art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error
 			Secure:    art.S3.Insecure == nil || !*art.S3.Insecure,
 			Region:    art.S3.Region,
 			RoleARN:   art.S3.RoleARN,
+			UseIRSA:   art.S3.UseIRSA,
 		}
 		return &driver, nil
 	}
