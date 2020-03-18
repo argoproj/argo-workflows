@@ -30,7 +30,7 @@ spec:
           parameters:
           - name: message
             value: "{{item}}"
-        withParam: "{{steps.divide-by-2.outputs.result}}"
+        withParam: "{{steps.divide-by-2.outputs.parameters}}"
 
   # odd-or-even accepts a number and returns whether or not that number is odd or even
   - name: odd-or-even
@@ -63,12 +63,15 @@ spec:
     inputs:
       parameters:
       - name: num
-    script:
+    container:
       image: alpine:latest
-      command: [sh, -x]
-      source: |
-        #!/bin/sh
-        echo $(({{inputs.parameters.num}}/2))
+      command: [sh, -c]
+      args: ["echo $(({{inputs.parameters.num}}/2)) > /tmp/res"]
+    outputs:
+      parameters:
+        - name: res
+          valueFrom:
+            path: /tmp/res
 
   # whalesay prints a number using whalesay
   - name: whalesay

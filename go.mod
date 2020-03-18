@@ -15,12 +15,15 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
 	github.com/evanphx/json-patch v4.2.0+incompatible
 	github.com/fasthttp-contrib/websocket v0.0.0-20160511215533-1f3b11f56072 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-ini/ini v1.51.1 // indirect
+	github.com/go-openapi/jsonpointer v0.19.3 // indirect
+	github.com/go-openapi/spec v0.19.2
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.3.5
@@ -49,7 +52,7 @@ require (
 	github.com/moul/http2curl v1.0.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.0.0
-	github.com/prometheus/client_model v0.1.0 // indirect
+	github.com/prometheus/client_model v0.1.0
 	github.com/prometheus/common v0.7.0 // indirect
 	github.com/prometheus/procfs v0.0.8 // indirect
 	github.com/robfig/cron v1.2.0
@@ -88,7 +91,7 @@ require (
 	k8s.io/api v0.0.0-20191219150132-17cfeff5d095
 	k8s.io/apimachinery v0.16.7-beta.0
 	k8s.io/client-go v0.0.0-20191225075139-73fd2ddc9180
-	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a // indirect
+	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
 	k8s.io/utils v0.0.0-20191218082557-f07c713de883
 	sigs.k8s.io/yaml v1.1.0
 	upper.io/db.v3 v3.6.3+incompatible

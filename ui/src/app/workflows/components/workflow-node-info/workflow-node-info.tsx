@@ -18,6 +18,7 @@ function nodeDuration(node: models.NodeStatus, now: moment.Moment) {
 interface Props {
     node: models.NodeStatus;
     workflow: models.Workflow;
+    links: models.Link[];
     archived: boolean;
     onShowContainerLogs: (nodeId: string, container: string) => any;
     onShowYaml?: (nodeId: string) => any;
@@ -84,6 +85,16 @@ export const WorkflowNodeSummary = (props: Props) => {
                         LOGS
                     </button>
                 )}
+                {props.links &&
+                    props.links
+                        .filter(link => link.scope === 'pod')
+                        .map(link => (
+                            <a
+                                className='argo-button argo-button--base-o'
+                                href={link.url.replace('${metadata.namespace}', props.workflow.metadata.namespace).replace('${metadata.name}', props.node.id)}>
+                                <i className='fa fa-link' /> {link.name}
+                            </a>
+                        ))}
             </div>
         </div>
     );
