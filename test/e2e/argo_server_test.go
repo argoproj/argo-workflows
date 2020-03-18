@@ -945,10 +945,7 @@ spec:
 			Status(200).
 			JSON()
 		j.
-			Path("$.items").
-			Array().
-			Length().
-			Equal(0)
+			Path("$.items").Null()
 	})
 
 	s.Run("Get", func() {
