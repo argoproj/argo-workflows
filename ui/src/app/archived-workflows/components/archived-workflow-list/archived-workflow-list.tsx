@@ -127,14 +127,14 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     private lastMonth() {
-        let dt = new Date();
+        const dt = new Date();
         dt.setMonth(dt.getMonth() - 1);
         dt.setHours(0, 0, 0, 0);
         return dt;
     }
 
     private nextDay() {
-        let dt = new Date();
+        const dt = new Date();
         dt.setDate(dt.getDate() + 1);
         dt.setHours(0, 0, 0, 0);
         return dt;
@@ -167,7 +167,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         if (offset > 0) {
             params.append('continue', offset.toString());
         }
-        let url = 'archived-workflows/' + namespace + '?' + params.toString();
+        const url = 'archived-workflows/' + namespace + '?' + params.toString();
         history.pushState(null, '', uiUrl(url));
         this.fetchArchivedWorkflows(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, offset && offset >= 0 ? offset : 0);
     }
