@@ -6,6 +6,7 @@ go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.12.1
 go get github.com/gogo/protobuf/protoc-gen-gogo@v1.3.1
 go get github.com/gogo/protobuf/protoc-gen-gogofast@v1.3.1
 go get github.com/gogo/protobuf/gogoproto@v1.3.1
+go get golang.org/x/tools/cmd/goimports
 go install k8s.io/code-generator/cmd/go-to-protobuf
 go-to-protobuf \
     --go-header-file=./hack/custom-boilerplate.go.txt \
