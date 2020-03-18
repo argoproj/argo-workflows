@@ -129,7 +129,7 @@ export const WorkflowNodeInputs = (props: {inputs: models.Inputs}) => {
     );
 };
 
-function isContainerOrSidecar(container: models.kubernetes.Container | models.Sidecar | models.Script): container is models.kubernetes.Container | models.Sidecar {
+function hasEnv(container: models.kubernetes.Container | models.Sidecar | models.Script): container is models.kubernetes.Container | models.Sidecar {
     return (container as models.kubernetes.Container | models.Sidecar).env !== undefined;
 }
 
@@ -152,7 +152,7 @@ export const WorkflowNodeContainer = (props: {
                   title: 'ARGS',
                   value: <span className='workflow-node-info__multi-line'>{(container.args || []).join(' ')}</span>
               },
-        isContainerOrSidecar(container)
+        hasEnv(container)
             ? {
                   title: 'ENV',
                   value: <span className='workflow-node-info__multi-line'>{(container.env || []).map(e => `${e.name}=${e.value}`).join('\n')}</span>
