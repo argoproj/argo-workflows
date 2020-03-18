@@ -64,6 +64,7 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                                 this.props.onChange(this.props.namespace, this.props.selectedPhases, this.props.selectedLabels, date, this.props.maxStartedAt);
                             }}
                             placeholderText='From'
+                            dateFormat='dd MMM, yyyy'
                             todayButton='Today'
                             className='argo-field argo-textarea'
                         />
@@ -73,6 +74,7 @@ export class ArchivedWorkflowFilters extends React.Component<ArchivedWorkflowFil
                                 this.props.onChange(this.props.namespace, this.props.selectedPhases, this.props.selectedLabels, this.props.minStartedAt, date);
                             }}
                             placeholderText='To'
+                            dateFormat='dd MMM, yyyy'
                             todayButton='Today'
                             className='argo-field argo-textarea'
                         />
