@@ -253,7 +253,7 @@ lint: server/static/files.go $(HOME)/go/bin/golangci-lint
 	# Lint Go files
 	pwd
 	ls
-	golangci-lint run --fix --verbose --concurrency 4
+	golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
 ifeq ($(CI),false)
 	# Lint UI files
 	yarn --cwd ui lint
