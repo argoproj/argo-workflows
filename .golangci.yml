@@ -1,6 +1,5 @@
 # https://github.com/golangci/golangci/wiki/Configuration
 run:
-  deadline: 2m
   skip-dirs:
     - pkg/client
     - vendor
