@@ -180,13 +180,21 @@ func (s *CLISuite) TestRoot() {
 		})
 	})
 	s.Run("List", func() {
-		s.Given().RunCli([]string{"list"}, func(t *testing.T, output string, err error) {
+		const rowCount = 1
+		for i := 0; i < rowCount*3; i++ {
+			s.Given().
+				Workflow(`@testdata/basic.yaml`).
+				When().
+				SubmitWorkflow()
+		}
+		s.Given().RunCli([]string{"list", "--chunk-size", "1"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "NAME")
 				assert.Contains(t, output, "STATUS")
 				assert.Contains(t, output, "AGE")
 				assert.Contains(t, output, "DURATION")
 				assert.Contains(t, output, "PRIORITY")
+
 			}
 		})
 	})

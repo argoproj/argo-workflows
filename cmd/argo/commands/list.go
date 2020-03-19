@@ -62,9 +62,6 @@ func NewListCommand() *cobra.Command {
 				labelSelector = labelSelector.Add(*req)
 			}
 			listOpts.LabelSelector = labelSelector.String()
-			if listArgs.chunkSize != 0 {
-				listOpts.Limit = listArgs.chunkSize
-			}
 
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
@@ -116,6 +113,9 @@ func NewListCommand() *cobra.Command {
 				for _, wf := range tmpWorkFlowsSelected {
 					if wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(*minTime) {
 						workflows = append(workflows, wf)
+					}
+					if listArgs.chunkSize != 0 && int64(len(workflows)) == listArgs.chunkSize {
+						break
 					}
 				}
 			}
