@@ -2846,7 +2846,7 @@
         },
         "podDisruptionBudget": {
           "title": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.\nController will automatically add the selector with workflow name, if selector is empty.\nOptional: Defaults to empty.\n+optional",
-          "$ref": "#/definitions/k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec"
+          "$ref": "#/definitions/io.k8s.api.core.v1.PodDisruptionBudgetSpec"
         },
         "podGC": {
           "title": "PodGC describes the strategy to use when to deleting completed pods",
@@ -5279,7 +5279,7 @@
         }
       }
     },
-    "k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec": {
+    "io.k8s.api.core.v1.PodDisruptionBudgetSpec": {
       "description": "PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.",
       "type": "object",
       "properties": {
