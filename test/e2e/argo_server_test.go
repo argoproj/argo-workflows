@@ -920,34 +920,6 @@ spec:
 			Equal("1")
 	})
 
-	s.Run("ListWithMinStartedAtGood", func() {
-		fieldSelector := "spec.startedAt>" + time.Now().Add(-1*time.Hour).Format(time.RFC3339) + ",spec.startedAt<" + time.Now().Add(1*time.Hour).Format(time.RFC3339)
-		j := s.e(s.T()).GET("/api/v1/archived-workflows").
-			WithQuery("listOptions.labelSelector", "argo-e2e").
-			WithQuery("listOptions.fieldSelector", fieldSelector).
-			WithQuery("listOptions.limit", 2).
-			Expect().
-			Status(200).
-			JSON()
-		j.
-			Path("$.items").
-			Array().
-			Length().
-			Equal(2)
-	})
-
-	s.Run("ListWithMinStartedAtBad", func() {
-		j := s.e(s.T()).GET("/api/v1/archived-workflows").
-			WithQuery("listOptions.labelSelector", "argo-e2e").
-			WithQuery("listOptions.fieldSelector", "spec.startedAt>"+time.Now().Add(1*time.Hour).Format(time.RFC3339)).
-			WithQuery("listOptions.limit", 2).
-			Expect().
-			Status(200).
-			JSON()
-		j.
-			Path("$.items").Null()
-	})
-
 	s.Run("Get", func() {
 		s.e(s.T()).GET("/api/v1/archived-workflows/not-found").
 			Expect().

@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -48,32 +47,9 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	if offset < 0 {
 		return nil, status.Error(codes.InvalidArgument, "listOptions.continue must >= 0")
 	}
-
 	namespace := ""
-	minStartedAt := time.Time{}
-	maxStartedAt := time.Time{}
-	selectors := strings.Split(options.FieldSelector, ",")
-	for _, selector := range selectors {
-		if len(selector) == 0 {
-			continue
-		}
-		if strings.HasPrefix(selector, "metadata.namespace=") {
-			namespace = strings.TrimPrefix(selector, "metadata.namespace=")
-		} else if strings.HasPrefix(selector, "spec.startedAt>") {
-			minStartedAtStr := strings.TrimPrefix(selector, "spec.startedAt>")
-			minStartedAt, err = time.Parse(time.RFC3339, minStartedAtStr)
-			if err != nil {
-				return nil, err
-			}
-		} else if strings.HasPrefix(selector, "spec.startedAt<") {
-			maxStartedAtStr := strings.TrimPrefix(selector, "spec.startedAt<")
-			maxStartedAt, err = time.Parse(time.RFC3339, maxStartedAtStr)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			return nil, fmt.Errorf("unsupported requirement %s", selector)
-		}
+	if strings.HasPrefix(options.FieldSelector, "metadata.namespace=") {
+		namespace = strings.TrimPrefix(options.FieldSelector, "metadata.namespace=")
 	}
 
 	requirements, err := labels.ParseToRequirements(options.LabelSelector)
@@ -86,7 +62,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	hasMore := true
 	// keep trying until we have enough
 	for len(items) < limit {
-		moreItems, err := w.wfArchive.ListWorkflows(namespace, minStartedAt, maxStartedAt, requirements, limit+1, offset)
+		moreItems, err := w.wfArchive.ListWorkflows(namespace, requirements, limit+1, offset)
 		if err != nil {
 			return nil, err
 		}

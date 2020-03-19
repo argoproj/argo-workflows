@@ -6,8 +6,6 @@ import (
 	mock "github.com/stretchr/testify/mock"
 	labels "k8s.io/apimachinery/pkg/labels"
 
-	time "time"
-
 	v1alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -67,13 +65,13 @@ func (_m *WorkflowArchive) GetWorkflow(uid string) (*v1alpha1.Workflow, error) {
 	return r0, r1
 }
 
-// ListWorkflows provides a mock function with given fields: namespace, minStartAt, maxStartAt, labelRequirements, limit, offset
-func (_m *WorkflowArchive) ListWorkflows(namespace string, minStartAt time.Time, maxStartAt time.Time, labelRequirements labels.Requirements, limit int, offset int) (v1alpha1.Workflows, error) {
-	ret := _m.Called(namespace, minStartAt, maxStartAt, labelRequirements, limit, offset)
+// ListWorkflows provides a mock function with given fields: namespace, labelRequirements, limit, offset
+func (_m *WorkflowArchive) ListWorkflows(namespace string, labelRequirements labels.Requirements, limit int, offset int) (v1alpha1.Workflows, error) {
+	ret := _m.Called(namespace, labelRequirements, limit, offset)
 
 	var r0 v1alpha1.Workflows
-	if rf, ok := ret.Get(0).(func(string, time.Time, time.Time, labels.Requirements, int, int) v1alpha1.Workflows); ok {
-		r0 = rf(namespace, minStartAt, maxStartAt, labelRequirements, limit, offset)
+	if rf, ok := ret.Get(0).(func(string, labels.Requirements, int, int) v1alpha1.Workflows); ok {
+		r0 = rf(namespace, labelRequirements, limit, offset)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(v1alpha1.Workflows)
@@ -81,8 +79,8 @@ func (_m *WorkflowArchive) ListWorkflows(namespace string, minStartAt time.Time,
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, time.Time, time.Time, labels.Requirements, int, int) error); ok {
-		r1 = rf(namespace, minStartAt, maxStartAt, labelRequirements, limit, offset)
+	if rf, ok := ret.Get(1).(func(string, labels.Requirements, int, int) error); ok {
+		r1 = rf(namespace, labelRequirements, limit, offset)
 	} else {
 		r1 = ret.Error(1)
 	}

@@ -7,7 +7,7 @@ require (
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/aliyun/aliyun-oss-go-sdk v2.0.6+incompatible
-	github.com/argoproj/pkg v0.0.0-20200318225345-d3be5f29b1a8
+	github.com/argoproj/pkg v0.0.0-20200226231057-d69f0b04da65
 	github.com/aws/aws-sdk-go v1.27.1 // indirect
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/colinmarc/hdfs v1.1.4-0.20180805212432-9746310a4d31
@@ -24,7 +24,7 @@ require (
 	github.com/go-openapi/spec v0.19.3
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/gogo/protobuf v1.3.1
-	github.com/golang/protobuf v1.3.5
+	github.com/golang/protobuf v1.3.3
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/googleapis/gnostic v0.3.1 // indirect
 	github.com/gophercloud/gophercloud v0.7.0 // indirect
@@ -70,7 +70,7 @@ require (
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
 	golang.org/x/crypto v0.0.0-20200128174031-69ecbb4d6d5d
-	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b
+	golang.org/x/net v0.0.0-20200114155413-6afb5195e5aa
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
 	golang.org/x/sys v0.0.0-20200124204421-9fbb57f87de9 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect

@@ -3,7 +3,6 @@ package workflowarchive
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
@@ -46,11 +45,8 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		}, nil
 	})
 	// two pages of results for limit 1
-	repo.On("ListWorkflows", "", time.Time{}, time.Time{}, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}, {}}, nil)
-	repo.On("ListWorkflows", "", time.Time{}, time.Time{}, labels.Requirements(nil), 2, 1).Return(wfv1.Workflows{{}}, nil)
-	minStartAt, _ := time.Parse(time.RFC3339, "2020-01-01T00:00:00Z")
-	maxStartAt, _ := time.Parse(time.RFC3339, "2020-01-02T00:00:00Z")
-	repo.On("ListWorkflows", "", minStartAt, maxStartAt, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}}, nil)
+	repo.On("ListWorkflows", "", labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}, {}}, nil)
+	repo.On("ListWorkflows", "", labels.Requirements(nil), 2, 1).Return(wfv1.Workflows{{}}, nil)
 	repo.On("GetWorkflow", "").Return(nil, nil)
 	repo.On("GetWorkflow", "my-uid").Return(&wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-name"},
@@ -82,11 +78,6 @@ func Test_archivedWorkflowServer(t *testing.T) {
 			assert.Equal(t, "1", resp.Continue)
 		}
 		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Continue: "1", Limit: 1}})
-		if assert.NoError(t, err) {
-			assert.Len(t, resp.Items, 1)
-			assert.Empty(t, resp.Continue)
-		}
-		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{FieldSelector: "spec.startedAt>2020-01-01T00:00:00Z,spec.startedAt<2020-01-02T00:00:00Z", Limit: 1}})
 		if assert.NoError(t, err) {
 			assert.Len(t, resp.Items, 1)
 			assert.Empty(t, resp.Continue)

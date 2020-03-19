@@ -2,7 +2,6 @@ package sqldb
 
 import (
 	"fmt"
-	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -18,7 +17,7 @@ func (r *nullWorkflowArchive) ArchiveWorkflow(*wfv1.Workflow) error {
 	return nil
 }
 
-func (r *nullWorkflowArchive) ListWorkflows(string, time.Time, time.Time, labels.Requirements, int, int) (wfv1.Workflows, error) {
+func (r *nullWorkflowArchive) ListWorkflows(string, labels.Requirements, int, int) (wfv1.Workflows, error) {
 	return wfv1.Workflows{}, nil
 }
 

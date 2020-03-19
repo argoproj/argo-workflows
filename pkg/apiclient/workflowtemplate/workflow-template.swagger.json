@@ -1120,11 +1120,6 @@
         "roleARN": {
           "type": "string",
           "description": "RoleARN is the Amazon Resource Name (ARN) of the role to assume."
-        },
-        "useSDKCreds": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults."
         }
       },
       "title": "S3Bucket contains the access information required for interfacing with an S3 bucket"

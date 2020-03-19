@@ -23,7 +23,6 @@
         "moment": "^2.24.0",
         "prop-types": "^15.7.2",
         "react": "^16.8.3",
-        "react-datepicker": "^2.14.0",
         "react-dom": "^16.8.3",
         "react-form": "2.16.0",
         "react-moment": "^0.9.7",
@@ -33,7 +32,7 @@
         "superagent-promise": "^1.1.0",
         "ts-loader": "^6.0.4",
         "typescript": "^2.8.3",
-        "webpack-cli": "^3.3.11"
+        "webpack-cli": "^3.3.5"
     },
     "devDependencies": {
         "@types/classnames": "^2.2.3",
@@ -43,7 +42,6 @@
         "@types/js-yaml": "^3.12.1",
         "@types/prop-types": "^15.5.2",
         "@types/react": "^16.8.5",
-        "@types/react-datepicker": "^2.11.0",
         "@types/react-dom": "^16.8.2",
         "@types/react-router-dom": "^4.2.3",
         "@types/superagent": "^3.5.7",
