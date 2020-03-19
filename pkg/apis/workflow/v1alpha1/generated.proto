@@ -707,6 +707,9 @@ message S3Bucket {
 
   // RoleARN is the Amazon Resource Name (ARN) of the role to assume.
   optional string roleARN = 7;
+
+  // UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
+  optional bool useSDKCreds = 8;
 }
 
 // ScriptTemplate is a template subtype to enable scripting through code steps
