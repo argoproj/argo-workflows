@@ -1203,6 +1203,9 @@ type S3Bucket struct {
 
 	// RoleARN is the Amazon Resource Name (ARN) of the role to assume.
 	RoleARN string `json:"roleARN,omitempty" protobuf:"bytes,7,opt,name=roleARN"`
+
+	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
+	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
 }
 
 // S3Artifact is the location of an S3 artifact

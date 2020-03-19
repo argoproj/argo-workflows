@@ -28,13 +28,14 @@ WORKDIR /tmp
 # Install docker
 ENV DOCKER_CHANNEL stable
 ENV DOCKER_VERSION 18.09.1
-RUN wget -O docker.tgz "https://download.docker.com/linux/static/${DOCKER_CHANNEL}/x86_64/docker-${DOCKER_VERSION}.tgz" && \
+
+RUN wget -O docker.tgz https://download.docker.com/linux/static/${DOCKER_CHANNEL}/$(uname -m)/docker-${DOCKER_VERSION}.tgz && \
     tar --extract --file docker.tgz --strip-components 1 --directory /usr/local/bin/ && \
     rm docker.tgz
 
 # Install dep
-ENV DEP_VERSION=0.5.0
-RUN wget https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-amd64 -O /usr/local/bin/dep && \
+ENV DEP_VERSION=0.5.1
+RUN wget https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-$(dpkg --print-architecture) -O /usr/local/bin/dep && \
     chmod +x /usr/local/bin/dep
 
 ####################################################################################################
@@ -55,7 +56,7 @@ RUN apt-get update && \
         /usr/share/man \
         /usr/share/doc \
         /usr/share/doc-base && \
-    curl -L -o /usr/local/bin/kubectl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl && \
+    curl -L -o /usr/local/bin/kubectl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/$(dpkg --print-architecture)/kubectl && \
     chmod +x /usr/local/bin/kubectl && \
     curl -L -o /usr/local/bin/jq -LO https://github.com/stedolan/jq/releases/download/jq-${JQ_VERSION}/jq-linux64 && \
     chmod +x /usr/local/bin/jq
@@ -86,13 +87,13 @@ RUN mkdir -p ui/dist
 COPY --from=argo-ui dist/app ui/dist/app
 # stop make from trying to re-build this without yarn installed
 RUN touch ui/dist/app
-RUN make dist/argo-linux-amd64 dist/workflow-controller-linux-amd64 dist/argoexec-linux-amd64
+RUN make dist/argo-linux-$(dpkg --print-architecture) dist/workflow-controller-linux-$(dpkg --print-architecture) dist/argoexec-linux-$(dpkg --print-architecture)
 
 ####################################################################################################
 # argoexec
 ####################################################################################################
 FROM argoexec-base as argoexec
-COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argoexec-linux-amd64 /usr/local/bin/argoexec
+COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argoexec-linux-* /usr/local/bin/argoexec
 ENTRYPOINT [ "argoexec" ]
 
 ####################################################################################################
@@ -101,7 +102,7 @@ ENTRYPOINT [ "argoexec" ]
 FROM scratch as workflow-controller
 # Add timezone data
 COPY --from=argo-build /usr/share/zoneinfo /usr/share/zoneinfo
-COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/workflow-controller-linux-amd64 /bin/workflow-controller
+COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/workflow-controller-linux-* /bin/workflow-controller
 ENTRYPOINT [ "workflow-controller" ]
 
 ####################################################################################################
@@ -110,5 +111,5 @@ ENTRYPOINT [ "workflow-controller" ]
 FROM scratch as argocli
 COPY --from=argoexec-base /etc/ssh/ssh_known_hosts /etc/ssh/ssh_known_hosts
 COPY --from=argoexec-base /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argo-linux-amd64 /bin/argo
+COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argo-linux-* /bin/argo
 ENTRYPOINT [ "argo" ]
