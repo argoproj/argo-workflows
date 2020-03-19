@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -183,10 +184,23 @@ func (s *CLISuite) TestRoot() {
 		const rowCount = 1
 		for i := 0; i < rowCount*3; i++ {
 			s.Given().
-				Workflow(`@testdata/basic.yaml`).
+				Workflow("@smoke/basic-generate-name.yaml").
 				When().
 				SubmitWorkflow()
 		}
+		s.Given().RunCli([]string{"list"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "NAME")
+				assert.Contains(t, output, "STATUS")
+				assert.Contains(t, output, "AGE")
+				assert.Contains(t, output, "DURATION")
+				assert.Contains(t, output, "PRIORITY")
+
+				// header + rowCount*3 workflows + empty line
+				assert.Equal(t, 5, len(strings.Split(output, "\n")))
+			}
+		})
+
 		s.Given().RunCli([]string{"list", "--chunk-size", "1"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "NAME")
@@ -195,6 +209,8 @@ func (s *CLISuite) TestRoot() {
 				assert.Contains(t, output, "DURATION")
 				assert.Contains(t, output, "PRIORITY")
 
+				// header + 1 workflow + empty line
+				assert.Equal(t, 3, len(strings.Split(output, "\n")))
 			}
 		})
 	})

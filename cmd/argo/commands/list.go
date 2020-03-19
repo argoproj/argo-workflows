@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"sort"
 	"strings"
@@ -114,12 +115,14 @@ func NewListCommand() *cobra.Command {
 					if wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(*minTime) {
 						workflows = append(workflows, wf)
 					}
-					if listArgs.chunkSize != 0 && int64(len(workflows)) == listArgs.chunkSize {
-						break
-					}
 				}
 			}
 			sort.Sort(workflows)
+
+			if listArgs.chunkSize != 0 {
+				idx := int64(math.Min(float64(listArgs.chunkSize), float64(len(workflows))))
+				workflows = workflows[0:idx]
+			}
 
 			switch listArgs.output {
 			case "", "wide":
