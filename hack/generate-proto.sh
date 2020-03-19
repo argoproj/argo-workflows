@@ -8,7 +8,6 @@ go get github.com/gogo/protobuf/protoc-gen-gogofast@v1.3.1
 go get github.com/gogo/protobuf/gogoproto@v1.3.1
 go get golang.org/x/tools/cmd/goimports
 go install k8s.io/code-generator/cmd/go-to-protobuf
-
 go-to-protobuf \
     --go-header-file=./hack/custom-boilerplate.go.txt \
     --packages=github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
@@ -21,6 +20,8 @@ for f in $(find pkg -name '*.proto'); do
         -I . \
         -I ./vendor \
         -I ${GOPATH}/src \
+        -I ${GOPATH}/pkg/mod/github.com/gogo/protobuf@v1.3.1/gogoproto \
+        -I ${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.12.1/third_party/googleapis \
         --include_imports \
         --gogofast_out=plugins=grpc:${GOPATH}/src \
         --grpc-gateway_out=logtostderr=true:${GOPATH}/src \
