@@ -505,6 +505,9 @@ message NodeStatus {
   // Time at which this node completed
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time finishedAt = 11;
 
+  // ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
+  map<string, int64> resourcesDuration = 21;
+
   // PodIP captures the IP of the pod for daemoned steps
   optional string podIP = 12;
 

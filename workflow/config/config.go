@@ -53,6 +53,9 @@ type WorkflowControllerConfig struct {
 
 	MetricsConfig PrometheusConfig `json:"metricsConfig,omitempty"`
 
+	// FeatureFlags for general/experimental features
+	FeatureFlags FeatureFlags `json:"featureFlags,omitempty"`
+
 	TelemetryConfig PrometheusConfig `json:"telemetryConfig,omitempty"`
 
 	// Parallelism limits the max total parallel workflows that can execute at the same time
@@ -69,6 +72,12 @@ type WorkflowControllerConfig struct {
 
 	// Default workflow spec, will be adde to workflow if the parameters are not set in the workflow
 	DefautWorkflowSpec *wfv1.WorkflowSpec `json:"workflowDefaults,omitempty"`
+}
+
+// More general feature flags.
+type FeatureFlags struct {
+	// ResourcesDuration.
+	ResourcesDuration bool `json:"resourcesDuration,omitempty"`
 }
 
 // KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,
