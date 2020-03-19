@@ -61,6 +61,7 @@ func (g *GCSArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) erro
 	return err
 }
 
+// download all the objects of a key from the bucket
 func downloadObjects(client *storage.Client, bucket, key, path string) error {
 	objNames, err := listByPrefix(client, bucket, key, "")
 	if err != nil {
@@ -75,6 +76,7 @@ func downloadObjects(client *storage.Client, bucket, key, path string) error {
 	return nil
 }
 
+// download an object from the bucket
 func downloadObject(client *storage.Client, bucket, key, objName, path string) error {
 	objPrefix := filepath.Clean(key)
 	relObjPath := strings.TrimPrefix(objName, objPrefix)
@@ -103,6 +105,7 @@ func downloadObject(client *storage.Client, bucket, key, objName, path string) e
 	return nil
 }
 
+// list all the object names of the prefix in the bucket
 func listByPrefix(client *storage.Client, bucket, prefix, delim string) ([]string, error) {
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
@@ -144,6 +147,9 @@ func (g *GCSArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) err
 	return err
 }
 
+// list all the file relative paths under a dir
+// path is suppoese to be a dir
+// relPath is a given relative path to be inserted in front
 func listFileRelPaths(path string, relPath string) ([]string, error) {
 	results := []string{}
 	files, err := ioutil.ReadDir(path)
@@ -164,6 +170,7 @@ func listFileRelPaths(path string, relPath string) ([]string, error) {
 	return results, nil
 }
 
+// upload a local file or dir to GCS
 func uploadObjects(client *storage.Client, bucket, key, path string) error {
 	isDir, err := file.IsDirectory(path)
 	if err != nil {
@@ -191,6 +198,7 @@ func uploadObjects(client *storage.Client, bucket, key, path string) error {
 	return nil
 }
 
+// upload an object to GCS
 func uploadObject(client *storage.Client, bucket, key, localPath string) error {
 	f, err := os.Open(localPath)
 	if err != nil {
