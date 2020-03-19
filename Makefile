@@ -1,4 +1,7 @@
 
+GOOS ?= $(shell go env GOOS)
+GOARCH ?= $(shell go env GOARCH)
+
 BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_REMOTE             = origin
@@ -77,8 +80,8 @@ CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join 
 MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
-# the sort puts _.primary first in the list
-SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json' | sort)
+# The sort puts _.primary first in the list. 'env LC_COLLATE=C' makes sure underscore comes first in both Mac and Linux.
+SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json' | env LC_COLLATE=C sort)
 
 .PHONY: build
 build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
@@ -122,28 +125,23 @@ server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/app
 dist/argo: server/static/files.go $(CLI_PKGS)
 	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
 
-dist/argo-linux-amd64: server/static/files.go $(CLI_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-amd64 ./cmd/argo
+dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
+dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
+dist/argo-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
+dist/argo-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
+dist/argo-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
+dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
-dist/argo-linux-ppc64le: server/static/files.go $(CLI_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-ppc64le ./cmd/argo
-
-dist/argo-linux-s390x: server/static/files.go $(CLI_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-s390x ./cmd/argo
-
-dist/argo-darwin-amd64: server/static/files.go $(CLI_PKGS)
-	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-darwin-amd64 ./cmd/argo
-
-dist/argo-windows-amd64: server/static/files.go $(CLI_PKGS)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-windows-amd64 ./cmd/argo
+dist/argo-%: server/static/files.go $(CLI_PKGS)
+	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 
 .PHONY: cli-image
 cli-image: dist/cli-image
 
-dist/cli-image: dist/argo-linux-amd64
+dist/cli-image: dist/argo-$(GOOS)-$(GOARCH)
 	# Create CLI image
 ifeq ($(DEV_IMAGE),true)
-	cp dist/argo-linux-amd64 argo
+	cp dist/argo-$(GOOS)-$(GOARCH) argo
 	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli -f Dockerfile.dev .
 	rm -f argo
 else
@@ -155,20 +153,23 @@ ifeq ($(K3D),true)
 endif
 
 .PHONY: clis
-clis: dist/argo-linux-amd64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/argo-darwin-amd64 dist/argo-windows-amd64 cli-image
+clis: dist/argo-linux-amd64 dist/argo-linux-arm64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/argo-darwin-amd64 dist/argo-windows-amd64 cli-image
 
 # controller
 
-dist/workflow-controller-linux-amd64: $(CONTROLLER_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/workflow-controller-linux-amd64 ./cmd/workflow-controller
+dist/workflow-controller-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
+dist/workflow-controller-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
+
+dist/workflow-controller-%: $(CONTROLLER_PKGS)
+	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
 
 .PHONY: controller-image
 controller-image: dist/controller-image
 
-dist/controller-image: dist/workflow-controller-linux-amd64
+dist/controller-image: dist/workflow-controller-$(GOOS)-$(GOARCH)
 	# Create controller image
 ifeq ($(DEV_IMAGE),true)
-	cp dist/workflow-controller-linux-amd64 workflow-controller
+	cp dist/workflow-controller-$(GOOS)-$(GOARCH) workflow-controller
 	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller -f Dockerfile.dev .
 	rm -f workflow-controller
 else
@@ -181,16 +182,19 @@ endif
 
 # argoexec
 
-dist/argoexec-linux-amd64: $(ARGOEXEC_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argoexec-linux-amd64 ./cmd/argoexec
+dist/argoexec-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
+dist/argoexec-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
+
+dist/argoexec-%: $(ARGOEXEC_PKGS)
+	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argoexec
 
 .PHONY: executor-image
 executor-image: dist/executor-image
 
-dist/executor-image: dist/argoexec-linux-amd64
+dist/executor-image: dist/argoexec-$(GOOS)-$(GOARCH)
 	# Create executor image
 ifeq ($(DEV_IMAGE),true)
-	cp dist/argoexec-linux-amd64 argoexec
+	cp dist/argoexec-$(GOOS)-$(GOARCH) argoexec
 	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec -f Dockerfile.dev .
 	rm -f argoexec
 else
@@ -203,8 +207,11 @@ endif
 
 # generation
 
+$(HOME)/go/bin/mockery:
+	go get github.com/vektra/mockery/.../
+
 .PHONY: codegen
-codegen:
+codegen: $(HOME)/go/bin/mockery
 	# Generate code
 	# We need the folder for compatibility
 	go mod vendor

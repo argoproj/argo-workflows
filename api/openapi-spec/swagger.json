@@ -2554,14 +2554,9 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.ParallelSteps": {
-      "type": "object",
-      "properties": {
-        "steps": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStep"
-          }
-        }
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStep"
       }
     },
     "io.argoproj.workflow.v1alpha1.Parameter": {
@@ -2741,6 +2736,11 @@
         "secretKeySecret": {
           "title": "SecretKeySecret is the secret selector to the bucket's secret key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "useSDKCreds": {
+          "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+          "type": "boolean",
+          "format": "boolean"
         }
       }
     },
