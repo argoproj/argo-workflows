@@ -71,13 +71,13 @@ type WorkflowControllerConfig struct {
 	DefautWorkflowSpec *wfv1.WorkflowSpec `json:"workflowDefaults,omitempty"`
 
 	// PodSpecLogStrategy enable the logging of podspec on controller log.
-	PodSpecLogStrategy PodSpecLogStrategy `json:"podspeclogstrategy,omitempty"`
+	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose
 type PodSpecLogStrategy struct {
-	FailedPod bool `json:"failedpod,omitempty"`
-	AllPods   bool `json:"allpods,omitempty"`
+	FailedPod bool `json:"failedPod,omitempty"`
+	AllPods   bool `json:"allPods,omitempty"`
 }
 
 // KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,
