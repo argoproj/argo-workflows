@@ -28,13 +28,13 @@ WORKDIR /tmp
 # Install docker
 ENV DOCKER_CHANNEL stable
 ENV DOCKER_VERSION 18.09.1
-RUN wget -O docker.tgz https://download.docker.com/linux/static/${DOCKER_CHANNEL}/$(uname -m)/docker-${DOCKER_VERSION}.tgz && \
+RUN wget -O docker.tgz "https://download.docker.com/linux/static/${DOCKER_CHANNEL}/x86_64/docker-${DOCKER_VERSION}.tgz" && \
     tar --extract --file docker.tgz --strip-components 1 --directory /usr/local/bin/ && \
     rm docker.tgz
 
 # Install dep
-ENV DEP_VERSION=0.5.1
-RUN wget https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-$(dpkg --print-architecture) -O /usr/local/bin/dep && \
+ENV DEP_VERSION=0.5.0
+RUN wget https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-amd64 -O /usr/local/bin/dep && \
     chmod +x /usr/local/bin/dep
 
 ####################################################################################################
@@ -55,7 +55,7 @@ RUN apt-get update && \
         /usr/share/man \
         /usr/share/doc \
         /usr/share/doc-base && \
-    curl -L -o /usr/local/bin/kubectl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/$(dpkg --print-architecture)/kubectl && \
+    curl -L -o /usr/local/bin/kubectl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl && \
     chmod +x /usr/local/bin/kubectl && \
     curl -L -o /usr/local/bin/jq -LO https://github.com/stedolan/jq/releases/download/jq-${JQ_VERSION}/jq-linux64 && \
     chmod +x /usr/local/bin/jq
