@@ -2185,6 +2185,14 @@
           "type": "string",
           "title": "PodIP captures the IP of the pod for daemoned steps"
         },
+        "resourcesDuration": {
+          "description": "ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          }
+        },
         "startedAt": {
           "title": "Time at which this node started",
           "$ref": "#/definitions/io.k8s.api.core.v1.Time"
