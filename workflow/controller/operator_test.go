@@ -452,9 +452,11 @@ func TestAssessNodeStatus(t *testing.T) {
 		want: wfv1.NodeError,
 	}}
 
+	wf := unmarshalWF(helloWorldWf)
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := assessNodeStatus(test.pod, test.node)
+			woc := newWorkflowOperationCtx(wf, newController())
+			got := woc.assessNodeStatus(test.pod, test.node)
 			assert.Equal(t, test.want, got.Phase)
 		})
 	}

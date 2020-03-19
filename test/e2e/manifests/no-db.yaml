@@ -267,39 +267,41 @@ subjects:
 ---
 apiVersion: v1
 data:
-  artifactRepository: |
-    archiveLogs: true
-    s3:
-      bucket: my-bucket
-      endpoint: minio:9000
-      insecure: true
-      accessKeySecret:
-        name: my-minio-cred
-        key: accesskey
-      secretKeySecret:
-        name: my-minio-cred
-        key: secretkey
-  containerRuntimeExecutor: pns
-  executor: |
-    imagePullPolicy: Never
-    resources:
-      requests:
-        cpu: 0.1
-        memory: 64Mi
-      limits:
-        cpu: 0.5
-        memory: 128Mi
-  links: |
-    - name: Example Workflow Link
-      scope: workflow
-      url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}
-    - name: Example Pod Link
-      scope: pod
-      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
-  metricsConfig: |
-    enabled: true
-    path: /metrics
-    port: 8080
+  config: |
+    executor:
+      imagePullPolicy: IfNotPresent
+      resources:
+        requests:
+          cpu: 0.1
+          memory: 64Mi
+        limits:
+          cpu: 0.5
+          memory: 128Mi
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        accessKeySecret:
+          name: my-minio-cred
+          key: accesskey
+        secretKeySecret:
+          name: my-minio-cred
+          key: secretkey
+    metricsConfig:
+      enabled: true
+      path: /metrics
+      port: 8080
+    links:
+      - name: Example Workflow Link
+        scope: workflow
+        url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}
+      - name: Example Pod Link
+        scope: pod
+        url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
+    featureFlags:
+      resourcesDuration: true
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
@@ -395,11 +397,17 @@ spec:
     spec:
       containers:
       - args:
+        - --configmap
+        - workflow-controller-configmap
         - --executor-image
         - argoproj/argoexec:latest
         - --namespaced
         - --loglevel
         - debug
+        - --executor-image-pull-policy
+        - Never
+        - --container-runtime-executor
+        - pns
         command:
         - workflow-controller
         env:

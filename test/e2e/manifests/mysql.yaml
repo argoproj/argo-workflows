@@ -300,7 +300,10 @@ data:
     enabled: true
     path: /metrics
     port: 8080
+  featureFlags: |
+    resourcesDuration: true
   persistence: |
+    persistence:
     connectionPool:
       maxIdleConns: 100
       maxOpenConns: 0

@@ -122,6 +122,7 @@ data:
         secretKeySecret:                #omit if accessing via AWS IAM
           name: my-minio-cred
           key: secretkey
+        useSDKCreds: true               #tells argo to use AWS SDK's default provider chain, enable for things like IRSA support
 ```
 The secrets are retrieved from the namespace you use to run your workflows. Note that you can specify a `keyPrefix`.
 

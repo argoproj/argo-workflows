@@ -3,7 +3,7 @@ BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_REMOTE             = origin
 GIT_BRANCH             = $(shell git rev-parse --abbrev-ref=loose HEAD | sed 's/heads\///')
-GIT_TAG                = $(shell git describe --exact-match --tags HEAD 2>/dev/null)
+GIT_TAG                = $(shell git describe --exact-match --tags HEAD 2>/dev/null || git rev-parse --short=8 HEAD 2>/dev/null)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
 export DOCKER_BUILDKIT = 1
@@ -77,8 +77,8 @@ CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join 
 MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
-# the sort puts _.primary first in the list
-SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json' | sort)
+# The sort puts _.primary first in the list. 'env LC_COLLATE=C' makes sure underscore comes first in both Mac and Linux.
+SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json' | env LC_COLLATE=C sort)
 
 .PHONY: build
 build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
@@ -203,8 +203,11 @@ endif
 
 # generation
 
+$(HOME)/go/bin/mockery:
+	go get github.com/vektra/mockery/.../
+
 .PHONY: codegen
-codegen:
+codegen: $(HOME)/go/bin/mockery
 	# Generate code
 	# We need the folder for compatibility
 	go mod vendor
@@ -243,12 +246,15 @@ manifests/quick-start-postgres.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
 
 # lint/test/etc
 
+$(HOME)/go/bin/golangci-lint:
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.23.8
+
 .PHONY: lint
-lint: server/static/files.go
+lint: server/static/files.go $(HOME)/go/bin/golangci-lint
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
-	golangci-lint run --fix --verbose
+	golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
 ifeq ($(CI),false)
 	# Lint UI files
 	yarn --cwd ui lint
