@@ -19,13 +19,11 @@ for f in $(find pkg -name '*.proto'); do
     protoc \
         -I /usr/local/include \
         -I . \
-        -I ./vendor \
-        -I ${GOPATH}/src \
-        -I ${GOPATH}/pkg/mod/github.com/gogo/protobuf@v1.3.1/gogoproto \
-        -I ${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.12.1/third_party/googleapis \
+        -I $(go env GOPATH)/pkg/mod/github.com/gogo/protobuf@v1.3.1/gogoproto \
+        -I $(go env GOPATH)/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.12.1/third_party/googleapis \
         --include_imports \
-        --gogofast_out=plugins=grpc:${GOPATH}/src \
-        --grpc-gateway_out=logtostderr=true:${GOPATH}/src \
+        --gogofast_out=plugins=grpc:$(go env GOPATH)/src \
+        --grpc-gateway_out=logtostderr=true:$(go env GOPATH)/src \
         --swagger_out=logtostderr=true,fqn_for_swagger_name=true:. \
         $f
 done
