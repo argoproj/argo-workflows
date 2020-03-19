@@ -250,12 +250,15 @@ manifests/quick-start-postgres.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
 
 # lint/test/etc
 
+$(HOME)/go/bin/golangci-lint:
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.23.8
+
 .PHONY: lint
-lint: server/static/files.go
+lint: server/static/files.go $(HOME)/go/bin/golangci-lint
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
-	golangci-lint run --fix --verbose
+	golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
 ifeq ($(CI),false)
 	# Lint UI files
 	yarn --cwd ui lint
