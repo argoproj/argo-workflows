@@ -24,7 +24,7 @@ func NewClusterWorkflowTemplateServer() clusterwftmplpkg.ClusterWorkflowTemplate
 func (cwts *ClusterWorkflowTemplateServer) CreateClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateCreateRequest) (*v1alpha1.ClusterWorkflowTemplate, error) {
 	wfClient := auth.GetWfClient(ctx)
 	if req.Template == nil {
-		return nil, fmt.Errorf("workflow template was not found in the request body")
+		return nil, fmt.Errorf("cluster workflow template was not found in the request body")
 	}
 
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
@@ -92,7 +92,7 @@ func (cwts *ClusterWorkflowTemplateServer) LintClusterWorkflowTemplate(ctx conte
 
 func (cwts *ClusterWorkflowTemplateServer) UpdateClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateUpdateRequest) (*v1alpha1.ClusterWorkflowTemplate, error) {
 	if req.Template == nil {
-		return nil, fmt.Errorf("WorkflowTemplate is not found in Request body")
+		return nil, fmt.Errorf("ClusterWorkflowTemplate is not found in Request body")
 	}
 	wfClient := auth.GetWfClient(ctx)
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
