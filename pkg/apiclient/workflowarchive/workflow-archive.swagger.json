@@ -768,6 +768,14 @@
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
           "title": "Time at which this node completed"
         },
+        "resourcesDuration": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          },
+          "description": "ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes."
+        },
         "podIP": {
           "type": "string",
           "title": "PodIP captures the IP of the pod for daemoned steps"
