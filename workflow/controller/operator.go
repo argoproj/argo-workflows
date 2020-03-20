@@ -793,7 +793,6 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	return nil
 }
 
-
 // canPrintPodSpec return eligible to print to the pod spec
 func (woc *wfOperationCtx) canPrintPodSpec(node wfv1.NodeStatus) bool {
 	return  woc.controller.Config.PodSpecLogStrategy.AllPods ||
