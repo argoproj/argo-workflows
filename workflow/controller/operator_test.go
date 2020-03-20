@@ -2435,13 +2435,13 @@ func TestPodSpecLogForFailedPods(t *testing.T) {
 	wf := unmarshalWF(helloWorldWf)
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf, err := wfcset.Create(wf)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
 	woc.operate()
 	woc.operate()
 	for _, node := range woc.wf.Status.Nodes {
-		assert.True(t, woc.canPrintPodSpec(node))
+		assert.True(t, woc.shouldPrintPodSpec(node))
 	}
 
 }
@@ -2454,13 +2454,13 @@ func TestPodSpecLogForAllPods(t *testing.T) {
 	wf := unmarshalWF(nestedOptionalOutputArtifacts)
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf, err := wfcset.Create(wf)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
 	woc.operate()
 	woc.operate()
 	for _, node := range woc.wf.Status.Nodes {
-		assert.True(t, woc.canPrintPodSpec(node))
+		assert.True(t, woc.shouldPrintPodSpec(node))
 	}
 
 }
