@@ -25,7 +25,7 @@ data:
     metricsConfig:
       enabled: true
       path: /metrics
-      port: 8080
+      port: 9090
     links:
       - name: Example Workflow Link
         scope: workflow
