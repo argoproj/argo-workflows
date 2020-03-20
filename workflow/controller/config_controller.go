@@ -15,11 +15,15 @@ import (
 )
 
 func (wfc *WorkflowController) updateConfig(config config.Config) error {
+	bytes, err := yaml.Marshal(config)
+	if err != nil {
+		return err
+	}
+	log.Info("Configuration:\n" + string(bytes))
 	if wfc.cliExecutorImage == "" && config.ExecutorImage == "" {
 		return errors.Errorf(errors.CodeBadRequest, "ConfigMap does not have executorImage")
 	}
 	wfc.Config = config
-
 	if wfc.session != nil {
 		err := wfc.session.Close()
 		if err != nil {
