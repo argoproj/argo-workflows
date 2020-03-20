@@ -19,7 +19,7 @@ import (
 const wftStr1 = `{
   "namespace": "default",
   "template": {
-    "apiVersion": "argoproj.io/wfv1",
+    "apiVersion": "argoproj.io/v1alpha1",
     "kind": "WorkflowTemplate",
     "metadata": {
       "name": "workflow-template-whalesay-template"
@@ -59,7 +59,7 @@ const wftStr1 = `{
 }`
 
 const wftStr2 = `{
-  "apiVersion": "argoproj.io/wfv1",
+  "apiVersion": "argoproj.io/v1alpha1",
   "kind": "WorkflowTemplate",
   "metadata": {
     "name": "workflow-template-whalesay-template2",
@@ -100,7 +100,7 @@ const wftStr2 = `{
 }`
 
 const wftStr3 = `{
-  "apiVersion": "argoproj.io/wfv1",
+  "apiVersion": "argoproj.io/v1alpha1",
   "kind": "WorkflowTemplate",
   "metadata": {
     "name": "workflow-template-whalesay-template3",
