@@ -371,6 +371,8 @@ data:
       - name: Example Pod Link
         scope: pod
         url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
+    featureFlags:
+      resourcesDuration: true
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

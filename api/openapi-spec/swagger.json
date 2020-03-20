@@ -2460,6 +2460,14 @@
           "type": "string",
           "title": "PodIP captures the IP of the pod for daemoned steps"
         },
+        "resourcesDuration": {
+          "description": "ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          }
+        },
         "startedAt": {
           "title": "Time at which this node started",
           "$ref": "#/definitions/io.k8s.api.core.v1.Time"
@@ -3157,7 +3165,7 @@
         },
         "podDisruptionBudget": {
           "title": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.\nController will automatically add the selector with workflow name, if selector is empty.\nOptional: Defaults to empty.\n+optional",
-          "$ref": "#/definitions/k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec"
+          "$ref": "#/definitions/io.k8s.api.core.v1.PodDisruptionBudgetSpec"
         },
         "podGC": {
           "title": "PodGC describes the strategy to use when to deleting completed pods",
@@ -5590,7 +5598,7 @@
         }
       }
     },
-    "k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec": {
+    "io.k8s.api.core.v1.PodDisruptionBudgetSpec": {
       "description": "PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.",
       "type": "object",
       "properties": {
