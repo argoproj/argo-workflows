@@ -795,7 +795,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 
 // canPrintPodSpec return eligible to print to the pod spec
 func (woc *wfOperationCtx) canPrintPodSpec(node wfv1.NodeStatus) bool {
-	return  woc.controller.Config.PodSpecLogStrategy.AllPods ||
+	return woc.controller.Config.PodSpecLogStrategy.AllPods ||
 		(woc.controller.Config.PodSpecLogStrategy.FailedPod && node.Failed())
 }
 
