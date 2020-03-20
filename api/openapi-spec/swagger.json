@@ -10,7 +10,7 @@
   ],
   "swagger": "2.0",
   "info": {
-    "description": "Workflow Service API performs CRUD actions against application resources",
+    "description": "Argo",
     "title": "Argo",
     "version": "latest"
   },
