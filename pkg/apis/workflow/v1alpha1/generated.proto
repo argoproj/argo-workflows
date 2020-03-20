@@ -1143,6 +1143,9 @@ message WorkflowStatus {
 
   // Condition for k8s conditions https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
   repeated Condition condition = 11;
+
+  // ResourcesDuration is the total for the workflow
+  map<string, int64> resourcesDuration = 12;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step
