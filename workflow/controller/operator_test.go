@@ -2426,3 +2426,41 @@ func TestNestedOptionalOutputArtifacts(t *testing.T) {
 
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
+
+//  TestPodSpecLogForFailedPods tests PodSpec logging configuration
+func TestPodSpecLogForFailedPods(t *testing.T) {
+	controller := newController()
+	assert.NotNil(t, controller)
+	controller.Config.PodSpecLogStrategy.FailedPod = true
+	wf := unmarshalWF(helloWorldWf)
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	assert.NotNil(t, woc)
+	woc.operate()
+	woc.operate()
+	for _, node := range woc.wf.Status.Nodes {
+		assert.True(t, woc.shouldPrintPodSpec(node))
+	}
+
+}
+
+//  TestPodSpecLogForAllPods tests  PodSpec logging configuration
+func TestPodSpecLogForAllPods(t *testing.T) {
+	controller := newController()
+	assert.NotNil(t, controller)
+	controller.Config.PodSpecLogStrategy.AllPods = true
+	wf := unmarshalWF(nestedOptionalOutputArtifacts)
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	assert.NotNil(t, woc)
+	woc.operate()
+	woc.operate()
+	for _, node := range woc.wf.Status.Nodes {
+		assert.True(t, woc.shouldPrintPodSpec(node))
+	}
+
+}

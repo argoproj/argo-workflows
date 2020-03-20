@@ -267,56 +267,58 @@ subjects:
 ---
 apiVersion: v1
 data:
-  artifactRepository: |
-    archiveLogs: true
-    s3:
-      bucket: my-bucket
-      endpoint: minio:9000
-      insecure: true
-      accessKeySecret:
-        name: my-minio-cred
-        key: accesskey
-      secretKeySecret:
-        name: my-minio-cred
-        key: secretkey
-  containerRuntimeExecutor: pns
-  executor: |
-    imagePullPolicy: Never
-    resources:
-      requests:
-        cpu: 0.1
-        memory: 64Mi
-      limits:
-        cpu: 0.5
-        memory: 128Mi
-  links: |
-    - name: Example Workflow Link
-      scope: workflow
-      url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}
-    - name: Example Pod Link
-      scope: pod
-      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
-  metricsConfig: |
-    enabled: true
-    path: /metrics
-    port: 8080
-  persistence: |
-    connectionPool:
-      maxIdleConns: 100
-      maxOpenConns: 0
-    nodeStatusOffLoad: true
-    archive: true
-    mysql:
-      host: mysql
-      port: 3306
-      database: argo
-      tableName: argo_workflows
-      userNameSecret:
-        name: argo-mysql-config
-        key: username
-      passwordSecret:
-        name: argo-mysql-config
-        key: password
+  config: |
+    executor:
+      imagePullPolicy: IfNotPresent
+      resources:
+        requests:
+          cpu: 0.1
+          memory: 64Mi
+        limits:
+          cpu: 0.5
+          memory: 128Mi
+    artifactRepository:
+      archiveLogs: true
+      s3:
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        accessKeySecret:
+          name: my-minio-cred
+          key: accesskey
+        secretKeySecret:
+          name: my-minio-cred
+          key: secretkey
+    metricsConfig:
+      enabled: true
+      path: /metrics
+      port: 9090
+    links:
+      - name: Example Workflow Link
+        scope: workflow
+        url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}
+      - name: Example Pod Link
+        scope: pod
+        url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
+    featureFlags:
+      resourcesDuration: true
+    persistence:
+      connectionPool:
+        maxIdleConns: 100
+        maxOpenConns: 0
+      nodeStatusOffLoad: true
+      archive: true
+      mysql:
+        host: mysql
+        port: 3306
+        database: argo
+        tableName: argo_workflows
+        userNameSecret:
+          name: argo-mysql-config
+          key: username
+        passwordSecret:
+          name: argo-mysql-config
+          key: password
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
@@ -381,6 +383,18 @@ spec:
     targetPort: 3306
   selector:
     app: mysql
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: workflow-controller-metrics
+spec:
+  ports:
+  - port: 9090
+    protocol: TCP
+    targetPort: 9090
+  selector:
+    app: workflow-controller
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -480,11 +494,17 @@ spec:
     spec:
       containers:
       - args:
+        - --configmap
+        - workflow-controller-configmap
         - --executor-image
         - argoproj/argoexec:latest
         - --namespaced
         - --loglevel
         - debug
+        - --executor-image-pull-policy
+        - Never
+        - --container-runtime-executor
+        - pns
         command:
         - workflow-controller
         env:
