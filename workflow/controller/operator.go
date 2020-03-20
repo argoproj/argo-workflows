@@ -743,8 +743,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 					}
 				}
 				woc.completedPods[pod.ObjectMeta.Name] = true
-				if woc.controller.Config.PodSpecLogStrategy.AllPods ||
-					(woc.controller.Config.PodSpecLogStrategy.FailedPod && node.Failed()) {
+				if woc.canPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
 				}
 			}
@@ -792,6 +791,14 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	}
 	return nil
 }
+
+
+// canPrintPodSpec return eligible to print to the pod spec
+func (woc *wfOperationCtx) canPrintPodSpec(node wfv1.NodeStatus) bool {
+	return  woc.controller.Config.PodSpecLogStrategy.AllPods ||
+		(woc.controller.Config.PodSpecLogStrategy.FailedPod && node.Failed())
+}
+
 
 //fails any suspended nodes if the workflow deadline has passed
 func (woc *wfOperationCtx) failSuspendedNodesAfterDeadline() error {
