@@ -908,6 +908,10 @@ message TemplateRef {
   optional bool runtimeResolution = 3;
 }
 
+message User {
+  optional string name = 1;
+}
+
 // UserContainer is a container specified by a user.
 message UserContainer {
   optional k8s.io.api.core.v1.Container container = 1;

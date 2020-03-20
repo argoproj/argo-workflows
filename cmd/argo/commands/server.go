@@ -14,6 +14,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/apiserver"
 	"github.com/argoproj/argo/util/help"
@@ -68,13 +69,13 @@ See %s`, help.ArgoSever),
 				"managedNamespace": managedNamespace,
 				"baseHRef":         baseHRef}).
 				Info()
-
 			opts := apiserver.ArgoServerOpts{
 				BaseHRef:         baseHRef,
 				Namespace:        namespace,
 				WfClientSet:      wflientset,
 				KubeClientset:    kubeConfig,
 				RestConfig:       config,
+				User:             wfv1.NullUser,
 				AuthMode:         authMode,
 				ManagedNamespace: managedNamespace,
 				ConfigName:       configMap,

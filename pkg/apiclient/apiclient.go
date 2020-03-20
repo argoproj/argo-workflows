@@ -19,6 +19,7 @@ type Client interface {
 }
 
 func NewClient(argoServer string, authSupplier func() string, clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
+
 	if argoServer != "" {
 		return newArgoServerClient(argoServer, authSupplier())
 	} else {

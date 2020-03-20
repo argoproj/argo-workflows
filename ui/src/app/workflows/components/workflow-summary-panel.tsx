@@ -14,6 +14,7 @@ export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
                 {title: 'Status', value: props.workflow.status.phase},
                 {title: 'Name', value: props.workflow.metadata.name},
                 {title: 'Namespace', value: props.workflow.metadata.namespace},
+                {title: 'Creator', value: props.workflow.metadata.labels['workflows.argoproj.io/creator']},
                 {title: 'Started At', value: props.workflow.status.startedAt},
                 {title: 'Finished At', value: props.workflow.status.finishedAt || '-'},
                 {title: 'Duration', value: <Duration durationMs={duration} />}

@@ -13,6 +13,7 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/util/logs"
+	"github.com/argoproj/argo/util/resource"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/templateresolution"
@@ -33,19 +34,12 @@ func NewWorkflowServer(instanceID string, offloadNodeStatusRepo sqldb.OffloadNod
 	}
 }
 
-func (s *workflowServer) setInstanceID(req *workflowpkg.WorkflowCreateRequest) {
-	if len(req.InstanceID) > 0 || len(s.instanceID) > 0 {
-		labels := req.Workflow.GetLabels()
-		if labels == nil {
-			labels = make(map[string]string)
-		}
-		if len(req.InstanceID) > 0 {
-			labels[common.LabelKeyControllerInstanceID] = req.InstanceID
-		} else {
-			labels[common.LabelKeyControllerInstanceID] = s.instanceID
-		}
-		req.Workflow.SetLabels(labels)
-	}
+func (s *workflowServer) setInstanceID(obj metav1.Object, instanceID string) {
+	resource.Label(obj, common.LabelKeyControllerInstanceID, instanceID, s.instanceID)
+}
+
+func (s *workflowServer) setCreator(ctx context.Context, obj metav1.Object) {
+	resource.Label(obj, common.LabelKeyControllerCreator, auth.GetUser(ctx).Name)
 }
 
 func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.WorkflowCreateRequest) (*v1alpha1.Workflow, error) {
@@ -59,7 +53,8 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 		req.Workflow.Namespace = req.Namespace
 	}
 
-	s.setInstanceID(req)
+	s.setInstanceID(req.Workflow, req.InstanceID)
+	s.setCreator(ctx, req.Workflow)
 
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 

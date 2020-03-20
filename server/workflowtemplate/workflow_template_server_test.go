@@ -7,18 +7,19 @@ import (
 
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/workflow/common"
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wftFake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 )
 
 const wftStr1 = `{
   "namespace": "default",
   "template": {
-    "apiVersion": "argoproj.io/v1alpha1",
+    "apiVersion": "argoproj.io/wfv1",
     "kind": "WorkflowTemplate",
     "metadata": {
       "name": "workflow-template-whalesay-template"
@@ -58,7 +59,7 @@ const wftStr1 = `{
 }`
 
 const wftStr2 = `{
-  "apiVersion": "argoproj.io/v1alpha1",
+  "apiVersion": "argoproj.io/wfv1",
   "kind": "WorkflowTemplate",
   "metadata": {
     "name": "workflow-template-whalesay-template2",
@@ -99,7 +100,7 @@ const wftStr2 = `{
 }`
 
 const wftStr3 = `{
-  "apiVersion": "argoproj.io/v1alpha1",
+  "apiVersion": "argoproj.io/wfv1",
   "kind": "WorkflowTemplate",
   "metadata": {
     "name": "workflow-template-whalesay-template3",
@@ -139,7 +140,7 @@ const wftStr3 = `{
 }`
 
 func getWorkflowTemplateServer() (workflowtemplatepkg.WorkflowTemplateServiceServer, context.Context) {
-	var wftObj1, wftObj2 v1alpha1.WorkflowTemplate
+	var wftObj1, wftObj2 wfv1.WorkflowTemplate
 	err := json.Unmarshal([]byte(wftStr2), &wftObj1)
 	if err != nil {
 		panic(err)
@@ -150,7 +151,7 @@ func getWorkflowTemplateServer() (workflowtemplatepkg.WorkflowTemplateServiceSer
 	}
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := wftFake.NewSimpleClientset(&wftObj1, &wftObj2)
-	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet)
+	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.UserKey, wfv1.User{Name: "my-username"})
 	return NewWorkflowTemplateServer(), ctx
 }
 
@@ -164,6 +165,7 @@ func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
 	wftRsp, err := server.CreateWorkflowTemplate(ctx, &wftReq)
 	if assert.NoError(t, err) {
 		assert.NotNil(t, wftRsp)
+		assert.Equal(t, "my-username", wftRsp.Labels[common.LabelKeyControllerCreator])
 	}
 }
 
@@ -212,7 +214,7 @@ func TestWorkflowTemplateServer_DeleteWorkflowTemplate(t *testing.T) {
 
 func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
 	server, ctx := getWorkflowTemplateServer()
-	var wftObj1 v1alpha1.WorkflowTemplate
+	var wftObj1 wfv1.WorkflowTemplate
 	err := json.Unmarshal([]byte(wftStr2), &wftObj1)
 	if err != nil {
 		panic(err)

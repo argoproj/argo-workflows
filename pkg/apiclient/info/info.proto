@@ -15,6 +15,7 @@ message GetInfoRequest {
 message InfoResponse {
     string managedNamespace = 1;
     repeated github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Link links = 2;
+    github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.User user = 3;
 }
 
 service InfoService {

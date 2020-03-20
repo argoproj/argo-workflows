@@ -156,7 +156,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                 ))}
                         </div>
                         {this.state.workflow && (
-                            <SlidingPanel isShown={this.selectedNodeId && !!this.sidePanel} onClose={() => this.closeSidePanel()}>
+                            <SlidingPanel isShown={!!this.sidePanel} onClose={() => this.closeSidePanel()}>
                                 {this.sidePanel && this.sidePanel.type === 'logs' && (
                                     <WorkflowLogsViewer workflow={this.state.workflow} nodeId={this.sidePanel.nodeId} container={this.sidePanel.container} archived={false} />
                                 )}

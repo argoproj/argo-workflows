@@ -3,6 +3,7 @@ package apiclient
 import (
 	"context"
 	"fmt"
+	"os/user"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -12,6 +13,7 @@ import (
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/auth"
 	cronworkflowserver "github.com/argoproj/argo/server/cronworkflow"
@@ -38,7 +40,11 @@ func newArgoKubeClient(clientConfig clientcmd.ClientConfig) (context.Context, Cl
 	if err != nil {
 		return nil, nil, err
 	}
-	gatekeeper := auth.NewGatekeeper(auth.Server, wfClient, kubeClient, restConfig)
+	current, err := user.Current()
+	if err != nil {
+		return nil, nil, err
+	}
+	gatekeeper := auth.NewGatekeeper(auth.Server, wfClient, kubeClient, restConfig, wfv1.User{Name: current.Name})
 	ctx, err := gatekeeper.Context(context.Background())
 	if err != nil {
 		return nil, nil, err

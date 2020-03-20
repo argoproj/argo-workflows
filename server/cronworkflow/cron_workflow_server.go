@@ -9,6 +9,7 @@ import (
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/util/resource"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/validate"
@@ -42,19 +43,17 @@ func (c *cronWorkflowServiceServer) ListCronWorkflows(ctx context.Context, req *
 }
 
 func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req *cronworkflowpkg.CreateCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
-	c.setInstanceID(req)
+	c.setInstanceID(req.CronWorkflow)
+	c.setCreator(ctx, req.CronWorkflow)
 	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).Create(req.CronWorkflow)
 }
 
-func (c *cronWorkflowServiceServer) setInstanceID(req *cronworkflowpkg.CreateCronWorkflowRequest) {
-	if len(c.instanceID) > 0 {
-		labels := req.CronWorkflow.GetLabels()
-		if labels == nil {
-			labels = make(map[string]string)
-		}
-		labels[common.LabelKeyControllerInstanceID] = c.instanceID
-		req.CronWorkflow.SetLabels(labels)
-	}
+func (c *cronWorkflowServiceServer) setInstanceID(obj metav1.Object) {
+	resource.Label(obj, common.LabelKeyControllerInstanceID, c.instanceID)
+}
+
+func (c *cronWorkflowServiceServer) setCreator(ctx context.Context, obj metav1.Object) {
+	resource.Label(obj, common.LabelKeyControllerCreator, auth.GetUser(ctx).Name)
 }
 
 func (c *cronWorkflowServiceServer) GetCronWorkflow(ctx context.Context, req *cronworkflowpkg.GetCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {

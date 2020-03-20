@@ -2,13 +2,17 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"os/user"
 
+	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/argoproj/argo/pkg/apiclient"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/kubeconfig"
 )
 
@@ -52,6 +56,12 @@ func Namespace() string {
 	return namespace
 }
 
+func GetUser() wfv1.User {
+	current, err := user.Current()
+	errors.CheckError(err)
+	return wfv1.User{Name: current.Username}
+}
+
 func GetAuthString() string {
 	restConfig, err := Config.ClientConfig()
 	if err != nil {
@@ -61,5 +71,5 @@ func GetAuthString() string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return authString
+	return fmt.Sprintf("v2/%s/%s", authString, GetUser().Name)
 }

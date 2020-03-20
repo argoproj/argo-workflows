@@ -6,6 +6,7 @@ import (
 
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/workflow/common"
 
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,7 +21,7 @@ func Test_cronWorkflowServiceServer(t *testing.T) {
 	}
 	wfClientset := wftFake.NewSimpleClientset()
 	server := NewCronWorkflowServer("testinstanceid001")
-	ctx := context.WithValue(context.TODO(), auth.WfKey, wfClientset)
+	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.UserKey, wfv1.User{Name: "my-username"})
 
 	t.Run("CreateCronWorkflow", func(t *testing.T) {
 		created, err := server.CreateCronWorkflow(ctx, &cronworkflowpkg.CreateCronWorkflowRequest{
@@ -29,6 +30,7 @@ func Test_cronWorkflowServiceServer(t *testing.T) {
 		})
 		if assert.NoError(t, err) {
 			assert.NotNil(t, created)
+			assert.Equal(t, "my-username", created.Labels[common.LabelKeyControllerCreator])
 		}
 	})
 	t.Run("ListCronWorkflows", func(t *testing.T) {

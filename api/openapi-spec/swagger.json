@@ -2705,6 +2705,14 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.User": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.UserContainer": {
       "description": "UserContainer is a container specified by a user.",
       "type": "object",
@@ -3133,6 +3141,9 @@
         },
         "managedNamespace": {
           "type": "string"
+        },
+        "user": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.User"
         }
       }
     },

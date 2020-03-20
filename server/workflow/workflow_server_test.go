@@ -16,9 +16,10 @@ import (
 	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/persist/sqldb/mocks"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	v1alpha "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/workflow/common"
 )
 
 const wf1 = `
@@ -368,7 +369,7 @@ const testInstanceID = "testinstanceid001"
 
 func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 
-	var wfObj1, wfObj2, wfObj3, wfObj4, wfObj5 v1alpha1.Workflow
+	var wfObj1, wfObj2, wfObj3, wfObj4, wfObj5 wfv1.Workflow
 	_ = json.Unmarshal([]byte(wf1), &wfObj1)
 	_ = json.Unmarshal([]byte(wf2), &wfObj2)
 	_ = json.Unmarshal([]byte(wf3), &wfObj3)
@@ -376,26 +377,26 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	_ = json.Unmarshal([]byte(wf5), &wfObj5)
 	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
 	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
-	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.UUIDVersion]v1alpha1.Nodes{}, nil)
+	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.UUIDVersion]wfv1.Nodes{}, nil)
 	server := NewWorkflowServer(testInstanceID, offloadNodeStatusRepo)
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := v1alpha.NewSimpleClientset(&wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
-	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet)
+	ctx := context.WithValue(context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet), auth.UserKey, wfv1.User{Name: "my-username"})
 	return server, ctx
 }
 
 // generateNameReactor implements the logic required for the GenerateName field to work when using
 // the fake client. Add it with client.PrependReactor to your fake client.
 func generateNameReactor(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-	wf := action.(ktesting.CreateAction).GetObject().(*v1alpha1.Workflow)
+	wf := action.(ktesting.CreateAction).GetObject().(*wfv1.Workflow)
 	if wf.Name == "" && wf.GenerateName != "" {
 		wf.Name = fmt.Sprintf("%s%s", wf.GenerateName, rand.String(5))
 	}
 	return false, nil, nil
 }
 
-func getWorkflow(ctx context.Context, server workflowpkg.WorkflowServiceServer, namespace string, wfName string) (*v1alpha1.Workflow, error) {
+func getWorkflow(ctx context.Context, server workflowpkg.WorkflowServiceServer, namespace string, wfName string) (*wfv1.Workflow, error) {
 
 	req := workflowpkg.WorkflowGetRequest{
 		Name:      wfName,
@@ -405,7 +406,7 @@ func getWorkflow(ctx context.Context, server workflowpkg.WorkflowServiceServer, 
 	return server.GetWorkflow(ctx, &req)
 }
 
-func getWorkflowList(ctx context.Context, server workflowpkg.WorkflowServiceServer, namespace string) (*v1alpha1.WorkflowList, error) {
+func getWorkflowList(ctx context.Context, server workflowpkg.WorkflowServiceServer, namespace string) (*wfv1.WorkflowList, error) {
 	return server.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{Namespace: namespace})
 
 }
@@ -418,9 +419,10 @@ func TestCreateWorkflow(t *testing.T) {
 
 	wf, err := server.CreateWorkflow(ctx, &req)
 
-	assert.NotNil(t, wf)
-	assert.Nil(t, err)
-
+	if assert.NoError(t, err) {
+		assert.NotNil(t, wf)
+		assert.Equal(t, "my-username", wf.Labels[common.LabelKeyControllerCreator])
+	}
 }
 
 func TestGetWorkflowWithFound(t *testing.T) {
@@ -537,7 +539,7 @@ func TestTerminateWorkflow(t *testing.T) {
 	}
 	wf, err = server.TerminateWorkflow(ctx, &rsmWfReq)
 	assert.NotNil(t, wf)
-	assert.Equal(t, v1alpha1.ShutdownStrategyTerminate, wf.Spec.Shutdown)
+	assert.Equal(t, wfv1.ShutdownStrategyTerminate, wf.Spec.Shutdown)
 	assert.Nil(t, err)
 
 	rsmWfReq = workflowpkg.WorkflowTerminateRequest{

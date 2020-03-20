@@ -30,7 +30,7 @@ import (
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/artifacts"
 	"github.com/argoproj/argo/server/auth"
@@ -67,6 +67,7 @@ type ArgoServerOpts struct {
 	KubeClientset *kubernetes.Clientset
 	WfClientSet   *versioned.Clientset
 	RestConfig    *rest.Config
+	User          wfv1.User
 	AuthMode      string
 	// config map name
 	ConfigName       string
@@ -79,7 +80,7 @@ func NewArgoServer(opts ArgoServerOpts) *argoServer {
 		namespace:        opts.Namespace,
 		managedNamespace: opts.ManagedNamespace,
 		kubeClientset:    opts.KubeClientset,
-		authenticator:    auth.NewGatekeeper(opts.AuthMode, opts.WfClientSet, opts.KubeClientset, opts.RestConfig),
+		authenticator:    auth.NewGatekeeper(opts.AuthMode, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, opts.User),
 		configName:       opts.ConfigName,
 	}
 }
@@ -171,7 +172,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	<-as.stopCh
 }
 
-func (as *argoServer) newGRPCServer(instanceID string, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, links []*v1alpha1.Link) *grpc.Server {
+func (as *argoServer) newGRPCServer(instanceID string, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, links []*wfv1.Link) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
 
 	sOpts := []grpc.ServerOption{

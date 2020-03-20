@@ -47,6 +47,14 @@
       },
       "title": "A link to another app.\n+patchStrategy=merge\n+patchMergeKey=name"
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.User": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
     "info.InfoResponse": {
       "type": "object",
       "properties": {
@@ -58,6 +66,9 @@
           "items": {
             "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Link"
           }
+        },
+        "user": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.User"
         }
       }
     }
