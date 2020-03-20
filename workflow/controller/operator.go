@@ -34,6 +34,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/argo"
+	"github.com/argoproj/argo/util/resource"
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/config"
@@ -730,7 +731,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		wfNodesLock.Lock()
 		defer wfNodesLock.Unlock()
 		if node, ok := woc.wf.Status.Nodes[nodeID]; ok {
-			if newState := assessNodeStatus(pod, &node); newState != nil {
+			if newState := woc.assessNodeStatus(pod, &node); newState != nil {
 				woc.wf.Status.Nodes[nodeID] = *newState
 				woc.addOutputsToScope("workflow", node.Outputs, nil)
 				woc.updated = true
@@ -884,7 +885,7 @@ func printPodSpecLog(pod *apiv1.Pod, wfName string) {
 
 // assessNodeStatus compares the current state of a pod with its corresponding node
 // and returns the new node status if something changed
-func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	var newPhase wfv1.NodePhase
 	var newDaemonStatus *bool
 	var message string
@@ -996,6 +997,9 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 			// If we get here, the container is daemoned so the
 			// finishedAt might not have been set.
 			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+		}
+		if woc.controller.Config.FeatureFlags.ResourcesDuration {
+			node.ResourcesDuration = resource.DurationForPod(pod, time.Now())
 		}
 	}
 	if updated {

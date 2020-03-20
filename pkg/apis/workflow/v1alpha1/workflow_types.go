@@ -6,6 +6,7 @@ import (
 	"hash/fnv"
 	"reflect"
 	"strings"
+	"time"
 
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
@@ -955,6 +956,46 @@ type RetryStrategy struct {
 	Backoff *Backoff `json:"backoff,omitempty" protobuf:"bytes,3,opt,name=backoff,casttype=Backoff"`
 }
 
+// The amount of requested resource * the duration that request was used.
+// This is represented as duration in seconds, so can be converted to and from
+// duration (with loss of precision).
+type ResourceDuration int64
+
+func NewResourceDuration(d time.Duration) ResourceDuration {
+	return ResourceDuration(d.Seconds())
+}
+
+func (in ResourceDuration) Duration() time.Duration {
+	return time.Duration(in) * time.Second
+}
+
+func (in ResourceDuration) String() string {
+	return in.Duration().String()
+}
+
+// This contains each duration by request requested.
+// e.g. 100m CPU * 1h, 1Gi memory * 1h
+type ResourcesDuration map[apiv1.ResourceName]ResourceDuration
+
+func (in ResourcesDuration) Add(o ResourcesDuration) ResourcesDuration {
+	for n, d := range o {
+		in[n] += d
+	}
+	return in
+}
+
+func (in ResourcesDuration) String() string {
+	var parts []string
+	for n, d := range in {
+		parts = append(parts, fmt.Sprintf("%v*%s", d, n))
+	}
+	return strings.Join(parts, ",")
+}
+
+func (in ResourcesDuration) IsZero() bool {
+	return len(in) == 0
+}
+
 // NodeStatus contains status information about an individual node in the workflow
 type NodeStatus struct {
 	// ID is a unique identifier of a node within the worklow
@@ -1005,6 +1046,9 @@ type NodeStatus struct {
 	// Time at which this node completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,11,opt,name=finishedAt"`
 
+	// ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
+	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,21,opt,name=resourcesDuration"`
+
 	// PodIP captures the IP of the pod for daemoned steps
 	PodIP string `json:"podIP,omitempty" protobuf:"bytes,12,opt,name=podIP"`
 
@@ -1033,6 +1077,14 @@ type NodeStatus struct {
 	// a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
 	// a template, will be a superset of the outbound nodes of its last children.
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
+}
+
+func (n Nodes) GetResourcesRequested() ResourcesDuration {
+	i := ResourcesDuration{}
+	for _, status := range n {
+		i = i.Add(status.ResourcesDuration)
+	}
+	return i
 }
 
 func (phase NodePhase) Completed() bool {
@@ -1151,6 +1203,9 @@ type S3Bucket struct {
 
 	// RoleARN is the Amazon Resource Name (ARN) of the role to assume.
 	RoleARN string `json:"roleARN,omitempty" protobuf:"bytes,7,opt,name=roleARN"`
+
+	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
+	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
 }
 
 // S3Artifact is the location of an S3 artifact

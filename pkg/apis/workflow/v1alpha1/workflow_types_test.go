@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -31,4 +32,28 @@ func TestNodes_FindByDisplayName(t *testing.T) {
 func TestNodes_Any(t *testing.T) {
 	assert.False(t, Nodes{"": NodeStatus{Name: "foo"}}.Any(func(node NodeStatus) bool { return node.Name == "bar" }))
 	assert.True(t, Nodes{"": NodeStatus{Name: "foo"}}.Any(func(node NodeStatus) bool { return node.Name == "foo" }))
+}
+
+func TestResourcesDuration(t *testing.T) {
+	t.Run("String", func(t *testing.T) {
+		assert.Equal(t, ResourcesDuration{}.String(), "")
+		assert.Equal(t, ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}.String(), "1s*memory")
+	})
+	t.Run("Add", func(t *testing.T) {
+		assert.Equal(t, ResourcesDuration{}.Add(ResourcesDuration{}).String(), "")
+		assert.Equal(t, ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}.Add(ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}).String(), "2s*memory")
+	})
+}
+
+func TestResourceDuration(t *testing.T) {
+	assert.Equal(t, ResourceDuration(1), NewResourceDuration(1*time.Second))
+	assert.Equal(t, "1s", NewResourceDuration(1*time.Second).String())
+}
+
+func TestNodes_GetResourcesRequested(t *testing.T) {
+	assert.Equal(t, ResourcesDuration{}, Nodes{}.GetResourcesRequested())
+	assert.Equal(t, ResourcesDuration{corev1.ResourceMemory: 3}, Nodes{
+		"foo": NodeStatus{ResourcesDuration: ResourcesDuration{corev1.ResourceMemory: 1}},
+		"bar": NodeStatus{ResourcesDuration: ResourcesDuration{corev1.ResourceMemory: 2}},
+	}.GetResourcesRequested())
 }
