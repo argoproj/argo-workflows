@@ -2459,7 +2459,7 @@ func TestPodSpecLogForAllPods(t *testing.T) {
 	assert.NotNil(t, woc)
 	woc.operate()
 	woc.operate()
-	for _,node := range woc.wf.Status.Nodes {
+	for _, node := range woc.wf.Status.Nodes {
 		assert.True(t, woc.canPrintPodSpec(node))
 	}
 
