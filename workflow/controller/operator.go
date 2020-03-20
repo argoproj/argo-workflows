@@ -799,7 +799,6 @@ func (woc *wfOperationCtx) canPrintPodSpec(node wfv1.NodeStatus) bool {
 		(woc.controller.Config.PodSpecLogStrategy.FailedPod && node.Failed())
 }
 
-
 //fails any suspended nodes if the workflow deadline has passed
 func (woc *wfOperationCtx) failSuspendedNodesAfterDeadline() error {
 	if woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline) {
