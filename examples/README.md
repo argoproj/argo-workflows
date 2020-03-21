@@ -769,9 +769,9 @@ spec:
       limit: 10
       retryOn: "Always"
       backoff:
-        duration: "1m"         # Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
+        duration: "1"      # Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
         factor: 2
-        maxDuration: "1m"   # Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
+        maxDuration: "1m"  # Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
     container:
       image: python:alpine3.6
       command: ["python", -c]

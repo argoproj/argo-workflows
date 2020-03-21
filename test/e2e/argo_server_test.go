@@ -56,12 +56,22 @@ func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 
 func (s *ArgoServerSuite) TestInfo() {
 	s.Run("Get", func() {
-		s.e(s.T()).GET("/api/v1/info").
+		json := s.e(s.T()).GET("/api/v1/info").
 			Expect().
 			Status(200).
-			JSON().
+			JSON()
+		json.
 			Path("$.managedNamespace").
 			Equal("argo")
+		json.
+			Path("$.links[0].name").
+			Equal("Example Workflow Link")
+		json.
+			Path("$.links[0].scope").
+			Equal("workflow")
+		json.
+			Path("$.links[0].url").
+			Equal("http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}")
 	})
 }
 
@@ -544,7 +554,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			Status(200).
 			JSON().
 			Path("$.status.message").
-			Equal("terminated")
+			Equal("Stopped with strategy 'Terminate'")
 	})
 
 	s.Run("Delete", func() {
@@ -908,6 +918,34 @@ spec:
 		j.
 			Path("$.metadata.continue").
 			Equal("1")
+	})
+
+	s.Run("ListWithMinStartedAtGood", func() {
+		fieldSelector := "spec.startedAt>" + time.Now().Add(-1*time.Hour).Format(time.RFC3339) + ",spec.startedAt<" + time.Now().Add(1*time.Hour).Format(time.RFC3339)
+		j := s.e(s.T()).GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.fieldSelector", fieldSelector).
+			WithQuery("listOptions.limit", 2).
+			Expect().
+			Status(200).
+			JSON()
+		j.
+			Path("$.items").
+			Array().
+			Length().
+			Equal(2)
+	})
+
+	s.Run("ListWithMinStartedAtBad", func() {
+		j := s.e(s.T()).GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.fieldSelector", "spec.startedAt>"+time.Now().Add(1*time.Hour).Format(time.RFC3339)).
+			WithQuery("listOptions.limit", 2).
+			Expect().
+			Status(200).
+			JSON()
+		j.
+			Path("$.items").Null()
 	})
 
 	s.Run("Get", func() {

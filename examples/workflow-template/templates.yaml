@@ -16,25 +16,6 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: workflow-template-nested-template
-spec:
-  templates:
-  - name: whalesay-inner-template
-    templateRef:
-      name: workflow-template-whalesay-template
-      template: whalesay-template
-    inputs:
-      parameters:
-      - name: message
-  - name: whalesay-template
-    template: whalesay-inner-template
-    inputs:
-      parameters:
-      - name: message
----
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
   name: workflow-template-random-fail-template
 spec:
   templates:
@@ -141,3 +122,23 @@ spec:
           parameters:
           - name: message
             value: inner-D
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-submittable
+spec:
+  entrypoint: whalesay-template
+  arguments:
+    parameters:
+      - name: message
+        value: hello world
+  templates:
+    - name: whalesay-template
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: docker/whalesay
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]

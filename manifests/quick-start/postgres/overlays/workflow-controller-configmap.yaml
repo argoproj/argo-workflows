@@ -1,6 +1,15 @@
 apiVersion: v1
 data:
   config: |
+    executor:
+      imagePullPolicy: IfNotPresent
+      resources:
+        requests:
+          cpu: 0.1
+          memory: 64Mi
+        limits:
+          cpu: 0.5
+          memory: 128Mi
     artifactRepository:
       archiveLogs: true
       s3:
@@ -13,6 +22,19 @@ data:
         secretKeySecret:
           name: my-minio-cred
           key: secretkey
+    metricsConfig:
+      enabled: true
+      path: /metrics
+      port: 9090
+    links:
+      - name: Example Workflow Link
+        scope: workflow
+        url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}
+      - name: Example Pod Link
+        scope: pod
+        url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
+    featureFlags:
+      resourcesDuration: true
     persistence:
       connectionPool:
         maxIdleConns: 100

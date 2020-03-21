@@ -6,6 +6,9 @@
 * Yarn. `brew install yarn`
 * Docker
 * [Kustomize](https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md)
+* [protoc](http://google.github.io/proto-lens/installing-protoc.html) `brew install protoc`
+* `jq`
+* [Swagger codegen](https://swagger.io/docs/open-source-tools/swagger-codegen/) `brew install swagger-codegen`
 * Kubernetes Cluster (we recommend Docker for Desktop + K3D, as this will allow you to test RBAC set-up, and is also fast)
 
 Useful:
@@ -44,7 +47,7 @@ You need the token to access the CLI or UI:
 
     eval $(make env)
 
-    ./dist/argo token
+    ./dist/argo auth token
 
 At this point you’ll have everything you need to use the CLI and UI.
 

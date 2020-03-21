@@ -59,6 +59,10 @@ const (
 	LabelKeyPhase = workflow.WorkflowFullName + "/phase"
 	// LabelKeyCronWorkflow is a label applied to Workflows that are started by a CronWorkflow
 	LabelKeyCronWorkflow = workflow.WorkflowFullName + "/cron-workflow"
+	// LabelKeyWorkflowTemplate is a label applied to Workflows that are submitted from Workflowtemplate
+	LabelKeyWorkflowTemplate = workflow.WorkflowFullName + "/workflow-template"
+	// LabelKeyOnExit is a label applied to Pods that are run from onExit nodes, so that they are not shut down when stopping a Workflow
+	LabelKeyOnExit = workflow.WorkflowFullName + "/on-exit"
 
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)
@@ -120,6 +124,8 @@ const (
 	GlobalVarWorkflowPriority = "workflow.priority"
 	// GlobalVarWorkflowFailures is a global variable of a JSON map referencing the workflow's failed nodes
 	GlobalVarWorkflowFailures = "workflow.failures"
+	// GlobalVarWorkflowDuration is the current duration of this workflow
+	GlobalVarWorkflowDuration = "workflow.duration"
 	// GlobalVarWorkflowParameters is a JSON string containing all workflow parameters
 	GlobalVarWorkflowParameters = "workflow.parameters"
 	// LocalVarPodName is a step level variable that references the name of the pod

@@ -2,8 +2,10 @@ import * as models from '../../../models';
 import requests from './requests';
 
 export class ArchivedWorkflowsService {
-    public list(namespace: string, phases: string[], labels: string[], offset: number) {
-        return requests.get(`api/v1/archived-workflows?${this.queryParams({namespace, phases, labels, offset}).join('&')}`).then(res => res.body as models.WorkflowList);
+    public list(namespace: string, phases: string[], labels: string[], minStartedAt: Date, maxStartedAt: Date, offset: number) {
+        return requests
+            .get(`api/v1/archived-workflows?${this.queryParams({namespace, phases, labels, minStartedAt, maxStartedAt, offset}).join('&')}`)
+            .then(res => res.body as models.WorkflowList);
     }
 
     public get(uid: string) {
@@ -14,10 +16,11 @@ export class ArchivedWorkflowsService {
         return requests.delete(`api/v1/archived-workflows/${uid}`);
     }
 
-    private queryParams(filter: {namespace?: string; phases?: Array<string>; labels?: Array<string>; offset?: number}) {
+    private queryParams(filter: {namespace?: string; phases?: Array<string>; labels?: Array<string>; minStartedAt?: Date; maxStartedAt?: Date; offset?: number}) {
         const queryParams: string[] = [];
-        if (filter.namespace) {
-            queryParams.push(`listOptions.fieldSelector=metadata.namespace=${filter.namespace}`);
+        const fieldSelector = this.fieldSelectorParams(filter.namespace, filter.minStartedAt, filter.maxStartedAt);
+        if (fieldSelector.length > 0) {
+            queryParams.push(`listOptions.fieldSelector=${fieldSelector}`);
         }
         const labelSelector = this.labelSelectorParams(filter.phases, filter.labels);
         if (labelSelector.length > 0) {
@@ -27,6 +30,23 @@ export class ArchivedWorkflowsService {
             queryParams.push(`listOptions.continue=${filter.offset}`);
         }
         return queryParams;
+    }
+
+    private fieldSelectorParams(namespace: string, minStartedAt: Date, maxStartedAt: Date) {
+        let fieldSelector = '';
+        if (namespace) {
+            fieldSelector += 'metadata.namespace=' + namespace + ',';
+        }
+        if (minStartedAt) {
+            fieldSelector += 'spec.startedAt>' + minStartedAt.toISOString() + ',';
+        }
+        if (maxStartedAt) {
+            fieldSelector += 'spec.startedAt<' + maxStartedAt.toISOString() + ',';
+        }
+        if (fieldSelector.endsWith(',')) {
+            fieldSelector = fieldSelector.substr(0, fieldSelector.length - 1);
+        }
+        return fieldSelector;
     }
 
     private labelSelectorParams(phases?: Array<string>, labels?: Array<string>) {
