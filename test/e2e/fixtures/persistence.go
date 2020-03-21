@@ -34,15 +34,15 @@ func newPersistence(kubeClient kubernetes.Interface) *Persistence {
 		if persistence.MySQL != nil {
 			persistence.MySQL.Host = "localhost"
 		}
-		session, tableName, err := sqldb.CreateDBSession(kubeClient, Namespace, persistence)
+		session, dbModel, err := sqldb.CreateDBSession(kubeClient, Namespace, persistence)
 		if err != nil {
 			panic(err)
 		}
-		offloadNodeStatusRepo, err := sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+		offloadNodeStatusRepo, err := sqldb.NewOffloadNodeStatusRepo(session, dbModel, persistence.GetClusterName())
 		if err != nil {
 			panic(err)
 		}
-		workflowArchive := sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), wcConfig.InstanceID)
+		workflowArchive := sqldb.NewWorkflowArchive(session, dbModel, persistence.GetClusterName(), wcConfig.InstanceID)
 		return &Persistence{session, offloadNodeStatusRepo, workflowArchive}
 	} else {
 		return &Persistence{offloadNodeStatusRepo: sqldb.ExplosiveOffloadNodeStatusRepo, workflowArchive: sqldb.NullWorkflowArchive}

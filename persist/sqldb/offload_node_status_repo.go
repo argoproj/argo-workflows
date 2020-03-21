@@ -31,7 +31,7 @@ type OffloadNodeStatusRepo interface {
 	IsEnabled() bool
 }
 
-func NewOffloadNodeStatusRepo(session sqlbuilder.Database, clusterName, tableName string) (OffloadNodeStatusRepo, error) {
+func NewOffloadNodeStatusRepo(session sqlbuilder.Database, dbModel dbModel, clusterName string) (OffloadNodeStatusRepo, error) {
 	// this environment variable allows you to make Argo Workflows delete offloaded data more or less aggressively,
 	// useful for testing
 	text, ok := os.LookupEnv("OFFLOAD_NODE_STATUS_TTL")
@@ -43,7 +43,7 @@ func NewOffloadNodeStatusRepo(session sqlbuilder.Database, clusterName, tableNam
 		return nil, err
 	}
 	log.WithField("ttl", ttl).Info("Node status offloading config")
-	return &nodeOffloadRepo{session: session, clusterName: clusterName, tableName: tableName, ttl: ttl}, nil
+	return &nodeOffloadRepo{session: session, clusterName: clusterName, tableName: dbModel.tables.workflows, ttl: ttl}, nil
 }
 
 type nodesRecord struct {

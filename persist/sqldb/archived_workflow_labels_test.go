@@ -30,7 +30,8 @@ func Test_labelsClause(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := labelsClause(tt.dbType, tt.requirements)
+			dbModel := NewDBModel("", "test")
+			got, err := labelsClause(tt.dbType, dbModel, tt.requirements)
 			if assert.NoError(t, err) {
 				assert.Equal(t, tt.want.Sentences(), got.Sentences())
 			}

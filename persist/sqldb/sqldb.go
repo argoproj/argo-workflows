@@ -15,9 +15,9 @@ import (
 )
 
 // CreateDBSession creates the dB session
-func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persistConfig *config.PersistConfig) (sqlbuilder.Database, string, error) {
+func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persistConfig *config.PersistConfig) (sqlbuilder.Database, dbModel, error) {
 	if persistConfig == nil {
-		return nil, "", errors.InternalError("Persistence config is not found")
+		return nil, dbModel{}, errors.InternalError("Persistence config is not found")
 	}
 
 	log.Info("Creating DB session")
@@ -27,23 +27,23 @@ func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persi
 	} else if persistConfig.MySQL != nil {
 		return CreateMySQLDBSession(kubectlConfig, namespace, persistConfig.MySQL, persistConfig.ConnectionPool)
 	}
-	return nil, "", fmt.Errorf("no databases are configured")
+	return nil, dbModel{}, fmt.Errorf("no databases are configured")
 }
 
 // CreatePostGresDBSession creates postgresDB session
-func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
+func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, dbModel, error) {
 
 	if cfg.TableName == "" {
-		return nil, "", errors.InternalError("tableName is empty")
+		return nil, dbModel{}, errors.InternalError("tableName is empty")
 	}
 
 	userNameByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
 	if err != nil {
-		return nil, "", err
+		return nil, dbModel{}, err
 	}
 	passwordByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
 	if err != nil {
-		return nil, "", err
+		return nil, dbModel{}, err
 	}
 
 	var settings = postgresql.ConnectionURL{
@@ -64,30 +64,32 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 
 	session, err := postgresql.Open(settings)
 	if err != nil {
-		return nil, "", err
+		return nil, dbModel{}, err
 	}
 
 	if persistPool != nil {
 		session.SetMaxOpenConns(persistPool.MaxOpenConns)
 		session.SetMaxIdleConns(persistPool.MaxIdleConns)
 	}
-	return session, cfg.TableName, nil
+
+	dbm := NewDBModel(cfg.Schema, cfg.TableName)
+	return session, dbm, nil
 }
 
 // CreateMySQLDBSession creates Mysql DB session
-func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.MySQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
+func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.MySQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, dbModel, error) {
 
 	if cfg.TableName == "" {
-		return nil, "", errors.InternalError("tableName is empty")
+		return nil, dbModel{}, errors.InternalError("tableName is empty")
 	}
 
 	userNameByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
 	if err != nil {
-		return nil, "", err
+		return nil, dbModel{}, err
 	}
 	passwordByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.PasswordSecret.Name, cfg.PasswordSecret.Key)
 	if err != nil {
-		return nil, "", err
+		return nil, dbModel{}, err
 	}
 
 	session, err := mysql.Open(mysql.ConnectionURL{
@@ -97,7 +99,7 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 		Database: cfg.Database,
 	})
 	if err != nil {
-		return nil, "", err
+		return nil, dbModel{}, err
 	}
 
 	if persistPool != nil {
@@ -107,11 +109,12 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 	// this is needed to make MySQL run in a Golang-compatible UTF-8 character set.
 	_, err = session.Exec("SET NAMES 'utf8mb4'")
 	if err != nil {
-		return nil, "", err
+		return nil, dbModel{}, err
 	}
 	_, err = session.Exec("SET CHARACTER SET utf8mb4")
 	if err != nil {
-		return nil, "", err
+		return nil, dbModel{}, err
 	}
-	return session, cfg.TableName, nil
+	dbm := NewDBModel("", cfg.TableName)
+	return session, dbm, nil
 }

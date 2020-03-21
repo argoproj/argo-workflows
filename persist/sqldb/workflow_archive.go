@@ -16,8 +16,6 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-const archiveTableName = "argo_archived_workflows"
-const archiveLabelsTableName = archiveTableName + "_labels"
 
 type archivedWorkflowMetadata struct {
 	ClusterName string         `db:"clustername"`
@@ -55,11 +53,12 @@ type workflowArchive struct {
 	clusterName string
 	instanceID  string
 	dbType      dbType
+	dbModel     dbModel
 }
 
 // NewWorkflowArchive returns a new workflowArchive
-func NewWorkflowArchive(session sqlbuilder.Database, clusterName string, instanceID string) WorkflowArchive {
-	return &workflowArchive{session: session, clusterName: clusterName, instanceID: instanceID, dbType: dbTypeFor(session)}
+func NewWorkflowArchive(session sqlbuilder.Database, dbModel dbModel, clusterName string, instanceID string) WorkflowArchive {
+	return &workflowArchive{session: session, clusterName: clusterName, instanceID: instanceID, dbType: dbTypeFor(session), dbModel: dbModel}
 }
 
 func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
@@ -71,14 +70,14 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 	}
 	return r.session.Tx(context.Background(), func(sess sqlbuilder.Tx) error {
 		_, err := sess.
-			DeleteFrom(archiveTableName).
+			DeleteFrom(r.dbModel.tables.archivedWorkflows).
 			Where(db.Cond{"clustername": r.clusterName}).
 			And(db.Cond{"uid": wf.UID}).
 			Exec()
 		if err != nil {
 			return err
 		}
-		_, err = sess.Collection(archiveTableName).
+		_, err = sess.Collection(r.dbModel.tables.archivedWorkflows).
 			Insert(&archivedWorkflowRecord{
 				archivedWorkflowMetadata: archivedWorkflowMetadata{
 					ClusterName: r.clusterName,
@@ -98,7 +97,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 
 		// insert the labels
 		for key, value := range wf.GetLabels() {
-			_, err := sess.Collection(archiveLabelsTableName).
+			_, err := sess.Collection(r.dbModel.tables.archivedWorkflowsLabels).
 				Insert(&archivedWorkflowLabelRecord{
 					ClusterName: r.clusterName,
 					UID:         string(wf.UID),
@@ -115,13 +114,13 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 
 func (r *workflowArchive) ListWorkflows(namespace string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements, limit int, offset int) (wfv1.Workflows, error) {
 	var archivedWfs []archivedWorkflowMetadata
-	clause, err := labelsClause(r.dbType, labelRequirements)
+	clause, err := labelsClause(r.dbType, r.dbModel,labelRequirements)
 	if err != nil {
 		return nil, err
 	}
 	err = r.session.
 		Select("name", "namespace", "uid", "phase", "startedat", "finishedat").
-		From(archiveTableName).
+		From(r.dbModel.tables.archivedWorkflows).
 		Where(db.Cond{"clustername": r.clusterName}).
 		And(db.Cond{"instanceid": r.instanceID}).
 		And(namespaceEqual(namespace)).
@@ -176,7 +175,7 @@ func (r *workflowArchive) GetWorkflow(uid string) (*wfv1.Workflow, error) {
 	archivedWf := &archivedWorkflowRecord{}
 	err := r.session.
 		Select("workflow").
-		From(archiveTableName).
+		From(r.dbModel.tables.archivedWorkflows).
 		Where(db.Cond{"clustername": r.clusterName}).
 		And(db.Cond{"instanceid": r.instanceID}).
 		And(db.Cond{"uid": uid}).
@@ -197,7 +196,7 @@ func (r *workflowArchive) GetWorkflow(uid string) (*wfv1.Workflow, error) {
 
 func (r *workflowArchive) DeleteWorkflow(uid string) error {
 	rs, err := r.session.
-		DeleteFrom(archiveTableName).
+		DeleteFrom(r.dbModel.tables.archivedWorkflows).
 		Where(db.Cond{"clustername": r.clusterName}).
 		And(db.Cond{"instanceid": r.instanceID}).
 		And(db.Cond{"uid": uid}).

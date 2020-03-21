@@ -60,19 +60,19 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
 		log.Info("Persistence configuration enabled")
-		session, tableName, err := sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, persistence)
+		session, dbModel, err := sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, persistence)
 		if err != nil {
 			return err
 		}
 		log.Info("Persistence Session created successfully")
-		err = sqldb.NewMigrate(session, persistence.GetClusterName(), tableName).Exec(context.Background())
+		err = sqldb.NewMigrate(session, dbModel, persistence.GetClusterName()).Exec(context.Background())
 		if err != nil {
 			return err
 		}
 
 		wfc.session = session
 		if persistence.NodeStatusOffload {
-			wfc.offloadNodeStatusRepo, err = sqldb.NewOffloadNodeStatusRepo(session, persistence.GetClusterName(), tableName)
+			wfc.offloadNodeStatusRepo, err = sqldb.NewOffloadNodeStatusRepo(session, dbModel, persistence.GetClusterName())
 			if err != nil {
 				return err
 			}
@@ -81,7 +81,7 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 			log.Info("Node status offloading is disabled")
 		}
 		if persistence.Archive {
-			wfc.wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), wfc.Config.InstanceID)
+			wfc.wfArchive = sqldb.NewWorkflowArchive(session, dbModel, persistence.GetClusterName(), wfc.Config.InstanceID)
 			log.Info("Workflow archiving is enabled")
 		} else {
 			log.Info("Workflow archiving is disabled")

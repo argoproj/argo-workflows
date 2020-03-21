@@ -313,6 +313,7 @@ data:
         port: 5432
         database: postgres
         tableName: argo_workflows
+        schema: argo
         userNameSecret:
           name: argo-postgres-config
           key: username

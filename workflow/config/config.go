@@ -148,6 +148,7 @@ type PostgreSQLConfig struct {
 	Port           string                  `json:"port"`
 	Database       string                  `json:"database"`
 	TableName      string                  `json:"tableName"`
+	Schema         string                  `json:"schema"`
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret"`
 	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret"`
 	SSL            bool                    `json:"ssl,omitempty"`

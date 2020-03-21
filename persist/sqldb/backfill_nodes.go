@@ -12,16 +12,16 @@ import (
 )
 
 type backfillNodes struct {
-	tableName string
+	dbModel dbModel
 }
 
 func (s backfillNodes) String() string {
-	return fmt.Sprintf("backfillNodes{%s}", s.tableName)
+	return fmt.Sprintf("backfillNodes{%s}", s.dbModel.tables.workflows)
 }
 
 func (s backfillNodes) apply(session sqlbuilder.Database) error {
 	log.Info("Backfill node status")
-	rs, err := session.SelectFrom(s.tableName).
+	rs, err := session.SelectFrom(s.dbModel.tables.workflows).
 		Columns("workflow").
 		Where(db.Cond{"version": nil}).
 		Query()
@@ -45,7 +45,7 @@ func (s backfillNodes) apply(session sqlbuilder.Database) error {
 		}
 		logCtx := log.WithFields(log.Fields{"name": wf.Name, "namespace": wf.Namespace, "version": version})
 		logCtx.Info("Back-filling node status")
-		res, err := session.Update(archiveTableName).
+		res, err := session.Update(s.dbModel.tables.archivedWorkflows).
 			Set("version", wf.ResourceVersion).
 			Set("nodes", marshalled).
 			Where(db.Cond{"name": wf.Name}).
