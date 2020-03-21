@@ -186,7 +186,7 @@ func (s *CLISuite) TestRoot() {
 				Workflow("@smoke/basic-generate-name.yaml").
 				When().
 				SubmitWorkflow().
-				WaitForWorkflow(15*time.Second)
+				WaitForWorkflow(15 * time.Second)
 		}
 		s.Given().RunCli([]string{"list"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
