@@ -744,6 +744,9 @@ func (woc *wfOperationCtx) podReconciliation() error {
 					}
 				}
 				woc.completedPods[pod.ObjectMeta.Name] = true
+				if woc.shouldPrintPodSpec(node) {
+					printPodSpecLog(pod, woc.wf.Name)
+				}
 			}
 			if node.Successful() {
 				woc.succeededPods[pod.ObjectMeta.Name] = true
@@ -788,6 +791,12 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		}
 	}
 	return nil
+}
+
+// shouldPrintPodSpec return eligible to print to the pod spec
+func (woc *wfOperationCtx) shouldPrintPodSpec(node wfv1.NodeStatus) bool {
+	return woc.controller.Config.PodSpecLogStrategy.AllPods ||
+		(woc.controller.Config.PodSpecLogStrategy.FailedPod && node.Failed())
 }
 
 //fails any suspended nodes if the workflow deadline has passed
@@ -863,6 +872,13 @@ func (woc *wfOperationCtx) getAllWorkflowPods() (*apiv1.PodList, error) {
 		return nil, errors.InternalWrapError(err)
 	}
 	return podList, nil
+}
+func printPodSpecLog(pod *apiv1.Pod, wfName string) {
+	podSpecByte, err := json.Marshal(pod)
+	if err != nil {
+		log.WithField("workflow", wfName).WithField("nodename", pod.Name).WithField("namespace", pod.Namespace).Warnf("Unable to mashal pod spec. %v", err)
+	}
+	log.WithField("workflow", wfName).WithField("nodename", pod.Name).WithField("namespace", pod.Namespace).Infof("Pod Spec: %s", string(podSpecByte))
 }
 
 // assessNodeStatus compares the current state of a pod with its corresponding node

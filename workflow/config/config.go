@@ -72,6 +72,15 @@ type WorkflowControllerConfig struct {
 
 	// Default workflow spec, will be adde to workflow if the parameters are not set in the workflow
 	DefautWorkflowSpec *wfv1.WorkflowSpec `json:"workflowDefaults,omitempty"`
+
+	// PodSpecLogStrategy enable the logging of podspec on controller log.
+	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`
+}
+
+// PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose
+type PodSpecLogStrategy struct {
+	FailedPod bool `json:"failedPod,omitempty"`
+	AllPods   bool `json:"allPods,omitempty"`
 }
 
 // More general feature flags.
