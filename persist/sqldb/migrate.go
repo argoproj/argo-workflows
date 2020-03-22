@@ -22,7 +22,6 @@ type migrate struct {
 	clusterName string
 }
 
-
 type change interface {
 	apply(session sqlbuilder.Database) error
 }
@@ -150,7 +149,7 @@ func (m migrate) Exec(ctx context.Context) error {
 			ansiSQLChange(`alter table `+m.dbModel.tables.archivedWorkflows+` drop constraint argo_archived_workflows_pkey`),
 		),
 		ansiSQLChange(`alter table ` + m.dbModel.tables.archivedWorkflows + ` add primary key(clustername,uid)`),
-		ansiSQLChange(`create index argo_archived_workflows_i1 on `+m.dbModel.tables.archivedWorkflows+` (clustername,namespace)`),
+		ansiSQLChange(`create index argo_archived_workflows_i1 on ` + m.dbModel.tables.archivedWorkflows + ` (clustername,namespace)`),
 		// argo_archived_workflows now looks like:
 		// clustername(not null) | uid(not null) | | name (null) | phase(not null) | namespace(not null) | workflow(not null) | startedat(not null)  | finishedat(not null)
 		// remove unused columns

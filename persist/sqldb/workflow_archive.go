@@ -16,7 +16,6 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-
 type archivedWorkflowMetadata struct {
 	ClusterName string         `db:"clustername"`
 	InstanceID  string         `db:"instanceid"`
@@ -114,7 +113,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 
 func (r *workflowArchive) ListWorkflows(namespace string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements, limit int, offset int) (wfv1.Workflows, error) {
 	var archivedWfs []archivedWorkflowMetadata
-	clause, err := labelsClause(r.dbType, r.dbModel,labelRequirements)
+	clause, err := labelsClause(r.dbType, r.dbModel, labelRequirements)
 	if err != nil {
 		return nil, err
 	}

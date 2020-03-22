@@ -15,22 +15,22 @@ type indexes struct {
 type dbModel struct {
 	schema    string
 	tableName string
-	tables tables
-	indexes indexes
+	tables    tables
+	indexes   indexes
 }
 
-func NewDBModel(schema string, tableName string) dbModel{
+func NewDBModel(schema string, tableName string) dbModel {
 	t := tables{
-		archivedWorkflows: "argo_archived_workflows",
+		archivedWorkflows:       "argo_archived_workflows",
 		archivedWorkflowsLabels: "argo_archived_workflows_labels",
-		schemaHistory: "schema_history",
-		workflows: tableName,
-		workflowsHistory: "argo_workflow_history",
+		schemaHistory:           "schema_history",
+		workflows:               tableName,
+		workflowsHistory:        "argo_workflow_history",
 	}
 
 	i := indexes{idxName: "idx_name"}
 
-	dbm := dbModel{schema: schema, tableName: tableName, tables: t, indexes:i}
+	dbm := dbModel{schema: schema, tableName: tableName, tables: t, indexes: i}
 	dbm.parseSchema(schema)
 	return dbm
 }
