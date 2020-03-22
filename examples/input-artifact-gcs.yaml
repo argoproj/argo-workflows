@@ -26,6 +26,9 @@ spec:
               # This secret is expected to have have the key 'serviceAccountKey',
               # containing the base64 encoded Google Cloud Service Account Key (json)
               # to the bucket.
+              #
+              # If it's running on GKE, and Workload Identity is used,
+              # serviceAccountKeySecret is not needed.
               serviceAccountKeySecret:
                 name: my-gcs-credentials
                 key: serviceAccountKey

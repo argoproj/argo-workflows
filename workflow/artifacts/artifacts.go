@@ -137,18 +137,17 @@ func NewDriver(art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error
 	}
 
 	if art.GCS != nil {
-		var serviceAccountKey string
+		driver := gcs.GCSArtifactDriver{}
 		if art.GCS.ServiceAccountKeySecret.Name != "" {
 			serviceAccountKeyBytes, err := ri.GetSecret(art.GCS.ServiceAccountKeySecret.Name, art.GCS.ServiceAccountKeySecret.Key)
 			if err != nil {
 				return nil, err
 			}
-			serviceAccountKey = string(serviceAccountKeyBytes)
-			driver := gcs.GCSArtifactDriver{
-				ServiceAccountKey: serviceAccountKey,
-			}
-			return &driver, nil
+			serviceAccountKey := string(serviceAccountKeyBytes)
+			driver.ServiceAccountKey = serviceAccountKey
 		}
+		// key is not set, assume it is using Workload Idendity
+		return &driver, nil
 	}
 
 	return nil, ErrUnsupportedDriver

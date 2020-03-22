@@ -28,12 +28,29 @@ type GCSArtifactDriver struct {
 }
 
 func (g *GCSArtifactDriver) newGCSClient() (*storage.Client, error) {
+	if g.ServiceAccountKey != "" {
+		return newGCSClientWithCredential(g.ServiceAccountKey)
+	}
+	// Assume it uses Workload Identity
+	return newGCSClientDefault()
+}
+
+func newGCSClientWithCredential(serviceAccountJSON string) (*storage.Client, error) {
 	ctx := context.Background()
-	creds, err := google.CredentialsFromJSON(ctx, []byte(g.ServiceAccountKey), storage.ScopeReadWrite)
+	creds, err := google.CredentialsFromJSON(ctx, []byte(serviceAccountJSON), storage.ScopeReadWrite)
 	if err != nil {
 		return nil, fmt.Errorf("GCS client CredentialsFromJSON: %v", err)
 	}
 	client, err := storage.NewClient(ctx, option.WithCredentials(creds))
+	if err != nil {
+		return nil, fmt.Errorf("GCS storage.NewClient with credential: %v", err)
+	}
+	return client, nil
+}
+
+func newGCSClientDefault() (*storage.Client, error) {
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("GCS storage.NewClient: %v", err)
 	}

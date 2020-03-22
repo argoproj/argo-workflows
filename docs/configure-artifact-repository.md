@@ -108,10 +108,19 @@ artifacts:
       # This secret is expected to have have the key 'serviceAccountKey',
       # containing the base64 encoded credentials
       # to the bucket.
+      #
+      # If it's running on GKE and Workload Identity is used,
+      # serviceAccountKeySecret is not needed.
       serviceAccountKeySecret:
         name: my-gcs-credentials
         key: serviceAccountKey
 ```
+
+If it's a GEK cluster, and Workload Identity is configured, there's no need to
+create the Service Account key and store it as a K8s secret,
+`serviceAccountKeySecret` is also not needed in this case. Please follow the
+link to configure Workload Identity
+(https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
 
 ### Use S3 APIs
 

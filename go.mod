@@ -3,8 +3,8 @@ module github.com/argoproj/argo
 go 1.13
 
 require (
-	cloud.google.com/go v0.51.0 // indirect
-	cloud.google.com/go/storage v1.0.0
+	cloud.google.com/go v0.55.0 // indirect
+	cloud.google.com/go/storage v1.6.0
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/aliyun/aliyun-oss-go-sdk v2.0.6+incompatible
@@ -74,14 +74,12 @@ require (
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
 	golang.org/x/crypto v0.0.0-20200128174031-69ecbb4d6d5d
-	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b
+	golang.org/x/net v0.0.0-20200301022130-244492dfa37a
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.0.0-20200124204421-9fbb57f87de9 // indirect
-	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
-	golang.org/x/tools v0.0.0-20200319210407-521f4a0cd458 // indirect
-	google.golang.org/api v0.15.0
-	google.golang.org/genproto v0.0.0-20191230161307-f3c370f40bfb
-	google.golang.org/grpc v1.26.0
+	golang.org/x/tools v0.0.0-20200321224714-0d839f3cf2ed // indirect
+	google.golang.org/api v0.20.0
+	google.golang.org/genproto v0.0.0-20200317114155-1f3552e48f24
+	google.golang.org/grpc v1.28.0
 	gopkg.in/gavv/httpexpect.v2 v2.0.0
 	gopkg.in/ini.v1 v1.52.0 // indirect
 	gopkg.in/jcmturner/goidentity.v2 v2.0.0 // indirect

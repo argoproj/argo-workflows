@@ -1360,7 +1360,7 @@ type GCSBucket struct {
 	Bucket string `json:"bucket" protobuf:"bytes,1,opt,name=bucket"`
 
 	// ServiceAccountKeySecret is the secret selector to the bucket's service account key
-	ServiceAccountKeySecret apiv1.SecretKeySelector `json:"serviceAccountKeySecret" protobuf:"bytes,2,opt,name=serviceAccountKeySecret"`
+	ServiceAccountKeySecret apiv1.SecretKeySelector `json:"serviceAccountKeySecret,omitempty" protobuf:"bytes,2,opt,name=serviceAccountKeySecret"`
 }
 
 // GCSArtifact is the location of a GCS artifact
@@ -1372,7 +1372,7 @@ type GCSArtifact struct {
 }
 
 func (g *GCSArtifact) HasLocation() bool {
-	return g != nil && g.Bucket != "" && g.Key != ""
+	return g != nil && g.Bucket != ""
 }
 
 // OSSBucket contains the access information required for interfacing with an OSS bucket
