@@ -195,9 +195,6 @@ func (s *CLISuite) TestRoot() {
 				assert.Contains(t, output, "AGE")
 				assert.Contains(t, output, "DURATION")
 				assert.Contains(t, output, "PRIORITY")
-
-				// header + rowCount*3 workflows + empty line
-				assert.Equal(t, 5, len(strings.Split(output, "\n")))
 			}
 		})
 
