@@ -2723,6 +2723,10 @@
       "type": "object",
       "title": "ValueFrom describes a location in which to obtain the value to a parameter",
       "properties": {
+        "default": {
+          "type": "string",
+          "title": "Default specifies a value to be used if retrieving the value from the specified source fails"
+        },
         "jqFilter": {
           "type": "string",
           "title": "JQFilter expression against the resource object in resource templates"

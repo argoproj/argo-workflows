@@ -1929,6 +1929,10 @@
         "parameter": {
           "type": "string",
           "title": "Parameter reference to a step or dag task in which to retrieve an output parameter value from\n(e.g. '{{steps.mystep.outputs.myparam}}')"
+        },
+        "default": {
+          "type": "string",
+          "title": "Default specifies a value to be used if retrieving the value from the specified source fails"
         }
       },
       "title": "ValueFrom describes a location in which to obtain the value to a parameter"
