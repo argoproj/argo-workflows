@@ -8,3 +8,6 @@ bases:
 resources:
   - workflow-role.yaml
   - workflow-default-rolebinding.yaml
+
+patchesStrategicMerge:
+  - overlays/workflow-controller-configmap.yaml
