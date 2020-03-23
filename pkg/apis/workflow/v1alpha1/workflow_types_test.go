@@ -50,10 +50,10 @@ func TestResourceDuration(t *testing.T) {
 	assert.Equal(t, "1s", NewResourceDuration(1*time.Second).String())
 }
 
-func TestNodes_GetResourcesRequested(t *testing.T) {
-	assert.Equal(t, ResourcesDuration{}, Nodes{}.GetResourcedDuration())
+func TestNodes_GetResourcesDuration(t *testing.T) {
+	assert.Equal(t, ResourcesDuration{}, Nodes{}.GetResourcesDuration())
 	assert.Equal(t, ResourcesDuration{corev1.ResourceMemory: 3}, Nodes{
 		"foo": NodeStatus{ResourcesDuration: ResourcesDuration{corev1.ResourceMemory: 1}},
 		"bar": NodeStatus{ResourcesDuration: ResourcesDuration{corev1.ResourceMemory: 2}},
-	}.GetResourcedDuration())
+	}.GetResourcesDuration())
 }

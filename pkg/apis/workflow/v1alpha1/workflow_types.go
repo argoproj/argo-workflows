@@ -1082,7 +1082,7 @@ type NodeStatus struct {
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
 }
 
-func (n Nodes) GetResourcedDuration() ResourcesDuration {
+func (n Nodes) GetResourcesDuration() ResourcesDuration {
 	i := ResourcesDuration{}
 	for _, status := range n {
 		i = i.Add(status.ResourcesDuration)
