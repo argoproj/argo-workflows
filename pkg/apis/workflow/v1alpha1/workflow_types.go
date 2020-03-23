@@ -620,6 +620,9 @@ type ValueFrom struct {
 	// Parameter reference to a step or dag task in which to retrieve an output parameter value from
 	// (e.g. '{{steps.mystep.outputs.myparam}}')
 	Parameter string `json:"parameter,omitempty" protobuf:"bytes,4,opt,name=parameter"`
+
+	// Default specifies a value to be used if retrieving the value from the specified source fails
+	Default string `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 }
 
 // Artifact indicates an artifact to place at a specified path
