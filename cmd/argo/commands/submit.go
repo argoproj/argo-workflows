@@ -8,6 +8,8 @@ import (
 	"github.com/argoproj/pkg/errors"
 	argoJson "github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
+	"github.com/valyala/fasttemplate"
+	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
@@ -87,6 +89,70 @@ func NewSubmitCommand() *cobra.Command {
 	return command
 }
 
+/*
+func replaceParameters(workflows []wfv1.Workflow, submitOpts *util.SubmitOpts) ([]wfv1.Workflow, error) {
+	if submitOpts.SubstituteParams {
+		var _workflows []wfv1.Workflow
+		for _, wf := range workflows {
+			//localParams := make(map[string]string)
+			globalParams := make(map[string]string)
+			for _, param := range wf.Spec.Arguments.Parameters {
+				globalParams["workflow.parameters."+param.Name] = *param.Value
+			}
+			var templates []wfv1.Template
+			for _, tmpWf := range wf.Spec.Templates {
+				tmplBytes, err := json.Marshal(tmpWf)
+				if err != nil {
+					return nil, err
+				}
+				fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
+				globalReplacedTmplStr, err := common.Replace(fstTmpl, globalParams, true)
+				if err != nil {
+					return nil, err
+				}
+				var template wfv1.Template
+				err = json.Unmarshal([]byte(globalReplacedTmplStr), &template)
+				if err != nil {
+					return nil, err
+				}
+				templates = append(templates, template)
+				fmt.Println("Here, Here, Here")
+				fmt.Println(globalReplacedTmplStr)
+			}
+			wf.Spec.Templates = templates
+			_workflows = append(_workflows, wf)
+		}
+		return _workflows, nil
+	}
+	return workflows, nil
+}
+*/
+func replaceGlobalParameters(fileContents [][]byte) ([][]byte, error) {
+	// 1
+	var output [][]byte
+	for _, body := range fileContents {
+		// 2
+		workflowRaw := make(map[interface{}]interface{})
+		err := yaml.Unmarshal(body, &workflowRaw)
+		if err != nil {
+			return nil, err
+		}
+		// 3
+		spec, _ := yaml.Marshal(workflowRaw["spec"])
+		var wfSpec wfv1.WorkflowSpec
+		yaml.Unmarshal(spec, &wfSpec)
+		globalParams := make(map[string]string)
+		for _, param := range wfSpec.Arguments.Parameters {
+			globalParams["workflow.parameters."+param.Name] = *param.Value
+		}
+		fstTmpl := fasttemplate.New(string(body), `"{{`, `}}"`)
+		globalReplacedTmplStr, err := common.Replace(fstTmpl, globalParams, true)
+		output = append(output, []byte(globalReplacedTmplStr))
+	}
+
+	return output, nil
+}
+
 func submitWorkflowsFromFile(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
 	fileContents, err := util.ReadManifest(filePaths...)
 	errors.CheckError(err)
@@ -96,6 +162,35 @@ func submitWorkflowsFromFile(filePaths []string, submitOpts *util.SubmitOpts, cl
 		wfs := unmarshalWorkflows(body, cliOpts.strict)
 		workflows = append(workflows, wfs...)
 	}
+	/*
+		if opts.SubstituteParams {
+			fmt.Println("Print Start")
+			localParams := make(map[string]string)
+			globalParams := make(map[string]string)
+			for _, param := range wf.Spec.Arguments.Parameters {
+				globalParams["workflow.parameters."+param.Name] = *param.Value
+			}
+			for _, tmpWf := range wf.Spec.Templates {
+				for _, param := range tmpWf.Arguments.Parameters {
+					localParams["inputs.parameters."+param.Name] = *param.Value
+				}
+				fmt.Println("These are the global/workflow once:")
+				fmt.Println(globalParams)
+				fmt.Println("These are the local/input once:")
+				fmt.Println(localParams)
+				//fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
+				//globalReplacedTmplStr, err := Replace(fstTmpl, globalParams, true)
+				fmt.Println()
+				//processedTmpl, _ := common.ProcessArgs(&tmpWf, args, globalParams, localParams, false)
+				//newTmpl := tmpWf.DeepCopy()
+				//processedTmpl, _ := common.SubstituteParams(newTmpl, globalParams, localParams)
+				//println("After:")
+				//fmt.Println(*newTmpl)
+				//fmt.Println(*processedTmpl)
+			}
+			fmt.Println("Print Done")
+		}
+	*/
 
 	submitWorkflows(workflows, submitOpts, cliOpts)
 }
