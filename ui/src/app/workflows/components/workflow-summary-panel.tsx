@@ -18,9 +18,14 @@ export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
                 {title: 'Namespace', value: props.workflow.metadata.namespace},
                 {title: 'Started At', value: props.workflow.status.startedAt},
                 {title: 'Finished At', value: props.workflow.status.finishedAt || '-'},
-                {title: 'Duration', value: <Duration durationMs={duration} />},
-                {title: 'Resources Duration', value: <ResourcesDuration resourcesDuration={props.workflow.status.resourcesDuration} />}
+                {title: 'Duration', value: <Duration durationMs={duration} />}
             ];
+            if (props.workflow.status.resourcesDuration) {
+                attributes.push({
+                    title: 'Resources Duration',
+                    value: <ResourcesDuration resourcesDuration={props.workflow.status.resourcesDuration} />
+                });
+            }
             return (
                 <div className='white-box'>
                     <div className='white-box__details'>

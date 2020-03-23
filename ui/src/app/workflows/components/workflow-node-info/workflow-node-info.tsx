@@ -72,6 +72,8 @@ export const WorkflowNodeSummary = (props: Props) => {
     ];
     if (props.node.type === 'Pod') {
         attributes.splice(2, 0, {title: 'POD NAME', value: props.node.id});
+    }
+    if (props.node.resourcesDuration) {
         attributes.push({
             title: 'RESOURCES DURATION',
             value: <ResourcesDuration resourcesDuration={props.node.resourcesDuration} />
