@@ -10,6 +10,7 @@
   ],
   "swagger": "2.0",
   "info": {
+    "description": "Workflow Service API performs CRUD actions against application resources",
     "title": "Argo",
     "version": "latest"
   },
@@ -2722,6 +2723,10 @@
       "type": "object",
       "title": "ValueFrom describes a location in which to obtain the value to a parameter",
       "properties": {
+        "default": {
+          "type": "string",
+          "title": "Default specifies a value to be used if retrieving the value from the specified source fails"
+        },
         "jqFilter": {
           "type": "string",
           "title": "JQFilter expression against the resource object in resource templates"
@@ -5873,6 +5878,32 @@
     "HTTPBasic": {
       "description": "HTTP Basic authentication",
       "type": "basic"
+    }
+  },
+  "x-stream-definitions": {
+    "io.argoproj.workflow.v1alpha1.LogEntry": {
+      "properties": {
+        "error": {
+          "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+        },
+        "result": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LogEntry"
+        }
+      },
+      "title": "Stream result of io.argoproj.workflow.v1alpha1.LogEntry",
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowWatchEvent": {
+      "properties": {
+        "error": {
+          "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+        },
+        "result": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowWatchEvent"
+        }
+      },
+      "title": "Stream result of io.argoproj.workflow.v1alpha1.WorkflowWatchEvent",
+      "type": "object"
     }
   }
 }
