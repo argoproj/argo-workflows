@@ -422,7 +422,7 @@ clean:
 	# Delete pre-go 1.3 vendor
 	rm -Rf vendor
 	# Delete build files
-	rm -Rf dist ui/dist
+	rm -Rf dist/* ui/dist
 
 # swagger
 

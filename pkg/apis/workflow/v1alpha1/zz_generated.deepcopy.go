@@ -1795,6 +1795,13 @@ func (in *WorkflowStatus) DeepCopyInto(out *WorkflowStatus) {
 		*out = make([]Condition, len(*in))
 		copy(*out, *in)
 	}
+	if in.ResourcesDuration != nil {
+		in, out := &in.ResourcesDuration, &out.ResourcesDuration
+		*out = make(ResourcesDuration, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	return
 }
 
