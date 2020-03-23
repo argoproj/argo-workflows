@@ -1527,7 +1527,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 			}
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
 			woc.wf.Status.Conditions = []wfv1.Condition{{Status: metav1.ConditionTrue, Type: "completed"}}
-			woc.wf.Status.ResourcesDuration = woc.wf.Status.Nodes.GetResourcedDuration()
+			woc.wf.Status.ResourcesDuration = woc.wf.Status.Nodes.GetResourceDuration()
 			err := woc.deletePDBResource()
 			if err != nil {
 				woc.wf.Status.Phase = wfv1.NodeError
