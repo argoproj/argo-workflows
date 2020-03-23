@@ -16,11 +16,11 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
-	"github.com/argoproj/argo/workflow/config"
 )
 
 var helloWorldWf = `
@@ -104,7 +104,7 @@ func newController() *WorkflowController {
 		panic("Timed out waiting for caches to sync")
 	}
 	return &WorkflowController{
-		Config: config.WorkflowControllerConfig{
+		Config: config.Config{
 			ExecutorImage: "executor:latest",
 		},
 		kubeclientset:  fake.NewSimpleClientset(),
@@ -128,7 +128,7 @@ func newControllerWithDefaults() *WorkflowController {
 	}
 	myBool := true
 	return &WorkflowController{
-		Config: config.WorkflowControllerConfig{
+		Config: config.Config{
 			ExecutorImage: "executor:latest",
 			DefautWorkflowSpec: &wfv1.WorkflowSpec{
 				HostNetwork: &myBool,
@@ -156,7 +156,7 @@ func newControllerWithComplexDefaults() *WorkflowController {
 	var ten int32 = 10
 	var seven int32 = 10
 	return &WorkflowController{
-		Config: config.WorkflowControllerConfig{
+		Config: config.Config{
 			ExecutorImage: "executor:latest",
 			DefautWorkflowSpec: &wfv1.WorkflowSpec{
 				HostNetwork:        &myBool,
