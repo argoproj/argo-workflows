@@ -342,6 +342,65 @@ func (s *FunctionalSuite) TestTerminateBehavior() {
 		})
 }
 
+func (s *FunctionalSuite) TestDefaultParameterOutputs() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: default-params
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: start
+  templates:
+  - name: start
+    steps:
+      - - name: generate-1
+          template: generate
+      - - name: generate-2
+          when: "True == False"
+          template: generate
+    outputs:
+      parameters:
+        - name: nested-out-parameter
+          valueFrom:
+            default: "Default value"
+            parameter: "{{steps.generate-2.outputs.parameters.out-parameter}}"
+
+  - name: generate
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["
+        echo 'my-output-parameter' > /tmp/my-output-parameter.txt
+      "]
+    outputs:
+      parameters:
+      - name: out-parameter
+        valueFrom:
+          path: /tmp/my-output-parameter.txt
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.True(t, status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+				if node.Outputs != nil {
+					for _, param := range node.Outputs.Parameters {
+						if param.Value != nil && *param.Value == "Default value" {
+							return true
+						}
+					}
+				}
+				return false
+			}))
+		})
+}
+
+
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }

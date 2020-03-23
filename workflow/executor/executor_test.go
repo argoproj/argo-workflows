@@ -135,5 +135,5 @@ func TestDefaultParameters(t *testing.T) {
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerID, "/path").Return("", fmt.Errorf("file not found"))
 	err := we.SaveParameters()
 	assert.NoError(t, err)
-	assert.Equal(t, *we.Template.Outputs.Parameters[0].Value, "Default Value")
+	assert.Equal(t, "Default Value", *we.Template.Outputs.Parameters[0].Value)
 }
