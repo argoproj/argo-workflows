@@ -8,13 +8,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
 	"github.com/argoproj/argo/util/argo"
-
-	apiv1 "k8s.io/api/core/v1"
 )
 
 type FunctionalSuite struct {
@@ -105,7 +104,7 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 		SubmitWorkflow().
 		WaitForWorkflow(30 * time.Second).
 		Then().
-		ExpectAuditEvents(func(t *testing.T, events *apiv1.EventList) {
+		ExpectAuditEvents(func(t *testing.T, events *corev1.EventList) {
 			found := false
 			for _, e := range events.Items {
 				isAboutFailedStep := strings.HasPrefix(e.InvolvedObject.Name, "failed-step-event-")
@@ -127,7 +126,7 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		SubmitWorkflow().
 		WaitForWorkflow(60 * time.Second).
 		Then().
-		ExpectAuditEvents(func(t *testing.T, events *apiv1.EventList) {
+		ExpectAuditEvents(func(t *testing.T, events *corev1.EventList) {
 			found := false
 			for _, e := range events.Items {
 				isAboutSuccess := strings.HasPrefix(e.InvolvedObject.Name, "success-event-")
@@ -149,7 +148,7 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 		SubmitWorkflow().
 		WaitForWorkflow(120 * time.Second).
 		Then().
-		ExpectAuditEvents(func(t *testing.T, events *apiv1.EventList) {
+		ExpectAuditEvents(func(t *testing.T, events *corev1.EventList) {
 			found := false
 			for _, e := range events.Items {
 				isAboutSuccess := strings.HasPrefix(e.InvolvedObject.Name, "volumes-pvc-fail-event-")

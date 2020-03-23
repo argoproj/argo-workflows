@@ -656,6 +656,11 @@ export interface NodeStatus {
     finishedAt: kubernetes.Time;
 
     /**
+     * How much resource was used.
+     */
+    resourcesDuration?: {[resource: string]: number};
+
+    /**
      * PodIP captures the IP of the pod for daemoned steps
      */
     podIP: string;
