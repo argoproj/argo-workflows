@@ -199,8 +199,7 @@ Example:
 $ kubectl edit configmap workflow-controller-configmap -n argo		# assumes argo was installed in the argo namespace
 ...
 data:
-  config: |
-    artifactRepository:
+    artifactRepository: |
       s3:
         bucket: my-bucket
         keyPrefix: prefix/in/bucket     #optional
