@@ -6,8 +6,8 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-// WorkflowControllerConfig contain the configuration settings for the workflow controller
-type WorkflowControllerConfig struct {
+// Config contain the configuration settings for the workflow controller
+type Config struct {
 	// ExecutorImage is the image name of the executor to use when running pods
 	// DEPRECATED: use --executor-image flag to workflow-controller instead
 	ExecutorImage string `json:"executorImage,omitempty"`
