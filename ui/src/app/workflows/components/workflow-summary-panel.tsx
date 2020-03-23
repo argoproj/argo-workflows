@@ -3,6 +3,7 @@ import * as moment from 'moment';
 import * as React from 'react';
 
 import {NODE_PHASE, Workflow} from '../../../models';
+import {ResourcesDuration} from '../../shared/resources-duration';
 
 export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
     <Ticker disabled={props.workflow && props.workflow.status.phase !== NODE_PHASE.RUNNING}>
@@ -12,12 +13,19 @@ export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
 
             const attributes = [
                 {title: 'Status', value: props.workflow.status.phase},
+                {title: 'Message', value: props.workflow.status.message},
                 {title: 'Name', value: props.workflow.metadata.name},
                 {title: 'Namespace', value: props.workflow.metadata.namespace},
                 {title: 'Started At', value: props.workflow.status.startedAt},
                 {title: 'Finished At', value: props.workflow.status.finishedAt || '-'},
                 {title: 'Duration', value: <Duration durationMs={duration} />}
             ];
+            if (props.workflow.status.resourcesDuration) {
+                attributes.push({
+                    title: 'Resources Duration',
+                    value: <ResourcesDuration resourcesDuration={props.workflow.status.resourcesDuration} />
+                });
+            }
             return (
                 <div className='white-box'>
                     <div className='white-box__details'>

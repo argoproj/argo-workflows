@@ -1623,6 +1623,14 @@
             "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Condition"
           },
           "title": "Condition for k8s conditions https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties"
+        },
+        "resourcesDuration": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          },
+          "title": "ResourcesDuration is the total for the workflow"
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"
