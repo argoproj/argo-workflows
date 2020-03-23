@@ -1801,7 +1801,12 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 			}
 			val, err := scope.resolveParameter(param.ValueFrom.Parameter)
 			if err != nil {
-				return nil, err
+				// We have a default value to use instead of returning an error
+				if param.ValueFrom.Default != "" {
+					val = param.ValueFrom.Default
+				} else {
+					return nil, err
+				}
 			}
 			param.Value = &val
 			param.ValueFrom = nil
