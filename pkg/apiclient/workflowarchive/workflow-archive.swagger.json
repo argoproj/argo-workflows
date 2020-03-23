@@ -768,6 +768,14 @@
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
           "title": "Time at which this node completed"
         },
+        "resourcesDuration": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          },
+          "description": "ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes."
+        },
         "podIP": {
           "type": "string",
           "title": "PodIP captures the IP of the pod for daemoned steps"
@@ -1052,6 +1060,11 @@
         "roleARN": {
           "type": "string",
           "description": "RoleARN is the Amazon Resource Name (ARN) of the role to assume."
+        },
+        "useSDKCreds": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults."
         }
       },
       "title": "S3Bucket contains the access information required for interfacing with an S3 bucket"

@@ -39,6 +39,10 @@ data:
         scope: pod
         url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
 
+    featureFlags:
+      # Enable resource duration
+      resourcesDuration: false
+
     # artifactRepository defines the default location to be used as the artifact repository for
     # container artifacts.
     artifactRepository:

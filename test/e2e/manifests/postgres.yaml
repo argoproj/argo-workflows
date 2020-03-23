@@ -292,7 +292,7 @@ data:
     metricsConfig:
       enabled: true
       path: /metrics
-      port: 8080
+      port: 9090
     links:
       - name: Example Workflow Link
         scope: workflow
@@ -300,6 +300,8 @@ data:
       - name: Example Pod Link
         scope: pod
         url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
+    featureFlags:
+      resourcesDuration: true
     persistence:
       connectionPool:
         maxIdleConns: 100
@@ -381,6 +383,18 @@ spec:
     targetPort: 5432
   selector:
     app: postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: workflow-controller-metrics
+spec:
+  ports:
+  - port: 9090
+    protocol: TCP
+    targetPort: 9090
+  selector:
+    app: workflow-controller
 ---
 apiVersion: apps/v1
 kind: Deployment
