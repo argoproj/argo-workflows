@@ -149,7 +149,6 @@ func replaceGlobalParameters(fileContents [][]byte) ([][]byte, error) {
 		globalReplacedTmplStr, err := common.Replace(fstTmpl, globalParams, true)
 		output = append(output, []byte(globalReplacedTmplStr))
 	}
-
 	return output, nil
 }
 
