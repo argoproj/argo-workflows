@@ -18,19 +18,23 @@ func GetTaskAncestry(ctx Context, taskName string, tasks []wfv1.DAGTask) []strin
 	for _, task := range tasks {
 		taskByName[task.Name] = task
 	}
-
+	visitedFlag := make(map[string]bool)
 	visited := make(map[string]time.Time)
 	var getAncestry func(s string)
 	getAncestry = func(currTask string) {
-		task := taskByName[currTask]
-		for _, depTask := range task.Dependencies {
-			getAncestry(depTask)
-		}
-		if currTask != taskName {
-			if _, ok := visited[currTask]; !ok {
-				visited[currTask] = getTimeFinished(ctx, currTask)
+		if !visitedFlag[currTask] {
+			task := taskByName[currTask]
+			for _, depTask := range task.Dependencies {
+				getAncestry(depTask)
 			}
+			if currTask != taskName {
+				if _, ok := visited[currTask]; !ok {
+					visited[currTask] = getTimeFinished(ctx, currTask)
+				}
+			}
+			visitedFlag[currTask] = true
 		}
+
 	}
 	getAncestry(taskName)
 
