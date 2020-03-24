@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,11 +16,11 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
-	"github.com/argoproj/argo/workflow/config"
 )
 
 var helloWorldWf = `
@@ -102,7 +104,7 @@ func newController() *WorkflowController {
 		panic("Timed out waiting for caches to sync")
 	}
 	return &WorkflowController{
-		Config: config.WorkflowControllerConfig{
+		Config: config.Config{
 			ExecutorImage: "executor:latest",
 		},
 		kubeclientset:  fake.NewSimpleClientset(),
@@ -111,6 +113,7 @@ func newController() *WorkflowController {
 		wftmplInformer: wftmplInformer,
 		wfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		wfArchive:      sqldb.NullWorkflowArchive,
+		Metrics:        make(map[string]prometheus.Metric),
 	}
 }
 
@@ -125,7 +128,7 @@ func newControllerWithDefaults() *WorkflowController {
 	}
 	myBool := true
 	return &WorkflowController{
-		Config: config.WorkflowControllerConfig{
+		Config: config.Config{
 			ExecutorImage: "executor:latest",
 			DefautWorkflowSpec: &wfv1.WorkflowSpec{
 				HostNetwork: &myBool,
@@ -153,7 +156,7 @@ func newControllerWithComplexDefaults() *WorkflowController {
 	var ten int32 = 10
 	var seven int32 = 10
 	return &WorkflowController{
-		Config: config.WorkflowControllerConfig{
+		Config: config.Config{
 			ExecutorImage: "executor:latest",
 			DefautWorkflowSpec: &wfv1.WorkflowSpec{
 				HostNetwork:        &myBool,
@@ -207,6 +210,20 @@ func makePodsPhase(t *testing.T, phase apiv1.PodPhase, kubeclientset kubernetes.
 			}
 			_, _ = podcs.Update(&pod)
 		}
+	}
+}
+
+// makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
+func makePodsPhaseAll(t *testing.T, phase apiv1.PodPhase, kubeclientset kubernetes.Interface, namespace string) {
+	podcs := kubeclientset.CoreV1().Pods(namespace)
+	pods, err := podcs.List(metav1.ListOptions{})
+	assert.NoError(t, err)
+	for _, pod := range pods.Items {
+		pod.Status.Phase = phase
+		if phase == apiv1.PodFailed {
+			pod.Status.Message = "Pod failed"
+		}
+		_, _ = podcs.Update(&pod)
 	}
 }
 

@@ -56,11 +56,7 @@ func (woc *cronWfOperationCtx) Run() {
 		return
 	}
 
-	wf, err := common.ConvertCronWorkflowToWorkflow(woc.cronWf)
-	if err != nil {
-		log.Errorf("Unable to create Workflow for CronWorkflow %s", woc.name)
-		return
-	}
+	wf := common.ConvertCronWorkflowToWorkflow(woc.cronWf)
 
 	runWf, err := util.SubmitWorkflow(woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, &util.SubmitOpts{})
 	if err != nil {

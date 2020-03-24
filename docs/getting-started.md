@@ -128,8 +128,7 @@ kubectl edit cm -n argo workflow-controller-configmap
 Add the following:
 ```yaml
 data:
-  config: |
-    artifactRepository:
+    artifactRepository: |
       s3:
         bucket: my-bucket
         endpoint: argo-artifacts:9000
@@ -165,6 +164,9 @@ kubectl -n argo port-forward deployment/argo-server 2746:2746
 ```
 
 Then visit: http://127.0.0.1:2746
+
+See the [Argo Server documentation](./argo-server.md) for config options, authentication,
+managed namespaces, etc.
 
 > v2.4 and before
 

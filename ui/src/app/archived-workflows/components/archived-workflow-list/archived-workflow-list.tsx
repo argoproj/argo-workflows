@@ -16,7 +16,7 @@ import {Consumer} from '../../../shared/context';
 import {exampleWorkflow} from '../../../shared/examples';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
-import {WorkflowFilters} from '../../../workflows/components/workflow-filters/workflow-filters';
+import {ArchivedWorkflowFilters} from '../archived-workflow-filters/archived-workflow-filters';
 
 interface State {
     offset: number;
@@ -27,6 +27,8 @@ interface State {
     namespace: string;
     selectedPhases: string[];
     selectedLabels: string[];
+    minStartedAt?: Date;
+    maxStartedAt?: Date;
     workflows?: Workflow[];
     error?: Error;
 }
@@ -44,14 +46,23 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             nextOffset: 0,
             initialized: false,
             managedNamespace: false,
-            namespace: this.props.match.params.namespace || '',
+            namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || '',
             selectedPhases: this.queryParams('phase'),
-            selectedLabels: this.queryParams('label')
+            selectedLabels: this.queryParams('label'),
+            minStartedAt: this.parseTime(this.queryParam('minStartedAt')) || this.lastMonth(),
+            maxStartedAt: this.parseTime(this.queryParam('maxStartedAt')) || this.nextDay()
         };
     }
 
     public componentDidMount(): void {
-        this.fetchArchivedWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.offset);
+        this.fetchArchivedWorkflows(
+            this.state.namespace,
+            this.state.selectedPhases,
+            this.state.selectedLabels,
+            this.state.minStartedAt,
+            this.state.maxStartedAt,
+            this.state.offset
+        );
     }
 
     public render() {
@@ -82,13 +93,17 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                         <div className='row'>
                             <div className='columns small-12 xlarge-2'>
                                 <div>
-                                    <WorkflowFilters
+                                    <ArchivedWorkflowFilters
                                         workflows={this.state.workflows}
                                         namespace={this.state.namespace}
                                         phaseItems={Object.values([models.NODE_PHASE.SUCCEEDED, models.NODE_PHASE.FAILED, models.NODE_PHASE.ERROR])}
                                         selectedPhases={this.state.selectedPhases}
                                         selectedLabels={this.state.selectedLabels}
-                                        onChange={(namespace, selectedPhases, selectedLabels) => this.changeFilters(namespace, selectedPhases, selectedLabels, 0)}
+                                        minStartedAt={this.state.minStartedAt}
+                                        maxStartedAt={this.state.maxStartedAt}
+                                        onChange={(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt) =>
+                                            this.changeFilters(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, 0)
+                                        }
                                     />
                                 </div>
                             </div>
@@ -111,6 +126,26 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         );
     }
 
+    private lastMonth() {
+        const dt = new Date();
+        dt.setMonth(dt.getMonth() - 1);
+        dt.setHours(0, 0, 0, 0);
+        return dt;
+    }
+
+    private nextDay() {
+        const dt = new Date();
+        dt.setDate(dt.getDate() + 1);
+        dt.setHours(0, 0, 0, 0);
+        return dt;
+    }
+
+    private parseTime(dateStr: string) {
+        if (dateStr != null) {
+            return new Date(dateStr);
+        }
+    }
+
     private parseOffset(str: string) {
         if (isNaN(str)) {
             return 0;
@@ -119,7 +154,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         return result >= 0 ? result : 0;
     }
 
-    private changeFilters(namespace: string, selectedPhases: string[], selectedLabels: string[], offset: number) {
+    private changeFilters(namespace: string, selectedPhases: string[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, offset: number) {
         const params = new URLSearchParams();
         selectedPhases.forEach(phase => {
             params.append('phase', phase);
@@ -127,18 +162,17 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         selectedLabels.forEach(label => {
             params.append('label', label);
         });
+        params.append('minStartedAt', minStartedAt.toISOString());
+        params.append('maxStartedAt', maxStartedAt.toISOString());
         if (offset > 0) {
             params.append('continue', offset.toString());
         }
-        let url = 'archived-workflows/' + namespace;
-        if (selectedPhases.length > 0 || selectedLabels.length > 0 || offset > 0) {
-            url += '?' + params.toString();
-        }
+        const url = 'archived-workflows/' + namespace + '?' + params.toString();
         history.pushState(null, '', uiUrl(url));
-        this.fetchArchivedWorkflows(namespace, selectedPhases, selectedLabels, offset && offset >= 0 ? offset : 0);
+        this.fetchArchivedWorkflows(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, offset && offset >= 0 ? offset : 0);
     }
 
-    private fetchArchivedWorkflows(namespace: string, selectedPhases: string[], selectedLabels: string[], offset: number): void {
+    private fetchArchivedWorkflows(namespace: string, selectedPhases: string[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, offset: number): void {
         let archivedWorkflowList;
         let newNamespace = namespace;
         if (!this.state.initialized) {
@@ -147,13 +181,13 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                     newNamespace = info.managedNamespace;
                 }
                 this.setState({initialized: true, managedNamespace: info.managedNamespace ? true : false});
-                return services.archivedWorkflows.list(newNamespace, selectedPhases, selectedLabels, offset);
+                return services.archivedWorkflows.list(newNamespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, offset);
             });
         } else {
             if (this.state.managedNamespace) {
                 newNamespace = this.state.namespace;
             }
-            archivedWorkflowList = services.archivedWorkflows.list(newNamespace, selectedPhases, selectedLabels, offset);
+            archivedWorkflowList = services.archivedWorkflows.list(newNamespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, offset);
         }
         archivedWorkflowList
             .then(list => {
@@ -162,10 +196,13 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                     workflows: list.items || [],
                     selectedPhases,
                     selectedLabels,
+                    minStartedAt,
+                    maxStartedAt,
                     offset,
                     nextOffset: this.parseOffset(list.metadata.continue || ''),
                     loading: false
                 });
+                Utils.setCurrentNamespace(newNamespace);
             })
             .catch(error => this.setState({error, loading: false}));
     }
@@ -210,7 +247,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                         <button
                             className='argo-button argo-button--base-o'
                             onClick={() => {
-                                this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, 0);
+                                this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.minStartedAt, this.state.maxStartedAt, 0);
                             }}>
                             <i className='fa fa-chevron-left' /> Start
                         </button>
@@ -219,7 +256,14 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                         <button
                             className='argo-button argo-button--base-o'
                             onClick={() => {
-                                this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.nextOffset);
+                                this.changeFilters(
+                                    this.state.namespace,
+                                    this.state.selectedPhases,
+                                    this.state.selectedLabels,
+                                    this.state.minStartedAt,
+                                    this.state.maxStartedAt,
+                                    this.state.nextOffset
+                                );
                             }}>
                             Next: {this.state.nextOffset} <i className='fa fa-chevron-right' />
                         </button>

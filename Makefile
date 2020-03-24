@@ -1,9 +1,12 @@
 
+OUTPUT_IMAGE_OS ?= linux
+OUTPUT_IMAGE_ARCH ?= amd64
+
 BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_REMOTE             = origin
 GIT_BRANCH             = $(shell git rev-parse --abbrev-ref=loose HEAD | sed 's/heads\///')
-GIT_TAG                = $(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
+GIT_TAG                = $(shell git describe --exact-match --tags HEAD 2>/dev/null || git rev-parse --short=8 HEAD 2>/dev/null)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
 export DOCKER_BUILDKIT = 1
@@ -14,8 +17,9 @@ IMAGE_NAMESPACE       ?= argoproj
 # The rules for what version are, in order of precedence
 # 1. If anything passed at the command line (e.g. make release VERSION=...)
 # 2. If on master, it must be "latest".
-# 3. If on a release branch, the most recent tag that contain the major minor on that branch,
-# 4. Otherwise, the branch.
+# 3. If on tag, must be tag.
+# 4. If on a release branch, the most recent tag that contain the major minor on that branch,
+# 5. Otherwise, the branch.
 #
 VERSION := $(subst /,-,$(GIT_BRANCH))
 
@@ -33,14 +37,20 @@ VERSION := $(GIT_LATEST_TAG)
 endif
 endif
 
-
 # MANIFESTS_VERSION is the version to be used for files in manifests and should always be latests unles we are releasing
+# we assume HEAD means you are on a tag
+ifeq ($(GIT_BRANCH),HEAD)
+VERSION               := $(GIT_TAG)
+MANIFESTS_VERSION     := $(VERSION)
+DEV_IMAGE             := false
+else
 ifeq ($(findstring release,$(GIT_BRANCH)),release)
 MANIFESTS_VERSION     := $(VERSION)
 DEV_IMAGE             := false
 else
 MANIFESTS_VERSION     := latest
 DEV_IMAGE             := true
+endif
 endif
 
 # perform static compilation
@@ -70,19 +80,15 @@ CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join 
 MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
-# the sort puts _.primary first in the list
-SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json' | sort)
+# The sort puts _.primary first in the list. 'env LC_COLLATE=C' makes sure underscore comes first in both Mac and Linux.
+SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json' | env LC_COLLATE=C sort)
 
 .PHONY: build
 build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
 
 .PHONY: status
 status:
-	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE)
-
-.PHONY: vendor
-vendor: go.mod go.sum
-	go mod download
+	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), GIT_TREE_STATE=$(GIT_TREE_STATE), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE)
 
 # cli
 
@@ -116,35 +122,30 @@ server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/app
 	# Pack UI into a Go file.
 	staticfiles -o server/static/files.go ui/dist/app
 
-dist/argo: vendor server/static/files.go $(CLI_PKGS)
+dist/argo: server/static/files.go $(CLI_PKGS)
 	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
 
-dist/argo-linux-amd64: vendor server/static/files.go $(CLI_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-amd64 ./cmd/argo
+dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
+dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
+dist/argo-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
+dist/argo-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
+dist/argo-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
+dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
-dist/argo-linux-ppc64le: vendor server/static/files.go $(CLI_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-ppc64le ./cmd/argo
-
-dist/argo-linux-s390x: vendor server/static/files.go $(CLI_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-s390x ./cmd/argo
-
-dist/argo-darwin-amd64: vendor server/static/files.go $(CLI_PKGS)
-	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-darwin-amd64 ./cmd/argo
-
-dist/argo-windows-amd64: vendor server/static/files.go $(CLI_PKGS)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-windows-amd64 ./cmd/argo
+dist/argo-%: server/static/files.go $(CLI_PKGS)
+	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 
 .PHONY: cli-image
 cli-image: dist/cli-image
 
-dist/cli-image: dist/argo-linux-amd64
+dist/cli-image: dist/argo-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
 	# Create CLI image
 ifeq ($(DEV_IMAGE),true)
-	cp dist/argo-linux-amd64 argo
-	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli -f Dockerfile.dev .
+	cp dist/argo-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) argo
+	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli -f Dockerfile.dev --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	rm -f argo
 else
-	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli .
+	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 endif
 	touch dist/cli-image
 ifeq ($(K3D),true)
@@ -152,24 +153,27 @@ ifeq ($(K3D),true)
 endif
 
 .PHONY: clis
-clis: dist/argo-linux-amd64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/argo-darwin-amd64 dist/argo-windows-amd64 cli-image
+clis: dist/argo-linux-amd64 dist/argo-linux-arm64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/argo-darwin-amd64 dist/argo-windows-amd64 cli-image
 
 # controller
 
-dist/workflow-controller-linux-amd64: vendor $(CONTROLLER_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/workflow-controller-linux-amd64 ./cmd/workflow-controller
+dist/workflow-controller-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
+dist/workflow-controller-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
+
+dist/workflow-controller-%: $(CONTROLLER_PKGS)
+	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
 
 .PHONY: controller-image
 controller-image: dist/controller-image
 
-dist/controller-image: dist/workflow-controller-linux-amd64
+dist/controller-image: dist/workflow-controller-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
 	# Create controller image
 ifeq ($(DEV_IMAGE),true)
-	cp dist/workflow-controller-linux-amd64 workflow-controller
-	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller -f Dockerfile.dev .
+	cp dist/workflow-controller-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) workflow-controller
+	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller -f Dockerfile.dev --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	rm -f workflow-controller
 else
-	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller .
+	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 endif
 	touch dist/controller-image
 ifeq ($(K3D),true)
@@ -178,20 +182,23 @@ endif
 
 # argoexec
 
-dist/argoexec-linux-amd64: vendor $(ARGOEXEC_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argoexec-linux-amd64 ./cmd/argoexec
+dist/argoexec-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
+dist/argoexec-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
+
+dist/argoexec-%: $(ARGOEXEC_PKGS)
+	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argoexec
 
 .PHONY: executor-image
 executor-image: dist/executor-image
 
-dist/executor-image: dist/argoexec-linux-amd64
+dist/executor-image: dist/argoexec-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
 	# Create executor image
 ifeq ($(DEV_IMAGE),true)
-	cp dist/argoexec-linux-amd64 argoexec
-	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec -f Dockerfile.dev .
+	cp dist/argoexec-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) argoexec
+	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec -f Dockerfile.dev --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	rm -f argoexec
 else
-	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec .
+	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 endif
 	touch dist/executor-image
 ifeq ($(K3D),true)
@@ -200,10 +207,13 @@ endif
 
 # generation
 
+$(HOME)/go/bin/mockery:
+	go get github.com/vektra/mockery/.../
+
 .PHONY: codegen
-codegen:
+codegen: $(HOME)/go/bin/mockery
 	# Generate code
-	# We need the vendor folder for compatibility
+	# We need the folder for compatibility
 	go mod vendor
 
 	./hack/generate-proto.sh
@@ -224,35 +234,38 @@ dist/MANIFESTS_VERSION:
 	echo $(MANIFESTS_VERSION) > dist/MANIFESTS_VERSION
 
 manifests/install.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
-	kustomize build manifests/cluster-install | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/install.yaml
+	kustomize build --load_restrictor=LoadRestrictionsNone manifests/cluster-install | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/install.yaml
 
 manifests/namespace-install.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
-	kustomize build manifests/namespace-install | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
+	kustomize build --load_restrictor=LoadRestrictionsNone manifests/namespace-install | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
 
 manifests/quick-start-no-db.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
-	kustomize build manifests/quick-start/no-db | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-no-db.yaml
+	kustomize build --load_restrictor=LoadRestrictionsNone manifests/quick-start/no-db | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-no-db.yaml
 
 manifests/quick-start-mysql.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
-	kustomize build manifests/quick-start/mysql | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
+	kustomize build --load_restrictor=LoadRestrictionsNone manifests/quick-start/mysql | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
 
 manifests/quick-start-postgres.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
-	kustomize build manifests/quick-start/postgres | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
+	kustomize build --load_restrictor=LoadRestrictionsNone manifests/quick-start/postgres | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
 # lint/test/etc
 
+$(HOME)/go/bin/golangci-lint:
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.23.8
+
 .PHONY: lint
-lint: server/static/files.go
+lint: server/static/files.go $(HOME)/go/bin/golangci-lint
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
-	golangci-lint run --fix --verbose
+	golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
 ifeq ($(CI),false)
 	# Lint UI files
 	yarn --cwd ui lint
 endif
 
 .PHONY: test
-test: server/static/files.go vendor
+test: server/static/files.go
 	# Run unit tests
 ifeq ($(CI),false)
 	go test `go list ./... | grep -v 'test/e2e'`
@@ -262,7 +275,7 @@ endif
 
 test/e2e/manifests/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
 	# Create Postgres e2e manifests
-	kustomize build test/e2e/manifests/postgres | ./hack/auto-gen-msg.sh > test/e2e/manifests/postgres.yaml
+	kustomize build --load_restrictor=LoadRestrictionsNone test/e2e/manifests/postgres | ./hack/auto-gen-msg.sh > test/e2e/manifests/postgres.yaml
 
 dist/postgres.yaml: test/e2e/manifests/postgres.yaml
 	# Create Postgres e2e manifests
@@ -276,26 +289,18 @@ test/e2e/manifests/no-db/overlays/workflow-controller-deployment.yaml: test/e2e/
 test/e2e/manifests/no-db/overlays/workflow-controller-deployment.yaml:
 	cat test/e2e/manifests/postgres/overlays/workflow-controller-deployment.yaml | ./hack/auto-gen-msg.sh > test/e2e/manifests/no-db/overlays/workflow-controller-deployment.yaml
 
-test/e2e/manifests/no-db.yaml: $(MANIFESTS) $(E2E_MANIFESTS) test/e2e/manifests/no-db/overlays/argo-server-deployment.yaml test/e2e/manifests/no-db/overlays/workflow-controller-deployment.yaml
+test/e2e/manifests/no-db.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
 	# Create no DB e2e manifests
-	kustomize build test/e2e/manifests/no-db | ./hack/auto-gen-msg.sh > test/e2e/manifests/no-db.yaml
+	kustomize build --load_restrictor=LoadRestrictionsNone test/e2e/manifests/no-db | ./hack/auto-gen-msg.sh > test/e2e/manifests/no-db.yaml
 
 dist/no-db.yaml: test/e2e/manifests/no-db.yaml
 	# Create no DB e2e manifests
 	# We additionlly disable ALWAY_OFFLOAD_NODE_STATUS
 	cat test/e2e/manifests/no-db.yaml | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | sed 's/"true"/"false"/' > dist/no-db.yaml
 
-test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml: test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml
-test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml:
-	cat test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml | ./hack/auto-gen-msg.sh > test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml
-
-test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml: test/e2e/manifests/postgres/overlays/workflow-controller-deployment.yaml
-test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml:
-	cat test/e2e/manifests/postgres/overlays/workflow-controller-deployment.yaml | ./hack/auto-gen-msg.sh > test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml
-
-test/e2e/manifests/mysql.yaml: $(MANIFESTS) $(E2E_MANIFESTS) test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml
+test/e2e/manifests/mysql.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
 	# Create MySQL e2e manifests
-	kustomize build test/e2e/manifests/mysql | ./hack/auto-gen-msg.sh > test/e2e/manifests/mysql.yaml
+	kustomize build --load_restrictor=LoadRestrictionsNone test/e2e/manifests/mysql | ./hack/auto-gen-msg.sh > test/e2e/manifests/mysql.yaml
 
 dist/mysql.yaml: test/e2e/manifests/mysql.yaml
 	# Create MySQL e2e manifests
@@ -334,14 +339,7 @@ dist/python-alpine3.6:
 	touch dist/python-alpine3.6
 
 .PHONY: start
-start: status controller-image cli-image executor-image install
-	# Start development environment
-ifeq ($(CI),false)
-	make down
-endif
-	make up
-	# Make the CLI
-	make cli
+start: status install down controller-image cli-image executor-image wait-down up cli wait-up env
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 
@@ -350,6 +348,9 @@ down:
 	# Scale down
 	kubectl -n argo scale deployment/argo-server --replicas 0
 	kubectl -n argo scale deployment/workflow-controller --replicas 0
+
+.PHONY: wait-down
+wait-down:
 	# Wait for pods to go away, so we don't wait for them to be ready later.
 	[ "`kubectl -n argo get pod -l app=argo-server -o name`" = "" ] || kubectl -n argo wait --for=delete pod -l app=argo-server  --timeout 30s
 	[ "`kubectl -n argo get pod -l app=workflow-controller -o name`" = "" ] || kubectl -n argo wait --for=delete pod -l app=workflow-controller  --timeout 2m
@@ -359,10 +360,11 @@ up:
 	# Scale up
 	kubectl -n argo scale deployment/workflow-controller --replicas 1
 	kubectl -n argo scale deployment/argo-server --replicas 1
+
+.PHONY: wait-up
+wait-up:
 	# Wait for pods to be ready
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
-	# Token
-	make env
 
 # this is a convenience to get the login token, you can use it as follows
 #   eval $(make env)
@@ -424,7 +426,7 @@ clean:
 	# Delete pre-go 1.3 vendor
 	rm -Rf vendor
 	# Delete build files
-	rm -Rf dist ui/dist
+	rm -Rf dist/* ui/dist
 
 # swagger
 

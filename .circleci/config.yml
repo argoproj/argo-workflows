@@ -140,6 +140,12 @@ jobs:
       - store_artifacts:
           path: test-results
           destination: .
+      - run:
+          name: Lint
+          command: make lint
+      - run:
+          name: Check nothing needs commiting
+          command: git diff --exit-code
   e2e-no-db:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:

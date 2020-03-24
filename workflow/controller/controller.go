@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -28,13 +29,13 @@ import (
 	"upper.io/db.v3/lib/sqlbuilder"
 
 	"github.com/argoproj/argo"
+	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
 	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/config"
 	"github.com/argoproj/argo/workflow/cron"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/packer"
@@ -48,11 +49,9 @@ type WorkflowController struct {
 	namespace        string
 	managedNamespace string
 
-	// configMap is the name of the config map in which to derive configuration of the controller from
-	configMap string
-
+	configController config.Controller
 	// Config is the workflow controller's configuration
-	Config config.WorkflowControllerConfig
+	Config config.Config
 
 	// cliExecutorImage is the executor image as specified from the command line
 	cliExecutorImage string
@@ -80,6 +79,7 @@ type WorkflowController struct {
 	session               sqlbuilder.Database
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wfArchive             sqldb.WorkflowArchive
+	Metrics               map[string]prometheus.Metric
 }
 
 const (
@@ -105,7 +105,6 @@ func NewWorkflowController(
 		restConfig:                 restConfig,
 		kubeclientset:              kubeclientset,
 		wfclientset:                wfclientset,
-		configMap:                  configMap,
 		namespace:                  namespace,
 		managedNamespace:           managedNamespace,
 		cliExecutorImage:           executorImage,
@@ -113,8 +112,10 @@ func NewWorkflowController(
 		containerRuntimeExecutor:   containerRuntimeExecutor,
 		wfQueue:                    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:                   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		configController:           config.NewController(namespace, configMap, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
+		Metrics:                    make(map[string]prometheus.Metric),
 	}
 	wfc.throttler = NewThrottler(0, wfc.wfQueue)
 	return &wfc
@@ -125,14 +126,14 @@ func (wfc *WorkflowController) MetricsServer(ctx context.Context) {
 	if wfc.Config.MetricsConfig.Enabled {
 		informer := util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowMetricsResyncPeriod, wfc.tweakWorkflowMetricslist)
 		go informer.Run(ctx.Done())
-		registry := metrics.NewWorkflowRegistry(informer)
+		registry := metrics.NewMetricsRegistry(wfc, informer, wfc.Config.MetricsConfig.DisableLegacy)
 		metrics.RunServer(ctx, wfc.Config.MetricsConfig, registry)
 	}
 }
 
 // TelemetryServer starts a prometheus telemetry server if enabled in the configmap
 func (wfc *WorkflowController) TelemetryServer(ctx context.Context) {
-	if wfc.Config.TelemetryConfig.Enabled {
+	if wfc.Config.TelemetryConfig.Enabled && !wfc.Config.MetricsConfig.DisableLegacy {
 		registry := metrics.NewTelemetryRegistry()
 		metrics.RunServer(ctx, wfc.Config.TelemetryConfig, registry)
 	}
@@ -164,11 +165,14 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 
 	log.WithField("version", argo.GetVersion()).Info("Starting Workflow Controller")
 	log.Infof("Workers: workflow: %d, pod: %d", wfWorkers, podWorkers)
-	log.Info("Watch Workflow controller config map updates")
-	_, err := wfc.watchControllerConfigMap(ctx)
+
+	c, err := wfc.configController.Get()
 	if err != nil {
-		log.Errorf("Failed to register watch for controller config map: %v", err)
-		return
+		log.Fatalf("Failed to register watch for controller config map: %v", err)
+	}
+	err = wfc.updateConfig(c)
+	if err != nil {
+		log.Fatalf("Failed to update config: %v", err)
 	}
 
 	wfc.incompleteWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.incompleteWorkflowTweakListOptions)
@@ -178,6 +182,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	wfc.addWorkflowInformerHandler()
 	wfc.podInformer = wfc.newPodInformer()
 
+	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
 	go wfc.incompleteWfInformer.Run(ctx.Done())
 	go wfc.completedWfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
@@ -431,7 +436,6 @@ func (wfc *WorkflowController) processNextItem() bool {
 // workflowController. Values in the workflow will be given the upper hand over the defaults.
 // The defaults for the workflow controller is set in the WorkflowController.Config.DefautWorkflowSpec
 func (wfc *WorkflowController) addingWorkflowDefaultValueIfValueNotExist(wf *wfv1.Workflow) error {
-	//var workflowSpec *wfv1.WorkflowSpec = &wf.Spec
 	if wfc.Config.DefautWorkflowSpec != nil {
 		defaultsSpec, err := json.Marshal(*wfc.Config.DefautWorkflowSpec)
 		if err != nil {
@@ -441,7 +445,7 @@ func (wfc *WorkflowController) addingWorkflowDefaultValueIfValueNotExist(wf *wfv
 		if err != nil {
 			return err
 		}
-		// https://github.com/kubernetes/apimachinery/blob/2373d029717c4d169463414a6127cd1d0d12680e/pkg/util/strategicpatch/patch.go#L94
+		// https: //godoc.org/k8s.io/apimachinery/pkg/util/strategicpatch#StrategicMergePatch
 		new, err := strategicpatch.StrategicMergePatch(defaultsSpec, workflowSpec, wfv1.WorkflowSpec{})
 		if err != nil {
 			return err
@@ -652,4 +656,8 @@ func (wfc *WorkflowController) GetContainerRuntimeExecutor() string {
 		return wfc.containerRuntimeExecutor
 	}
 	return wfc.Config.ContainerRuntimeExecutor
+}
+
+func (wfc *WorkflowController) GetMetrics() map[string]prometheus.Metric {
+	return wfc.Metrics
 }
