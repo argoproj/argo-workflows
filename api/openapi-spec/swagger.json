@@ -10,7 +10,7 @@
   ],
   "swagger": "2.0",
   "info": {
-    "description": "Workflow Service API performs CRUD actions against application resources",
+    "description": "Argo",
     "title": "Argo",
     "version": "latest"
   },
@@ -2754,6 +2754,10 @@
       "type": "object",
       "title": "ValueFrom describes a location in which to obtain the value to a parameter",
       "properties": {
+        "default": {
+          "type": "string",
+          "title": "Default specifies a value to be used if retrieving the value from the specified source fails"
+        },
         "jqFilter": {
           "type": "string",
           "title": "JQFilter expression against the resource object in resource templates"
@@ -3017,6 +3021,14 @@
         "phase": {
           "description": "Phase a simple, high-level summary of where the workflow is in its lifecycle.",
           "type": "string"
+        },
+        "resourcesDuration": {
+          "type": "object",
+          "title": "ResourcesDuration is the total for the workflow",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          }
         },
         "startedAt": {
           "title": "Time at which this workflow started",

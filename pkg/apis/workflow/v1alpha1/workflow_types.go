@@ -620,6 +620,9 @@ type ValueFrom struct {
 	// Parameter reference to a step or dag task in which to retrieve an output parameter value from
 	// (e.g. '{{steps.mystep.outputs.myparam}}')
 	Parameter string `json:"parameter,omitempty" protobuf:"bytes,4,opt,name=parameter"`
+
+	// Default specifies a value to be used if retrieving the value from the specified source fails
+	Default string `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 }
 
 // Artifact indicates an artifact to place at a specified path
@@ -913,6 +916,9 @@ type WorkflowStatus struct {
 
 	// Condition for k8s conditions https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
 	Conditions []Condition `json:"condition,omitempty" protobuf:"bytes,11,opt,name=condition"`
+
+	// ResourcesDuration is the total for the workflow
+	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
 }
 
 type Condition struct {
@@ -1082,7 +1088,7 @@ type NodeStatus struct {
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
 }
 
-func (n Nodes) GetResourcesRequested() ResourcesDuration {
+func (n Nodes) GetResourcesDuration() ResourcesDuration {
 	i := ResourcesDuration{}
 	for _, status := range n {
 		i = i.Add(status.ResourcesDuration)

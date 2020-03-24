@@ -1391,6 +1391,10 @@
         "parameter": {
           "type": "string",
           "title": "Parameter reference to a step or dag task in which to retrieve an output parameter value from\n(e.g. '{{steps.mystep.outputs.myparam}}')"
+        },
+        "default": {
+          "type": "string",
+          "title": "Default specifies a value to be used if retrieving the value from the specified source fails"
         }
       },
       "title": "ValueFrom describes a location in which to obtain the value to a parameter"
@@ -1650,6 +1654,14 @@
             "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Condition"
           },
           "title": "Condition for k8s conditions https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties"
+        },
+        "resourcesDuration": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          },
+          "title": "ResourcesDuration is the total for the workflow"
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"

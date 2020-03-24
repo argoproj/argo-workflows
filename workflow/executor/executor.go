@@ -429,14 +429,24 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
 			output, err = we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
 			if err != nil {
-				return err
+				// We have a default value to use instead of returning an error
+				if param.ValueFrom.Default != "" {
+					output = param.ValueFrom.Default
+				} else {
+					return err
+				}
 			}
 		} else {
 			log.Infof("Copying %s from from volume mount", param.ValueFrom.Path)
 			mountedPath := filepath.Join(common.ExecutorMainFilesystemDir, param.ValueFrom.Path)
 			out, err := ioutil.ReadFile(mountedPath)
 			if err != nil {
-				return err
+				// We have a default value to use instead of returning an error
+				if param.ValueFrom.Default != "" {
+					output = param.ValueFrom.Default
+				} else {
+					return err
+				}
 			}
 			output = string(out)
 		}
