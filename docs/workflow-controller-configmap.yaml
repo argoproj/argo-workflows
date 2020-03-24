@@ -4,173 +4,174 @@ kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
 data:
-  # instanceID is a label selector to limit the controller's watch to a specific instance. It
-  # contains an arbitrary value that is carried forward into its pod labels, under the key
-  # workflows.argoproj.io/controller-instanceid, for the purposes of workflow segregation. This
-  # enables a controller to only receive workflow and pod events that it is interested about,
-  # in order to support multiple controllers in a single cluster, and ultimately allows the
-  # controller itself to be bundled as part of a higher level application. If omitted, the
-  # controller watches workflows and pods that *are not* labeled with an instance id.
-  instanceID: my-ci-controller
+  config: |
+    # instanceID is a label selector to limit the controller's watch to a specific instance. It
+    # contains an arbitrary value that is carried forward into its pod labels, under the key
+    # workflows.argoproj.io/controller-instanceid, for the purposes of workflow segregation. This
+    # enables a controller to only receive workflow and pod events that it is interested about,
+    # in order to support multiple controllers in a single cluster, and ultimately allows the
+    # controller itself to be bundled as part of a higher level application. If omitted, the
+    # controller watches workflows and pods that *are not* labeled with an instance id.
+    instanceID: my-ci-controller
 
-  # Parallelism limits the max total parallel workflows that can execute at the same time
-  # (available since Argo v2.3)
-  parallelism: 10
+    # Parallelism limits the max total parallel workflows that can execute at the same time
+    # (available since Argo v2.3)
+    parallelism: 10
 
-  # uncomment flowing lines if workflow controller runs in a different k8s cluster with the
-  # workflow workloads, or needs to communicate with the k8s apiserver using an out-of-cluster
-  # kubeconfig secret
-  # kubeConfig:
-  #   # name of the kubeconfig secret, may not be empty when kubeConfig specified
-  #   secretName: kubeconfig-secret
-  #   # key of the kubeconfig secret, may not be empty when kubeConfig specified
-  #   secretKey: kubeconfig
-  #   # mounting path of the kubeconfig secret, default to /kube/config
-  #   mountPath: /kubeconfig/mount/path
-  #   # volume name when mounting the secret, default to kubeconfig
-  #   volumeName: kube-config-volume
+    # uncomment flowing lines if workflow controller runs in a different k8s cluster with the 
+    # workflow workloads, or needs to communicate with the k8s apiserver using an out-of-cluster
+    # kubeconfig secret
+    # kubeConfig:
+    #   # name of the kubeconfig secret, may not be empty when kubeConfig specified
+    #   secretName: kubeconfig-secret
+    #   # key of the kubeconfig secret, may not be empty when kubeConfig specified
+    #   secretKey: kubeconfig
+    #   # mounting path of the kubeconfig secret, default to /kube/config
+    #   mountPath: /kubeconfig/mount/path
+    #   # volume name when mounting the secret, default to kubeconfig
+    #   volumeName: kube-config-volume
 
-  links: |
-    - name: Example Workflow Link
-      scope: workflow
-      url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}
-    - name: Example Pod Link
-      scope: pod
-      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
+    links:
+      - name: Example Workflow Link
+        scope: workflow
+        url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}
+      - name: Example Pod Link
+        scope: pod
+        url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
 
     featureFlags:
       # Enable resource duration
       resourcesDuration: false
 
-  # artifactRepository defines the default location to be used as the artifact repository for
-  # container artifacts.
-  artifactRepository: |
-    # archiveLogs will archive the main container logs as an artifact
-    archiveLogs: true
+    # artifactRepository defines the default location to be used as the artifact repository for
+    # container artifacts.
+    artifactRepository:
+      # archiveLogs will archive the main container logs as an artifact
+      archiveLogs: true
 
-    s3:
-      # Use the corresponding endpoint depending on your S3 provider:
-      #   AWS: s3.amazonaws.com
-      #   GCS: storage.googleapis.com
-      #   Minio: my-minio-endpoint.default:9000
-      endpoint: s3.amazonaws.com
-      bucket: my-bucket
-      region: us-west-2
-      # insecure will disable TLS. Primarily used for minio installs not configured with TLS
-      insecure: false
-      # keyFormat is a format pattern to define how artifacts will be organized in a bucket.
-      # It can reference workflow metadata variables such as workflow.namespace, workflow.name,
-      # pod.name. Can also use strftime formating of workflow.creationTimestamp so that workflow
-      # artifacts can be organized by date. If omitted, will use `{{workflow.name}}/{{pod.name}}`,
-      # which has potential for have collisions.
-      # The following example pattern organizes workflow artifacts under a "my-artifacts" sub dir,
-      # then sub dirs for year, month, date and finally workflow name and pod.
-      # e.g.: my-artifacts/2018/08/23/my-workflow-abc123/my-workflow-abc123-1234567890
-      keyFormat: "my-artifacts\
-        /{{workflow.creationTimestamp.Y}}\
-        /{{workflow.creationTimestamp.m}}\
-        /{{workflow.creationTimestamp.d}}\
-        /{{workflow.name}}\
-        /{{pod.name}}"
-      # The actual secret object (in this example my-s3-credentials), should be created in every
-      # namespace where a workflow needs to store its artifacts to S3. If omitted,
-      # attempts to use IAM role to access the bucket (instead of accessKey/secretKey).
-      accessKeySecret:
-        name: my-s3-credentials
-        key: accessKey
-      secretKeySecret:
-        name: my-s3-credentials
-        key: secretKey
+      s3:
+        # Use the corresponding endpoint depending on your S3 provider:
+        #   AWS: s3.amazonaws.com
+        #   GCS: storage.googleapis.com
+        #   Minio: my-minio-endpoint.default:9000
+        endpoint: s3.amazonaws.com
+        bucket: my-bucket
+        region: us-west-2
+        # insecure will disable TLS. Primarily used for minio installs not configured with TLS
+        insecure: false
+        # keyFormat is a format pattern to define how artifacts will be organized in a bucket.
+        # It can reference workflow metadata variables such as workflow.namespace, workflow.name,
+        # pod.name. Can also use strftime formating of workflow.creationTimestamp so that workflow
+        # artifacts can be organized by date. If omitted, will use `{{workflow.name}}/{{pod.name}}`,
+        # which has potential for have collisions.
+        # The following example pattern organizes workflow artifacts under a "my-artifacts" sub dir,
+        # then sub dirs for year, month, date and finally workflow name and pod.
+        # e.g.: my-artifacts/2018/08/23/my-workflow-abc123/my-workflow-abc123-1234567890
+        keyFormat: "my-artifacts\
+          /{{workflow.creationTimestamp.Y}}\
+          /{{workflow.creationTimestamp.m}}\
+          /{{workflow.creationTimestamp.d}}\
+          /{{workflow.name}}\
+          /{{pod.name}}"
+        # The actual secret object (in this example my-s3-credentials), should be created in every
+        # namespace where a workflow needs to store its artifacts to S3. If omitted,
+        # attempts to use IAM role to access the bucket (instead of accessKey/secretKey).
+        accessKeySecret:
+          name: my-s3-credentials
+          key: accessKey
+        secretKeySecret:
+          name: my-s3-credentials
+          key: secretKey
 
-  # Specifies the container runtime interface to use (default: docker)
-  # must be one of: docker, kubelet, k8sapi, pns
-  containerRuntimeExecutor: docker
+    # Specifies the container runtime interface to use (default: docker)
+    # must be one of: docker, kubelet, k8sapi, pns
+    containerRuntimeExecutor: docker
 
-  # Specifies the location of docker.sock on the host for docker executor (default: /var/run/docker.sock)
-  # (available since Argo v2.4)
-  dockerSockPath: /var/someplace/else/docker.sock
+    # Specifies the location of docker.sock on the host for docker executor (default: /var/run/docker.sock)
+    # (available since Argo v2.4)
+    dockerSockPath: /var/someplace/else/docker.sock
 
-  # kubelet port when using kubelet executor (default: 10250)
-  kubeletPort: 10250
+    # kubelet port when using kubelet executor (default: 10250)
+    kubeletPort: 10250
 
-  # disable the TLS verification of the kubelet executor (default: false)
-  kubeletInsecure: false
+    # disable the TLS verification of the kubelet executor (default: false)
+    kubeletInsecure: false
 
-  # executor controls how the init and wait container should be customized
-  # (available since Argo v2.3)
-  executor: |
-    imagePullPolicy: IfNotPresent
-    resources:
-      requests:
-        cpu: 0.1
-        memory: 64Mi
-      limits:
-        cpu: 0.5
-        memory: 512Mi
-    # args & env allows command line arguments and environment variables to be appended to the
-    # executor container and is mainly used for development/debugging purposes.
-    args:
-    - --loglevel
-    - debug
-    - --gloglevel
-    - "6"
-    env:
-    # ARGO_TRACE enables some tracing information for debugging purposes. Currently it enables
-    # logging of S3 request/response payloads (including auth headers)
-    - name: ARGO_TRACE
-      value: "1"
+    # executor controls how the init and wait container should be customized
+    # (available since Argo v2.3)
+    executor:
+      imagePullPolicy: IfNotPresent
+      resources:
+        requests:
+          cpu: 0.1
+          memory: 64Mi
+        limits:
+          cpu: 0.5
+          memory: 512Mi
+      # args & env allows command line arguments and environment variables to be appended to the
+      # executor container and is mainly used for development/debugging purposes.
+      args:
+      - --loglevel
+      - debug
+      - --gloglevel
+      - "6"
+      env:
+      # ARGO_TRACE enables some tracing information for debugging purposes. Currently it enables
+      # logging of S3 request/response payloads (including auth headers)
+      - name: ARGO_TRACE
+        value: "1"
 
-  # metricsConfig controls the path and port for prometheus metrics
-  metricsConfig: |
-    disableLegacy: false  # Switch to "true" to disable legacy metrics. "false" by default
-    enabled: true
-    path: /metrics
-    port: 8080
+    # metricsConfig controls the path and port for prometheus metrics
+    metricsConfig:
+      disableLegacy: false  # Switch to "true" to disable legacy metrics. "false" by default
+      enabled: true
+      path: /metrics
+      port: 8080
 
-  # telemetryConfig controls the path and port for prometheus telemetry
-  telemetryConfig: |
-    enabled: true
-    path: /telemetry
-    port: 8080
+    # telemetryConfig controls the path and port for prometheus telemetry
+    telemetryConfig:
+      enabled: true
+      path: /telemetry
+      port: 8080
 
-  # enable persistence using postgres
-  persistence: |
-    connectionPool:
-      maxIdleConns: 100
-      maxOpenConns: 0
-    #  if true node status is only saved to the persistence DB to avoid the 1MB limit in etcd
-    nodeStatusOffLoad: false
-    # save completed workloads to the workflow archive
-    archive: false
-    # Optional name of the cluster I'm running in. This must be unique for your cluster.
-    clusterName: default
-    postgresql:
-      host: localhost
-      port: 5432
-      database: postgres
-      tableName: argo_workflows
-      # the database secrets must be in the same namespace of the controller
-      userNameSecret:
-        name: argo-postgres-config
-        key: username
-      passwordSecret:
-        name: argo-postgres-config
-        key: password
+    # enable persistence using postgres
+    persistence:
+      connectionPool:
+        maxIdleConns: 100
+        maxOpenConns: 0
+      #  if true node status is only saved to the persistence DB to avoid the 1MB limit in etcd
+      nodeStatusOffLoad: false
+      # save completed workloads to the workflow archive
+      archive: false
+      # Optional name of the cluster I'm running in. This must be unique for your cluster.
+      clusterName: default
+      postgresql:
+        host: localhost
+        port: 5432
+        database: postgres
+        tableName: argo_workflows
+        # the database secrets must be in the same namespace of the controller
+        userNameSecret:
+          name: argo-postgres-config
+          key: username
+        passwordSecret:
+          name: argo-postgres-config
+          key: password
 
-    # Optional config for mysql:
-    # mysql:
-    #   host: localhost
-    #   port: 3306
-    #   database: argo
-    #   tableName: argo_workflows
-    #   userNameSecret:
-    #     name: argo-mysql-config
-    #     key: username
-    #   passwordSecret:
-    #     name: argo-mysql-config
-    #     key: password
+      # Optional config for mysql:
+      # mysql:
+      #   host: localhost
+      #   port: 3306
+      #   database: argo
+      #   tableName: argo_workflows
+      #   userNameSecret:
+      #     name: argo-mysql-config
+      #     key: username
+      #   passwordSecret:
+      #     name: argo-mysql-config
+      #     key: password
 
-  # default workflow spec, follow the workflow spec, more info: https://github.com/argoproj/argo/blob/master/examples/README.md#the-structure-of-workflow-specs
-  workflowDefaults: |
-    ttlStrategy:
-      secondsAfterCompletion: 10
+    # default workflow spec, follow the workflow spec, more info: https://github.com/argoproj/argo/blob/master/examples/README.md#the-structure-of-workflow-specs
+    workflowDefaults:
+      ttlStrategy:
+        secondsAfterCompletion: 10
