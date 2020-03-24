@@ -1,8 +1,12 @@
 package commands
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/argoproj/pkg/errors"
@@ -18,8 +22,9 @@ import (
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/util"
+	util "github.com/argoproj/argo/workflow/util"
 )
 
 // cliSubmitOpts holds submission options specific to CLI submission (e.g. controlling output)
@@ -127,29 +132,106 @@ func replaceParameters(workflows []wfv1.Workflow, submitOpts *util.SubmitOpts) (
 	return workflows, nil
 }
 */
-func replaceGlobalParameters(fileContents [][]byte) ([][]byte, error) {
-	// 1
-	var output [][]byte
-	for _, body := range fileContents {
-		// 2
-		workflowRaw := make(map[interface{}]interface{})
-		err := yaml.Unmarshal(body, &workflowRaw)
-		if err != nil {
-			return nil, err
+
+func parseParameters(opts *util.SubmitOpts) ([]wfv1.Parameter, error) {
+	// Add parameters from a parameter-file, if one was provided
+	newParams := make([]wfv1.Parameter, 0)
+	if len(opts.Parameters) > 0 || opts.ParameterFile != "" {
+		passedParams := make(map[string]bool)
+		for _, paramStr := range opts.Parameters {
+			parts := strings.SplitN(paramStr, "=", 2)
+			if len(parts) == 1 {
+				return nil, fmt.Errorf("Expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
+			}
+			param := wfv1.Parameter{
+				Name:  parts[0],
+				Value: &parts[1],
+			}
+			newParams = append(newParams, param)
+			passedParams[param.Name] = true
 		}
-		// 3
-		spec, _ := yaml.Marshal(workflowRaw["spec"])
-		var wfSpec wfv1.WorkflowSpec
-		yaml.Unmarshal(spec, &wfSpec)
-		globalParams := make(map[string]string)
-		for _, param := range wfSpec.Arguments.Parameters {
-			globalParams["workflow.parameters."+param.Name] = *param.Value
+
+		// Add parameters from a parameter-file, if one was provided
+		if opts.ParameterFile != "" {
+			var body []byte
+			var err error
+			if cmdutil.IsURL(opts.ParameterFile) {
+				body, err = util.ReadFromUrl(opts.ParameterFile)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				body, err = ioutil.ReadFile(opts.ParameterFile)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			yamlParams := map[string]json.RawMessage{}
+			err = yaml.Unmarshal(body, &yamlParams)
+			if err != nil {
+				return nil, err
+			}
+
+			for k, v := range yamlParams {
+				// We get quoted strings from the yaml file.
+				value, err := strconv.Unquote(string(v))
+				if err != nil {
+					// the string is already clean.
+					value = string(v)
+				}
+				param := wfv1.Parameter{
+					Name:  k,
+					Value: &value,
+				}
+				if _, ok := passedParams[param.Name]; ok {
+					// this parameter was overridden via command line
+					continue
+				}
+				newParams = append(newParams, param)
+				passedParams[param.Name] = true
+			}
 		}
-		fstTmpl := fasttemplate.New(string(body), `"{{`, `}}"`)
-		globalReplacedTmplStr, err := common.Replace(fstTmpl, globalParams, true)
-		output = append(output, []byte(globalReplacedTmplStr))
 	}
-	return output, nil
+	return newParams, nil
+}
+
+func replaceGlobalParameters(fileContents [][]byte, submitOpts *util.SubmitOpts) ([][]byte, error) {
+	// 1
+	if submitOpts.SubstituteParams {
+		var output [][]byte
+		for _, body := range fileContents {
+			// 2
+			workflowRaw := make(map[interface{}]interface{})
+			err := yaml.Unmarshal(body, &workflowRaw)
+			if err != nil {
+				return nil, err
+			}
+			// 3
+			spec, _ := yaml.Marshal(workflowRaw["spec"])
+			// only grabb the parameters in the spec .... the globals
+			var wfSpec wfv1.WorkflowSpec
+			yaml.Unmarshal(spec, &wfSpec)
+			globalParams := make(map[string]string)
+			for _, param := range wfSpec.Arguments.Parameters {
+				globalParams["workflow.parameters."+param.Name] = *param.Value
+			}
+
+			newParams, err := parseParameters(submitOpts)
+			if err != nil {
+				return nil, err
+			}
+			// We overwrite what is in the file with the once passed around
+			for _, param := range newParams {
+				globalParams["workflow.parameters."+param.Name] = *param.Value
+			}
+			fstTmpl := fasttemplate.New(string(body), `"{{`, `}}"`)
+			globalReplacedTmplStr, err := common.Replace(fstTmpl, globalParams, true)
+			output = append(output, []byte(globalReplacedTmplStr))
+		}
+		return output, nil
+	}
+	return fileContents, nil
 }
 
 func submitWorkflowsFromFile(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
