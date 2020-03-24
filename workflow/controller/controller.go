@@ -123,7 +123,6 @@ func NewWorkflowController(
 
 // MetricsServer starts a prometheus metrics server if enabled in the configmap
 func (wfc *WorkflowController) MetricsServer(ctx context.Context) {
-
 	if wfc.Config.MetricsConfig.Enabled {
 		informer := util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowMetricsResyncPeriod, wfc.tweakWorkflowMetricslist)
 		go informer.Run(ctx.Done())
