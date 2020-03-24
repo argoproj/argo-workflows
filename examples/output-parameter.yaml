@@ -37,6 +37,7 @@ spec:
       parameters:
       - name: hello-param
         valueFrom:
+          default: "Foobar"   # Default value to use if retrieving valueFrom fails. If not provided workflow will fail instead
           path: /tmp/hello_world.txt
 
   - name: print-message

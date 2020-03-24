@@ -230,19 +230,19 @@ dist/MANIFESTS_VERSION:
 	echo $(MANIFESTS_VERSION) > dist/MANIFESTS_VERSION
 
 manifests/install.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
-	kustomize build manifests/cluster-install | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/install.yaml
+	kustomize build --load_restrictor=LoadRestrictionsNone manifests/cluster-install | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/install.yaml
 
 manifests/namespace-install.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
-	kustomize build manifests/namespace-install | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
+	kustomize build --load_restrictor=LoadRestrictionsNone manifests/namespace-install | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
 
 manifests/quick-start-no-db.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
-	kustomize build manifests/quick-start/no-db | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-no-db.yaml
+	kustomize build --load_restrictor=LoadRestrictionsNone manifests/quick-start/no-db | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-no-db.yaml
 
 manifests/quick-start-mysql.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
-	kustomize build manifests/quick-start/mysql | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
+	kustomize build --load_restrictor=LoadRestrictionsNone manifests/quick-start/mysql | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
 
 manifests/quick-start-postgres.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
-	kustomize build manifests/quick-start/postgres | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
+	kustomize build --load_restrictor=LoadRestrictionsNone manifests/quick-start/postgres | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
 # lint/test/etc
 
@@ -271,7 +271,7 @@ endif
 
 test/e2e/manifests/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
 	# Create Postgres e2e manifests
-	kustomize build test/e2e/manifests/postgres | ./hack/auto-gen-msg.sh > test/e2e/manifests/postgres.yaml
+	kustomize build --load_restrictor=LoadRestrictionsNone test/e2e/manifests/postgres | ./hack/auto-gen-msg.sh > test/e2e/manifests/postgres.yaml
 
 dist/postgres.yaml: test/e2e/manifests/postgres.yaml
 	# Create Postgres e2e manifests
@@ -285,26 +285,18 @@ test/e2e/manifests/no-db/overlays/workflow-controller-deployment.yaml: test/e2e/
 test/e2e/manifests/no-db/overlays/workflow-controller-deployment.yaml:
 	cat test/e2e/manifests/postgres/overlays/workflow-controller-deployment.yaml | ./hack/auto-gen-msg.sh > test/e2e/manifests/no-db/overlays/workflow-controller-deployment.yaml
 
-test/e2e/manifests/no-db.yaml: $(MANIFESTS) $(E2E_MANIFESTS) test/e2e/manifests/no-db/overlays/argo-server-deployment.yaml test/e2e/manifests/no-db/overlays/workflow-controller-deployment.yaml
+test/e2e/manifests/no-db.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
 	# Create no DB e2e manifests
-	kustomize build test/e2e/manifests/no-db | ./hack/auto-gen-msg.sh > test/e2e/manifests/no-db.yaml
+	kustomize build --load_restrictor=LoadRestrictionsNone test/e2e/manifests/no-db | ./hack/auto-gen-msg.sh > test/e2e/manifests/no-db.yaml
 
 dist/no-db.yaml: test/e2e/manifests/no-db.yaml
 	# Create no DB e2e manifests
 	# We additionlly disable ALWAY_OFFLOAD_NODE_STATUS
 	cat test/e2e/manifests/no-db.yaml | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | sed 's/"true"/"false"/' > dist/no-db.yaml
 
-test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml: test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml
-test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml:
-	cat test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml | ./hack/auto-gen-msg.sh > test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml
-
-test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml: test/e2e/manifests/postgres/overlays/workflow-controller-deployment.yaml
-test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml:
-	cat test/e2e/manifests/postgres/overlays/workflow-controller-deployment.yaml | ./hack/auto-gen-msg.sh > test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml
-
-test/e2e/manifests/mysql.yaml: $(MANIFESTS) $(E2E_MANIFESTS) test/e2e/manifests/mysql/overlays/argo-server-deployment.yaml test/e2e/manifests/mysql/overlays/workflow-controller-deployment.yaml
+test/e2e/manifests/mysql.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
 	# Create MySQL e2e manifests
-	kustomize build test/e2e/manifests/mysql | ./hack/auto-gen-msg.sh > test/e2e/manifests/mysql.yaml
+	kustomize build --load_restrictor=LoadRestrictionsNone test/e2e/manifests/mysql | ./hack/auto-gen-msg.sh > test/e2e/manifests/mysql.yaml
 
 dist/mysql.yaml: test/e2e/manifests/mysql.yaml
 	# Create MySQL e2e manifests
@@ -430,7 +422,7 @@ clean:
 	# Delete pre-go 1.3 vendor
 	rm -Rf vendor
 	# Delete build files
-	rm -Rf dist ui/dist
+	rm -Rf dist/* ui/dist
 
 # swagger
 
