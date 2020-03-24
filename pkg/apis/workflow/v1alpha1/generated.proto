@@ -933,6 +933,9 @@ message ValueFrom {
   // Parameter reference to a step or dag task in which to retrieve an output parameter value from
   // (e.g. '{{steps.mystep.outputs.myparam}}')
   optional string parameter = 4;
+
+  // Default specifies a value to be used if retrieving the value from the specified source fails
+  optional string default = 5;
 }
 
 // Workflow is the definition of a workflow resource
@@ -1143,6 +1146,9 @@ message WorkflowStatus {
 
   // Condition for k8s conditions https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
   repeated Condition condition = 11;
+
+  // ResourcesDuration is the total for the workflow
+  map<string, int64> resourcesDuration = 12;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step
