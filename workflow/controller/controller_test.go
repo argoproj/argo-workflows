@@ -130,7 +130,7 @@ func newControllerWithDefaults() *WorkflowController {
 	return &WorkflowController{
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
-			DefautWorkflowSpec: &wfv1.WorkflowSpec{
+			WorkflowDefaults: &wfv1.WorkflowSpec{
 				HostNetwork: &myBool,
 			},
 		},
@@ -158,7 +158,7 @@ func newControllerWithComplexDefaults() *WorkflowController {
 	return &WorkflowController{
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
-			DefautWorkflowSpec: &wfv1.WorkflowSpec{
+			WorkflowDefaults: &wfv1.WorkflowSpec{
 				HostNetwork:        &myBool,
 				Entrypoint:         "good_entrypoint",
 				ServiceAccountName: "my_service_account",
@@ -232,12 +232,12 @@ func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
 	ans := true
 	controller := newController()
 	workflow := unmarshalWF(helloWorldWf)
-	err := controller.addingWorkflowDefaultValueIfValueNotExist(workflow)
+	err := controller.setWorkflowDefaults(workflow)
 	assert.NoError(t, err)
 	assert.Equal(t, workflow, unmarshalWF(helloWorldWf))
 	controllerDefaults := newControllerWithDefaults()
 	defautWorkflowSpec := unmarshalWF(helloWorldWf)
-	err = controllerDefaults.addingWorkflowDefaultValueIfValueNotExist(defautWorkflowSpec)
+	err = controllerDefaults.setWorkflowDefaults(defautWorkflowSpec)
 	assert.NoError(t, err)
 	assert.Equal(t, defautWorkflowSpec.Spec.HostNetwork, &ans)
 	assert.NotEqual(t, defautWorkflowSpec, unmarshalWF(helloWorldWf))
@@ -251,7 +251,7 @@ func TestAddingWorkflowDefaultComplex(t *testing.T) {
 	var ten int32 = 10
 	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")
 	assert.Nil(t, workflow.Spec.TTLStrategy)
-	err := controller.addingWorkflowDefaultValueIfValueNotExist(workflow)
+	err := controller.setWorkflowDefaults(workflow)
 	assert.NoError(t, err)
 	assert.NotEqual(t, workflow, unmarshalWF(testDefaultWf))
 	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")
@@ -266,7 +266,7 @@ func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
 	var ten int32 = 10
 	var seven int32 = 7
 	var five int32 = 5
-	err := controller.addingWorkflowDefaultValueIfValueNotExist(workflow)
+	err := controller.setWorkflowDefaults(workflow)
 	assert.NoError(t, err)
 	assert.NotEqual(t, workflow, unmarshalWF(testDefaultWfTTL))
 	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")

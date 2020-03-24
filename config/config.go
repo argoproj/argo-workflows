@@ -51,11 +51,13 @@ type Config struct {
 	// controller watches workflows and pods that *are not* labeled with an instance id.
 	InstanceID string `json:"instanceID,omitempty"`
 
+	// MetricsConfig specifies configuration for metrics emission
 	MetricsConfig PrometheusConfig `json:"metricsConfig,omitempty"`
 
 	// FeatureFlags for general/experimental features
 	FeatureFlags FeatureFlags `json:"featureFlags,omitempty"`
 
+	// TelemetryConfig specifies configuration for telemetry emission
 	TelemetryConfig PrometheusConfig `json:"telemetryConfig,omitempty"`
 
 	// Parallelism limits the max total parallel workflows that can execute at the same time
@@ -70,8 +72,8 @@ type Config struct {
 	// Config customized Docker Sock path
 	DockerSockPath string `json:"dockerSockPath,omitempty"`
 
-	// Default workflow spec, will be adde to workflow if the parameters are not set in the workflow
-	DefautWorkflowSpec *wfv1.WorkflowSpec `json:"workflowDefaults,omitempty"`
+	// WorkflowDefaults are values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
+	WorkflowDefaults *wfv1.WorkflowSpec `json:"workflowDefaults,omitempty"`
 
 	// PodSpecLogStrategy enable the logging of podspec on controller log.
 	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`

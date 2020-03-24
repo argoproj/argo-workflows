@@ -4,34 +4,44 @@
 
 > v2.7 and after
 
-It's possible to set default workflow specs which will be written to all workflows if the spec of interest is not set. This can be configurated through the 
-workflow controller config [map](../workflow/config/config.go#L11) and the field [DefaultWorkflowSpec](../workflow/config/config.go#L69). 
+## Introduction
 
+Default Workflow spec values can be set at the controller config map that will apply to all Workflows executed from said controller.
+If a Workflow has a value that also has a default value set in the config map, thw Workflow's value will take precedence.
 
-In order to edit the Default workflow spec for a controller, edit the workflow config map: 
+## Setting Default Workflow Values
 
+Default Workflow values can be specified by adding them under the `workflowDefaults` key in the [`workflow-controller-configmap`](./workflow-controller-configmap.yaml).
+Values can be added as the would under the `Workflow.spec` tag.
 
-```bash 
-kubectl edit cm/workflow-controller-configmap
-```
+For example, to specify default values that would partially produce the following `Workflow`:
 
-
-As an example the time for a argo workflow to live after finish can be set, in the spec this field is known as ```secondsAfterCompletion``` in the ```ttlStrategy```. Example of how the config map could look with this filed can be found [here](./workflow-controller-configmap.yaml).
-
-In order to test it a example workflow can be submited, in this case the [coinflip example](../examples/coinflip.yaml), the following can be run:
-
-```bash 
-argo submit ./examples/coinflip.yaml
-```
-
-to verify that the the defaultd are set run 
-
-```bash
-argo get [YOUR_ARGO_WORKFLOW_NAME]
-```
-
-You should then see the field, Ttl Strategy populated
 ```yaml
-Ttl Strategy:
-  Seconds After Completion:  10
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: gc-ttl-
+spec:
+  ttlStrategy:
+    secondsAfterSuccess: 5     # Time to live after workflow is successful
+  parallelism: 3
+```
+
+The following would be specified in the Config Map:
+
+```yaml
+# This file describes the config settings available in the workflow controller configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workflow-controller-configmap
+data:
+  config: |
+
+    # Default values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
+    workflowDefaults:
+      ttlStrategy:
+        secondsAfterSuccess: 5
+      parallelism: 3
+
 ```
