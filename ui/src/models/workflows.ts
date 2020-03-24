@@ -763,6 +763,11 @@ export interface WorkflowStatus {
      * StoredTemplates is a mapping between a template ref and the node's status.
      */
     storedTemplates: {[name: string]: Template};
+
+    /**
+     * How much resource was used.
+     */
+    resourcesDuration?: {[resource: string]: number};
 }
 
 /**
