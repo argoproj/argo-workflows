@@ -1378,7 +1378,7 @@ type GCSArtifact struct {
 }
 
 func (g *GCSArtifact) HasLocation() bool {
-	return g != nil && g.Bucket != ""
+	return g != nil && g.Bucket != "" && g.Key != ""
 }
 
 // OSSBucket contains the access information required for interfacing with an OSS bucket
