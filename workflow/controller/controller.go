@@ -166,15 +166,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	log.WithField("version", argo.GetVersion()).Info("Starting Workflow Controller")
 	log.Infof("Workers: workflow: %d, pod: %d", wfWorkers, podWorkers)
 
-	c, err := wfc.configController.Get()
-	if err != nil {
-		log.Fatalf("Failed to register watch for controller config map: %v", err)
-	}
-	err = wfc.updateConfig(c)
-	if err != nil {
-		log.Fatalf("Failed to update config: %v", err)
-	}
-
 	wfc.incompleteWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.incompleteWorkflowTweakListOptions)
 	wfc.completedWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.completedWorkflowTweakListOptions)
 	wfc.wftmplInformer = wfc.newWorkflowTemplateInformer()
@@ -206,6 +197,17 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
 	}
 	<-ctx.Done()
+}
+
+func (wfc *WorkflowController) UpdateConfig() {
+	config, err := wfc.configController.Get()
+	if err != nil {
+		log.Fatalf("Failed to register watch for controller config map: %v", err)
+	}
+	err = wfc.updateConfig(config)
+	if err != nil {
+		log.Fatalf("Failed to update config: %v", err)
+	}
 }
 
 // podLabeler will label all pods on the controllers completedPod channel as completed
