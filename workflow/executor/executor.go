@@ -272,6 +272,10 @@ func (we *WorkflowExecutor) saveArtifact(mainCtrID string, art *wfv1.Artifact) e
 			shallowCopy := *we.Template.ArchiveLocation.OSS
 			art.OSS = &shallowCopy
 			art.OSS.Key = path.Join(art.OSS.Key, fileName)
+		} else if we.Template.ArchiveLocation.GCS != nil {
+			shallowCopy := *we.Template.ArchiveLocation.GCS
+			art.GCS = &shallowCopy
+			art.GCS.Key = path.Join(art.GCS.Key, fileName)
 		} else {
 			return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
 		}
@@ -425,14 +429,24 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
 			output, err = we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
 			if err != nil {
-				return err
+				// We have a default value to use instead of returning an error
+				if param.ValueFrom.Default != "" {
+					output = param.ValueFrom.Default
+				} else {
+					return err
+				}
 			}
 		} else {
 			log.Infof("Copying %s from from volume mount", param.ValueFrom.Path)
 			mountedPath := filepath.Join(common.ExecutorMainFilesystemDir, param.ValueFrom.Path)
 			out, err := ioutil.ReadFile(mountedPath)
 			if err != nil {
-				return err
+				// We have a default value to use instead of returning an error
+				if param.ValueFrom.Default != "" {
+					output = param.ValueFrom.Default
+				} else {
+					return err
+				}
 			}
 			output = string(out)
 		}
@@ -490,6 +504,10 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 		shallowCopy := *we.Template.ArchiveLocation.HDFS
 		art.HDFS = &shallowCopy
 		art.HDFS.Path = path.Join(art.HDFS.Path, fileName)
+	} else if we.Template.ArchiveLocation.GCS != nil {
+		shallowCopy := *we.Template.ArchiveLocation.GCS
+		art.GCS = &shallowCopy
+		art.GCS.Key = path.Join(art.GCS.Key, fileName)
 	} else {
 		return nil, errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
 	}

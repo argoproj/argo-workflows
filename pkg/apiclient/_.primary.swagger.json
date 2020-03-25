@@ -12,6 +12,7 @@
   ],
   "info": {
     "title": "Argo",
+    "description": "Argo",
     "version": "VERSION"
   },
   "securityDefinitions": {
@@ -34,7 +35,7 @@
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ParallelSteps": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStep"
+        "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowStep"
       }
     }
   }
