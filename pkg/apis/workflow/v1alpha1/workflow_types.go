@@ -240,8 +240,7 @@ type WorkflowSpec struct {
 	// TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
 	// Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be
 	// deleted after the time to live expires. If this field is unset,
-	// the controller config map will hold the default values
-	// Update
+	// the controller config map will hold the default values.
 	TTLStrategy *TTLStrategy `json:"ttlStrategy,omitempty" protobuf:"bytes,30,opt,name=ttlStrategy"`
 
 	// Optional duration in seconds relative to the workflow start time which the workflow is
