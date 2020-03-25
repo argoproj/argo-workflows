@@ -2,18 +2,18 @@ package commands
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/fields"
 	"log"
 
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/fields"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 )
 
 type stopOps struct {
-	message      string // --message
+	message           string // --message
 	nodeFieldSelector string // --node-field-selector
 }
 
@@ -38,10 +38,10 @@ func NewStopCommand() *cobra.Command {
 
 			for _, name := range args {
 				wf, err := serviceClient.StopWorkflow(ctx, &workflowpkg.WorkflowStopRequest{
-					Name:      name,
-					Namespace: namespace,
+					Name:              name,
+					Namespace:         namespace,
 					NodeFieldSelector: selector.String(),
-					Message: stopArgs.message,
+					Message:           stopArgs.message,
 				})
 				errors.CheckError(err)
 				fmt.Printf("workflow %s stopped\n", wf.Name)

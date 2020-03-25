@@ -2,17 +2,17 @@ package commands
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/fields"
 	"log"
 
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/fields"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 )
 
 type resumeOps struct {
-	nodeFieldSelector       string   // --node-field-selector
+	nodeFieldSelector string // --node-field-selector
 }
 
 func NewResumeCommand() *cobra.Command {
@@ -35,8 +35,8 @@ func NewResumeCommand() *cobra.Command {
 
 			for _, wfName := range args {
 				_, err := serviceClient.ResumeWorkflow(ctx, &workflowpkg.WorkflowResumeRequest{
-					Name:      wfName,
-					Namespace: namespace,
+					Name:              wfName,
+					Namespace:         namespace,
 					NodeFieldSelector: selector.String(),
 				})
 				if err != nil {
