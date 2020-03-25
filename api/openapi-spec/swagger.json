@@ -10,7 +10,7 @@
   ],
   "swagger": "2.0",
   "info": {
-    "description": "Workflow Service API performs CRUD actions against application resources",
+    "description": "Argo",
     "title": "Argo",
     "version": "latest"
   },
@@ -1495,6 +1495,10 @@
           "title": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
         },
+        "gcs": {
+          "title": "GCS contains GCS artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSArtifact"
+        },
         "git": {
           "title": "Git contains git artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GitArtifact"
@@ -1787,6 +1791,33 @@
         "serviceAccountName": {
           "description": "ServiceAccountName specifies the service account name of the executor container.",
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.GCSArtifact": {
+      "type": "object",
+      "title": "GCSArtifact is the location of a GCS artifact",
+      "properties": {
+        "gCSBucket": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSBucket"
+        },
+        "key": {
+          "type": "string",
+          "title": "Key is the path in the bucket where the artifact resides"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.GCSBucket": {
+      "type": "object",
+      "title": "GCSBucket contains the access information for  interfacring with a GCS bucket",
+      "properties": {
+        "bucket": {
+          "type": "string",
+          "title": "Bucket is the name of the bucket"
+        },
+        "serviceAccountKeySecret": {
+          "title": "ServiceAccountKeySecret is the secret selector to the bucket's service account key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }
     },
@@ -2154,6 +2185,14 @@
           "type": "string",
           "title": "PodIP captures the IP of the pod for daemoned steps"
         },
+        "resourcesDuration": {
+          "description": "ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          }
+        },
         "startedAt": {
           "title": "Time at which this node started",
           "$ref": "#/definitions/io.k8s.api.core.v1.Time"
@@ -2250,7 +2289,7 @@
     "io.argoproj.workflow.v1alpha1.ParallelSteps": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/io.argoproj.io.argoproj.workflow.v1alpha1.v1alpha1.WorkflowStep"
+        "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStep"
       }
     },
     "io.argoproj.workflow.v1alpha1.Parameter": {
@@ -2430,6 +2469,11 @@
         "secretKeySecret": {
           "title": "SecretKeySecret is the secret selector to the bucket's secret key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "useSDKCreds": {
+          "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+          "type": "boolean",
+          "format": "boolean"
         }
       }
     },
@@ -2710,6 +2754,10 @@
       "type": "object",
       "title": "ValueFrom describes a location in which to obtain the value to a parameter",
       "properties": {
+        "default": {
+          "type": "string",
+          "title": "Default specifies a value to be used if retrieving the value from the specified source fails"
+        },
         "jqFilter": {
           "type": "string",
           "title": "JQFilter expression against the resource object in resource templates"
@@ -2841,7 +2889,7 @@
         },
         "podDisruptionBudget": {
           "title": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.\nController will automatically add the selector with workflow name, if selector is empty.\nOptional: Defaults to empty.\n+optional",
-          "$ref": "#/definitions/k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec"
+          "$ref": "#/definitions/io.k8s.api.core.v1.PodDisruptionBudgetSpec"
         },
         "podGC": {
           "title": "PodGC describes the strategy to use when to deleting completed pods",
@@ -2973,6 +3021,14 @@
         "phase": {
           "description": "Phase a simple, high-level summary of where the workflow is in its lifecycle.",
           "type": "string"
+        },
+        "resourcesDuration": {
+          "type": "object",
+          "title": "ResourcesDuration is the total for the workflow",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          }
         },
         "startedAt": {
           "title": "Time at which this workflow started",
@@ -5274,7 +5330,7 @@
         }
       }
     },
-    "k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec": {
+    "io.k8s.api.core.v1.PodDisruptionBudgetSpec": {
       "description": "PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.",
       "type": "object",
       "properties": {

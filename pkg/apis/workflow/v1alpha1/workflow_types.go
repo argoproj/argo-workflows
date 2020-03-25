@@ -6,6 +6,7 @@ import (
 	"hash/fnv"
 	"reflect"
 	"strings"
+	"time"
 
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
@@ -619,6 +620,9 @@ type ValueFrom struct {
 	// Parameter reference to a step or dag task in which to retrieve an output parameter value from
 	// (e.g. '{{steps.mystep.outputs.myparam}}')
 	Parameter string `json:"parameter,omitempty" protobuf:"bytes,4,opt,name=parameter"`
+
+	// Default specifies a value to be used if retrieving the value from the specified source fails
+	Default string `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 }
 
 // Artifact indicates an artifact to place at a specified path
@@ -697,6 +701,9 @@ type ArtifactLocation struct {
 
 	// OSS contains OSS artifact location details
 	OSS *OSSArtifact `json:"oss,omitempty" protobuf:"bytes,8,opt,name=oss"`
+
+	// GCS contains GCS artifact location details
+	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 }
 
 type ArtifactRepositoryRef struct {
@@ -909,6 +916,9 @@ type WorkflowStatus struct {
 
 	// Condition for k8s conditions https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
 	Conditions []Condition `json:"condition,omitempty" protobuf:"bytes,11,opt,name=condition"`
+
+	// ResourcesDuration is the total for the workflow
+	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
 }
 
 type Condition struct {
@@ -953,6 +963,46 @@ type RetryStrategy struct {
 
 	// Backoff is a backoff strategy
 	Backoff *Backoff `json:"backoff,omitempty" protobuf:"bytes,3,opt,name=backoff,casttype=Backoff"`
+}
+
+// The amount of requested resource * the duration that request was used.
+// This is represented as duration in seconds, so can be converted to and from
+// duration (with loss of precision).
+type ResourceDuration int64
+
+func NewResourceDuration(d time.Duration) ResourceDuration {
+	return ResourceDuration(d.Seconds())
+}
+
+func (in ResourceDuration) Duration() time.Duration {
+	return time.Duration(in) * time.Second
+}
+
+func (in ResourceDuration) String() string {
+	return in.Duration().String()
+}
+
+// This contains each duration by request requested.
+// e.g. 100m CPU * 1h, 1Gi memory * 1h
+type ResourcesDuration map[apiv1.ResourceName]ResourceDuration
+
+func (in ResourcesDuration) Add(o ResourcesDuration) ResourcesDuration {
+	for n, d := range o {
+		in[n] += d
+	}
+	return in
+}
+
+func (in ResourcesDuration) String() string {
+	var parts []string
+	for n, d := range in {
+		parts = append(parts, fmt.Sprintf("%v*%s", d, n))
+	}
+	return strings.Join(parts, ",")
+}
+
+func (in ResourcesDuration) IsZero() bool {
+	return len(in) == 0
 }
 
 // NodeStatus contains status information about an individual node in the workflow
@@ -1005,6 +1055,9 @@ type NodeStatus struct {
 	// Time at which this node completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,11,opt,name=finishedAt"`
 
+	// ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
+	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,21,opt,name=resourcesDuration"`
+
 	// PodIP captures the IP of the pod for daemoned steps
 	PodIP string `json:"podIP,omitempty" protobuf:"bytes,12,opt,name=podIP"`
 
@@ -1033,6 +1086,14 @@ type NodeStatus struct {
 	// a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
 	// a template, will be a superset of the outbound nodes of its last children.
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
+}
+
+func (n Nodes) GetResourcesDuration() ResourcesDuration {
+	i := ResourcesDuration{}
+	for _, status := range n {
+		i = i.Add(status.ResourcesDuration)
+	}
+	return i
 }
 
 func (phase NodePhase) Completed() bool {
@@ -1151,6 +1212,9 @@ type S3Bucket struct {
 
 	// RoleARN is the Amazon Resource Name (ARN) of the role to assume.
 	RoleARN string `json:"roleARN,omitempty" protobuf:"bytes,7,opt,name=roleARN"`
+
+	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
+	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
 }
 
 // S3Artifact is the location of an S3 artifact
@@ -1293,6 +1357,28 @@ type HTTPArtifact struct {
 
 func (h *HTTPArtifact) HasLocation() bool {
 	return h != nil && h.URL != ""
+}
+
+// GCSBucket contains the access information for  interfacring with a GCS bucket
+type GCSBucket struct {
+
+	// Bucket is the name of the bucket
+	Bucket string `json:"bucket" protobuf:"bytes,1,opt,name=bucket"`
+
+	// ServiceAccountKeySecret is the secret selector to the bucket's service account key
+	ServiceAccountKeySecret apiv1.SecretKeySelector `json:"serviceAccountKeySecret,omitempty" protobuf:"bytes,2,opt,name=serviceAccountKeySecret"`
+}
+
+// GCSArtifact is the location of a GCS artifact
+type GCSArtifact struct {
+	GCSBucket `json:",inline" protobuf:"bytes,1,opt,name=gCSBucket"`
+
+	// Key is the path in the bucket where the artifact resides
+	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+}
+
+func (g *GCSArtifact) HasLocation() bool {
+	return g != nil && g.Bucket != "" && g.Key != ""
 }
 
 // OSSBucket contains the access information required for interfacing with an OSS bucket
@@ -1548,7 +1634,8 @@ func (a *Artifact) HasLocation() bool {
 		a.Artifactory.HasLocation() ||
 		a.Raw.HasLocation() ||
 		a.HDFS.HasLocation() ||
-		a.OSS.HasLocation()
+		a.OSS.HasLocation() ||
+		a.GCS.HasLocation()
 }
 
 // GetTemplateByName retrieves a defined template by its name

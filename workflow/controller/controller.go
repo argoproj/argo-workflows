@@ -29,13 +29,13 @@ import (
 	"upper.io/db.v3/lib/sqlbuilder"
 
 	"github.com/argoproj/argo"
+	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
 	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/config"
 	"github.com/argoproj/argo/workflow/cron"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/packer"
@@ -49,11 +49,9 @@ type WorkflowController struct {
 	namespace        string
 	managedNamespace string
 
-	// configMap is the name of the config map in which to derive configuration of the controller from
-	configMap string
-
+	configController config.Controller
 	// Config is the workflow controller's configuration
-	Config config.WorkflowControllerConfig
+	Config config.Config
 
 	// cliExecutorImage is the executor image as specified from the command line
 	cliExecutorImage string
@@ -107,7 +105,6 @@ func NewWorkflowController(
 		restConfig:                 restConfig,
 		kubeclientset:              kubeclientset,
 		wfclientset:                wfclientset,
-		configMap:                  configMap,
 		namespace:                  namespace,
 		managedNamespace:           managedNamespace,
 		cliExecutorImage:           executorImage,
@@ -115,6 +112,7 @@ func NewWorkflowController(
 		containerRuntimeExecutor:   containerRuntimeExecutor,
 		wfQueue:                    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:                   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		configController:           config.NewController(namespace, configMap, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 		Metrics:                    make(map[string]prometheus.Metric),
@@ -167,12 +165,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 
 	log.WithField("version", argo.GetVersion()).Info("Starting Workflow Controller")
 	log.Infof("Workers: workflow: %d, pod: %d", wfWorkers, podWorkers)
-	log.Info("Watch Workflow controller config map updates")
-	_, err := wfc.watchControllerConfigMap(ctx)
-	if err != nil {
-		log.Errorf("Failed to register watch for controller config map: %v", err)
-		return
-	}
 
 	wfc.incompleteWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.incompleteWorkflowTweakListOptions)
 	wfc.completedWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.completedWorkflowTweakListOptions)
@@ -181,6 +173,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	wfc.addWorkflowInformerHandler()
 	wfc.podInformer = wfc.newPodInformer()
 
+	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
 	go wfc.incompleteWfInformer.Run(ctx.Done())
 	go wfc.completedWfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
@@ -204,6 +197,17 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
 	}
 	<-ctx.Done()
+}
+
+func (wfc *WorkflowController) UpdateConfig() {
+	config, err := wfc.configController.Get()
+	if err != nil {
+		log.Fatalf("Failed to register watch for controller config map: %v", err)
+	}
+	err = wfc.updateConfig(config)
+	if err != nil {
+		log.Fatalf("Failed to update config: %v", err)
+	}
 }
 
 // podLabeler will label all pods on the controllers completedPod channel as completed

@@ -8,13 +8,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
 	"github.com/argoproj/argo/util/argo"
-
-	apiv1 "k8s.io/api/core/v1"
 )
 
 type FunctionalSuite struct {
@@ -105,7 +104,7 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 		SubmitWorkflow().
 		WaitForWorkflow(30 * time.Second).
 		Then().
-		ExpectAuditEvents(func(t *testing.T, events *apiv1.EventList) {
+		ExpectAuditEvents(func(t *testing.T, events *corev1.EventList) {
 			found := false
 			for _, e := range events.Items {
 				isAboutFailedStep := strings.HasPrefix(e.InvolvedObject.Name, "failed-step-event-")
@@ -127,7 +126,7 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		SubmitWorkflow().
 		WaitForWorkflow(60 * time.Second).
 		Then().
-		ExpectAuditEvents(func(t *testing.T, events *apiv1.EventList) {
+		ExpectAuditEvents(func(t *testing.T, events *corev1.EventList) {
 			found := false
 			for _, e := range events.Items {
 				isAboutSuccess := strings.HasPrefix(e.InvolvedObject.Name, "success-event-")
@@ -149,7 +148,7 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 		SubmitWorkflow().
 		WaitForWorkflow(120 * time.Second).
 		Then().
-		ExpectAuditEvents(func(t *testing.T, events *apiv1.EventList) {
+		ExpectAuditEvents(func(t *testing.T, events *corev1.EventList) {
 			found := false
 			for _, e := range events.Items {
 				isAboutSuccess := strings.HasPrefix(e.InvolvedObject.Name, "volumes-pvc-fail-event-")
@@ -340,6 +339,64 @@ func (s *FunctionalSuite) TestTerminateBehavior() {
 			assert.Nil(t, nodeStatus)
 			nodeStatus = status.Nodes.FindByDisplayName("stop-terminate.onExit")
 			assert.Nil(t, nodeStatus)
+		})
+}
+
+func (s *FunctionalSuite) TestDefaultParameterOutputs() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: default-params
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: start
+  templates:
+  - name: start
+    steps:
+      - - name: generate-1
+          template: generate
+      - - name: generate-2
+          when: "True == False"
+          template: generate
+    outputs:
+      parameters:
+        - name: nested-out-parameter
+          valueFrom:
+            default: "Default value"
+            parameter: "{{steps.generate-2.outputs.parameters.out-parameter}}"
+
+  - name: generate
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["
+        echo 'my-output-parameter' > /tmp/my-output-parameter.txt
+      "]
+    outputs:
+      parameters:
+      - name: out-parameter
+        valueFrom:
+          path: /tmp/my-output-parameter.txt
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.True(t, status.Nodes.Any(func(node wfv1.NodeStatus) bool {
+				if node.Outputs != nil {
+					for _, param := range node.Outputs.Parameters {
+						if param.Value != nil && *param.Value == "Default value" {
+							return true
+						}
+					}
+				}
+				return false
+			}))
 		})
 }
 

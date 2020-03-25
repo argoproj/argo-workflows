@@ -5,6 +5,7 @@ import * as React from 'react';
 
 import * as models from '../../../../models';
 import {Timestamp} from '../../../shared/components/timestamp';
+import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 
@@ -71,6 +72,12 @@ export const WorkflowNodeSummary = (props: Props) => {
     ];
     if (props.node.type === 'Pod') {
         attributes.splice(2, 0, {title: 'POD NAME', value: props.node.id});
+    }
+    if (props.node.resourcesDuration) {
+        attributes.push({
+            title: 'RESOURCES DURATION',
+            value: <ResourcesDuration resourcesDuration={props.node.resourcesDuration} />
+        });
     }
     const template = Utils.getResolvedTemplates(props.workflow, props.node);
     return (

@@ -3,6 +3,7 @@ package executor
 import (
 	"fmt"
 
+	"github.com/argoproj/argo/workflow/artifacts/gcs"
 	"github.com/argoproj/argo/workflow/artifacts/oss"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -46,12 +47,13 @@ func NewDriver(art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error
 		}
 
 		driver := s3.S3ArtifactDriver{
-			Endpoint:  art.S3.Endpoint,
-			AccessKey: accessKey,
-			SecretKey: secretKey,
-			Secure:    art.S3.Insecure == nil || !*art.S3.Insecure,
-			Region:    art.S3.Region,
-			RoleARN:   art.S3.RoleARN,
+			Endpoint:    art.S3.Endpoint,
+			AccessKey:   accessKey,
+			SecretKey:   secretKey,
+			Secure:      art.S3.Insecure == nil || !*art.S3.Insecure,
+			Region:      art.S3.Region,
+			RoleARN:     art.S3.RoleARN,
+			UseSDKCreds: art.S3.UseSDKCreds,
 		}
 		return &driver, nil
 	}
@@ -131,6 +133,20 @@ func NewDriver(art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error
 			AccessKey: accessKey,
 			SecretKey: secretKey,
 		}
+		return &driver, nil
+	}
+
+	if art.GCS != nil {
+		driver := gcs.GCSArtifactDriver{}
+		if art.GCS.ServiceAccountKeySecret.Name != "" {
+			serviceAccountKeyBytes, err := ri.GetSecret(art.GCS.ServiceAccountKeySecret.Name, art.GCS.ServiceAccountKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			serviceAccountKey := string(serviceAccountKeyBytes)
+			driver.ServiceAccountKey = serviceAccountKey
+		}
+		// key is not set, assume it is using Workload Idendity
 		return &driver, nil
 	}
 
