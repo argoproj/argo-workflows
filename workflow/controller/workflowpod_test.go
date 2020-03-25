@@ -338,7 +338,7 @@ func TestTmplLevelExecutorSecurityContext(t *testing.T) {
 	if waitCtr.SecurityContext != nil {
 		assert.NotNil(t, waitCtr.SecurityContext.RunAsUser)
 		if waitCtr.SecurityContext.RunAsUser != nil {
-			assert.Equal(t, 1000, *waitCtr.SecurityContext.RunAsUser)
+			assert.Equal(t, int64(1000), *waitCtr.SecurityContext.RunAsUser)
 		}
 	}
 }
