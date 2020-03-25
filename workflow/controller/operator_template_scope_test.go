@@ -13,6 +13,7 @@ var testTemplateScopeWorkflowYaml = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  namespace: default
   name: test-template-scope
   namespace: default
 spec:
@@ -28,6 +29,7 @@ var testTemplateScopeWorkflowTemplateYaml1 = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
+  namespace: default
   name: test-template-scope-1
 spec:
   templates:
@@ -51,6 +53,7 @@ var testTemplateScopeWorkflowTemplateYaml2 = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
+  namespace: default
   name: test-template-scope-2
   namespace: default
 spec:
@@ -69,8 +72,9 @@ spec:
 
 func TestTemplateScope(t *testing.T) {
 	controller := newController()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
-	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("default")
+
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(metav1.NamespaceDefault)
+	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault)
 
 	wf := unmarshalWF(testTemplateScopeWorkflowYaml)
 	_, err := wfcset.Create(wf)
@@ -129,6 +133,7 @@ var testTemplateScopeWithParamWorkflowYaml = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  namespace: default
   name: test-template-scope-with-param
 spec:
   entrypoint: main
@@ -143,6 +148,7 @@ var testTemplateScopeWithParamWorkflowTemplateYaml1 = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
+  namespace: default
   name: test-template-scope-with-param-1
 spec:
   templates:
@@ -166,10 +172,9 @@ spec:
 `
 
 func TestTemplateScopeWithParam(t *testing.T) {
-	t.SkipNow()
 	controller := newController()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("")
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(metav1.NamespaceDefault)
+	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault)
 
 	wf := unmarshalWF(testTemplateScopeWithParamWorkflowYaml)
 	_, err := wfcset.Create(wf)
@@ -219,6 +224,7 @@ var testTemplateScopeNestedStepsWithParamsWorkflowYaml = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  namespace: default
   name: test-template-scope-nested-steps-with-params
 spec:
   entrypoint: main
@@ -233,6 +239,7 @@ var testTemplateScopeNestedStepsWithParamsWorkflowTemplateYaml1 = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
+  namespace: default
   name: test-template-scope-nested-steps-with-params-1
 spec:
   templates:
@@ -260,10 +267,9 @@ spec:
 `
 
 func TestTemplateScopeNestedStepsWithParams(t *testing.T) {
-	t.SkipNow()
 	controller := newController()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("")
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(metav1.NamespaceDefault)
+	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault)
 
 	wf := unmarshalWF(testTemplateScopeNestedStepsWithParamsWorkflowYaml)
 	_, err := wfcset.Create(wf)
@@ -325,6 +331,7 @@ var testTemplateScopeDAGWorkflowYaml = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  namespace: default
   name: test-template-scope-dag
 spec:
   entrypoint: main
@@ -339,6 +346,7 @@ var testTemplateScopeDAGWorkflowTemplateYaml1 = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
+  namespace: default
   name: test-template-scope-dag-1
 spec:
   templates:
@@ -369,10 +377,9 @@ spec:
 `
 
 func TestTemplateScopeDAG(t *testing.T) {
-	t.SkipNow()
 	controller := newController()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("")
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(metav1.NamespaceDefault)
+	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault)
 
 	wf := unmarshalWF(testTemplateScopeDAGWorkflowYaml)
 	_, err := wfcset.Create(wf)

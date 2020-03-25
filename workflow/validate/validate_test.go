@@ -2028,3 +2028,60 @@ func TestAllowPlaceholderInVariableTakenFromInputs(t *testing.T) {
 		assert.NoError(t, err)
 	}
 }
+
+var runtimeResolutionOfVariableNames = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: global-parameter-passing-
+spec:
+  entrypoint: plan
+  templates:
+  - name: plan
+    steps:
+    - - name: pass-parameter
+        template: global-parameter-passing
+        arguments:
+          parameters:
+          - name: global-parameter-name
+            value: key
+          - name: global-parameter-value
+            value: value
+    - - name: print-parameter
+        template: parameter-printing
+        arguments:
+          parameters:
+          - name: parameter
+            value: "{{workflow.outputs.parameters.key}}"
+
+  - name: global-parameter-passing
+    inputs:
+      parameters:
+      - name: global-parameter-name
+      - name: global-parameter-value
+    container:
+      image: alpine:3.11
+      command: [sh, -c]
+      args: ["exit 0"]
+    outputs:
+      parameters:
+      - name: global-parameter
+        value: "{{inputs.parameters.global-parameter-value}}"
+        globalName: "{{inputs.parameters.global-parameter-name}}"
+
+  - name: parameter-printing
+    inputs:
+      parameters:
+      - name: parameter
+    container:
+      image: alpine:3.11
+      command: [sh, -c]
+      args: ["echo {{inputs.parameters.parameter}}"]
+`
+
+// TestInvalidResourceWorkflow verifies an error against a workflow of an invalid resource.
+func TestRuntimeResolutionOfVariableNames(t *testing.T) {
+	wf := unmarshalWf(runtimeResolutionOfVariableNames)
+	err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+	assert.NoError(t, err)
+}
