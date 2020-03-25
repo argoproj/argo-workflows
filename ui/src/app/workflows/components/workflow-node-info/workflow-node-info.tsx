@@ -5,7 +5,7 @@ import * as React from 'react';
 
 import * as models from '../../../../models';
 import {Timestamp} from '../../../shared/components/timestamp';
-import {formatDuration} from '../../../shared/duration';
+import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 
@@ -72,19 +72,11 @@ export const WorkflowNodeSummary = (props: Props) => {
     ];
     if (props.node.type === 'Pod') {
         attributes.splice(2, 0, {title: 'POD NAME', value: props.node.id});
+    }
+    if (props.node.resourcesDuration) {
         attributes.push({
             title: 'RESOURCES DURATION',
-            value: (
-                <>
-                    {props.node.resourcesDuration &&
-                        Object.entries(props.node.resourcesDuration)
-                            .map(([resource, duration]) => formatDuration(duration) + '*' + resource)
-                            .join(',')}{' '}
-                    <a href='https://github.com/argoproj/argo/blob/master/docs/resource-duration.md'>
-                        <i className='fa fa-info-circle' />
-                    </a>
-                </>
-            )
+            value: <ResourcesDuration resourcesDuration={props.node.resourcesDuration} />
         });
     }
     const template = Utils.getResolvedTemplates(props.workflow, props.node);

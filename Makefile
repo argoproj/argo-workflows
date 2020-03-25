@@ -1,4 +1,7 @@
 
+OUTPUT_IMAGE_OS ?= linux
+OUTPUT_IMAGE_ARCH ?= amd64
+
 BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_REMOTE             = origin
@@ -122,32 +125,27 @@ server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/app
 dist/argo: server/static/files.go $(CLI_PKGS)
 	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
 
-dist/argo-linux-amd64: server/static/files.go $(CLI_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-amd64 ./cmd/argo
+dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
+dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
+dist/argo-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
+dist/argo-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
+dist/argo-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
+dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
-dist/argo-linux-ppc64le: server/static/files.go $(CLI_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-ppc64le ./cmd/argo
-
-dist/argo-linux-s390x: server/static/files.go $(CLI_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-s390x ./cmd/argo
-
-dist/argo-darwin-amd64: server/static/files.go $(CLI_PKGS)
-	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-darwin-amd64 ./cmd/argo
-
-dist/argo-windows-amd64: server/static/files.go $(CLI_PKGS)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-windows-amd64 ./cmd/argo
+dist/argo-%: server/static/files.go $(CLI_PKGS)
+	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 
 .PHONY: cli-image
 cli-image: dist/cli-image
 
-dist/cli-image: dist/argo-linux-amd64
+dist/cli-image: dist/argo-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
 	# Create CLI image
 ifeq ($(DEV_IMAGE),true)
-	cp dist/argo-linux-amd64 argo
-	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli -f Dockerfile.dev .
+	cp dist/argo-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) argo
+	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli -f Dockerfile.dev --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	rm -f argo
 else
-	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli .
+	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 endif
 	touch dist/cli-image
 ifeq ($(K3D),true)
@@ -155,24 +153,27 @@ ifeq ($(K3D),true)
 endif
 
 .PHONY: clis
-clis: dist/argo-linux-amd64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/argo-darwin-amd64 dist/argo-windows-amd64 cli-image
+clis: dist/argo-linux-amd64 dist/argo-linux-arm64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/argo-darwin-amd64 dist/argo-windows-amd64 cli-image
 
 # controller
 
-dist/workflow-controller-linux-amd64: $(CONTROLLER_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/workflow-controller-linux-amd64 ./cmd/workflow-controller
+dist/workflow-controller-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
+dist/workflow-controller-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
+
+dist/workflow-controller-%: $(CONTROLLER_PKGS)
+	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
 
 .PHONY: controller-image
 controller-image: dist/controller-image
 
-dist/controller-image: dist/workflow-controller-linux-amd64
+dist/controller-image: dist/workflow-controller-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
 	# Create controller image
 ifeq ($(DEV_IMAGE),true)
-	cp dist/workflow-controller-linux-amd64 workflow-controller
-	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller -f Dockerfile.dev .
+	cp dist/workflow-controller-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) workflow-controller
+	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller -f Dockerfile.dev --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	rm -f workflow-controller
 else
-	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller .
+	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 endif
 	touch dist/controller-image
 ifeq ($(K3D),true)
@@ -181,20 +182,23 @@ endif
 
 # argoexec
 
-dist/argoexec-linux-amd64: $(ARGOEXEC_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argoexec-linux-amd64 ./cmd/argoexec
+dist/argoexec-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
+dist/argoexec-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
+
+dist/argoexec-%: $(ARGOEXEC_PKGS)
+	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argoexec
 
 .PHONY: executor-image
 executor-image: dist/executor-image
 
-dist/executor-image: dist/argoexec-linux-amd64
+dist/executor-image: dist/argoexec-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
 	# Create executor image
 ifeq ($(DEV_IMAGE),true)
-	cp dist/argoexec-linux-amd64 argoexec
-	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec -f Dockerfile.dev .
+	cp dist/argoexec-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) argoexec
+	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec -f Dockerfile.dev --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	rm -f argoexec
 else
-	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec .
+	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 endif
 	touch dist/executor-image
 ifeq ($(K3D),true)
@@ -422,7 +426,7 @@ clean:
 	# Delete pre-go 1.3 vendor
 	rm -Rf vendor
 	# Delete build files
-	rm -Rf dist ui/dist
+	rm -Rf dist/* ui/dist
 
 # swagger
 

@@ -1527,11 +1527,8 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 				woc.wf.ObjectMeta.Labels = make(map[string]string)
 			}
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
-			conditions := []wfv1.Condition{wfv1.Condition{
-				Status: metav1.ConditionStatus("True"),
-				Type:   "completed"}}
-			woc.wf.Status.Conditions = conditions
-
+			woc.wf.Status.Conditions = []wfv1.Condition{{Status: metav1.ConditionTrue, Type: "completed"}}
+			woc.wf.Status.ResourcesDuration = woc.wf.Status.Nodes.GetResourcesDuration()
 			err := woc.deletePDBResource()
 			if err != nil {
 				woc.wf.Status.Phase = wfv1.NodeError
@@ -1542,7 +1539,6 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 			err = woc.controller.wfArchive.ArchiveWorkflow(woc.wf)
 			if err != nil {
 				woc.log.WithField("err", err).Error("Failed to archive workflow")
-
 			}
 			woc.updated = true
 		}
@@ -1802,7 +1798,12 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 			}
 			val, err := scope.resolveParameter(param.ValueFrom.Parameter)
 			if err != nil {
-				return nil, err
+				// We have a default value to use instead of returning an error
+				if param.ValueFrom.Default != "" {
+					val = param.ValueFrom.Default
+				} else {
+					return nil, err
+				}
 			}
 			param.Value = &val
 			param.ValueFrom = nil

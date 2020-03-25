@@ -10,6 +10,7 @@
   ],
   "swagger": "2.0",
   "info": {
+    "description": "Argo",
     "title": "Argo",
     "version": "latest"
   },
@@ -1774,6 +1775,10 @@
           "title": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
         },
+        "gcs": {
+          "title": "GCS contains GCS artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSArtifact"
+        },
         "git": {
           "title": "Git contains git artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GitArtifact"
@@ -2093,6 +2098,33 @@
         "serviceAccountName": {
           "description": "ServiceAccountName specifies the service account name of the executor container.",
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.GCSArtifact": {
+      "type": "object",
+      "title": "GCSArtifact is the location of a GCS artifact",
+      "properties": {
+        "gCSBucket": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSBucket"
+        },
+        "key": {
+          "type": "string",
+          "title": "Key is the path in the bucket where the artifact resides"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.GCSBucket": {
+      "type": "object",
+      "title": "GCSBucket contains the access information for  interfacring with a GCS bucket",
+      "properties": {
+        "bucket": {
+          "type": "string",
+          "title": "Bucket is the name of the bucket"
+        },
+        "serviceAccountKeySecret": {
+          "title": "ServiceAccountKeySecret is the secret selector to the bucket's service account key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }
     },
@@ -3034,6 +3066,10 @@
       "type": "object",
       "title": "ValueFrom describes a location in which to obtain the value to a parameter",
       "properties": {
+        "default": {
+          "type": "string",
+          "title": "Default specifies a value to be used if retrieving the value from the specified source fails"
+        },
         "jqFilter": {
           "type": "string",
           "title": "JQFilter expression against the resource object in resource templates"
@@ -3297,6 +3333,14 @@
         "phase": {
           "description": "Phase a simple, high-level summary of where the workflow is in its lifecycle.",
           "type": "string"
+        },
+        "resourcesDuration": {
+          "type": "object",
+          "title": "ResourcesDuration is the total for the workflow",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          }
         },
         "startedAt": {
           "title": "Time at which this workflow started",
@@ -6185,6 +6229,32 @@
     "HTTPBasic": {
       "description": "HTTP Basic authentication",
       "type": "basic"
+    }
+  },
+  "x-stream-definitions": {
+    "io.argoproj.workflow.v1alpha1.LogEntry": {
+      "properties": {
+        "error": {
+          "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+        },
+        "result": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LogEntry"
+        }
+      },
+      "title": "Stream result of io.argoproj.workflow.v1alpha1.LogEntry",
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowWatchEvent": {
+      "properties": {
+        "error": {
+          "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+        },
+        "result": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowWatchEvent"
+        }
+      },
+      "title": "Stream result of io.argoproj.workflow.v1alpha1.WorkflowWatchEvent",
+      "type": "object"
     }
   }
 }

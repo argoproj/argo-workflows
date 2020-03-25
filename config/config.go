@@ -116,6 +116,8 @@ type ArtifactRepository struct {
 	HDFS *HDFSArtifactRepository `json:"hdfs,omitempty"`
 	// OSS stores artifact in a OSS-compliant object store
 	OSS *OSSArtifactRepository `json:"oss,omitempty"`
+	// GCS stores artifact in a GCS object store
+	GCS *GCSArtifactRepository `json:"gcs,omitempty"`
 }
 
 func (a *ArtifactRepository) IsArchiveLogs() bool {
@@ -179,6 +181,14 @@ type S3ArtifactRepository struct {
 // OSSArtifactRepository defines the controller configuration for an OSS artifact repository
 type OSSArtifactRepository struct {
 	wfv1.OSSBucket `json:",inline"`
+
+	// KeyFormat is defines the format of how to store keys. Can reference workflow variables
+	KeyFormat string `json:"keyFormat,omitempty"`
+}
+
+// GCSArtifactRepository defines the controller configuration for a GCS artifact repository
+type GCSArtifactRepository struct {
+	wfv1.GCSBucket `json:",inline"`
 
 	// KeyFormat is defines the format of how to store keys. Can reference workflow variables
 	KeyFormat string `json:"keyFormat,omitempty"`

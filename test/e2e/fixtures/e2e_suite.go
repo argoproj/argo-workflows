@@ -95,7 +95,7 @@ func (s *E2ESuite) DeleteResources(label string) {
 	// if in the list it is either a test wf or not
 	isTestWf := make(map[string]bool)
 	{
-		list, err := s.wfClient.List(metav1.ListOptions{})
+		list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: label})
 		if err != nil {
 			panic(err)
 		}
