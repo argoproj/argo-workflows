@@ -15,7 +15,6 @@ kind: Workflow
 metadata:
   namespace: default
   name: test-template-scope
-  namespace: default
 spec:
   entrypoint: entry
   templates:
@@ -55,7 +54,6 @@ kind: WorkflowTemplate
 metadata:
   namespace: default
   name: test-template-scope-2
-  namespace: default
 spec:
   templates:
   - name: steps

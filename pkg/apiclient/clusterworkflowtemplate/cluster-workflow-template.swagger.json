@@ -643,7 +643,7 @@
           "title": "ServiceAccountKeySecret is the secret selector to the bucket's service account key"
         }
       },
-      "title": "GCSBucket contains the access information for  interfacring with a GCS bucket"
+      "title": "GCSBucket contains the access information for interfacring with a GCS bucket"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Gauge": {
       "type": "object",
