@@ -28,11 +28,12 @@ import (
 
 // cliSubmitOpts holds submission options specific to CLI submission (e.g. controlling output)
 type cliSubmitOpts struct {
-	output   string // --output
-	wait     bool   // --wait
-	watch    bool   // --watch
-	strict   bool   // --strict
-	priority *int32 // --priority
+	output           string // --output
+	wait             bool   // --wait
+	watch            bool   // --watch
+	strict           bool   // --strict
+	priority         *int32 // --priority
+	SubstituteParams bool   // --substitute-params
 }
 
 func NewSubmitCommand() *cobra.Command {
@@ -93,54 +94,11 @@ func NewSubmitCommand() *cobra.Command {
 	return command
 }
 
-func replaceGlobalParameters(fileContents [][]byte, submitOpts *util.SubmitOpts) ([][]byte, error) {
-	if submitOpts.SubstituteParams {
-		var output [][]byte
-		for _, body := range fileContents {
-			workflowRaw := make(map[interface{}]interface{})
-			err := yaml.Unmarshal(body, &workflowRaw)
-			if err != nil {
-				return nil, err
-			}
-			spec, ok := workflowRaw["spec"].(map[interface{}]interface{})
-			if !ok {
-				log.Fatalf("Problem with the spec defintion for the workflow: '%s'", workflowRaw["spec"])
-			}
-			args, err := yaml.Marshal(spec["arguments"])
-			if err != nil {
-				return nil, err
-			}
-			var argSpec wfv1.Arguments
-			err = yaml.Unmarshal(args, &argSpec)
-			if err != nil {
-				return nil, err
-			}
-			globalParams := make(map[string]string)
-			for _, param := range argSpec.Parameters {
-				globalParams["workflow.parameters."+param.Name] = *param.Value
-			}
-			newParams, err := parseParameters(submitOpts)
-			if err != nil {
-				return nil, err
-			}
-			for _, param := range newParams {
-				globalParams["workflow.parameters."+param.Name] = *param.Value
-			}
-			fstTmpl := fasttemplate.New(string(body), `"{{`, `}}"`)
-			globalReplacedTmplStr, err := common.Replace(fstTmpl, globalParams, true)
-			if err != nil {
-				return nil, err
-			}
-			output = append(output, []byte(globalReplacedTmplStr))
-		}
-		return output, nil
-	}
-	return fileContents, nil
-}
-
 func submitWorkflowsFromFile(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
 	fileContents, err := util.ReadManifest(filePaths...)
 	errors.CheckError(err)
+
+	fileContents, err = replaceGlobalParameters(fileContents, submitOpts, cliOpts)
 
 	var workflows []wfv1.Workflow
 	for _, body := range fileContents {
@@ -353,4 +311,49 @@ func parseParameters(opts *util.SubmitOpts) ([]wfv1.Parameter, error) {
 		}
 	}
 	return newParams, nil
+}
+
+func replaceGlobalParameters(fileContents [][]byte, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) ([][]byte, error) {
+	if cliOpts.SubstituteParams {
+		var output [][]byte
+		for _, body := range fileContents {
+			workflowRaw := make(map[interface{}]interface{})
+			err := yaml.Unmarshal(body, &workflowRaw)
+			if err != nil {
+				return nil, err
+			}
+			spec, ok := workflowRaw["spec"].(map[interface{}]interface{})
+			if !ok {
+				log.Fatalf("Problem with the spec defintion for the workflow: '%s'", workflowRaw["spec"])
+			}
+			args, err := yaml.Marshal(spec["arguments"])
+			if err != nil {
+				return nil, err
+			}
+			var argSpec wfv1.Arguments
+			err = yaml.Unmarshal(args, &argSpec)
+			if err != nil {
+				return nil, err
+			}
+			globalParams := make(map[string]string)
+			for _, param := range argSpec.Parameters {
+				globalParams["workflow.parameters."+param.Name] = *param.Value
+			}
+			newParams, err := parseParameters(submitOpts)
+			if err != nil {
+				return nil, err
+			}
+			for _, param := range newParams {
+				globalParams["workflow.parameters."+param.Name] = *param.Value
+			}
+			fstTmpl := fasttemplate.New(string(body), `"{{`, `}}"`)
+			globalReplacedTmplStr, err := common.Replace(fstTmpl, globalParams, true)
+			if err != nil {
+				return nil, err
+			}
+			output = append(output, []byte(globalReplacedTmplStr))
+		}
+		return output, nil
+	}
+	return fileContents, nil
 }
