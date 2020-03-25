@@ -137,7 +137,7 @@ func NewDriver(art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error
 	}
 
 	if art.GCS != nil {
-		driver := gcs.GCSArtifactDriver{}
+		driver := gcs.ArtifactDriver{}
 		if art.GCS.ServiceAccountKeySecret.Name != "" {
 			serviceAccountKeyBytes, err := ri.GetSecret(art.GCS.ServiceAccountKeySecret.Name, art.GCS.ServiceAccountKeySecret.Key)
 			if err != nil {
