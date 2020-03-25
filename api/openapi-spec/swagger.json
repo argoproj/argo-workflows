@@ -2116,7 +2116,7 @@
     },
     "io.argoproj.workflow.v1alpha1.GCSBucket": {
       "type": "object",
-      "title": "GCSBucket contains the access information for  interfacring with a GCS bucket",
+      "title": "GCSBucket contains the access information for interfacring with a GCS bucket",
       "properties": {
         "bucket": {
           "type": "string",

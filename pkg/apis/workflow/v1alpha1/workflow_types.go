@@ -1361,7 +1361,7 @@ func (h *HTTPArtifact) HasLocation() bool {
 	return h != nil && h.URL != ""
 }
 
-// GCSBucket contains the access information for  interfacring with a GCS bucket
+// GCSBucket contains the access information for interfacring with a GCS bucket
 type GCSBucket struct {
 
 	// Bucket is the name of the bucket
