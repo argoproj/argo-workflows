@@ -99,6 +99,9 @@ func submitWorkflowsFromFile(filePaths []string, submitOpts *util.SubmitOpts, cl
 	errors.CheckError(err)
 	if cliOpts.SubstituteParams {
 		fileContents, err = replaceGlobalParameters(fileContents, submitOpts, cliOpts)
+		if err != nil {
+			log.Fatalf("Failed to replace global paramters for workflows, error '%s' ", err)
+		}
 	}
 	var workflows []wfv1.Workflow
 	for _, body := range fileContents {
@@ -154,11 +157,10 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *util.Subm
 	if cliOpts.SubstituteParams {
 		fileContents := [][]byte{fileContent}
 		fileContents, err = replaceGlobalParameters(fileContents, submitOpts, cliOpts)
-		var workflows []wfv1.Workflow
-		for _, body := range fileContents {
-			wfs := unmarshalWorkflows(body, cliOpts.strict)
-			workflows = append(workflows, wfs...)
+		if err != nil {
+			log.Fatalf("Failed to replace global paramters for workflow, error '%s' ", resourceIdentifier)
 		}
+		workflowToSubmit = &unmarshalWorkflows(fileContents[0], cliOpts.strict)[0]
 	}
 	submitWorkflows([]wfv1.Workflow{*workflowToSubmit}, submitOpts, cliOpts)
 }
