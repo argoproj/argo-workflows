@@ -301,7 +301,7 @@ rules:
   - workflows
   - workflowtemplates
   - cronworkflows
-  - clusterworkflows
+  - clusterworkflowtemplates
   verbs:
   - create
   - get
