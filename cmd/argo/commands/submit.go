@@ -23,7 +23,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/common"
-	util "github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 // cliSubmitOpts holds submission options specific to CLI submission (e.g. controlling output)
@@ -93,62 +93,6 @@ func NewSubmitCommand() *cobra.Command {
 	return command
 }
 
-func parseParameters(opts *util.SubmitOpts) ([]wfv1.Parameter, error) {
-	newParams := make([]wfv1.Parameter, 0)
-	if len(opts.Parameters) > 0 || opts.ParameterFile != "" {
-		passedParams := make(map[string]bool)
-		for _, paramStr := range opts.Parameters {
-			parts := strings.SplitN(paramStr, "=", 2)
-			if len(parts) == 1 {
-				return nil, fmt.Errorf("Expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
-			}
-			param := wfv1.Parameter{
-				Name:  parts[0],
-				Value: &parts[1],
-			}
-			newParams = append(newParams, param)
-			passedParams[param.Name] = true
-		}
-		if opts.ParameterFile != "" {
-			var body []byte
-			var err error
-			if cmdutil.IsURL(opts.ParameterFile) {
-				body, err = util.ReadFromUrl(opts.ParameterFile)
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				body, err = ioutil.ReadFile(opts.ParameterFile)
-				if err != nil {
-					return nil, err
-				}
-			}
-			yamlParams := make(map[string]string)
-			err = yaml.Unmarshal(body, &yamlParams)
-			if err != nil {
-				return nil, err
-			}
-
-			for k, v := range yamlParams {
-				value, err := strconv.Unquote(string(v))
-				if err != nil {
-					value = string(v)
-				}
-				param := wfv1.Parameter{
-					Name:  k,
-					Value: &value,
-				}
-				if _, ok := passedParams[param.Name]; ok {
-					continue
-				}
-				newParams = append(newParams, param)
-				passedParams[param.Name] = true
-			}
-		}
-	}
-	return newParams, nil
-}
-
 func replaceGlobalParameters(fileContents [][]byte, submitOpts *util.SubmitOpts) ([][]byte, error) {
 	if submitOpts.SubstituteParams {
 		var output [][]byte
@@ -158,14 +102,23 @@ func replaceGlobalParameters(fileContents [][]byte, submitOpts *util.SubmitOpts)
 			if err != nil {
 				return nil, err
 			}
-			spec, _ := yaml.Marshal(workflowRaw["spec"])
-			var wfSpec wfv1.WorkflowSpec
-			yaml.Unmarshal(spec, &wfSpec)
+			spec, ok := workflowRaw["spec"].(map[interface{}]interface{})
+			if !ok {
+				log.Fatalf("Problem with the spec defintion for the workflow: '%s'", workflowRaw["spec"])
+			}
+			args, err := yaml.Marshal(spec["arguments"])
+			if err != nil {
+				return nil, err
+			}
+			var argSpec wfv1.Arguments
+			err = yaml.Unmarshal(args, &argSpec)
+			if err != nil {
+				return nil, err
+			}
 			globalParams := make(map[string]string)
-			for _, param := range wfSpec.Arguments.Parameters {
+			for _, param := range argSpec.Parameters {
 				globalParams["workflow.parameters."+param.Name] = *param.Value
 			}
-
 			newParams, err := parseParameters(submitOpts)
 			if err != nil {
 				return nil, err
@@ -175,6 +128,9 @@ func replaceGlobalParameters(fileContents [][]byte, submitOpts *util.SubmitOpts)
 			}
 			fstTmpl := fasttemplate.New(string(body), `"{{`, `}}"`)
 			globalReplacedTmplStr, err := common.Replace(fstTmpl, globalParams, true)
+			if err != nil {
+				return nil, err
+			}
 			output = append(output, []byte(globalReplacedTmplStr))
 		}
 		return output, nil
@@ -341,4 +297,60 @@ func waitOrWatch(workflowNames []string, cliSubmitOpts cliSubmitOpts) {
 	} else if cliSubmitOpts.watch {
 		watchWorkflow(workflowNames[0])
 	}
+}
+
+func parseParameters(opts *util.SubmitOpts) ([]wfv1.Parameter, error) {
+	newParams := make([]wfv1.Parameter, 0)
+	if len(opts.Parameters) > 0 || opts.ParameterFile != "" {
+		passedParams := make(map[string]bool)
+		for _, paramStr := range opts.Parameters {
+			parts := strings.SplitN(paramStr, "=", 2)
+			if len(parts) == 1 {
+				return nil, fmt.Errorf("Expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
+			}
+			param := wfv1.Parameter{
+				Name:  parts[0],
+				Value: &parts[1],
+			}
+			newParams = append(newParams, param)
+			passedParams[param.Name] = true
+		}
+		if opts.ParameterFile != "" {
+			var body []byte
+			var err error
+			if cmdutil.IsURL(opts.ParameterFile) {
+				body, err = util.ReadFromUrl(opts.ParameterFile)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				body, err = ioutil.ReadFile(opts.ParameterFile)
+				if err != nil {
+					return nil, err
+				}
+			}
+			yamlParams := make(map[string]string)
+			err = yaml.Unmarshal(body, &yamlParams)
+			if err != nil {
+				return nil, err
+			}
+
+			for k, v := range yamlParams {
+				value, err := strconv.Unquote(string(v))
+				if err != nil {
+					value = string(v)
+				}
+				param := wfv1.Parameter{
+					Name:  k,
+					Value: &value,
+				}
+				if _, ok := passedParams[param.Name]; ok {
+					continue
+				}
+				newParams = append(newParams, param)
+				passedParams[param.Name] = true
+			}
+		}
+	}
+	return newParams, nil
 }
