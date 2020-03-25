@@ -198,25 +198,25 @@ func TestTemplateScopeWithParam(t *testing.T) {
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-with-param[0]")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-with-param[0]") {
 		assert.Equal(t, wfv1.NodeTypeStepGroup, node.Type)
-		assert.Equal(t, "test-template-scope-with-param-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-with-param-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-with-param[0].print-string(0:x)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-with-param[0].print-string(0:x)") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-with-param-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-with-param-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-with-param[0].print-string(1:y)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-with-param[0].print-string(1:y)") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-with-param-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-with-param-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-with-param[0].print-string(2:z)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-with-param[0].print-string(2:z)") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-with-param-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-with-param-1", node.TemplateScope)
 	}
 }
 
@@ -293,37 +293,37 @@ func TestTemplateScopeNestedStepsWithParams(t *testing.T) {
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-nested-steps-with-params[0]")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-with-param[0]") {
 		assert.Equal(t, wfv1.NodeTypeStepGroup, node.Type)
-		assert.Equal(t, "test-template-scope-nested-steps-with-params-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-nested-steps-with-params-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-nested-steps-with-params[0].main")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-nested-steps-with-params[0].main") {
 		assert.Equal(t, wfv1.NodeTypeSteps, node.Type)
-		assert.Equal(t, "test-template-scope-nested-steps-with-params-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-nested-steps-with-params-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-nested-steps-with-params[0].main[0]")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-nested-steps-with-params[0].main[0]") {
 		assert.Equal(t, wfv1.NodeTypeStepGroup, node.Type)
-		assert.Equal(t, "test-template-scope-nested-steps-with-params-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-nested-steps-with-params-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-nested-steps-with-params[0].main[0].print-string(0:x)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-nested-steps-with-params[0].main[0].print-string(0:x)") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-nested-steps-with-params-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-nested-steps-with-params-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-nested-steps-with-params[0].main[0].print-string(1:y)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-nested-steps-with-params[0].main[0].print-string(1:y)") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-nested-steps-with-params-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-nested-steps-with-params-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-nested-steps-with-params[0].main[0].print-string(2:z)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-nested-steps-with-params[0].main[0].print-string(2:z)") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-nested-steps-with-params-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-nested-steps-with-params-1", node.TemplateScope)
 	}
 }
 
@@ -403,31 +403,31 @@ func TestTemplateScopeDAG(t *testing.T) {
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-dag.A")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-dag.A") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-dag-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-dag-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-dag.B")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-dag.B") {
 		assert.Equal(t, wfv1.NodeTypeTaskGroup, node.Type)
-		assert.Equal(t, "test-template-scope-dag-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-dag-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-dag.B(0:x)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-dag.B(0:x") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-dag-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-dag-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-dag.B(1:y)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-dag.B(0:x") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-dag-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-dag-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-dag.B(2:z)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-dag.B(0:x") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-dag-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-dag-1", node.TemplateScope)
 	}
 }
 
