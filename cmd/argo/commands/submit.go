@@ -1,8 +1,6 @@
 package commands
 
 import (
-	//"encoding/json"
-
 	"fmt"
 	"io/ioutil"
 	"log"
