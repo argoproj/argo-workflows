@@ -3,7 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"k8s.io/apimachinery/pkg/fields"
 	"strings"
 	"testing"
 	"time"
@@ -848,7 +847,7 @@ func TestSuspendResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow and operate again. two pods should be able to be scheduled
-	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, false, "", nil)
+	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, "")
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -1167,7 +1166,7 @@ func TestSuspendTemplate(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
-	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, false, "" , nil)
+	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, "" )
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -1203,7 +1202,7 @@ func TestSuspendTemplateWithFailedResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
-	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, true, "Step failed!" , nil)
+	err = util.StopWorkflow(wfcset, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1", "Step failed!")
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -1240,7 +1239,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow, but with non-matching selector
-	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, false, "" , fields.ParseSelectorOrDie("param1=value2"))
+	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, "inputs.paramaters.param1.value=value2")
 	assert.Error(t, err)
 
 	// operate the workflow. nothing should have happened
@@ -1252,7 +1251,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.True(t, util.IsWorkflowSuspended(wf))
 
 	// resume the workflow, but with matching selector
-	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, false, "" , fields.ParseSelectorOrDie("param1=value1"))
+	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1")
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)

@@ -48,7 +48,7 @@ message WorkflowRetryRequest {
 message WorkflowResumeRequest {
     string name = 1;
     string namespace = 2;
-    string nodeSelector = 3;
+    string nodeFieldSelector = 3;
 }
 
 message WorkflowTerminateRequest {
@@ -59,7 +59,7 @@ message WorkflowTerminateRequest {
 message WorkflowStopRequest {
      string name = 1;
      string namespace = 2;
-     string nodeSelector = 3;
+     string nodeFieldSelector = 3;
      string message = 4;
 }
 

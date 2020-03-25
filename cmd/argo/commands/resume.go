@@ -12,7 +12,7 @@ import (
 )
 
 type resumeOps struct {
-	nodeSelector       string   // --node-selector
+	nodeFieldSelector       string   // --node-field-selector
 }
 
 func NewResumeCommand() *cobra.Command {
@@ -28,16 +28,16 @@ func NewResumeCommand() *cobra.Command {
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 
-			selector, err := fields.ParseSelector(resumeArgs.nodeSelector)
+			selector, err := fields.ParseSelector(resumeArgs.nodeFieldSelector)
 			if err != nil {
-				log.Fatalf("Unable to parse node selector '%s': %s", resumeArgs.nodeSelector, err)
+				log.Fatalf("Unable to parse node field selector '%s': %s", resumeArgs.nodeFieldSelector, err)
 			}
 
 			for _, wfName := range args {
 				_, err := serviceClient.ResumeWorkflow(ctx, &workflowpkg.WorkflowResumeRequest{
 					Name:      wfName,
 					Namespace: namespace,
-					NodeSelector: selector.String(),
+					NodeFieldSelector: selector.String(),
 				})
 				if err != nil {
 					log.Fatalf("Failed to resume %s: %+v", wfName, err)
@@ -47,6 +47,6 @@ func NewResumeCommand() *cobra.Command {
 
 		},
 	}
-	command.Flags().StringVar(&resumeArgs.nodeSelector, "node-selector", "", "selector of node to resume, eg: --node-selector inputs.paramaters.myparam.value=abc")
+	command.Flags().StringVar(&resumeArgs.nodeFieldSelector, "node-field-selector", "", "selector of node to resume, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
 	return command
 }

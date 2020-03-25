@@ -5799,7 +5799,7 @@
         "namespace": {
           "type": "string"
         },
-        "nodeSelector": {
+        "nodeFieldSelector": {
           "type": "string"
         }
       }
@@ -5827,7 +5827,7 @@
         "namespace": {
           "type": "string"
         },
-        "nodeSelector": {
+        "nodeFieldSelector": {
           "type": "string"
         }
       }

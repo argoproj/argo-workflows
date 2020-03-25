@@ -338,9 +338,9 @@ func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error
 
 // ResumeWorkflow resumes a workflow by setting spec.suspend to nil and any suspended nodes to Successful.
 // Retries conflict errors
-func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string, nodeSelector string) error {
-	if len(nodeSelector) > 0 {
-		return updateWorkflowNodeByKey(wfIf, workflowName, nodeSelector, wfv1.NodeSucceeded, "")
+func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string, nodeFieldSelector string) error {
+	if len(nodeFieldSelector) > 0 {
+		return updateWorkflowNodeByKey(wfIf, workflowName, nodeFieldSelector, wfv1.NodeSucceeded, "")
 	} else {
 		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 			wf, err := wfIf.Get(workflowName, metav1.GetOptions{})
@@ -359,6 +359,16 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string, nodeSe
 				workflowUpdated = true
 			}
 
+			// To resume a workflow with a suspended node we simply mark the node as Successful
+			for nodeID, node := range wf.Status.Nodes {
+				if node.IsActiveSuspendNode() {
+					node.Phase = wfv1.NodeSucceeded
+					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+					wf.Status.Nodes[nodeID] = node
+					workflowUpdated = true
+				}
+			}
+
 			if workflowUpdated {
 				_, err = wfIf.Update(wf)
 				if err != nil {
@@ -374,8 +384,8 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string, nodeSe
 	}
 }
 
-func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, workflowName string, nodeSelector string, phase wfv1.NodePhase, message string) error {
-	selector, err := fields.ParseSelector(nodeSelector)
+func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, workflowName string, nodeFieldSelector string, phase wfv1.NodePhase, message string) error {
+	selector, err := fields.ParseSelector(nodeFieldSelector)
 
 	if err != nil {
 		return err
@@ -423,7 +433,7 @@ func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, workflowName strin
 				return false, err
 			}
 		} else {
-			return true, fmt.Errorf("No nodes matching nodeSelector: %s", nodeSelector)
+			return true, fmt.Errorf("No nodes matching nodeFieldSelector: %s", nodeFieldSelector)
 		}
 		return true, nil
 	})
@@ -673,10 +683,10 @@ func TerminateWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
 }
 
 // StopWorkflow terminates a workflow by setting its spec.shutdown to ShutdownStrategyStop
-// Or terminates a single resume step referenced by nodeSelector
-func StopWorkflow(wfClient v1alpha1.WorkflowInterface, name string, nodeSelector string, message string) error {
-	if len(nodeSelector) > 0 {
-		return updateWorkflowNodeByKey(wfClient, name, nodeSelector, wfv1.NodeFailed, message)
+// Or terminates a single resume step referenced by nodeFieldSelector
+func StopWorkflow(wfClient v1alpha1.WorkflowInterface, name string, nodeFieldSelector string, message string) error {
+	if len(nodeFieldSelector) > 0 {
+		return updateWorkflowNodeByKey(wfClient, name, nodeFieldSelector, wfv1.NodeFailed, message)
 	} else {
 		patchObj := map[string]interface{}{
 			"spec": map[string]interface{}{

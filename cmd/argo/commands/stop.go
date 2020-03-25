@@ -14,7 +14,7 @@ import (
 
 type stopOps struct {
 	message      string // --message
-	nodeSelector string // --node-selector
+	nodeFieldSelector string // --node-field-selector
 }
 
 func NewStopCommand() *cobra.Command {
@@ -31,16 +31,16 @@ func NewStopCommand() *cobra.Command {
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 
-			selector, err := fields.ParseSelector(stopArgs.nodeSelector)
+			selector, err := fields.ParseSelector(stopArgs.nodeFieldSelector)
 			if err != nil {
-				log.Fatalf("Unable to parse node selector '%s': %s", stopArgs.nodeSelector, err)
+				log.Fatalf("Unable to parse node field selector '%s': %s", stopArgs.nodeFieldSelector, err)
 			}
 
 			for _, name := range args {
 				wf, err := serviceClient.StopWorkflow(ctx, &workflowpkg.WorkflowStopRequest{
 					Name:      name,
 					Namespace: namespace,
-					NodeSelector: selector.String(),
+					NodeFieldSelector: selector.String(),
 					Message: stopArgs.message,
 				})
 				errors.CheckError(err)
@@ -49,6 +49,6 @@ func NewStopCommand() *cobra.Command {
 		},
 	}
 	command.Flags().StringVar(&stopArgs.message, "message", "", "Message to add to previously running nodes")
-	command.Flags().StringVar(&stopArgs.nodeSelector, "node-selector", "", "selector of node to stop, eg: --node-selector inputs.paramaters.myparam.value=abc")
+	command.Flags().StringVar(&stopArgs.nodeFieldSelector, "node-field-selector", "", "selector of node to stop, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
 	return command
 }
