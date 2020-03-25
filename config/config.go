@@ -6,8 +6,8 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-// WorkflowControllerConfig contain the configuration settings for the workflow controller
-type WorkflowControllerConfig struct {
+// Config contain the configuration settings for the workflow controller
+type Config struct {
 	// ExecutorImage is the image name of the executor to use when running pods
 	// DEPRECATED: use --executor-image flag to workflow-controller instead
 	ExecutorImage string `json:"executorImage,omitempty"`
@@ -51,11 +51,13 @@ type WorkflowControllerConfig struct {
 	// controller watches workflows and pods that *are not* labeled with an instance id.
 	InstanceID string `json:"instanceID,omitempty"`
 
+	// MetricsConfig specifies configuration for metrics emission
 	MetricsConfig PrometheusConfig `json:"metricsConfig,omitempty"`
 
 	// FeatureFlags for general/experimental features
 	FeatureFlags FeatureFlags `json:"featureFlags,omitempty"`
 
+	// TelemetryConfig specifies configuration for telemetry emission
 	TelemetryConfig PrometheusConfig `json:"telemetryConfig,omitempty"`
 
 	// Parallelism limits the max total parallel workflows that can execute at the same time
@@ -70,8 +72,8 @@ type WorkflowControllerConfig struct {
 	// Config customized Docker Sock path
 	DockerSockPath string `json:"dockerSockPath,omitempty"`
 
-	// Default workflow spec, will be adde to workflow if the parameters are not set in the workflow
-	DefautWorkflowSpec *wfv1.WorkflowSpec `json:"workflowDefaults,omitempty"`
+	// WorkflowDefaults are values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
+	WorkflowDefaults *wfv1.Workflow `json:"workflowDefaults,omitempty"`
 
 	// PodSpecLogStrategy enable the logging of podspec on controller log.
 	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`
@@ -116,6 +118,8 @@ type ArtifactRepository struct {
 	HDFS *HDFSArtifactRepository `json:"hdfs,omitempty"`
 	// OSS stores artifact in a OSS-compliant object store
 	OSS *OSSArtifactRepository `json:"oss,omitempty"`
+	// GCS stores artifact in a GCS object store
+	GCS *GCSArtifactRepository `json:"gcs,omitempty"`
 }
 
 func (a *ArtifactRepository) IsArchiveLogs() bool {
@@ -179,6 +183,14 @@ type S3ArtifactRepository struct {
 // OSSArtifactRepository defines the controller configuration for an OSS artifact repository
 type OSSArtifactRepository struct {
 	wfv1.OSSBucket `json:",inline"`
+
+	// KeyFormat is defines the format of how to store keys. Can reference workflow variables
+	KeyFormat string `json:"keyFormat,omitempty"`
+}
+
+// GCSArtifactRepository defines the controller configuration for a GCS artifact repository
+type GCSArtifactRepository struct {
+	wfv1.GCSBucket `json:",inline"`
 
 	// KeyFormat is defines the format of how to store keys. Can reference workflow variables
 	KeyFormat string `json:"keyFormat,omitempty"`

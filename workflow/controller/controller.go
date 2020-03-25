@@ -29,13 +29,13 @@ import (
 	"upper.io/db.v3/lib/sqlbuilder"
 
 	"github.com/argoproj/argo"
+	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
 	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/config"
 	"github.com/argoproj/argo/workflow/cron"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/packer"
@@ -49,11 +49,9 @@ type WorkflowController struct {
 	namespace        string
 	managedNamespace string
 
-	// configMap is the name of the config map in which to derive configuration of the controller from
-	configMap string
-
+	configController config.Controller
 	// Config is the workflow controller's configuration
-	Config config.WorkflowControllerConfig
+	Config config.Config
 
 	// cliExecutorImage is the executor image as specified from the command line
 	cliExecutorImage string
@@ -107,7 +105,6 @@ func NewWorkflowController(
 		restConfig:                 restConfig,
 		kubeclientset:              kubeclientset,
 		wfclientset:                wfclientset,
-		configMap:                  configMap,
 		namespace:                  namespace,
 		managedNamespace:           managedNamespace,
 		cliExecutorImage:           executorImage,
@@ -115,6 +112,7 @@ func NewWorkflowController(
 		containerRuntimeExecutor:   containerRuntimeExecutor,
 		wfQueue:                    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:                   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		configController:           config.NewController(namespace, configMap, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 		Metrics:                    make(map[string]prometheus.Metric),
@@ -167,12 +165,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 
 	log.WithField("version", argo.GetVersion()).Info("Starting Workflow Controller")
 	log.Infof("Workers: workflow: %d, pod: %d", wfWorkers, podWorkers)
-	log.Info("Watch Workflow controller config map updates")
-	_, err := wfc.watchControllerConfigMap(ctx)
-	if err != nil {
-		log.Errorf("Failed to register watch for controller config map: %v", err)
-		return
-	}
 
 	wfc.incompleteWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.incompleteWorkflowTweakListOptions)
 	wfc.completedWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.completedWorkflowTweakListOptions)
@@ -181,6 +173,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	wfc.addWorkflowInformerHandler()
 	wfc.podInformer = wfc.newPodInformer()
 
+	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
 	go wfc.incompleteWfInformer.Run(ctx.Done())
 	go wfc.completedWfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
@@ -204,6 +197,17 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
 	}
 	<-ctx.Done()
+}
+
+func (wfc *WorkflowController) UpdateConfig() {
+	config, err := wfc.configController.Get()
+	if err != nil {
+		log.Fatalf("Failed to register watch for controller config map: %v", err)
+	}
+	err = wfc.updateConfig(config)
+	if err != nil {
+		log.Fatalf("Failed to update config: %v", err)
+	}
 }
 
 // podLabeler will label all pods on the controllers completedPod channel as completed
@@ -362,13 +366,15 @@ func (wfc *WorkflowController) processNextItem() bool {
 		wfc.throttler.Remove(key)
 		return true
 	}
-	err = wfc.addingWorkflowDefaultValueIfValueNotExist(wf)
+
+	err = wfc.setWorkflowDefaults(wf)
 	if err != nil {
-		log.Warnf("Failed to unmarshal key '%s' to workflow object: %v", key, err)
+		log.Warnf("Failed to apply default workflow values to '%s': %v", wf.Name, err)
 		woc := newWorkflowOperationCtx(wf, wfc)
 		woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
 		woc.persistUpdates()
 		wfc.throttler.Remove(key)
+		return true
 	}
 
 	if wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true" {
@@ -377,7 +383,9 @@ func (wfc *WorkflowController) processNextItem() bool {
 		// but we are still draining the controller's workflow workqueue
 		return true
 	}
+
 	woc := newWorkflowOperationCtx(wf, wfc)
+
 	// Loading running workflow from persistence storage if nodeStatusOffload enabled
 	if wf.Status.IsOffloadNodeStatus() {
 		nodes, err := wfc.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
@@ -428,32 +436,6 @@ func (wfc *WorkflowController) processNextItem() bool {
 	// See: https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go
 	//c.handleErr(err, key)
 	return true
-}
-
-// addingWorkflowDefaultValueIfValueNotExist sets values in the workflow.Spec with defaults from the
-// workflowController. Values in the workflow will be given the upper hand over the defaults.
-// The defaults for the workflow controller is set in the WorkflowController.Config.DefautWorkflowSpec
-func (wfc *WorkflowController) addingWorkflowDefaultValueIfValueNotExist(wf *wfv1.Workflow) error {
-	if wfc.Config.DefautWorkflowSpec != nil {
-		defaultsSpec, err := json.Marshal(*wfc.Config.DefautWorkflowSpec)
-		if err != nil {
-			return err
-		}
-		workflowSpec, err := json.Marshal(wf.Spec)
-		if err != nil {
-			return err
-		}
-		// https: //godoc.org/k8s.io/apimachinery/pkg/util/strategicpatch#StrategicMergePatch
-		new, err := strategicpatch.StrategicMergePatch(defaultsSpec, workflowSpec, wfv1.WorkflowSpec{})
-		if err != nil {
-			return err
-		}
-		err = json.Unmarshal(new, &wf.Spec)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (wfc *WorkflowController) podWorker() {
@@ -636,6 +618,31 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 		},
 	)
 	return informer
+}
+
+// setWorkflowDefaults sets values in the workflow.Spec with defaults from the
+// workflowController. Values in the workflow will be given the upper hand over the defaults.
+// The defaults for the workflow controller are set in the workflow-controller config map
+func (wfc *WorkflowController) setWorkflowDefaults(wf *wfv1.Workflow) error {
+	if wfc.Config.WorkflowDefaults != nil {
+		defaultsSpec, err := json.Marshal(*wfc.Config.WorkflowDefaults)
+		if err != nil {
+			return err
+		}
+		workflowBytes, err := json.Marshal(wf)
+		if err != nil {
+			return err
+		}
+		mergedWf, err := strategicpatch.StrategicMergePatch(defaultsSpec, workflowBytes, wfv1.Workflow{})
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(mergedWf, &wf)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (wfc *WorkflowController) newWorkflowTemplateInformer() wfextvv1alpha1.WorkflowTemplateInformer {

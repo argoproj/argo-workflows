@@ -484,6 +484,9 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 	}
 	if woc.controller.Config.Executor != nil {
 		exec.Args = woc.controller.Config.Executor.Args
+		if woc.controller.Config.Executor.SecurityContext != nil {
+			exec.SecurityContext = woc.controller.Config.Executor.SecurityContext.DeepCopy()
+		}
 	}
 	if isResourcesSpecified(woc.controller.Config.Executor) {
 		exec.Resources = woc.controller.Config.Executor.Resources
@@ -850,7 +853,7 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 	var needLocation bool
 
 	if tmpl.ArchiveLocation != nil {
-		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil || tmpl.ArchiveLocation.OSS != nil {
+		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil || tmpl.ArchiveLocation.OSS != nil || tmpl.ArchiveLocation.GCS != nil {
 			// User explicitly set the location. nothing else to do.
 			return nil
 		}
@@ -914,6 +917,19 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 				Endpoint:        ossLocation.Endpoint,
 				AccessKeySecret: ossLocation.AccessKeySecret,
 				SecretKeySecret: ossLocation.SecretKeySecret,
+			},
+			Key: artLocationKey,
+		}
+	} else if gcsLocation := woc.artifactRepository.GCS; gcsLocation != nil {
+		woc.log.Debugf("Setting GCS artifact repository information")
+		artLocationKey := gcsLocation.KeyFormat
+		if artLocationKey == "" {
+			artLocationKey = common.DefaultArchivePattern
+		}
+		tmpl.ArchiveLocation.GCS = &wfv1.GCSArtifact{
+			GCSBucket: wfv1.GCSBucket{
+				Bucket:                  gcsLocation.Bucket,
+				ServiceAccountKeySecret: gcsLocation.ServiceAccountKeySecret,
 			},
 			Key: artLocationKey,
 		}
@@ -1110,6 +1126,8 @@ func createArchiveLocationSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Vo
 	} else if ossRepo := tmpl.ArchiveLocation.OSS; ossRepo != nil {
 		createSecretVal(volMap, &ossRepo.AccessKeySecret, uniqueKeyMap)
 		createSecretVal(volMap, &ossRepo.SecretKeySecret, uniqueKeyMap)
+	} else if gcsRepo := tmpl.ArchiveLocation.GCS; gcsRepo != nil {
+		createSecretVal(volMap, &gcsRepo.ServiceAccountKeySecret, uniqueKeyMap)
 	}
 }
 
@@ -1130,6 +1148,8 @@ func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMa
 	} else if art.OSS != nil {
 		createSecretVal(volMap, &art.OSS.AccessKeySecret, keyMap)
 		createSecretVal(volMap, &art.OSS.SecretKeySecret, keyMap)
+	} else if art.GCS != nil {
+		createSecretVal(volMap, &art.GCS.ServiceAccountKeySecret, keyMap)
 	}
 }
 
