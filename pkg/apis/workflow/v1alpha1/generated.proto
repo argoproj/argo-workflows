@@ -94,6 +94,9 @@ message ArtifactLocation {
 
   // GCS contains GCS artifact location details
   optional GCSArtifact gcs = 9;
+
+  // AzureBlob contains Azure Blog storage artifact location detail
+  optional AzureBlobArtifact azureBlob = 10;
 }
 
 message ArtifactRepositoryRef {
@@ -117,6 +120,26 @@ message ArtifactoryAuth {
 
   // PasswordSecret is the secret selector to the repository password
   optional k8s.io.api.core.v1.SecretKeySelector passwordSecret = 2;
+}
+
+// AzureBlobArtifact is the location of a Azure blob storage artifact
+message AzureBlobArtifact {
+  optional AzureBlobContainer azureBlobContainer = 1;
+
+  // Key is the path in the container where the artifact resides
+  optional string key = 2;
+}
+
+// AzureBlobContainer contains the access information fori nterfacring with an Azure blob storage container
+message AzureBlobContainer {
+  // AccountName is the blob storage account name
+  optional string accountName = 1;
+
+  // Container is the container name to store artifact in the storage account
+  optional string container = 2;
+
+  // AccountKeySecret is the secret selector to the storage's account key
+  optional k8s.io.api.core.v1.SecretKeySelector accountKeySecret = 3;
 }
 
 message Backoff {
@@ -280,7 +303,7 @@ message GCSArtifact {
   optional string key = 2;
 }
 
-// GCSBucket contains the access information for  interfacring with a GCS bucket
+// GCSBucket contains the access information for interfacring with a GCS bucket
 message GCSBucket {
   // Bucket is the name of the bucket
   optional string bucket = 1;

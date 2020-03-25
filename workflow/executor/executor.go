@@ -276,6 +276,10 @@ func (we *WorkflowExecutor) saveArtifact(mainCtrID string, art *wfv1.Artifact) e
 			shallowCopy := *we.Template.ArchiveLocation.GCS
 			art.GCS = &shallowCopy
 			art.GCS.Key = path.Join(art.GCS.Key, fileName)
+		} else if we.Template.ArchiveLocation.AzureBlob != nil {
+			shallowCopy := *we.Template.ArchiveLocation.AzureBlob
+			art.AzureBlob = &shallowCopy
+			art.AzureBlob.Key = path.Join(art.AzureBlob.Key, fileName)
 		} else {
 			return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
 		}
@@ -508,6 +512,10 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 		shallowCopy := *we.Template.ArchiveLocation.GCS
 		art.GCS = &shallowCopy
 		art.GCS.Key = path.Join(art.GCS.Key, fileName)
+	} else if we.Template.ArchiveLocation.AzureBlob != nil {
+		shallowCopy := *we.Template.ArchiveLocation.AzureBlob
+		art.AzureBlob = &shallowCopy
+		art.AzureBlob.Key = path.Join(art.AzureBlob.Key, fileName)
 	} else {
 		return nil, errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
 	}

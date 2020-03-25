@@ -850,7 +850,7 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 	var needLocation bool
 
 	if tmpl.ArchiveLocation != nil {
-		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil || tmpl.ArchiveLocation.OSS != nil || tmpl.ArchiveLocation.GCS != nil {
+		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil || tmpl.ArchiveLocation.OSS != nil || tmpl.ArchiveLocation.GCS != nil || tmpl.ArchiveLocation.AzureBlob != nil {
 			// User explicitly set the location. nothing else to do.
 			return nil
 		}
@@ -927,6 +927,20 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 			GCSBucket: wfv1.GCSBucket{
 				Bucket:                  gcsLocation.Bucket,
 				ServiceAccountKeySecret: gcsLocation.ServiceAccountKeySecret,
+			},
+			Key: artLocationKey,
+		}
+	} else if azureBlobLocation := woc.artifactRepository.AzureBlob; azureBlobLocation != nil {
+		woc.log.Debugf("Setting Azure Blob storage artifact repository information")
+		artLocationKey := azureBlobLocation.KeyFormat
+		if artLocationKey == "" {
+			artLocationKey = common.DefaultArchivePattern
+		}
+		tmpl.ArchiveLocation.AzureBlob = &wfv1.AzureBlobArtifact{
+			AzureBlobContainer: wfv1.AzureBlobContainer{
+				Container:        azureBlobLocation.Container,
+				AccountKeySecret: azureBlobLocation.AccountKeySecret,
+				AccountName:      azureBlobLocation.AccountName,
 			},
 			Key: artLocationKey,
 		}
@@ -1125,6 +1139,8 @@ func createArchiveLocationSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Vo
 		createSecretVal(volMap, &ossRepo.SecretKeySecret, uniqueKeyMap)
 	} else if gcsRepo := tmpl.ArchiveLocation.GCS; gcsRepo != nil {
 		createSecretVal(volMap, &gcsRepo.ServiceAccountKeySecret, uniqueKeyMap)
+	} else if azureBlobRepo := tmpl.ArchiveLocation.AzureBlob; azureBlobRepo != nil {
+		createSecretVal(volMap, &azureBlobRepo.AccountKeySecret, uniqueKeyMap)
 	}
 }
 
@@ -1147,6 +1163,8 @@ func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMa
 		createSecretVal(volMap, &art.OSS.SecretKeySecret, keyMap)
 	} else if art.GCS != nil {
 		createSecretVal(volMap, &art.GCS.ServiceAccountKeySecret, keyMap)
+	} else if art.AzureBlob != nil {
+		createSecretVal(volMap, &art.AzureBlob.AccountKeySecret, keyMap)
 	}
 }
 

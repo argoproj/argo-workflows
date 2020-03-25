@@ -704,6 +704,9 @@ type ArtifactLocation struct {
 
 	// GCS contains GCS artifact location details
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
+
+	// AzureBlob contains Azure Blog storage artifact location detail
+	AzureBlob *AzureBlobArtifact `json:"azureBlob,omitempty" protobuf:"bytes,10,opt,name=azureBlob"`
 }
 
 type ArtifactRepositoryRef struct {
@@ -1359,7 +1362,7 @@ func (h *HTTPArtifact) HasLocation() bool {
 	return h != nil && h.URL != ""
 }
 
-// GCSBucket contains the access information for  interfacring with a GCS bucket
+// GCSBucket contains the access information for interfacring with a GCS bucket
 type GCSBucket struct {
 
 	// Bucket is the name of the bucket
@@ -1379,6 +1382,30 @@ type GCSArtifact struct {
 
 func (g *GCSArtifact) HasLocation() bool {
 	return g != nil && g.Bucket != "" && g.Key != ""
+}
+
+// AzureBlobContainer contains the access information fori nterfacring with an Azure blob storage container
+type AzureBlobContainer struct {
+	// AccountName is the blob storage account name
+	AccountName string `json:"accountName" protobuf:"bytes,1,opt,name=accountName"`
+
+	// Container is the container name to store artifact in the storage account
+	Container string `json:"container" protobuf:"bytes,2,opt,name=container"`
+
+	// AccountKeySecret is the secret selector to the storage's account key
+	AccountKeySecret apiv1.SecretKeySelector `json:"accountKeySecret" protobuf:"bytes,3,opt,name=accountKeySecret"`
+}
+
+// AzureBlobArtifact is the location of a Azure blob storage artifact
+type AzureBlobArtifact struct {
+	AzureBlobContainer `json:",inline" protobuf:"bytes,1,opt,name=azureBlobContainer"`
+
+	// Key is the path in the container where the artifact resides
+	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+}
+
+func (az *AzureBlobArtifact) HasLocation() bool {
+	return az != nil && az.Container != "" && az.AccountName != "" && az.Key != ""
 }
 
 // OSSBucket contains the access information required for interfacing with an OSS bucket
@@ -1635,7 +1662,8 @@ func (a *Artifact) HasLocation() bool {
 		a.Raw.HasLocation() ||
 		a.HDFS.HasLocation() ||
 		a.OSS.HasLocation() ||
-		a.GCS.HasLocation()
+		a.GCS.HasLocation() ||
+		a.AzureBlob.HasLocation()
 }
 
 // GetTemplateByName retrieves a defined template by its name

@@ -155,6 +155,7 @@ func (g *GCSArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) err
 				log.Warnf("Failed to create new GCS client: %v", err)
 				return false, nil
 			}
+			defer client.Close()
 			err = uploadObjects(client, outputArtifact.GCS.Bucket, outputArtifact.GCS.Key, path)
 			if err != nil {
 				log.Warnf("Failed to upload objects: %v", err)

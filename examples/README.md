@@ -1196,7 +1196,7 @@ In the above example, we create a sidecar container that runs nginx as a simple 
 
 ## Hardwired Artifacts
 
-With Argo, you can use any container image that you like to generate any kind of artifact. In practice, however, we find certain types of artifacts are very common, so there is built-in support for git, http, gcs and s3 artifacts.
+With Argo, you can use any container image that you like to generate any kind of artifact. In practice, however, we find certain types of artifacts are very common, so there is built-in support for git, http, gcs, Azure Blob storage and s3 artifacts.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1

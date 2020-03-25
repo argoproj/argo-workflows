@@ -118,6 +118,8 @@ type ArtifactRepository struct {
 	OSS *OSSArtifactRepository `json:"oss,omitempty"`
 	// GCS stores artifact in a GCS object store
 	GCS *GCSArtifactRepository `json:"gcs,omitempty"`
+	// AzureBlob stores artifact in an Azure Blog storage
+	AzureBlob *AzureBlobArtifactRepository `json:"azureBlob,omitempty"`
 }
 
 func (a *ArtifactRepository) IsArchiveLogs() bool {
@@ -189,6 +191,14 @@ type OSSArtifactRepository struct {
 // GCSArtifactRepository defines the controller configuration for a GCS artifact repository
 type GCSArtifactRepository struct {
 	wfv1.GCSBucket `json:",inline"`
+
+	// KeyFormat is defines the format of how to store keys. Can reference workflow variables
+	KeyFormat string `json:"keyFormat,omitempty"`
+}
+
+// AzureBlobArtifactRepository defines the controller configuration for an Azure Blog storage repository
+type AzureBlobArtifactRepository struct {
+	wfv1.AzureBlobContainer `json:",inline"`
 
 	// KeyFormat is defines the format of how to store keys. Can reference workflow variables
 	KeyFormat string `json:"keyFormat,omitempty"`

@@ -3,6 +3,7 @@ package executor
 import (
 	"fmt"
 
+	"github.com/argoproj/argo/workflow/artifacts/azblob"
 	"github.com/argoproj/argo/workflow/artifacts/gcs"
 	"github.com/argoproj/argo/workflow/artifacts/oss"
 
@@ -147,6 +148,20 @@ func NewDriver(art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error
 			driver.ServiceAccountKey = serviceAccountKey
 		}
 		// key is not set, assume it is using Workload Idendity
+		return &driver, nil
+	}
+
+	if art.AzureBlob != nil {
+		accountKeyBytes, err := ri.GetSecret(art.AzureBlob.AccountKeySecret.Name, art.AzureBlob.AccountKeySecret.Key)
+		if err != nil {
+			return nil, err
+		}
+		accountKey := string(accountKeyBytes)
+		driver := azblob.ArtifactDriver{
+			AccountName: art.AzureBlob.AccountName,
+			AccountKey:  accountKey,
+			Container:   art.AzureBlob.Container,
+		}
 		return &driver, nil
 	}
 

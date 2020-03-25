@@ -1495,6 +1495,10 @@
           "title": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
         },
+        "azureBlob": {
+          "title": "AzureBlob contains Azure Blog storage artifact location detail",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureBlobArtifact"
+        },
         "gcs": {
           "title": "GCS contains GCS artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSArtifact"
@@ -1560,6 +1564,37 @@
         "usernameSecret": {
           "title": "UsernameSecret is the secret selector to the repository username",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.AzureBlobArtifact": {
+      "type": "object",
+      "title": "AzureBlobArtifact is the location of a Azure blob storage artifact",
+      "properties": {
+        "azureBlobContainer": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureBlobContainer"
+        },
+        "key": {
+          "type": "string",
+          "title": "Key is the path in the container where the artifact resides"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.AzureBlobContainer": {
+      "type": "object",
+      "title": "AzureBlobContainer contains the access information fori nterfacring with an Azure blob storage container",
+      "properties": {
+        "accountKeySecret": {
+          "title": "AccountKeySecret is the secret selector to the storage's account key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "accountName": {
+          "type": "string",
+          "title": "AccountName is the blob storage account name"
+        },
+        "container": {
+          "type": "string",
+          "title": "Container is the container name to store artifact in the storage account"
         }
       }
     },
@@ -1809,7 +1844,7 @@
     },
     "io.argoproj.workflow.v1alpha1.GCSBucket": {
       "type": "object",
-      "title": "GCSBucket contains the access information for  interfacring with a GCS bucket",
+      "title": "GCSBucket contains the access information for interfacring with a GCS bucket",
       "properties": {
         "bucket": {
           "type": "string",

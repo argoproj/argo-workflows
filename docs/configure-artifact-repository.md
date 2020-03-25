@@ -1,9 +1,9 @@
 # Configuring Your Artifact Repository
 
 To run Argo workflows that use artifacts, you must configure and use an artifact
-repository. Argo supports any S3 compatible artifact repository such as AWS, GCS
-and Minio. This section shows how to configure the artifact repository.
-Subsequent sections will show how to use it.
+repository. Argo supports Google Cloud Storage, Azure Blob Storage and any S3
+compatible artifact repository such as AWS and Minio. This section shows how to
+configure the artifact repository. Subsequent sections will show how to use it.
 
 ## Configuring Minio
 
@@ -135,8 +135,8 @@ access is on a per project rather than per bucket basis.
 
 ```yaml
 artifacts:
-  - name: my-output-artifact
-    path: /my-ouput-artifact
+  - name: my-artifact
+    path: /my-artifact
     s3:
       endpoint: storage.googleapis.com
       bucket: my-gcs-bucket-name
@@ -151,6 +151,31 @@ artifacts:
       secretKeySecret:
         name: my-gcs-s3-credentials
         key: secretKey
+```
+
+## Configuring Azure Blob Storage
+
+- Create a container in your Azure storage account
+- Save the account key in k8s as a secret
+- Configure `azureBlob` artifact as following example.
+
+```yaml
+artifacts:
+  - name: my-artifact
+    path: /my-artifact
+    azureBlob:
+      accountName: my-bucket-name
+      container: my-container
+      # key could be either a file or a directory.
+      key: path/in/bucket
+      # accountKeySecret is a secret selector.
+      # It references the k8s secret named 'my-azblob-credentials'.
+      # This secret is expected to have have the key 'accountKey',
+      # containing the base64 encoded Azure Blob Storage Account Key
+      # to the storage.
+      accountKeySecret:
+        name: my-azblob-credentials
+        key: accountKey
 ```
 
 # Configure the Default Artifact Repository

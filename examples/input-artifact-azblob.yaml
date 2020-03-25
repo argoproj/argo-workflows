@@ -1,0 +1,36 @@
+# This example demonstrates the loading of a hard-wired input artifact from an Azure blog storage.
+#
+# It uses an Azure blob storage Account Key stored as a regular Kubernetes secret, to access blob storage.
+# To create the secret required for this example, first run the following command:
+#
+# $ kubectl create secret generic my-azblob-credentials --from-literal=accountKey=<YOUR-ACCESS-KEY>
+#
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: input-artifact-azblob-
+spec:
+  entrypoint: input-artifact-azblob-example
+  templates:
+    - name: input-artifact-azblob-example
+      inputs:
+        artifacts:
+          - name: my-art
+            path: /my-artifact
+            azureBlob:
+              accountName: my-bucket-name
+              container: my-container
+              # key could be either a file or a directory.
+              key: path/in/bucket
+              # accountKeySecret is a secret selector.
+              # It references the k8s secret named 'my-azblob-credentials'.
+              # This secret is expected to have have the key 'accountKey',
+              # containing the base64 encoded Azure Blob Storage Account Key
+              # to the storage.
+              accountKeySecret:
+                name: my-azblob-credentials
+                key: accountKey
+      container:
+        image: debian:latest
+        command: [sh, -c]
+        args: ["ls -l /my-artifact"]
