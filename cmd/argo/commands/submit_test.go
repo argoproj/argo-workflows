@@ -10,7 +10,7 @@ import (
 )
 
 func TestSubmitSimple(t *testing.T) {
-	replaceGlobalParameter, err := util.ReadManifest("/Users/niklashansson/Documents/go/src/github.com/argoproj/argo/cmd/argo/commands/testComplex.yaml")
+	replaceGlobalParameter, err := util.ReadManifest("../../../test/e2e/functional/retry-paramter.yaml")
 	submitOpts := util.SubmitOpts{SubstituteParams: true}
 	output, err := replaceGlobalParameters(replaceGlobalParameter, &submitOpts)
 	assert.NoError(t, err)
@@ -19,19 +19,30 @@ func TestSubmitSimple(t *testing.T) {
 	assert.Equal(t, *workflows[0].Spec.Templates[0].RetryStrategy.Limit, ans)
 }
 
-func TestSubmitComplex(t *testing.T) {
-	replaceGlobalParameter, err := util.ReadManifest("/Users/niklashansson/Documents/go/src/github.com/argoproj/argo/cmd/argo/commands/testComplexTwo.yaml")
-	parameters := []string{`message="goodbye world"`}
+func TestSubmitGlobalParametersComplex(t *testing.T) {
+	replaceGlobalParameter, err := util.ReadManifest("../../../test/e2e/functional/global-parameters-complex.yaml")
+	parameters := []string{`message1=goodbye world`}
 	submitOpts := util.SubmitOpts{Parameters: parameters, SubstituteParams: true}
 	output, err := replaceGlobalParameters(replaceGlobalParameter, &submitOpts)
 	assert.NoError(t, err)
 	var wfSpec wfv1.Workflow
 	yaml.Unmarshal(output[0], &wfSpec)
-	assert.Equal(t, *wfSpec.Spec.Templates[0].Inputs.Parameters[1].Value, "hello world")
+	assert.Equal(t, *wfSpec.Spec.Templates[0].Inputs.Parameters[1].Value, "goodbye world")
 }
 
-func TestSubmitSimpleCommandlineParameter(t *testing.T) {
-	replaceGlobalParameter, err := util.ReadManifest("/Users/niklashansson/Documents/go/src/github.com/argoproj/argo/cmd/argo/commands/testComplex.yaml")
+func TestSubmitGlobalParametersComplexDefault(t *testing.T) {
+	replaceGlobalParameter, err := util.ReadManifest("../../../test/e2e/functional/global-parameters-complex.yaml")
+	parameters := []string{`message1=goodbye world`}
+	submitOpts := util.SubmitOpts{Parameters: parameters, SubstituteParams: false}
+	output, err := replaceGlobalParameters(replaceGlobalParameter, &submitOpts)
+	assert.NoError(t, err)
+	var wfSpec wfv1.Workflow
+	yaml.Unmarshal(output[0], &wfSpec)
+	assert.Equal(t, *wfSpec.Spec.Templates[0].Inputs.Parameters[1].Value, "{{workflow.parameters.message1}}")
+}
+
+func TestSubmitRetryParamterCommandlineParameter(t *testing.T) {
+	replaceGlobalParameter, err := util.ReadManifest("../../../test/e2e/functional/retry-paramter.yaml")
 	parameters := []string{"retry-count=1"}
 	submitOpts := util.SubmitOpts{Parameters: parameters, SubstituteParams: true}
 	output, err := replaceGlobalParameters(replaceGlobalParameter, &submitOpts)
@@ -39,4 +50,39 @@ func TestSubmitSimpleCommandlineParameter(t *testing.T) {
 	workflows := unmarshalWorkflows(output[0], true)
 	var ans int32 = 1
 	assert.Equal(t, *workflows[0].Spec.Templates[0].RetryStrategy.Limit, ans)
+}
+
+func TestSubmitRetryParamterCommandlineParameterFile(t *testing.T) {
+	replaceGlobalParameter, err := util.ReadManifest("../../../test/e2e/functional/retry-paramter.yaml")
+	parameterfile := "../../../test/e2e/functional/parameter-file.yaml"
+	submitOpts := util.SubmitOpts{ParameterFile: parameterfile, SubstituteParams: true}
+	output, err := replaceGlobalParameters(replaceGlobalParameter, &submitOpts)
+	assert.NoError(t, err)
+	workflows := unmarshalWorkflows(output[0], true)
+	var ans int32 = 7
+	assert.Equal(t, *workflows[0].Spec.Templates[0].RetryStrategy.Limit, ans)
+}
+
+func TestSubmitRetryParamterCommandlineParameterFileParameters(t *testing.T) {
+	replaceGlobalParameter, err := util.ReadManifest("../../../test/e2e/functional/retry-paramter.yaml")
+	parameterfile := "../../../test/e2e/functional/parameter-file.yaml"
+	parameters := []string{"retry-count=1"}
+	submitOpts := util.SubmitOpts{ParameterFile: parameterfile, Parameters: parameters, SubstituteParams: true}
+	output, err := replaceGlobalParameters(replaceGlobalParameter, &submitOpts)
+	assert.NoError(t, err)
+	workflows := unmarshalWorkflows(output[0], true)
+	var ans int32 = 1
+	assert.Equal(t, *workflows[0].Spec.Templates[0].RetryStrategy.Limit, ans)
+}
+
+func TestSubmitNoSubstituteParams(t *testing.T) {
+	replaceGlobalParameter, err := util.ReadManifest("../../../test/e2e/functional/global-parameters-complex.yaml")
+	parameters := []string{`message="goodbye world"`}
+	submitOpts := util.SubmitOpts{Parameters: parameters, SubstituteParams: false}
+	output, err := replaceGlobalParameters(replaceGlobalParameter, &submitOpts)
+	assert.NoError(t, err)
+	var wfSpec wfv1.Workflow
+	yaml.Unmarshal(output[0], &wfSpec)
+	assert.NotEqual(t, *wfSpec.Spec.Templates[0].Inputs.Parameters[1].Value, "hello world")
+	assert.Equal(t, *wfSpec.Spec.Templates[0].Inputs.Parameters[1].Value, "{{workflow.parameters.message1}}")
 }

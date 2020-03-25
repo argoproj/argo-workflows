@@ -1,7 +1,8 @@
 package commands
 
 import (
-	"encoding/json"
+	//"encoding/json"
+
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -94,47 +95,7 @@ func NewSubmitCommand() *cobra.Command {
 	return command
 }
 
-/*
-func replaceParameters(workflows []wfv1.Workflow, submitOpts *util.SubmitOpts) ([]wfv1.Workflow, error) {
-	if submitOpts.SubstituteParams {
-		var _workflows []wfv1.Workflow
-		for _, wf := range workflows {
-			//localParams := make(map[string]string)
-			globalParams := make(map[string]string)
-			for _, param := range wf.Spec.Arguments.Parameters {
-				globalParams["workflow.parameters."+param.Name] = *param.Value
-			}
-			var templates []wfv1.Template
-			for _, tmpWf := range wf.Spec.Templates {
-				tmplBytes, err := json.Marshal(tmpWf)
-				if err != nil {
-					return nil, err
-				}
-				fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
-				globalReplacedTmplStr, err := common.Replace(fstTmpl, globalParams, true)
-				if err != nil {
-					return nil, err
-				}
-				var template wfv1.Template
-				err = json.Unmarshal([]byte(globalReplacedTmplStr), &template)
-				if err != nil {
-					return nil, err
-				}
-				templates = append(templates, template)
-				fmt.Println("Here, Here, Here")
-				fmt.Println(globalReplacedTmplStr)
-			}
-			wf.Spec.Templates = templates
-			_workflows = append(_workflows, wf)
-		}
-		return _workflows, nil
-	}
-	return workflows, nil
-}
-*/
-
 func parseParameters(opts *util.SubmitOpts) ([]wfv1.Parameter, error) {
-	// Add parameters from a parameter-file, if one was provided
 	newParams := make([]wfv1.Parameter, 0)
 	if len(opts.Parameters) > 0 || opts.ParameterFile != "" {
 		passedParams := make(map[string]bool)
@@ -150,8 +111,6 @@ func parseParameters(opts *util.SubmitOpts) ([]wfv1.Parameter, error) {
 			newParams = append(newParams, param)
 			passedParams[param.Name] = true
 		}
-
-		// Add parameters from a parameter-file, if one was provided
 		if opts.ParameterFile != "" {
 			var body []byte
 			var err error
@@ -166,18 +125,15 @@ func parseParameters(opts *util.SubmitOpts) ([]wfv1.Parameter, error) {
 					return nil, err
 				}
 			}
-
-			yamlParams := map[string]json.RawMessage{}
+			yamlParams := make(map[string]string)
 			err = yaml.Unmarshal(body, &yamlParams)
 			if err != nil {
 				return nil, err
 			}
 
 			for k, v := range yamlParams {
-				// We get quoted strings from the yaml file.
 				value, err := strconv.Unquote(string(v))
 				if err != nil {
-					// the string is already clean.
 					value = string(v)
 				}
 				param := wfv1.Parameter{
@@ -185,7 +141,6 @@ func parseParameters(opts *util.SubmitOpts) ([]wfv1.Parameter, error) {
 					Value: &value,
 				}
 				if _, ok := passedParams[param.Name]; ok {
-					// this parameter was overridden via command line
 					continue
 				}
 				newParams = append(newParams, param)
@@ -197,19 +152,15 @@ func parseParameters(opts *util.SubmitOpts) ([]wfv1.Parameter, error) {
 }
 
 func replaceGlobalParameters(fileContents [][]byte, submitOpts *util.SubmitOpts) ([][]byte, error) {
-	// 1
 	if submitOpts.SubstituteParams {
 		var output [][]byte
 		for _, body := range fileContents {
-			// 2
 			workflowRaw := make(map[interface{}]interface{})
 			err := yaml.Unmarshal(body, &workflowRaw)
 			if err != nil {
 				return nil, err
 			}
-			// 3
 			spec, _ := yaml.Marshal(workflowRaw["spec"])
-			// only grabb the parameters in the spec .... the globals
 			var wfSpec wfv1.WorkflowSpec
 			yaml.Unmarshal(spec, &wfSpec)
 			globalParams := make(map[string]string)
@@ -221,7 +172,6 @@ func replaceGlobalParameters(fileContents [][]byte, submitOpts *util.SubmitOpts)
 			if err != nil {
 				return nil, err
 			}
-			// We overwrite what is in the file with the once passed around
 			for _, param := range newParams {
 				globalParams["workflow.parameters."+param.Name] = *param.Value
 			}
@@ -243,36 +193,6 @@ func submitWorkflowsFromFile(filePaths []string, submitOpts *util.SubmitOpts, cl
 		wfs := unmarshalWorkflows(body, cliOpts.strict)
 		workflows = append(workflows, wfs...)
 	}
-	/*
-		if opts.SubstituteParams {
-			fmt.Println("Print Start")
-			localParams := make(map[string]string)
-			globalParams := make(map[string]string)
-			for _, param := range wf.Spec.Arguments.Parameters {
-				globalParams["workflow.parameters."+param.Name] = *param.Value
-			}
-			for _, tmpWf := range wf.Spec.Templates {
-				for _, param := range tmpWf.Arguments.Parameters {
-					localParams["inputs.parameters."+param.Name] = *param.Value
-				}
-				fmt.Println("These are the global/workflow once:")
-				fmt.Println(globalParams)
-				fmt.Println("These are the local/input once:")
-				fmt.Println(localParams)
-				//fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
-				//globalReplacedTmplStr, err := Replace(fstTmpl, globalParams, true)
-				fmt.Println()
-				//processedTmpl, _ := common.ProcessArgs(&tmpWf, args, globalParams, localParams, false)
-				//newTmpl := tmpWf.DeepCopy()
-				//processedTmpl, _ := common.SubstituteParams(newTmpl, globalParams, localParams)
-				//println("After:")
-				//fmt.Println(*newTmpl)
-				//fmt.Println(*processedTmpl)
-			}
-			fmt.Println("Print Done")
-		}
-	*/
-
 	submitWorkflows(workflows, submitOpts, cliOpts)
 }
 
