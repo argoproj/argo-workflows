@@ -38,32 +38,36 @@ func NewController(namespace, name string, kubeclientset kubernetes.Interface) C
 }
 
 func (cc *controller) updateConfig(cm *apiv1.ConfigMap, onChange func(config Config) error) error {
-	c, err := parseConfigMap(cm)
+	config, err := parseConfigMap(cm)
 	if err != nil {
 		return err
 	}
-	return onChange(c)
+	return onChange(config)
 }
 
 func parseConfigMap(cm *apiv1.ConfigMap) (Config, error) {
 	// The key in the configmap to retrieve workflow configuration from.
 	// Content encoding is expected to be YAML.
-	var c Config
-	config, ok := cm.Data["config"]
+	var config Config
+	rawConfig, ok := cm.Data["config"]
 	if ok && len(cm.Data) != 1 {
-		return c, fmt.Errorf("if you have an item in your config map named 'config', you must only have one item")
+		return Config{}, fmt.Errorf("if you have an item in your config map named 'config', you must only have one item")
 	}
 	if !ok {
 		for name, value := range cm.Data {
 			if strings.Contains(value, "\n") {
 				// this mucky code indents with two spaces
-				config = config + name + ":\n  " + strings.Join(strings.Split(strings.Trim(value, "\n"), "\n"), "\n  ") + "\n"
+				rawConfig = rawConfig + name + ":\n  " + strings.Join(strings.Split(strings.Trim(value, "\n"), "\n"), "\n  ") + "\n"
 			} else {
-				config = config + name + ": " + value + "\n"
+				rawConfig = rawConfig + name + ": " + value + "\n"
 			}
 		}
 	}
-	return c, yaml.Unmarshal([]byte(config), &c)
+	err := yaml.Unmarshal([]byte(rawConfig), &config)
+	if err != nil {
+		return Config{}, err
+	}
+	return config, nil
 }
 
 func (cc *controller) Run(stopCh <-chan struct{}, onChange func(config Config) error) {

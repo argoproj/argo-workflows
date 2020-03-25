@@ -80,6 +80,9 @@ func NewRootCommand() *cobra.Command {
 			wfController := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
+
+			wfController.UpdateConfig()
+
 			go wfController.Run(ctx, workflowWorkers, podWorkers)
 			go wfController.MetricsServer(ctx)
 			go wfController.TelemetryServer(ctx)

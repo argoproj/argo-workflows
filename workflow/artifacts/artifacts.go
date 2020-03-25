@@ -3,6 +3,7 @@ package executor
 import (
 	"fmt"
 
+	"github.com/argoproj/argo/workflow/artifacts/gcs"
 	"github.com/argoproj/argo/workflow/artifacts/oss"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -132,6 +133,20 @@ func NewDriver(art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error
 			AccessKey: accessKey,
 			SecretKey: secretKey,
 		}
+		return &driver, nil
+	}
+
+	if art.GCS != nil {
+		driver := gcs.GCSArtifactDriver{}
+		if art.GCS.ServiceAccountKeySecret.Name != "" {
+			serviceAccountKeyBytes, err := ri.GetSecret(art.GCS.ServiceAccountKeySecret.Name, art.GCS.ServiceAccountKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			serviceAccountKey := string(serviceAccountKeyBytes)
+			driver.ServiceAccountKey = serviceAccountKey
+		}
+		// key is not set, assume it is using Workload Idendity
 		return &driver, nil
 	}
 
