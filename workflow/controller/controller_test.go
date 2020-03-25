@@ -50,6 +50,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: hello-world
+  labels:
+    foo: bar
 spec:
   entrypoint: whalesay
   serviceAccountName: whalesay
@@ -130,8 +132,10 @@ func newControllerWithDefaults() *WorkflowController {
 	return &WorkflowController{
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
-			WorkflowDefaults: &wfv1.WorkflowSpec{
-				HostNetwork: &myBool,
+			WorkflowDefaults: &wfv1.Workflow{
+				Spec: wfv1.WorkflowSpec{
+					HostNetwork: &myBool,
+				},
 			},
 		},
 		kubeclientset:  fake.NewSimpleClientset(),
@@ -158,16 +162,26 @@ func newControllerWithComplexDefaults() *WorkflowController {
 	return &WorkflowController{
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
-			WorkflowDefaults: &wfv1.WorkflowSpec{
-				HostNetwork:        &myBool,
-				Entrypoint:         "good_entrypoint",
-				ServiceAccountName: "my_service_account",
-				TTLStrategy: &wfv1.TTLStrategy{
-					SecondsAfterCompletion: &ten,
-					SecondsAfterSuccess:    &ten,
-					SecondsAfterFailure:    &ten,
+			WorkflowDefaults: &wfv1.Workflow{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"annotation": "value",
+					},
+					Labels: map[string]string{
+						"label": "value",
+					},
 				},
-				TTLSecondsAfterFinished: &seven,
+				Spec: wfv1.WorkflowSpec{
+					HostNetwork:        &myBool,
+					Entrypoint:         "good_entrypoint",
+					ServiceAccountName: "my_service_account",
+					TTLStrategy: &wfv1.TTLStrategy{
+						SecondsAfterCompletion: &ten,
+						SecondsAfterSuccess:    &ten,
+						SecondsAfterFailure:    &ten,
+					},
+					TTLSecondsAfterFinished: &seven,
+				},
 			},
 		},
 		kubeclientset:  fake.NewSimpleClientset(),
@@ -228,7 +242,6 @@ func makePodsPhaseAll(t *testing.T, phase apiv1.PodPhase, kubeclientset kubernet
 }
 
 func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
-	assert.Equal(t, "hello", "hello")
 	ans := true
 	controller := newController()
 	workflow := unmarshalWF(helloWorldWf)
@@ -245,22 +258,24 @@ func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
 }
 
 func TestAddingWorkflowDefaultComplex(t *testing.T) {
-	assert.Equal(t, "hello", "hello")
 	controller := newControllerWithComplexDefaults()
 	workflow := unmarshalWF(testDefaultWf)
 	var ten int32 = 10
 	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")
 	assert.Nil(t, workflow.Spec.TTLStrategy)
+	assert.Contains(t, workflow.Labels, "foo")
 	err := controller.setWorkflowDefaults(workflow)
 	assert.NoError(t, err)
 	assert.NotEqual(t, workflow, unmarshalWF(testDefaultWf))
 	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")
 	assert.Equal(t, workflow.Spec.ServiceAccountName, "whalesay")
 	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterFailure, ten)
+	assert.Contains(t, workflow.Labels, "foo")
+	assert.Contains(t, workflow.Labels, "label")
+	assert.Contains(t, workflow.Annotations, "annotation")
 }
 
 func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
-	assert.Equal(t, "hello", "hello")
 	controller := newControllerWithComplexDefaults()
 	workflow := unmarshalWF(testDefaultWfTTL)
 	var ten int32 = 10
@@ -274,4 +289,7 @@ func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
 	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterCompletion, five)
 	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterFailure, ten)
 	assert.Equal(t, *workflow.Spec.TTLSecondsAfterFinished, seven)
+	assert.NotContains(t, workflow.Labels, "foo")
+	assert.Contains(t, workflow.Labels, "label")
+	assert.Contains(t, workflow.Annotations, "annotation")
 }

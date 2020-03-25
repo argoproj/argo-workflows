@@ -73,7 +73,7 @@ type Config struct {
 	DockerSockPath string `json:"dockerSockPath,omitempty"`
 
 	// WorkflowDefaults are values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
-	WorkflowDefaults *wfv1.WorkflowSpec `json:"workflowDefaults,omitempty"`
+	WorkflowDefaults *wfv1.Workflow `json:"workflowDefaults,omitempty"`
 
 	// PodSpecLogStrategy enable the logging of podspec on controller log.
 	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`

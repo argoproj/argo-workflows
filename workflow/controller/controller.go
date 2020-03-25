@@ -629,15 +629,15 @@ func (wfc *WorkflowController) setWorkflowDefaults(wf *wfv1.Workflow) error {
 		if err != nil {
 			return err
 		}
-		workflowSpec, err := json.Marshal(wf.Spec)
+		workflowBytes, err := json.Marshal(wf)
 		if err != nil {
 			return err
 		}
-		mergedWf, err := strategicpatch.StrategicMergePatch(defaultsSpec, workflowSpec, wfv1.WorkflowSpec{})
+		mergedWf, err := strategicpatch.StrategicMergePatch(defaultsSpec, workflowBytes, wfv1.Workflow{})
 		if err != nil {
 			return err
 		}
-		err = json.Unmarshal(mergedWf, &wf.Spec)
+		err = json.Unmarshal(mergedWf, &wf)
 		if err != nil {
 			return err
 		}

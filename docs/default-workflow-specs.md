@@ -21,6 +21,10 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: gc-ttl-
+  annotations:
+    argo: workflows
+  labels:
+    foo: bar
 spec:
   ttlStrategy:
     secondsAfterSuccess: 5     # Time to live after workflow is successful
@@ -40,8 +44,14 @@ data:
 
     # Default values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
     workflowDefaults:
-      ttlStrategy:
-        secondsAfterSuccess: 5
-      parallelism: 3
+      metadata:
+        annotations:
+          argo: workflows
+        labels:
+          foo: bar
+      spec:
+        ttlStrategy:
+          secondsAfterSuccess: 5
+        parallelism: 3
 
 ```
