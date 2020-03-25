@@ -67,7 +67,9 @@ const (
 	// anyItemMagicValue is a magic value set in addItemsToScope() and checked in
 	// resolveAllVariables() to determine if any {{item.name}} can be accepted during
 	// variable resolution (to support withParam)
-	anyItemMagicValue = "item.*"
+	anyItemMagicValue                    = "item.*"
+	anyWorkflowOutputParameterMagicValue = "workflow.outputs.parameters.*"
+	anyWorkflowOutputArtifactMagicValue  = "workflow.outputs.artifacts.*"
 )
 
 var (
@@ -488,6 +490,8 @@ func validateArtifactLocation(errPrefix string, art wfv1.ArtifactLocation) error
 func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 	var unresolvedErr error
 	_, allowAllItemRefs := scope[anyItemMagicValue] // 'item.*' is a magic placeholder value set by addItemsToScope
+	_, allowAllWorkflowOutputParameterRefs := scope[anyWorkflowOutputParameterMagicValue]
+	_, allowAllWorkflowOutputArtifactRefs := scope[anyWorkflowOutputArtifactMagicValue]
 	fstTmpl := fasttemplate.New(tmplStr, "{{", "}}")
 
 	fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
@@ -501,6 +505,10 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 			if (tag == "item" || strings.HasPrefix(tag, "item.")) && allowAllItemRefs {
 				// we are *probably* referencing a undetermined item using withParam
 				// NOTE: this is far from foolproof.
+			} else if strings.HasPrefix(tag, "workflow.outputs.parameters.") && allowAllWorkflowOutputParameterRefs {
+				// Allow runtime resolution of workflow output parameter names
+			} else if strings.HasPrefix(tag, "workflow.outputs.artifacts.") && allowAllWorkflowOutputArtifactRefs {
+				// Allow runtime resolution of workflow output artifact names
 			} else if strings.HasPrefix(tag, "outputs.") {
 				// We are self referencing for metric emission, allow it.
 			} else if strings.HasPrefix(tag, common.GlobalVarWorkflowCreationTimestamp) {
@@ -747,18 +755,28 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 	}
 	for _, param := range tmpl.Outputs.Parameters {
 		scope[fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)] = true
-		if param.GlobalName != "" && !isParameter(param.GlobalName) {
-			globalParamName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
-			scope[globalParamName] = true
-			ctx.globalParams[globalParamName] = placeholderGenerator.NextPlaceholder()
+		if param.GlobalName != "" {
+			if !isParameter(param.GlobalName) {
+				globalParamName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
+				scope[globalParamName] = true
+				ctx.globalParams[globalParamName] = placeholderGenerator.NextPlaceholder()
+			} else {
+				logrus.Warnf("GlobalName '%s' is a parameter and won't be validated until runtime", param.GlobalName)
+				scope[anyWorkflowOutputParameterMagicValue] = true
+			}
 		}
 	}
 	for _, art := range tmpl.Outputs.Artifacts {
 		scope[fmt.Sprintf("%s.outputs.artifacts.%s", prefix, art.Name)] = true
-		if art.GlobalName != "" && !isParameter(art.GlobalName) {
-			globalArtName := fmt.Sprintf("workflow.outputs.artifacts.%s", art.GlobalName)
-			scope[globalArtName] = true
-			ctx.globalParams[globalArtName] = placeholderGenerator.NextPlaceholder()
+		if art.GlobalName != "" {
+			if !isParameter(art.GlobalName) {
+				globalArtName := fmt.Sprintf("workflow.outputs.artifacts.%s", art.GlobalName)
+				scope[globalArtName] = true
+				ctx.globalParams[globalArtName] = placeholderGenerator.NextPlaceholder()
+			} else {
+				logrus.Warnf("GlobalName '%s' is a parameter and won't be validated until runtime", art.GlobalName)
+				scope[anyWorkflowOutputArtifactMagicValue] = true
+			}
 		}
 	}
 	if aggregate {
