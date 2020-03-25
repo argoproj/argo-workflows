@@ -24,7 +24,7 @@ type Given struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wf                    *wfv1.Workflow
 	wfTemplates           []*wfv1.WorkflowTemplate
-	cwfTemplates		  []*wfv1.ClusterWorkflowTemplate
+	cwfTemplates          []*wfv1.ClusterWorkflowTemplate
 	cronWf                *wfv1.CronWorkflow
 	workflowName          string
 	kubeClient            kubernetes.Interface
@@ -202,7 +202,7 @@ func (g *Given) When() *When {
 		diagnostics:           g.diagnostics,
 		wf:                    g.wf,
 		wfTemplates:           g.wfTemplates,
-		cwfTemplates:		   g.cwfTemplates,
+		cwfTemplates:          g.cwfTemplates,
 		cronWf:                g.cronWf,
 		client:                g.client,
 		wfTemplateClient:      g.wfTemplateClient,

@@ -88,7 +88,6 @@ func (w *When) CreateClusterWorkflowTemplates() *When {
 	return w
 }
 
-
 func (w *When) CreateCronWorkflow() *When {
 	if w.cronWf == nil {
 		w.t.Fatal("No cron workflow to create")

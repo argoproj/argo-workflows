@@ -137,8 +137,8 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *util.Subm
 		workflowToSubmit = common.ConvertWorkflowTemplateToWorkflow(template)
 	case workflow.ClusterWorkflowTemplateKind, workflow.ClusterWorkflowTemplateSingular, workflow.ClusterWorkflowTemplatePlural, workflow.ClusterWorkflowTemplateShortName:
 		serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
-		template, err := serviceClient.GetClusterWorkflowTemplate(ctx, & clusterworkflowtmplpkg.ClusterWorkflowTemplateGetRequest{
-			Name:      name,
+		template, err := serviceClient.GetClusterWorkflowTemplate(ctx, &clusterworkflowtmplpkg.ClusterWorkflowTemplateGetRequest{
+			Name: name,
 		})
 		if err != nil {
 			log.Fatalf("Unable to get cluster workflow template '%s': %s", name, err)

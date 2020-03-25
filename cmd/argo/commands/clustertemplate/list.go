@@ -9,13 +9,12 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 type listFlags struct {
-	allNamespaces bool   // --all-namespaces
-	output        string // --output
+	output string // --output
 }
 
 func NewListCommand() *cobra.Command {
@@ -29,8 +28,7 @@ func NewListCommand() *cobra.Command {
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
 
-			cwftmplList, err := serviceClient.ListClusterWorkflowTemplates(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateListRequest{
-			})
+			cwftmplList, err := serviceClient.ListClusterWorkflowTemplates(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateListRequest{})
 			if err != nil {
 				log.Fatal(err)
 			}

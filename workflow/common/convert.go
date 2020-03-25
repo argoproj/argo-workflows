@@ -51,7 +51,6 @@ func ConvertClusterWorkflowTemplateToWorkflow(template *wfv1.ClusterWorkflowTemp
 	return wf
 }
 
-
 func toWorkflow(typeMeta metav1.TypeMeta, objectMeta metav1.ObjectMeta, spec wfv1.WorkflowSpec) *wfv1.Workflow {
 	wf := &wfv1.Workflow{
 		TypeMeta: metav1.TypeMeta{

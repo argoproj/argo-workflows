@@ -32,7 +32,7 @@ func NewCreateCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			CreateWorkflowTemplates(args, &cliCreateOpts)
+			createClusterWorkflowTemplates(args, &cliCreateOpts)
 		},
 	}
 	command.Flags().StringVarP(&cliCreateOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
@@ -40,7 +40,7 @@ func NewCreateCommand() *cobra.Command {
 	return command
 }
 
-func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
+func createClusterWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 	if cliOpts == nil {
 		cliOpts = &cliCreateOpts{}
 	}

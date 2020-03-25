@@ -245,36 +245,6 @@ rules:
   - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: argo-cluster-role
-rules:
-- apiGroups:
-  - argoproj.io
-  resources:
-  - clusterworkflowtemplates
-  - clusterworkflowtemplates/finalizers
-  verbs:
-  - get
-  - list
-  - watch
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: argo-cluster-wftmpl-role
-rules:
-- apiGroups:
-  - argoproj.io
-  resources:
-  - clusterworkflowtemplates
-  - clusterworkflowtemplates/finalizers
-  verbs:
-  - get
-  - list
-  - watch
----
-apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: argo-binding
@@ -309,32 +279,6 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: default
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: argo-cluster-binding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: argo-cluster-role
-subjects:
-- kind: ServiceAccount
-  name: argo
-  namespace: argo
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: argo-cluster-wftmpl-binding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: argo-cluster-wftmpl-role
-subjects:
-- kind: ServiceAccount
-  name: argo-server
-  namespace: argo
 ---
 apiVersion: v1
 data:

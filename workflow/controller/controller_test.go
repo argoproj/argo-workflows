@@ -117,7 +117,7 @@ func newController() *WorkflowController {
 		cwftmplInformer: cwftmplInformer,
 		wfQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		wfArchive:       sqldb.NullWorkflowArchive,
-		Metrics:        make(map[string]prometheus.Metric),
+		Metrics:         make(map[string]prometheus.Metric),
 	}
 }
 

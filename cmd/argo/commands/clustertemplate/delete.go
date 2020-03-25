@@ -1,13 +1,12 @@
 package clustertemplate
 
 import (
-	"context"
 	"fmt"
-	"log"
 
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/pkg/errors"
+
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 )
@@ -35,12 +34,8 @@ func apiServerDeleteClusterWorkflowTemplates(allWFs bool, wfTmplNames []string) 
 	serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
 	var delWFTmplNames []string
 	if allWFs {
-		cwftmplList, err := serviceClient.ListClusterWorkflowTemplates(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateListRequest{
-
-		})
-		if err != nil {
-			log.Fatal(err)
-		}
+		cwftmplList, err := serviceClient.ListClusterWorkflowTemplates(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateListRequest{})
+		errors.CheckError(err)
 		for _, cwfTmpl := range cwftmplList.Items {
 			delWFTmplNames = append(delWFTmplNames, cwfTmpl.Name)
 		}
@@ -48,17 +43,11 @@ func apiServerDeleteClusterWorkflowTemplates(allWFs bool, wfTmplNames []string) 
 	} else {
 		delWFTmplNames = wfTmplNames
 	}
-	for _, wfTmplNames := range delWFTmplNames {
-		apiServerDeleteClusterWorkflowTemplate(serviceClient, ctx, wfTmplNames)
-	}
-}
-
-func apiServerDeleteClusterWorkflowTemplate(client clusterworkflowtemplate.ClusterWorkflowTemplateServiceClient, ctx context.Context, cwftmplName string) {
-	_, err := client.DeleteClusterWorkflowTemplate(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateDeleteRequest{
-		Name:      cwftmplName,
-	})
-	if err != nil {
+	for _, cwfTmplName := range delWFTmplNames {
+		_, err := serviceClient.DeleteClusterWorkflowTemplate(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateDeleteRequest{
+			Name: cwfTmplName,
+		})
 		errors.CheckError(err)
+		fmt.Printf("ClusterWorkflowTemplate '%s' deleted\n", cwfTmplName)
 	}
-	fmt.Printf("ClusterWorkflowTemplate '%s' deleted\n", cwftmplName)
 }
