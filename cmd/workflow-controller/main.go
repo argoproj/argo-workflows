@@ -78,22 +78,11 @@ func NewRootCommand() *cobra.Command {
 
 			// start a controller on instances of our custom resource
 			wfController := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, managedNamespace, executorImage, executorImagePullPolicy, containerRuntimeExecutor, configMap)
-			err = wfController.ResyncConfig()
-			if err != nil {
-				return err
-			}
-			// TODO: following code will be updated in next major release to remove configmap
-			// setting for namespace installation mode.
-			if len(wfController.Config.Namespace) > 0 {
-				_, _ = fmt.Fprintf(os.Stderr, "\n------------------------    WARNING    ------------------------\n")
-				_, _ = fmt.Fprintf(os.Stderr, "Namespaced installation with configmap setting is deprecated, \n")
-				_, _ = fmt.Fprintf(os.Stderr, "it will be removed in next major release. Instead please add \n")
-				_, _ = fmt.Fprintf(os.Stderr, "\"--namespaced\" to workflow-controller start args.\n")
-				_, _ = fmt.Fprintf(os.Stderr, "-----------------------------------------------------------------\n\n")
-			}
-
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
+
+			wfController.UpdateConfig()
+
 			go wfController.Run(ctx, workflowWorkers, podWorkers)
 			go wfController.MetricsServer(ctx)
 			go wfController.TelemetryServer(ctx)

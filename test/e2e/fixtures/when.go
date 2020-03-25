@@ -9,12 +9,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/test/util"
 	"github.com/argoproj/argo/workflow/packer"
 )
 
@@ -32,6 +34,7 @@ type When struct {
 	wfTemplateNames       []string
 	cronWorkflowName      string
 	kubeClient            kubernetes.Interface
+	resourceQuota         *corev1.ResourceQuota
 }
 
 func (w *When) SubmitWorkflow() *When {
@@ -170,6 +173,24 @@ func (w *When) DeleteWorkflow() *When {
 func (w *When) RunCli(args []string, block func(t *testing.T, output string, err error)) *When {
 	output, err := runCli(w.diagnostics, args)
 	block(w.t, output, err)
+	return w
+}
+
+func (w *When) MemoryQuota(quota string) *When {
+	obj, err := util.CreateHardMemoryQuota(w.kubeClient, "argo", "memory-quota", quota)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	w.resourceQuota = obj
+	return w
+}
+
+func (w *When) DeleteQuota() *When {
+	err := util.DeleteQuota(w.kubeClient, w.resourceQuota)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	w.resourceQuota = nil
 	return w
 }
 

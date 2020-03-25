@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,11 +16,11 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
-	"github.com/argoproj/argo/workflow/config"
 )
 
 var helloWorldWf = `
@@ -28,6 +30,57 @@ metadata:
   name: hello-world
 spec:
   entrypoint: whalesay
+  templates:
+  - name: whalesay
+    metadata:
+      annotations:
+        annotationKey1: "annotationValue1"
+        annotationKey2: "annotationValue2"
+      labels:
+        labelKey1: "labelValue1"
+        labelKey2: "labelValue2"
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+var testDefaultWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+  labels:
+    foo: bar
+spec:
+  entrypoint: whalesay
+  serviceAccountName: whalesay
+  templates:
+  - name: whalesay
+    metadata:
+      annotations:
+        annotationKey1: "annotationValue1"
+        annotationKey2: "annotationValue2"
+      labels:
+        labelKey1: "labelValue1"
+        labelKey2: "labelValue2"
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+var testDefaultWfTTL = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  serviceAccountName: whalesay
+  ttlSecondsAfterFinished: 7
+  ttlStrategy:
+    secondsAfterCompletion: 5
   templates:
   - name: whalesay
     metadata:
@@ -53,8 +106,83 @@ func newController() *WorkflowController {
 		panic("Timed out waiting for caches to sync")
 	}
 	return &WorkflowController{
-		Config: config.WorkflowControllerConfig{
+		Config: config.Config{
 			ExecutorImage: "executor:latest",
+		},
+		kubeclientset:  fake.NewSimpleClientset(),
+		wfclientset:    wfclientset,
+		completedPods:  make(chan string, 512),
+		wftmplInformer: wftmplInformer,
+		wfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfArchive:      sqldb.NullWorkflowArchive,
+		Metrics:        make(map[string]prometheus.Metric),
+	}
+}
+
+func newControllerWithDefaults() *WorkflowController {
+	wfclientset := fakewfclientset.NewSimpleClientset()
+	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
+	wftmplInformer := informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
+	ctx := context.Background()
+	go wftmplInformer.Informer().Run(ctx.Done())
+	if !cache.WaitForCacheSync(ctx.Done(), wftmplInformer.Informer().HasSynced) {
+		panic("Timed out waiting for caches to sync")
+	}
+	myBool := true
+	return &WorkflowController{
+		Config: config.Config{
+			ExecutorImage: "executor:latest",
+			WorkflowDefaults: &wfv1.Workflow{
+				Spec: wfv1.WorkflowSpec{
+					HostNetwork: &myBool,
+				},
+			},
+		},
+		kubeclientset:  fake.NewSimpleClientset(),
+		wfclientset:    wfclientset,
+		completedPods:  make(chan string, 512),
+		wftmplInformer: wftmplInformer,
+		wfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfArchive:      sqldb.NullWorkflowArchive,
+	}
+}
+
+func newControllerWithComplexDefaults() *WorkflowController {
+	wfclientset := fakewfclientset.NewSimpleClientset()
+	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
+	wftmplInformer := informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
+	ctx := context.Background()
+	go wftmplInformer.Informer().Run(ctx.Done())
+	if !cache.WaitForCacheSync(ctx.Done(), wftmplInformer.Informer().HasSynced) {
+		panic("Timed out waiting for caches to sync")
+	}
+	myBool := true
+	var ten int32 = 10
+	var seven int32 = 10
+	return &WorkflowController{
+		Config: config.Config{
+			ExecutorImage: "executor:latest",
+			WorkflowDefaults: &wfv1.Workflow{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"annotation": "value",
+					},
+					Labels: map[string]string{
+						"label": "value",
+					},
+				},
+				Spec: wfv1.WorkflowSpec{
+					HostNetwork:        &myBool,
+					Entrypoint:         "good_entrypoint",
+					ServiceAccountName: "my_service_account",
+					TTLStrategy: &wfv1.TTLStrategy{
+						SecondsAfterCompletion: &ten,
+						SecondsAfterSuccess:    &ten,
+						SecondsAfterFailure:    &ten,
+					},
+					TTLSecondsAfterFinished: &seven,
+				},
+			},
 		},
 		kubeclientset:  fake.NewSimpleClientset(),
 		wfclientset:    wfclientset,
@@ -97,4 +225,71 @@ func makePodsPhase(t *testing.T, phase apiv1.PodPhase, kubeclientset kubernetes.
 			_, _ = podcs.Update(&pod)
 		}
 	}
+}
+
+// makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
+func makePodsPhaseAll(t *testing.T, phase apiv1.PodPhase, kubeclientset kubernetes.Interface, namespace string) {
+	podcs := kubeclientset.CoreV1().Pods(namespace)
+	pods, err := podcs.List(metav1.ListOptions{})
+	assert.NoError(t, err)
+	for _, pod := range pods.Items {
+		pod.Status.Phase = phase
+		if phase == apiv1.PodFailed {
+			pod.Status.Message = "Pod failed"
+		}
+		_, _ = podcs.Update(&pod)
+	}
+}
+
+func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
+	ans := true
+	controller := newController()
+	workflow := unmarshalWF(helloWorldWf)
+	err := controller.setWorkflowDefaults(workflow)
+	assert.NoError(t, err)
+	assert.Equal(t, workflow, unmarshalWF(helloWorldWf))
+	controllerDefaults := newControllerWithDefaults()
+	defautWorkflowSpec := unmarshalWF(helloWorldWf)
+	err = controllerDefaults.setWorkflowDefaults(defautWorkflowSpec)
+	assert.NoError(t, err)
+	assert.Equal(t, defautWorkflowSpec.Spec.HostNetwork, &ans)
+	assert.NotEqual(t, defautWorkflowSpec, unmarshalWF(helloWorldWf))
+	assert.Equal(t, *defautWorkflowSpec.Spec.HostNetwork, true)
+}
+
+func TestAddingWorkflowDefaultComplex(t *testing.T) {
+	controller := newControllerWithComplexDefaults()
+	workflow := unmarshalWF(testDefaultWf)
+	var ten int32 = 10
+	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")
+	assert.Nil(t, workflow.Spec.TTLStrategy)
+	assert.Contains(t, workflow.Labels, "foo")
+	err := controller.setWorkflowDefaults(workflow)
+	assert.NoError(t, err)
+	assert.NotEqual(t, workflow, unmarshalWF(testDefaultWf))
+	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")
+	assert.Equal(t, workflow.Spec.ServiceAccountName, "whalesay")
+	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterFailure, ten)
+	assert.Contains(t, workflow.Labels, "foo")
+	assert.Contains(t, workflow.Labels, "label")
+	assert.Contains(t, workflow.Annotations, "annotation")
+}
+
+func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
+	controller := newControllerWithComplexDefaults()
+	workflow := unmarshalWF(testDefaultWfTTL)
+	var ten int32 = 10
+	var seven int32 = 7
+	var five int32 = 5
+	err := controller.setWorkflowDefaults(workflow)
+	assert.NoError(t, err)
+	assert.NotEqual(t, workflow, unmarshalWF(testDefaultWfTTL))
+	assert.Equal(t, workflow.Spec.Entrypoint, "whalesay")
+	assert.Equal(t, workflow.Spec.ServiceAccountName, "whalesay")
+	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterCompletion, five)
+	assert.Equal(t, *workflow.Spec.TTLStrategy.SecondsAfterFailure, ten)
+	assert.Equal(t, *workflow.Spec.TTLSecondsAfterFinished, seven)
+	assert.NotContains(t, workflow.Labels, "foo")
+	assert.Contains(t, workflow.Labels, "label")
+	assert.Contains(t, workflow.Annotations, "annotation")
 }

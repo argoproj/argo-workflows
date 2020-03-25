@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -180,6 +181,13 @@ func (s *CLISuite) TestRoot() {
 		})
 	})
 	s.Run("List", func() {
+		for i := 0; i < 3; i++ {
+			s.Given().
+				Workflow("@smoke/basic-generate-name.yaml").
+				When().
+				SubmitWorkflow().
+				WaitForWorkflow(15 * time.Second)
+		}
 		s.Given().RunCli([]string{"list"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "NAME")
@@ -187,6 +195,19 @@ func (s *CLISuite) TestRoot() {
 				assert.Contains(t, output, "AGE")
 				assert.Contains(t, output, "DURATION")
 				assert.Contains(t, output, "PRIORITY")
+			}
+		})
+
+		s.Given().RunCli([]string{"list", "--chunk-size", "1"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "NAME")
+				assert.Contains(t, output, "STATUS")
+				assert.Contains(t, output, "AGE")
+				assert.Contains(t, output, "DURATION")
+				assert.Contains(t, output, "PRIORITY")
+
+				// header + 1 workflow + empty line
+				assert.Equal(t, 3, len(strings.Split(output, "\n")))
 			}
 		})
 	})
@@ -467,6 +488,31 @@ func (s *CLISuite) TestTemplate() {
 				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
 				assert.Contains(t, output, "Created:")
+			}
+		})
+	})
+	s.Run("Submittable-Template", func() {
+		s.Given().RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
+		var templateWorkflowName string
+		s.Given().RunCli([]string{"list"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				r := regexp.MustCompile(`\s+?(workflow-template-whalesay-template-[a-z0-9]+)`)
+				res := r.FindStringSubmatch(output)
+				if len(res) != 2 {
+					assert.Fail(t, "Internal test error, please report a bug")
+				}
+				templateWorkflowName = res[1]
+			}
+		}).When().Wait(20*time.Second).RunCli([]string{"get", templateWorkflowName}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, templateWorkflowName)
+				assert.Contains(t, output, "Succeeded")
 			}
 		})
 	})

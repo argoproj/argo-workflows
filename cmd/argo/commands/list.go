@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"sort"
 	"strings"
@@ -62,9 +63,6 @@ func NewListCommand() *cobra.Command {
 				labelSelector = labelSelector.Add(*req)
 			}
 			listOpts.LabelSelector = labelSelector.String()
-			if listArgs.chunkSize != 0 {
-				listOpts.Limit = listArgs.chunkSize
-			}
 
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
@@ -120,6 +118,11 @@ func NewListCommand() *cobra.Command {
 				}
 			}
 			sort.Sort(workflows)
+
+			if listArgs.chunkSize != 0 {
+				idx := int64(math.Min(float64(listArgs.chunkSize), float64(len(workflows))))
+				workflows = workflows[0:idx]
+			}
 
 			switch listArgs.output {
 			case "", "wide":
@@ -230,7 +233,7 @@ func workflowStatus(wf *wfv1.Workflow) wfv1.NodePhase {
 		}
 		return wf.Status.Phase
 	case wfv1.NodeFailed:
-		if util.IsWorkflowTerminated(wf) {
+		if wf.Spec.Shutdown != "" {
 			return "Failed (Terminated)"
 		}
 		return wf.Status.Phase

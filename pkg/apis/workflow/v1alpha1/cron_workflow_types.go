@@ -42,6 +42,8 @@ type CronWorkflowSpec struct {
 	FailedJobsHistoryLimit *int32 `json:"failedJobsHistoryLimit,omitempty" protobuf:"varint,7,opt,name=failedJobsHistoryLimit"`
 	// Timezone is the timezone against which the cron schedule will be calculated, e.g. "Asia/Tokyo". Default is machine's local time.
 	Timezone string `json:"timezone,omitempty" protobuf:"bytes,8,opt,name=timezone"`
+	// WorkflowMetadata contains some metadata of the workflow to be run
+	WorkflowMetadata *metav1.ObjectMeta `json:"workflowMetadata,omitempty" protobuf:"bytes,9,opt,name=workflowMeta"`
 }
 
 type CronWorkflowStatus struct {

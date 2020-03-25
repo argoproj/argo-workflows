@@ -769,9 +769,9 @@ spec:
       limit: 10
       retryOn: "Always"
       backoff:
-        duration: 1         # Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
+        duration: "1"      # Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
         factor: 2
-        maxDuration: "1m"   # Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
+        maxDuration: "1m"  # Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
     container:
       image: python:alpine3.6
       command: ["python", -c]
@@ -1196,7 +1196,7 @@ In the above example, we create a sidecar container that runs nginx as a simple 
 
 ## Hardwired Artifacts
 
-With Argo, you can use any container image that you like to generate any kind of artifact. In practice, however, we find certain types of artifacts are very common, so there is built-in support for git, http, and s3 artifacts.
+With Argo, you can use any container image that you like to generate any kind of artifact. In practice, however, we find certain types of artifacts are very common, so there is built-in support for git, http, gcs and s3 artifacts.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -1222,7 +1222,7 @@ spec:
         mode: 0755
         http:
           url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
-      # Copy an s3 bucket and place it at /s3
+      # Copy an s3 compatible artifact repository bucket (such as AWS, GCS and Minio) and place it at /s3
       - name: objects
         path: /s3
         s3:

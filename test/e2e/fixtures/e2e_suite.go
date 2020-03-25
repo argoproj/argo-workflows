@@ -93,7 +93,7 @@ func (s *E2ESuite) DeleteResources(label string) {
 	// if in the list it is either a test wf or not
 	isTestWf := make(map[string]bool)
 	{
-		list, err := s.wfClient.List(metav1.ListOptions{})
+		list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: label})
 		if err != nil {
 			panic(err)
 		}
@@ -176,6 +176,19 @@ func (s *E2ESuite) DeleteResources(label string) {
 	for _, wfTmpl := range wfTmpl.Items {
 		log.WithField("template", wfTmpl.Name).Info("Deleting workflow template")
 		err = s.wfTemplateClient.Delete(wfTmpl.Name, nil)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// Delete all resourcequotas
+	rqList, err := s.KubeClient.CoreV1().ResourceQuotas(Namespace).List(metav1.ListOptions{LabelSelector: label})
+	if err != nil {
+		panic(err)
+	}
+	for _, rq := range rqList.Items {
+		log.WithField("resourcequota", rq.Name).Info("Deleting resource quota")
+		err = s.KubeClient.CoreV1().ResourceQuotas(Namespace).Delete(rq.Name, nil)
 		if err != nil {
 			panic(err)
 		}

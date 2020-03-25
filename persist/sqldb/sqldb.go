@@ -9,9 +9,9 @@ import (
 	"upper.io/db.v3/mysql"
 	"upper.io/db.v3/postgresql"
 
+	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/util"
-	"github.com/argoproj/argo/workflow/config"
 )
 
 // CreateDBSession creates the dB session
@@ -54,8 +54,11 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 	}
 
 	if cfg.SSL {
-		settings.Options = map[string]string{
-			"sslmode": "true",
+		if cfg.SSLMode != "" {
+			options := map[string]string{
+				"sslmode": cfg.SSLMode,
+			}
+			settings.Options = options
 		}
 	}
 

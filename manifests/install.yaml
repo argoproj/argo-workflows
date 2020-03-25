@@ -265,6 +265,7 @@ rules:
   - get
   - list
   - watch
+  - delete
 - apiGroups:
   - ""
   resources:
@@ -339,6 +340,18 @@ spec:
     targetPort: 2746
   selector:
     app: argo-server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: workflow-controller-metrics
+spec:
+  ports:
+  - port: 9090
+    protocol: TCP
+    targetPort: 9090
+  selector:
+    app: workflow-controller
 ---
 apiVersion: apps/v1
 kind: Deployment

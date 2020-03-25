@@ -4,11 +4,10 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/metrics"
 )
 
-// WorkflowControllerConfig contain the configuration settings for the workflow controller
-type WorkflowControllerConfig struct {
+// Config contain the configuration settings for the workflow controller
+type Config struct {
 	// ExecutorImage is the image name of the executor to use when running pods
 	// DEPRECATED: use --executor-image flag to workflow-controller instead
 	ExecutorImage string `json:"executorImage,omitempty"`
@@ -52,9 +51,14 @@ type WorkflowControllerConfig struct {
 	// controller watches workflows and pods that *are not* labeled with an instance id.
 	InstanceID string `json:"instanceID,omitempty"`
 
-	MetricsConfig metrics.PrometheusConfig `json:"metricsConfig,omitempty"`
+	// MetricsConfig specifies configuration for metrics emission
+	MetricsConfig PrometheusConfig `json:"metricsConfig,omitempty"`
 
-	TelemetryConfig metrics.PrometheusConfig `json:"telemetryConfig,omitempty"`
+	// FeatureFlags for general/experimental features
+	FeatureFlags FeatureFlags `json:"featureFlags,omitempty"`
+
+	// TelemetryConfig specifies configuration for telemetry emission
+	TelemetryConfig PrometheusConfig `json:"telemetryConfig,omitempty"`
 
 	// Parallelism limits the max total parallel workflows that can execute at the same time
 	Parallelism int `json:"parallelism,omitempty"`
@@ -62,8 +66,29 @@ type WorkflowControllerConfig struct {
 	// Persistence contains the workflow persistence DB configuration
 	Persistence *PersistConfig `json:"persistence,omitempty"`
 
+	// Links to related apps.
+	Links []*wfv1.Link `json:"links,omitempty"`
+
 	// Config customized Docker Sock path
 	DockerSockPath string `json:"dockerSockPath,omitempty"`
+
+	// WorkflowDefaults are values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
+	WorkflowDefaults *wfv1.Workflow `json:"workflowDefaults,omitempty"`
+
+	// PodSpecLogStrategy enable the logging of podspec on controller log.
+	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`
+}
+
+// PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose
+type PodSpecLogStrategy struct {
+	FailedPod bool `json:"failedPod,omitempty"`
+	AllPods   bool `json:"allPods,omitempty"`
+}
+
+// More general feature flags.
+type FeatureFlags struct {
+	// ResourcesDuration.
+	ResourcesDuration bool `json:"resourcesDuration,omitempty"`
 }
 
 // KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,
@@ -93,6 +118,8 @@ type ArtifactRepository struct {
 	HDFS *HDFSArtifactRepository `json:"hdfs,omitempty"`
 	// OSS stores artifact in a OSS-compliant object store
 	OSS *OSSArtifactRepository `json:"oss,omitempty"`
+	// GCS stores artifact in a GCS object store
+	GCS *GCSArtifactRepository `json:"gcs,omitempty"`
 }
 
 func (a *ArtifactRepository) IsArchiveLogs() bool {
@@ -128,6 +155,7 @@ type PostgreSQLConfig struct {
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret"`
 	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret"`
 	SSL            bool                    `json:"ssl,omitempty"`
+	SSLMode        string                  `json:"sslMode,omitempty"`
 }
 
 type MySQLConfig struct {
@@ -160,6 +188,14 @@ type OSSArtifactRepository struct {
 	KeyFormat string `json:"keyFormat,omitempty"`
 }
 
+// GCSArtifactRepository defines the controller configuration for a GCS artifact repository
+type GCSArtifactRepository struct {
+	wfv1.GCSBucket `json:",inline"`
+
+	// KeyFormat is defines the format of how to store keys. Can reference workflow variables
+	KeyFormat string `json:"keyFormat,omitempty"`
+}
+
 // ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository
 type ArtifactoryArtifactRepository struct {
 	wfv1.ArtifactoryAuth `json:",inline"`
@@ -176,4 +212,12 @@ type HDFSArtifactRepository struct {
 
 	// Force copies a file forcibly even if it exists (default: false)
 	Force bool `json:"force,omitempty"`
+}
+
+// PrometheusConfig defines a config for a metrics server
+type PrometheusConfig struct {
+	Enabled       bool   `json:"enabled,omitempty"`
+	DisableLegacy bool   `json:"disableLegacy"`
+	Path          string `json:"path,omitempty"`
+	Port          string `json:"port,omitempty"`
 }
