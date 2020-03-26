@@ -16,6 +16,7 @@ import (
 	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
+	"github.com/argoproj/argo/util/argo"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -2519,6 +2520,12 @@ func TestNestedOptionalOutputArtifacts(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
 
+func Test_nodePhaseReason(t *testing.T) {
+	assert.Equal(t, argo.EventReasonWorkflowNodeSucceeded, nodePhaseReason(wfv1.NodeSucceeded))
+	assert.Equal(t, argo.EventReasonWorkflowNodeFailed, nodePhaseReason(wfv1.NodeFailed))
+	assert.Equal(t, argo.EventReasonWorkflowNodeError, nodePhaseReason(wfv1.NodeError))
+}
+
 //  TestPodSpecLogForFailedPods tests PodSpec logging configuration
 func TestPodSpecLogForFailedPods(t *testing.T) {
 	controller := newController()
@@ -2555,4 +2562,15 @@ func TestPodSpecLogForAllPods(t *testing.T) {
 		assert.True(t, woc.shouldPrintPodSpec(node))
 	}
 
+}
+
+func Test_nodePhaseReason1(t *testing.T) {
+	assert.Equal(t, argo.EventReasonWorkflowNodeError, nodePhaseReason(wfv1.NodeError))
+	assert.Equal(t, argo.EventReasonWorkflowNodeFailed, nodePhaseReason(wfv1.NodeFailed))
+	assert.Equal(t, argo.EventReasonWorkflowNodeSucceeded, nodePhaseReason(wfv1.NodeSucceeded))
+}
+
+func Test_nodeMessage(t *testing.T) {
+	assert.Equal(t, "Succeeded node my-node", nodeMessage(&wfv1.NodeStatus{Phase: wfv1.NodeSucceeded, Name: "my-node"}))
+	assert.Equal(t, "Succeeded node my-node: my-message", nodeMessage(&wfv1.NodeStatus{Phase: wfv1.NodeSucceeded, Name: "my-node", Message: "my-message"}))
 }
