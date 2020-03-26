@@ -86,6 +86,11 @@ data:
       secretKeySecret:
         name: my-s3-credentials
         key: secretKey
+      # When useSDKCreds is set to true it will use Amazon's SDK default credential chain. This will allow
+      # the use of IRSA (IAM roles for service accounts) as well as any of Amazons environment variables
+      # that you can find here: (https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+      # and things like IAM instance roles etc.
+      useSDKCreds: true
 
   # Specifies the container runtime interface to use (default: docker)
   # must be one of: docker, kubelet, k8sapi, pns
