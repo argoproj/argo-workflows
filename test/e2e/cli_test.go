@@ -297,7 +297,8 @@ func (s *CLISuite) TestNodeSuspendResume() {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "workflow node-suspend stopped")
 			}
-		}).WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+		}).
+		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.Phase == wfv1.NodeFailed
 		}, "suspended node", 10*time.Second).
 		Then().
