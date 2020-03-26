@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"context"
+	"k8s.io/client-go/tools/cache"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,8 +15,8 @@ var testTemplateScopeWorkflowYaml = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  namespace: default
   name: test-template-scope
+  namespace: default
 spec:
   entrypoint: entry
   templates:
@@ -28,8 +30,8 @@ var testTemplateScopeWorkflowTemplateYaml1 = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  namespace: default
   name: test-template-scope-1
+  namespace: default
 spec:
   templates:
   - name: steps
@@ -52,8 +54,8 @@ var testTemplateScopeWorkflowTemplateYaml2 = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  namespace: default
   name: test-template-scope-2
+  namespace: default
 spec:
   templates:
   - name: steps
@@ -83,6 +85,12 @@ func TestTemplateScope(t *testing.T) {
 	wftmpl = unmarshalWFTmpl(testTemplateScopeWorkflowTemplateYaml2)
 	_, err = wfctmplset.Create(wftmpl)
 	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	if !cache.WaitForCacheSync(ctx.Done(), controller.wftmplInformer.Informer().HasSynced) {
+		panic("Timed out waiting for caches to sync")
+	}
 
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
@@ -131,8 +139,8 @@ var testTemplateScopeWithParamWorkflowYaml = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  namespace: default
   name: test-template-scope-with-param
+  namespace: default
 spec:
   entrypoint: main
   templates:
@@ -146,8 +154,8 @@ var testTemplateScopeWithParamWorkflowTemplateYaml1 = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  namespace: default
   name: test-template-scope-with-param-1
+  namespace: default
 spec:
   templates:
     - name: main
@@ -186,6 +194,12 @@ func TestTemplateScopeWithParam(t *testing.T) {
 
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	if !cache.WaitForCacheSync(ctx.Done(), controller.wftmplInformer.Informer().HasSynced) {
+		panic("Timed out waiting for caches to sync")
+	}
 
 	node := findNodeByName(wf.Status.Nodes, "test-template-scope-with-param")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-with-param") {
@@ -237,8 +251,8 @@ var testTemplateScopeNestedStepsWithParamsWorkflowTemplateYaml1 = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  namespace: default
   name: test-template-scope-nested-steps-with-params-1
+  namespace: default
 spec:
   templates:
     - name: main
@@ -281,6 +295,12 @@ func TestTemplateScopeNestedStepsWithParams(t *testing.T) {
 
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	if !cache.WaitForCacheSync(ctx.Done(), controller.wftmplInformer.Informer().HasSynced) {
+		panic("Timed out waiting for caches to sync")
+	}
 
 	node := findNodeByName(wf.Status.Nodes, "test-template-scope-nested-steps-with-params")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-with-param") {
@@ -329,8 +349,8 @@ var testTemplateScopeDAGWorkflowYaml = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  namespace: default
   name: test-template-scope-dag
+  namespace: default
 spec:
   entrypoint: main
   templates:
@@ -344,8 +364,8 @@ var testTemplateScopeDAGWorkflowTemplateYaml1 = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  namespace: default
   name: test-template-scope-dag-1
+  namespace: default
 spec:
   templates:
     - name: main
@@ -391,6 +411,12 @@ func TestTemplateScopeDAG(t *testing.T) {
 
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
+
+	ctx := context.Background()
+
+	if !cache.WaitForCacheSync(ctx.Done(), controller.wftmplInformer.Informer().HasSynced) {
+		panic("Timed out waiting for caches to sync")
+	}
 
 	node := findNodeByName(wf.Status.Nodes, "test-template-scope-dag")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-dag") {
@@ -494,6 +520,15 @@ func TestTemplateClusterScope(t *testing.T) {
 	_, err = wftmplset.Create(wftmpl)
 	assert.NoError(t, err)
 
+	ctx := context.Background()
+
+	if !cache.WaitForCacheSync(ctx.Done(), controller.wftmplInformer.Informer().HasSynced) {
+		panic("Timed out waiting for caches to sync")
+	}
+
+	if !cache.WaitForCacheSync(ctx.Done(), controller.cwftmplInformer.Informer().HasSynced) {
+		panic("Timed out waiting for caches to sync")
+	}
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})

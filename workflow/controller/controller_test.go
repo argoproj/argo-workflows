@@ -107,6 +107,9 @@ func newController() *WorkflowController {
 	if !cache.WaitForCacheSync(ctx.Done(), wftmplInformer.Informer().HasSynced) {
 		panic("Timed out waiting for caches to sync")
 	}
+	if !cache.WaitForCacheSync(ctx.Done(), cwftmplInformer.Informer().HasSynced) {
+		panic("Timed out waiting for caches to sync")
+	}
 	return &WorkflowController{
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
