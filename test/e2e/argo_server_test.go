@@ -38,6 +38,7 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	}
 }
 
+
 func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 	return httpexpect.
 		WithConfig(httpexpect.Config{
@@ -886,6 +887,7 @@ spec:
 	} {
 		s.Run(tt.name, func() {
 			path := s.e(s.T()).GET("/api/v1/archived-workflows").
+				WithQuery("listOptions.fieldSelector", "metadata.namespace=argo").
 				WithQuery("listOptions.labelSelector", tt.selector).
 				Expect().
 				Status(200).
@@ -905,6 +907,7 @@ spec:
 	s.Run("ListWithLimitAndOffset", func() {
 		j := s.e(s.T()).GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace=argo").
 			WithQuery("listOptions.limit", 1).
 			WithQuery("listOptions.offset", 1).
 			Expect().
@@ -921,15 +924,14 @@ spec:
 	})
 
 	s.Run("ListWithMinStartedAtGood", func() {
-		fieldSelector := "spec.startedAt>" + time.Now().Add(-1*time.Hour).Format(time.RFC3339) + ",spec.startedAt<" + time.Now().Add(1*time.Hour).Format(time.RFC3339)
-		j := s.e(s.T()).GET("/api/v1/archived-workflows").
+		fieldSelector := "metadata.namespace=argo,spec.startedAt>" + time.Now().Add(-1*time.Hour).Format(time.RFC3339) + ",spec.startedAt<" + time.Now().Add(1*time.Hour).Format(time.RFC3339)
+		s.e(s.T()).GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "argo-e2e").
 			WithQuery("listOptions.fieldSelector", fieldSelector).
 			WithQuery("listOptions.limit", 2).
 			Expect().
 			Status(200).
-			JSON()
-		j.
+			JSON().
 			Path("$.items").
 			Array().
 			Length().
@@ -937,14 +939,13 @@ spec:
 	})
 
 	s.Run("ListWithMinStartedAtBad", func() {
-		j := s.e(s.T()).GET("/api/v1/archived-workflows").
+		s.e(s.T()).GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "argo-e2e").
-			WithQuery("listOptions.fieldSelector", "spec.startedAt>"+time.Now().Add(1*time.Hour).Format(time.RFC3339)).
+			WithQuery("listOptions.fieldSelector", "metadata.namespace=argo,spec.startedAt>"+time.Now().Add(1*time.Hour).Format(time.RFC3339)).
 			WithQuery("listOptions.limit", 2).
 			Expect().
 			Status(200).
-			JSON()
-		j.
+			JSON().
 			Path("$.items").Null()
 	})
 
