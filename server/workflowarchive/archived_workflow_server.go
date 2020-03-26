@@ -82,7 +82,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	}
 
 	items := make(wfv1.Workflows, 0)
-	allowed, err := auth.CanI(ctx, "get", workflow.WorkflowPlural, namespace, "")
+	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, namespace, "")
 	if err != nil {
 		return nil, err
 	}
