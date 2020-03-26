@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
+	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo/pkg/apis/workflow"
@@ -82,7 +83,13 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	}
 
 	items := make(wfv1.Workflows, 0)
-	authorizer := auth.NewAuthorizer(ctx)
+	allowed, err := auth.CanI(ctx, "get", workflow.WorkflowPlural, namespace, "")
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
+		return nil, errors.New(errors.CodeForbidden, "you do not have get permission on workflows in namespace "+namespace)
+	}
 	hasMore := true
 	// keep trying until we have enough
 	for len(items) < limit {
@@ -94,14 +101,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 			if index == limit {
 				break
 			}
-			// TODO second pass filtering?
-			allowed, err := authorizer.CanI("get", workflow.WorkflowPlural, wf.Namespace, wf.Name)
-			if err != nil {
-				return nil, err
-			}
-			if allowed {
-				items = append(items, wf)
-			}
+			items = append(items, wf)
 		}
 		if len(moreItems) < limit+1 {
 			hasMore = false

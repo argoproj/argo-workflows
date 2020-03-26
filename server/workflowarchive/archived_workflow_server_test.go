@@ -72,9 +72,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	t.Run("ListArchivedWorkflows", func(t *testing.T) {
 		allowed = false
 		resp, err := w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1}})
-		if assert.NoError(t, err) {
-			assert.Len(t, resp.Items, 0)
-		}
+		assert.Error(t, err, status.Error(codes.PermissionDenied, "permission denied"))
 		allowed = true
 		resp, err = w.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1}})
 		if assert.NoError(t, err) {
