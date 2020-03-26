@@ -71,8 +71,8 @@ spec:
 func TestTemplateScope(t *testing.T) {
 	controller := newController()
 
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(metav1.NamespaceDefault)
-	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault)
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
+	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("default")
 
 	wf := unmarshalWF(testTemplateScopeWorkflowYaml)
 	_, err := wfcset.Create(wf)
@@ -171,8 +171,8 @@ spec:
 
 func TestTemplateScopeWithParam(t *testing.T) {
 	controller := newController()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(metav1.NamespaceDefault)
-	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault)
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
+	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("default")
 
 	wf := unmarshalWF(testTemplateScopeWithParamWorkflowYaml)
 	_, err := wfcset.Create(wf)
@@ -266,8 +266,8 @@ spec:
 
 func TestTemplateScopeNestedStepsWithParams(t *testing.T) {
 	controller := newController()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(metav1.NamespaceDefault)
-	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault)
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
+	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("default")
 
 	wf := unmarshalWF(testTemplateScopeNestedStepsWithParamsWorkflowYaml)
 	_, err := wfcset.Create(wf)
@@ -376,8 +376,8 @@ spec:
 
 func TestTemplateScopeDAG(t *testing.T) {
 	controller := newController()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(metav1.NamespaceDefault)
-	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault)
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
+	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("default")
 
 	wf := unmarshalWF(testTemplateScopeDAGWorkflowYaml)
 	_, err := wfcset.Create(wf)
