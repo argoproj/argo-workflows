@@ -1,13 +1,15 @@
-
 # Document contains couple of examples of workflow JSON's to submit via argo-server REST API. 
 
+> >v2.5
+
 Assuming
-* tested on argo-server 2.5.2
+
 * the namespace of argo-server is argo
 * authentication is turned off (otherwise provide Authentication header)
 * argo-server is available on localhost:2746
 
 ## Submitting workflow
+
 ```
 curl --request POST \
   --url http://localhost:2746/api/v1/workflows/argo \
@@ -48,7 +50,6 @@ curl --request POST \
     "arguments": {}
   }
 }
-
 }'
 ```
 
@@ -57,8 +58,6 @@ curl --request POST \
 ```
 curl --request GET \
   --url http://localhost:2746/api/v1/workflows/argo
-  
-  
 ```
 
 ## Getting single workflow for namespace argo
@@ -66,7 +65,6 @@ curl --request GET \
 ```
 curl --request GET \
   --url http://localhost:2746/api/v1/workflows/argo/abc-dthgt
-  
 ```
 
 ## Deleting single workflow for namespace argo
@@ -74,5 +72,4 @@ curl --request GET \
 ```
 curl --request DELETE \
   --url http://localhost:2746/api/v1/workflows/argo/abc-dthgt
-  
 ```
