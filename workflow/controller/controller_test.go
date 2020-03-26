@@ -98,8 +98,7 @@ spec:
 
 func newController() *WorkflowController {
 	wfclientset := fakewfclientset.NewSimpleClientset()
-	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 1*time.Microsecond)
-
+	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
 	wftmplInformer := informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 	cwftmplInformer := informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 	ctx := context.Background()
