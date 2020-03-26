@@ -1664,11 +1664,8 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 		node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 		woc.log.Infof("node %s finished: %s", node, node.FinishedAt)
 	}
-	if woc.updated {
-		reason := nodePhaseReason(node.Phase)
-		if reason != "" {
-			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: reason}, nodeMessage(node))
-		}
+	if woc.updated && node.Phase.Completed() {
+		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: nodePhaseReason(node.Phase)}, nodeMessage(node))
 	}
 	woc.wf.Status.Nodes[node.ID] = *node
 	return node
