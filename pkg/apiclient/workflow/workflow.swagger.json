@@ -4903,6 +4903,9 @@
         },
         "namespace": {
           "type": "string"
+        },
+        "nodeFieldSelector": {
+          "type": "string"
         }
       }
     },
@@ -4924,6 +4927,12 @@
           "type": "string"
         },
         "namespace": {
+          "type": "string"
+        },
+        "nodeFieldSelector": {
+          "type": "string"
+        },
+        "message": {
           "type": "string"
         }
       }
