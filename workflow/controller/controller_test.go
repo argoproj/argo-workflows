@@ -98,14 +98,16 @@ spec:
 
 func newController() *WorkflowController {
 	wfclientset := fakewfclientset.NewSimpleClientset()
-	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 1*time.Microsecond)
-
+	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
 	wftmplInformer := informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 	cwftmplInformer := informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 	ctx := context.Background()
 	go wftmplInformer.Informer().Run(ctx.Done())
 	go cwftmplInformer.Informer().Run(ctx.Done())
 	if !cache.WaitForCacheSync(ctx.Done(), wftmplInformer.Informer().HasSynced) {
+		panic("Timed out waiting for caches to sync")
+	}
+	if !cache.WaitForCacheSync(ctx.Done(), cwftmplInformer.Informer().HasSynced) {
 		panic("Timed out waiting for caches to sync")
 	}
 	return &WorkflowController{

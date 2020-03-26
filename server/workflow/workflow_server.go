@@ -257,7 +257,7 @@ func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return nil, err
 	}
 
-	err = util.ResumeWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), req.Name)
+	err = util.ResumeWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), req.Name, req.NodeFieldSelector)
 	if err != nil {
 		log.Warnf("Failed to resume %s: %+v", req.Name, err)
 		return nil, err
@@ -314,7 +314,7 @@ func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *workflowpkg
 
 func (s *workflowServer) StopWorkflow(ctx context.Context, req *workflowpkg.WorkflowStopRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	err := util.StopWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), req.Name)
+	err := util.StopWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), req.Name, req.NodeFieldSelector, req.Message)
 	if err != nil {
 		return nil, err
 	}
