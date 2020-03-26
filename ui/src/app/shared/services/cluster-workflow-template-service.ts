@@ -2,7 +2,7 @@ import * as models from '../../../models';
 import requests from './requests';
 
 export class ClusterWorkflowTemplateService {
-    public create(template: models.ClusterWorkflowTemplate, namespace: string) {
+    public create(template: models.ClusterWorkflowTemplate) {
         return requests
             .post(`api/v1/cluster-workflow-templates`)
             .send({template})

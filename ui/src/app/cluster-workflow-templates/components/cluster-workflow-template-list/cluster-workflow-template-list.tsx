@@ -77,8 +77,8 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
                                 defaultResource={exampleClusterWorkflowTemplate()}
                                 onSubmit={wfTmpl => {
                                     return services.clusterWorkflowTemplate
-                                        .create(wfTmpl, wfTmpl.metadata.namespace)
-                                        .then(wf => ctx.navigation.goto(uiUrl(`cluster-workflow-templates`)));
+                                        .create(wfTmpl)
+                                        .then(wf => ctx.navigation.goto(uiUrl(`cluster-workflow-templates/${wf.metadata.name}`)));
                                 }}
                             />
                         </SlidingPanel>

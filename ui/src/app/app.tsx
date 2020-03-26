@@ -48,7 +48,7 @@ const navItems = [
     {
         title: 'Workflow Templates',
         path: workflowTemplatesUrl,
-        iconClassName: 'fa fa-clone'
+        iconClassName: 'fas fa-object-group'
     },
     {
         title: 'Cluster Workflow Templates',
