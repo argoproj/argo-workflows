@@ -6110,6 +6110,9 @@
         },
         "namespace": {
           "type": "string"
+        },
+        "nodeFieldSelector": {
+          "type": "string"
         }
       }
     },
@@ -6127,10 +6130,16 @@
     "io.argoproj.workflow.v1alpha1.WorkflowStopRequest": {
       "type": "object",
       "properties": {
+        "message": {
+          "type": "string"
+        },
         "name": {
           "type": "string"
         },
         "namespace": {
+          "type": "string"
+        },
+        "nodeFieldSelector": {
           "type": "string"
         }
       }
