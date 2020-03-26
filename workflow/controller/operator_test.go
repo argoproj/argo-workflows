@@ -847,7 +847,7 @@ func TestSuspendResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow and operate again. two pods should be able to be scheduled
-	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name)
+	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, "")
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -1124,10 +1124,17 @@ spec:
     steps:
     - - name: approve
         template: approve
+        arguments:
+          parameters:
+          - name: param1
+            value: value1
     - - name: release
         template: whalesay
 
   - name: approve
+    inputs:
+      parameters:
+      - name: param1
     suspend: {}
 
   - name: whalesay
@@ -1159,7 +1166,92 @@ func TestSuspendTemplate(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
-	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name)
+	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, "")
+	assert.NoError(t, err)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.False(t, util.IsWorkflowSuspended(wf))
+
+	// operate the workflow. it should reach the second step
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(pods.Items))
+}
+
+func TestSuspendTemplateWithFailedResume(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// operate the workflow. it should become in a suspended state after
+	wf := unmarshalWF(suspendTemplate)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.True(t, util.IsWorkflowSuspended(wf))
+
+	// operate again and verify no pods were scheduled
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(pods.Items))
+
+	// resume the workflow. verify resume workflow edits nodestatus correctly
+	err = util.StopWorkflow(wfcset, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1", "Step failed!")
+	assert.NoError(t, err)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.False(t, util.IsWorkflowSuspended(wf))
+
+	// operate the workflow. it should be failed and not reach the second step
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(pods.Items))
+}
+
+func TestSuspendTemplateWithFilteredResume(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// operate the workflow. it should become in a suspended state after
+	wf := unmarshalWF(suspendTemplate)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.True(t, util.IsWorkflowSuspended(wf))
+
+	// operate again and verify no pods were scheduled
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(pods.Items))
+
+	// resume the workflow, but with non-matching selector
+	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, "inputs.paramaters.param1.value=value2")
+	assert.Error(t, err)
+
+	// operate the workflow. nothing should have happened
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(pods.Items))
+	assert.True(t, util.IsWorkflowSuspended(wf))
+
+	// resume the workflow, but with matching selector
+	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1")
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
