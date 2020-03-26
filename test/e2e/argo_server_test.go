@@ -317,10 +317,7 @@ func (s *ArgoServerSuite) TestPermission() {
 					WithQuery("listOptions.labelSelector", "argo-e2e").
 					WithQuery("listOptions.fieldSelector", "metadata.namespace="+nsName).
 					Expect().
-					Status(200).
-					JSON().
-					Path("$.items").
-					Null()
+					Status(403)
 			})
 
 			// Test get archived wf with good token
