@@ -244,6 +244,10 @@
         "oss": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSArtifact",
           "title": "OSS contains OSS artifact location details"
+        },
+        "gcs": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GCSArtifact",
+          "title": "GCS contains GCS artifact location details"
         }
       },
       "description": "ArtifactLocation describes a location for a single or multiple artifacts.\nIt is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).\nIt is also used to describe the location of multiple artifacts such as the archive location\nof a single workflow step, which the executor will use as a default location to store its files."
@@ -425,6 +429,33 @@
         }
       },
       "description": "ExecutorConfig holds configurations of an executor container."
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GCSArtifact": {
+      "type": "object",
+      "properties": {
+        "gCSBucket": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GCSBucket"
+        },
+        "key": {
+          "type": "string",
+          "title": "Key is the path in the bucket where the artifact resides"
+        }
+      },
+      "title": "GCSArtifact is the location of a GCS artifact"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GCSBucket": {
+      "type": "object",
+      "properties": {
+        "bucket": {
+          "type": "string",
+          "title": "Bucket is the name of the bucket"
+        },
+        "serviceAccountKeySecret": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",
+          "title": "ServiceAccountKeySecret is the secret selector to the bucket's service account key"
+        }
+      },
+      "title": "GCSBucket contains the access information for interfacring with a GCS bucket"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Gauge": {
       "type": "object",
@@ -1360,6 +1391,10 @@
         "parameter": {
           "type": "string",
           "title": "Parameter reference to a step or dag task in which to retrieve an output parameter value from\n(e.g. '{{steps.mystep.outputs.myparam}}')"
+        },
+        "default": {
+          "type": "string",
+          "title": "Default specifies a value to be used if retrieving the value from the specified source fails"
         }
       },
       "title": "ValueFrom describes a location in which to obtain the value to a parameter"
@@ -1502,7 +1537,7 @@
         },
         "ttlStrategy": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TTLStrategy",
-          "title": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it\nSucceeded or Failed. If this struct is set, once the Workflow finishes, it will be\ndeleted after the time to live expires. If this field is unset,\nthe controller config map will hold the default values\nUpdate"
+          "description": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it\nSucceeded or Failed. If this struct is set, once the Workflow finishes, it will be\ndeleted after the time to live expires. If this field is unset,\nthe controller config map will hold the default values."
         },
         "activeDeadlineSeconds": {
           "type": "string",
@@ -1619,6 +1654,14 @@
             "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Condition"
           },
           "title": "Condition for k8s conditions https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties"
+        },
+        "resourcesDuration": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          },
+          "title": "ResourcesDuration is the total for the workflow"
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"

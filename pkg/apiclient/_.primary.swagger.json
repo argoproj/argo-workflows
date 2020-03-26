@@ -12,6 +12,7 @@
   ],
   "info": {
     "title": "Argo",
+    "description": "Argo",
     "version": "VERSION"
   },
   "securityDefinitions": {

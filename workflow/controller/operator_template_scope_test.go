@@ -13,8 +13,8 @@ var testTemplateScopeWorkflowYaml = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: test-template-scope
   namespace: default
+  name: test-template-scope
 spec:
   entrypoint: entry
   templates:
@@ -28,6 +28,7 @@ var testTemplateScopeWorkflowTemplateYaml1 = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
+  namespace: default
   name: test-template-scope-1
 spec:
   templates:
@@ -51,8 +52,8 @@ var testTemplateScopeWorkflowTemplateYaml2 = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: test-template-scope-2
   namespace: default
+  name: test-template-scope-2
 spec:
   templates:
   - name: steps
@@ -69,8 +70,9 @@ spec:
 
 func TestTemplateScope(t *testing.T) {
 	controller := newController()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
-	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("default")
+
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(metav1.NamespaceDefault)
+	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault)
 
 	wf := unmarshalWF(testTemplateScopeWorkflowYaml)
 	_, err := wfcset.Create(wf)
@@ -129,6 +131,7 @@ var testTemplateScopeWithParamWorkflowYaml = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  namespace: default
   name: test-template-scope-with-param
 spec:
   entrypoint: main
@@ -143,6 +146,7 @@ var testTemplateScopeWithParamWorkflowTemplateYaml1 = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
+  namespace: default
   name: test-template-scope-with-param-1
 spec:
   templates:
@@ -166,10 +170,9 @@ spec:
 `
 
 func TestTemplateScopeWithParam(t *testing.T) {
-	t.SkipNow()
 	controller := newController()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("")
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(metav1.NamespaceDefault)
+	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault)
 
 	wf := unmarshalWF(testTemplateScopeWithParamWorkflowYaml)
 	_, err := wfcset.Create(wf)
@@ -193,25 +196,25 @@ func TestTemplateScopeWithParam(t *testing.T) {
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-with-param[0]")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-with-param[0]") {
 		assert.Equal(t, wfv1.NodeTypeStepGroup, node.Type)
-		assert.Equal(t, "test-template-scope-with-param-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-with-param-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-with-param[0].print-string(0:x)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-with-param[0].print-string(0:x)") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-with-param-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-with-param-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-with-param[0].print-string(1:y)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-with-param[0].print-string(1:y)") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-with-param-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-with-param-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-with-param[0].print-string(2:z)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-with-param[0].print-string(2:z)") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-with-param-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-with-param-1", node.TemplateScope)
 	}
 }
 
@@ -219,6 +222,7 @@ var testTemplateScopeNestedStepsWithParamsWorkflowYaml = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  namespace: default
   name: test-template-scope-nested-steps-with-params
 spec:
   entrypoint: main
@@ -233,6 +237,7 @@ var testTemplateScopeNestedStepsWithParamsWorkflowTemplateYaml1 = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
+  namespace: default
   name: test-template-scope-nested-steps-with-params-1
 spec:
   templates:
@@ -260,10 +265,9 @@ spec:
 `
 
 func TestTemplateScopeNestedStepsWithParams(t *testing.T) {
-	t.SkipNow()
 	controller := newController()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("")
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(metav1.NamespaceDefault)
+	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault)
 
 	wf := unmarshalWF(testTemplateScopeNestedStepsWithParamsWorkflowYaml)
 	_, err := wfcset.Create(wf)
@@ -287,37 +291,37 @@ func TestTemplateScopeNestedStepsWithParams(t *testing.T) {
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-nested-steps-with-params[0]")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-with-param[0]") {
 		assert.Equal(t, wfv1.NodeTypeStepGroup, node.Type)
-		assert.Equal(t, "test-template-scope-nested-steps-with-params-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-nested-steps-with-params-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-nested-steps-with-params[0].main")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-nested-steps-with-params[0].main") {
 		assert.Equal(t, wfv1.NodeTypeSteps, node.Type)
-		assert.Equal(t, "test-template-scope-nested-steps-with-params-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-nested-steps-with-params-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-nested-steps-with-params[0].main[0]")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-nested-steps-with-params[0].main[0]") {
 		assert.Equal(t, wfv1.NodeTypeStepGroup, node.Type)
-		assert.Equal(t, "test-template-scope-nested-steps-with-params-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-nested-steps-with-params-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-nested-steps-with-params[0].main[0].print-string(0:x)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-nested-steps-with-params[0].main[0].print-string(0:x)") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-nested-steps-with-params-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-nested-steps-with-params-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-nested-steps-with-params[0].main[0].print-string(1:y)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-nested-steps-with-params[0].main[0].print-string(1:y)") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-nested-steps-with-params-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-nested-steps-with-params-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-nested-steps-with-params[0].main[0].print-string(2:z)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-nested-steps-with-params[0].main[0].print-string(2:z)") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-nested-steps-with-params-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-nested-steps-with-params-1", node.TemplateScope)
 	}
 }
 
@@ -325,6 +329,7 @@ var testTemplateScopeDAGWorkflowYaml = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
+  namespace: default
   name: test-template-scope-dag
 spec:
   entrypoint: main
@@ -339,6 +344,7 @@ var testTemplateScopeDAGWorkflowTemplateYaml1 = `
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
+  namespace: default
   name: test-template-scope-dag-1
 spec:
   templates:
@@ -369,10 +375,9 @@ spec:
 `
 
 func TestTemplateScopeDAG(t *testing.T) {
-	t.SkipNow()
 	controller := newController()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("")
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows(metav1.NamespaceDefault)
+	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault)
 
 	wf := unmarshalWF(testTemplateScopeDAGWorkflowYaml)
 	_, err := wfcset.Create(wf)
@@ -396,31 +401,31 @@ func TestTemplateScopeDAG(t *testing.T) {
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-dag.A")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-dag.A") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-dag-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-dag-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-dag.B")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-dag.B") {
 		assert.Equal(t, wfv1.NodeTypeTaskGroup, node.Type)
-		assert.Equal(t, "test-template-scope-dag-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-dag-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-dag.B(0:x)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-dag.B(0:x") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-dag-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-dag-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-dag.B(1:y)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-dag.B(0:x") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-dag-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-dag-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope-dag.B(2:z)")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope-dag.B(0:x") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		assert.Equal(t, "test-template-scope-dag-1", node.TemplateScope)
+		assert.Equal(t, "namespaced/test-template-scope-dag-1", node.TemplateScope)
 	}
 }
 

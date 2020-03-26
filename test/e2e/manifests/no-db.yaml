@@ -247,22 +247,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: argo-cluster-role
-rules:
-- apiGroups:
-  - argoproj.io
-  resources:
-  - clusterworkflowtemplates
-  - clusterworkflowtemplates/finalizers
-  verbs:
-  - get
-  - list
-  - watch
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: argo-cluster-wftmpl-role
+  name: argo-clusterworkflowtemplate-role
 rules:
 - apiGroups:
   - argoproj.io
@@ -313,11 +298,11 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: argo-cluster-binding
+  name: argo-clusterworkflowtemplate-role-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: argo-cluster-role
+  name: argo-clusterworkflowtemplate-role
 subjects:
 - kind: ServiceAccount
   name: argo
@@ -326,11 +311,11 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: argo-cluster-wftmpl-binding
+  name: argo-server-clusterworkflowtemplate-role-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: argo-cluster-wftmpl-role
+  name: argo-clusterworkflowtemplate-role
 subjects:
 - kind: ServiceAccount
   name: argo-server
@@ -338,41 +323,41 @@ subjects:
 ---
 apiVersion: v1
 data:
-  config: |
-    executor:
-      imagePullPolicy: IfNotPresent
-      resources:
-        requests:
-          cpu: 0.1
-          memory: 64Mi
-        limits:
-          cpu: 0.5
-          memory: 128Mi
-    artifactRepository:
-      archiveLogs: true
-      s3:
-        bucket: my-bucket
-        endpoint: minio:9000
-        insecure: true
-        accessKeySecret:
-          name: my-minio-cred
-          key: accesskey
-        secretKeySecret:
-          name: my-minio-cred
-          key: secretkey
-    metricsConfig:
-      enabled: true
-      path: /metrics
-      port: 8080
-    links:
-      - name: Example Workflow Link
-        scope: workflow
-        url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}
-      - name: Example Pod Link
-        scope: pod
-        url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
-    featureFlags:
-      resourcesDuration: true
+  artifactRepository: |
+    archiveLogs: true
+    s3:
+      bucket: my-bucket
+      endpoint: minio:9000
+      insecure: true
+      accessKeySecret:
+        name: my-minio-cred
+        key: accesskey
+      secretKeySecret:
+        name: my-minio-cred
+        key: secretkey
+  containerRuntimeExecutor: pns
+  executor: |
+    imagePullPolicy: Never
+    resources:
+      requests:
+        cpu: 0.1
+        memory: 64Mi
+      limits:
+        cpu: 0.5
+        memory: 128Mi
+  featureFlags: |
+    resourcesDuration: true
+  links: |
+    - name: Example Workflow Link
+      scope: workflow
+      url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}
+    - name: Example Pod Link
+      scope: pod
+      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
+  metricsConfig: |
+    enabled: true
+    path: /metrics
+    port: 9090
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
@@ -412,6 +397,18 @@ spec:
     targetPort: 9000
   selector:
     app: minio
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: workflow-controller-metrics
+spec:
+  ports:
+  - port: 9090
+    protocol: TCP
+    targetPort: 9090
+  selector:
+    app: workflow-controller
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -468,17 +465,11 @@ spec:
     spec:
       containers:
       - args:
-        - --configmap
-        - workflow-controller-configmap
         - --executor-image
         - argoproj/argoexec:latest
         - --namespaced
         - --loglevel
         - debug
-        - --executor-image-pull-policy
-        - Never
-        - --container-runtime-executor
-        - pns
         command:
         - workflow-controller
         env:

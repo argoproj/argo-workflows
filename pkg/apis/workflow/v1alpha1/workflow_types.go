@@ -240,8 +240,7 @@ type WorkflowSpec struct {
 	// TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
 	// Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be
 	// deleted after the time to live expires. If this field is unset,
-	// the controller config map will hold the default values
-	// Update
+	// the controller config map will hold the default values.
 	TTLStrategy *TTLStrategy `json:"ttlStrategy,omitempty" protobuf:"bytes,30,opt,name=ttlStrategy"`
 
 	// Optional duration in seconds relative to the workflow start time which the workflow is
@@ -621,6 +620,9 @@ type ValueFrom struct {
 	// Parameter reference to a step or dag task in which to retrieve an output parameter value from
 	// (e.g. '{{steps.mystep.outputs.myparam}}')
 	Parameter string `json:"parameter,omitempty" protobuf:"bytes,4,opt,name=parameter"`
+
+	// Default specifies a value to be used if retrieving the value from the specified source fails
+	Default string `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 }
 
 // Artifact indicates an artifact to place at a specified path
@@ -699,6 +701,9 @@ type ArtifactLocation struct {
 
 	// OSS contains OSS artifact location details
 	OSS *OSSArtifact `json:"oss,omitempty" protobuf:"bytes,8,opt,name=oss"`
+
+	// GCS contains GCS artifact location details
+	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 }
 
 type ArtifactRepositoryRef struct {
@@ -913,6 +918,9 @@ type WorkflowStatus struct {
 
 	// Condition for k8s conditions https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
 	Conditions []Condition `json:"condition,omitempty" protobuf:"bytes,11,opt,name=condition"`
+
+	// ResourcesDuration is the total for the workflow
+	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
 }
 
 type Condition struct {
@@ -1082,7 +1090,7 @@ type NodeStatus struct {
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
 }
 
-func (n Nodes) GetResourcesRequested() ResourcesDuration {
+func (n Nodes) GetResourcesDuration() ResourcesDuration {
 	i := ResourcesDuration{}
 	for _, status := range n {
 		i = i.Add(status.ResourcesDuration)
@@ -1350,6 +1358,28 @@ func (h *HTTPArtifact) HasLocation() bool {
 	return h != nil && h.URL != ""
 }
 
+// GCSBucket contains the access information for interfacring with a GCS bucket
+type GCSBucket struct {
+
+	// Bucket is the name of the bucket
+	Bucket string `json:"bucket" protobuf:"bytes,1,opt,name=bucket"`
+
+	// ServiceAccountKeySecret is the secret selector to the bucket's service account key
+	ServiceAccountKeySecret apiv1.SecretKeySelector `json:"serviceAccountKeySecret,omitempty" protobuf:"bytes,2,opt,name=serviceAccountKeySecret"`
+}
+
+// GCSArtifact is the location of a GCS artifact
+type GCSArtifact struct {
+	GCSBucket `json:",inline" protobuf:"bytes,1,opt,name=gCSBucket"`
+
+	// Key is the path in the bucket where the artifact resides
+	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+}
+
+func (g *GCSArtifact) HasLocation() bool {
+	return g != nil && g.Bucket != "" && g.Key != ""
+}
+
 // OSSBucket contains the access information required for interfacing with an OSS bucket
 type OSSBucket struct {
 	// Endpoint is the hostname of the bucket endpoint
@@ -1603,7 +1633,8 @@ func (a *Artifact) HasLocation() bool {
 		a.Artifactory.HasLocation() ||
 		a.Raw.HasLocation() ||
 		a.HDFS.HasLocation() ||
-		a.OSS.HasLocation()
+		a.OSS.HasLocation() ||
+		a.GCS.HasLocation()
 }
 
 // GetTemplateByName retrieves a defined template by its name

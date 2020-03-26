@@ -12,10 +12,10 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/util"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/config"
 )
 
 func unmarshalTemplate(yamlStr string) *wfv1.Template {
@@ -311,6 +311,36 @@ func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 
 	waitCtr := pod.Spec.Containers[0]
 	verifyServiceAccountTokenVolumeMount(t, waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")
+}
+
+// TestTmplLevelExecutorServiceAccountName verifies the ability to carry forward template level AutomountServiceAccountToken to Podspec.
+func TestTmplLevelExecutorSecurityContext(t *testing.T) {
+	var user int64 = 1000
+	woc := newWoc()
+	_, err := util.CreateServiceAccountWithToken(woc.controller.kubeclientset, "", "foo", "foo-token")
+	assert.NoError(t, err)
+	_, err = util.CreateServiceAccountWithToken(woc.controller.kubeclientset, "", "tmpl", "tmpl-token")
+	assert.NoError(t, err)
+
+	woc.controller.Config.Executor = &apiv1.Container{SecurityContext: &apiv1.SecurityContext{RunAsUser: &user}}
+	woc.wf.Spec.Templates[0].Executor = &wfv1.ExecutorConfig{ServiceAccountName: "tmpl"}
+	tmplCtx, err := woc.createTemplateContext("")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetCurrentTemplateBase().GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	assert.NoError(t, err)
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
+	pod := pods.Items[0]
+
+	waitCtr := pod.Spec.Containers[0]
+	assert.NotNil(t, waitCtr.SecurityContext)
+	if waitCtr.SecurityContext != nil {
+		assert.NotNil(t, waitCtr.SecurityContext.RunAsUser)
+		if waitCtr.SecurityContext.RunAsUser != nil {
+			assert.Equal(t, int64(1000), *waitCtr.SecurityContext.RunAsUser)
+		}
+	}
 }
 
 // TestImagePullSecrets verifies the ability to carry forward imagePullSecrets from workflow.spec

@@ -3,6 +3,3 @@ kind: Kustomization
 
 bases:
   - ../base
-
-patchesStrategicMerge:
-  - overlays/workflow-controller-configmap.yaml

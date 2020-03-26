@@ -7,10 +7,6 @@ import (
 )
 
 const (
-	// WorkflowControllerConfigMapKey is the key in the configmap to retrieve workflow configuration from.
-	// Content encoding is expected to be YAML.
-	WorkflowControllerConfigMapKey = "config"
-
 	// DefaultArchivePattern is the default pattern when storing artifacts in an archive repository
 	DefaultArchivePattern = "{{workflow.name}}/{{pod.name}}"
 

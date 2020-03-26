@@ -13,6 +13,11 @@ import (
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 )
 
+const (
+	// MaxGRPCMessageSize contains max grpc message size supported by the client
+	MaxClientGRPCMessageSize = 100 * 1024 * 1024
+)
+
 type argoServerClient struct {
 	*grpc.ClientConn
 }
@@ -46,7 +51,7 @@ func (a *argoServerClient) NewClusterWorkflowTemplateServiceClient() clusterwork
 }
 
 func NewClientConn(argoServer string) (*grpc.ClientConn, error) {
-	conn, err := grpc.Dial(argoServer, grpc.WithInsecure())
+	conn, err := grpc.Dial(argoServer, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxClientGRPCMessageSize)), grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
