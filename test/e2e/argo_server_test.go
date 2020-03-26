@@ -38,7 +38,6 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	}
 }
 
-
 func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 	return httpexpect.
 		WithConfig(httpexpect.Config{
