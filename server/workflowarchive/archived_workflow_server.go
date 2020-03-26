@@ -13,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 	"github.com/argoproj/argo/pkg/apis/workflow"
@@ -88,7 +87,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		return nil, err
 	}
 	if !allowed {
-		return nil, errors.New(errors.CodeForbidden, "you do not have get permission on workflows in namespace "+namespace)
+		return nil, status.Error(codes.PermissionDenied, "permission denied")
 	}
 	hasMore := true
 	// keep trying until we have enough
