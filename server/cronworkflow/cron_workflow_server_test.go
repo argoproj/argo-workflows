@@ -5,14 +5,12 @@ import (
 	"testing"
 
 	"github.com/ghodss/yaml"
-
-	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
-	"github.com/argoproj/argo/server/auth"
-
 	"github.com/stretchr/testify/assert"
 
+	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wftFake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/server/auth"
 )
 
 func Test_cronWorkflowServiceServer(t *testing.T) {
