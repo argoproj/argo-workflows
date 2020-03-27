@@ -3,8 +3,9 @@ package commands
 import (
 	"testing"
 
-	"github.com/argoproj/argo/workflow/util"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/argoproj/argo/workflow/util"
 )
 
 func TestSubmitSimple(t *testing.T) {
