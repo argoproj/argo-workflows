@@ -12,6 +12,7 @@ import (
 
 func TestSubmitSimple(t *testing.T) {
 	replaceGlobalParameter, err := util.ReadManifest("../../../test/e2e/functional/retry-paramter.yaml")
+	assert.NoError(t, err)
 	submitOpts := util.SubmitOpts{}
 	cliOpts := cliSubmitOpts{SubstituteParams: true}
 	output, err := replaceGlobalParameters(replaceGlobalParameter, &submitOpts, &cliOpts)
@@ -31,7 +32,8 @@ func TestSubmitGlobalParametersComplex(t *testing.T) {
 	assert.NoError(t, err)
 	var wfSpec wfv1.Workflow
 	fmt.Println(string(output[0]))
-	yaml.Unmarshal(output[0], &wfSpec)
+	err = yaml.Unmarshal(output[0], &wfSpec)
+	assert.NoError(t, err)
 	assert.Equal(t, *wfSpec.Spec.Templates[0].Inputs.Parameters[1].Value, "goodbye world")
 }
 
