@@ -3,6 +3,7 @@ package commands
 import (
 	"testing"
 
+	"github.com/argoproj/argo/workflow/util"
 	"github.com/stretchr/testify/assert"
 )
 
