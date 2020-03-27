@@ -33,7 +33,17 @@ func NewWorkflowServer(instanceID string, offloadNodeStatusRepo sqldb.OffloadNod
 	}
 }
 
-func (s *workflowServer) setInstanceID(req *workflowpkg.WorkflowCreateRequest) {
+func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.WorkflowCreateRequest) (*v1alpha1.Workflow, error) {
+	wfClient := auth.GetWfClient(ctx)
+
+	if req.Workflow == nil {
+		return nil, fmt.Errorf("workflow body not specified")
+	}
+
+	if req.Workflow.Namespace == "" {
+		req.Workflow.Namespace = req.Namespace
+	}
+
 	if len(req.InstanceID) > 0 || len(s.instanceID) > 0 {
 		labels := req.Workflow.GetLabels()
 		if labels == nil {
@@ -46,20 +56,6 @@ func (s *workflowServer) setInstanceID(req *workflowpkg.WorkflowCreateRequest) {
 		}
 		req.Workflow.SetLabels(labels)
 	}
-}
-
-func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.WorkflowCreateRequest) (*v1alpha1.Workflow, error) {
-	wfClient := auth.GetWfClient(ctx)
-
-	if req.Workflow == nil {
-		return nil, fmt.Errorf("workflow body not specified")
-	}
-
-	if req.Workflow.Namespace == "" {
-		req.Workflow.Namespace = req.Namespace
-	}
-
-	s.setInstanceID(req)
 
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 
@@ -91,7 +87,7 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	if req.GetOptions != nil {
 		wfGetOption = *req.GetOptions
 	}
-	wf, err := s.getAndValidateWorkflow(ctx, req.Namespace, req.Name, wfGetOption)
+	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, wfGetOption)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +197,7 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 }
 
 func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *workflowpkg.WorkflowDeleteRequest) (*workflowpkg.WorkflowDeleteResponse, error) {
-	_, err := s.getAndValidateWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	_, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +213,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 	wfClient := auth.GetWfClient(ctx)
 	kubeClient := auth.GetKubeClient(ctx)
 
-	wf, err := s.getAndValidateWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -231,7 +227,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 
 func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.WorkflowResubmitRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	wf, err := s.getAndValidateWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +247,7 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.WorkflowResumeRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	_, err := s.getAndValidateWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	_, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +269,7 @@ func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.Wo
 func (s *workflowServer) SuspendWorkflow(ctx context.Context, req *workflowpkg.WorkflowSuspendRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	_, err := s.getAndValidateWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	_, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +290,7 @@ func (s *workflowServer) SuspendWorkflow(ctx context.Context, req *workflowpkg.W
 func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *workflowpkg.WorkflowTerminateRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	_, err := s.getAndValidateWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	_, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -362,33 +358,33 @@ func (s *workflowServer) withInstanceID(opt metav1.ListOptions) metav1.ListOptio
 	return opt
 }
 
-func (s *workflowServer) getAndValidateWorkflow(ctx context.Context, namespace string, name string, options metav1.GetOptions) (*v1alpha1.Workflow, error) {
+func (s *workflowServer) getWorkflow(ctx context.Context, namespace string, name string, options metav1.GetOptions) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(name, options)
 	if err != nil {
 		return nil, err
 	}
-	err = s.validateInstanceID(wf)
-	if err != nil {
-		return nil, err
+	ok := s.validateInstanceID(wf)
+	if !ok {
+		return nil, fmt.Errorf("Workflow '%s' is not managed by the current Argo server", wf.Name)
 	}
 	return wf, nil
 }
 
-func (s *workflowServer) validateInstanceID(wf *v1alpha1.Workflow) error {
+func (s *workflowServer) validateInstanceID(wf *v1alpha1.Workflow) bool {
 	if len(s.instanceID) == 0 {
 		if len(wf.Labels) == 0 {
-			return nil
+			return true
 		}
 		if _, ok := wf.Labels[common.LabelKeyControllerInstanceID]; !ok {
-			return nil
+			return true
 		}
 	} else if len(wf.Labels) > 0 {
 		if val, ok := wf.Labels[common.LabelKeyControllerInstanceID]; ok {
 			if val == s.instanceID {
-				return nil
+				return true
 			}
 		}
 	}
-	return fmt.Errorf("the workflow is not managed by current Argo server")
+	return false
 }
