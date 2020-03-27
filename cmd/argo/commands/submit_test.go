@@ -1,13 +1,10 @@
 package commands
 
 import (
-	"fmt"
 	"testing"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
 )
 
 func TestSubmitSimple(t *testing.T) {
@@ -20,21 +17,6 @@ func TestSubmitSimple(t *testing.T) {
 	workflows := unmarshalWorkflows(output[0], true)
 	var ans int32 = 2
 	assert.Equal(t, *workflows[0].Spec.Templates[0].RetryStrategy.Limit, ans)
-}
-
-func TestSubmitGlobalParametersComplex(t *testing.T) {
-	replaceGlobalParameter, err := util.ReadManifest("../../../test/e2e/functional/global-parameters-complex.yaml")
-	assert.NoError(t, err)
-	parameters := []string{`message1=goodbye world`}
-	cliOpts := cliSubmitOpts{SubstituteParams: true}
-	submitOpts := util.SubmitOpts{Parameters: parameters}
-	output, err := replaceGlobalParameters(replaceGlobalParameter, &submitOpts, &cliOpts)
-	assert.NoError(t, err)
-	var wfSpec wfv1.Workflow
-	fmt.Println(string(output[0]))
-	err = yaml.Unmarshal(output[0], &wfSpec)
-	assert.NoError(t, err)
-	assert.Equal(t, *wfSpec.Spec.Templates[0].Inputs.Parameters[1].Value, "goodbye world")
 }
 
 func TestSubmitRetryParamterCommandlineParameter(t *testing.T) {

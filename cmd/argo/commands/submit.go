@@ -11,7 +11,6 @@ import (
 	"github.com/argoproj/pkg/errors"
 	argoJson "github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
-	"github.com/valyala/fasttemplate"
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -358,13 +357,12 @@ func replaceGlobalParameters(fileContents [][]byte, submitOpts *util.SubmitOpts,
 		if err != nil {
 			return nil, err
 		}
+		globalReplacedTmplStr := string(body)
 		for _, param := range newParams {
 			globalParams["workflow.parameters."+param.Name] = *param.Value
 		}
-		fstTmpl := fasttemplate.New(string(body), `"{{`, `}}"`)
-		globalReplacedTmplStr, err := common.Replace(fstTmpl, globalParams, true)
-		if err != nil {
-			return nil, err
+		for key, value := range globalParams {
+			globalReplacedTmplStr = strings.ReplaceAll(globalReplacedTmplStr, `"{{`+key+`}}"`, value)
 		}
 		output = append(output, []byte(globalReplacedTmplStr))
 	}
