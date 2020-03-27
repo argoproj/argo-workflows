@@ -1024,7 +1024,7 @@
           "title": "ServiceAccountKeySecret is the secret selector to the bucket's service account key"
         }
       },
-      "title": "GCSBucket contains the access information for  interfacring with a GCS bucket"
+      "title": "GCSBucket contains the access information for interfacring with a GCS bucket"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Gauge": {
       "type": "object",
@@ -2106,7 +2106,7 @@
         },
         "ttlStrategy": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TTLStrategy",
-          "title": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it\nSucceeded or Failed. If this struct is set, once the Workflow finishes, it will be\ndeleted after the time to live expires. If this field is unset,\nthe controller config map will hold the default values\nUpdate"
+          "description": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it\nSucceeded or Failed. If this struct is set, once the Workflow finishes, it will be\ndeleted after the time to live expires. If this field is unset,\nthe controller config map will hold the default values."
         },
         "activeDeadlineSeconds": {
           "type": "string",
@@ -4903,6 +4903,9 @@
         },
         "namespace": {
           "type": "string"
+        },
+        "nodeFieldSelector": {
+          "type": "string"
         }
       }
     },
@@ -4924,6 +4927,12 @@
           "type": "string"
         },
         "namespace": {
+          "type": "string"
+        },
+        "nodeFieldSelector": {
+          "type": "string"
+        },
+        "message": {
           "type": "string"
         }
       }
