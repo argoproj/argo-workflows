@@ -733,7 +733,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		if node, ok := woc.wf.Status.Nodes[nodeID]; ok {
 			if newState := woc.assessNodeStatus(pod, &node); newState != nil {
 				woc.wf.Status.Nodes[nodeID] = *newState
-				woc.addOutputsToScope("workflow", node.Outputs, nil)
+				woc.addOutputsToGlobalScope(node.Outputs)
 				woc.updated = true
 			}
 			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
@@ -1889,9 +1889,9 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 	return node, err
 }
 
-// processNodeOutputs adds all of a nodes outputs to the local scope with the given prefix, as well
+// buildLocalScope adds all of a nodes outputs to the local scope with the given prefix, as well
 // as the global scope, if specified with a globalName
-func (woc *wfOperationCtx) processNodeOutputs(scope *wfScope, prefix string, node *wfv1.NodeStatus) {
+func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *wfv1.NodeStatus) {
 	if node.PodIP != "" {
 		key := fmt.Sprintf("%s.ip", prefix)
 		scope.addParamToScope(key, node.PodIP)
@@ -1900,10 +1900,10 @@ func (woc *wfOperationCtx) processNodeOutputs(scope *wfScope, prefix string, nod
 		key := fmt.Sprintf("%s.status", prefix)
 		scope.addParamToScope(key, string(node.Phase))
 	}
-	woc.addOutputsToScope(prefix, node.Outputs, scope)
+	woc.addOutputsToLocalScope(prefix, node.Outputs, scope)
 }
 
-func (woc *wfOperationCtx) addOutputsToScope(prefix string, outputs *wfv1.Outputs, scope *wfScope) {
+func (woc *wfOperationCtx) addOutputsToLocalScope(prefix string, outputs *wfv1.Outputs, scope *wfScope) {
 	if outputs == nil {
 		return
 	}
@@ -1918,14 +1918,24 @@ func (woc *wfOperationCtx) addOutputsToScope(prefix string, outputs *wfv1.Output
 		if scope != nil {
 			scope.addParamToScope(key, *param.Value)
 		}
-		woc.addParamToGlobalScope(param)
 	}
 	for _, art := range outputs.Artifacts {
 		key := fmt.Sprintf("%s.outputs.artifacts.%s", prefix, art.Name)
 		if scope != nil {
 			scope.addArtifactToScope(key, art)
 		}
-		woc.addArtifactToGlobalScope(art, scope)
+	}
+}
+
+func (woc *wfOperationCtx) addOutputsToGlobalScope(outputs *wfv1.Outputs) {
+	if outputs == nil {
+		return
+	}
+	for _, param := range outputs.Parameters {
+		woc.addParamToGlobalScope(param)
+	}
+	for _, art := range outputs.Artifacts {
+		woc.addArtifactToGlobalScope(art, nil)
 	}
 }
 

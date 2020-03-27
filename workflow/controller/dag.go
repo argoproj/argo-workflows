@@ -259,7 +259,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 			// Can happen when dag.target was specified
 			continue
 		}
-		woc.processNodeOutputs(&scope, fmt.Sprintf("tasks.%s", task.Name), taskNode)
+		woc.buildLocalScope(&scope, fmt.Sprintf("tasks.%s", task.Name), taskNode)
 	}
 	outputs, err := getTemplateOutputsFromScope(tmpl, &scope)
 	if err != nil {
@@ -448,7 +448,7 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv
 		tmpl:  dagCtx.tmpl,
 		scope: make(map[string]interface{}),
 	}
-	woc.addOutputsToScope("workflow", woc.wf.Status.Outputs, &scope)
+	woc.addOutputsToLocalScope("workflow", woc.wf.Status.Outputs, &scope)
 
 	ancestors := common.GetTaskAncestry(dagCtx, task.Name, dagCtx.tasks)
 	for _, ancestor := range ancestors {
@@ -473,7 +473,8 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv
 				return nil, errors.InternalWrapError(err)
 			}
 		} else {
-			woc.processNodeOutputs(&scope, prefix, ancestorNode)
+			woc.buildLocalScope(&scope, prefix, ancestorNode)
+			woc.addOutputsToGlobalScope(ancestorNode.Outputs)
 		}
 	}
 	return &scope, nil
