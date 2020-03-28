@@ -128,6 +128,7 @@ kubectl edit cm -n argo workflow-controller-configmap
 Add the following:
 ```yaml
 data:
+  config: |
     artifactRepository: |
       s3:
         bucket: my-bucket
