@@ -77,11 +77,11 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
-data:       # "config: |" key is optional in 2.7+!
+data:                      # "config: |" key is optional in 2.7+!
   instanceID: my-ci-controller
-  artifactRepository:
+  artifactRepository: |    # However, all nested maps must be strings
    archiveLogs: true
-   s3: |    # However, all nested maps must be strings
+   s3:
      endpoint: s3.amazonaws.com
      bucket: my-bucket
      region: us-west-2
