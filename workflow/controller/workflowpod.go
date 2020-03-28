@@ -484,6 +484,9 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 	}
 	if woc.controller.Config.Executor != nil {
 		exec.Args = woc.controller.Config.Executor.Args
+		if woc.controller.Config.Executor.SecurityContext != nil {
+			exec.SecurityContext = woc.controller.Config.Executor.SecurityContext.DeepCopy()
+		}
 	}
 	if isResourcesSpecified(woc.controller.Config.Executor) {
 		exec.Resources = woc.controller.Config.Executor.Resources

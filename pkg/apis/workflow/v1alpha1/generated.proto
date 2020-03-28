@@ -280,7 +280,7 @@ message GCSArtifact {
   optional string key = 2;
 }
 
-// GCSBucket contains the access information for  interfacring with a GCS bucket
+// GCSBucket contains the access information for interfacring with a GCS bucket
 message GCSBucket {
   // Bucket is the name of the bucket
   optional string bucket = 1;
@@ -1077,8 +1077,7 @@ message WorkflowSpec {
   // TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
   // Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be
   // deleted after the time to live expires. If this field is unset,
-  // the controller config map will hold the default values
-  // Update
+  // the controller config map will hold the default values.
   optional TTLStrategy ttlStrategy = 30;
 
   // Optional duration in seconds relative to the workflow start time which the workflow is
