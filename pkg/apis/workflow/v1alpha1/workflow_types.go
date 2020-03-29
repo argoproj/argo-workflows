@@ -913,17 +913,11 @@ type WorkflowStatus struct {
 	// Outputs captures output values and artifact locations produced by the workflow via global outputs
 	Outputs *Outputs `json:"outputs,omitempty" protobuf:"bytes,8,opt,name=outputs"`
 
-	// Condition for k8s conditions https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
-	Conditions []Condition `json:"condition,omitempty" protobuf:"bytes,11,opt,name=condition"`
+	// Conditions is a list of conditions the Workflow may have
+	Conditions WorkflowConditions `json:"conditions,omitempty" protobuf:"bytes,13,rep,name=conditions"`
 
 	// ResourcesDuration is the total for the workflow
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
-}
-
-type Condition struct {
-	Status metav1.ConditionStatus `json:"status,omitempty" protobuf:"varint,1,opt,name=status"`
-
-	Type string `json:"type,omitempty" protobuf:"varint,2,opt,name=type"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -1002,6 +996,41 @@ func (in ResourcesDuration) String() string {
 
 func (in ResourcesDuration) IsZero() bool {
 	return len(in) == 0
+}
+
+type WorkflowConditions []*WorkflowCondition
+
+func (ws *WorkflowConditions) AddOrUpdateCondition(condition *WorkflowCondition) {
+	for index, wfCondition := range *ws {
+		if wfCondition.Type == condition.Type {
+			(*ws)[index] = condition
+			return
+		}
+	}
+	*ws = append(*ws, condition)
+}
+
+func (ws *WorkflowConditions) JoinConditions(conditions *WorkflowConditions) {
+	for _, condition := range *conditions {
+		ws.AddOrUpdateCondition(condition)
+	}
+}
+
+type WorkflowConditionType string
+
+const (
+	// WorkflowConditionCompleted is a signifies the workflow has completed
+	WorkflowConditionCompleted WorkflowConditionType = "Completed"
+	// WorkflowConditionSpecWarning is a warning on the current application spec
+	WorkflowConditionSpecWarning WorkflowConditionType = "SpecWarning"
+)
+
+type WorkflowCondition struct {
+	Type WorkflowConditionType `json:"type,omitempty" protobuf:"bytes,1,opt,name=type,casttype=WorkflowConditionType"`
+
+	Status metav1.ConditionStatus `json:"status,omitempty" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/apimachinery/pkg/apis/meta/v1.ConditionStatus"`
+
+	Message string `json:"message,omitempty" protobuf:"bytes,3,opt,name=message"`
 }
 
 // NodeStatus contains status information about an individual node in the workflow
