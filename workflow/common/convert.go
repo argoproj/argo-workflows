@@ -36,7 +36,7 @@ func ConvertWorkflowTemplateToWorkflow(template *wfv1.WorkflowTemplate) *wfv1.Wo
 	if wfLabel == nil {
 		wf.Labels = make(map[string]string)
 	}
-	wf.Labels[LabelKeyWorkflowTemplate] = template.ObjectMeta.Name
+	wf.Labels[LabelKeyWorkflowTemplate] = template.Namespace + "/" + template.ObjectMeta.Name
 	return wf
 }
 

@@ -113,6 +113,6 @@ func TestConvertWorkflowTemplateToWorkflow(t *testing.T) {
 	}
 	wf := ConvertWorkflowTemplateToWorkflow(&wfTmpl)
 	assert.NotNil(t, wf)
-	assert.Equal(t, wf.Labels[LabelKeyWorkflowTemplate], wfTmpl.Name)
+	assert.Equal(t, wf.Labels[LabelKeyWorkflowTemplate], wfTmpl.Namespace+"/"+wfTmpl.Name)
 	assert.Equal(t, wf.GenerateName, wfTmpl.Name+"-")
 }
