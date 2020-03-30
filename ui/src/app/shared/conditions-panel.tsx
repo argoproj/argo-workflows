@@ -1,11 +1,27 @@
 import * as React from 'react';
-import {WarningWorkflowConditions, WorkflowCondition} from '../../models';
+import {WorkflowCondition, WorkflowConditionType} from '../../models';
 
 interface Props {
     conditions: WorkflowCondition[];
 }
 
-export class Conditions extends React.Component<Props> {
+const WarningWorkflowConditions: WorkflowConditionType[] = ['SpecWarning'];
+
+export function hasWarningCondition(conditions: WorkflowCondition[]): boolean {
+    if (conditions.length === 0) {
+        return false;
+    }
+
+    for (const condition of conditions) {
+        if (WarningWorkflowConditions.includes(condition.type)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+export class ConditionsPanel extends React.Component<Props> {
     public render() {
         return (
             <>

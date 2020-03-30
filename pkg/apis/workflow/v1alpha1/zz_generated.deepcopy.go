@@ -1616,13 +1616,7 @@ func (in WorkflowConditions) DeepCopyInto(out *WorkflowConditions) {
 	{
 		in := &in
 		*out = make(WorkflowConditions, len(*in))
-		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(WorkflowCondition)
-				**out = **in
-			}
-		}
+		copy(*out, *in)
 		return
 	}
 }
@@ -1858,13 +1852,7 @@ func (in *WorkflowStatus) DeepCopyInto(out *WorkflowStatus) {
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
 		*out = make(WorkflowConditions, len(*in))
-		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(WorkflowCondition)
-				**out = **in
-			}
-		}
+		copy(*out, *in)
 	}
 	if in.ResourcesDuration != nil {
 		in, out := &in.ResourcesDuration, &out.ResourcesDuration

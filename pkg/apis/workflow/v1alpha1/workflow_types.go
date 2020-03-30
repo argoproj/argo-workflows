@@ -998,9 +998,9 @@ func (in ResourcesDuration) IsZero() bool {
 	return len(in) == 0
 }
 
-type WorkflowConditions []*WorkflowCondition
+type WorkflowConditions []WorkflowCondition
 
-func (wc *WorkflowConditions) AddOrReplaceCondition(condition *WorkflowCondition) {
+func (wc *WorkflowConditions) UpsertCondition(condition WorkflowCondition) {
 	for index, wfCondition := range *wc {
 		if wfCondition.Type == condition.Type {
 			(*wc)[index] = condition
@@ -1010,7 +1010,7 @@ func (wc *WorkflowConditions) AddOrReplaceCondition(condition *WorkflowCondition
 	*wc = append(*wc, condition)
 }
 
-func (wc *WorkflowConditions) AddOrAppendCondition(condition *WorkflowCondition) {
+func (wc *WorkflowConditions) UpsertConditionMessage(condition WorkflowCondition) {
 	for index, wfCondition := range *wc {
 		if wfCondition.Type == condition.Type {
 			(*wc)[index].Message += ", " + condition.Message
@@ -1022,7 +1022,7 @@ func (wc *WorkflowConditions) AddOrAppendCondition(condition *WorkflowCondition)
 
 func (wc *WorkflowConditions) JoinConditions(conditions *WorkflowConditions) {
 	for _, condition := range *conditions {
-		wc.AddOrReplaceCondition(condition)
+		wc.UpsertCondition(condition)
 	}
 }
 

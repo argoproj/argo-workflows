@@ -3,7 +3,7 @@ import * as moment from 'moment';
 import * as React from 'react';
 
 import {NODE_PHASE, Workflow} from '../../../models';
-import {Conditions} from '../../shared/conditions';
+import {ConditionsPanel} from '../../shared/conditions-panel';
 import {ResourcesDuration} from '../../shared/resources-duration';
 
 export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
@@ -30,7 +30,7 @@ export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
             if (props.workflow.status.conditions) {
                 attributes.push({
                     title: 'Conditions',
-                    value: <Conditions conditions={props.workflow.status.conditions} />
+                    value: <ConditionsPanel conditions={props.workflow.status.conditions} />
                 });
             }
             return (
