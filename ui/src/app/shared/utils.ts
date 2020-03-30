@@ -1,6 +1,6 @@
 import {Observable} from 'rxjs';
 import * as models from '../../models';
-import {NODE_PHASE, Template, WarningConditions, WorkflowCondition} from '../../models';
+import {NODE_PHASE, Template, WarningWorkflowConditions, WorkflowCondition} from '../../models';
 
 export const Utils = {
     statusIconClasses(status: string): string {
@@ -136,7 +136,7 @@ export const Utils = {
         }
 
         for (const condition of conditions) {
-            if (WarningConditions.includes(condition.type)) {
+            if (WarningWorkflowConditions.includes(condition.type)) {
                 return true;
             }
         }

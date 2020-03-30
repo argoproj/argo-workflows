@@ -782,7 +782,7 @@ export interface WorkflowCondition {
 }
 export type WorkflowConditionType = 'Completed' | 'SpecWarning';
 export type ConditionStatus = 'True' | 'False' | 'Unknown;';
-export let WarningConditions: WorkflowConditionType[] = ['SpecWarning'];
+export let WarningWorkflowConditions: WorkflowConditionType[] = ['SpecWarning'];
 
 /**
  * WorkflowList is list of Workflow resources
