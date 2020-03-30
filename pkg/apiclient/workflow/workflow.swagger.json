@@ -703,6 +703,50 @@
           "WorkflowService"
         ]
       }
+    },
+    "/api/v1/workflows/{namespace}/{resourceKind}/{resourceName}/submit": {
+      "put": {
+        "operationId": "SubmitFromResource",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "resourceKind",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "resourceName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workflow.WorkflowSubmitRequest"
+            }
+          }
+        ],
+        "tags": [
+          "WorkflowService"
+        ]
+      }
     }
   },
   "definitions": {
@@ -4934,6 +4978,26 @@
         },
         "message": {
           "type": "string"
+        }
+      }
+    },
+    "workflow.WorkflowSubmitRequest": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "resourceKind": {
+          "type": "string"
+        },
+        "resourceName": {
+          "type": "string"
+        },
+        "instanceID": {
+          "type": "string"
+        },
+        "createOptions": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions"
         }
       }
     },

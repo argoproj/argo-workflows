@@ -330,9 +330,8 @@ const wf5 = `
         "startedAt": "2019-12-13T23:36:32Z"
     }
 }
-
 `
-const workflow = `
+const workflow1 = `
 {
   "namespace": "default",
   "workflow": {
@@ -364,22 +363,107 @@ const workflow = `
   }
 }
 `
+
+const workflowtmpl = `
+{
+  "apiVersion": "argoproj.io/v1alpha1",
+  "kind": "WorkflowTemplate",
+  "metadata": {
+    "name": "workflow-template-whalesay-template",
+    "namespace": "workflows"
+  },
+  "spec": {
+    "entrypoint": "whalesay-template",
+    "arguments": {
+      "parameters": [
+        {
+          "name": "message",
+          "value": "hello world"
+        }
+      ]
+    },
+    "templates": [
+      {
+        "name": "whalesay-template",
+        "inputs": {
+          "parameters": [
+            {
+              "name": "message"
+            }
+          ]
+        },
+        "container": {
+          "image": "docker/whalesay",
+          "command": [
+            "cowsay"
+          ],
+          "args": [
+            "{{inputs.parameters.message}}"
+          ]
+        }
+      }
+    ]
+  }
+}
+`
+const cronwf = `
+{
+  "apiVersion": "argoproj.io/v1alpha1",
+  "kind": "CronWorkflow",
+  "metadata": {
+    "name": "hello-world",
+	"namespace": "workflows"
+  },
+  "spec": {
+    "schedule": "* * * * *",
+    "timezone": "America/Los_Angeles",
+    "startingDeadlineSeconds": 0,
+    "concurrencyPolicy": "Replace",
+    "successfulJobsHistoryLimit": 4,
+    "failedJobsHistoryLimit": 4,
+    "suspend": false,
+    "workflowSpec": {
+      "entrypoint": "whalesay",
+      "templates": [
+        {
+          "name": "whalesay",
+          "container": {
+            "image": "docker/whalesay:latest",
+            "command": [
+              "cowsay"
+            ],
+            "args": [
+              "🕓 hello world"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
+`
 const testInstanceID = "testinstanceid001"
 
 func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 
 	var wfObj1, wfObj2, wfObj3, wfObj4, wfObj5 v1alpha1.Workflow
+	var wftmpl v1alpha1.WorkflowTemplate
+	var cronwfObj v1alpha1.CronWorkflow
+
 	_ = json.Unmarshal([]byte(wf1), &wfObj1)
 	_ = json.Unmarshal([]byte(wf2), &wfObj2)
 	_ = json.Unmarshal([]byte(wf3), &wfObj3)
 	_ = json.Unmarshal([]byte(wf4), &wfObj4)
 	_ = json.Unmarshal([]byte(wf5), &wfObj5)
+	_ = json.Unmarshal([]byte(workflowtmpl), &wftmpl)
+	_ = json.Unmarshal([]byte(cronwf), &cronwfObj)
+
 	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
 	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
 	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.UUIDVersion]v1alpha1.Nodes{}, nil)
 	server := NewWorkflowServer(testInstanceID, offloadNodeStatusRepo)
 	kubeClientSet := fake.NewSimpleClientset()
-	wfClientset := v1alpha.NewSimpleClientset(&wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5)
+	wfClientset := v1alpha.NewSimpleClientset(&wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &wftmpl, &cronwfObj)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
 	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet)
 	return server, ctx
@@ -414,7 +498,7 @@ func TestCreateWorkflow(t *testing.T) {
 
 	server, ctx := getWorkflowServer()
 	var req workflowpkg.WorkflowCreateRequest
-	_ = json.Unmarshal([]byte(workflow), &req)
+	_ = json.Unmarshal([]byte(workflow1), &req)
 
 	wf, err := server.CreateWorkflow(ctx, &req)
 
@@ -561,4 +645,28 @@ func TestResubmitWorkflow(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.NotNil(t, wf)
 	}
+}
+
+func TestSubmitWorkflowFromResource(t *testing.T) {
+
+	server, ctx := getWorkflowServer()
+
+	wf, err := server.SubmitFromResource(ctx, &workflowpkg.WorkflowSubmitRequest{
+		Namespace:    "workflows",
+		ResourceKind: "workflowtemplate",
+		ResourceName: "workflow-template-whalesay-template",
+	})
+	if assert.NoError(t, err) {
+		assert.NotNil(t, wf)
+	}
+
+	wf, err = server.SubmitFromResource(ctx, &workflowpkg.WorkflowSubmitRequest{
+		Namespace:    "workflows",
+		ResourceKind: "cronworkflow",
+		ResourceName: "hello-world",
+	})
+	if assert.NoError(t, err) {
+		assert.NotNil(t, wf)
+	}
+
 }
