@@ -292,7 +292,7 @@ func (s *CLISuite) TestNodeSuspendResume() {
 		}).
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.AnyActiveSuspendNode()
-		}, "suspended node", 10*time.Second).
+		}, "suspended node", 20*time.Second).
 		RunCli([]string{"stop", "node-suspend", "--node-field-selector", "inputs.parameters.tag.value=suspend2-tag1", "--message", "because"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "workflow node-suspend stopped")
@@ -300,7 +300,7 @@ func (s *CLISuite) TestNodeSuspendResume() {
 		}).
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.Phase == wfv1.NodeFailed
-		}, "suspended node", 10*time.Second).
+		}, "suspended node", 20*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			if assert.Equal(t, wfv1.NodeFailed, status.Phase) {
