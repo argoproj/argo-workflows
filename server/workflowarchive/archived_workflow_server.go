@@ -52,22 +52,19 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	namespace := ""
 	minStartedAt := time.Time{}
 	maxStartedAt := time.Time{}
-	selectors := strings.Split(options.FieldSelector, ",")
-	for _, selector := range selectors {
+	for _, selector := range strings.Split(options.FieldSelector, ",") {
 		if len(selector) == 0 {
 			continue
 		}
 		if strings.HasPrefix(selector, "metadata.namespace=") {
 			namespace = strings.TrimPrefix(selector, "metadata.namespace=")
 		} else if strings.HasPrefix(selector, "spec.startedAt>") {
-			minStartedAtStr := strings.TrimPrefix(selector, "spec.startedAt>")
-			minStartedAt, err = time.Parse(time.RFC3339, minStartedAtStr)
+			minStartedAt, err = time.Parse(time.RFC3339, strings.TrimPrefix(selector, "spec.startedAt>"))
 			if err != nil {
 				return nil, err
 			}
 		} else if strings.HasPrefix(selector, "spec.startedAt<") {
-			maxStartedAtStr := strings.TrimPrefix(selector, "spec.startedAt<")
-			maxStartedAt, err = time.Parse(time.RFC3339, maxStartedAtStr)
+			maxStartedAt, err = time.Parse(time.RFC3339, strings.TrimPrefix(selector, "spec.startedAt<"))
 			if err != nil {
 				return nil, err
 			}
@@ -75,14 +72,19 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 			return nil, fmt.Errorf("unsupported requirement %s", selector)
 		}
 	}
-
 	requirements, err := labels.ParseToRequirements(options.LabelSelector)
 	if err != nil {
 		return nil, err
 	}
 
 	items := make(wfv1.Workflows, 0)
-	authorizer := auth.NewAuthorizer(ctx)
+	allowed, err := auth.CanI(ctx, "list", workflow.WorkflowPlural, namespace, "")
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
+		return nil, status.Error(codes.PermissionDenied, "permission denied")
+	}
 	hasMore := true
 	// keep trying until we have enough
 	for len(items) < limit {
@@ -94,14 +96,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 			if index == limit {
 				break
 			}
-			// TODO second pass filtering?
-			allowed, err := authorizer.CanI("get", workflow.WorkflowPlural, wf.Namespace, wf.Name)
-			if err != nil {
-				return nil, err
-			}
-			if allowed {
-				items = append(items, wf)
-			}
+			items = append(items, wf)
 		}
 		if len(moreItems) < limit+1 {
 			hasMore = false
