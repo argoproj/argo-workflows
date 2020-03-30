@@ -33,7 +33,7 @@ spec:
 `
 
 func TestDAGCycle(t *testing.T) {
-	err := validate(dagCycle)
+	_, err := validate(dagCycle)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "cycle")
 	}
@@ -62,7 +62,7 @@ spec:
 `
 
 func TestDuplicateDependencies(t *testing.T) {
-	err := validate(duplicateDependencies)
+	_, err := validate(duplicateDependencies)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "duplicate")
 	}
@@ -84,7 +84,7 @@ spec:
 `
 
 func TestDAGUndefinedTemplate(t *testing.T) {
-	err := validate(dagUndefinedTemplate)
+	_, err := validate(dagUndefinedTemplate)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "undefined")
 	}
@@ -219,14 +219,14 @@ spec:
 `
 
 func TestDAGVariableResolution(t *testing.T) {
-	err := validate(dagUnresolvedVar)
+	_, err := validate(dagUnresolvedVar)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "failed to resolve {{tasks.A.outputs.parameters.unresolvable}}")
 	}
-	err = validate(dagResolvedVar)
+	_, err = validate(dagResolvedVar)
 	assert.NoError(t, err)
 
-	err = validate(dagResolvedVarNotAncestor)
+	_, err = validate(dagResolvedVarNotAncestor)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "failed to resolve {{tasks.B.outputs.parameters.unresolvable}}")
 	}
@@ -286,7 +286,7 @@ spec:
 `
 
 func TestDAGArtifactResolution(t *testing.T) {
-	err := validate(dagResolvedArt)
+	_, err := validate(dagResolvedArt)
 	assert.NoError(t, err)
 }
 
@@ -520,25 +520,25 @@ spec:
 `
 
 func TestDAGStatusReference(t *testing.T) {
-	err := validate(dagStatusReference)
+	_, err := validate(dagStatusReference)
 	assert.NoError(t, err)
 
-	err = validate(dagStatusNoFutureReferenceSimple)
+	_, err = validate(dagStatusNoFutureReferenceSimple)
 	// Can't reference the status of steps that have not run yet
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "failed to resolve {{tasks.B.status}}")
 	}
 
-	err = validate(dagStatusNoFutureReferenceWhenFutureReferenceHasChild)
+	_, err = validate(dagStatusNoFutureReferenceWhenFutureReferenceHasChild)
 	// Can't reference the status of steps that have not run yet, even if the referenced steps have children
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "failed to resolve {{tasks.B.status}}")
 	}
 
-	err = validate(dagStatusPastReferenceChain)
+	_, err = validate(dagStatusPastReferenceChain)
 	assert.NoError(t, err)
 
-	err = validate(dagStatusOnlyDirectAncestors)
+	_, err = validate(dagStatusOnlyDirectAncestors)
 	// Can't reference steps that are not direct ancestors of node
 	// Here Node E references the status of Node B, even though it is not its descendent
 	if assert.NotNil(t, err) {
@@ -577,7 +577,7 @@ spec:
 `
 
 func TestDAGNonExistantTarget(t *testing.T) {
-	err := validate(dagNonexistantTarget)
+	_, err := validate(dagNonexistantTarget)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "target 'DOESNTEXIST' is not defined")
 	}
@@ -618,7 +618,7 @@ spec:
 `
 
 func TestDAGTargetSubstitution(t *testing.T) {
-	err := validate(dagTargetSubstitution)
+	_, err := validate(dagTargetSubstitution)
 	assert.NoError(t, err)
 }
 
@@ -652,6 +652,6 @@ spec:
 `
 
 func TestDAGTargetMissingInputParam(t *testing.T) {
-	err := validate(dagTargetMissingInputParam)
+	_, err := validate(dagTargetMissingInputParam)
 	assert.NotNil(t, err)
 }
