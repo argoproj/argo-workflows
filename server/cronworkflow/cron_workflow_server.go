@@ -52,7 +52,7 @@ func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req 
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
-	err := validate.ValidateCronWorkflow(wftmplGetter,cwftmplGetter, req.CronWorkflow)
+	err := validate.ValidateCronWorkflow(wftmplGetter, cwftmplGetter, req.CronWorkflow)
 	if err != nil {
 		return nil, err
 	}
