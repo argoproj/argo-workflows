@@ -759,16 +759,30 @@ export interface WorkflowStatus {
 
     compressedNodes: string;
 
-    /*
+    /**
      * StoredTemplates is a mapping between a template ref and the node's status.
      */
     storedTemplates: {[name: string]: Template};
 
     /**
-     * How much resource was used.
+     * ResourcesDuration tracks how much resources were used.
      */
     resourcesDuration?: {[resource: string]: number};
+
+    /**
+     * Conditions is a list of WorkflowConditions
+     */
+    conditions?: WorkflowCondition[];
 }
+
+export interface WorkflowCondition {
+    type: WorkflowConditionType;
+    status: ConditionStatus;
+    message: string;
+}
+export type WorkflowConditionType = 'Completed' | 'SpecWarning';
+export type ConditionStatus = 'True' | 'False' | 'Unknown;';
+export let WarningConditions: WorkflowConditionType[] = ['SpecWarning'];
 
 /**
  * WorkflowList is list of Workflow resources

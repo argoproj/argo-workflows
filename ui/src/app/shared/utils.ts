@@ -1,6 +1,6 @@
 import {Observable} from 'rxjs';
 import * as models from '../../models';
-import {NODE_PHASE, Template} from '../../models';
+import {NODE_PHASE, Template, WarningConditions, WorkflowCondition} from '../../models';
 
 export const Utils = {
     statusIconClasses(status: string): string {
@@ -128,5 +128,19 @@ export const Utils = {
 
     getCurrentNamespace(): string {
         return localStorage.getItem('current_namespace');
+    },
+
+    hasWarningCondition(conditions: WorkflowCondition[]): boolean {
+        if (conditions.length === 0) {
+            return false;
+        }
+
+        for (const condition of conditions) {
+            if (WarningConditions.includes(condition.type)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 };

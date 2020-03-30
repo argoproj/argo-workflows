@@ -26,7 +26,13 @@ function parseSidePanelParam(param: string) {
     return null;
 }
 
-export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {workflowDagRenderOptions: WorkflowDagRenderOptions; workflow: models.Workflow; links: Link[]}> {
+interface WorkflowDetailsState {
+    workflowDagRenderOptions: WorkflowDagRenderOptions;
+    workflow: models.Workflow;
+    links: Link[];
+}
+
+export class WorkflowDetails extends React.Component<RouteComponentProps<any>, WorkflowDetailsState> {
     public static contextTypes = {
         router: PropTypes.object,
         apis: PropTypes.object
@@ -49,7 +55,11 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
 
     constructor(props: RouteComponentProps<any>) {
         super(props);
-        this.state = {workflowDagRenderOptions: {horizontal: false, zoom: 1, hideSucceeded: false}, workflow: null, links: null};
+        this.state = {
+            workflowDagRenderOptions: {horizontal: false, zoom: 1, hideSucceeded: false},
+            workflow: null,
+            links: null
+        };
     }
 
     public componentDidMount() {
@@ -106,6 +116,9 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                     )}
                                     <a className={classNames({active: this.selectedTabKey === 'summary'})} onClick={() => this.selectTab('summary')}>
                                         <i className='fa fa-columns' />
+                                        {this.state.workflow && this.state.workflow.status.conditions && Utils.hasWarningCondition(this.state.workflow.status.conditions) && (
+                                            <span className='badge' />
+                                        )}
                                     </a>
                                     <a className={classNames({active: this.selectedTabKey === 'timeline'})} onClick={() => this.selectTab('timeline')}>
                                         <i className='fa argo-icon-timeline' />

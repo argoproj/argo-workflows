@@ -142,7 +142,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	for _, template := range wf.Spec.Templates {
 		if !template.Arguments.IsEmpty() {
 			logrus.Warn("template.arguments is deprecated and its contents are ignored")
-			wfConditions.AddOrUpdateCondition(&wfv1.WorkflowCondition{
+			wfConditions.AddOrAppendCondition(&wfv1.WorkflowCondition{
 				Type:    wfv1.WorkflowConditionSpecWarning,
 				Status:  v1.ConditionTrue,
 				Message: fmt.Sprintf(`template.arguments is deprecated and its contents are ignored. See more: %s`, help.WorkflowTemplatesReferencingOtherTemplates),
@@ -150,7 +150,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		}
 		if template.TemplateRef != nil {
 			logrus.Warn(getTemplateRefHelpString(&template))
-			wfConditions.AddOrUpdateCondition(&wfv1.WorkflowCondition{
+			wfConditions.AddOrAppendCondition(&wfv1.WorkflowCondition{
 				Type:    wfv1.WorkflowConditionSpecWarning,
 				Status:  v1.ConditionTrue,
 				Message: fmt.Sprintf(`Referencing/calling other templates directly on a "template" is deprecated; they should be referenced in a "steps" or a "dag" template. See more: %s`, help.WorkflowTemplatesReferencingOtherTemplates),
@@ -158,7 +158,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		}
 		if template.Template != "" {
 			logrus.Warn(getTemplateRefHelpString(&template))
-			wfConditions.AddOrUpdateCondition(&wfv1.WorkflowCondition{
+			wfConditions.AddOrAppendCondition(&wfv1.WorkflowCondition{
 				Type:    wfv1.WorkflowConditionSpecWarning,
 				Status:  v1.ConditionTrue,
 				Message: fmt.Sprintf(`Referencing/calling other templates directly on a "template" is deprecated; they should be referenced in a "steps" or a "dag" template. See more: %s`, help.WorkflowTemplatesReferencingOtherTemplates),

@@ -1000,19 +1000,29 @@ func (in ResourcesDuration) IsZero() bool {
 
 type WorkflowConditions []*WorkflowCondition
 
-func (ws *WorkflowConditions) AddOrUpdateCondition(condition *WorkflowCondition) {
-	for index, wfCondition := range *ws {
+func (wc *WorkflowConditions) AddOrReplaceCondition(condition *WorkflowCondition) {
+	for index, wfCondition := range *wc {
 		if wfCondition.Type == condition.Type {
-			(*ws)[index] = condition
+			(*wc)[index] = condition
 			return
 		}
 	}
-	*ws = append(*ws, condition)
+	*wc = append(*wc, condition)
 }
 
-func (ws *WorkflowConditions) JoinConditions(conditions *WorkflowConditions) {
+func (wc *WorkflowConditions) AddOrAppendCondition(condition *WorkflowCondition) {
+	for index, wfCondition := range *wc {
+		if wfCondition.Type == condition.Type {
+			(*wc)[index].Message += ", " + condition.Message
+			return
+		}
+	}
+	*wc = append(*wc, condition)
+}
+
+func (wc *WorkflowConditions) JoinConditions(conditions *WorkflowConditions) {
 	for _, condition := range *conditions {
-		ws.AddOrUpdateCondition(condition)
+		wc.AddOrReplaceCondition(condition)
 	}
 }
 

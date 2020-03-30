@@ -199,7 +199,7 @@ func (woc *wfOperationCtx) operate() {
 			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg)
 			return
 		}
-		// If we recieved conditions during validation (such as SpecWarnings), add them to the Workflow object
+		// If we received conditions during validation (such as SpecWarnings), add them to the Workflow object
 		if len(*wfConditions) > 0 {
 			woc.wf.Status.Conditions.JoinConditions(wfConditions)
 			woc.updated = true
@@ -1533,7 +1533,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 			}
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
 			woc.wf.Status.ResourcesDuration = woc.wf.Status.Nodes.GetResourcesDuration()
-			woc.wf.Status.Conditions.AddOrUpdateCondition(&wfv1.WorkflowCondition{Status: metav1.ConditionTrue, Type: wfv1.WorkflowConditionCompleted})
+			woc.wf.Status.Conditions.AddOrReplaceCondition(&wfv1.WorkflowCondition{Status: metav1.ConditionTrue, Type: wfv1.WorkflowConditionCompleted})
 			err := woc.deletePDBResource()
 			if err != nil {
 				woc.wf.Status.Phase = wfv1.NodeError

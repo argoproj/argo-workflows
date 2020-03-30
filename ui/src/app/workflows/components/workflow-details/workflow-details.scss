@@ -93,3 +93,18 @@
     }
 
 }
+.badge{
+    position: absolute;
+    margin-left: -.3%;
+    margin-top: -.3%;
+    font-size: 30%;
+    padding: .6em;
+    border-radius: 999px;
+    line-height: .75em;
+    color: white;
+    background: rgba(255, 0, 0, 0.85);
+    text-align: center;
+    min-width: 2em;
+    font-weight: bold;
+    min-height: 2em;
+}
