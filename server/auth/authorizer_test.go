@@ -36,11 +36,4 @@ func TestAuthorizer_CanI(t *testing.T) {
 			},
 		}, nil
 	})
-	t.Run("Authorizer.CanI", func(t *testing.T) {
-		authorizer := NewAuthorizer(ctx)
-		allowed, err := authorizer.CanI("", "", "", "my-name")
-		if assert.NoError(t, err) {
-			assert.True(t, allowed)
-		}
-	})
 }

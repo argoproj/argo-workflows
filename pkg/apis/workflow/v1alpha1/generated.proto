@@ -280,7 +280,7 @@ message GCSArtifact {
   optional string key = 2;
 }
 
-// GCSBucket contains the access information for  interfacring with a GCS bucket
+// GCSBucket contains the access information for interfacring with a GCS bucket
 message GCSBucket {
   // Bucket is the name of the bucket
   optional string bucket = 1;
