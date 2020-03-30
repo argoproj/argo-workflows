@@ -192,13 +192,19 @@ func (woc *wfOperationCtx) operate() {
 		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: argo.EventReasonWorkflowRunning}, "Workflow Running")
 		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.controller.GetContainerRuntimeExecutor()}
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
-		err = validate.ValidateWorkflow(wftmplGetter, woc.wf, validateOpts)
+		wfConditions, err := validate.ValidateWorkflow(wftmplGetter, woc.wf, validateOpts)
 		if err != nil {
 			msg := fmt.Sprintf("invalid spec: %s", err.Error())
 			woc.markWorkflowFailed(msg)
 			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg)
 			return
 		}
+		// If we received conditions during validation (such as SpecWarnings), add them to the Workflow object
+		if len(*wfConditions) > 0 {
+			woc.wf.Status.Conditions.JoinConditions(wfConditions)
+			woc.updated = true
+		}
+
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 
 		if woc.wf.Spec.Metrics != nil {
@@ -1526,8 +1532,8 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 				woc.wf.ObjectMeta.Labels = make(map[string]string)
 			}
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
-			woc.wf.Status.Conditions = []wfv1.Condition{{Status: metav1.ConditionTrue, Type: "completed"}}
 			woc.wf.Status.ResourcesDuration = woc.wf.Status.Nodes.GetResourcesDuration()
+			woc.wf.Status.Conditions.UpsertCondition(wfv1.WorkflowCondition{Status: metav1.ConditionTrue, Type: wfv1.WorkflowConditionCompleted})
 			err := woc.deletePDBResource()
 			if err != nil {
 				woc.wf.Status.Phase = wfv1.NodeError
