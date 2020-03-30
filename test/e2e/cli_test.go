@@ -278,6 +278,7 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 }
 
 func (s *CLISuite) TestNodeSuspendResume() {
+	s.T().SkipNow()
 	s.Given().
 		Workflow("@testdata/node-suspend.yaml").
 		When().
