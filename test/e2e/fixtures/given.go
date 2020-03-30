@@ -35,6 +35,7 @@ type Given struct {
 // 1. A file name if it starts with "@"
 // 2. Raw YAML.
 func (g *Given) Workflow(text string) *Given {
+	g.t.Helper()
 	var file string
 	if strings.HasPrefix(text, "@") {
 		file = strings.TrimPrefix(text, "@")

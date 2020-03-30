@@ -66,5 +66,5 @@ spec:
 
 `
 	_, err = SplitWorkflowYAMLFile([]byte(invalidWf), false)
-	assert.Error(t, err, `unknown field "doesNotExist"`)
+	assert.EqualError(t, err, `error unmarshaling JSON: while decoding JSON: json: unknown field "doesNotExist"`)
 }
