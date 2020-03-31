@@ -260,6 +260,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 			continue
 		}
 		woc.buildLocalScope(&scope, fmt.Sprintf("tasks.%s", task.Name), taskNode)
+		woc.addOutputsToGlobalScope(taskNode.Outputs)
 	}
 	outputs, err := getTemplateOutputsFromScope(tmpl, &scope)
 	if err != nil {
@@ -474,7 +475,6 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv
 			}
 		} else {
 			woc.buildLocalScope(&scope, prefix, ancestorNode)
-			woc.addOutputsToGlobalScope(ancestorNode.Outputs)
 		}
 	}
 	return &scope, nil
