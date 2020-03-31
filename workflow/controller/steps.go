@@ -50,7 +50,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 		},
 		tmplCtx: tmplCtx,
 	}
-	woc.addOutputsToScope("workflow", woc.wf.Status.Outputs, stepsCtx.scope)
+	woc.addOutputsToLocalScope("workflow", woc.wf.Status.Outputs, stepsCtx.scope)
 
 	for i, stepGroup := range tmpl.Steps {
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
@@ -126,7 +126,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 					woc.log.Infof("Step '%s' has no expanded child nodes", childNode)
 				}
 			} else {
-				woc.processNodeOutputs(stepsCtx.scope, prefix, childNode)
+				woc.buildLocalScope(stepsCtx.scope, prefix, childNode)
 			}
 		}
 	}
@@ -258,6 +258,8 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	if !completed {
 		return node
 	}
+
+	woc.addOutputsToGlobalScope(node.Outputs)
 
 	// All children completed. Determine step group status as a whole
 	for _, childNodeID := range node.Children {

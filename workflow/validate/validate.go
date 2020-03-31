@@ -12,6 +12,7 @@ import (
 	"github.com/robfig/cron"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
@@ -90,13 +91,15 @@ func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
 var _ wfv1.ArgumentsProvider = &FakeArguments{}
 
 // ValidateWorkflow accepts a workflow and performs validation against it.
+
 func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wf *wfv1.Workflow, opts ValidateOpts) error {
+
 	ctx := newTemplateValidationCtx(wf, opts)
 	tmplCtx := templateresolution.NewContext(wftmplGetter, cwftmplGetter, wf, wf)
 
 	err := validateWorkflowFieldNames(wf.Spec.Templates)
 	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
+		return nil, errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
 	}
 	if ctx.Lint {
 		// if we are just linting we don't care if spec.arguments.parameters.XXX doesn't have an
@@ -106,7 +109,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		err = validateArguments("spec.arguments.", wf.Spec.Arguments)
 	}
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(wf.Spec.Arguments.Parameters) > 0 {
 		ctx.globalParams[common.GlobalVarWorkflowParameters] = placeholderGenerator.NextPlaceholder()
@@ -133,25 +136,40 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	}
 
 	if wf.Spec.Entrypoint == "" {
-		return errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
+		return nil, errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
 	}
 
 	// Make sure that templates are not defined with deprecated fields
 	for _, template := range wf.Spec.Templates {
+		if !template.Arguments.IsEmpty() {
+			logrus.Warn("template.arguments is deprecated and its contents are ignored")
+			wfConditions.UpsertConditionMessage(wfv1.WorkflowCondition{
+				Type:    wfv1.WorkflowConditionSpecWarning,
+				Status:  v1.ConditionTrue,
+				Message: fmt.Sprintf(`template.arguments is deprecated and its contents are ignored. See more: %s`, help.WorkflowTemplatesReferencingOtherTemplates),
+			})
+		}
 		if template.TemplateRef != nil {
 			logrus.Warn(getTemplateRefHelpString(&template))
+			wfConditions.UpsertConditionMessage(wfv1.WorkflowCondition{
+				Type:    wfv1.WorkflowConditionSpecWarning,
+				Status:  v1.ConditionTrue,
+				Message: fmt.Sprintf(`Referencing/calling other templates directly on a "template" is deprecated; they should be referenced in a "steps" or a "dag" template. See more: %s`, help.WorkflowTemplatesReferencingOtherTemplates),
+			})
 		}
 		if template.Template != "" {
 			logrus.Warn(getTemplateRefHelpString(&template))
-		}
-		if !template.Arguments.IsEmpty() {
-			logrus.Warn("template.arguments is deprecated and its contents are ignored")
+			wfConditions.UpsertConditionMessage(wfv1.WorkflowCondition{
+				Type:    wfv1.WorkflowConditionSpecWarning,
+				Status:  v1.ConditionTrue,
+				Message: fmt.Sprintf(`Referencing/calling other templates directly on a "template" is deprecated; they should be referenced in a "steps" or a "dag" template. See more: %s`, help.WorkflowTemplatesReferencingOtherTemplates),
+			})
 		}
 	}
 
 	_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.Entrypoint}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if wf.Spec.OnExit != "" {
 		// now when validating onExit, {{workflow.status}} is now available as a global
@@ -159,7 +177,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		ctx.globalParams[common.GlobalVarWorkflowFailures] = placeholderGenerator.NextPlaceholder()
 		_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -167,7 +185,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		switch wf.Spec.PodGC.Strategy {
 		case wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess:
 		default:
-			return errors.Errorf(errors.CodeBadRequest, "podGC.strategy unknown strategy '%s'", wf.Spec.PodGC.Strategy)
+			return nil, errors.Errorf(errors.CodeBadRequest, "podGC.strategy unknown strategy '%s'", wf.Spec.PodGC.Strategy)
 		}
 	}
 
@@ -175,10 +193,10 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	for _, template := range wf.Spec.Templates {
 		_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})
 		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
+			return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
 		}
 	}
-	return nil
+	return wfConditions, nil
 }
 
 // ValidateWorkflow accepts a workflow template and performs validation against it.
@@ -217,6 +235,7 @@ func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamesp
 	wf := common.ConvertCronWorkflowToWorkflow(cronWf)
 
 	err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "cannot validate Workflow: %s", err)
 	}
