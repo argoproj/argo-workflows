@@ -92,7 +92,7 @@ func NewSubmitCommand() *cobra.Command {
 func submitWorkflowsFromFile(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
 	fileContents, err := util.ReadManifest(filePaths...)
 	errors.CheckError(err)
-	if cliOpts.SubstituteParams {
+	if cliOpts.substituteParams {
 		fileContents, err = replaceGlobalParameters(fileContents, submitOpts)
 		if err != nil {
 			log.Fatalf("Failed to replace global parameters for workflows: %s", err)
@@ -149,7 +149,7 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *util.Subm
 	if err != nil {
 		log.Fatalf("Unable to get marshal workflow: %s", err)
 	}
-	if cliOpts.SubstituteParams {
+	if cliOpts.substituteParams {
 		fileContents := [][]byte{fileContent}
 		fileContents, err = replaceGlobalParameters(fileContents, submitOpts)
 		if err != nil {
