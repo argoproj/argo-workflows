@@ -648,6 +648,41 @@ func (s *CLISuite) TestCron() {
 	})
 }
 
+func (s *CLISuite) TestClusterTemplateCommands() {
+	s.Run("Create", func() {
+		s.Given().
+			RunCli([]string{"cluster-template", "create", "smoke/cluster-workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "cluster-workflow-template-whalesay-template")
+				}
+			})
+	})
+	s.Run("Get", func() {
+		s.Given().
+			RunCli([]string{"cluster-template", "get", "cluster-workflow-template-whalesay-template"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "cluster-workflow-template-whalesay-template")
+				}
+			})
+	})
+	s.Run("list", func() {
+		s.Given().
+			RunCli([]string{"cluster-template", "list"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "cluster-workflow-template-whalesay-template")
+				}
+			})
+	})
+	s.Run("Delete", func() {
+		s.Given().
+			RunCli([]string{"cluster-template", "delete", "cluster-workflow-template-whalesay-template"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "cluster-workflow-template-whalesay-template")
+				}
+			})
+	})
+}
+
 func TestCLISuite(t *testing.T) {
 	suite.Run(t, new(CLISuite))
 }

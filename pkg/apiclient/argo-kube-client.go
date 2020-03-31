@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
-
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/argoproj/argo/persist/sqldb"
+	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	"github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"

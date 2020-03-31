@@ -823,7 +823,7 @@ type TemplateRef struct {
 	// RuntimeResolution skips validation at creation time.
 	// By enabling this option, you can create the referred workflow template before the actual runtime.
 	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
-	// ClusterScope indicates the referred template is cluster scoped clusterworkflowtemplate.
+	// ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
 	ClusterScope bool `json:"clusterscope,omitempty" protobuf:"varint,4,opt,name=clusterscope"`
 }
 
