@@ -1,4 +1,4 @@
-import {AppContext, NotificationType, Page, SlidingPanel} from 'argo-ui';
+import {AppContext, NotificationType, Page, SlidingPanel, TopBarFilter} from 'argo-ui';
 import * as classNames from 'classnames';
 import * as PropTypes from 'prop-types';
 import * as React from 'react';
@@ -26,6 +26,20 @@ function parseSidePanelParam(param: string) {
     }
     return null;
 }
+
+export const defaultNodesToDisplay = [
+    'phase:Pending',
+    'phase:Running',
+    'phase:Succeeded',
+    'phase:Skipped',
+    'phase:Failed',
+    'phase:Error',
+    'type:Pod',
+    'type:Steps',
+    'type:Retry',
+    'type:Skipped',
+    'type:Suspend'
+];
 
 interface WorkflowDetailsState {
     workflowDagRenderOptions: WorkflowDagRenderOptions;
@@ -57,7 +71,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
     constructor(props: RouteComponentProps<any>) {
         super(props);
         this.state = {
-            workflowDagRenderOptions: {horizontal: false, zoom: 1, hideSucceeded: false},
+            workflowDagRenderOptions: {horizontal: false, zoom: 1, nodesToDisplay: defaultNodesToDisplay},
             workflow: null,
             links: null
         };
@@ -91,12 +105,43 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
     public render() {
         const selectedNode = this.state.workflow && this.state.workflow.status && this.state.workflow.status.nodes && this.state.workflow.status.nodes[this.selectedNodeId];
         const workflowPhase: NodePhase = this.state.workflow && this.state.workflow.status ? this.state.workflow.status.phase : undefined;
+        const filter: TopBarFilter<string> = {
+            items: [
+                {content: () => <span>Phase</span>},
+                {value: 'phase:Pending', label: 'Pending'},
+                {value: 'phase:Running', label: 'Running'},
+                {value: 'phase:Succeeded', label: 'Succeeded'},
+                {value: 'phase:Skipped', label: 'Skipped'},
+                {value: 'phase:Failed', label: 'Failed'},
+                {value: 'phase:Error', label: 'Error'},
+                {content: () => <span>Type</span>},
+                {value: 'type:Pod', label: 'Pod'},
+                {value: 'type:Steps', label: 'Steps'},
+                {value: 'type:StepGroup', label: 'StepGroup'},
+                {value: 'type:DAG', label: 'DAG'},
+                {value: 'type:TaskGroup', label: 'TaskGroup'},
+                {value: 'type:Retry', label: 'Retry'},
+                {value: 'type:Skipped', label: 'Skipped'},
+                {value: 'type:Suspend', label: 'Suspend'}
+            ],
+            selectedValues: this.state.workflowDagRenderOptions.nodesToDisplay,
+            selectionChanged: items => {
+                this.setState({
+                    workflowDagRenderOptions: {
+                        nodesToDisplay: items,
+                        horizontal: this.state.workflowDagRenderOptions.horizontal,
+                        zoom: this.state.workflowDagRenderOptions.zoom
+                    }
+                });
+            }
+        };
         return (
             <Consumer>
                 {ctx => (
                     <Page
                         title={'Workflow Details'}
                         toolbar={{
+                            filter,
                             breadcrumbs: [
                                 {
                                     title: 'Workflows',
