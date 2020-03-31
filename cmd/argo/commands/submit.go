@@ -32,7 +32,7 @@ type cliSubmitOpts struct {
 	watch            bool   // --watch
 	strict           bool   // --strict
 	priority         *int32 // --priority
-	SubstituteParams bool   // --substitute-params
+	substituteParams bool   // --substitute-params
 }
 
 func NewSubmitCommand() *cobra.Command {
