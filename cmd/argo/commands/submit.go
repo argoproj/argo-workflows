@@ -99,7 +99,7 @@ func submitWorkflowsFromFile(filePaths []string, submitOpts *util.SubmitOpts, cl
 	if cliOpts.SubstituteParams {
 		fileContents, err = replaceGlobalParameters(fileContents, submitOpts, cliOpts)
 		if err != nil {
-			log.Fatalf("Failed to replace global paramters for workflows, error '%s' ", err)
+			log.Fatalf("Failed to replace global parameters for workflows: %s", err)
 		}
 	}
 	var workflows []wfv1.Workflow
