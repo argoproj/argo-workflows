@@ -32,17 +32,6 @@ export class WorkflowDagRenderOptionsPanel extends React.Component<WorkflowDagRe
                     title='Zoom into the timeline'>
                     2x
                 </a>
-                <a
-                    className={classNames({active: !this.props.hideSucceeded})}
-                    onClick={() =>
-                        this.props.onChange({
-                            ...this.workflowDagRenderOptions,
-                            hideSucceeded: !this.props.hideSucceeded
-                        })
-                    }
-                    title='Hide succeeded'>
-                    <i className='fa fa-check' />
-                </a>
             </>
         );
     }
