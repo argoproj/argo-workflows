@@ -22,12 +22,12 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-// GCSArtifactDriver is a driver for GCS
-type GCSArtifactDriver struct {
+// ArtifactDriver is a driver for GCS
+type ArtifactDriver struct {
 	ServiceAccountKey string
 }
 
-func (g *GCSArtifactDriver) newGCSClient() (*storage.Client, error) {
+func (g *ArtifactDriver) newGCSClient() (*storage.Client, error) {
 	if g.ServiceAccountKey != "" {
 		return newGCSClientWithCredential(g.ServiceAccountKey)
 	}
@@ -58,7 +58,7 @@ func newGCSClientDefault() (*storage.Client, error) {
 }
 
 // Load function downloads objects from GCS
-func (g *GCSArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
+func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
 		func() (bool, error) {
 			log.Infof("GCS Load path: %s, key: %s", path, inputArtifact.GCS.Key)
@@ -146,7 +146,7 @@ func listByPrefix(client *storage.Client, bucket, prefix, delim string) ([]strin
 }
 
 // Save an artifact to GCS compliant storage, e.g., uploading a local file to GCS bucket
-func (g *GCSArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
+func (g *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
 	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
 		func() (bool, error) {
 			log.Infof("GCS Save path: %s, key: %s", path, outputArtifact.GCS.Key)
@@ -155,6 +155,7 @@ func (g *GCSArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) err
 				log.Warnf("Failed to create new GCS client: %v", err)
 				return false, nil
 			}
+			defer client.Close()
 			err = uploadObjects(client, outputArtifact.GCS.Bucket, outputArtifact.GCS.Key, path)
 			if err != nil {
 				log.Warnf("Failed to upload objects: %v", err)

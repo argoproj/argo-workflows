@@ -28,7 +28,7 @@ type cliSubmitOpts struct {
 	watch            bool   // --watch
 	strict           bool   // --strict
 	priority         *int32 // --priority
-	SubstituteParams bool   // --substitute-params
+	substituteParams bool   // --substitute-params
 }
 
 func NewSubmitCommand() *cobra.Command {
@@ -95,7 +95,7 @@ func submitWorkflowsFromFile(filePaths []string, submitOpts *util.SubmitOpts, cl
 	if cliOpts.SubstituteParams {
 		fileContents, err = replaceGlobalParameters(fileContents, submitOpts)
 		if err != nil {
-			log.Fatalf("Failed to replace global paramters for workflows, error '%s' ", err)
+			log.Fatalf("Failed to replace global parameters for workflows: %s", err)
 		}
 	}
 	var workflows []wfv1.Workflow
@@ -145,9 +145,9 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *util.Subm
 	}
 
 	// Need to Marshal in order to do the parameter replace
-	fileContent, err := yaml.Marshal(workflowToSubmit)
+	wfBytes, err := yaml.Marshal(workflowToSubmit)
 	if err != nil {
-		log.Fatalf("Unable to get marshale workflow: %s", err)
+		log.Fatalf("Unable to get marshal workflow: %s", err)
 	}
 	if cliOpts.SubstituteParams {
 		fileContents := [][]byte{fileContent}

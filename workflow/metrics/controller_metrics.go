@@ -58,7 +58,9 @@ func (wc *controllerCollector) collectWorkflowStatuses(wfs []*wfv1.Workflow) []p
 	}
 
 	for _, wf := range wfs {
-		gauges[wf.Status.Phase].Inc()
+		if _, ok := gauges[wf.Status.Phase]; ok {
+			gauges[wf.Status.Phase].Inc()
+		}
 	}
 
 	var out []prometheus.Metric

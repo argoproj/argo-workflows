@@ -1809,7 +1809,7 @@
     },
     "io.argoproj.workflow.v1alpha1.GCSBucket": {
       "type": "object",
-      "title": "GCSBucket contains the access information for  interfacring with a GCS bucket",
+      "title": "GCSBucket contains the access information for interfacring with a GCS bucket",
       "properties": {
         "bucket": {
           "type": "string",
@@ -2954,7 +2954,7 @@
           "format": "int32"
         },
         "ttlStrategy": {
-          "title": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it\nSucceeded or Failed. If this struct is set, once the Workflow finishes, it will be\ndeleted after the time to live expires. If this field is unset,\nthe controller config map will hold the default values\nUpdate",
+          "description": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it\nSucceeded or Failed. If this struct is set, once the Workflow finishes, it will be\ndeleted after the time to live expires. If this field is unset,\nthe controller config map will hold the default values.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TTLStrategy"
         },
         "volumeClaimTemplates": {
@@ -5798,6 +5798,9 @@
         },
         "namespace": {
           "type": "string"
+        },
+        "nodeFieldSelector": {
+          "type": "string"
         }
       }
     },
@@ -5815,10 +5818,16 @@
     "io.argoproj.workflow.v1alpha1.WorkflowStopRequest": {
       "type": "object",
       "properties": {
+        "message": {
+          "type": "string"
+        },
         "name": {
           "type": "string"
         },
         "namespace": {
+          "type": "string"
+        },
+        "nodeFieldSelector": {
           "type": "string"
         }
       }

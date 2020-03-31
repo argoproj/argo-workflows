@@ -277,6 +277,41 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 		})
 }
 
+func (s *CLISuite) TestNodeSuspendResume() {
+	s.Given().
+		Workflow("@testdata/node-suspend.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.AnyActiveSuspendNode()
+		}, "suspended node", 20*time.Second).
+		RunCli([]string{"resume", "node-suspend", "--node-selector", "inputs.parameters.tag.value=suspend1-tag1"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "workflow node-suspend resumed")
+			}
+		}).
+		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.AnyActiveSuspendNode()
+		}, "suspended node", 10*time.Second).
+		RunCli([]string{"stop", "node-suspend", "--node-selector", "inputs.parameters.tag.value=suspend2-tag1", "--message", "because"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "workflow node-suspend stopped")
+			}
+		}).
+		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
+			return wf.Status.Phase == wfv1.NodeFailed
+		}, "suspended node", 10*time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			if assert.Equal(t, wfv1.NodeFailed, status.Phase) {
+				r := regexp.MustCompile(`child '(node-suspend-[0-9]+)' failed`)
+				res := r.FindStringSubmatch(status.Message)
+				assert.Equal(t, len(res), 2)
+				assert.Equal(t, status.Nodes[res[1]].Message, "because")
+			}
+		})
+}
+
 func (s *CLISuite) TestWorkflowDelete() {
 	s.Run("DeleteByName", func() {
 		s.Given().
@@ -350,14 +385,14 @@ func (s *CLISuite) TestWorkflowLint() {
 	})
 	s.Run("LintFileEmptyParamDAG", func() {
 		s.Given().RunCli([]string{"lint", "expectedfailures/empty-parameter-dag.yaml"}, func(t *testing.T, output string, err error) {
-			if assert.Error(t, err, "exit status 1") {
+			if assert.EqualError(t, err, "exit status 1") {
 				assert.Contains(t, output, "templates.abc.tasks.a templates.whalesay inputs.parameters.message was not supplied")
 			}
 		})
 	})
 	s.Run("LintFileEmptyParamSteps", func() {
 		s.Given().RunCli([]string{"lint", "expectedfailures/empty-parameter-steps.yaml"}, func(t *testing.T, output string, err error) {
-			if assert.Error(t, err, "exit status 1") {
+			if assert.EqualError(t, err, "exit status 1") {
 				assert.Contains(t, output, "templates.abc.steps[0].a templates.whalesay inputs.parameters.message was not supplied")
 			}
 		})
@@ -479,7 +514,7 @@ func (s *CLISuite) TestTemplate() {
 	})
 	s.Run("Get", func() {
 		s.Given().RunCli([]string{"template", "get", "not-found"}, func(t *testing.T, output string, err error) {
-			if assert.Error(t, err, "exit status 1") {
+			if assert.EqualError(t, err, "exit status 1") {
 				assert.Contains(t, output, `"not-found" not found`)
 
 			}
@@ -590,7 +625,7 @@ func (s *CLISuite) TestCron() {
 	})
 	s.Run("Get", func() {
 		s.Given().RunCli([]string{"cron", "get", "not-found"}, func(t *testing.T, output string, err error) {
-			if assert.Error(t, err, "exit status 1") {
+			if assert.EqualError(t, err, "exit status 1") {
 				assert.Contains(t, output, `\"not-found\" not found`)
 
 			}
