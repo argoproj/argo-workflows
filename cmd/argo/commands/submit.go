@@ -149,7 +149,7 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *util.Subm
 	}
 
 	// Need to Marshal in order to do the parameter replace
-	fileContent, err := yaml.Marshal(workflowToSubmit)
+	wfBytes, err := yaml.Marshal(workflowToSubmit)
 	if err != nil {
 		log.Fatalf("Unable to get marshal workflow: %s", err)
 	}
