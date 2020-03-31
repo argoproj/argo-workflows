@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/argoproj/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
@@ -56,7 +57,9 @@ func NewLintCommand() *cobra.Command {
 					errors.CheckError(err)
 				} else {
 					err := lint(file)
-					errors.CheckError(err)
+					if err != nil {
+						log.Warn(err)
+					}
 				}
 			}
 			fmt.Printf("Workflow manifests validated\n")
