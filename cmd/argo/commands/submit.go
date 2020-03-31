@@ -144,7 +144,6 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *util.Subm
 		log.Fatalf("Resource kind '%s' is not supported with --from", kind)
 	}
 
-	// Need to Marshal in order to do the parameter replace
 	wfBytes, err := yaml.Marshal(workflowToSubmit)
 	if err != nil {
 		log.Fatalf("Unable to get marshal workflow: %s", err)
