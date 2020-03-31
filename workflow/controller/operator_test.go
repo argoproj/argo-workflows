@@ -2521,9 +2521,14 @@ func TestNestedOptionalOutputArtifacts(t *testing.T) {
 }
 
 func Test_nodePhaseReason(t *testing.T) {
-	assert.Equal(t, argo.EventReasonWorkflowNodeSucceeded, nodePhaseReason(wfv1.NodeSucceeded))
-	assert.Equal(t, argo.EventReasonWorkflowNodeFailed, nodePhaseReason(wfv1.NodeFailed))
 	assert.Equal(t, argo.EventReasonWorkflowNodeError, nodePhaseReason(wfv1.NodeError))
+	assert.Equal(t, argo.EventReasonWorkflowNodeFailed, nodePhaseReason(wfv1.NodeFailed))
+	assert.Equal(t, argo.EventReasonWorkflowNodeSucceeded, nodePhaseReason(wfv1.NodeSucceeded))
+}
+
+func Test_nodeMessage(t *testing.T) {
+	assert.Equal(t, "Succeeded node my-node", nodeMessage(&wfv1.NodeStatus{Phase: wfv1.NodeSucceeded, Name: "my-node"}))
+	assert.Equal(t, "Succeeded node my-node: my-message", nodeMessage(&wfv1.NodeStatus{Phase: wfv1.NodeSucceeded, Name: "my-node", Message: "my-message"}))
 }
 
 //  TestPodSpecLogForFailedPods tests PodSpec logging configuration
@@ -2562,15 +2567,4 @@ func TestPodSpecLogForAllPods(t *testing.T) {
 		assert.True(t, woc.shouldPrintPodSpec(node))
 	}
 
-}
-
-func Test_nodePhaseReason1(t *testing.T) {
-	assert.Equal(t, argo.EventReasonWorkflowNodeError, nodePhaseReason(wfv1.NodeError))
-	assert.Equal(t, argo.EventReasonWorkflowNodeFailed, nodePhaseReason(wfv1.NodeFailed))
-	assert.Equal(t, argo.EventReasonWorkflowNodeSucceeded, nodePhaseReason(wfv1.NodeSucceeded))
-}
-
-func Test_nodeMessage(t *testing.T) {
-	assert.Equal(t, "Succeeded node my-node", nodeMessage(&wfv1.NodeStatus{Phase: wfv1.NodeSucceeded, Name: "my-node"}))
-	assert.Equal(t, "Succeeded node my-node: my-message", nodeMessage(&wfv1.NodeStatus{Phase: wfv1.NodeSucceeded, Name: "my-node", Message: "my-message"}))
 }
