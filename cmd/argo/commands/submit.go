@@ -1,11 +1,8 @@
 package commands
 
 import (
-	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/argoproj/pkg/errors"
@@ -20,7 +17,6 @@ import (
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -97,7 +93,7 @@ func submitWorkflowsFromFile(filePaths []string, submitOpts *util.SubmitOpts, cl
 	fileContents, err := util.ReadManifest(filePaths...)
 	errors.CheckError(err)
 	if cliOpts.SubstituteParams {
-		fileContents, err = replaceGlobalParameters(fileContents, submitOpts, cliOpts)
+		fileContents, err = replaceGlobalParameters(fileContents, submitOpts)
 		if err != nil {
 			log.Fatalf("Failed to replace global paramters for workflows, error '%s' ", err)
 		}
@@ -155,7 +151,7 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *util.Subm
 	}
 	if cliOpts.SubstituteParams {
 		fileContents := [][]byte{fileContent}
-		fileContents, err = replaceGlobalParameters(fileContents, submitOpts, cliOpts)
+		fileContents, err = replaceGlobalParameters(fileContents, submitOpts)
 		if err != nil {
 			log.Fatalf("Failed to replace global paramters for workflow, error '%s' ", resourceIdentifier)
 		}
@@ -272,63 +268,7 @@ func waitOrWatch(workflowNames []string, cliSubmitOpts cliSubmitOpts) {
 	}
 }
 
-func parseParameters(opts *util.SubmitOpts) ([]wfv1.Parameter, error) {
-	newParams := make([]wfv1.Parameter, 0)
-	if len(opts.Parameters) > 0 || opts.ParameterFile != "" {
-		passedParams := make(map[string]bool)
-		for _, paramStr := range opts.Parameters {
-			parts := strings.SplitN(paramStr, "=", 2)
-			if len(parts) == 1 {
-				return nil, fmt.Errorf("Expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
-			}
-			param := wfv1.Parameter{
-				Name:  parts[0],
-				Value: &parts[1],
-			}
-			newParams = append(newParams, param)
-			passedParams[param.Name] = true
-		}
-		if opts.ParameterFile != "" {
-			var body []byte
-			var err error
-			if cmdutil.IsURL(opts.ParameterFile) {
-				body, err = util.ReadFromUrl(opts.ParameterFile)
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				body, err = ioutil.ReadFile(opts.ParameterFile)
-				if err != nil {
-					return nil, err
-				}
-			}
-			yamlParams := make(map[string]string)
-			err = yaml.Unmarshal(body, &yamlParams)
-			if err != nil {
-				return nil, err
-			}
-
-			for k, v := range yamlParams {
-				value, err := strconv.Unquote(string(v))
-				if err != nil {
-					value = string(v)
-				}
-				param := wfv1.Parameter{
-					Name:  k,
-					Value: &value,
-				}
-				if _, ok := passedParams[param.Name]; ok {
-					continue
-				}
-				newParams = append(newParams, param)
-				passedParams[param.Name] = true
-			}
-		}
-	}
-	return newParams, nil
-}
-
-func replaceGlobalParameters(fileContents [][]byte, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) ([][]byte, error) {
+func replaceGlobalParameters(fileContents [][]byte, submitOpts *util.SubmitOpts) ([][]byte, error) {
 	var output [][]byte
 	for _, body := range fileContents {
 		workflowRaw := make(map[interface{}]interface{})
@@ -353,18 +293,22 @@ func replaceGlobalParameters(fileContents [][]byte, submitOpts *util.SubmitOpts,
 		for _, param := range argSpec.Parameters {
 			globalParams["workflow.parameters."+param.Name] = *param.Value
 		}
-		newParams, err := parseParameters(submitOpts)
-		if err != nil {
-			return nil, err
+		if len(submitOpts.Parameters) > 0 || submitOpts.ParameterFile != "" {
+			newParams, _, err := util.ParseParameters(submitOpts)
+			if err != nil {
+				return nil, err
+			}
+			for _, param := range newParams {
+				globalParams["workflow.parameters."+param.Name] = *param.Value
+			}
 		}
+		// do substitution locally on the set parameters
 		globalReplacedTmplStr := string(body)
-		for _, param := range newParams {
-			globalParams["workflow.parameters."+param.Name] = *param.Value
-		}
 		for key, value := range globalParams {
 			globalReplacedTmplStr = strings.ReplaceAll(globalReplacedTmplStr, `"{{`+key+`}}"`, value)
 		}
-		output = append(output, []byte(globalReplacedTmplStr))
+		body = []byte(globalReplacedTmplStr)
+		output = append(output, body)
 	}
 	return output, nil
 }

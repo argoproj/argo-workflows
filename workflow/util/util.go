@@ -203,6 +203,60 @@ func CreateServerDryRun(wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*
 	return wf, err
 }
 
+func ParseParameters(opts *SubmitOpts) ([]wfv1.Parameter, map[string]bool, error) {
+	newParams := make([]wfv1.Parameter, 0)
+	passedParams := make(map[string]bool)
+	for _, paramStr := range opts.Parameters {
+		parts := strings.SplitN(paramStr, "=", 2)
+		if len(parts) == 1 {
+			return nil, nil, fmt.Errorf("Expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
+		}
+		param := wfv1.Parameter{
+			Name:  parts[0],
+			Value: &parts[1],
+		}
+		newParams = append(newParams, param)
+		passedParams[param.Name] = true
+	}
+	if opts.ParameterFile != "" {
+		var body []byte
+		var err error
+		if cmdutil.IsURL(opts.ParameterFile) {
+			body, err = ReadFromUrl(opts.ParameterFile)
+			if err != nil {
+				return nil, nil, errors.InternalWrapError(err)
+			}
+		} else {
+			body, err = ioutil.ReadFile(opts.ParameterFile)
+			if err != nil {
+				return nil, nil, errors.InternalWrapError(err)
+			}
+		}
+		yamlParams := make(map[string]string)
+		err = yaml.Unmarshal(body, &yamlParams)
+		if err != nil {
+			return nil, nil, errors.InternalWrapError(err)
+		}
+
+		for k, v := range yamlParams {
+			value, err := strconv.Unquote(string(v))
+			if err != nil {
+				value = string(v)
+			}
+			param := wfv1.Parameter{
+				Name:  k,
+				Value: &value,
+			}
+			if _, ok := passedParams[param.Name]; ok {
+				continue
+			}
+			newParams = append(newParams, param)
+			passedParams[param.Name] = true
+		}
+	}
+	return newParams, passedParams, nil
+}
+
 // Apply the Submit options into workflow object
 func ApplySubmitOpts(wf *wfv1.Workflow, opts *SubmitOpts) error {
 	if opts == nil {
@@ -232,63 +286,10 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *SubmitOpts) error {
 	}
 	wf.SetLabels(labels)
 	if len(opts.Parameters) > 0 || opts.ParameterFile != "" {
-		newParams := make([]wfv1.Parameter, 0)
-		passedParams := make(map[string]bool)
-		for _, paramStr := range opts.Parameters {
-			parts := strings.SplitN(paramStr, "=", 2)
-			if len(parts) == 1 {
-				return fmt.Errorf("Expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
-			}
-			param := wfv1.Parameter{
-				Name:  parts[0],
-				Value: &parts[1],
-			}
-			newParams = append(newParams, param)
-			passedParams[param.Name] = true
+		newParams, passedParams, err := ParseParameters(opts)
+		if err != nil {
+			return err
 		}
-
-		// Add parameters from a parameter-file, if one was provided
-		if opts.ParameterFile != "" {
-			var body []byte
-			var err error
-			if cmdutil.IsURL(opts.ParameterFile) {
-				body, err = ReadFromUrl(opts.ParameterFile)
-				if err != nil {
-					return errors.InternalWrapError(err)
-				}
-			} else {
-				body, err = ioutil.ReadFile(opts.ParameterFile)
-				if err != nil {
-					return errors.InternalWrapError(err)
-				}
-			}
-
-			yamlParams := map[string]json.RawMessage{}
-			err = yaml.Unmarshal(body, &yamlParams)
-			if err != nil {
-				return errors.InternalWrapError(err)
-			}
-
-			for k, v := range yamlParams {
-				// We get quoted strings from the yaml file.
-				value, err := strconv.Unquote(string(v))
-				if err != nil {
-					// the string is already clean.
-					value = string(v)
-				}
-				param := wfv1.Parameter{
-					Name:  k,
-					Value: &value,
-				}
-				if _, ok := passedParams[param.Name]; ok {
-					// this parameter was overridden via command line
-					continue
-				}
-				newParams = append(newParams, param)
-				passedParams[param.Name] = true
-			}
-		}
-
 		for _, param := range wf.Spec.Arguments.Parameters {
 			if _, ok := passedParams[param.Name]; ok {
 				// this parameter was overridden via command line
