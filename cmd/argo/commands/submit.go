@@ -144,18 +144,17 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *util.Subm
 		log.Fatalf("Resource kind '%s' is not supported with --from", kind)
 	}
 
-	// Need to Marshal in order to do the parameter replace
-	wfBytes, err := yaml.Marshal(workflowToSubmit)
-	if err != nil {
-		log.Fatalf("Unable to get marshal workflow: %s", err)
-	}
 	if cliOpts.substituteParams {
-		fileContents := [][]byte{fileContent}
-		fileContents, err = replaceGlobalParameters(fileContents, submitOpts)
+		wfBytes, err := yaml.Marshal(workflowToSubmit)
+		if err != nil {
+			log.Fatalf("Unable to get marshal workflow: %s", err)
+		}
+		wfContents := [][]byte{wfBytes}
+		wfContents, err = replaceGlobalParameters(wfContents, submitOpts)
 		if err != nil {
 			log.Fatalf("Failed to replace global paramters for workflow, error '%s' ", resourceIdentifier)
 		}
-		workflowToSubmit = &unmarshalWorkflows(fileContents[0], cliOpts.strict)[0]
+		workflowToSubmit = &unmarshalWorkflows(wfContents[0], cliOpts.strict)[0]
 	}
 	submitWorkflows([]wfv1.Workflow{*workflowToSubmit}, submitOpts, cliOpts)
 }
