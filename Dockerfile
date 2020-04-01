@@ -32,7 +32,8 @@ RUN wget https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-lin
 # argoexec-base
 # Used as the base for both the release and development version of argoexec
 ####################################################################################################
-FROM debian:9.6-slim as argoexec-base
+FROM debian:10.3-slim as argoexec-base
+
 # NOTE: keep the version synced with https://storage.googleapis.com/kubernetes-release/release/stable.txt
 ENV KUBECTL_VERSION=1.15.1
 ENV JQ_VERSION=1.6
