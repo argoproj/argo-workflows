@@ -374,7 +374,7 @@ func (woc *wfOperationCtx) operate() {
 			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, onExitNode.Message)
 		} else {
 			woc.markWorkflowSuccess()
-			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: argo.EventReasonWorkflowSucceded}, "Workflow completed")
+			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: argo.EventReasonWorkflowSucceeded}, "Workflow completed")
 		}
 	case wfv1.NodeFailed:
 		woc.markWorkflowFailed(workflowMessage)
@@ -1671,8 +1671,27 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 		woc.log.Infof("node %s finished: %s", node, node.FinishedAt)
 		woc.updated = true
 	}
+	if woc.updated && node.Phase.Completed() {
+		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: nodePhaseReason(node.Phase)}, nodeMessage(node))
+	}
 	woc.wf.Status.Nodes[node.ID] = *node
 	return node
+}
+
+func nodePhaseReason(phase wfv1.NodePhase) string {
+	return map[wfv1.NodePhase]string{
+		wfv1.NodeError:     argo.EventReasonWorkflowNodeError,
+		wfv1.NodeFailed:    argo.EventReasonWorkflowNodeFailed,
+		wfv1.NodeSucceeded: argo.EventReasonWorkflowNodeSucceeded,
+	}[phase]
+}
+
+func nodeMessage(node *wfv1.NodeStatus) string {
+	message := fmt.Sprintf("%v node %s", node.Phase, node.Name)
+	if node.Message != "" {
+		message = message + ": " + node.Message
+	}
+	return message
 }
 
 // markNodeError is a convenience method to mark a node with an error and set the message from the error
