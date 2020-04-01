@@ -22,7 +22,7 @@ func NewLintCommand() *cobra.Command {
 		Use:   "lint FILE...",
 		Short: "validate files or directories of workflow manifests",
 		Run: func(cmd *cobra.Command, args []string) {
-			var unvalidWf error
+			var invalidWfErr error
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
