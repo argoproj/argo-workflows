@@ -41,6 +41,7 @@ func NewLintCommand() *cobra.Command {
 				fmt.Printf("%s is valid\n", file)
 				return nil
 			}
+
 			for _, file := range args {
 				stat, err := os.Stat(file)
 				errors.CheckError(err)
@@ -54,7 +55,7 @@ func NewLintCommand() *cobra.Command {
 						}
 						err = lint(path)
 						if err != nil {
-							unvalidWf = fmt.Errorf("unvalid workflow/workflows found")
+							invalidWfErr = fmt.Errorf("Unvalid workflow/workflows found")
 							log.Warn(err)
 						}
 						return nil
@@ -62,14 +63,14 @@ func NewLintCommand() *cobra.Command {
 				} else {
 					err := lint(file)
 					if err != nil {
-						unvalidWf = fmt.Errorf("unvalidWf workflow/workflows found")
+						invalidWfErr = fmt.Errorf("Unvalid workflow/workflows found")
 						log.Warn(err)
 					}
 				}
 				err = nil
 			}
-			if unvalidWf != nil {
-				errors.CheckError(unvalidWf)
+			if invalidWfErr != nil {
+				errors.CheckError(invalidWfErr)
 			}
 			fmt.Printf("Workflow manifests validated\n")
 		},
