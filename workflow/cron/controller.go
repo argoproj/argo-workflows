@@ -226,7 +226,7 @@ func (cc *Controller) processNextWorkflowItem() bool {
 			return true
 		}
 	} else {
-		log.Errorf("Parent CronWorkflow '%s' no longer exists", nameEntryIdMapKey)
+		log.Warnf("Parent CronWorkflow '%s' no longer exists", nameEntryIdMapKey)
 		return true
 	}
 
