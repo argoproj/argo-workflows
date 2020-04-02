@@ -458,7 +458,7 @@ func DeletePod(c kubernetes.Interface, podName, namespace string) error {
 	for attempt := 0; attempt < deleteRetries; attempt++ {
 		err = c.CoreV1().Pods(namespace).Delete(podName, &metav1.DeleteOptions{})
 		if err == nil || apierr.IsNotFound(err) {
-			break
+			return nil
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
