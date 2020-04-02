@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
@@ -67,4 +69,18 @@ spec:
 `
 	_, err = SplitWorkflowYAMLFile([]byte(invalidWf), false)
 	assert.EqualError(t, err, `error unmarshaling JSON: while decoding JSON: json: unknown field "doesNotExist"`)
+}
+
+func TestDeletePod(t *testing.T) {
+	kube := fake.NewSimpleClientset(&corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{Name: "my-pod", Namespace: "my-ns"},
+	})
+	t.Run("Exists", func(t *testing.T) {
+		err := DeletePod(kube, "my-pod", "my-ms")
+		assert.NoError(t, err)
+	})
+	t.Run("NotExists", func(t *testing.T) {
+		err := DeletePod(kube, "not-exists", "my-ms")
+		assert.NoError(t, err)
+	})
 }
