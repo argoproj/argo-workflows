@@ -52,7 +52,7 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                     <p />
                                 )}
                                 <button type='button' className='argo-button argo-button--sm' id='uploadWf' onClick={() => document.getElementById('file').click()}>
-                                    Upload Workflow{' '}
+                                    Upload File{' '}
                                 </button>
                                 <input
                                     type='file'

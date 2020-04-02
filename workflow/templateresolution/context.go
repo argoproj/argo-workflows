@@ -128,16 +128,7 @@ func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Templat
 		if apierr.IsNotFound(err) {
 			return nil, errors.Errorf(errors.CodeNotFound, "workflow template %s not found", tmplRef.Name)
 		}
-		template = cwftmpl.GetTemplateByName(tmplRef.Template)
-	} else {
-		wftmpl, err := ctx.wftmplGetter.Get(tmplRef.Name)
-		if err != nil {
-			if apierr.IsNotFound(err) {
-				return nil, errors.Errorf(errors.CodeNotFound, "workflow template %s not found", tmplRef.Name)
-			}
-			return nil, err
-		}
-		template = wftmpl.GetTemplateByName(tmplRef.Template)
+		return nil, err
 	}
 
 	template = wftmpl.GetTemplateByName(tmplRef.Template)

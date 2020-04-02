@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -47,6 +48,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	if offset < 0 {
 		return nil, status.Error(codes.InvalidArgument, "listOptions.continue must >= 0")
 	}
+
 	namespace := ""
 	minStartedAt := time.Time{}
 	maxStartedAt := time.Time{}
@@ -86,7 +88,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	hasMore := true
 	// keep trying until we have enough
 	for len(items) < limit {
-		moreItems, err := w.wfArchive.ListWorkflows(namespace, requirements, limit+1, offset)
+		moreItems, err := w.wfArchive.ListWorkflows(namespace, minStartedAt, maxStartedAt, requirements, limit+1, offset)
 		if err != nil {
 			return nil, err
 		}
