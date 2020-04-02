@@ -52,8 +52,8 @@ func (cwftmpl *ClusterWorkflowTemplate) GetTemplateByName(name string) *Template
 }
 
 // GetTemplateScope returns the template scope of workflow template.
-func (cwftmpl *ClusterWorkflowTemplate) GetTemplateScope() string {
-	return "cluster/" + cwftmpl.Name
+func (cwftmpl *ClusterWorkflowTemplate) GetTemplateScope() (ResourceScope, string) {
+	return ResourceScopeClusterWorkflowTemplate, cwftmpl.Name
 }
 
 // GetAllTemplates returns the list of templates of cluster workflow template

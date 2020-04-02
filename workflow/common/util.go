@@ -658,8 +658,8 @@ func GetTemplateGetterString(getter wfv1.TemplateGetter) string {
 	return fmt.Sprintf("%T (namespace=%s,name=%s)", getter, getter.GetNamespace(), getter.GetName())
 }
 
-// GetTemplateHolderString returns string of TemplateHolder.
-func GetTemplateHolderString(tmplHolder wfv1.TemplateHolder) string {
+// GetTemplateHolderString returns string of TemplateCaller.
+func GetTemplateHolderString(tmplHolder wfv1.TemplateCaller) string {
 	tmplName := tmplHolder.GetTemplateName()
 	tmplRef := tmplHolder.GetTemplateRef()
 	if tmplRef != nil {

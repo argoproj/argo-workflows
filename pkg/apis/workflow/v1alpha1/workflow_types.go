@@ -462,7 +462,7 @@ type Template struct {
 	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,35,opt,name=metrics"`
 }
 
-var _ TemplateHolder = &Template{}
+var _ TemplateCaller = &Template{}
 
 // DEPRECATED: Templates should not be used at TemplateHolders
 func (tmpl *Template) GetTemplateName() string {
@@ -476,11 +476,6 @@ func (tmpl *Template) GetTemplateName() string {
 // DEPRECATED: Templates should not be used at TemplateHolders
 func (tmpl *Template) GetTemplateRef() *TemplateRef {
 	return tmpl.TemplateRef
-}
-
-// DEPRECATED: Templates should not be used at TemplateHolders
-func (tmpl *Template) IsResolvable() bool {
-	return tmpl.Template != "" || tmpl.TemplateRef != nil
 }
 
 // GetBaseTemplate returns a base template content.
@@ -740,7 +735,7 @@ type WorkflowStep struct {
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 }
 
-var _ TemplateHolder = &WorkflowStep{}
+var _ TemplateCaller = &WorkflowStep{}
 
 func (step *WorkflowStep) GetTemplateName() string {
 	return step.Template
@@ -748,10 +743,6 @@ func (step *WorkflowStep) GetTemplateName() string {
 
 func (step *WorkflowStep) GetTemplateRef() *TemplateRef {
 	return step.TemplateRef
-}
-
-func (step *WorkflowStep) IsResolvable() bool {
-	return true
 }
 
 // Sequence expands a workflow step into numeric range
@@ -1054,6 +1045,7 @@ type NodeStatus struct {
 	WorkflowTemplateName string `json:"workflowTemplateName,omitempty" protobuf:"bytes,19,opt,name=workflowTemplateName"`
 
 	// TemplateScope is the template scope in which the template of this node was retrieved.
+	// DEPRECATED: This value is not used anymore.
 	TemplateScope string `json:"templateScope,omitempty" protobuf:"bytes,20,opt,name=templateScope"`
 
 	// Phase a simple, high-level summary of where the node is in its lifecycle.
@@ -1188,7 +1180,18 @@ func (n NodeStatus) CanRetry() bool {
 	return n.Completed() && !n.Successful()
 }
 
-var _ TemplateHolder = &NodeStatus{}
+// CanRetry returns whether the node should be retried or not.
+func (n NodeStatus) GetTemplateScope() (ResourceScope, string) {
+	if n.TemplateRef != nil {
+		if n.TemplateRef.ClusterScope {
+			return ResourceScopeClusterWorkflowTemplate, n.TemplateRef.Name
+		}
+		return ResourceScopeWorkflowTemplate, n.TemplateRef.Name
+	}
+	return ResourceScopeLocal, ""
+}
+
+var _ TemplateCaller = &NodeStatus{}
 
 func (n *NodeStatus) GetTemplateName() string {
 	return n.TemplateName
@@ -1196,10 +1199,6 @@ func (n *NodeStatus) GetTemplateName() string {
 
 func (n *NodeStatus) GetTemplateRef() *TemplateRef {
 	return n.TemplateRef
-}
-
-func (n *NodeStatus) IsResolvable() bool {
-	return true
 }
 
 // IsActiveSuspendNode returns whether this node is an active suspend node
@@ -1564,7 +1563,7 @@ type DAGTask struct {
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 }
 
-var _ TemplateHolder = &DAGTask{}
+var _ TemplateCaller = &DAGTask{}
 
 func (t *DAGTask) GetTemplateName() string {
 	return t.Template
@@ -1572,10 +1571,6 @@ func (t *DAGTask) GetTemplateName() string {
 
 func (t *DAGTask) GetTemplateRef() *TemplateRef {
 	return t.TemplateRef
-}
-
-func (t *DAGTask) IsResolvable() bool {
-	return true
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
@@ -1666,8 +1661,8 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 }
 
 // GetTemplateScope returns the template scope of workflow.
-func (wf *Workflow) GetTemplateScope() string {
-	return ""
+func (wf *Workflow) GetTemplateScope() (ResourceScope, string) {
+	return ResourceScopeLocal, ""
 }
 
 // GetAllTemplates returns the list of templates of workflow.
@@ -1686,26 +1681,28 @@ func (wf *Workflow) NodeID(name string) string {
 }
 
 // GetStoredTemplate retrieves a template from stored templates of the workflow.
-func (wf *Workflow) GetStoredTemplate(templateScope string, holder TemplateHolder) *Template {
-	tmplID := wf.getStoredTemplateName(templateScope, holder)
-	if tmplID == "" {
+func (wf *Workflow) GetStoredTemplate(scope ResourceScope, resourceName string, caller TemplateCaller) *Template {
+	// Local templates aren't stored
+	if scope == ResourceScopeLocal {
 		return nil
 	}
-	tmpl, ok := wf.Status.StoredTemplates[tmplID]
-	if !ok {
-		return nil
+
+	tmplID := wf.getStoredTemplateName(scope, resourceName, caller)
+	if tmpl, ok := wf.Status.StoredTemplates[tmplID]; ok {
+		return &tmpl
 	}
-	return &tmpl
+	return nil
 }
 
 // SetStoredTemplate stores a new template in stored templates of the workflow.
-func (wf *Workflow) SetStoredTemplate(templateScope string, holder TemplateHolder, tmpl *Template) (bool, error) {
-	tmplID := wf.getStoredTemplateName(templateScope, holder)
-	if tmplID == "" {
+func (wf *Workflow) SetStoredTemplate(scope ResourceScope, resourceName string, caller TemplateCaller, tmpl *Template) (bool, error) {
+	// Don't store local templates
+	if scope == ResourceScopeLocal {
 		return false, nil
 	}
-	_, ok := wf.Status.StoredTemplates[tmplID]
-	if !ok {
+
+	tmplID := wf.getStoredTemplateName(scope, resourceName, caller)
+	if _, ok := wf.Status.StoredTemplates[tmplID]; !ok {
 		if wf.Status.StoredTemplates == nil {
 			wf.Status.StoredTemplates = map[string]Template{}
 		}
@@ -1716,16 +1713,14 @@ func (wf *Workflow) SetStoredTemplate(templateScope string, holder TemplateHolde
 }
 
 // getStoredTemplateName returns the stored template name of a given template holder on the template scope.
-func (wf *Workflow) getStoredTemplateName(templateScope string, holder TemplateHolder) string {
-	tmplRef := holder.GetTemplateRef()
+func (wf *Workflow) getStoredTemplateName(scope ResourceScope, resourceName string, caller TemplateCaller) string {
+	tmplRef := caller.GetTemplateRef()
+	// We are calling an external WorkflowTemplate or ClusterWorkflowTemplate
 	if tmplRef != nil {
-		return fmt.Sprintf("%s/%s", tmplRef.Name, tmplRef.Template)
-	} else if templateScope != "" {
-		return fmt.Sprintf("%s/%s", templateScope, holder.GetTemplateName())
-	} else {
-		// Do not store workflow-local templates.
-		return ""
+		return fmt.Sprintf("%s/%s/%s", scope, tmplRef.Name, tmplRef.Template)
 	}
+	// Either a WorkflowTemplate or a ClusterWorkflowTemplate is calling a template inside itself
+	return fmt.Sprintf("%s/%s/%s", scope, resourceName, caller.GetTemplateName())
 }
 
 // ContinueOn defines if a workflow should continue even if a task or step fails/errors.

@@ -27,10 +27,10 @@ type stepsContext struct {
 	tmplCtx *templateresolution.Context
 }
 
-func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, orgTmpl wfv1.TemplateCaller, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
-		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSteps, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSteps, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
 	}
 
 	defer func() {
@@ -38,9 +38,6 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 			_ = woc.killDaemonedChildren(node.ID)
 		}
 	}()
-
-	// The template scope of this step.
-	stepTemplateScope := tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
 
 	stepsCtx := stepsContext{
 		boundaryID: node.ID,
@@ -55,7 +52,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 	for i, stepGroup := range tmpl.Steps {
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
 		if woc.getNodeByName(sgNodeName) == nil {
-			_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, stepTemplateScope, tmpl, stepsCtx.boundaryID, wfv1.NodeRunning)
+			_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, tmpl, stepsCtx.boundaryID, wfv1.NodeRunning)
 		} else {
 			_ = woc.markNodePhase(sgNodeName, wfv1.NodeRunning)
 		}
@@ -195,9 +192,6 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	// Maps nodes to their steps
 	nodeSteps := make(map[string]wfv1.WorkflowStep)
 
-	// The template scope of this step group.
-	stepTemplateScope := stepsCtx.tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
-
 	// Kick off all parallel steps in the group
 	for _, step := range stepGroup {
 		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
@@ -205,7 +199,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		// Check the step's when clause to decide if it should execute
 		proceed, err := shouldExecute(step.When)
 		if err != nil {
-			woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeError, err.Error())
+			woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, &step, stepsCtx.boundaryID, wfv1.NodeError, err.Error())
 			woc.addChildNode(sgNodeName, childNodeName)
 			woc.markNodeError(childNodeName, err)
 			return woc.markNodeError(sgNodeName, err)
@@ -214,7 +208,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			if woc.getNodeByName(childNodeName) == nil {
 				skipReason := fmt.Sprintf("when '%s' evaluated false", step.When)
 				woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
-				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
 				woc.addChildNode(sgNodeName, childNodeName)
 			}
 			continue
@@ -382,10 +376,9 @@ func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.W
 			// Empty list
 			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
 			if woc.getNodeByName(childNodeName) == nil {
-				stepTemplateScope := stepsCtx.tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
 				skipReason := fmt.Sprint("Skipped, empty params")
 				woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
-				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
 				woc.addChildNode(sgNodeName, childNodeName)
 			}
 		}

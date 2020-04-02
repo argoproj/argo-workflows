@@ -56,8 +56,8 @@ func (wftmpl *WorkflowTemplate) GetTemplateByName(name string) *Template {
 }
 
 // GetTemplateScope returns the template scope of workflow template.
-func (wftmpl *WorkflowTemplate) GetTemplateScope() string {
-	return "namespaced/" + wftmpl.Name
+func (wftmpl *WorkflowTemplate) GetTemplateScope() (ResourceScope, string) {
+	return ResourceScopeWorkflowTemplate, wftmpl.Name
 }
 
 // GetAllTemplates returns the list of templates of workflow template
