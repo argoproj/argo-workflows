@@ -17,6 +17,7 @@ import (
 
 var wfClientset = fakewfclientset.NewSimpleClientset()
 var wftmplGetter = templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault))
+var cwftmplGetter = templateresolution.WrapClusterWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
 func createWorkflowTemplate(yamlStr string) error {
 	wftmpl := unmarshalWftmpl(yamlStr)
@@ -31,14 +32,14 @@ func createWorkflowTemplate(yamlStr string) error {
 // its validation result.
 func validate(yamlStr string) (*wfv1.WorkflowConditions, error) {
 	wf := unmarshalWf(yamlStr)
-	return ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 }
 
 // validateWorkflowTemplate is a test helper to accept WorkflowTemplate YAML as a string and return
 // its validation result.
 func validateWorkflowTemplate(yamlStr string) error {
 	wftmpl := unmarshalWftmpl(yamlStr)
-	return ValidateWorkflowTemplate(wftmplGetter, wftmpl)
+	return ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, wftmpl)
 }
 
 func unmarshalWf(yamlStr string) *wfv1.Workflow {
@@ -1009,13 +1010,17 @@ spec:
 func TestVolumeMountArtifactPathCollision(t *testing.T) {
 	// ensure we detect and reject path collisions
 	wf := unmarshalWf(volumeMountArtifactPathCollision)
-	_, err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+
+	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "already mounted")
 	}
 	// tweak the mount path and validation should now be successful
 	wf.Spec.Templates[0].Container.VolumeMounts[0].MountPath = "/differentpath"
-	_, err = ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+
+	_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+
 	assert.NoError(t, err)
 }
 
@@ -1275,7 +1280,8 @@ func TestPodNameVariable(t *testing.T) {
 }
 
 func TestGlobalParamWithVariable(t *testing.T) {
-	_, err := ValidateWorkflow(wftmplGetter, test.LoadE2EWorkflow("functional/global-outputs-variable.yaml"), ValidateOpts{})
+	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, test.LoadE2EWorkflow("functional/global-outputs-variable.yaml"), ValidateOpts{})
+
 	assert.NoError(t, err)
 }
 
@@ -1300,9 +1306,11 @@ spec:
 // TestSpecArgumentNoValue we allow parameters to have no value at the spec level during linting
 func TestSpecArgumentNoValue(t *testing.T) {
 	wf := unmarshalWf(specArgumentNoValue)
-	_, err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{Lint: true})
+
+	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{Lint: true})
 	assert.NoError(t, err)
-	_, err = ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+	_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+
 	assert.NotNil(t, err)
 }
 
@@ -1337,7 +1345,9 @@ spec:
 // TestSpecArgumentSnakeCase we allow parameter and artifact names to be snake case
 func TestSpecArgumentSnakeCase(t *testing.T) {
 	wf := unmarshalWf(specArgumentSnakeCase)
-	_, err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{Lint: true})
+
+	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{Lint: true})
+
 	assert.NoError(t, err)
 }
 
@@ -1372,7 +1382,9 @@ spec:
 // TestSpecBadSequenceCountAndEnd verifies both count and end cannot be defined
 func TestSpecBadSequenceCountAndEnd(t *testing.T) {
 	wf := unmarshalWf(specBadSequenceCountAndEnd)
-	_, err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{Lint: true})
+
+	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{Lint: true})
+
 	assert.Error(t, err)
 }
 
@@ -1392,7 +1404,9 @@ spec:
 // TestCustomTemplatVariable verifies custom template variable
 func TestCustomTemplatVariable(t *testing.T) {
 	wf := unmarshalWf(customVariableInput)
-	_, err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{Lint: true})
+
+	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{Lint: true})
+
 	assert.Equal(t, err, nil)
 }
 
@@ -1493,28 +1507,28 @@ func TestBaseImageOutputVerify(t *testing.T) {
 	for _, executor := range []string{common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorPNS, common.ContainerRuntimeExecutorDocker, ""} {
 		switch executor {
 		case common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet:
-			_, err = ValidateWorkflow(wftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.Error(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
+			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.Error(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.Error(t, err)
 		case common.ContainerRuntimeExecutorPNS:
-			_, err = ValidateWorkflow(wftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
+			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.Error(t, err)
 		case common.ContainerRuntimeExecutorDocker, "":
-			_, err = ValidateWorkflow(wftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
+			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
 		}
-		_, err = ValidateWorkflow(wftmplGetter, wfEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+		_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 		assert.NoError(t, err)
 	}
 }
@@ -1809,7 +1823,9 @@ spec:
 // TestValidResourceWorkflow verifies a workflow of a valid resource.
 func TestValidResourceWorkflow(t *testing.T) {
 	wf := unmarshalWf(validResourceWorkflow)
-	_, err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+
+	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+
 	assert.Equal(t, err, nil)
 }
 
@@ -1852,11 +1868,11 @@ spec:
 // TestInvalidResourceWorkflow verifies an error against a workflow of an invalid resource.
 func TestInvalidResourceWorkflow(t *testing.T) {
 	wf := unmarshalWf(invalidResourceWorkflow)
-	_, err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 	assert.EqualError(t, err, "templates.whalesay.resource.manifest must be a valid yaml")
 
 	wf = unmarshalWf(invalidActionResourceWorkflow)
-	_, err = ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+	_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 	assert.EqualError(t, err, "templates.whalesay.resource.action must be one of: get, create, apply, delete, replace, patch")
 }
 
@@ -1880,12 +1896,13 @@ spec:
 // TestUnknownPodGCStrategy verifies pod gc strategy is correct.
 func TestUnknownPodGCStrategy(t *testing.T) {
 	wf := unmarshalWf(invalidPodGC)
-	_, err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+
 	assert.EqualError(t, err, "podGC.strategy unknown strategy 'Foo'")
 
 	for _, strat := range []wfv1.PodGCStrategy{wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess} {
 		wf.Spec.PodGC.Strategy = strat
-		_, err = ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+		_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 		assert.NoError(t, err)
 	}
 }
@@ -1960,22 +1977,26 @@ spec:
 func TestAutomountServiceAccountTokenUse(t *testing.T) {
 	{
 		wf := unmarshalWf(validAutomountServiceAccountTokenUseWfLevel)
-		_, err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+		_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+
 		assert.NoError(t, err)
 	}
 	{
 		wf := unmarshalWf(validAutomountServiceAccountTokenUseTmplLevel)
-		_, err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+		_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+
 		assert.NoError(t, err)
 	}
 	{
 		wf := unmarshalWf(invalidAutomountServiceAccountTokenUseWfLevel)
-		_, err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+		_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+
 		assert.EqualError(t, err, "templates.whalesay.executor.serviceAccountName must not be empty if automountServiceAccountToken is false")
 	}
 	{
 		wf := unmarshalWf(invalidAutomountServiceAccountTokenUseTmplLevel)
-		_, err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+		_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+
 		assert.EqualError(t, err, "templates.whalesay.executor.serviceAccountName must not be empty if automountServiceAccountToken is false")
 	}
 }
@@ -2017,7 +2038,8 @@ spec:
 func TestTemplateResolutionWithPlaceholderWorkflow(t *testing.T) {
 	{
 		wf := unmarshalWf(templateResolutionWithPlaceholderWorkflow)
-		_, err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+		_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+
 		assert.NoError(t, err)
 	}
 }
@@ -2120,7 +2142,8 @@ spec:
 func TestAllowPlaceholderInVariableTakenFromInputs(t *testing.T) {
 	{
 		wf := unmarshalWf(allowPlaceholderInVariableTakenFromInputs)
-		_, err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+		_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+
 		assert.NoError(t, err)
 	}
 }
@@ -2178,6 +2201,7 @@ spec:
 // TestInvalidResourceWorkflow verifies an error against a workflow of an invalid resource.
 func TestRuntimeResolutionOfVariableNames(t *testing.T) {
 	wf := unmarshalWf(runtimeResolutionOfVariableNames)
-	_, err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+
 	assert.NoError(t, err)
 }
