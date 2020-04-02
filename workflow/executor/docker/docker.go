@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strconv"
 	"sync"
 	"time"
 
@@ -45,9 +46,24 @@ func (d *DockerExecutor) GetFileContents(containerID string, sourcePath string) 
 	return string(out), nil
 }
 
-func (d *DockerExecutor) CopyFile(containerID string, sourcePath string, destPath string) error {
+func (d *DockerExecutor) CopyFile(containerID string, sourcePath string, destPath string, compressionLevel int) error {
 	log.Infof("Archiving %s:%s to %s", containerID, sourcePath, destPath)
-	dockerCpCmd := fmt.Sprintf("docker cp -a %s:%s - | gzip > %s", containerID, sourcePath, destPath)
+	var levelFlag string
+	switch compressionLevel {
+	case gzip.NoCompression:
+		// best we can do - if we skip gzip it's a different file
+		levelFlag = "-1"
+	case gzip.DefaultCompression:
+		// use cmd default
+		levelFlag = ""
+	default:
+		// -1 through -9 (or error)
+		levelFlag = "-" + strconv.Itoa(compressionLevel)
+	}
+	if compressionLevel != gzip.DefaultCompression {
+
+	}
+	dockerCpCmd := fmt.Sprintf("docker cp -a %s:%s - | gzip %s > %s", containerID, sourcePath, levelFlag, destPath)
 	err := common.RunCommand("sh", "-c", dockerCpCmd)
 	if err != nil {
 		return err

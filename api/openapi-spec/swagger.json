@@ -2838,7 +2838,14 @@
     },
     "io.argoproj.workflow.v1alpha1.TarStrategy": {
       "type": "object",
-      "title": "TarStrategy will tar and gzip the file or directory when saving"
+      "title": "TarStrategy will tar and gzip the file or directory when saving",
+      "properties": {
+        "compressionLevel": {
+          "description": "Specifies the gzip compression level to use for the artifact.\nDefaults to gzip.DefaultCompression.",
+          "type": "integer",
+          "format": "int32"
+        }
+      }
     },
     "io.argoproj.workflow.v1alpha1.Template": {
       "type": "object",
