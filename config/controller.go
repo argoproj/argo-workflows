@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	apiv1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -46,12 +47,15 @@ func (cc *controller) updateConfig(cm *apiv1.ConfigMap, onChange func(config Con
 }
 
 func parseConfigMap(cm *apiv1.ConfigMap) (Config, error) {
+	if cm == nil {
+		return emptyConfig, nil
+	}
 	// The key in the configmap to retrieve workflow configuration from.
 	// Content encoding is expected to be YAML.
 	var config Config
 	rawConfig, ok := cm.Data["config"]
 	if ok && len(cm.Data) != 1 {
-		return Config{}, fmt.Errorf("if you have an item in your config map named 'config', you must only have one item")
+		return emptyConfig, fmt.Errorf("if you have an item in your config map named 'config', you must only have one item")
 	}
 	if !ok {
 		for name, value := range cm.Data {
@@ -65,7 +69,7 @@ func parseConfigMap(cm *apiv1.ConfigMap) (Config, error) {
 	}
 	err := yaml.Unmarshal([]byte(rawConfig), &config)
 	if err != nil {
-		return Config{}, err
+		return emptyConfig, err
 	}
 	return config, nil
 }
@@ -119,8 +123,8 @@ func (cc *controller) Run(stopCh <-chan struct{}, onChange func(config Config) e
 func (cc *controller) Get() (Config, error) {
 	cmClient := cc.kubeclientset.CoreV1().ConfigMaps(cc.namespace)
 	cm, err := cmClient.Get(cc.configMap, metav1.GetOptions{})
-	if err != nil {
-		return Config{}, err
+	if err != nil && !apierr.IsNotFound(err) {
+		return emptyConfig, err
 	}
 	return parseConfigMap(cm)
 }
