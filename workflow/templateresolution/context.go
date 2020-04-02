@@ -63,7 +63,7 @@ type Context struct {
 	// cwftmplGetter is an interface to get ClusterWorkflowTemplates
 	cwftmplGetter ClusterWorkflowTemplateGetter
 	// tmplBase is the base of local template search.
-	tmplBase wfv1.TemplateGetter
+	tmplBase wfv1.TemplateHolder
 	// storage is an implementation of TemplateStorage.
 	storage wfv1.TemplateStorage
 	// log is a logrus entry.
@@ -71,7 +71,7 @@ type Context struct {
 }
 
 // NewContext returns new Context.
-func NewContext(wftmplGetter WorkflowTemplateNamespacedGetter, cwftmplGetter ClusterWorkflowTemplateGetter, tmplBase wfv1.TemplateGetter, storage wfv1.TemplateStorage) *Context {
+func NewContext(wftmplGetter WorkflowTemplateNamespacedGetter, cwftmplGetter ClusterWorkflowTemplateGetter, tmplBase wfv1.TemplateHolder, storage wfv1.TemplateStorage) *Context {
 	return &Context{
 		wftmplGetter:  wftmplGetter,
 		cwftmplGetter: cwftmplGetter,
@@ -82,7 +82,7 @@ func NewContext(wftmplGetter WorkflowTemplateNamespacedGetter, cwftmplGetter Clu
 }
 
 // NewContext returns new Context.
-func NewContextFromClientset(wftmplClientset typed.WorkflowTemplateInterface, clusterWftmplClient typed.ClusterWorkflowTemplateInterface, tmplBase wfv1.TemplateGetter, storage wfv1.TemplateStorage) *Context {
+func NewContextFromClientset(wftmplClientset typed.WorkflowTemplateInterface, clusterWftmplClient typed.ClusterWorkflowTemplateInterface, tmplBase wfv1.TemplateHolder, storage wfv1.TemplateStorage) *Context {
 	return &Context{
 		wftmplGetter:  WrapWorkflowTemplateInterface(wftmplClientset),
 		cwftmplGetter: WrapClusterWorkflowTemplateInterface(clusterWftmplClient),
@@ -103,7 +103,7 @@ func (ctx *Context) GetTemplateByName(name string) (*wfv1.Template, error) {
 	return tmpl.DeepCopy(), nil
 }
 
-func (ctx *Context) GetTemplateGetterFromRef(tmplRef *wfv1.TemplateRef) (wfv1.TemplateGetter, error) {
+func (ctx *Context) GetTemplateGetterFromRef(tmplRef *wfv1.TemplateRef) (wfv1.TemplateHolder, error) {
 	if tmplRef.ClusterScope {
 		return ctx.cwftmplGetter.Get(tmplRef.Name)
 	}
@@ -114,7 +114,7 @@ func (ctx *Context) GetTemplateGetterFromRef(tmplRef *wfv1.TemplateRef) (wfv1.Te
 func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Template, error) {
 	ctx.log.Debug("Getting the template from ref")
 	var template *wfv1.Template
-	var wftmpl wfv1.TemplateGetter
+	var wftmpl wfv1.TemplateHolder
 	var err error
 	if tmplRef.ClusterScope {
 		wftmpl, err = ctx.cwftmplGetter.Get(tmplRef.Name)
@@ -138,7 +138,7 @@ func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Templat
 }
 
 // GetTemplate returns a template found by template name or template ref.
-func (ctx *Context) GetTemplate(tmplHolder wfv1.TemplateCaller) (*wfv1.Template, error) {
+func (ctx *Context) GetTemplate(tmplHolder wfv1.TemplateReferenceHolder) (*wfv1.Template, error) {
 	ctx.log.Debug("Getting the template")
 
 	tmplName := tmplHolder.GetTemplateName()
@@ -159,13 +159,13 @@ func (ctx *Context) GetTemplate(tmplHolder wfv1.TemplateCaller) (*wfv1.Template,
 }
 
 // GetCurrentTemplateBase returns the current template base of the context.
-func (ctx *Context) GetCurrentTemplateBase() wfv1.TemplateGetter {
+func (ctx *Context) GetCurrentTemplateBase() wfv1.TemplateHolder {
 	return ctx.tmplBase
 }
 
 // ResolveTemplate digs into referenes and returns a merged template.
 // This method is the public start point of template resolution.
-func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateCaller) (*Context, *wfv1.Template, error) {
+func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateReferenceHolder) (*Context, *wfv1.Template, error) {
 	return ctx.resolveTemplateImpl(tmplHolder, 0)
 }
 
@@ -173,7 +173,7 @@ func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateCaller) (*Context, *
 // This method processes inputs and arguments so the inputs of the final
 //  resolved template include intermediate parameter passing.
 // The other fields are just merged and shallower templates overwrite deeper.
-func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateCaller, depth int) (*Context, *wfv1.Template, error) {
+func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateReferenceHolder, depth int) (*Context, *wfv1.Template, error) {
 	ctx.log = ctx.log.WithFields(logrus.Fields{
 		"depth": depth,
 		"base":  common.GetTemplateGetterString(ctx.tmplBase),
@@ -189,7 +189,8 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateCaller, depth in
 	var tmpl *wfv1.Template
 	if ctx.storage != nil {
 		// Check if the template has been stored.
-		scope, resourceName := ctx.tmplBase.GetTemplateScope()
+		scope := ctx.tmplBase.GetResourceScope()
+		resourceName := ctx.tmplBase.GetName()
 		tmpl = ctx.storage.GetStoredTemplate(scope, resourceName, tmplHolder)
 	}
 	if tmpl != nil {
@@ -202,7 +203,8 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateCaller, depth in
 		}
 		// Stored the found template.
 		if ctx.storage != nil {
-			scope, resourceName := ctx.tmplBase.GetTemplateScope()
+			scope := ctx.tmplBase.GetResourceScope()
+			resourceName := ctx.tmplBase.GetName()
 			stored, err := ctx.storage.SetStoredTemplate(scope, resourceName, tmplHolder, newTmpl)
 			if err != nil {
 				return nil, nil, err
@@ -241,26 +243,25 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateCaller, depth in
 }
 
 // WithTemplateHolder creates new context with a template base of a given template holder.
-func (ctx *Context) WithTemplateHolder(tmplHolder wfv1.TemplateCaller) (*Context, error) {
+func (ctx *Context) WithTemplateHolder(tmplHolder wfv1.TemplateReferenceHolder) (*Context, error) {
 	tmplRef := tmplHolder.GetTemplateRef()
 	if tmplRef != nil {
 		tmplName := tmplRef.Name
 		if tmplRef.ClusterScope {
-			tmplName = "cluster/" + tmplName
+			return ctx.WithClusterWorkflowTemplate(tmplName)
 		} else {
-			tmplName = "namespaced/" + tmplName
+			return ctx.WithWorkflowTemplate(tmplName)
 		}
-		return ctx.WithWorkflowTemplate(tmplName)
 	}
 	return ctx.WithTemplateBase(ctx.tmplBase), nil
 }
 
-// WithTemplateBase creates new context with a wfv1.TemplateGetter.
-func (ctx *Context) WithTemplateBase(tmplBase wfv1.TemplateGetter) *Context {
+// WithTemplateBase creates new context with a wfv1.TemplateHolder.
+func (ctx *Context) WithTemplateBase(tmplBase wfv1.TemplateHolder) *Context {
 	return NewContext(ctx.wftmplGetter, ctx.cwftmplGetter, tmplBase, ctx.storage)
 }
 
-// WithWorkflowTemplate creates new context with a wfv1.TemplateGetter.
+// WithWorkflowTemplate creates new context with a wfv1.TemplateHolder.
 func (ctx *Context) WithWorkflowTemplate(name string) (*Context, error) {
 	wftmpl, err := ctx.wftmplGetter.Get(name)
 	if err != nil {
@@ -269,11 +270,41 @@ func (ctx *Context) WithWorkflowTemplate(name string) (*Context, error) {
 	return ctx.WithTemplateBase(wftmpl), nil
 }
 
-// WithWorkflowTemplate creates new context with a wfv1.TemplateGetter.
+// WithWorkflowTemplate creates new context with a wfv1.TemplateHolder.
 func (ctx *Context) WithClusterWorkflowTemplate(name string) (*Context, error) {
 	cwftmpl, err := ctx.cwftmplGetter.Get(name)
 	if err != nil {
 		return nil, err
 	}
 	return ctx.WithTemplateBase(cwftmpl), nil
+}
+
+// This function "localizes" a template reference to the local scope of the Workflow running it.
+// If a template inside a WorkflowTemplate calls another template inside the same WorkflowTemplate, it does so with a local
+// "template:" call. However, from the perspective of the original Workflow this is still an external "templateRef:" call.
+// In this function we can convert that "local" call found within the WorkflowTemplate, to an "external" call that can be used
+// anywhere.
+func (ctx *Context) LocalizeTemplateReference(orgTmpl wfv1.TemplateReferenceHolder) wfv1.TemplateReferenceHolder {
+	currentTemplateBase := ctx.GetCurrentTemplateBase()
+	switch currentTemplateBase.GetResourceScope() {
+	case wfv1.ResourceScopeLocal:
+		// Context is already local, simply return the template reference as is
+		return orgTmpl
+	case wfv1.ResourceScopeNamespaced, wfv1.ResourceScopeCluster:
+		// We are in an external context, if we are performing a local reference within this external context, localize it
+		if orgTmpl.GetTemplateName() != "" {
+			return &wfv1.WorkflowStep{
+				TemplateRef: &wfv1.TemplateRef{
+					Name:         currentTemplateBase.GetName(),
+					Template:     orgTmpl.GetTemplateName(),
+					ClusterScope: currentTemplateBase.GetResourceScope() == wfv1.ResourceScopeCluster,
+				},
+			}
+		}
+		// If we are performing another external reference in this external context, we can simply return it
+		return orgTmpl
+	default:
+		// This should be unreachable
+		return orgTmpl
+	}
 }

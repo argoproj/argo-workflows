@@ -214,7 +214,7 @@ func TestWithTemplateHolder(t *testing.T) {
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
 	ctx := NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates(), wftmpl, nil)
 
-	var tmplGetter wfv1.TemplateGetter
+	var tmplGetter wfv1.TemplateHolder
 	// Get the template base of existing template name.
 	tmplHolder := wfv1.WorkflowStep{Template: "whalesay"}
 	newCtx, err := ctx.WithTemplateHolder(&tmplHolder)
@@ -277,7 +277,7 @@ func TestResolveTemplate(t *testing.T) {
 	assert.Equal(t, "base-workflow-template", wftmpl.Name)
 	assert.Equal(t, "whalesay", tmpl.Name)
 
-	var tmplGetter wfv1.TemplateGetter
+	var tmplGetter wfv1.TemplateHolder
 	// Get the template of template reference.
 	tmplHolder = wfv1.WorkflowStep{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay"}}
 	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder)

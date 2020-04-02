@@ -7,29 +7,29 @@ import (
 type ResourceScope string
 
 const (
-	ResourceScopeLocal                   ResourceScope = "Local"
-	ResourceScopeWorkflowTemplate        ResourceScope = "WorkflowTemplate"
-	ResourceScopeClusterWorkflowTemplate ResourceScope = "ClusterWorkflowTemplate"
+	ResourceScopeLocal      ResourceScope = "Local"
+	ResourceScopeNamespaced ResourceScope = "Namespaced"
+	ResourceScopeCluster    ResourceScope = "Cluster"
 )
 
-// TemplateGetter is an interface to get templates.
-type TemplateGetter interface {
+// TemplateHolder is an object that holds templates; e.g. Workflow, WorkflowTemplate, and ClusterWorkflowTemplate
+type TemplateHolder interface {
 	GetNamespace() string
 	GetName() string
 	GroupVersionKind() schema.GroupVersionKind
 	GetTemplateByName(name string) *Template
-	GetTemplateScope() (ResourceScope, string)
+	GetResourceScope() ResourceScope
 	GetAllTemplates() []Template
 }
 
-// TemplateCaller is an object that can call other templates
-type TemplateCaller interface {
+// TemplateReferenceHolder is an object that holds a reference to other templates; e.g. WorkflowStep, DAGTask, and NodeStatus
+type TemplateReferenceHolder interface {
 	GetTemplateName() string
 	GetTemplateRef() *TemplateRef
 }
 
 // TemplateStorage is an interface of template storage getter and setter.
 type TemplateStorage interface {
-	GetStoredTemplate(scope ResourceScope, resourceName string, caller TemplateCaller) *Template
-	SetStoredTemplate(scope ResourceScope, resourceName string, caller TemplateCaller, tmpl *Template) (bool, error)
+	GetStoredTemplate(scope ResourceScope, resourceName string, caller TemplateReferenceHolder) *Template
+	SetStoredTemplate(scope ResourceScope, resourceName string, caller TemplateReferenceHolder, tmpl *Template) (bool, error)
 }

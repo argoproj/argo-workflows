@@ -107,7 +107,7 @@ type WorkflowList struct {
 	Items           Workflows `json:"items" protobuf:"bytes,2,opt,name=items"`
 }
 
-var _ TemplateGetter = &Workflow{}
+var _ TemplateHolder = &Workflow{}
 var _ TemplateStorage = &Workflow{}
 
 // TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed
@@ -462,9 +462,10 @@ type Template struct {
 	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,35,opt,name=metrics"`
 }
 
-var _ TemplateCaller = &Template{}
+// DEPRECATED: Templates should not be used as TemplateReferenceHolder
+var _ TemplateReferenceHolder = &Template{}
 
-// DEPRECATED: Templates should not be used at TemplateHolders
+// DEPRECATED: Templates should not be used as TemplateReferenceHolder
 func (tmpl *Template) GetTemplateName() string {
 	if tmpl.Template != "" {
 		return tmpl.Template
@@ -473,7 +474,7 @@ func (tmpl *Template) GetTemplateName() string {
 	}
 }
 
-// DEPRECATED: Templates should not be used at TemplateHolders
+// DEPRECATED: Templates should not be used as TemplateReferenceHolder
 func (tmpl *Template) GetTemplateRef() *TemplateRef {
 	return tmpl.TemplateRef
 }
@@ -735,7 +736,7 @@ type WorkflowStep struct {
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 }
 
-var _ TemplateCaller = &WorkflowStep{}
+var _ TemplateReferenceHolder = &WorkflowStep{}
 
 func (step *WorkflowStep) GetTemplateName() string {
 	return step.Template
@@ -1180,18 +1181,17 @@ func (n NodeStatus) CanRetry() bool {
 	return n.Completed() && !n.Successful()
 }
 
-// CanRetry returns whether the node should be retried or not.
 func (n NodeStatus) GetTemplateScope() (ResourceScope, string) {
 	if n.TemplateRef != nil {
 		if n.TemplateRef.ClusterScope {
-			return ResourceScopeClusterWorkflowTemplate, n.TemplateRef.Name
+			return ResourceScopeCluster, n.TemplateRef.Name
 		}
-		return ResourceScopeWorkflowTemplate, n.TemplateRef.Name
+		return ResourceScopeNamespaced, n.TemplateRef.Name
 	}
 	return ResourceScopeLocal, ""
 }
 
-var _ TemplateCaller = &NodeStatus{}
+var _ TemplateReferenceHolder = &NodeStatus{}
 
 func (n *NodeStatus) GetTemplateName() string {
 	return n.TemplateName
@@ -1563,7 +1563,7 @@ type DAGTask struct {
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 }
 
-var _ TemplateCaller = &DAGTask{}
+var _ TemplateReferenceHolder = &DAGTask{}
 
 func (t *DAGTask) GetTemplateName() string {
 	return t.Template
@@ -1660,9 +1660,9 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 	return nil
 }
 
-// GetTemplateScope returns the template scope of workflow.
-func (wf *Workflow) GetTemplateScope() (ResourceScope, string) {
-	return ResourceScopeLocal, ""
+// GetResourceScope returns the template scope of workflow.
+func (wf *Workflow) GetResourceScope() ResourceScope {
+	return ResourceScopeLocal
 }
 
 // GetAllTemplates returns the list of templates of workflow.
@@ -1681,7 +1681,7 @@ func (wf *Workflow) NodeID(name string) string {
 }
 
 // GetStoredTemplate retrieves a template from stored templates of the workflow.
-func (wf *Workflow) GetStoredTemplate(scope ResourceScope, resourceName string, caller TemplateCaller) *Template {
+func (wf *Workflow) GetStoredTemplate(scope ResourceScope, resourceName string, caller TemplateReferenceHolder) *Template {
 	// Local templates aren't stored
 	if scope == ResourceScopeLocal {
 		return nil
@@ -1695,7 +1695,7 @@ func (wf *Workflow) GetStoredTemplate(scope ResourceScope, resourceName string, 
 }
 
 // SetStoredTemplate stores a new template in stored templates of the workflow.
-func (wf *Workflow) SetStoredTemplate(scope ResourceScope, resourceName string, caller TemplateCaller, tmpl *Template) (bool, error) {
+func (wf *Workflow) SetStoredTemplate(scope ResourceScope, resourceName string, caller TemplateReferenceHolder, tmpl *Template) (bool, error) {
 	// Don't store local templates
 	if scope == ResourceScopeLocal {
 		return false, nil
@@ -1713,7 +1713,7 @@ func (wf *Workflow) SetStoredTemplate(scope ResourceScope, resourceName string, 
 }
 
 // getStoredTemplateName returns the stored template name of a given template holder on the template scope.
-func (wf *Workflow) getStoredTemplateName(scope ResourceScope, resourceName string, caller TemplateCaller) string {
+func (wf *Workflow) getStoredTemplateName(scope ResourceScope, resourceName string, caller TemplateReferenceHolder) string {
 	tmplRef := caller.GetTemplateRef()
 	// We are calling an external WorkflowTemplate or ClusterWorkflowTemplate
 	if tmplRef != nil {

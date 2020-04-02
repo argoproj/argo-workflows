@@ -27,10 +27,10 @@ type stepsContext struct {
 	tmplCtx *templateresolution.Context
 }
 
-func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, orgTmpl wfv1.TemplateCaller, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, localizedTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
-		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSteps, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSteps, tmpl, localizedTmpl, opts.boundaryID, wfv1.NodeRunning)
 	}
 
 	defer func() {
