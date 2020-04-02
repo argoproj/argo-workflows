@@ -116,13 +116,17 @@ func (ctx *Context) GetTemplateGetterFromRef(tmplRef *wfv1.TemplateRef) (wfv1.Te
 func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Template, error) {
 	ctx.log.Debug("Getting the template from ref")
 	var template *wfv1.Template
+	var wftmpl wfv1.WorkflowTemplateInterface
+	var err error
 	if tmplRef.ClusterScope {
-		cwftmpl, err := ctx.cwftmplGetter.Get(tmplRef.Name)
-		if err != nil {
-			if apierr.IsNotFound(err) {
-				return nil, errors.Errorf(errors.CodeNotFound, "workflow template %s not found", tmplRef.Name)
-			}
-			return nil, err
+		wftmpl, err = ctx.cwftmplGetter.Get(tmplRef.Name)
+	} else {
+		wftmpl, err = ctx.wftmplGetter.Get(tmplRef.Name)
+	}
+
+	if err != nil {
+		if apierr.IsNotFound(err) {
+			return nil, errors.Errorf(errors.CodeNotFound, "workflow template %s not found", tmplRef.Name)
 		}
 		template = cwftmpl.GetTemplateByName(tmplRef.Template)
 	} else {
@@ -135,6 +139,8 @@ func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Templat
 		}
 		template = wftmpl.GetTemplateByName(tmplRef.Template)
 	}
+
+	template = wftmpl.GetTemplateByName(tmplRef.Template)
 
 	if template == nil {
 		return nil, errors.Errorf(errors.CodeNotFound, "template %s not found in workflow template %s", tmplRef.Template, tmplRef.Name)

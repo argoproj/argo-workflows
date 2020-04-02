@@ -4,7 +4,7 @@ kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
 data:
-  config: |
+  config: |   # This is optional in v2.7+, see docs/workflow-controller-configmap.md
     # instanceID is a label selector to limit the controller's watch to a specific instance. It
     # contains an arbitrary value that is carried forward into its pod labels, under the key
     # workflows.argoproj.io/controller-instanceid, for the purposes of workflow segregation. This

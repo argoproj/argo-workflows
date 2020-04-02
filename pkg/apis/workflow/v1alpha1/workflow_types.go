@@ -11,7 +11,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // TemplateType is the type of a template
@@ -66,29 +65,6 @@ const (
 	PodGCOnWorkflowCompletion PodGCStrategy = "OnWorkflowCompletion"
 	PodGCOnWorkflowSuccess    PodGCStrategy = "OnWorkflowSuccess"
 )
-
-// TemplateGetter is an interface to get templates.
-type TemplateGetter interface {
-	GetNamespace() string
-	GetName() string
-	GroupVersionKind() schema.GroupVersionKind
-	GetTemplateByName(name string) *Template
-	GetTemplateScope() string
-	GetAllTemplates() []Template
-}
-
-// TemplateHolder is an interface for holders of templates.
-type TemplateHolder interface {
-	GetTemplateName() string
-	GetTemplateRef() *TemplateRef
-	IsResolvable() bool
-}
-
-// TemplateStorage is an interface of template storage getter and setter.
-type TemplateStorage interface {
-	GetStoredTemplate(templateScope string, holder TemplateHolder) *Template
-	SetStoredTemplate(templateScope string, holder TemplateHolder, tmpl *Template) (bool, error)
-}
 
 // Workflow is the definition of a workflow resource
 // +genclient
@@ -823,7 +799,7 @@ type TemplateRef struct {
 	// RuntimeResolution skips validation at creation time.
 	// By enabling this option, you can create the referred workflow template before the actual runtime.
 	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
-	// ClusterScope indicates the referred template is cluster scoped clusterworkflowtemplate.
+	// ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
 	ClusterScope bool `json:"clusterscope,omitempty" protobuf:"varint,4,opt,name=clusterscope"`
 }
 
@@ -916,17 +892,11 @@ type WorkflowStatus struct {
 	// Outputs captures output values and artifact locations produced by the workflow via global outputs
 	Outputs *Outputs `json:"outputs,omitempty" protobuf:"bytes,8,opt,name=outputs"`
 
-	// Condition for k8s conditions https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
-	Conditions []Condition `json:"condition,omitempty" protobuf:"bytes,11,opt,name=condition"`
+	// Conditions is a list of conditions the Workflow may have
+	Conditions WorkflowConditions `json:"conditions,omitempty" protobuf:"bytes,13,rep,name=conditions"`
 
 	// ResourcesDuration is the total for the workflow
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
-}
-
-type Condition struct {
-	Status metav1.ConditionStatus `json:"status,omitempty" protobuf:"varint,1,opt,name=status"`
-
-	Type string `json:"type,omitempty" protobuf:"varint,2,opt,name=type"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -1005,6 +975,51 @@ func (in ResourcesDuration) String() string {
 
 func (in ResourcesDuration) IsZero() bool {
 	return len(in) == 0
+}
+
+type WorkflowConditions []WorkflowCondition
+
+func (wc *WorkflowConditions) UpsertCondition(condition WorkflowCondition) {
+	for index, wfCondition := range *wc {
+		if wfCondition.Type == condition.Type {
+			(*wc)[index] = condition
+			return
+		}
+	}
+	*wc = append(*wc, condition)
+}
+
+func (wc *WorkflowConditions) UpsertConditionMessage(condition WorkflowCondition) {
+	for index, wfCondition := range *wc {
+		if wfCondition.Type == condition.Type {
+			(*wc)[index].Message += ", " + condition.Message
+			return
+		}
+	}
+	*wc = append(*wc, condition)
+}
+
+func (wc *WorkflowConditions) JoinConditions(conditions *WorkflowConditions) {
+	for _, condition := range *conditions {
+		wc.UpsertCondition(condition)
+	}
+}
+
+type WorkflowConditionType string
+
+const (
+	// WorkflowConditionCompleted is a signifies the workflow has completed
+	WorkflowConditionCompleted WorkflowConditionType = "Completed"
+	// WorkflowConditionSpecWarning is a warning on the current application spec
+	WorkflowConditionSpecWarning WorkflowConditionType = "SpecWarning"
+)
+
+type WorkflowCondition struct {
+	Type WorkflowConditionType `json:"type,omitempty" protobuf:"bytes,1,opt,name=type,casttype=WorkflowConditionType"`
+
+	Status metav1.ConditionStatus `json:"status,omitempty" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/apimachinery/pkg/apis/meta/v1.ConditionStatus"`
+
+	Message string `json:"message,omitempty" protobuf:"bytes,3,opt,name=message"`
 }
 
 // NodeStatus contains status information about an individual node in the workflow

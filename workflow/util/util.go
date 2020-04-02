@@ -173,7 +173,9 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 	}
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
-	err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, validate.ValidateOpts{})
+
+	_, err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, validate.ValidateOpts{})
+
 	if err != nil {
 		return nil, err
 	}
@@ -562,6 +564,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 		newWF.Status.StoredTemplates[id] = tmpl
 	}
 
+	newWF.Status.Conditions.UpsertCondition(wfv1.WorkflowCondition{Status: metav1.ConditionFalse, Type: wfv1.WorkflowConditionCompleted})
 	newWF.Status.Phase = wfv1.NodePending
 
 	return &newWF, nil
@@ -586,6 +589,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 
 	// Delete/reset fields which indicate workflow completed
 	delete(newWF.Labels, common.LabelKeyCompleted)
+	newWF.Status.Conditions.UpsertCondition(wfv1.WorkflowCondition{Status: metav1.ConditionFalse, Type: wfv1.WorkflowConditionCompleted})
 	newWF.ObjectMeta.Labels[common.LabelKeyPhase] = string(wfv1.NodeRunning)
 	newWF.Status.Phase = wfv1.NodeRunning
 	newWF.Status.Message = ""

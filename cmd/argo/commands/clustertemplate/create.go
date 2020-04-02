@@ -54,7 +54,10 @@ func createClusterWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) 
 
 	var clusterWorkflowTemplates []wfv1.ClusterWorkflowTemplate
 	for _, body := range fileContents {
-		cwftmpls := unmarshalClusterWorkflowTemplates(body, cliOpts.strict)
+		cwftmpls, err := unmarshalClusterWorkflowTemplates(body, cliOpts.strict)
+		if err != nil {
+			log.Fatalf("Failed to parse cluster workflow template: %v", err)
+		}
 		clusterWorkflowTemplates = append(clusterWorkflowTemplates, cwftmpls...)
 	}
 
@@ -68,14 +71,14 @@ func createClusterWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) 
 			Template: &wftmpl,
 		})
 		if err != nil {
-			log.Fatalf("Failed to create cluster workflow template: %v", err)
+			log.Fatalf("Failed to create cluster workflow template: %s,  %v", wftmpl.Name, err)
 		}
 		printClusterWorkflowTemplate(created, cliOpts.output)
 	}
 }
 
 // unmarshalClusterWorkflowTemplates unmarshals the input bytes as either json or yaml
-func unmarshalClusterWorkflowTemplates(wfBytes []byte, strict bool) []wfv1.ClusterWorkflowTemplate {
+func unmarshalClusterWorkflowTemplates(wfBytes []byte, strict bool) ([]wfv1.ClusterWorkflowTemplate, error) {
 	var cwft wfv1.ClusterWorkflowTemplate
 	var jsonOpts []json.JSONOpt
 	if strict {
@@ -83,12 +86,11 @@ func unmarshalClusterWorkflowTemplates(wfBytes []byte, strict bool) []wfv1.Clust
 	}
 	err := json.Unmarshal(wfBytes, &cwft, jsonOpts...)
 	if err == nil {
-		return []wfv1.ClusterWorkflowTemplate{cwft}
+		return []wfv1.ClusterWorkflowTemplate{cwft}, nil
 	}
 	yamlWfs, err := common.SplitClusterWorkflowTemplateYAMLFile(wfBytes, strict)
 	if err == nil {
-		return yamlWfs
+		return yamlWfs, nil
 	}
-	log.Fatalf("Failed to parse cluster workflow template: %v", err)
-	return nil
+	return nil, err
 }
