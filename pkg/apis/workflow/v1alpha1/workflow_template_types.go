@@ -16,11 +16,6 @@ type WorkflowTemplate struct {
 	Spec              WorkflowTemplateSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 }
 
-type WorkflowTemplateInterface interface {
-	GetTemplateByName(name string) *Template
-	GetTemplateScope() string
-}
-
 type WorkflowTemplates []WorkflowTemplate
 
 func (w WorkflowTemplates) Len() int {

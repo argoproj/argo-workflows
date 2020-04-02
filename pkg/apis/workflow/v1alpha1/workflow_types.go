@@ -11,7 +11,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // TemplateType is the type of a template
@@ -66,29 +65,6 @@ const (
 	PodGCOnWorkflowCompletion PodGCStrategy = "OnWorkflowCompletion"
 	PodGCOnWorkflowSuccess    PodGCStrategy = "OnWorkflowSuccess"
 )
-
-// TemplateGetter is an interface to get templates.
-type TemplateGetter interface {
-	GetNamespace() string
-	GetName() string
-	GroupVersionKind() schema.GroupVersionKind
-	GetTemplateByName(name string) *Template
-	GetTemplateScope() string
-	GetAllTemplates() []Template
-}
-
-// TemplateHolder is an interface for holders of templates.
-type TemplateHolder interface {
-	GetTemplateName() string
-	GetTemplateRef() *TemplateRef
-	IsResolvable() bool
-}
-
-// TemplateStorage is an interface of template storage getter and setter.
-type TemplateStorage interface {
-	GetStoredTemplate(templateScope string, holder TemplateHolder) *Template
-	SetStoredTemplate(templateScope string, holder TemplateHolder, tmpl *Template) (bool, error)
-}
 
 // Workflow is the definition of a workflow resource
 // +genclient
