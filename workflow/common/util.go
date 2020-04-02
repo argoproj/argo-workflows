@@ -668,3 +668,31 @@ func GetTemplateHolderString(tmplHolder wfv1.TemplateHolder) string {
 		return fmt.Sprintf("%T (%s)", tmplHolder, tmplName)
 	}
 }
+
+// SplitClusterWorkflowTemplateYAMLFile is a helper to split a body into multiple cluster workflow template objects
+func SplitClusterWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.ClusterWorkflowTemplate, error) {
+	manifestsStrings := yamlSeparator.Split(string(body), -1)
+	manifests := make([]wfv1.ClusterWorkflowTemplate, 0)
+	for _, manifestStr := range manifestsStrings {
+		if strings.TrimSpace(manifestStr) == "" {
+			continue
+		}
+		var cwftmpl wfv1.ClusterWorkflowTemplate
+		var opts []yaml.JSONOpt
+		if strict {
+			opts = append(opts, yaml.DisallowUnknownFields) // nolint
+		}
+		err := yaml.Unmarshal([]byte(manifestStr), &cwftmpl, opts...)
+		if cwftmpl.Kind != "" && cwftmpl.Kind != workflow.ClusterWorkflowTemplateKind {
+			log.Warnf("%s is not a cluster workflow template", cwftmpl.Kind)
+			// If we get here, it was a k8s manifest which was not of type 'WorkflowTemplate'
+			// We ignore these since we only care about WorkflowTemplate manifests.
+			continue
+		}
+		if err != nil {
+			return nil, errors.New(errors.CodeBadRequest, err.Error())
+		}
+		manifests = append(manifests, cwftmpl)
+	}
+	return manifests, nil
+}
