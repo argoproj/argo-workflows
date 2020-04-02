@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 func Test_parseConfigMap(t *testing.T) {
@@ -39,4 +40,13 @@ func Test_parseConfigMap(t *testing.T) {
 		_, err := parseConfigMap(&apiv1.ConfigMap{Data: map[string]string{"garbage": "garbage"}})
 		assert.NoError(t, err)
 	})
+}
+
+func Test_controller_Get(t *testing.T) {
+	kube := fake.NewSimpleClientset()
+	c := controller{configMap: "my-config-map", kubeclientset: kube}
+	config, err := c.Get()
+	if assert.NoError(t, err) {
+		assert.Empty(t, config)
+	}
 }

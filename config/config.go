@@ -6,6 +6,8 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
+var emptyConfig = Config{}
+
 // Config contain the configuration settings for the workflow controller
 type Config struct {
 	// ExecutorImage is the image name of the executor to use when running pods
