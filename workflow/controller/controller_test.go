@@ -100,22 +100,28 @@ func newController() *WorkflowController {
 	wfclientset := fakewfclientset.NewSimpleClientset()
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
 	wftmplInformer := informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
+	cwftmplInformer := informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 	ctx := context.Background()
 	go wftmplInformer.Informer().Run(ctx.Done())
+	go cwftmplInformer.Informer().Run(ctx.Done())
 	if !cache.WaitForCacheSync(ctx.Done(), wftmplInformer.Informer().HasSynced) {
+		panic("Timed out waiting for caches to sync")
+	}
+	if !cache.WaitForCacheSync(ctx.Done(), cwftmplInformer.Informer().HasSynced) {
 		panic("Timed out waiting for caches to sync")
 	}
 	return &WorkflowController{
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
 		},
-		kubeclientset:  fake.NewSimpleClientset(),
-		wfclientset:    wfclientset,
-		completedPods:  make(chan string, 512),
-		wftmplInformer: wftmplInformer,
-		wfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		wfArchive:      sqldb.NullWorkflowArchive,
-		Metrics:        make(map[string]prometheus.Metric),
+		kubeclientset:   fake.NewSimpleClientset(),
+		wfclientset:     wfclientset,
+		completedPods:   make(chan string, 512),
+		wftmplInformer:  wftmplInformer,
+		cwftmplInformer: cwftmplInformer,
+		wfQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfArchive:       sqldb.NullWorkflowArchive,
+		Metrics:         make(map[string]prometheus.Metric),
 	}
 }
 
@@ -209,6 +215,15 @@ func unmarshalWFTmpl(yamlStr string) *wfv1.WorkflowTemplate {
 		panic(err)
 	}
 	return &wftmpl
+}
+
+func unmarshalCWFTmpl(yamlStr string) *wfv1.ClusterWorkflowTemplate {
+	var cwftmpl wfv1.ClusterWorkflowTemplate
+	err := yaml.Unmarshal([]byte(yamlStr), &cwftmpl)
+	if err != nil {
+		panic(err)
+	}
+	return &cwftmpl
 }
 
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state

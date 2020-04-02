@@ -19,10 +19,12 @@ type Given struct {
 	diagnostics           *Diagnostics
 	client                v1alpha1.WorkflowInterface
 	wfTemplateClient      v1alpha1.WorkflowTemplateInterface
+	cwfTemplateClient     v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient            v1alpha1.CronWorkflowInterface
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wf                    *wfv1.Workflow
 	wfTemplates           []*wfv1.WorkflowTemplate
+	cwfTemplates          []*wfv1.ClusterWorkflowTemplate
 	cronWf                *wfv1.CronWorkflow
 	workflowName          string
 	kubeClient            kubernetes.Interface
@@ -159,15 +161,53 @@ func (g *Given) RunCli(args []string, block func(t *testing.T, output string, er
 	return g
 }
 
+func (g *Given) ClusterWorkflowTemplate(text string) *Given {
+	var file string
+	if strings.HasPrefix(text, "@") {
+		file = strings.TrimPrefix(text, "@")
+	} else {
+		f, err := ioutil.TempFile("", "argo_e2e")
+		if err != nil {
+			g.t.Fatal(err)
+		}
+		_, err = f.Write([]byte(text))
+		if err != nil {
+			g.t.Fatal(err)
+		}
+		err = f.Close()
+		if err != nil {
+			g.t.Fatal(err)
+		}
+		file = f.Name()
+	}
+	// read the file in
+	{
+		file, err := ioutil.ReadFile(file)
+		if err != nil {
+			g.t.Fatal(err)
+		}
+		cwfTemplate := &wfv1.ClusterWorkflowTemplate{}
+		err = yaml.Unmarshal(file, cwfTemplate)
+		if err != nil {
+			g.t.Fatal(err)
+		}
+		g.checkLabels(cwfTemplate.ObjectMeta)
+		g.cwfTemplates = append(g.cwfTemplates, cwfTemplate)
+	}
+	return g
+}
+
 func (g *Given) When() *When {
 	return &When{
 		t:                     g.t,
 		diagnostics:           g.diagnostics,
 		wf:                    g.wf,
 		wfTemplates:           g.wfTemplates,
+		cwfTemplates:          g.cwfTemplates,
 		cronWf:                g.cronWf,
 		client:                g.client,
 		wfTemplateClient:      g.wfTemplateClient,
+		cwfTemplateClient:     g.cwfTemplateClient,
 		cronClient:            g.cronClient,
 		offloadNodeStatusRepo: g.offloadNodeStatusRepo,
 		workflowName:          g.workflowName,
