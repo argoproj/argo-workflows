@@ -64,30 +64,30 @@ type Context struct {
 	cwftmplGetter ClusterWorkflowTemplateGetter
 	// tmplBase is the base of local template search.
 	tmplBase wfv1.TemplateHolder
-	// storage is an implementation of TemplateStorage.
-	storage wfv1.TemplateStorage
+	// workflow is the Workflow where templates will be stored
+	workflow *wfv1.Workflow
 	// log is a logrus entry.
 	log *logrus.Entry
 }
 
 // NewContext returns new Context.
-func NewContext(wftmplGetter WorkflowTemplateNamespacedGetter, cwftmplGetter ClusterWorkflowTemplateGetter, tmplBase wfv1.TemplateHolder, storage wfv1.TemplateStorage) *Context {
+func NewContext(wftmplGetter WorkflowTemplateNamespacedGetter, cwftmplGetter ClusterWorkflowTemplateGetter, tmplBase wfv1.TemplateHolder, workflow *wfv1.Workflow) *Context {
 	return &Context{
 		wftmplGetter:  wftmplGetter,
 		cwftmplGetter: cwftmplGetter,
 		tmplBase:      tmplBase,
-		storage:       storage,
+		workflow:      workflow,
 		log:           log.WithFields(logrus.Fields{}),
 	}
 }
 
 // NewContext returns new Context.
-func NewContextFromClientset(wftmplClientset typed.WorkflowTemplateInterface, clusterWftmplClient typed.ClusterWorkflowTemplateInterface, tmplBase wfv1.TemplateHolder, storage wfv1.TemplateStorage) *Context {
+func NewContextFromClientset(wftmplClientset typed.WorkflowTemplateInterface, clusterWftmplClient typed.ClusterWorkflowTemplateInterface, tmplBase wfv1.TemplateHolder, workflow *wfv1.Workflow) *Context {
 	return &Context{
 		wftmplGetter:  WrapWorkflowTemplateInterface(wftmplClientset),
 		cwftmplGetter: WrapClusterWorkflowTemplateInterface(clusterWftmplClient),
 		tmplBase:      tmplBase,
-		storage:       storage,
+		workflow:      workflow,
 		log:           log.WithFields(logrus.Fields{}),
 	}
 }
@@ -165,7 +165,7 @@ func (ctx *Context) GetCurrentTemplateBase() wfv1.TemplateHolder {
 
 // ResolveTemplate digs into referenes and returns a merged template.
 // This method is the public start point of template resolution.
-func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateReferenceHolder) (*Context, *wfv1.Template, error) {
+func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateReferenceHolder) (*Context, *wfv1.Template, bool, error) {
 	return ctx.resolveTemplateImpl(tmplHolder, 0)
 }
 
@@ -173,7 +173,7 @@ func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateReferenceHolder) (*C
 // This method processes inputs and arguments so the inputs of the final
 //  resolved template include intermediate parameter passing.
 // The other fields are just merged and shallower templates overwrite deeper.
-func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateReferenceHolder, depth int) (*Context, *wfv1.Template, error) {
+func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateReferenceHolder, depth int) (*Context, *wfv1.Template, bool, error) {
 	ctx.log = ctx.log.WithFields(logrus.Fields{
 		"depth": depth,
 		"base":  common.GetTemplateGetterString(ctx.tmplBase),
@@ -181,17 +181,18 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateReferenceHolder,
 	})
 	// Avoid infinite references
 	if depth > maxResolveDepth {
-		return nil, nil, errors.Errorf(errors.CodeBadRequest, "template reference exceeded max depth (%d)", maxResolveDepth)
+		return nil, nil, false, errors.Errorf(errors.CodeBadRequest, "template reference exceeded max depth (%d)", maxResolveDepth)
 	}
 
 	ctx.log.Debug("Resolving the template")
 
+	templateStored := false
 	var tmpl *wfv1.Template
-	if ctx.storage != nil {
+	if ctx.workflow != nil {
 		// Check if the template has been stored.
 		scope := ctx.tmplBase.GetResourceScope()
 		resourceName := ctx.tmplBase.GetName()
-		tmpl = ctx.storage.GetStoredTemplate(scope, resourceName, tmplHolder)
+		tmpl = ctx.workflow.GetStoredTemplate(scope, resourceName, tmplHolder)
 	}
 	if tmpl != nil {
 		ctx.log.Debug("Found stored template")
@@ -199,18 +200,19 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateReferenceHolder,
 		// Find newly appeared template.
 		newTmpl, err := ctx.GetTemplate(tmplHolder)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, false, err
 		}
 		// Stored the found template.
-		if ctx.storage != nil {
+		if ctx.workflow != nil {
 			scope := ctx.tmplBase.GetResourceScope()
 			resourceName := ctx.tmplBase.GetName()
-			stored, err := ctx.storage.SetStoredTemplate(scope, resourceName, tmplHolder, newTmpl)
+			stored, err := ctx.workflow.SetStoredTemplate(scope, resourceName, tmplHolder, newTmpl)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, false, err
 			}
 			if stored {
 				ctx.log.Debug("Stored the template")
+				templateStored = true
 			}
 		}
 		tmpl = newTmpl
@@ -219,27 +221,30 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateReferenceHolder,
 	// Update the template base of the context.
 	newTmplCtx, err := ctx.WithTemplateHolder(tmplHolder)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, false, err
 	}
 
 	// Return a concrete template without digging into it.
 	if tmpl.GetType() != wfv1.TemplateTypeUnknown {
-		return newTmplCtx, tmpl, nil
+		return newTmplCtx, tmpl, templateStored, nil
 	}
 
 	// Dig into nested references with new template base.
-	finalTmplCtx, resolvedTmpl, err := newTmplCtx.resolveTemplateImpl(tmpl, depth+1)
+	finalTmplCtx, resolvedTmpl, templateStoredInCall, err := newTmplCtx.resolveTemplateImpl(tmpl, depth+1)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, false, err
+	}
+	if templateStoredInCall {
+		templateStored = true
 	}
 
 	// Merge the referred template into the original.
 	mergedTmpl, err := common.MergeReferredTemplate(tmpl, resolvedTmpl)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, false, err
 	}
 
-	return finalTmplCtx, mergedTmpl, nil
+	return finalTmplCtx, mergedTmpl, templateStored, nil
 }
 
 // WithTemplateHolder creates new context with a template base of a given template holder.
@@ -258,7 +263,7 @@ func (ctx *Context) WithTemplateHolder(tmplHolder wfv1.TemplateReferenceHolder) 
 
 // WithTemplateBase creates new context with a wfv1.TemplateHolder.
 func (ctx *Context) WithTemplateBase(tmplBase wfv1.TemplateHolder) *Context {
-	return NewContext(ctx.wftmplGetter, ctx.cwftmplGetter, tmplBase, ctx.storage)
+	return NewContext(ctx.wftmplGetter, ctx.cwftmplGetter, tmplBase, ctx.workflow)
 }
 
 // WithWorkflowTemplate creates new context with a wfv1.TemplateHolder.

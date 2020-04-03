@@ -111,10 +111,15 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 				}
 				if len(childNodes) > 0 {
 					// Expanded child nodes should be created from the same template.
-					_, tmpl, err := stepsCtx.tmplCtx.ResolveTemplate(&childNodes[0])
+					_, tmpl, templateStored, err := stepsCtx.tmplCtx.ResolveTemplate(&childNodes[0])
 					if err != nil {
 						return node, err
 					}
+					// A new template was stored during resolution, persist it
+					if templateStored {
+						woc.updated = true
+					}
+
 					err = woc.processAggregateNodeOutputs(tmpl, stepsCtx.scope, prefix, childNodes)
 					if err != nil {
 						return node, err

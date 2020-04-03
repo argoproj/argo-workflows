@@ -204,7 +204,7 @@ func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNa
 	tmplCtx := templateresolution.NewContext(wftmplGetter, cwftmplGetter, wftmpl, nil)
 
 	// Check if all templates can be resolved.
-	for _, template := range wftmpl.GetAllTemplates() {
+	for _, template := range wftmpl.GetTemplates() {
 		_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
@@ -396,7 +396,7 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 		}
 	}
 
-	tmplCtx, resolvedTmpl, err := tmplCtx.ResolveTemplate(tmplHolder)
+	tmplCtx, resolvedTmpl, _, err := tmplCtx.ResolveTemplate(tmplHolder)
 	if err != nil {
 		if argoerr, ok := err.(errors.ArgoError); ok && argoerr.Code() == errors.CodeNotFound {
 			if tmplRef != nil {

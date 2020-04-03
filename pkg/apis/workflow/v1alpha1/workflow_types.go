@@ -1665,8 +1665,8 @@ func (wf *Workflow) GetResourceScope() ResourceScope {
 	return ResourceScopeLocal
 }
 
-// GetAllTemplates returns the list of templates of workflow.
-func (wf *Workflow) GetAllTemplates() []Template {
+// GetTemplates returns the list of templates of workflow.
+func (wf *Workflow) GetTemplates() []Template {
 	return wf.Spec.Templates
 }
 

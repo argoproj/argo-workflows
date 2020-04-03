@@ -19,17 +19,11 @@ type TemplateHolder interface {
 	GroupVersionKind() schema.GroupVersionKind
 	GetTemplateByName(name string) *Template
 	GetResourceScope() ResourceScope
-	GetAllTemplates() []Template
+	GetTemplates() []Template
 }
 
 // TemplateReferenceHolder is an object that holds a reference to other templates; e.g. WorkflowStep, DAGTask, and NodeStatus
 type TemplateReferenceHolder interface {
 	GetTemplateName() string
 	GetTemplateRef() *TemplateRef
-}
-
-// TemplateStorage is an interface of template storage getter and setter.
-type TemplateStorage interface {
-	GetStoredTemplate(scope ResourceScope, resourceName string, caller TemplateReferenceHolder) *Template
-	SetStoredTemplate(scope ResourceScope, resourceName string, caller TemplateReferenceHolder, tmpl *Template) (bool, error)
 }
