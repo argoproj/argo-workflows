@@ -130,7 +130,7 @@ func (a *ArtifactServer) GetLogs(w http.ResponseWriter, r *http.Request) {
 func GetLogNodeIds(w *wfv1.Workflow) []string {
 	visited := make(map[string]struct{})
 	var getLoggedNodeIdsRecursive func(nodeName string) []string
-	getLoggedNodeIdsRecursive = func(nodeName string) []string {
+	getLoggedNodeIdsRecursive = func (nodeName string) []string {
 		_, wasVisited := visited[nodeName]
 		if wasVisited {
 			return make([]string, 0)
