@@ -794,7 +794,7 @@
             "type": "string",
             "format": "int64"
           },
-          "description": "ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes."
+          "title": "ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.\nALPHA"
         },
         "podIP": {
           "type": "string",
@@ -1669,7 +1669,7 @@
             "type": "string",
             "format": "int64"
           },
-          "title": "ResourcesDuration is the total for the workflow"
+          "title": "ResourcesDuration is the total for the workflow\nALPHA"
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"

@@ -128,6 +128,8 @@ rules:
   resources:
   - workflowtemplates
   - workflowtemplates/finalizers
+  - clusterworkflowtemplates
+  - clusterworkflowtemplates/finalizers
   verbs:
   - get
   - list
@@ -479,6 +481,8 @@ spec:
           value: 30s
         - name: WORKFLOW_GC_PERIOD
           value: 30s
+        - name: USAGE_CAPTURE_PERIOD
+          value: 10s
         - name: UPPERIO_DB_DEBUG
           value: "1"
         image: argoproj/workflow-controller:latest
