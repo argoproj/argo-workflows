@@ -1357,6 +1357,13 @@
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TarStrategy": {
       "type": "object",
+      "properties": {
+        "compressionLevel": {
+          "type": "integer",
+          "format": "int32",
+          "description": "CompressionLevel specifies the gzip compression level to use for the artifact.\nDefaults to gzip.DefaultCompression."
+        }
+      },
       "title": "TarStrategy will tar and gzip the file or directory when saving"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Template": {
