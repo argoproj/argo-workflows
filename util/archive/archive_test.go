@@ -2,6 +2,7 @@ package archive
 
 import (
 	"bufio"
+	"compress/gzip"
 	"crypto/rand"
 	"encoding/hex"
 	"os"
@@ -36,7 +37,7 @@ func TestTarDirectory(t *testing.T) {
 	log.Infof("Taring to %s", f.Name())
 	w := bufio.NewWriter(f)
 
-	err = TarGzToWriter("../../test/e2e", w)
+	err = TarGzToWriter("../../test/e2e", gzip.DefaultCompression, w)
 	assert.NoError(t, err)
 
 	err = f.Close()
@@ -56,7 +57,7 @@ func TestTarFile(t *testing.T) {
 	log.Infof("Taring to %s", f.Name())
 	w := bufio.NewWriter(f)
 
-	err = TarGzToWriter(data.Name(), w)
+	err = TarGzToWriter(data.Name(), gzip.DefaultCompression, w)
 	assert.NoError(t, err)
 	err = os.Remove(data.Name())
 	assert.NoError(t, err)
