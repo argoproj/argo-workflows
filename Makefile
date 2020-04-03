@@ -309,7 +309,6 @@ dist/mysql.yaml: test/e2e/manifests/mysql.yaml
 .PHONY: install
 install: dist/postgres.yaml dist/mysql.yaml dist/no-db.yaml
 	# Install quick-start
-	kubectl apply -f manifests/quick-start/metrics-service
 	kubectl apply -f test/e2e/manifests/argo-ns.yaml
 ifeq ($(DB),postgres)
 	kubectl -n argo apply -f dist/postgres.yaml
