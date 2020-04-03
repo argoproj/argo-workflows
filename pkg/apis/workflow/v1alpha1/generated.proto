@@ -793,6 +793,9 @@ message TTLStrategy {
 
 // TarStrategy will tar and gzip the file or directory when saving
 message TarStrategy {
+  // CompressionLevel specifies the gzip compression level to use for the artifact.
+  // Defaults to gzip.DefaultCompression.
+  optional int32 compressionLevel = 1;
 }
 
 // Template is a reusable and composable unit of execution in a workflow

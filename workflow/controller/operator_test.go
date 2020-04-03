@@ -2566,5 +2566,119 @@ func TestPodSpecLogForAllPods(t *testing.T) {
 	for _, node := range woc.wf.Status.Nodes {
 		assert.True(t, woc.shouldPrintPodSpec(node))
 	}
+}
 
+var retryNodeOutputs = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: daemon-step-dvbnn
+spec:
+  arguments: {}
+  entrypoint: daemon-example
+  templates:
+  - arguments: {}
+    inputs: {}
+    metadata: {}
+    name: daemon-example
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: influx
+        template: influxdb
+  - arguments: {}
+    container:
+      image: influxdb:1.2
+      name: ""
+      readinessProbe:
+        httpGet:
+          path: /ping
+          port: 8086
+      resources: {}
+    daemon: true
+    inputs: {}
+    metadata: {}
+    name: influxdb
+    outputs: {}
+    retryStrategy:
+      limit: 10
+status:
+  finishedAt: null
+  nodes:
+    daemon-step-dvbnn:
+      children:
+      - daemon-step-dvbnn-1159996203
+      displayName: daemon-step-dvbnn
+      finishedAt: "2020-04-02T16:29:24Z"
+      id: daemon-step-dvbnn
+      name: daemon-step-dvbnn
+      outboundNodes:
+      - daemon-step-dvbnn-2254877734
+      phase: Succeeded
+      startedAt: "2020-04-02T16:29:18Z"
+      templateName: daemon-example
+      type: Steps
+    daemon-step-dvbnn-1159996203:
+      boundaryID: daemon-step-dvbnn
+      children:
+      - daemon-step-dvbnn-3639466923
+      displayName: '[0]'
+      finishedAt: "2020-04-02T16:29:24Z"
+      id: daemon-step-dvbnn-1159996203
+      name: daemon-step-dvbnn[0]
+      phase: Succeeded
+      startedAt: "2020-04-02T16:29:18Z"
+      templateName: daemon-example
+      type: StepGroup
+    daemon-step-dvbnn-2254877734:
+      boundaryID: daemon-step-dvbnn
+      daemoned: true
+      displayName: influx(0)
+      finishedAt: "2020-04-02T16:29:24Z"
+      id: daemon-step-dvbnn-2254877734
+      name: daemon-step-dvbnn[0].influx(0)
+      phase: Running
+      podIP: 172.17.0.8
+      resourcesDuration:
+        cpu: 10
+        memory: 0
+      startedAt: "2020-04-02T16:29:18Z"
+      templateName: influxdb
+      type: Pod
+    daemon-step-dvbnn-3639466923:
+      boundaryID: daemon-step-dvbnn
+      children:
+      - daemon-step-dvbnn-2254877734
+      displayName: influx
+      finishedAt: "2020-04-02T16:29:24Z"
+      id: daemon-step-dvbnn-3639466923
+      name: daemon-step-dvbnn[0].influx
+      phase: Succeeded
+      startedAt: "2020-04-02T16:29:18Z"
+      templateName: influxdb
+      type: Retry
+  phase: Succeeded
+  startedAt: "2020-04-02T16:29:18Z"
+
+`
+
+// This tests to see if the outputs of the last child node of a retry node are added correctly to the scope
+func TestRetryNodeOutputs(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(retryNodeOutputs)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	retryNode := woc.getNodeByName("daemon-step-dvbnn[0].influx")
+	assert.NotNil(t, retryNode)
+	fmt.Println(retryNode)
+	scope := &wfScope{
+		scope: make(map[string]interface{}),
+	}
+	woc.buildLocalScope(scope, "steps.influx", retryNode)
+	assert.Contains(t, scope.scope, "steps.influx.ip")
 }
