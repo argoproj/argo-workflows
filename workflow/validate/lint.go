@@ -80,7 +80,7 @@ func ParseWfTmplFromFile(filePath string, strict bool) ([]wfv1.WorkflowTemplate,
 }
 
 // LintWorkflowTemplateDir validates all workflow manifests in a directory. Ignores non-workflow template manifests
-func LintWorkflowTemplateDir(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, dirPath string, strict bool) error {
+func LintWorkflowTemplateDir(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, dirPath string, strict bool) error {
 	walkFunc := func(path string, info os.FileInfo, err error) error {
 		if info == nil || info.IsDir() {
 			return nil
@@ -91,14 +91,14 @@ func LintWorkflowTemplateDir(wftmplGetter templateresolution.WorkflowTemplateNam
 		default:
 			return nil
 		}
-		return LintWorkflowTemplateFile(wftmplGetter, path, strict)
+		return LintWorkflowTemplateFile(wftmplGetter, cwftmplGetter, path, strict)
 	}
 	return filepath.Walk(dirPath, walkFunc)
 }
 
 // LintWorkflowTemplateFile lints a json file, or multiple workflow template manifest in a single yaml file. Ignores
 // non-workflow template manifests
-func LintWorkflowTemplateFile(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, filePath string, strict bool) error {
+func LintWorkflowTemplateFile(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, filePath string, strict bool) error {
 	body, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "Can't read from file: %s, err: %v", filePath, err)
@@ -127,7 +127,7 @@ func LintWorkflowTemplateFile(wftmplGetter templateresolution.WorkflowTemplateNa
 		return errors.Errorf(errors.CodeBadRequest, "%s failed to parse: %v", filePath, err)
 	}
 	for _, wftmpl := range workflowTemplates {
-		err = ValidateWorkflowTemplate(wftmplGetter, &wftmpl)
+		err = ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, &wftmpl)
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "%s: %s", filePath, err.Error())
 		}
@@ -164,4 +164,35 @@ func ParseCronWorkflowsFromFile(filePath string, strict bool) ([]wfv1.CronWorkfl
 		return nil, fmt.Errorf("%s failed to parse: %v", filePath, err)
 	}
 	return cronWorkflows, nil
+}
+
+func ParseCWfTmplFromFile(filePath string, strict bool) ([]wfv1.ClusterWorkflowTemplate, error) {
+	body, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, errors.Errorf(errors.CodeBadRequest, "Can't read from file: %s, err: %v", filePath, err)
+	}
+	var clusterWorkflowTmpls []wfv1.ClusterWorkflowTemplate
+	if json.IsJSON(body) {
+		var cwfTmpl wfv1.ClusterWorkflowTemplate
+		if strict {
+			err = json.UnmarshalStrict(body, &cwfTmpl)
+		} else {
+			err = json.Unmarshal(body, &cwfTmpl)
+		}
+		if err == nil {
+			clusterWorkflowTmpls = []wfv1.ClusterWorkflowTemplate{cwfTmpl}
+		} else {
+			if cwfTmpl.Kind != "" && cwfTmpl.Kind != workflow.ClusterWorkflowTemplateKind {
+				// If we get here, it was a k8s manifest which was not of type 'Workflow'
+				// We ignore these since we only care about validating Workflow manifests.
+				return nil, nil
+			}
+		}
+	} else {
+		clusterWorkflowTmpls, err = common.SplitClusterWorkflowTemplateYAMLFile(body, strict)
+	}
+	if err != nil {
+		return nil, errors.Errorf(errors.CodeBadRequest, "%s failed to parse: %v", filePath, err)
+	}
+	return clusterWorkflowTmpls, nil
 }

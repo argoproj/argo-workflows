@@ -12,6 +12,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
@@ -35,13 +36,14 @@ func init() {
 
 type E2ESuite struct {
 	suite.Suite
-	Diagnostics      *Diagnostics
-	Persistence      *Persistence
-	RestConfig       *rest.Config
-	wfClient         v1alpha1.WorkflowInterface
-	wfTemplateClient v1alpha1.WorkflowTemplateInterface
-	cronClient       v1alpha1.CronWorkflowInterface
-	KubeClient       kubernetes.Interface
+	Diagnostics       *Diagnostics
+	Persistence       *Persistence
+	RestConfig        *rest.Config
+	wfClient          v1alpha1.WorkflowInterface
+	wfTemplateClient  v1alpha1.WorkflowTemplateInterface
+	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
+	cronClient        v1alpha1.CronWorkflowInterface
+	KubeClient        kubernetes.Interface
 }
 
 func (s *E2ESuite) SetupSuite() {
@@ -59,6 +61,7 @@ func (s *E2ESuite) SetupSuite() {
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
 	s.Persistence = newPersistence(s.KubeClient)
+	s.cwfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates()
 }
 
 func (s *E2ESuite) TearDownSuite() {
@@ -100,12 +103,28 @@ func (s *E2ESuite) DeleteResources(label string) {
 		for _, wf := range list.Items {
 			isTestWf[wf.Name] = false
 			if s.Persistence.IsEnabled() && wf.Status.IsOffloadNodeStatus() {
-				// TODO - may make tests flakey
 				err := s.Persistence.offloadNodeStatusRepo.Delete(string(wf.UID), wf.Status.OffloadNodeStatusVersion)
 				if err != nil {
 					panic(err)
 				}
-				err = s.Persistence.workflowArchive.DeleteWorkflow(string(wf.UID))
+			}
+		}
+	}
+
+	// delete from the archive
+	{
+		if s.Persistence.IsEnabled() {
+			archive := s.Persistence.workflowArchive
+			parse, err := labels.ParseToRequirements(Label)
+			if err != nil {
+				panic(err)
+			}
+			workflows, err := archive.ListWorkflows(Namespace, time.Time{}, time.Time{}, parse, 0, 0)
+			if err != nil {
+				panic(err)
+			}
+			for _, workflow := range workflows {
+				err := archive.DeleteWorkflow(string(workflow.UID))
 				if err != nil {
 					panic(err)
 				}
@@ -115,7 +134,7 @@ func (s *E2ESuite) DeleteResources(label string) {
 
 	// delete all workflows
 	{
-		list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: label})
+		list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: Label})
 		if err != nil {
 			panic(err)
 		}
@@ -176,6 +195,19 @@ func (s *E2ESuite) DeleteResources(label string) {
 	for _, wfTmpl := range wfTmpl.Items {
 		log.WithField("template", wfTmpl.Name).Info("Deleting workflow template")
 		err = s.wfTemplateClient.Delete(wfTmpl.Name, nil)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// delete all cluster workflow templates
+	cwfTmpl, err := s.cwfTemplateClient.List(metav1.ListOptions{LabelSelector: label})
+	if err != nil {
+		panic(err)
+	}
+	for _, cwfTmpl := range cwfTmpl.Items {
+		log.WithField("template", cwfTmpl.Name).Info("Deleting cluster workflow template")
+		err = s.cwfTemplateClient.Delete(cwfTmpl.Name, nil)
 		if err != nil {
 			panic(err)
 		}
@@ -319,6 +351,7 @@ func (s *E2ESuite) Given() *Given {
 		diagnostics:           s.Diagnostics,
 		client:                s.wfClient,
 		wfTemplateClient:      s.wfTemplateClient,
+		cwfTemplateClient:     s.cwfTemplateClient,
 		cronClient:            s.cronClient,
 		offloadNodeStatusRepo: s.Persistence.offloadNodeStatusRepo,
 		kubeClient:            s.KubeClient,

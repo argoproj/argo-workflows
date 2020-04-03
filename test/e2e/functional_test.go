@@ -11,6 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
 	"github.com/argoproj/argo/util/argo"
@@ -104,17 +105,15 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 		SubmitWorkflow().
 		WaitForWorkflow(30 * time.Second).
 		Then().
-		ExpectAuditEvents(func(t *testing.T, events *corev1.EventList) {
-			found := false
-			for _, e := range events.Items {
-				isAboutFailedStep := strings.HasPrefix(e.InvolvedObject.Name, "failed-step-event-")
-				isFailureEvent := e.Reason == argo.EventReasonWorkflowFailed
-				if isAboutFailedStep && isFailureEvent {
-					found = true
-					assert.Equal(t, "failed with exit code 1", e.Message)
-				}
-			}
-			assert.True(t, found, "event not found")
+		ExpectAuditEvent(func(e corev1.Event) bool {
+			return strings.HasPrefix(e.InvolvedObject.Name, "failed-step-event-") &&
+				e.Reason == argo.EventReasonWorkflowFailed &&
+				e.Message == "failed with exit code 1"
+		}).
+		ExpectAuditEvent(func(e corev1.Event) bool {
+			return e.InvolvedObject.Kind == workflow.WorkflowKind &&
+				e.Reason == argo.EventReasonWorkflowNodeFailed &&
+				strings.HasPrefix(e.Message, "Failed node failed-step-event-")
 		})
 }
 
@@ -126,17 +125,15 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		SubmitWorkflow().
 		WaitForWorkflow(60 * time.Second).
 		Then().
-		ExpectAuditEvents(func(t *testing.T, events *corev1.EventList) {
-			found := false
-			for _, e := range events.Items {
-				isAboutSuccess := strings.HasPrefix(e.InvolvedObject.Name, "success-event-")
-				isSuccessEvent := e.Reason == argo.EventReasonWorkflowSucceded
-				if isAboutSuccess && isSuccessEvent {
-					found = true
-					assert.Equal(t, "Workflow completed", e.Message)
-				}
-			}
-			assert.True(t, found, "event not found")
+		ExpectAuditEvent(func(e corev1.Event) bool {
+			return strings.HasPrefix(e.InvolvedObject.Name, "success-event-") &&
+				e.Reason == argo.EventReasonWorkflowSucceeded &&
+				e.Message == "Workflow completed"
+		}).
+		ExpectAuditEvent(func(e corev1.Event) bool {
+			return e.InvolvedObject.Kind == workflow.WorkflowKind &&
+				e.Reason == argo.EventReasonWorkflowNodeSucceeded &&
+				strings.HasPrefix(e.Message, "Succeeded node success-event-")
 		})
 }
 
@@ -148,17 +145,10 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 		SubmitWorkflow().
 		WaitForWorkflow(120 * time.Second).
 		Then().
-		ExpectAuditEvents(func(t *testing.T, events *corev1.EventList) {
-			found := false
-			for _, e := range events.Items {
-				isAboutSuccess := strings.HasPrefix(e.InvolvedObject.Name, "volumes-pvc-fail-event-")
-				isFailureEvent := e.Reason == argo.EventReasonWorkflowFailed
-				if isAboutSuccess && isFailureEvent {
-					found = true
-					assert.True(t, strings.Contains(e.Message, "pvc create error"), "event should contain \"pvc create error\"")
-				}
-			}
-			assert.True(t, found, "event not found")
+		ExpectAuditEvent(func(e corev1.Event) bool {
+			return strings.HasPrefix(e.InvolvedObject.Name, "volumes-pvc-fail-event-") &&
+				e.Reason == argo.EventReasonWorkflowFailed &&
+				strings.Contains(e.Message, "pvc create error")
 		})
 }
 
