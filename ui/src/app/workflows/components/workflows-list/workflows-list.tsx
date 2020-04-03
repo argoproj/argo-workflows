@@ -19,6 +19,7 @@ import {ZeroState} from '../../../shared/components/zero-state';
 import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
 
+import {LogDownloadButton} from '../../../shared/components/log-download-button';
 import {WorkflowFilters} from '../workflow-filters/workflow-filters';
 
 require('./workflows-list.scss');
@@ -100,8 +101,11 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                         onChange={(namespace, selectedPhases, selectedLabels) => this.changeFilters(namespace, selectedPhases, selectedLabels)}
                                     />
                                 </div>
+                                <LogDownloadButton workflows={this.state.workflows} />
                             </div>
-                            <div className='columns small-12 xlarge-10'>{this.renderWorkflows(ctx)}</div>
+                            <div className='columns small-12 xlarge-10'>
+                                {this.renderWorkflows(ctx)}
+                            </div>
                         </div>
                         <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
                             <ResourceSubmit<models.Workflow>

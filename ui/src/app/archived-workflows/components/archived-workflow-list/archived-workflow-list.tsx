@@ -9,6 +9,7 @@ import {Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
+import {LogDownloadButton} from '../../../shared/components/log-download-button';
 import {ResourceSubmit} from '../../../shared/components/resource-submit';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
@@ -106,6 +107,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                                         }
                                     />
                                 </div>
+                                <LogDownloadButton workflows={this.state.workflows} />
                             </div>
                             <div className='columns small-12 xlarge-10'>{this.renderWorkflows()}</div>
                         </div>

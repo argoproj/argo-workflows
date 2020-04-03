@@ -1,11 +1,16 @@
 package artifacts
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -62,8 +67,106 @@ func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
 	a.ok(w, data)
 }
-func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request) {
 
+// Information to enable downloading logs for a given workflow.
+type LogDownloadInfo struct {
+	WorkflowName      string `json:"name"`
+	WorkflowNamespace string `json:"namespace"`
+}
+
+func (a *ArtifactServer) GetLogs(w http.ResponseWriter, r *http.Request) {
+	ctx, err := a.gateKeeping(r)
+	if err != nil {
+		w.WriteHeader(401)
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
+
+	tmpDir, err := ioutil.TempDir(".", "main-logs")
+	if err != nil {
+		a.serverInternalError(err, w)
+		return
+	}
+
+	var workflowNames []LogDownloadInfo
+	err = json.Unmarshal([]byte(r.PostFormValue("workflows")), &workflowNames)
+	if err != nil {
+		w.WriteHeader(401)
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
+
+	for _, workflowInfo := range workflowNames {
+		wf, err := a.getWorkflow(ctx, workflowInfo.WorkflowNamespace, workflowInfo.WorkflowName)
+		if err != nil {
+			a.serverInternalError(err, w)
+			return
+		}
+
+		err = os.Mkdir(filepath.Join(tmpDir, workflowInfo.WorkflowName), 0744)
+		if err != nil {
+			a.serverInternalError(err, w)
+			return
+		}
+
+		err = a.getLogArtifacts(ctx, wf, filepath.Join(tmpDir, workflowInfo.WorkflowName))
+		if err != nil {
+			a.serverInternalError(err, w)
+			return
+		}
+	}
+
+	data, err := dirToTarGz(tmpDir, "")
+	if err != nil {
+		a.serverInternalError(err, w)
+		return
+	}
+
+	w.Header().Add("Content-Disposition", `filename="workflow-main-logs.tgz"`)
+	a.ok(w, data)
+}
+
+// Get node IDs for nodes with main-logs artifacts.
+func GetLogNodeIds(w *wfv1.Workflow) []string {
+	visited := make(map[string]struct{})
+	var getLoggedNodeIdsRecursive func(nodeName string) []string
+	getLoggedNodeIdsRecursive = func (nodeName string) []string {
+		_, wasVisited := visited[nodeName]
+		if wasVisited {
+			return make([]string, 0)
+		}
+		visited[nodeName] = struct{}{}
+		node := w.Status.Nodes[nodeName]
+		var hasLogs bool
+		nodeOutputs := node.Outputs
+		if nodeOutputs != nil {
+			items := nodeOutputs.Artifacts
+			if items != nil {
+				for _, item := range items {
+					if item.Name == "main-logs" {
+						hasLogs = true
+						break
+					}
+				}
+			}
+		}
+		var childItems []string
+		for _, childNodeName := range node.Children {
+			childItems = append(childItems, getLoggedNodeIdsRecursive(childNodeName)...)
+		}
+		if hasLogs {
+			return append([]string{node.ID}, childItems...)
+		}
+		return childItems
+	}
+	var nodes []string
+	for _, node := range w.Status.Nodes {
+		nodes = append(nodes, getLoggedNodeIdsRecursive(node.Name)...)
+	}
+	return nodes
+}
+
+func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request) {
 	ctx, err := a.gateKeeping(r)
 	if err != nil {
 		w.WriteHeader(401)
@@ -92,6 +195,7 @@ func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
 	a.ok(w, data)
 }
+
 func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
 	token := r.Header.Get("Authorization")
 	if token == "" {
@@ -156,6 +260,112 @@ func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nod
 	log.WithFields(log.Fields{"size": len(file)}).Debug("Artifact file size")
 
 	return file, nil
+}
+
+// Get log artifacts from all logged nodes in the given workflow. Write them to the specified
+// directory.
+func(a *ArtifactServer) getLogArtifacts(ctx context.Context, wf *wfv1.Workflow, destDir string) error {
+	if destDir == "" {
+		destDir = "."
+	}
+
+	nodeIds := GetLogNodeIds(wf)
+
+	for _, nodeId := range nodeIds {
+		art, err := a.getArtifact(ctx, wf, nodeId, "main-logs")
+		if err != nil {
+			return err
+		}
+		err = ioutil.WriteFile(filepath.Join(destDir, nodeId), art, 0644)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// dirToTarGz converts a directory to a tar.gz file. Files from the source directory are placed in
+// the tar.gz's root. Returns a byte array of the tar.gz file.
+func dirToTarGz(sourceDir string, destDir string) ([]byte, error) {
+	tmpFile, err := ioutil.TempFile(".", "dir-to-tar")
+	if err != nil {
+		return nil, err
+	}
+
+	gzw := gzip.NewWriter(tmpFile)
+	tw := tar.NewWriter(gzw)
+
+	err = filepath.Walk(sourceDir, func(file string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		err2 := addFileToTgz(fi, file, sourceDir, destDir, tw)
+		if err2 != nil {
+			return err2
+		}
+
+		return nil
+	})
+
+	err = gzw.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	err = tw.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := ioutil.ReadFile(tmpFile.Name())
+	if err != nil {
+		return nil, err
+	}
+
+	err = os.Remove(tmpFile.Name())
+	if err != nil {
+		return nil, err
+	}
+
+	return data, err
+}
+
+func addFileToTgz(fi os.FileInfo, file string, sourceDir string, destDir string, tw *tar.Writer) error {
+	if !fi.Mode().IsRegular() {
+		return nil
+	}
+
+	header, err := tar.FileInfoHeader(fi, fi.Name())
+	if err != nil {
+		return err
+	}
+
+	// Remove the source dir from the path. All files go in root.
+	header.Name = strings.Trim(strings.Replace(file, sourceDir, destDir, -1), string(filepath.Separator))
+
+	err = tw.WriteHeader(header)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Open(file)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(tw, f)
+	if err != nil {
+		return err
+	}
+
+	err = f.Close()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (a *ArtifactServer) getWorkflow(ctx context.Context, namespace string, workflowName string) (*wfv1.Workflow, error) {

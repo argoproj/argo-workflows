@@ -89,6 +89,14 @@ export class WorkflowsService {
             : `artifacts/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}`;
     }
 
+    public getLogsUrl(workflow: Workflow) {
+        return `logs/${workflow.metadata.namespace}/${workflow.metadata.name}`;
+    }
+
+    public getLogsMultipleUrl() {
+        return `http://localhost:2746/logs/`;
+    }
+
     private queryParams(filter: {namespace?: string; name?: string; phases?: Array<string>; labels?: Array<string>}) {
         const queryParams: string[] = [];
         if (filter.name) {

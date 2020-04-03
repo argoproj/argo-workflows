@@ -5,6 +5,7 @@ import * as React from 'react';
 import {NODE_PHASE, Workflow} from '../../../models';
 import {ConditionsPanel} from '../../shared/conditions-panel';
 import {ResourcesDuration} from '../../shared/resources-duration';
+import {services} from "../../shared/services";
 
 export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
     <Ticker disabled={props.workflow && props.workflow.status.phase !== NODE_PHASE.RUNNING}>
@@ -19,7 +20,8 @@ export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
                 {title: 'Namespace', value: props.workflow.metadata.namespace},
                 {title: 'Started At', value: props.workflow.status.startedAt},
                 {title: 'Finished At', value: props.workflow.status.finishedAt || '-'},
-                {title: 'Duration', value: <Duration durationMs={duration} />}
+                {title: 'Duration', value: <Duration durationMs={duration} />},
+                {title: 'Logs', value: <a href={services.workflows.getLogsUrl(props.workflow)}>Download all logs as .tgz</a>}
             ];
             if (props.workflow.status.resourcesDuration) {
                 attributes.push({

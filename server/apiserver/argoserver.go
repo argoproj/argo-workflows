@@ -234,6 +234,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.Handle("/api/", gwmux)
 	mux.HandleFunc("/artifacts/", artifactServer.GetArtifact)
 	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetArtifactByUID)
+	mux.HandleFunc("/logs/", artifactServer.GetLogs)
 	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef).ServerFiles)
 	return &httpServer
 }
