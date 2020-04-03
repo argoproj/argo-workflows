@@ -191,7 +191,7 @@ NOTE: artifact download and webconsole is not supported using this method
 ### Method 3: Expose a LoadBalancer
 Update the argo-ui service to be of type `LoadBalancer`.
 ```
-kubectl patch svc argo-ui -n argo -p '{"spec": {"type": "LoadBalancer"}}'
+kubectl patch svc argo-server -n argo -p '{"spec": {"type": "LoadBalancer"}}'
 ```
 Then wait for the external IP to be made available:
 ```
