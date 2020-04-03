@@ -1,7 +1,5 @@
 
-# Argo Core Concepts
-
-## Introduction
+# Argo Basic Concepts
 
 This page serves as an introduction into the core concepts of Argo.
 
@@ -38,99 +36,113 @@ spec:
       args: ["hello world"]   # This template runs "cowsay" in the "whalesay" image with arguments "hello world"
 ```
 
-#### `template` Types
+### `template` Types
 
 There are 6 types of templates, divided into two different categories.
 
-##### 1. Template Definitions
+#### Template Definitions
 
 These templates _define_ work to be done, usually in a Container.
 
-* `container`: Perhaps the most common template type, it will schedule a Container. The spec of the template is the same as the [K8s container spec](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#container-v1-core), so you can define a container here the same way you do anywhere else in K8s.
+##### Container
+
+Perhaps the most common template type, it will schedule a Container. The spec of the template is the same as the [K8s container spec](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.11/#container-v1-core), so you can define a container here the same way you do anywhere else in K8s.
     
-    Example:
-    ```yaml
-      - name: whalesay
-        container:
-          image: docker/whalesay
-          command: [cowsay]
-          args: ["hello world"]
-    ```
+Example:
+```yaml
+  - name: whalesay
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["hello world"]
+```
   
-* `script`: A convenience wrapper around a `container`. The spec is the same as a container, but adds the `source:` field which allows you to define a script in-place.
+##### Script
+
+A convenience wrapper around a `container`. The spec is the same as a container, but adds the `source:` field which allows you to define a script in-place.
 The script will be saved into a file and executed for you. The result of the script is automatically exported into an [Argo variable](./variables.md) either `{{tasks.<NAME>.outputs.result}}` or `{{steps.<NAME>.outputs.result}}`, depending how it was called. 
     
-    Example:
-    ```yaml
-      - name: gen-random-int
-        script:
-          image: python:alpine3.6
-          command: [python]
-          source: |
-            import random
-            i = random.randint(1, 100)
-            print(i)
-    ```
+Example:
+```yaml
+  - name: gen-random-int
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        import random
+        i = random.randint(1, 100)
+        print(i)
+```
 
-* `resource`: Performs operations on cluster Resources directly. It can be used to get, create, apply, delete, replace, or patch resources on your cluster.
+##### Resource
+
+Performs operations on cluster Resources directly. It can be used to get, create, apply, delete, replace, or patch resources on your cluster.
     
-    This example creates a `ConfigMap` resource on the cluster:
-    ```yaml
-      - name: k8s-owner-reference
-        resource:
-          action: create
-          manifest: |
-            apiVersion: v1
-            kind: ConfigMap
-            metadata:
-              generateName: owned-eg-
-            data:
-              some: value
-    ```
+This example creates a `ConfigMap` resource on the cluster:
+```yaml
+  - name: k8s-owner-reference
+    resource:
+      action: create
+      manifest: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          generateName: owned-eg-
+        data:
+          some: value
+```
   
-* `suspend`: A suspend template will suspend execution, either for a duration or until it is resumed manually. Suspend templates can be resumed from the CLI (with `argo resume`), the API endpoint<!-- TODO: LINK -->, or the UI.
+##### Suspend
+
+A suspend template will suspend execution, either for a duration or until it is resumed manually. Suspend templates can be resumed from the CLI (with `argo resume`), the API endpoint<!-- TODO: LINK -->, or the UI.
         
-    Example:
-    ```yaml
-      - name: delay
-        suspend:
-          duration: "20s"
-    ```
+Example:
+```yaml
+  - name: delay
+    suspend:
+      duration: "20s"
+```
   
-##### 2. Template Invocators
+#### Template Invocators
 
 These tempaltes are used to invoke/call other tempaltes and provide execution control.
 
-* `steps`: A steps template allows you to define your tasks in a series of steps. The structure of the template is a "list of lists". Outer lists will run sequentially and inner lists will run in parallel. You can set a wide array of options to control execution, such as [`when:` clauses to conditionally execute a step](../examples/coinflip.yaml).
-    
-    In this example `step1` runs first. Once it is completed, `step2a` and `step2b` will run in parallel:
-    ```yaml
-      - name: hello-hello-hello
-        steps:
-        - - name: step1
-            template: prepare-data
-        - - name: step2a
-            template: run-data-first-half
-          - name: step2b
-            template: run-data-second-half
-    ```
+##### Steps
 
-* `dag`: A dag template allows you to define your tasks as a graph of dependencies. In a DAG, you list all your tasks and set which other tasks must complete before a particular task can begin. Tasks without any dependencies will be run immediately.
+A steps template allows you to define your tasks in a series of steps. The structure of the template is a "list of lists". Outer lists will run sequentially and inner lists will run in parallel. You can set a wide array of options to control execution, such as [`when:` clauses to conditionally execute a step](../examples/coinflip.yaml).
     
-    In this example `A` runs first. Once it is completed, `B` and `C` will run in parallel and once they both complete, `D` will run:
-    ```yaml
-      - name: diamond
-        dag:
-          tasks:
-          - name: A
-            template: echo
-          - name: B
-            dependencies: [A]
-            template: echo
-          - name: C
-            dependencies: [A]
-            template: echo
-          - name: D
-            dependencies: [B, C]
-            template: echo
-    ```
+In this example `step1` runs first. Once it is completed, `step2a` and `step2b` will run in parallel:
+```yaml
+  - name: hello-hello-hello
+    steps:
+    - - name: step1
+        template: prepare-data
+    - - name: step2a
+        template: run-data-first-half
+      - name: step2b
+        template: run-data-second-half
+```
+
+##### DAG
+
+A dag template allows you to define your tasks as a graph of dependencies. In a DAG, you list all your tasks and set which other tasks must complete before a particular task can begin. Tasks without any dependencies will be run immediately.
+    
+In this example `A` runs first. Once it is completed, `B` and `C` will run in parallel and once they both complete, `D` will run:
+```yaml
+  - name: diamond
+    dag:
+      tasks:
+      - name: A
+        template: echo
+      - name: B
+        dependencies: [A]
+        template: echo
+      - name: C
+        dependencies: [A]
+        template: echo
+      - name: D
+        dependencies: [B, C]
+        template: echo
+```
+
+## Running Workflows
