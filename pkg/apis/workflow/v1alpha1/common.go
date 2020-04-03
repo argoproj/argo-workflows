@@ -7,9 +7,9 @@ import (
 type ResourceScope string
 
 const (
-	ResourceScopeLocal      ResourceScope = "Local"
-	ResourceScopeNamespaced ResourceScope = "Namespaced"
-	ResourceScopeCluster    ResourceScope = "Cluster"
+	ResourceScopeLocal      ResourceScope = "local"
+	ResourceScopeNamespaced ResourceScope = "namespaced"
+	ResourceScopeCluster    ResourceScope = "cluster"
 )
 
 // TemplateHolder is an object that holds templates; e.g. Workflow, WorkflowTemplate, and ClusterWorkflowTemplate

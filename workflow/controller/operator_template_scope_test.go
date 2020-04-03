@@ -472,7 +472,7 @@ spec:
 `
 
 func TestTemplateClusterScope(t *testing.T) {
-	t.SkipNow()
+	//t.SkipNow()
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates()
@@ -496,7 +496,7 @@ func TestTemplateClusterScope(t *testing.T) {
 	node := findNodeByName(wf.Status.Nodes, "test-template-scope")
 	if assert.NotNil(t, node, "Node %s not found", "test-templte-scope") {
 		assert.Equal(t, wfv1.NodeTypeSteps, node.Type)
-		assert.Equal(t, "", node.TemplateScope)
+		assert.Equal(t, "local/test-template-scope", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0]")
@@ -520,16 +520,12 @@ func TestTemplateClusterScope(t *testing.T) {
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].other-wftmpl[0]")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope[0].other-wftmpl[0]") {
 		assert.Equal(t, wfv1.NodeTypeStepGroup, node.Type)
-		scope, resourceName := node.GetTemplateScope()
-		assert.Equal(t, wfv1.ResourceScopeNamespaced, scope)
-		assert.Equal(t, "test-template-scope-2", resourceName)
+		assert.Equal(t, "namespaced/test-template-scope-2", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].other-wftmpl[0].hello")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope[0].other-wftmpl[0].hello") {
 		assert.Equal(t, wfv1.NodeTypePod, node.Type)
-		scope, resourceName := node.GetTemplateScope()
-		assert.Equal(t, wfv1.ResourceScopeNamespaced, scope)
-		assert.Equal(t, "test-template-scope-2", resourceName)
+		assert.Equal(t, "namespaced/test-template-scope-2", node.TemplateScope)
 	}
 }

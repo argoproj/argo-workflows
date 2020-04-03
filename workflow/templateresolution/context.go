@@ -163,6 +163,10 @@ func (ctx *Context) GetCurrentTemplateBase() wfv1.TemplateHolder {
 	return ctx.tmplBase
 }
 
+func (ctx *Context) GetTemplateScope() string {
+	return string(ctx.tmplBase.GetResourceScope()) + "/" + ctx.tmplBase.GetName()
+}
+
 // ResolveTemplate digs into referenes and returns a merged template.
 // This method is the public start point of template resolution.
 func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateReferenceHolder) (*Context, *wfv1.Template, bool, error) {
@@ -282,34 +286,4 @@ func (ctx *Context) WithClusterWorkflowTemplate(name string) (*Context, error) {
 		return nil, err
 	}
 	return ctx.WithTemplateBase(cwftmpl), nil
-}
-
-// This function "localizes" a template reference to the local scope of the Workflow running it.
-// If a template inside a WorkflowTemplate calls another template inside the same WorkflowTemplate, it does so with a local
-// "template:" call. However, from the perspective of the original Workflow this is still an external "templateRef:" call.
-// In this function we can convert that "local" call found within the WorkflowTemplate, to an "external" call that can be used
-// anywhere.
-func (ctx *Context) LocalizeTemplateReference(orgTmpl wfv1.TemplateReferenceHolder) wfv1.TemplateReferenceHolder {
-	currentTemplateBase := ctx.GetCurrentTemplateBase()
-	switch currentTemplateBase.GetResourceScope() {
-	case wfv1.ResourceScopeLocal:
-		// Context is already local, simply return the template reference as is
-		return orgTmpl
-	case wfv1.ResourceScopeNamespaced, wfv1.ResourceScopeCluster:
-		// We are in an external context, if we are performing a local reference within this external context, localize it
-		if orgTmpl.GetTemplateName() != "" {
-			return &wfv1.WorkflowStep{
-				TemplateRef: &wfv1.TemplateRef{
-					Name:         currentTemplateBase.GetName(),
-					Template:     orgTmpl.GetTemplateName(),
-					ClusterScope: currentTemplateBase.GetResourceScope() == wfv1.ResourceScopeCluster,
-				},
-			}
-		}
-		// If we are performing another external reference in this external context, we can simply return it
-		return orgTmpl
-	default:
-		// This should be unreachable
-		return orgTmpl
-	}
 }

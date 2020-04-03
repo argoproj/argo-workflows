@@ -63,7 +63,7 @@ script:
 func TestScriptTemplateWithVolume(t *testing.T) {
 	tmpl := unmarshalTemplate(scriptTemplateWithInputArtifact)
 	woc := newWoc()
-	_, err := woc.executeScript(tmpl.Name, tmpl, tmpl, &executeTemplateOpts{})
+	_, err := woc.executeScript(tmpl.Name, "", tmpl, tmpl, &executeTemplateOpts{})
 	assert.NoError(t, err)
 }
 
@@ -186,7 +186,9 @@ func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 func TestWFLevelServiceAccount(t *testing.T) {
 	woc := newWoc()
 	woc.wf.Spec.ServiceAccountName = "foo"
-	_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -201,7 +203,9 @@ func TestTmplServiceAccount(t *testing.T) {
 	woc := newWoc()
 	woc.wf.Spec.ServiceAccountName = "foo"
 	woc.wf.Spec.Templates[0].ServiceAccountName = "tmpl"
-	_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -219,7 +223,9 @@ func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 	falseValue := false
 	woc.wf.Spec.AutomountServiceAccountToken = &falseValue
 	woc.wf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
-	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -239,7 +245,9 @@ func TestTmplLevelAutomountServiceAccountToken(t *testing.T) {
 	woc.wf.Spec.AutomountServiceAccountToken = &trueValue
 	woc.wf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
 	woc.wf.Spec.Templates[0].AutomountServiceAccountToken = &falseValue
-	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -265,7 +273,9 @@ func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 	assert.NoError(t, err)
 
 	woc.wf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
-	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -288,7 +298,9 @@ func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 
 	woc.wf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
 	woc.wf.Spec.Templates[0].Executor = &wfv1.ExecutorConfig{ServiceAccountName: "tmpl"}
-	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -312,7 +324,9 @@ func TestTmplLevelExecutorSecurityContext(t *testing.T) {
 
 	woc.controller.Config.Executor = &apiv1.Container{SecurityContext: &apiv1.SecurityContext{RunAsUser: &user}}
 	woc.wf.Spec.Templates[0].Executor = &wfv1.ExecutorConfig{ServiceAccountName: "tmpl"}
-	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -337,7 +351,9 @@ func TestImagePullSecrets(t *testing.T) {
 			Name: "secret-name",
 		},
 	}
-	_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -369,7 +385,9 @@ func TestAffinity(t *testing.T) {
 			},
 		},
 	}
-	_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -386,7 +404,9 @@ func TestTolerations(t *testing.T) {
 		Operator: "Exists",
 		Effect:   "NoSchedule",
 	}}
-	_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -399,7 +419,9 @@ func TestTolerations(t *testing.T) {
 // TestMetadata verifies ability to carry forward annotations and labels
 func TestMetadata(t *testing.T) {
 	woc := newWoc()
-	_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -550,7 +572,9 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 		woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorDocker
 
-		_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+		tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+		assert.NoError(t, err)
+		_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 		assert.NoError(t, err)
 		pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 		assert.NoError(t, err)
@@ -571,7 +595,9 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 		woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorKubelet
 
-		_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+		tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+		assert.NoError(t, err)
+		_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 		assert.NoError(t, err)
 		pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 		assert.NoError(t, err)
@@ -591,7 +617,9 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 		woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorK8sAPI
 
-		_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+		tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+		assert.NoError(t, err)
+		_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 		assert.NoError(t, err)
 		pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 		assert.NoError(t, err)
@@ -636,7 +664,9 @@ func TestVolumesPodSubstitution(t *testing.T) {
 	woc.wf.Spec.Templates[0].Inputs.Parameters = inputParameters
 	woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorDocker
 
-	_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -672,7 +702,9 @@ func TestOutOfCluster(t *testing.T) {
 			SecretKey:  "bar",
 		}
 
-		_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+		tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+		assert.NoError(t, err)
+		_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 		assert.NoError(t, err)
 		pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 		assert.NoError(t, err)
@@ -695,7 +727,9 @@ func TestOutOfCluster(t *testing.T) {
 			VolumeName: "kube-config-secret",
 		}
 
-		_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+		tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+		assert.NoError(t, err)
+		_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 		assert.NoError(t, err)
 		pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 		assert.NoError(t, err)
@@ -716,7 +750,9 @@ func TestPriority(t *testing.T) {
 	woc := newWoc()
 	woc.wf.Spec.Templates[0].PriorityClassName = "foo"
 	woc.wf.Spec.Templates[0].Priority = &priority
-	_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -730,7 +766,9 @@ func TestPriority(t *testing.T) {
 func TestSchedulerName(t *testing.T) {
 	woc := newWoc()
 	woc.wf.Spec.Templates[0].SchedulerName = "foo"
-	_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -782,7 +820,9 @@ func TestInitContainers(t *testing.T) {
 		},
 	}
 
-	_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -841,7 +881,9 @@ func TestSidecars(t *testing.T) {
 		},
 	}
 
-	_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -893,7 +935,9 @@ func TestTemplateLocalVolumes(t *testing.T) {
 	woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 	woc.wf.Spec.Templates[0].Volumes = localVolumes
 
-	_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -914,7 +958,9 @@ func TestWFLevelHostAliases(t *testing.T) {
 		{IP: "127.0.0.1"},
 		{IP: "127.0.0.1"},
 	}
-	_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -931,7 +977,9 @@ func TestTmplLevelHostAliases(t *testing.T) {
 		{IP: "127.0.0.1"},
 		{IP: "127.0.0.1"},
 	}
-	_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -948,7 +996,9 @@ func TestWFLevelSecurityContext(t *testing.T) {
 	woc.wf.Spec.SecurityContext = &apiv1.PodSecurityContext{
 		RunAsUser: &runAsUser,
 	}
-	_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -965,7 +1015,9 @@ func TestTmplLevelSecurityContext(t *testing.T) {
 	woc.wf.Spec.Templates[0].SecurityContext = &apiv1.PodSecurityContext{
 		RunAsUser: &runAsUser,
 	}
-	_, err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	assert.NoError(t, err)
+	_, err = woc.executeContainer(woc.wf.Spec.Entrypoint, tmplCtx.GetTemplateScope(), &woc.wf.Spec.Templates[0], &woc.wf.Spec.Templates[0], &executeTemplateOpts{})
 	assert.NoError(t, err)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
