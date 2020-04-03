@@ -13,20 +13,16 @@ spec:
         template: whalesay
         arguments:
           parameters: [{name: message, value: "hello1"}]
-    - - name: hello2a
+    - - name: hello2
         template: whalesay
         arguments:
-          parameters: [{name: message, value: "hello2a"}]
-      - name: hello2b
-        template: whalesay
-        arguments:
-          parameters: [{name: message, value: "hello2b"}]
+          parameters: [{name: message, value: "{{steps.hello1.outputs.result}}"}]
 
   - name: whalesay
     inputs:
       parameters:
       - name: message
     container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["{{inputs.parameters.message}}"]
+      image: alpine:latest
+      command: [echo]
+      args: ["{{pod.name}}: {{inputs.parameters.message}}"]

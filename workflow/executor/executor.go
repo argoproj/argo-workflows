@@ -690,7 +690,8 @@ func (we *WorkflowExecutor) CaptureScriptResult() error {
 		log.Infof("No Script output reference in workflow. Capturing script output ignored")
 		return nil
 	}
-	if we.Template.Script == nil {
+	if we.Template.Script == nil && we.Template.Container == nil {
+		log.Infof("Template type is neither of Script or Container. Capturing script output ignored")
 		return nil
 	}
 	log.Infof("Capturing script output")
@@ -713,6 +714,14 @@ func (we *WorkflowExecutor) CaptureScriptResult() error {
 	if outputLen > 0 && out[outputLen-1] == '\n' {
 		out = out[0 : outputLen-1]
 	}
+
+	const maxAnnotationSize int = 256 * (1 << 10) // 256 kB
+	// A character in a string is a byte
+	if len(out) > maxAnnotationSize {
+		log.Warnf("Output is larger than the maximum allowed size of 256 kB, only the last 256 kB were saved")
+		out = out[len(out)-maxAnnotationSize:]
+	}
+
 	we.Template.Outputs.Result = &out
 	return nil
 }

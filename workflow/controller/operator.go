@@ -1767,8 +1767,18 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope strin
 		return node, nil
 	}
 
+	// Check if the output of this container is referenced elsewhere in the Workflow. If so, make sure to include it during
+	// execution.
+	includeScriptOutput, err := woc.includeScriptOutput(nodeName, opts.boundaryID)
+	if err != nil {
+		return node, err
+	}
+
 	woc.log.Debugf("Executing node %s with container template: %v\n", nodeName, tmpl)
-	_, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl, &createWorkflowPodOpts{onExitPod: opts.onExitTemplate})
+	_, err = woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl, &createWorkflowPodOpts{
+		includeScriptOutput: includeScriptOutput,
+		onExitPod:           opts.onExitTemplate,
+	})
 
 	if apierr.IsForbidden(err) && isResubmitAllowed(tmpl) {
 		// Our error was most likely caused by a lack of resources. If pod resubmission is allowed, keep the node pending
@@ -1894,23 +1904,16 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 	}
 	node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
 
-	includeScriptOutput := false
-	if boundaryNode, ok := woc.wf.Status.Nodes[opts.boundaryID]; ok {
-		tmplCtx, err := woc.createTemplateContext(boundaryNode.TemplateScope)
-		if err != nil {
-			return node, err
-		}
-		_, parentTemplate, err := tmplCtx.ResolveTemplate(&boundaryNode)
-		if err != nil {
-			return node, err
-		}
-		name := getStepOrDAGTaskName(nodeName)
-		includeScriptOutput = hasOutputResultRef(name, parentTemplate)
+	// Check if the output of this script is referenced elsewhere in the Workflow. If so, make sure to include it during
+	// execution.
+	includeScriptOutput, err := woc.includeScriptOutput(nodeName, opts.boundaryID)
+	if err != nil {
+		return node, err
 	}
 
 	mainCtr := tmpl.Script.Container
 	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
-	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl, &createWorkflowPodOpts{
+	_, err = woc.createWorkflowPod(nodeName, mainCtr, tmpl, &createWorkflowPodOpts{
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
 	})
@@ -2524,4 +2527,22 @@ func (woc *wfOperationCtx) deletePDBResource() error {
 	}
 	woc.log.Infof("Deleted PDB resource for workflow.")
 	return nil
+}
+
+// Check if the output of this node is referenced elsewhere in the Workflow. If so, make sure to include it during
+// execution.
+func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (bool, error) {
+	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
+		tmplCtx, err := woc.createTemplateContext(boundaryNode.TemplateScope)
+		if err != nil {
+			return false, err
+		}
+		_, parentTemplate, err := tmplCtx.ResolveTemplate(&boundaryNode)
+		if err != nil {
+			return false, err
+		}
+		name := getStepOrDAGTaskName(nodeName)
+		return hasOutputResultRef(name, parentTemplate), nil
+	}
+	return false, nil
 }

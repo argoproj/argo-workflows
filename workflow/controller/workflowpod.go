@@ -545,8 +545,8 @@ func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, incl
 
 	if woc.workflowDeadline != nil {
 		execCtl.Deadline = woc.workflowDeadline
-
 	}
+
 	if woc.workflowDeadline != nil || includeScriptOutput {
 		execCtlBytes, err := json.Marshal(execCtl)
 		if err != nil {
