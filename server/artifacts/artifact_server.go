@@ -308,6 +308,9 @@ func dirToTarGz(sourceDir string, destDir string) ([]byte, error) {
 
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	err = gzw.Close()
 	if err != nil {
