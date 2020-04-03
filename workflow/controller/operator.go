@@ -192,7 +192,10 @@ func (woc *wfOperationCtx) operate() {
 		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: argo.EventReasonWorkflowRunning}, "Workflow Running")
 		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.controller.GetContainerRuntimeExecutor()}
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
-		wfConditions, err := validate.ValidateWorkflow(wftmplGetter, woc.wf, validateOpts)
+		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+
+		wfConditions, err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, validateOpts)
+
 		if err != nil {
 			msg := fmt.Sprintf("invalid spec: %s", err.Error())
 			woc.markWorkflowFailed(msg)
@@ -335,7 +338,7 @@ func (woc *wfOperationCtx) operate() {
 		onExitNode, err = woc.executeTemplate(onExitNodeName, &wfv1.WorkflowStep{Template: woc.wf.Spec.OnExit}, tmplCtx, woc.wf.Spec.Arguments, &executeTemplateOpts{onExitTemplate: true})
 		if err != nil {
 			// the error are handled in the callee so just log it.
-			woc.log.Errorf("%s error in exit template execution: %+v", woc.wf.Name, err)
+			woc.log.Errorf("error in exit template execution: %+v", err)
 			return
 		}
 		if onExitNode == nil || !onExitNode.Completed() {
@@ -374,7 +377,7 @@ func (woc *wfOperationCtx) operate() {
 			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, onExitNode.Message)
 		} else {
 			woc.markWorkflowSuccess()
-			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: argo.EventReasonWorkflowSucceded}, "Workflow completed")
+			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: argo.EventReasonWorkflowSucceeded}, "Workflow completed")
 		}
 	case wfv1.NodeFailed:
 		woc.markWorkflowFailed(workflowMessage)
@@ -739,7 +742,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		if node, ok := woc.wf.Status.Nodes[nodeID]; ok {
 			if newState := woc.assessNodeStatus(pod, &node); newState != nil {
 				woc.wf.Status.Nodes[nodeID] = *newState
-				woc.addOutputsToScope("workflow", node.Outputs, nil)
+				woc.addOutputsToGlobalScope(node.Outputs)
 				woc.updated = true
 			}
 			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
@@ -1671,8 +1674,27 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 		woc.log.Infof("node %s finished: %s", node, node.FinishedAt)
 		woc.updated = true
 	}
+	if woc.updated && node.Phase.Completed() {
+		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: nodePhaseReason(node.Phase)}, nodeMessage(node))
+	}
 	woc.wf.Status.Nodes[node.ID] = *node
 	return node
+}
+
+func nodePhaseReason(phase wfv1.NodePhase) string {
+	return map[wfv1.NodePhase]string{
+		wfv1.NodeError:     argo.EventReasonWorkflowNodeError,
+		wfv1.NodeFailed:    argo.EventReasonWorkflowNodeFailed,
+		wfv1.NodeSucceeded: argo.EventReasonWorkflowNodeSucceeded,
+	}[phase]
+}
+
+func nodeMessage(node *wfv1.NodeStatus) string {
+	message := fmt.Sprintf("%v node %s", node.Phase, node.Name)
+	if node.Message != "" {
+		message = message + ": " + node.Message
+	}
+	return message
 }
 
 // markNodeError is a convenience method to mark a node with an error and set the message from the error
@@ -1895,9 +1917,9 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 	return node, err
 }
 
-// processNodeOutputs adds all of a nodes outputs to the local scope with the given prefix, as well
+// buildLocalScope adds all of a nodes outputs to the local scope with the given prefix, as well
 // as the global scope, if specified with a globalName
-func (woc *wfOperationCtx) processNodeOutputs(scope *wfScope, prefix string, node *wfv1.NodeStatus) {
+func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *wfv1.NodeStatus) {
 	if node.PodIP != "" {
 		key := fmt.Sprintf("%s.ip", prefix)
 		scope.addParamToScope(key, node.PodIP)
@@ -1906,10 +1928,10 @@ func (woc *wfOperationCtx) processNodeOutputs(scope *wfScope, prefix string, nod
 		key := fmt.Sprintf("%s.status", prefix)
 		scope.addParamToScope(key, string(node.Phase))
 	}
-	woc.addOutputsToScope(prefix, node.Outputs, scope)
+	woc.addOutputsToLocalScope(prefix, node.Outputs, scope)
 }
 
-func (woc *wfOperationCtx) addOutputsToScope(prefix string, outputs *wfv1.Outputs, scope *wfScope) {
+func (woc *wfOperationCtx) addOutputsToLocalScope(prefix string, outputs *wfv1.Outputs, scope *wfScope) {
 	if outputs == nil {
 		return
 	}
@@ -1924,14 +1946,24 @@ func (woc *wfOperationCtx) addOutputsToScope(prefix string, outputs *wfv1.Output
 		if scope != nil {
 			scope.addParamToScope(key, *param.Value)
 		}
-		woc.addParamToGlobalScope(param)
 	}
 	for _, art := range outputs.Artifacts {
 		key := fmt.Sprintf("%s.outputs.artifacts.%s", prefix, art.Name)
 		if scope != nil {
 			scope.addArtifactToScope(key, art)
 		}
-		woc.addArtifactToGlobalScope(art, scope)
+	}
+}
+
+func (woc *wfOperationCtx) addOutputsToGlobalScope(outputs *wfv1.Outputs) {
+	if outputs == nil {
+		return
+	}
+	for _, param := range outputs.Parameters {
+		woc.addParamToGlobalScope(param)
+	}
+	for _, art := range outputs.Artifacts {
+		woc.addArtifactToGlobalScope(art, nil)
 	}
 }
 
@@ -2325,10 +2357,8 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 
 // createTemplateContext creates a new template context.
 func (woc *wfOperationCtx) createTemplateContext(templateScope string) (*templateresolution.Context, error) {
-	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), woc.wf, woc)
+	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), woc.controller.cwftmplInformer.Lister(), woc.wf, woc)
 	if templateScope != "" {
-		fmt.Printf("templateScope: %s\n", templateScope)
-		// ctx = ctx.WithLazyWorkflowTemplate(woc.wf.Namespace, templateScope)
 		return ctx.WithWorkflowTemplate(templateScope)
 	}
 	return ctx, nil

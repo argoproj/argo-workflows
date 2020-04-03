@@ -35,10 +35,13 @@ type ObjectRef struct {
 }
 
 const (
-	EventReasonWorkflowRunning  = "WorkflowRunning"
-	EventReasonWorkflowSucceded = "WorkflowSucceeded"
-	EventReasonWorkflowFailed   = "WorkflowFailed"
-	EventReasonWorkflowTimedOut = "WorkflowTimedOut"
+	EventReasonWorkflowRunning       = "WorkflowRunning"
+	EventReasonWorkflowSucceeded     = "WorkflowSucceeded"
+	EventReasonWorkflowFailed        = "WorkflowFailed"
+	EventReasonWorkflowTimedOut      = "WorkflowTimedOut"
+	EventReasonWorkflowNodeSucceeded = "WorkflowNodeSucceeded"
+	EventReasonWorkflowNodeFailed    = "WorkflowNodeFailed"
+	EventReasonWorkflowNodeError     = "WorkflowNodeError"
 )
 
 func (l *AuditLogger) logEvent(objMeta ObjectRef, gvk schema.GroupVersionKind, info EventInfo, message string, logFields map[string]interface{}) {

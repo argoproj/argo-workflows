@@ -209,8 +209,8 @@ Using `kubectl apply -f` and `kubectl get wftmpl`
 
 ### GitOps via Argo CD
 
-`WorkflowTempalte` resources can be managed with GitOps by using [Argo CD](https://github.com/argoproj/argo-cd)
+`WorkflowTemplate` resources can be managed with GitOps by using [Argo CD](https://github.com/argoproj/argo-cd)
 
 ### UI
 
-`WorkflowTempalte` resources can also be managed by the UI
+`WorkflowTemplate` resources can also be managed by the UI
