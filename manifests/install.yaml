@@ -187,6 +187,13 @@ rules:
   - patch
   - delete
 - apiGroups:
+  - metrics.k8s.io
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+- apiGroups:
   - ""
   resources:
   - configmaps

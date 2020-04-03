@@ -897,9 +897,11 @@ type WorkflowStatus struct {
 	Conditions WorkflowConditions `json:"conditions,omitempty" protobuf:"bytes,13,rep,name=conditions"`
 
 	// ResourcesDuration is the total for the workflow
+	// ALPHA
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
 
 	// Usage is the estimated usage of the resource
+	// ALPHA
 	Usage ResourcesDuration `json:"usage,omitempty" protobuf:"bytes,14,opt,name=usage"`
 }
 
@@ -1090,9 +1092,11 @@ type NodeStatus struct {
 	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,11,opt,name=finishedAt"`
 
 	// ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
+	// ALPHA
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,21,opt,name=resourcesDuration"`
 
 	// Usage is an estimate of the actual usage of a pod. This is populated when the nodes completes.
+	// ALPHA
 	Usage ResourcesDuration `json:"usage,omitempty" protobuf:"bytes,22,opt,name=usage"`
 
 	// PodIP captures the IP of the pod for daemoned steps

@@ -22,3 +22,5 @@ Some use-case specific documentation is available:
 * [Cron Workflows](cron-workflows.md)
 * [Offloading Large Workflows](offloading-large-workflows.md)
 * [Workflow Archive](workflow-archive.md)
+* [Resources Duration](resource-duration.md)
+* [Usage Capture](usage.md)

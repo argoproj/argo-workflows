@@ -794,7 +794,7 @@
             "type": "string",
             "format": "int64"
           },
-          "description": "ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes."
+          "title": "ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.\nALPHA"
         },
         "usage": {
           "type": "object",
@@ -802,7 +802,7 @@
             "type": "string",
             "format": "int64"
           },
-          "description": "Usage is an estimate of the actual usage of a pod. This is populated when the nodes completes."
+          "title": "Usage is an estimate of the actual usage of a pod. This is populated when the nodes completes.\nALPHA"
         },
         "podIP": {
           "type": "string",
@@ -1677,7 +1677,7 @@
             "type": "string",
             "format": "int64"
           },
-          "title": "ResourcesDuration is the total for the workflow"
+          "title": "ResourcesDuration is the total for the workflow\nALPHA"
         },
         "usage": {
           "type": "object",
@@ -1685,7 +1685,7 @@
             "type": "string",
             "format": "int64"
           },
-          "title": "Usage is the estimated usage of the resource"
+          "title": "Usage is the estimated usage of the resource\nALPHA"
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"

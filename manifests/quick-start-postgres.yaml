@@ -96,6 +96,13 @@ rules:
   - patch
   - delete
 - apiGroups:
+  - metrics.k8s.io
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+- apiGroups:
   - ""
   resources:
   - configmaps
@@ -128,6 +135,8 @@ rules:
   resources:
   - workflowtemplates
   - workflowtemplates/finalizers
+  - clusterworkflowtemplates
+  - clusterworkflowtemplates/finalizers
   verbs:
   - get
   - list
@@ -294,8 +303,6 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  featureFlags: |
-    resourcesDuration: true
   links: |
     - name: Example Workflow Link
       scope: workflow
@@ -324,6 +331,10 @@ data:
       passwordSecret:
         name: argo-postgres-config
         key: password
+  resourcesDuration: |
+    enabled: true
+  usageCapture: |
+    enabled: true
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

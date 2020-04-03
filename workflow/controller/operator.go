@@ -1006,11 +1006,11 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 		}
 		logCtx := log.WithFields(log.Fields{"namespace": pod.Namespace, "podName": pod.Name})
-		if woc.controller.Config.FeatureFlags.ResourcesDuration {
+		if woc.controller.Config.GetResourcesDuration() {
 			node.ResourcesDuration = resource.DurationForPod(pod)
 			logCtx.WithField("resourceDuration", node.ResourcesDuration).Debug("Finalised resource duration")
 		}
-		if woc.controller.Config.FeatureFlags.UsageCapture {
+		if woc.controller.Config.UsageCapture.Enabled {
 			// TODO - extract and write tests
 			key := pod.Namespace + "/" + pod.Name
 			capture, ok := woc.controller.usageCapture[key]

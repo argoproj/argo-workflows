@@ -39,11 +39,13 @@ data:
         scope: pod
         url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
 
-    featureFlags:
-      # Enable resource duration
-      resourcesDuration: false
-      # Enable usage capture
-      usageCapture: false
+    # Enable resource duration
+    resourcesDuration:
+      enabled: false
+
+    # Enable usage capture
+    usageCapture:
+      enabled: false
 
     # artifactRepository defines the default location to be used as the artifact repository for
     # container artifacts.

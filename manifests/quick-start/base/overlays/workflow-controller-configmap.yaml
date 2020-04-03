@@ -12,9 +12,10 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  featureFlags: |
-    resourcesDuration: true
-    usageCapture: true
+  resourcesDuration: |
+    enabled: true
+  usageCapture: |
+    enabled: true
   metricsConfig: |
     enabled: true
     path: /metrics

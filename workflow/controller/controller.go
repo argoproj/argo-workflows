@@ -273,17 +273,15 @@ func (wfc *WorkflowController) podGarbageCollector(stopCh <-chan struct{}) {
 }
 
 func (wfc *WorkflowController) usageCollector(stopCh <-chan struct{}) {
-	// TODO reduces to once every 30s say
-	periodicity := 5 * time.Second
-	log.Infof("Capturing pod usage every %v, if enabled in config", periodicity)
-	ticker := time.NewTicker(periodicity)
+	periodicity, ticker := newTickerFromEnvvar("USAGE_CAPTURE_PERIOD", 30*time.Second)
+	log.Infof("Performing usage capture every %v", periodicity)
 	for {
 		select {
 		case <-stopCh:
 			ticker.Stop()
 			return
 		case <-ticker.C:
-			if wfc.Config.FeatureFlags.UsageCapture {
+			if wfc.Config.UsageCapture.Enabled {
 				metricsList, err := wfc.metricsClientset.PodMetricses(wfc.namespace).List(metav1.ListOptions{})
 				if err != nil {
 					log.WithField("err", err).Error("Failed to list pod metrics")
@@ -315,18 +313,23 @@ func (wfc *WorkflowController) usageCollector(stopCh <-chan struct{}) {
 	}
 }
 
-func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan struct{}) {
-	value, ok := os.LookupEnv("WORKFLOW_GC_PERIOD")
-	periodicity := 5 * time.Minute
+func newTickerFromEnvvar(key string, defaultValue time.Duration) (time.Duration, *time.Ticker) {
+	value, ok := os.LookupEnv(key)
+	periodicity := defaultValue
 	if ok {
 		var err error
 		periodicity, err = time.ParseDuration(value)
 		if err != nil {
-			log.WithFields(log.Fields{"err": err, "value": value}).Fatal("Failed to parse WORKFLOW_GC_PERIOD")
+			log.WithFields(log.Fields{"err": err, "value": value}).Fatal("Failed to parse " + key)
 		}
 	}
-	log.Infof("Performing periodic GC every %v", periodicity)
 	ticker := time.NewTicker(periodicity)
+	return periodicity, ticker
+}
+
+func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan struct{}) {
+	periodicity, ticker := newTickerFromEnvvar("WORKFLOW_GC_PERIOD", 5*time.Minute)
+	log.Infof("Performing periodic GC every %v", periodicity)
 	for {
 		select {
 		case <-stopCh:

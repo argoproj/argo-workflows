@@ -5,6 +5,7 @@ import * as React from 'react';
 import {NODE_PHASE, Workflow} from '../../../models';
 import {ConditionsPanel} from '../../shared/conditions-panel';
 import {ResourcesDuration} from '../../shared/resources-duration';
+import {Usage} from '../../shared/usage';
 
 export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
     <Ticker disabled={props.workflow && props.workflow.status.phase !== NODE_PHASE.RUNNING}>
@@ -30,7 +31,7 @@ export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
             if (props.workflow.status.usage) {
                 attributes.push({
                     title: 'Usage',
-                    value: <ResourcesDuration resourcesDuration={props.workflow.status.usage} />
+                    value: <Usage usage={props.workflow.status.usage} />
                 });
             }
             if (props.workflow.status.conditions) {

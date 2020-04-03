@@ -24,3 +24,16 @@ export function formatDuration(seconds: number) {
 
     return formattedDuration;
 }
+
+export function denominator(resource: string) {
+    switch (resource) {
+        case 'memory':
+            return '100Mi';
+        case 'storage':
+            return '10Gi';
+        case 'ephemeral-storage':
+            return '10Gi';
+        default:
+            return '1';
+    }
+}

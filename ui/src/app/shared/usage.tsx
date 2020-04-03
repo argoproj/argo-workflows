@@ -2,18 +2,18 @@ import * as React from 'react';
 import {denominator, formatDuration} from './duration';
 
 interface Props {
-    resourcesDuration: {[resource: string]: number};
+    usage: {[resource: string]: number};
 }
 
-export class ResourcesDuration extends React.Component<Props> {
+export class Usage extends React.Component<Props> {
     public render() {
         return (
             <>
-                {this.props.resourcesDuration &&
-                    Object.entries(this.props.resourcesDuration)
+                {this.props.usage &&
+                    Object.entries(this.props.usage)
                         .map(([resource, duration]) => formatDuration(duration) + '*(' + denominator(resource) + ' ' + resource + ')')
                         .join(',')}{' '}
-                <a href='https://github.com/argoproj/argo/blob/master/docs/resource-duration.md'>
+                <a href='https://github.com/argoproj/argo/blob/master/docs/usage.md'>
                     <i className='fa fa-info-circle' />
                 </a>
             </>

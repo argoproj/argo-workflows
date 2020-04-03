@@ -42,7 +42,7 @@ func TestDurationForPod(t *testing.T) {
 			},
 		}, wfv1.ResourcesDuration{
 			corev1.ResourceCPU:    wfv1.NewResourceDuration(2 * time.Minute),
-			corev1.ResourceMemory: wfv1.NewResourceDuration(5 * time.Second),
+			corev1.ResourceMemory: wfv1.NewResourceDuration(1 * time.Minute),
 		}},
 		{"ContainerWithCPURequest", &corev1.Pod{
 			Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "main", Resources: corev1.ResourceRequirements{
@@ -68,7 +68,7 @@ func TestDurationForPod(t *testing.T) {
 			},
 		}, wfv1.ResourcesDuration{
 			corev1.ResourceCPU:                    wfv1.NewResourceDuration(6 * time.Minute),
-			corev1.ResourceMemory:                 wfv1.NewResourceDuration(17 * time.Second),
+			corev1.ResourceMemory:                 wfv1.NewResourceDuration(3 * time.Minute),
 			corev1.ResourceName("nvidia.com/gpu"): wfv1.NewResourceDuration(3 * time.Minute),
 		}},
 	}

@@ -1,15 +1,15 @@
-# Resource Duration & Usage
+# Resource Duration 
 
 ![alpha](assets/alpha.svg)
 
 Argo Workflows provides an indication of how much resource your workflow has requested and saves this 
 information. This is intended to be an **indicative but not accurate** value.
 
-If you have the Metrics Server running, you can captures the pods CPU and memory usage too.
+See also [usage capture](usage.md)
 
 ## Configuration
 
-This is turned on only if [the feature flags are enabled in config](workflow-controller-configmap.yaml).
+This is turned on only if [the `resourcesDuration` flag is enabled in config](workflow-controller-configmap.yaml).
 
 ## Calculation
 

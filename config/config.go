@@ -8,6 +8,10 @@ import (
 
 var emptyConfig = Config{}
 
+type Enabler struct {
+	Enabled bool `json:"enabled,omitempty"`
+}
+
 // Config contain the configuration settings for the workflow controller
 type Config struct {
 	// ExecutorImage is the image name of the executor to use when running pods
@@ -57,7 +61,14 @@ type Config struct {
 	MetricsConfig PrometheusConfig `json:"metricsConfig,omitempty"`
 
 	// FeatureFlags for general/experimental features
+	// DEPRECATED
 	FeatureFlags FeatureFlags `json:"featureFlags,omitempty"`
+
+	// ALPHA
+	ResourcesDuration Enabler `json:"resourcesDuration,omitempty"`
+
+	// ALPHA
+	UsageCapture Enabler `json:"usageCapture,omitempty"`
 
 	// TelemetryConfig specifies configuration for telemetry emission
 	TelemetryConfig PrometheusConfig `json:"telemetryConfig,omitempty"`
@@ -81,6 +92,10 @@ type Config struct {
 	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`
 }
 
+func (c Config) GetResourcesDuration() bool {
+	return c.ResourcesDuration.Enabled || c.FeatureFlags.ResourcesDuration
+}
+
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose
 type PodSpecLogStrategy struct {
 	FailedPod bool `json:"failedPod,omitempty"`
@@ -88,11 +103,10 @@ type PodSpecLogStrategy struct {
 }
 
 // More general feature flags.
+// DEPRECATED this is not friendly to strategic-merge-patch
 type FeatureFlags struct {
 	// ResourcesDuration.
 	ResourcesDuration bool `json:"resourcesDuration,omitempty"`
-	// UsageCapture
-	UsageCapture bool `json:"usageCapture,omitempty"`
 }
 
 // KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,
@@ -220,7 +234,7 @@ type HDFSArtifactRepository struct {
 
 // PrometheusConfig defines a config for a metrics server
 type PrometheusConfig struct {
-	Enabled       bool   `json:"enabled,omitempty"`
+	Enabler
 	DisableLegacy bool   `json:"disableLegacy"`
 	Path          string `json:"path,omitempty"`
 	Port          string `json:"port,omitempty"`

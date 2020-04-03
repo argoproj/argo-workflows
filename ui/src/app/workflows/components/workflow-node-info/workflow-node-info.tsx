@@ -7,6 +7,7 @@ import * as models from '../../../../models';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
+import {Usage} from '../../../shared/usage';
 import {Utils} from '../../../shared/utils';
 
 require('./workflow-node-info.scss');
@@ -27,8 +28,8 @@ interface Props {
 
 const AttributeRow = (attr: {title: string; value: any}) => (
     <div className='row white-box__details-row' key={attr.title}>
-        <div className='columns small-3'>{attr.title}</div>
-        <div className='columns small-9'>{attr.value}</div>
+        <div className='columns small-4'>{attr.title}</div>
+        <div className='columns small-8'>{attr.value}</div>
     </div>
 );
 const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
@@ -82,7 +83,7 @@ export const WorkflowNodeSummary = (props: Props) => {
     if (props.node.usage) {
         attributes.push({
             title: 'USAGE',
-            value: <ResourcesDuration resourcesDuration={props.node.usage} />
+            value: <Usage usage={props.node.usage} />
         });
     }
     return (

@@ -308,8 +308,9 @@ dist/mysql.yaml: test/e2e/manifests/mysql.yaml
 
 .PHONY: install
 install: dist/postgres.yaml dist/mysql.yaml dist/no-db.yaml
-	# Install Postgres quick-start
-	kubectl get ns argo || kubectl create ns argo
+	# Install quick-start
+	kubectl apply -f manifests/quick-start/metrics-service
+	kubectl apply -f test/e2e/manifests/argo-ns.yaml
 ifeq ($(DB),postgres)
 	kubectl -n argo apply -f dist/postgres.yaml
 else
@@ -416,8 +417,8 @@ test-api: test-images
 .PHONY: test-cli
 test-cli: test-images cli
 	# Run CLI tests
-	go test -timeout 1m -v -count 1 -p 1 -run CLISuite ./test/e2e
-	go test -timeout 1m -v -count 1 -p 1 -run CLIWithServerSuite ./test/e2e
+	go test -timeout 2m -v -count 1 -p 1 -run CLISuite ./test/e2e
+	go test -timeout 2m -v -count 1 -p 1 -run CLIWithServerSuite ./test/e2e
 
 # clean
 

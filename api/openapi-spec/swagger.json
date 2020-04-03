@@ -2482,8 +2482,8 @@
           "title": "PodIP captures the IP of the pod for daemoned steps"
         },
         "resourcesDuration": {
-          "description": "ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.",
           "type": "object",
+          "title": "ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.\nALPHA",
           "additionalProperties": {
             "type": "string",
             "format": "int64"
@@ -2514,8 +2514,8 @@
           "title": "Type indicates type of node"
         },
         "usage": {
-          "description": "Usage is an estimate of the actual usage of a pod. This is populated when the nodes completes.",
           "type": "object",
+          "title": "Usage is an estimate of the actual usage of a pod. This is populated when the nodes completes.\nALPHA",
           "additionalProperties": {
             "type": "string",
             "format": "int64"
@@ -3347,7 +3347,7 @@
         },
         "resourcesDuration": {
           "type": "object",
-          "title": "ResourcesDuration is the total for the workflow",
+          "title": "ResourcesDuration is the total for the workflow\nALPHA",
           "additionalProperties": {
             "type": "string",
             "format": "int64"
@@ -3366,7 +3366,7 @@
         },
         "usage": {
           "type": "object",
-          "title": "Usage is the estimated usage of the resource",
+          "title": "Usage is the estimated usage of the resource\nALPHA",
           "additionalProperties": {
             "type": "string",
             "format": "int64"

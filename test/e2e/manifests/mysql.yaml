@@ -354,9 +354,6 @@ data:
       limits:
         cpu: 0.5
         memory: 128Mi
-  featureFlags: |
-    resourcesDuration: true
-    usageCapture: true
   links: |
     - name: Example Workflow Link
       scope: workflow
@@ -385,6 +382,10 @@ data:
       passwordSecret:
         name: argo-mysql-config
         key: password
+  resourcesDuration: |
+    enabled: true
+  usageCapture: |
+    enabled: true
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
@@ -574,6 +575,8 @@ spec:
           value: 30s
         - name: WORKFLOW_GC_PERIOD
           value: 30s
+        - name: USAGE_CAPTURE_PERIOD
+          value: 10s
         - name: UPPERIO_DB_DEBUG
           value: "1"
         image: argoproj/workflow-controller:latest
