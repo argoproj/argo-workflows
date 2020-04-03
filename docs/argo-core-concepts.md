@@ -42,7 +42,7 @@ spec:
 
 There are 6 types of templates, divided into two different categories.
 
-##### Definitions
+##### 1. Template Definitions
 
 These templates _define_ work to be done, usually in a Container.
 
@@ -95,4 +95,42 @@ The script will be saved into a file and executed for you. The result of the scr
       - name: delay
         suspend:
           duration: "20s"
+    ```
+  
+##### 2. Template Invocators
+
+These tempaltes are used to invoke/call other tempaltes and provide execution control.
+
+* `steps`: A steps template allows you to define your tasks in a series of steps. The structure of the template is a "list of lists". Outer lists will run sequentially and inner lists will run in parallel. You can set a wide array of options to control execution, such as [`when:` clauses to conditionally execute a step](../examples/coinflip.yaml).
+    
+    In this example `step1` runs first. Once it is completed, `step2a` and `step2b` will run in parallel:
+    ```yaml
+      - name: hello-hello-hello
+        steps:
+        - - name: step1
+            template: prepare-data
+        - - name: step2a
+            template: run-data-first-half
+          - name: step2b
+            template: run-data-second-half
+    ```
+
+* `dag`: A dag template allows you to define your tasks as a graph of dependencies. In a DAG, you list all your tasks and set which other tasks must complete before a particular task can begin. Tasks without any dependencies will be run immediately.
+    
+    In this example `A` runs first. Once it is completed, `B` and `C` will run in parallel and once they both complete, `D` will run:
+    ```yaml
+      - name: diamond
+        dag:
+          tasks:
+          - name: A
+            template: echo
+          - name: B
+            dependencies: [A]
+            template: echo
+          - name: C
+            dependencies: [A]
+            template: echo
+          - name: D
+            dependencies: [B, C]
+            template: echo
     ```
