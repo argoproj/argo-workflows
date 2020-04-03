@@ -1180,7 +1180,15 @@ func (n NodeStatus) CanRetry() bool {
 }
 
 func (n NodeStatus) GetTemplateScope() (ResourceScope, string) {
+	// For compatibility: an empty TemplateScope is a local scope
+	if n.TemplateScope == "" {
+		return ResourceScopeLocal, ""
+	}
 	split := strings.Split(n.TemplateScope, "/")
+	// For compatibility: an unspecified ResourceScope in a TemplateScope is a namespaced scope
+	if len(split) == 1 {
+		return ResourceScopeNamespaced, split[0]
+	}
 	resourceScope, resourceName := split[0], split[1]
 	return ResourceScope(resourceScope), resourceName
 }
