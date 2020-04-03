@@ -192,7 +192,10 @@ func (woc *wfOperationCtx) operate() {
 		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: argo.EventReasonWorkflowRunning}, "Workflow Running")
 		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.controller.GetContainerRuntimeExecutor()}
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
-		wfConditions, err := validate.ValidateWorkflow(wftmplGetter, woc.wf, validateOpts)
+		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+
+		wfConditions, err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, woc.wf, validateOpts)
+
 		if err != nil {
 			msg := fmt.Sprintf("invalid spec: %s", err.Error())
 			woc.markWorkflowFailed(msg)
@@ -335,7 +338,7 @@ func (woc *wfOperationCtx) operate() {
 		onExitNode, err = woc.executeTemplate(onExitNodeName, &wfv1.WorkflowStep{Template: woc.wf.Spec.OnExit}, tmplCtx, woc.wf.Spec.Arguments, &executeTemplateOpts{onExitTemplate: true})
 		if err != nil {
 			// the error are handled in the callee so just log it.
-			woc.log.Errorf("%s error in exit template execution: %+v", woc.wf.Name, err)
+			woc.log.Errorf("error in exit template execution: %+v", err)
 			return
 		}
 		if onExitNode == nil || !onExitNode.Completed() {
@@ -1917,6 +1920,14 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 // buildLocalScope adds all of a nodes outputs to the local scope with the given prefix, as well
 // as the global scope, if specified with a globalName
 func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *wfv1.NodeStatus) {
+	// It may be that the node is a retry node, in which case we want to get the outputs of the last node
+	// in the retry group instead of the retry node itself.
+	if node.Type == wfv1.NodeTypeRetry {
+		if lastNode, err := woc.getLastChildNode(node); err == nil {
+			node = lastNode
+		}
+	}
+
 	if node.PodIP != "" {
 		key := fmt.Sprintf("%s.ip", prefix)
 		scope.addParamToScope(key, node.PodIP)
@@ -2354,10 +2365,8 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 
 // createTemplateContext creates a new template context.
 func (woc *wfOperationCtx) createTemplateContext(templateScope string) (*templateresolution.Context, error) {
-	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), woc.wf, woc)
+	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), woc.controller.cwftmplInformer.Lister(), woc.wf, woc)
 	if templateScope != "" {
-		fmt.Printf("templateScope: %s\n", templateScope)
-		// ctx = ctx.WithLazyWorkflowTemplate(woc.wf.Namespace, templateScope)
 		return ctx.WithWorkflowTemplate(templateScope)
 	}
 	return ctx, nil

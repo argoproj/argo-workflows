@@ -36,13 +36,14 @@ func init() {
 
 type E2ESuite struct {
 	suite.Suite
-	Diagnostics      *Diagnostics
-	Persistence      *Persistence
-	RestConfig       *rest.Config
-	wfClient         v1alpha1.WorkflowInterface
-	wfTemplateClient v1alpha1.WorkflowTemplateInterface
-	cronClient       v1alpha1.CronWorkflowInterface
-	KubeClient       kubernetes.Interface
+	Diagnostics       *Diagnostics
+	Persistence       *Persistence
+	RestConfig        *rest.Config
+	wfClient          v1alpha1.WorkflowInterface
+	wfTemplateClient  v1alpha1.WorkflowTemplateInterface
+	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
+	cronClient        v1alpha1.CronWorkflowInterface
+	KubeClient        kubernetes.Interface
 }
 
 func (s *E2ESuite) SetupSuite() {
@@ -60,6 +61,7 @@ func (s *E2ESuite) SetupSuite() {
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
 	s.Persistence = newPersistence(s.KubeClient)
+	s.cwfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates()
 }
 
 func (s *E2ESuite) TearDownSuite() {
@@ -193,6 +195,19 @@ func (s *E2ESuite) DeleteResources(label string) {
 	for _, wfTmpl := range wfTmpl.Items {
 		log.WithField("template", wfTmpl.Name).Info("Deleting workflow template")
 		err = s.wfTemplateClient.Delete(wfTmpl.Name, nil)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// delete all cluster workflow templates
+	cwfTmpl, err := s.cwfTemplateClient.List(metav1.ListOptions{LabelSelector: label})
+	if err != nil {
+		panic(err)
+	}
+	for _, cwfTmpl := range cwfTmpl.Items {
+		log.WithField("template", cwfTmpl.Name).Info("Deleting cluster workflow template")
+		err = s.cwfTemplateClient.Delete(cwfTmpl.Name, nil)
 		if err != nil {
 			panic(err)
 		}
@@ -336,6 +351,7 @@ func (s *E2ESuite) Given() *Given {
 		diagnostics:           s.Diagnostics,
 		client:                s.wfClient,
 		wfTemplateClient:      s.wfTemplateClient,
+		cwfTemplateClient:     s.cwfTemplateClient,
 		cronClient:            s.cronClient,
 		offloadNodeStatusRepo: s.Persistence.offloadNodeStatusRepo,
 		kubeClient:            s.KubeClient,

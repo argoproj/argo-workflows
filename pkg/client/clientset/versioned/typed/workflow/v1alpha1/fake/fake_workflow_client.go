@@ -12,6 +12,10 @@ type FakeArgoprojV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeArgoprojV1alpha1) ClusterWorkflowTemplates() v1alpha1.ClusterWorkflowTemplateInterface {
+	return &FakeClusterWorkflowTemplates{c}
+}
+
 func (c *FakeArgoprojV1alpha1) CronWorkflows(namespace string) v1alpha1.CronWorkflowInterface {
 	return &FakeCronWorkflows{c, namespace}
 }

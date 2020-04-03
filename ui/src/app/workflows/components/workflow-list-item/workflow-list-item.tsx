@@ -1,4 +1,6 @@
+import {Duration, Ticker} from 'argo-ui';
 import * as classNames from 'classnames';
+import * as moment from 'moment';
 import * as React from 'react';
 
 import * as models from '../../../../models';
@@ -12,6 +14,11 @@ require('./workflow-list-item.scss');
 export interface WorkflowListItemProps {
     workflow: models.Workflow;
     archived: boolean;
+}
+
+function wfDuration(workflow: models.WorkflowStatus, now: moment.Moment) {
+    const endTime = workflow.finishedAt ? moment(workflow.finishedAt) : now;
+    return endTime.diff(moment(workflow.startedAt)) / 1000;
 }
 
 export const WorkflowListItem = (props: WorkflowListItemProps) => (
@@ -54,6 +61,12 @@ export const WorkflowListItem = (props: WorkflowListItemProps) => (
                             <div className='columns large-4'>CREATED:</div>
                             <div className='columns large-8'>
                                 <Timestamp date={props.workflow.metadata.creationTimestamp} />
+                            </div>
+                        </div>
+                        <div className='workflow-list-item__content-details-row row'>
+                            <div className='columns large-4'>DURATION:</div>
+                            <div className='columns large-8'>
+                                <Ticker>{now => <Duration durationMs={wfDuration(props.workflow.status, now)} />}</Ticker>
                             </div>
                         </div>
                     </div>

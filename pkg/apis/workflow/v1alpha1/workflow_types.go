@@ -11,7 +11,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // TemplateType is the type of a template
@@ -66,28 +65,6 @@ const (
 	PodGCOnWorkflowCompletion PodGCStrategy = "OnWorkflowCompletion"
 	PodGCOnWorkflowSuccess    PodGCStrategy = "OnWorkflowSuccess"
 )
-
-// TemplateGetter is an interface to get templates.
-type TemplateGetter interface {
-	GetNamespace() string
-	GetName() string
-	GroupVersionKind() schema.GroupVersionKind
-	GetTemplateByName(name string) *Template
-	GetTemplateScope() string
-}
-
-// TemplateHolder is an interface for holders of templates.
-type TemplateHolder interface {
-	GetTemplateName() string
-	GetTemplateRef() *TemplateRef
-	IsResolvable() bool
-}
-
-// TemplateStorage is an interface of template storage getter and setter.
-type TemplateStorage interface {
-	GetStoredTemplate(templateScope string, holder TemplateHolder) *Template
-	SetStoredTemplate(templateScope string, holder TemplateHolder, tmpl *Template) (bool, error)
-}
 
 // Workflow is the definition of a workflow resource
 // +genclient
@@ -665,7 +642,11 @@ type ArchiveStrategy struct {
 }
 
 // TarStrategy will tar and gzip the file or directory when saving
-type TarStrategy struct{}
+type TarStrategy struct {
+	// CompressionLevel specifies the gzip compression level to use for the artifact.
+	// Defaults to gzip.DefaultCompression.
+	CompressionLevel *int32 `json:"compressionLevel,omitempty" protobuf:"varint,1,opt,name=compressionLevel"`
+}
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
 // files. Note that if the artifact is a directory, the artifact driver must support the ability to
@@ -822,6 +803,8 @@ type TemplateRef struct {
 	// RuntimeResolution skips validation at creation time.
 	// By enabling this option, you can create the referred workflow template before the actual runtime.
 	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
+	// ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+	ClusterScope bool `json:"clusterscope,omitempty" protobuf:"varint,4,opt,name=clusterscope"`
 }
 
 type ArgumentsProvider interface {
@@ -1689,6 +1672,11 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 // GetTemplateScope returns the template scope of workflow.
 func (wf *Workflow) GetTemplateScope() string {
 	return ""
+}
+
+// GetAllTemplates returns the list of templates of workflow.
+func (wf *Workflow) GetAllTemplates() []Template {
+	return wf.Spec.Templates
 }
 
 // NodeID creates a deterministic node ID based on a node name
