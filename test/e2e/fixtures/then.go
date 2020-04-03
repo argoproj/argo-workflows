@@ -4,11 +4,13 @@ import (
 	"testing"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo/persist/sqldb"
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
@@ -78,21 +80,31 @@ func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *
 	return t
 }
 
-func (t *Then) ExpectAuditEvents(block func(*testing.T, *apiv1.EventList)) *Then {
-	if t.workflowName == "" {
-		t.t.Fatal("No workflow to test")
-	}
-	log.WithFields(log.Fields{"workflow": t.workflowName}).Info("Checking expectation")
-	wf, err := t.client.Get(t.workflowName, metav1.GetOptions{})
+func (t *Then) expectAuditEvents(block func(*testing.T, []apiv1.Event)) *Then {
+	eventList, err := t.kubeClient.CoreV1().Events(Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	eventList, err := t.kubeClient.CoreV1().Events(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
-	if err != nil {
-		t.t.Fatal(err)
+	var events []apiv1.Event
+	for _, e := range eventList.Items {
+		if e.Namespace == Namespace && e.InvolvedObject.Kind == workflow.WorkflowKind {
+			events = append(events, e)
+		}
 	}
-	block(t.t, eventList)
+
+	block(t.t, events)
 	return t
+}
+
+func (t *Then) ExpectAuditEvent(f func(apiv1.Event) bool) *Then {
+	return t.expectAuditEvents(func(t *testing.T, events []apiv1.Event) {
+		for _, item := range events {
+			if f(item) {
+				return
+			}
+		}
+		assert.Fail(t, "did not see expected event")
+	})
 }
 
 func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err error)) *Then {

@@ -25,9 +25,11 @@ type When struct {
 	diagnostics           *Diagnostics
 	wf                    *wfv1.Workflow
 	wfTemplates           []*wfv1.WorkflowTemplate
+	cwfTemplates          []*wfv1.ClusterWorkflowTemplate
 	cronWf                *wfv1.CronWorkflow
 	client                v1alpha1.WorkflowInterface
 	wfTemplateClient      v1alpha1.WorkflowTemplateInterface
+	cwfTemplateClient     v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient            v1alpha1.CronWorkflowInterface
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	workflowName          string
@@ -65,6 +67,23 @@ func (w *When) CreateWorkflowTemplates() *When {
 			w.wfTemplateNames = append(w.wfTemplateNames, wfTmpl.Name)
 		}
 		log.WithField("template", wfTmpl.Name).Info("Workflow template created")
+	}
+	return w
+}
+
+func (w *When) CreateClusterWorkflowTemplates() *When {
+	if len(w.cwfTemplates) == 0 {
+		w.t.Fatal("No cluster workflow templates to create")
+	}
+	for _, cwfTmpl := range w.cwfTemplates {
+		log.WithField("template", cwfTmpl.Name).Info("Creating cluster workflow template")
+		wfTmpl, err := w.cwfTemplateClient.Create(cwfTmpl)
+		if err != nil {
+			w.t.Fatal(err)
+		} else {
+			w.wfTemplateNames = append(w.wfTemplateNames, wfTmpl.Name)
+		}
+		log.WithField("template", wfTmpl.Name).Info("Cluster Workflow template created")
 	}
 	return w
 }
@@ -214,6 +233,7 @@ func (w *When) Given() *Given {
 		diagnostics:           w.diagnostics,
 		client:                w.client,
 		wfTemplateClient:      w.wfTemplateClient,
+		cwfTemplateClient:     w.cwfTemplateClient,
 		cronClient:            w.cronClient,
 		offloadNodeStatusRepo: w.offloadNodeStatusRepo,
 		wf:                    w.wf,

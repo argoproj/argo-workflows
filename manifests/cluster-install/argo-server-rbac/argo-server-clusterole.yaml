@@ -40,6 +40,7 @@ rules:
       - workflows
       - workflowtemplates
       - cronworkflows
+      - clusterworkflowtemplates
     verbs:
       - create
       - get
