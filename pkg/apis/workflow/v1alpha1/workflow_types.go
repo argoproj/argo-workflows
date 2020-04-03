@@ -983,7 +983,8 @@ func (in ResourcesDuration) IsZero() bool {
 
 func ResourceQuantityDenominator(r apiv1.ResourceName) *resource.Quantity {
 	q, ok := map[apiv1.ResourceName]resource.Quantity{
-		apiv1.ResourceMemory:           resource.MustParse("1Gi"),
+		// TODO! - breaking change from 1Gi to 100Mi
+		apiv1.ResourceMemory:           resource.MustParse("100Mi"),
 		apiv1.ResourceStorage:          resource.MustParse("10Gi"),
 		apiv1.ResourceEphemeralStorage: resource.MustParse("10Gi"),
 	}[r]

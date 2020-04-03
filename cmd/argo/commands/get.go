@@ -110,7 +110,9 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 	if !wf.Status.ResourcesDuration.IsZero() {
 		fmt.Printf(fmtStr, "ResourcesDuration:", wf.Status.ResourcesDuration)
 	}
-
+	if !wf.Status.Usage.IsZero() {
+		fmt.Printf(fmtStr, "Usage:", wf.Status.Usage)
+	}
 	if len(wf.Spec.Arguments.Parameters) > 0 {
 		fmt.Printf(fmtStr, "Parameters:", "")
 		for _, param := range wf.Spec.Arguments.Parameters {

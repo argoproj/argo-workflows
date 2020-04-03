@@ -10,7 +10,7 @@ export class ResourcesDuration extends React.Component<Props> {
         function denominator(resource: string) {
             switch (resource) {
                 case 'memory':
-                    return '1Gi';
+                    return '100Mi';
                 case 'storage':
                     return '10Gi';
                 case 'ephemeral-storage':

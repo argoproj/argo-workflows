@@ -23,8 +23,8 @@ Each indicator is divided by a common denominator depending on resource type.
 
 Each resource type has a denominator used to make large values smaller.
 
- * CPU: `1000m`
- * Memory: `1Gi`
+ * CPU: `1`
+ * Memory: `100Mi`
  * Storage: `10Gi`
  * Ephemeral Storage: `10Gi`
  * All others: `1` 
@@ -49,8 +49,8 @@ A pod that runs for 3min, with a CPU limit of `2000m`, no memory request and an 
 resource limit of `1`:
 
 ```
-CPU:    3min * 2000m / 1000m = 6min * (1000m cpu)
-Memory: 3min * 100Mi / 1Gi   = 18sec * (1Gi memory)
+CPU:    3min * 2000m / 1000m = 6min * (1 cpu)
+Memory: 3min * 100Mi / 1Gi   = 18sec * (100Mi memory)
 GPU:    3min * 1     / 1     = 2min * (1 nvidia.com/gpu)
 ```
 

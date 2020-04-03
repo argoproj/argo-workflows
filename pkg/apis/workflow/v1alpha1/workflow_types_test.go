@@ -37,20 +37,20 @@ func TestNodes_Any(t *testing.T) {
 func TestResourcesDuration(t *testing.T) {
 	t.Run("String", func(t *testing.T) {
 		assert.Equal(t, ResourcesDuration{}.String(), "")
-		assert.Equal(t, ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}.String(), "1s*(1Gi memory)")
+		assert.Equal(t, ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}.String(), "1s*(100Mi memory)")
 	})
 	t.Run("Add", func(t *testing.T) {
 		assert.Equal(t, ResourcesDuration{}.Add(ResourcesDuration{}).String(), "")
 		assert.Equal(t, ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}.
 			Add(ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}).
-			String(), "2s*(1Gi memory)")
+			String(), "2s*(100Mi memory)")
 	})
 	t.Run("CPUAndMemory", func(t *testing.T) {
 		assert.Equal(t, ResourcesDuration{}.Add(ResourcesDuration{}).String(), "")
 		s := ResourcesDuration{corev1.ResourceCPU: NewResourceDuration(2 * time.Second)}.
 			Add(ResourcesDuration{corev1.ResourceMemory: NewResourceDuration(1 * time.Second)}).
 			String()
-		assert.Contains(t, s, "1s*(1Gi memory)")
+		assert.Contains(t, s, "1s*(100Mi memory)")
 		assert.Contains(t, s, "2s*(1 cpu)")
 	})
 }

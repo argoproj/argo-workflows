@@ -9,21 +9,21 @@ spec:
   templates:
     - name: stress
       container:
-        #resources:
-        #  requests:
-        #    cpu: 1000m
-        #    memory: 500Mi
+        resources:
+          requests:
+            cpu: 100m
+            memory: 1000m
         name: main
         image: jfusterm/stress
         args:
-          # timeout after 70s
+          # timeout after at least 1m
           - -t
-          - '70'
-          # chew threw 16 cores
+          - '90'
+          # chew threw some cores
           - -c
-          - '50'
-          # gobble up 1G memory
+          - '2'
+          # gobble up a few bites of memory
           - -m
           - '1'
           - --vm-bytes
-          - '1G'
+          - '2G'
