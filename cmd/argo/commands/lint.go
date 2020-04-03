@@ -22,7 +22,6 @@ func NewLintCommand() *cobra.Command {
 		Use:   "lint FILE...",
 		Short: "validate files or directories of workflow manifests",
 		Run: func(cmd *cobra.Command, args []string) {
-			var invalidWfErr error
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
@@ -42,11 +41,12 @@ func NewLintCommand() *cobra.Command {
 				return nil
 			}
 
+			var invalidWfErr error
 			for _, file := range args {
 				stat, err := os.Stat(file)
 				errors.CheckError(err)
 				if stat.IsDir() {
-					invalidWfErr = filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
+					_ = filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
 						fileExt := filepath.Ext(info.Name())
 						switch fileExt {
 						case ".yaml", ".yml", ".json":
