@@ -788,7 +788,7 @@ message TTLStrategy {
 
 // TarStrategy will tar and gzip the file or directory when saving
 message TarStrategy {
-  // Specifies the gzip compression level to use for the artifact.
+  // CompressionLevel specifies the gzip compression level to use for the artifact.
   // Defaults to gzip.DefaultCompression.
   optional int32 compressionLevel = 1;
 }

@@ -1158,7 +1158,7 @@
         "compressionLevel": {
           "type": "integer",
           "format": "int32",
-          "description": "Specifies the gzip compression level to use for the artifact.\nDefaults to gzip.DefaultCompression."
+          "description": "CompressionLevel specifies the gzip compression level to use for the artifact.\nDefaults to gzip.DefaultCompression."
         }
       },
       "title": "TarStrategy will tar and gzip the file or directory when saving"

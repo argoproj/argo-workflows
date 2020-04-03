@@ -643,7 +643,7 @@ type ArchiveStrategy struct {
 
 // TarStrategy will tar and gzip the file or directory when saving
 type TarStrategy struct {
-	// Specifies the gzip compression level to use for the artifact.
+	// CompressionLevel specifies the gzip compression level to use for the artifact.
 	// Defaults to gzip.DefaultCompression.
 	CompressionLevel *int32 `json:"compressionLevel,omitempty" protobuf:"varint,1,opt,name=compressionLevel"`
 }

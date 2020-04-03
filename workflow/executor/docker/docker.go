@@ -60,9 +60,6 @@ func (d *DockerExecutor) CopyFile(containerID string, sourcePath string, destPat
 		// -1 through -9 (or error)
 		levelFlag = "-" + strconv.Itoa(compressionLevel)
 	}
-	if compressionLevel != gzip.DefaultCompression {
-
-	}
 	dockerCpCmd := fmt.Sprintf("docker cp -a %s:%s - | gzip %s > %s", containerID, sourcePath, levelFlag, destPath)
 	err := common.RunCommand("sh", "-c", dockerCpCmd)
 	if err != nil {
