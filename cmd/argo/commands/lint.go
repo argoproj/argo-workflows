@@ -63,7 +63,7 @@ func NewLintCommand() *cobra.Command {
 				} else {
 					err := lint(file)
 					if err != nil {
-						invalidWfErr = fmt.Errorf("Unvalid workflow/workflows found")
+						invalidWfErr = fmt.Errorf("Invalid workflow/workflows found")
 						log.Warn(err)
 					}
 				}
