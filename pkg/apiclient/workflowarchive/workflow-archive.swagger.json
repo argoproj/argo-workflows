@@ -766,7 +766,7 @@
         },
         "templateScope": {
           "type": "string",
-          "description": "TemplateScope is the template scope in which the template of this node was retrieved.\nDEPRECATED: This value is not used anymore."
+          "description": "TemplateScope is the template scope in which the template of this node was retrieved."
         },
         "phase": {
           "type": "string",

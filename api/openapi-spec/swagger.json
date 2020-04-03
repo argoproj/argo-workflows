@@ -2506,7 +2506,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TemplateRef"
         },
         "templateScope": {
-          "description": "TemplateScope is the template scope in which the template of this node was retrieved.\nDEPRECATED: This value is not used anymore.",
+          "description": "TemplateScope is the template scope in which the template of this node was retrieved.",
           "type": "string"
         },
         "type": {
