@@ -108,7 +108,6 @@ type WorkflowList struct {
 }
 
 var _ TemplateHolder = &Workflow{}
-var _ TemplateStorage = &Workflow{}
 
 // TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed
 type TTLStrategy struct {

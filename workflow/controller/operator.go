@@ -89,8 +89,6 @@ type wfOperationCtx struct {
 	preExecutionNodePhases map[string]wfv1.NodePhase
 }
 
-var _ wfv1.TemplateStorage = &wfOperationCtx{}
-
 var (
 	// ErrDeadlineExceeded indicates the operation exceeded its deadline for execution
 	ErrDeadlineExceeded = errors.New(errors.CodeTimeout, "Deadline exceeded")
@@ -2361,7 +2359,7 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 
 // createTemplateContext creates a new template context.
 func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resourceName string) (*templateresolution.Context, error) {
-	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), woc.controller.cwftmplInformer.Lister(), woc.wf, woc)
+	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), woc.controller.cwftmplInformer.Lister(), woc.wf, woc.wf)
 	switch scope {
 	case wfv1.ResourceScopeNamespaced:
 		return ctx.WithWorkflowTemplate(resourceName)
