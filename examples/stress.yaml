@@ -1,0 +1,29 @@
+# Create some CPU stress so you can test usage capture.
+# Needs to run for at least 60s for data to be available.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: stress
+spec:
+  entrypoint: stress
+  templates:
+    - name: stress
+      container:
+        #resources:
+        #  requests:
+        #    cpu: 1000m
+        #    memory: 500Mi
+        name: main
+        image: jfusterm/stress
+        args:
+          # timeout after 70s
+          - -t
+          - '70'
+          # chew threw 16 cores
+          - -c
+          - '50'
+          # gobble up 1G memory
+          - -m
+          - '1'
+          - --vm-bytes
+          - '1G'

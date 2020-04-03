@@ -42,6 +42,8 @@ data:
     featureFlags:
       # Enable resource duration
       resourcesDuration: false
+      # Enable usage capture
+      usageCapture: false
 
     # artifactRepository defines the default location to be used as the artifact repository for
     # container artifacts.

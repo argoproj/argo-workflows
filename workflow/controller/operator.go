@@ -1005,8 +1005,32 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			// finishedAt might not have been set.
 			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 		}
+		logCtx := log.WithFields(log.Fields{"namespace": pod.Namespace, "podName": pod.Name})
 		if woc.controller.Config.FeatureFlags.ResourcesDuration {
-			node.ResourcesDuration = resource.DurationForPod(pod, time.Now())
+			node.ResourcesDuration = resource.DurationForPod(pod)
+			logCtx.WithField("resourceDuration", node.ResourcesDuration).Debug("Finalised resource duration")
+		}
+		if woc.controller.Config.FeatureFlags.UsageCapture {
+			// TODO - extract and write tests
+			key := pod.Namespace + "/" + pod.Name
+			capture, ok := woc.controller.usageCapture[key]
+			if ok {
+				logCtx.WithField("capture", capture).Debug("Capture")
+				summaries := resource.Summaries{}
+				for _, c := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
+					containerCapture, ok := capture[c.Name]
+					if ok {
+						summaries[c.Name] = resource.Summary{ResourceList: containerCapture.xs, ContainerState: c.State}
+					} else {
+						logCtx.WithField("container", c.Name).Info("No container usage capture")
+					}
+				}
+				node.Usage = summaries.Duration()
+				logCtx.WithField("usage", node.Usage).Debug("Finalising usage capture")
+				delete(woc.controller.usageCapture, key)
+			} else {
+				logCtx.Info("No pod usage captures")
+			}
 		}
 	}
 	if updated {
@@ -1536,6 +1560,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 			}
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
 			woc.wf.Status.ResourcesDuration = woc.wf.Status.Nodes.GetResourcesDuration()
+			woc.wf.Status.Usage = woc.wf.Status.Nodes.GetUsage()
 			woc.wf.Status.Conditions.UpsertCondition(wfv1.WorkflowCondition{Status: metav1.ConditionTrue, Type: wfv1.WorkflowConditionCompleted})
 			err := woc.deletePDBResource()
 			if err != nil {

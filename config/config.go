@@ -91,6 +91,8 @@ type PodSpecLogStrategy struct {
 type FeatureFlags struct {
 	// ResourcesDuration.
 	ResourcesDuration bool `json:"resourcesDuration,omitempty"`
+	// UsageCapture
+	UsageCapture bool `json:"usageCapture,omitempty"`
 }
 
 // KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,

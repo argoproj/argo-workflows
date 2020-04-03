@@ -962,6 +962,13 @@ func (in *NodeStatus) DeepCopyInto(out *NodeStatus) {
 			(*out)[key] = val
 		}
 	}
+	if in.Usage != nil {
+		in, out := &in.Usage, &out.Usage
+		*out = make(ResourcesDuration, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	if in.Daemoned != nil {
 		in, out := &in.Daemoned, &out.Daemoned
 		*out = new(bool)
@@ -1938,6 +1945,13 @@ func (in *WorkflowStatus) DeepCopyInto(out *WorkflowStatus) {
 	}
 	if in.ResourcesDuration != nil {
 		in, out := &in.ResourcesDuration, &out.ResourcesDuration
+		*out = make(ResourcesDuration, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
+	if in.Usage != nil {
+		in, out := &in.Usage, &out.Usage
 		*out = make(ResourcesDuration, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val

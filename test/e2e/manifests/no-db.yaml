@@ -96,6 +96,13 @@ rules:
   - patch
   - delete
 - apiGroups:
+  - metrics.k8s.io
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+- apiGroups:
   - ""
   resources:
   - configmaps
@@ -128,6 +135,8 @@ rules:
   resources:
   - workflowtemplates
   - workflowtemplates/finalizers
+  - clusterworkflowtemplates
+  - clusterworkflowtemplates/finalizers
   verbs:
   - get
   - list
@@ -347,6 +356,7 @@ data:
         memory: 128Mi
   featureFlags: |
     resourcesDuration: true
+    usageCapture: true
   links: |
     - name: Example Workflow Link
       scope: workflow

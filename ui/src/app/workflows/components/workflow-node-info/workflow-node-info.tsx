@@ -79,6 +79,12 @@ export const WorkflowNodeSummary = (props: Props) => {
             value: <ResourcesDuration resourcesDuration={props.node.resourcesDuration} />
         });
     }
+    if (props.node.usage) {
+        attributes.push({
+            title: 'USAGE',
+            value: <ResourcesDuration resourcesDuration={props.node.usage} />
+        });
+    }
     return (
         <div className='white-box'>
             <div className='white-box__details'>{<AttributeRows attributes={attributes} />}</div>

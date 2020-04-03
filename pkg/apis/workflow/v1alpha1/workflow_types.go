@@ -10,6 +10,7 @@ import (
 
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -897,6 +898,9 @@ type WorkflowStatus struct {
 
 	// ResourcesDuration is the total for the workflow
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
+
+	// Usage is the estimated usage of the resource
+	Usage ResourcesDuration `json:"usage,omitempty" protobuf:"bytes,14,opt,name=usage"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -968,13 +972,25 @@ func (in ResourcesDuration) Add(o ResourcesDuration) ResourcesDuration {
 func (in ResourcesDuration) String() string {
 	var parts []string
 	for n, d := range in {
-		parts = append(parts, fmt.Sprintf("%v*%s", d, n))
+		parts = append(parts, fmt.Sprintf("%v*(%s %s)", d, ResourceQuantityDenominator(n).String(), n))
 	}
 	return strings.Join(parts, ",")
 }
 
 func (in ResourcesDuration) IsZero() bool {
 	return len(in) == 0
+}
+
+func ResourceQuantityDenominator(r apiv1.ResourceName) *resource.Quantity {
+	q, ok := map[apiv1.ResourceName]resource.Quantity{
+		apiv1.ResourceMemory:           resource.MustParse("1Gi"),
+		apiv1.ResourceStorage:          resource.MustParse("10Gi"),
+		apiv1.ResourceEphemeralStorage: resource.MustParse("10Gi"),
+	}[r]
+	if !ok {
+		q = resource.MustParse("1")
+	}
+	return &q
 }
 
 type WorkflowConditions []WorkflowCondition
@@ -1075,6 +1091,9 @@ type NodeStatus struct {
 	// ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,21,opt,name=resourcesDuration"`
 
+	// Usage is an estimate of the actual usage of a pod. This is populated when the nodes completes.
+	Usage ResourcesDuration `json:"usage,omitempty" protobuf:"bytes,22,opt,name=usage"`
+
 	// PodIP captures the IP of the pod for daemoned steps
 	PodIP string `json:"podIP,omitempty" protobuf:"bytes,12,opt,name=podIP"`
 
@@ -1109,6 +1128,14 @@ func (n Nodes) GetResourcesDuration() ResourcesDuration {
 	i := ResourcesDuration{}
 	for _, status := range n {
 		i = i.Add(status.ResourcesDuration)
+	}
+	return i
+}
+
+func (n Nodes) GetUsage() ResourcesDuration {
+	i := ResourcesDuration{}
+	for _, status := range n {
+		i = i.Add(status.Usage)
 	}
 	return i
 }

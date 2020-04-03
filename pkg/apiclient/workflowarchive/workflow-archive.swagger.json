@@ -796,6 +796,14 @@
           },
           "description": "ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes."
         },
+        "usage": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          },
+          "description": "Usage is an estimate of the actual usage of a pod. This is populated when the nodes completes."
+        },
         "podIP": {
           "type": "string",
           "title": "PodIP captures the IP of the pod for daemoned steps"
@@ -1670,6 +1678,14 @@
             "format": "int64"
           },
           "title": "ResourcesDuration is the total for the workflow"
+        },
+        "usage": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          },
+          "title": "Usage is the estimated usage of the resource"
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"

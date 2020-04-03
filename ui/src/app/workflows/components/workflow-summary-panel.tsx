@@ -27,6 +27,12 @@ export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
                     value: <ResourcesDuration resourcesDuration={props.workflow.status.resourcesDuration} />
                 });
             }
+            if (props.workflow.status.usage) {
+                attributes.push({
+                    title: 'Usage',
+                    value: <ResourcesDuration resourcesDuration={props.workflow.status.usage} />
+                });
+            }
             if (props.workflow.status.conditions) {
                 attributes.push({
                     title: 'Conditions',

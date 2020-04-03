@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	metricsv1beta1 "k8s.io/metrics/pkg/client/clientset/versioned/typed/metrics/v1beta1"
 	"upper.io/db.v3/lib/sqlbuilder"
 
 	"github.com/argoproj/argo"
@@ -61,9 +62,10 @@ type WorkflowController struct {
 	containerRuntimeExecutor   string
 
 	// restConfig is used by controller to send a SIGUSR1 to the wait sidecar using remotecommand.NewSPDYExecutor().
-	restConfig    *rest.Config
-	kubeclientset kubernetes.Interface
-	wfclientset   wfclientset.Interface
+	restConfig       *rest.Config
+	kubeclientset    kubernetes.Interface
+	wfclientset      wfclientset.Interface
+	metricsClientset *metricsv1beta1.MetricsV1beta1Client
 
 	// datastructures to support the processing of workflows and workflow pods
 	incompleteWfInformer cache.SharedIndexInformer
@@ -81,6 +83,8 @@ type WorkflowController struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wfArchive             sqldb.WorkflowArchive
 	Metrics               map[string]prometheus.Metric
+	// map[namespace+"/"+name][containerName]...
+	usageCapture map[string]map[string]usageMovingAvg
 }
 
 const (
@@ -96,6 +100,7 @@ func NewWorkflowController(
 	restConfig *rest.Config,
 	kubeclientset kubernetes.Interface,
 	wfclientset wfclientset.Interface,
+	metricsClientset *metricsv1beta1.MetricsV1beta1Client,
 	namespace string,
 	managedNamespace string,
 	executorImage,
@@ -107,6 +112,7 @@ func NewWorkflowController(
 		restConfig:                 restConfig,
 		kubeclientset:              kubeclientset,
 		wfclientset:                wfclientset,
+		metricsClientset:           metricsClientset,
 		namespace:                  namespace,
 		managedNamespace:           managedNamespace,
 		cliExecutorImage:           executorImage,
@@ -118,6 +124,7 @@ func NewWorkflowController(
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 		Metrics:                    make(map[string]prometheus.Metric),
+		usageCapture:               make(map[string]map[string]usageMovingAvg),
 	}
 	wfc.throttler = NewThrottler(0, wfc.wfQueue)
 	return &wfc
@@ -184,6 +191,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.podInformer.Run(ctx.Done())
 	go wfc.podLabeler(ctx.Done())
 	go wfc.podGarbageCollector(ctx.Done())
+	go wfc.usageCollector(ctx.Done())
 	go wfc.periodicWorkflowGarbageCollector(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
@@ -259,6 +267,49 @@ func (wfc *WorkflowController) podGarbageCollector(stopCh <-chan struct{}) {
 				log.Errorf("Failed to delete pod %s/%s for gc: %+v", namespace, podName, err)
 			} else {
 				log.Infof("Delete pod %s/%s for gc successfully", namespace, podName)
+			}
+		}
+	}
+}
+
+func (wfc *WorkflowController) usageCollector(stopCh <-chan struct{}) {
+	// TODO reduces to once every 30s say
+	periodicity := 5 * time.Second
+	log.Infof("Capturing pod usage every %v, if enabled in config", periodicity)
+	ticker := time.NewTicker(periodicity)
+	for {
+		select {
+		case <-stopCh:
+			ticker.Stop()
+			return
+		case <-ticker.C:
+			if wfc.Config.FeatureFlags.UsageCapture {
+				metricsList, err := wfc.metricsClientset.PodMetricses(wfc.namespace).List(metav1.ListOptions{})
+				if err != nil {
+					log.WithField("err", err).Error("Failed to list pod metrics")
+					continue
+				}
+				for _, m := range metricsList.Items {
+					logCtx := log.WithFields(log.Fields{"namespace": m.Namespace, "podName": m.Name})
+					key := m.Namespace + "/" + m.Name
+					_, exists, err := wfc.podInformer.GetStore().GetByKey(key)
+					if err != nil {
+						logCtx.WithField("err", err).Error("Failed to get pod")
+						continue
+					}
+					if exists {
+						logCtx.WithField("podMetrics", m).Debug("Capturing pod usage")
+						// TODO - lock?
+						_, ok := wfc.usageCapture[key]
+						if !ok {
+							wfc.usageCapture[key] = map[string]usageMovingAvg{}
+						}
+						for _, c := range m.Containers {
+							wfc.usageCapture[key][c.Name] = wfc.usageCapture[key][c.Name].Add(c.Usage)
+						}
+						logCtx.WithField("usageCapture", wfc.usageCapture[key]).Debug("Captured pod usage")
+					}
+				}
 			}
 		}
 	}

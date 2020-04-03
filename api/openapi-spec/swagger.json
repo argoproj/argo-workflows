@@ -2513,6 +2513,14 @@
           "type": "string",
           "title": "Type indicates type of node"
         },
+        "usage": {
+          "description": "Usage is an estimate of the actual usage of a pod. This is populated when the nodes completes.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          }
+        },
         "workflowTemplateName": {
           "description": "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.\nDEPRECATED: This value is not used anymore.",
           "type": "string"
@@ -3354,6 +3362,14 @@
           "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
+          }
+        },
+        "usage": {
+          "type": "object",
+          "title": "Usage is the estimated usage of the resource",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
           }
         }
       }
@@ -6241,6 +6257,32 @@
     "HTTPBasic": {
       "description": "HTTP Basic authentication",
       "type": "basic"
+    }
+  },
+  "x-stream-definitions": {
+    "io.argoproj.workflow.v1alpha1.LogEntry": {
+      "properties": {
+        "error": {
+          "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+        },
+        "result": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LogEntry"
+        }
+      },
+      "title": "Stream result of io.argoproj.workflow.v1alpha1.LogEntry",
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowWatchEvent": {
+      "properties": {
+        "error": {
+          "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+        },
+        "result": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowWatchEvent"
+        }
+      },
+      "title": "Stream result of io.argoproj.workflow.v1alpha1.WorkflowWatchEvent",
+      "type": "object"
     }
   }
 }
