@@ -23,12 +23,7 @@ interface State {
 }
 
 export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<any>, State> {
-
-    // private set namespace(namespace: string) {
-    //     history.pushState(null, '', uiUrl('cluster-workflow-templates'));
-    //     this.fetchClusterWorkflowTemplates();
-    // }
-
+    
     private get sidePanel() {
         return this.queryParam('sidePanel');
     }
