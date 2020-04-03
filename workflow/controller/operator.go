@@ -1898,6 +1898,14 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 // buildLocalScope adds all of a nodes outputs to the local scope with the given prefix, as well
 // as the global scope, if specified with a globalName
 func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *wfv1.NodeStatus) {
+	// It may be that the node is a retry node, in which case we want to get the outputs of the last node
+	// in the retry group instead of the retry node itself.
+	if node.Type == wfv1.NodeTypeRetry {
+		if lastNode, err := woc.getLastChildNode(node); err == nil {
+			node = lastNode
+		}
+	}
+
 	if node.PodIP != "" {
 		key := fmt.Sprintf("%s.ip", prefix)
 		scope.addParamToScope(key, node.PodIP)
