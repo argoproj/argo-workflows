@@ -143,9 +143,10 @@ func (we *WorkflowExecutor) WaitResource(resourceNamespace string, resourceName 
 		} else {
 			log.Warnf("Waiting for resource %s resulted in error %v", resourceName, err)
 		}
+		return err
 	}
 
-	return err
+	return nil
 }
 
 func checkIfResourceDeleted(resourceName string, resourceNamespace string) bool {
