@@ -36,7 +36,6 @@ export class LogDownloadButton extends React.Component<LogDownloadProps, LogDown
             return null;
         }
 
-        // TODO: don't stringify until submit event, for performance.
         return (
             <form method='POST' action={services.workflows.getLogsMultipleUrl()} onSubmit={() => this.setState({workflows: this.props.workflows})}>
                 <input type='hidden' name='workflows' value={JSON.stringify(this.state.workflows.map(wf => ({name: wf.metadata.name, namespace: wf.metadata.namespace})))} />
