@@ -46,7 +46,7 @@ func NewLintCommand() *cobra.Command {
 				stat, err := os.Stat(file)
 				errors.CheckError(err)
 				if stat.IsDir() {
-					filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
+					invalidWfErr = filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
 						fileExt := filepath.Ext(info.Name())
 						switch fileExt {
 						case ".yaml", ".yml", ".json":
@@ -55,7 +55,7 @@ func NewLintCommand() *cobra.Command {
 						}
 						err = lint(path)
 						if err != nil {
-							invalidWfErr = fmt.Errorf("Unvalid workflow/workflows found")
+							invalidWfErr = fmt.Errorf("Invalid workflow/workflows found")
 							log.Warn(err)
 						}
 						return nil
