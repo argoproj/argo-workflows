@@ -415,6 +415,12 @@ func (s *workflowServer) SubmitFromResource(ctx context.Context, req *workflowpk
 			return nil, err
 		}
 		wf = common.ConvertWorkflowTemplateToWorkflow(wfTmpl)
+	case workflow.ClusterWorkflowTemplateKind, workflow.ClusterWorkflowTemplateSingular, workflow.ClusterWorkflowTemplatePlural, workflow.ClusterWorkflowTemplateShortName:
+		wfTmpl, err := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Get(req.ResourceName, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+		wf = common.ConvertClusterWorkflowTemplateToWorkflow(wfTmpl)
 	default:
 
 		return nil, errors.Errorf(errors.CodeBadRequest, "Resource kind '%s' is not supported with --from", req.ResourceKind)
@@ -422,8 +428,9 @@ func (s *workflowServer) SubmitFromResource(ctx context.Context, req *workflowpk
 	}
 	s.setInstanceID(req.InstanceID, wf)
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
+	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
-	err := validate.ValidateWorkflow(wftmplGetter, wf, validate.ValidateOpts{})
+	_,err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, validate.ValidateOpts{})
 	if err != nil {
 		return nil, err
 	}
