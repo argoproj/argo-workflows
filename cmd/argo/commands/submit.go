@@ -14,7 +14,6 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
-	argoJson "github.com/argoproj/pkg/json"
 )
 
 // cliSubmitOpts holds submission options specific to CLI submission (e.g. controlling output)
