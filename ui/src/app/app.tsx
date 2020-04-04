@@ -9,6 +9,7 @@ import {ContextApis, Provider} from './shared/context';
 
 import archivedWorkflows from './archived-workflows';
 import cronWorkflows from './cron-workflows';
+import clusterWorkflowTemplates from './cluster-workflow-templates'
 import help from './help';
 import login from './login';
 import ErrorBoundary from './shared/components/error-boundary';
@@ -17,6 +18,8 @@ import workflows from './workflows';
 
 const workflowsUrl = uiUrl('workflows');
 const workflowTemplatesUrl = uiUrl('workflow-templates');
+const clusterWorkflowTemplatesUrl = uiUrl('cluster-workflow-templates');
+
 const cronWorkflowUrl = uiUrl('cron-workflows');
 const archivedWorkflowUrl = uiUrl('archived-workflows');
 const helpUrl = uiUrl('help');
@@ -27,6 +30,7 @@ const routes: {
 } = {
     [workflowsUrl]: {component: workflows.component},
     [workflowTemplatesUrl]: {component: workflowTemplates.component},
+    [clusterWorkflowTemplatesUrl]: {component: clusterWorkflowTemplates.component},
     [cronWorkflowUrl]: {component: cronWorkflows.component},
     [archivedWorkflowUrl]: {component: archivedWorkflows.component},
     [helpUrl]: {component: help.component},
@@ -44,6 +48,11 @@ const navItems = [
     {
         title: 'Workflow Templates',
         path: workflowTemplatesUrl,
+        iconClassName: 'fas fa-object-group'
+    },
+    {
+        title: 'Cluster Workflow Templates',
+        path: clusterWorkflowTemplatesUrl,
         iconClassName: 'fa fa-clone'
     },
     {
