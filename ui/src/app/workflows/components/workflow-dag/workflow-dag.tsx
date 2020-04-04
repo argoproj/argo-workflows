@@ -3,19 +3,19 @@ import * as dagre from 'dagre';
 import * as React from 'react';
 
 import * as models from '../../../../models';
-import {NODE_PHASE} from '../../../../models';
 import {Utils} from '../../../shared/utils';
+import {defaultNodesToDisplay} from '../workflow-details/workflow-details';
 
 export const defaultWorkflowDagRenderOptions: WorkflowDagRenderOptions = {
-    hideSucceeded: false,
     horizontal: false,
-    zoom: 1
+    zoom: 1,
+    nodesToDisplay: defaultNodesToDisplay
 };
 
 export interface WorkflowDagRenderOptions {
     horizontal: boolean;
     zoom: number;
-    hideSucceeded: boolean;
+    nodesToDisplay: string[];
 }
 
 export interface WorkflowDagProps {
@@ -61,7 +61,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
         const nodes = (this.props.workflow.status && this.props.workflow.status.nodes) || {};
         Object.values(nodes).forEach(node => {
             const label = Utils.shortNodeName(node);
-            if (this.isSmall(node)) {
+            if (this.filterNode(node)) {
                 graph.setNode(node.id, {label, width: 1, height: 1, ...nodes[node.id]});
             } else {
                 graph.setNode(node.id, {label, width: this.nodeWidth, height: this.nodeHeight, ...nodes[node.id]});
@@ -94,7 +94,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
                         y1: edge.points[i - 1].y,
                         x2: edge.points[i].x,
                         y2: edge.points[i].y,
-                        noArrow: this.isSmall(toNode)
+                        noArrow: this.filterNode(toNode)
                     });
                 }
             }
@@ -105,7 +105,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
             <div className='workflow-dag' style={{width: size.width, height: size.height}}>
                 {graph.nodes().map(id => {
                     const node = graph.node(id) as models.NodeStatus & dagre.Node;
-                    const small = this.isSmall(node);
+                    const small = this.filterNode(node);
                     return (
                         <>
                             <div
@@ -177,10 +177,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
         );
     }
 
-    private isSmall(node: models.NodeStatus) {
-        return this.filterNode(node) || (this.props.renderOptions.hideSucceeded && node.phase === NODE_PHASE.SUCCEEDED);
-    }
-
     private getOutboundNodes(nodeID: string): string[] {
         const node = this.props.workflow.status.nodes[nodeID];
         if (node.type === 'Pod' || node.type === 'Skipped') {
@@ -198,13 +194,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
         return outbound;
     }
 
-    private isVirtual(node: models.NodeStatus) {
-        return (node.type === 'StepGroup' || node.type === 'DAG' || node.type === 'TaskGroup') && !!node.boundaryID;
-    }
-
     private filterNode(node: models.NodeStatus) {
         // Filter the node if it is a virtual node or a Retry node with one child
-        return this.isVirtual(node) || (node.type === 'Retry' && node.children.length === 1);
+        return (
+            !(this.props.renderOptions.nodesToDisplay.includes('type:' + node.type) && this.props.renderOptions.nodesToDisplay.includes('phase:' + node.phase)) ||
+            (node.type === 'Retry' && node.children.length === 1)
+        );
     }
 
     private getGraphSize(nodes: dagre.Node[]): {width: number; height: number} {
