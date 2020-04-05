@@ -127,10 +127,23 @@ message Backoff {
   optional string maxDuration = 3;
 }
 
-message Condition {
-  optional string status = 1;
+// ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope
+// +genclient
+// +genclient:noStatus
+// +genclient:nonNamespaced
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message ClusterWorkflowTemplate {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
-  optional string type = 2;
+  optional WorkflowTemplateSpec spec = 2;
+}
+
+// ClusterWorkflowTemplateList is list of ClusterWorkflowTemplate resources
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message ClusterWorkflowTemplateList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated ClusterWorkflowTemplate items = 2;
 }
 
 // ContinueOn defines if a workflow should continue even if a task or step fails/errors.
@@ -775,6 +788,9 @@ message TTLStrategy {
 
 // TarStrategy will tar and gzip the file or directory when saving
 message TarStrategy {
+  // CompressionLevel specifies the gzip compression level to use for the artifact.
+  // Defaults to gzip.DefaultCompression.
+  optional int32 compressionLevel = 1;
 }
 
 // Template is a reusable and composable unit of execution in a workflow
@@ -926,6 +942,9 @@ message TemplateRef {
   // RuntimeResolution skips validation at creation time.
   // By enabling this option, you can create the referred workflow template before the actual runtime.
   optional bool runtimeResolution = 3;
+
+  // ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+  optional bool clusterscope = 4;
 }
 
 // UserContainer is a container specified by a user.
@@ -968,6 +987,14 @@ message Workflow {
   optional WorkflowSpec spec  = 2;
 
   optional WorkflowStatus status = 3;
+}
+
+message WorkflowCondition {
+  optional string type = 1;
+
+  optional string status = 2;
+
+  optional string message = 3;
 }
 
 // WorkflowList is list of Workflow resources
@@ -1163,8 +1190,8 @@ message WorkflowStatus {
   // Outputs captures output values and artifact locations produced by the workflow via global outputs
   optional Outputs outputs = 8;
 
-  // Condition for k8s conditions https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
-  repeated Condition condition = 11;
+  // Conditions is a list of conditions the Workflow may have
+  repeated WorkflowCondition conditions = 13;
 
   // ResourcesDuration is the total for the workflow
   map<string, int64> resourcesDuration = 12;

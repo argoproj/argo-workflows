@@ -79,7 +79,6 @@ export const WorkflowNodeSummary = (props: Props) => {
             value: <ResourcesDuration resourcesDuration={props.node.resourcesDuration} />
         });
     }
-    const template = Utils.getResolvedTemplates(props.workflow, props.node);
     return (
         <div className='white-box'>
             <div className='white-box__details'>{<AttributeRows attributes={attributes} />}</div>
@@ -87,7 +86,7 @@ export const WorkflowNodeSummary = (props: Props) => {
                 <button className='argo-button argo-button--base-o' onClick={() => props.onShowYaml && props.onShowYaml(props.node.id)}>
                     YAML
                 </button>{' '}
-                {template && (template.container || template.script) && (
+                {props.node.type === 'Pod' && (
                     <button className='argo-button argo-button--base-o' onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.node.id, 'main')}>
                         LOGS
                     </button>
