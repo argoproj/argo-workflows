@@ -23,6 +23,7 @@ interface State {
 }
 
 export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<any>, State> {
+    
     private get sidePanel() {
         return this.queryParam('sidePanel');
     }
@@ -62,7 +63,7 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
                                         action: () => (this.sidePanel = 'new')
                                     }
                                 ]
-                            }
+                            },
                         }}>
                         {this.renderTemplates()}
                         <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
@@ -70,7 +71,9 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
                                 resourceName={'Cluster Workflow Template'}
                                 defaultResource={exampleClusterWorkflowTemplate()}
                                 onSubmit={wfTmpl => {
-                                    return services.clusterWorkflowTemplate.create(wfTmpl).then(wf => ctx.navigation.goto(uiUrl(`cluster-workflow-templates/${wf.metadata.name}`)));
+                                    return services.clusterWorkflowTemplate
+                                        .create(wfTmpl)
+                                        .then(wf => ctx.navigation.goto(uiUrl(`cluster-workflow-templates/${wf.metadata.name}`)));
                                 }}
                             />
                         </SlidingPanel>

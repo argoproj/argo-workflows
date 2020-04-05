@@ -3,6 +3,7 @@ import {ClusterWorkflowTemplateService} from './cluster-workflow-template-servic
 import {CronWorkflowService} from './cron-workflow-service';
 import {InfoService} from './info-service';
 import {WorkflowTemplateService} from './workflow-template-service';
+import {ClusterWorkflowTemplateService} from './cluster-workflow-template-service';
 import {WorkflowsService} from './workflows-service';
 
 export interface Services {

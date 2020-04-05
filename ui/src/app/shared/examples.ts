@@ -31,7 +31,7 @@ export const exampleWorkflow = (namespace: string): Workflow => ({
 });
 export const exampleClusterWorkflowTemplate = (): ClusterWorkflowTemplate => ({
     metadata: {
-        name: randomSillyName()
+        name: randomSillyName(),
     },
     spec: {
         templates: [
@@ -47,6 +47,7 @@ export const exampleClusterWorkflowTemplate = (): ClusterWorkflowTemplate => ({
         ]
     }
 });
+
 
 export const exampleWorkflowTemplate = (namespace: string): WorkflowTemplate => ({
     metadata: {
