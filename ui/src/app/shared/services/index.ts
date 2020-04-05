@@ -1,5 +1,4 @@
 import {ArchivedWorkflowsService} from './archived-workflows-service';
-import {ClusterWorkflowTemplateService} from './cluster-workflow-template-service';
 import {CronWorkflowService} from './cron-workflow-service';
 import {InfoService} from './info-service';
 import {WorkflowTemplateService} from './workflow-template-service';
