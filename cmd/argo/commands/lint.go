@@ -42,15 +42,17 @@ func NewLintCommand() *cobra.Command {
 				return nil
 			}
 
-			var failed bool
+			var invalidWfErr error
 			for _, file := range args {
 				stat, err := os.Stat(file)
 				errors.CheckError(err)
 				if stat.IsDir() {
-					err := filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
+					_ = filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
+						// If there was an error with the walk, return
 						if err != nil {
 							return err
 						}
+
 						fileExt := filepath.Ext(info.Name())
 						switch fileExt {
 						case ".yaml", ".yml", ".json":
@@ -59,23 +61,20 @@ func NewLintCommand() *cobra.Command {
 						}
 						err = lint(path)
 						if err != nil {
-							log.Warnf("%s is invalid: %v", path, err)
-							failed = true
+							invalidWfErr = fmt.Errorf("Invalid workflow/workflows found")
+							log.Warn(err)
 						}
 						return nil
 					})
-					errors.CheckError(err)
 				} else {
 					err := lint(file)
 					if err != nil {
-						log.Warnf("%s is invalid: %v", file, err)
-						failed = true
+						invalidWfErr = fmt.Errorf("Invalid workflow/workflows found")
+						log.Warn(err)
 					}
 				}
 			}
-			if failed {
-				fmt.Printf("One or more manifests invalid\n")
-			}
+			errors.CheckError(invalidWfErr)
 			fmt.Printf("Workflow manifests validated\n")
 		},
 	}
