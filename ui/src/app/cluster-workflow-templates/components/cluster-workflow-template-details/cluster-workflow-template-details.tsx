@@ -19,8 +19,6 @@ interface State {
 }
 
 export class ClusterWorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, State> {
-
-
     private get name() {
         return this.props.match.params.name;
     }
@@ -138,7 +136,7 @@ export class ClusterWorkflowTemplateDetails extends BasePage<RouteComponentProps
                     templateRef: {
                         name: template.metadata.name,
                         template: t.name,
-                        clusterscope: true,
+                        clusterscope: true
                     }
                 }))
             }
