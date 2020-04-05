@@ -2,12 +2,12 @@
 
 ![alpha](assets/alpha.svg)
 
-Argo Workflows provides an indication of how much resource your workflow has requested and saves this 
+Argo Workflows provides an indication of how much resource your workflow has used and saves this 
 information. This is intended to be an **indicative but not accurate** value.
 
 ## Configuration
 
-This is turned on only if [the `resourcesDuration` flag is enabled in config](workflow-controller-configmap.yaml).
+This is only set if [the feature flags is enabled in config](workflow-controller-configmap.yaml).
 
 ## Calculation
 
@@ -17,12 +17,12 @@ defaults.
 
 Each indicator is divided by a common denominator depending on resource type.
 
-### Base Amounts
+### Base amounts
 
-Each resource type has a denominator used to make large values smaller.
+Each resource type has a "base amount" used to normalize usage across containers.
 
- * CPU: `1`
- * Memory: `100Mi`
+ * CPU: `1000m`
+ * Memory: `1Gi`
  * Storage: `10Gi`
  * Ephemeral Storage: `10Gi`
  * All others: `1` 
@@ -33,7 +33,7 @@ the container's Resource Duration.
 For example, if you've requested `100Mi` of memory (one tenth of the base amount), and the container 
 runs 120sec, then the reported Resource Duration will be `12sec * (1Gi memory)`. 
 
-### Request Defaults
+### Request defaults
 
 If `requests` are not set for a container, Kubernetes defaults to `limits`. If `limits` are not set,
 Argo falls back to `100m` for CPU and `100Mi` for memory. 

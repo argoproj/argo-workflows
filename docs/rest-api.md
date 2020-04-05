@@ -2,7 +2,7 @@
 
 ## Argo Server API
 
-![beta](assets/beta.svg)
+![alpha](assets/alpha.svg)
 
 > v2.5 and after
 
