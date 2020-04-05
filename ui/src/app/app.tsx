@@ -8,8 +8,8 @@ import {uiUrl} from './shared/base';
 import {ContextApis, Provider} from './shared/context';
 
 import archivedWorkflows from './archived-workflows';
+import clusterWorkflowTemplates from './cluster-workflow-templates';
 import cronWorkflows from './cron-workflows';
-import clusterWorkflowTemplates from './cluster-workflow-templates'
 import help from './help';
 import login from './login';
 import ErrorBoundary from './shared/components/error-boundary';
