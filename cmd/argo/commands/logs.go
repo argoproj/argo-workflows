@@ -100,7 +100,7 @@ func NewLogsCommand() *cobra.Command {
 					return
 				}
 				errors.CheckError(err)
-				fmt.Println(ansiFormat(fmt.Sprintf("%s: %s", event.PodName, event.Content), ansiColorCode(podName)))
+				fmt.Println(ansiFormat(fmt.Sprintf("%s: %s", event.PodName, event.Content), ansiColorCode(event.PodName)))
 			}
 		},
 	}
