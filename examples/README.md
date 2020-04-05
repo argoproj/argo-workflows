@@ -767,7 +767,7 @@ spec:
   - name: retry-backoff
     retryStrategy:
       limit: 10
-      retryOn: "Always"
+      retryPolicy: "Always"
       backoff:
         duration: "1"      # Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
         factor: 2
@@ -780,7 +780,7 @@ spec:
 ```
 
 * `limit` is the maximum number of times the container will be retried.
-* `retryOn` specifies if a container will be retried on failure, error, or both. "Always" retries on both errors and failures. Also available: "OnFailure" (default), "OnError"
+* `retryPolicy` specifies if a container will be retried on failure, error, or both. "Always" retries on both errors and failures. Also available: "OnFailure" (default), "OnError"
 * `backoff` is an exponential backoff
 
 Providing an empty `retryStrategy` (i.e. `retryStrategy: {}`) will cause a container to retry until completion.
