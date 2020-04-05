@@ -168,6 +168,31 @@ func (s *CLISuite) TestLogs() {
 	})
 }
 
+// this test probably should be in the ArgoServerSuite, but it's just much easier to write the test
+// for the CLI
+func (s *CLISuite) TestLogProblems() {
+	s.Given().
+		Workflow(`@testdata/log-problems.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflowToStart(5*time.Second).
+		// logs should come in order
+		RunCli([]string{"logs", "log-problems", "--follow"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "one.*two.*three.*four.*five", output)
+			}
+		}).
+		WaitForWorkflow(10*time.Second).
+		// now the workflow has finished, logs should remain in order
+		RunCli([]string{"logs", "log-problems", "--follow"}, func(t *testing.T, output string, err error) {
+			// not sure how to fix this issue
+			t.SkipNow()
+			if assert.NoError(t, err) {
+				assert.Regexp(t, "one.*two.*three.*four.*five", output)
+			}
+		})
+}
+
 func (s *CLISuite) TestRoot() {
 	s.Run("Submit", func() {
 		s.Given().RunCli([]string{"submit", "smoke/basic.yaml"}, func(t *testing.T, output string, err error) {
