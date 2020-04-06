@@ -5,9 +5,10 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
+	executil "github.com/argoproj/pkg/exec"
 	log "github.com/sirupsen/logrus"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 )
@@ -16,10 +17,9 @@ func runCli(diagnostics *Diagnostics, args []string) (string, error) {
 	runArgs := append([]string{"-n", Namespace}, args...)
 	cmd := exec.Command("../../dist/argo", runArgs...)
 	cmd.Env = os.Environ()
-	output, err := exec.Command("../../dist/argo", runArgs...).CombinedOutput()
-	stringOutput := string(output)
-	diagnostics.Log(log.Fields{"args": args, "output": stringOutput, "err": err}, "Run CLI")
-	return stringOutput, err
+	output, err := executil.RunCommandExt(cmd, executil.CmdOpts{Timeout: 30 * time.Second})
+	diagnostics.Log(log.Fields{"args": args, "output": output, "err": err}, "Run CLI")
+	return output, err
 }
 
 // LoadObject is used to load yaml to runtime.Object

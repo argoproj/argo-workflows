@@ -97,6 +97,7 @@ func (s *CLISuite) TestTokenArg() {
 }
 
 func (s *CLISuite) TestLogs() {
+	os.Unsetenv("ARGO_SERVER")
 	s.Given().
 		Workflow(`@smoke/basic.yaml`).
 		When().
@@ -108,7 +109,7 @@ func (s *CLISuite) TestLogs() {
 
 	s.Run("FollowWorkflowLogs", func() {
 		s.Given().
-			RunCli([]string{"logs", "basic", "--follow"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"--loglevel", "debug", "logs", "basic", "--follow"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, ":) Hello Argo!")
 				}

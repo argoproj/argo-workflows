@@ -320,26 +320,33 @@ else
 endif
 endif
 
-.PHONY: test-images
-test-images: dist/cowsay-v1 dist/bitnami-kubectl-1.15.3-ol-7-r165 dist/python-alpine3.6
+.PHONY: clean-images
+clean-images:
+ifeq ($(K3D),true)
+	# Force import to K3D
+	find dist -type f -name '*-image' -mtime +5m | xargs rm -f
+endif
 
-dist/cowsay-v1:
+.PHONY: test-images
+test-images: dist/controller-image dist/cli-image dist/executor-image dist/cowsay-v1-image dist/bitnami-kubectl-1.15.3-ol-7-r165-image dist/python-alpine3.6-image
+
+dist/cowsay-v1-image:
 	docker build -t cowsay:v1 test/e2e/images/cowsay
 ifeq ($(K3D),true)
 	k3d import-images cowsay:v1
 endif
-	touch dist/cowsay-v1
+	touch dist/cowsay-v1-image
 
-dist/bitnami-kubectl-1.15.3-ol-7-r165:
+dist/bitnami-kubectl-1.15.3-ol-7-r165-image:
 	docker pull bitnami/kubectl:1.15.3-ol-7-r165
-	touch dist/bitnami-kubectl-1.15.3-ol-7-r165
+	touch dist/bitnami-kubectl-1.15.3-ol-7-r165-image
 
-dist/python-alpine3.6:
+dist/python-alpine3.6-image:
 	docker pull python:alpine3.6
-	touch dist/python-alpine3.6
+	touch dist/python-alpine3.6-image
 
 .PHONY: start
-start: status install down controller-image cli-image executor-image wait-down up cli wait-up env
+start: status install down clean-images test-images wait-down up cli wait-up env
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 
