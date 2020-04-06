@@ -6,6 +6,8 @@ import (
 	"github.com/argoproj/pkg/cli"
 	"github.com/spf13/cobra"
 
+	"github.com/argoproj/argo/cmd/argo/commands/clustertemplate"
+
 	"github.com/argoproj/argo/cmd/argo/commands/auth"
 	"github.com/argoproj/argo/cmd/argo/commands/cron"
 	"github.com/argoproj/argo/util/help"
@@ -48,11 +50,14 @@ If you're using the Argo Server (e.g. because you need large workflow support or
 	command.AddCommand(auth.NewAuthCommand())
 	command.AddCommand(NewWaitCommand())
 	command.AddCommand(NewWatchCommand())
+	command.AddCommand(NewStopCommand())
 	command.AddCommand(NewTerminateCommand())
 	command.AddCommand(archive.NewArchiveCommand())
 	command.AddCommand(cmd.NewVersionCmd(CLIName))
 	command.AddCommand(template.NewTemplateCommand())
 	command.AddCommand(cron.NewCronWorkflowCommand())
+	command.AddCommand(clustertemplate.NewClusterTemplateCommand())
+
 	client.AddKubectlFlagsToCmd(command)
 	client.AddArgoServerFlagsToCmd(command)
 

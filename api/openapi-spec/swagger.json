@@ -10,7 +10,7 @@
   ],
   "swagger": "2.0",
   "info": {
-    "description": "Workflow Service API performs CRUD actions against application resources",
+    "description": "Argo",
     "title": "Argo",
     "version": "latest"
   },
@@ -127,6 +127,250 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArchivedWorkflowDeletedResponse"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cluster-workflow-templates": {
+      "get": {
+        "tags": [
+          "ClusterWorkflowTemplateService"
+        ],
+        "operationId": "ListClusterWorkflowTemplates",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional.",
+            "name": "listOptions.labelSelector",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "A selector to restrict the list of returned objects by their fields.\nDefaults to everything.\n+optional.",
+            "name": "listOptions.fieldSelector",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "format": "boolean",
+            "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
+            "name": "listOptions.watch",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "format": "boolean",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional",
+            "name": "listOptions.allowWatchBookmarks",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "When specified with a watch call, shows changes that occur after that particular version of a resource.\nDefaults to changes from the beginning of history.\nWhen specified for list:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.\n+optional.",
+            "name": "listOptions.resourceVersion",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "description": "Timeout for the list/watch call.\nThis limits the duration of the call, regardless of any activity or inactivity.\n+optional.",
+            "name": "listOptions.timeoutSeconds",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "description": "limit is a maximum number of responses to return for a list call. If more items exist, the\nserver will set the `continue` field on the list metadata to a value that can be used with the\nsame initial query to retrieve the next set of results. Setting a limit may return fewer than\nthe requested amount of items (up to zero items) in the event all requested objects are\nfiltered out and clients should only use the presence of the continue field to determine whether\nmore results are available. Servers may choose not to support the limit argument and will return\nall of the available results. If limit is specified and the continue field is empty, clients may\nassume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing\na single list call without a limit - that is, no objects created, modified, or deleted after the\nfirst request is issued will be included in any subsequent continued requests. This is sometimes\nreferred to as a consistent snapshot, and ensures that a client that is using limit to receive\nsmaller chunks of a very large result can ensure they see all possible objects. If objects are\nupdated during a chunked list the version of the object that was present at the time the first list\nresult was calculated is returned.",
+            "name": "listOptions.limit",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
+            "name": "listOptions.continue",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateList"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ClusterWorkflowTemplateService"
+        ],
+        "operationId": "CreateClusterWorkflowTemplate",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/clusterio.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateCreateRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cluster-workflow-templates/lint": {
+      "post": {
+        "tags": [
+          "ClusterWorkflowTemplateService"
+        ],
+        "operationId": "LintClusterWorkflowTemplate",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/clusterio.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateLintRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cluster-workflow-templates/{name}": {
+      "get": {
+        "tags": [
+          "ClusterWorkflowTemplateService"
+        ],
+        "operationId": "GetClusterWorkflowTemplate",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.",
+            "name": "getOptions.resourceVersion",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ClusterWorkflowTemplateService"
+        ],
+        "operationId": "UpdateClusterWorkflowTemplate",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/clusterio.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateUpdateRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ClusterWorkflowTemplateService"
+        ],
+        "operationId": "DeleteClusterWorkflowTemplate",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "format": "int64",
+            "description": "The duration in seconds before the object should be deleted. Value must be non-negative integer.\nThe value zero indicates delete immediately. If this value is nil, the default grace period for the\nspecified type will be used.\nDefaults to a per object value if not specified. zero means delete immediately.\n+optional.",
+            "name": "deleteOptions.gracePeriodSeconds",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Specifies the target UID.\n+optional.",
+            "name": "deleteOptions.preconditions.uid",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Specifies the target ResourceVersion\n+optional.",
+            "name": "deleteOptions.preconditions.resourceVersion",
+            "in": "query"
+          },
+          {
+            "type": "boolean",
+            "format": "boolean",
+            "description": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.\nShould the dependent objects be orphaned. If true/false, the \"orphan\"\nfinalizer will be added to/removed from the object's finalizers list.\nEither this field or PropagationPolicy may be set, but not both.\n+optional.",
+            "name": "deleteOptions.orphanDependents",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Whether and how garbage collection will be performed.\nEither this field or OrphanDependents may be set, but not both.\nThe default policy is decided by the existing finalizer set in the\nmetadata.finalizers and the resource-specific default policy.\nAcceptable values are: 'Orphan' - orphan the dependents; 'Background' -\nallow the garbage collector to delete the dependents in the background;\n'Foreground' - a cascading policy that deletes all dependents in the\nforeground.\n+optional.",
+            "name": "deleteOptions.propagationPolicy",
+            "in": "query"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi",
+            "description": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional.",
+            "name": "deleteOptions.dryRun",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/clusterio.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateDeleteResponse"
             }
           }
         }
@@ -848,6 +1092,12 @@
             "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
             "name": "listOptions.continue",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Fields to be included or excluded in the response. e.g. \"items.spec,items.status.phase\", \"-items.status.nodes\".",
+            "name": "fields",
+            "in": "query"
           }
         ],
         "responses": {
@@ -945,6 +1195,12 @@
             "type": "string",
             "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.",
             "name": "getOptions.resourceVersion",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Fields to be included or excluded in the response. e.g. \"spec,status.phase\", \"-status.nodes\".",
+            "name": "fields",
             "in": "query"
           }
         ],
@@ -1142,6 +1398,44 @@
         }
       }
     },
+    "/api/v1/workflows/{namespace}/{name}/stop": {
+      "put": {
+        "tags": [
+          "WorkflowService"
+        ],
+        "operationId": "StopWorkflow",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStopRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/workflows/{namespace}/{name}/suspend": {
       "put": {
         "tags": [
@@ -1318,6 +1612,42 @@
     }
   },
   "definitions": {
+    "clusterio.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateCreateRequest": {
+      "type": "object",
+      "properties": {
+        "createOptions": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.CreateOptions"
+        },
+        "template": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
+        }
+      }
+    },
+    "clusterio.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateDeleteResponse": {
+      "type": "object"
+    },
+    "clusterio.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateLintRequest": {
+      "type": "object",
+      "properties": {
+        "createOptions": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.CreateOptions"
+        },
+        "template": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
+        }
+      }
+    },
+    "clusterio.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateUpdateRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "template": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
+        }
+      }
+    },
     "cronio.argoproj.workflow.v1alpha1.CreateCronWorkflowRequest": {
       "type": "object",
       "properties": {
@@ -1445,6 +1775,10 @@
           "title": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
         },
+        "gcs": {
+          "title": "GCS contains GCS artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSArtifact"
+        },
         "git": {
           "title": "Git contains git artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GitArtifact"
@@ -1456,6 +1790,10 @@
         "http": {
           "title": "HTTP contains HTTP artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPArtifact"
+        },
+        "oss": {
+          "title": "OSS contains OSS artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSArtifact"
         },
         "raw": {
           "title": "Raw contains raw artifact location details",
@@ -1520,6 +1858,33 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate": {
+      "type": "object",
+      "title": "ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope\n+genclient\n+genclient:noStatus\n+genclient:nonNamespaced\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateList": {
+      "type": "object",
+      "title": "ClusterWorkflowTemplateList is list of ClusterWorkflowTemplate resources\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate"
+          }
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ListMeta"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.ContinueOn": {
       "description": "ContinueOn defines if a workflow should continue even if a task or step fails/errors.\nIt can be specified if the workflow should continue when the pod errors, fails or both.",
       "type": "object",
@@ -1533,6 +1898,16 @@
           "type": "boolean",
           "format": "boolean",
           "title": "+optional"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Counter": {
+      "type": "object",
+      "title": "Counter is a Counter prometheus metric",
+      "properties": {
+        "value": {
+          "type": "string",
+          "title": "Value is the value of the metric"
         }
       }
     },
@@ -1600,6 +1975,10 @@
         "timezone": {
           "description": "Timezone is the timezone against which the cron schedule will be calculated, e.g. \"Asia/Tokyo\". Default is machine's local time.",
           "type": "string"
+        },
+        "workflowMeta": {
+          "title": "WorkflowMetadata contains some metadata of the workflow to be run",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ObjectMeta"
         },
         "workflowSpec": {
           "title": "WorkflowSpec is the spec of the workflow to be run",
@@ -1708,6 +2087,48 @@
         "serviceAccountName": {
           "description": "ServiceAccountName specifies the service account name of the executor container.",
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.GCSArtifact": {
+      "type": "object",
+      "title": "GCSArtifact is the location of a GCS artifact",
+      "properties": {
+        "gCSBucket": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSBucket"
+        },
+        "key": {
+          "type": "string",
+          "title": "Key is the path in the bucket where the artifact resides"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.GCSBucket": {
+      "type": "object",
+      "title": "GCSBucket contains the access information for interfacring with a GCS bucket",
+      "properties": {
+        "bucket": {
+          "type": "string",
+          "title": "Bucket is the name of the bucket"
+        },
+        "serviceAccountKeySecret": {
+          "title": "ServiceAccountKeySecret is the secret selector to the bucket's service account key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Gauge": {
+      "type": "object",
+      "title": "Gauge is a Gauge prometheus metric",
+      "properties": {
+        "realtime": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Realtime emits this metric in real time if applicable"
+        },
+        "value": {
+          "type": "string",
+          "title": "Value is the value of the metric"
         }
       }
     },
@@ -1832,6 +2253,24 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Histogram": {
+      "type": "object",
+      "title": "Histogram is a Histogram prometheus metric",
+      "properties": {
+        "buckets": {
+          "type": "array",
+          "title": "Buckets is a list of bucket divisors for the histogram",
+          "items": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "value": {
+          "type": "string",
+          "title": "Value is the value of the metric"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Inputs": {
       "type": "object",
       "title": "Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another",
@@ -1918,6 +2357,24 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Link": {
+      "type": "object",
+      "title": "A link to another app.\n+patchStrategy=merge\n+patchMergeKey=name",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "The name of the link, E.g. \"Workflow Logs\" or \"Pod Logs\""
+        },
+        "scope": {
+          "type": "string",
+          "title": "Either \"workflow\" or \"pod\""
+        },
+        "url": {
+          "description": "The URL. May contain \"${metadata.namespace}\" and \"${metadata.name}\".",
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Metadata": {
       "type": "object",
       "title": "Pod metdata",
@@ -1932,6 +2389,31 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
+          }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.MetricLabel": {
+      "type": "object",
+      "title": "MetricLabel is a single label for a prometheus metric",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Metrics": {
+      "type": "object",
+      "title": "Metrics are a list of metrics emitted from a Workflow/Template",
+      "properties": {
+        "prometheus": {
+          "type": "array",
+          "title": "Prometheus is a list of prometheus metrics to be emitted",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Prometheus"
           }
         }
       }
@@ -1999,6 +2481,14 @@
           "type": "string",
           "title": "PodIP captures the IP of the pod for daemoned steps"
         },
+        "resourcesDuration": {
+          "description": "ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          }
+        },
         "startedAt": {
           "title": "Time at which this node started",
           "$ref": "#/definitions/io.k8s.api.core.v1.Time"
@@ -2033,6 +2523,41 @@
       "description": "NoneStrategy indicates to skip tar process and upload the files or directory tree as independent\nfiles. Note that if the artifact is a directory, the artifact driver must support the ability to\nsave/load the directory appropriately.",
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.OSSArtifact": {
+      "type": "object",
+      "title": "OSSArtifact is the location of an OSS artifact",
+      "properties": {
+        "key": {
+          "type": "string",
+          "title": "Key is the path in the bucket where the artifact resides"
+        },
+        "oSSBucket": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSBucket"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.OSSBucket": {
+      "type": "object",
+      "title": "OSSBucket contains the access information required for interfacing with an OSS bucket",
+      "properties": {
+        "accessKeySecret": {
+          "title": "AccessKeySecret is the secret selector to the bucket's access key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "bucket": {
+          "type": "string",
+          "title": "Bucket is the name of the bucket"
+        },
+        "endpoint": {
+          "type": "string",
+          "title": "Endpoint is the hostname of the bucket endpoint"
+        },
+        "secretKeySecret": {
+          "title": "SecretKeySecret is the secret selector to the bucket's secret key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Outputs": {
       "type": "object",
       "title": "Outputs hold parameters, artifacts, and results from a step",
@@ -2058,14 +2583,9 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.ParallelSteps": {
-      "type": "object",
-      "properties": {
-        "steps": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStep"
-          }
-        }
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStep"
       }
     },
     "io.argoproj.workflow.v1alpha1.Parameter": {
@@ -2074,7 +2594,7 @@
       "properties": {
         "default": {
           "type": "string",
-          "title": "Default is the default value to use for an input parameter if a value was not supplied"
+          "title": "Default is the default value to use for an input parameter if a value was not supplied\nDEPRECATED: This field is not used"
         },
         "globalName": {
           "type": "string",
@@ -2100,6 +2620,43 @@
       "properties": {
         "strategy": {
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Prometheus": {
+      "type": "object",
+      "title": "Prometheus is a prometheus metric to be emitted",
+      "properties": {
+        "counter": {
+          "title": "Counter is a counter metric",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Counter"
+        },
+        "gauge": {
+          "title": "Gauge is a gauge metric",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Gauge"
+        },
+        "help": {
+          "type": "string",
+          "title": "Help is a string that describes the metric"
+        },
+        "histogram": {
+          "title": "Histogram is a histogram metric",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Histogram"
+        },
+        "labels": {
+          "type": "array",
+          "title": "Labels is a list of metric labels",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.MetricLabel"
+          }
+        },
+        "name": {
+          "type": "string",
+          "title": "Name is the name of the metric"
+        },
+        "when": {
+          "type": "string",
+          "title": "When is a conditional statement that decides when to emit the metric"
         }
       }
     },
@@ -2208,6 +2765,11 @@
         "secretKeySecret": {
           "title": "SecretKeySecret is the secret selector to the bucket's secret key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "useSDKCreds": {
+          "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+          "type": "boolean",
+          "format": "boolean"
         }
       }
     },
@@ -2276,7 +2838,14 @@
     },
     "io.argoproj.workflow.v1alpha1.TarStrategy": {
       "type": "object",
-      "title": "TarStrategy will tar and gzip the file or directory when saving"
+      "title": "TarStrategy will tar and gzip the file or directory when saving",
+      "properties": {
+        "compressionLevel": {
+          "description": "CompressionLevel specifies the gzip compression level to use for the artifact.\nDefaults to gzip.DefaultCompression.",
+          "type": "integer",
+          "format": "int32"
+        }
+      }
     },
     "io.argoproj.workflow.v1alpha1.Template": {
       "type": "object",
@@ -2294,6 +2863,10 @@
         "archiveLocation": {
           "description": "Location in which all files related to the step will be stored (logs, artifacts, etc...).\nCan be overridden by individual items in Outputs. If omitted, will use the default\nartifact repository location configured in the controller, appended with the\n\u003cworkflowname\u003e/\u003cnodename\u003e in the key.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactLocation"
+        },
+        "arguments": {
+          "description": "Arguments hold arguments to the template.\nDEPRECATED: This field is not used.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
         },
         "automountServiceAccountToken": {
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.\nServiceAccountName of ExecutorConfig must be specified if this value is false.",
@@ -2339,6 +2912,10 @@
           "title": "Metdata sets the pods's metadata, i.e. annotations and labels",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata"
         },
+        "metrics": {
+          "title": "Metrics are a list of metrics emitted from this template",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metrics"
+        },
         "name": {
           "type": "string",
           "title": "Name is the name of the template"
@@ -2375,6 +2952,11 @@
         "resource": {
           "title": "Resource template subtype which can run k8s resources",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ResourceTemplate"
+        },
+        "resubmitPendingPods": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission"
         },
         "retryStrategy": {
           "title": "RetryStrategy describes how to retry a template when it fails",
@@ -2415,11 +2997,11 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SuspendTemplate"
         },
         "template": {
-          "description": "Template is the name of the template which is used as the base of this template.",
+          "description": "Template is the name of the template which is used as the base of this template.\nDEPRECATED: This field is not used.",
           "type": "string"
         },
         "templateRef": {
-          "description": "TemplateRef is the reference to the template resource which is used as the base of this template.",
+          "description": "TemplateRef is the reference to the template resource which is used as the base of this template.\nDEPRECATED: This field is not used.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TemplateRef"
         },
         "tolerations": {
@@ -2442,6 +3024,11 @@
       "description": "TemplateRef is a reference of template resource.",
       "type": "object",
       "properties": {
+        "clusterscope": {
+          "description": "ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).",
+          "type": "boolean",
+          "format": "boolean"
+        },
         "name": {
           "description": "Name is the resource name of the template.",
           "type": "string"
@@ -2475,6 +3062,10 @@
       "type": "object",
       "title": "ValueFrom describes a location in which to obtain the value to a parameter",
       "properties": {
+        "default": {
+          "type": "string",
+          "title": "Default specifies a value to be used if retrieving the value from the specified source fails"
+        },
         "jqFilter": {
           "type": "string",
           "title": "JQFilter expression against the resource object in resource templates"
@@ -2505,6 +3096,20 @@
         },
         "status": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStatus"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowCondition": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
         }
       }
     },
@@ -2558,8 +3163,8 @@
           "type": "string"
         },
         "entrypoint": {
-          "type": "string",
-          "title": "Entrypoint is a template reference to the starting point of the workflow"
+          "description": "Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.",
+          "type": "string"
         },
         "executor": {
           "description": "Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.",
@@ -2584,6 +3189,10 @@
             "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
           }
         },
+        "metrics": {
+          "title": "Metrics are a list of metrics emitted from this Workflow",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metrics"
+        },
         "nodeSelector": {
           "description": "NodeSelector is a selector which will result in all pods of the workflow\nto be scheduled on the selected node(s). This is able to be overridden by\na nodeSelector specified in the template.",
           "type": "object",
@@ -2599,6 +3208,10 @@
           "type": "string",
           "format": "int64",
           "title": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow"
+        },
+        "podDisruptionBudget": {
+          "title": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.\nController will automatically add the selector with workflow name, if selector is empty.\nOptional: Defaults to empty.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PodDisruptionBudgetSpec"
         },
         "podGC": {
           "title": "PodGC describes the strategy to use when to deleting completed pods",
@@ -2634,6 +3247,10 @@
           "description": "ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.",
           "type": "string"
         },
+        "shutdown": {
+          "type": "string",
+          "title": "Shutdown will shutdown the workflow according to its ShutdownStrategy"
+        },
         "suspend": {
           "type": "boolean",
           "format": "boolean",
@@ -2659,7 +3276,7 @@
           "format": "int32"
         },
         "ttlStrategy": {
-          "title": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it\nSucceeded or Failed. If this struct is set, once the Workflow finishes, it will be\ndeleted after the time to live expires. If this field is unset,\nthe controller config map will hold the default values\nUpdate",
+          "description": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it\nSucceeded or Failed. If this struct is set, once the Workflow finishes, it will be\ndeleted after the time to live expires. If this field is unset,\nthe controller config map will hold the default values.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TTLStrategy"
         },
         "volumeClaimTemplates": {
@@ -2685,6 +3302,13 @@
         "compressedNodes": {
           "type": "string",
           "title": "Compressed and base64 decoded Nodes map"
+        },
+        "conditions": {
+          "type": "array",
+          "title": "Conditions is a list of conditions the Workflow may have",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowCondition"
+          }
         },
         "finishedAt": {
           "title": "Time at which this workflow completed",
@@ -2719,6 +3343,14 @@
         "phase": {
           "description": "Phase a simple, high-level summary of where the workflow is in its lifecycle.",
           "type": "string"
+        },
+        "resourcesDuration": {
+          "type": "object",
+          "title": "ResourcesDuration is the total for the workflow",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          }
         },
         "startedAt": {
           "title": "Time at which this workflow started",
@@ -2813,16 +3445,8 @@
       "description": "WorkflowTemplateSpec is a spec of WorkflowTemplate.",
       "type": "object",
       "properties": {
-        "arguments": {
-          "description": "Arguments hold arguments to the template.",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
-        },
-        "templates": {
-          "description": "Templates is a list of workflow templates.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
-          }
+        "workflowSpec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"
         }
       }
     },
@@ -2866,6 +3490,12 @@
     "io.argoproj.workflow.v1alpha1.InfoResponse": {
       "type": "object",
       "properties": {
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Link"
+          }
+        },
         "managedNamespace": {
           "type": "string"
         }
@@ -5022,6 +5652,24 @@
         }
       }
     },
+    "io.k8s.api.core.v1.PodDisruptionBudgetSpec": {
+      "description": "PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.",
+      "type": "object",
+      "properties": {
+        "maxUnavailable": {
+          "title": "An eviction is allowed if at most \"maxUnavailable\" pods selected by\n\"selector\" are unavailable after the eviction, i.e. even in absence of\nthe evicted pod. For example, one can prevent all voluntary evictions\nby specifying 0. This is a mutually exclusive setting with \"minAvailable\".\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.IntOrString"
+        },
+        "minAvailable": {
+          "title": "An eviction is allowed if at least \"minAvailable\" pods selected by\n\"selector\" will still be available after the eviction, i.e. even in the\nabsence of the evicted pod.  So for example you can prevent all voluntary\nevictions by specifying \"100%\".\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.IntOrString"
+        },
+        "selector": {
+          "title": "Label query over pods whose evictions are managed by the disruption\nbudget.\n+optional",
+          "$ref": "#/definitions/io.k8s.api.core.v1.LabelSelector"
+        }
+      }
+    },
     "io.k8s.api.core.v1.Quantity": {
       "description": "Quantity is a fixed-point representation of a number.\nIt provides convenient marshaling/unmarshaling in JSON and YAML,\nin addition to String() and AsInt64() accessors.\n\nThe serialization format is:\n\n\u003cquantity\u003e        ::= \u003csignedNumber\u003e\u003csuffix\u003e\n  (Note that \u003csuffix\u003e may be empty, from the \"\" case in \u003cdecimalSI\u003e.)\n\u003cdigit\u003e           ::= 0 | 1 | ... | 9\n\u003cdigits\u003e          ::= \u003cdigit\u003e | \u003cdigit\u003e\u003cdigits\u003e\n\u003cnumber\u003e          ::= \u003cdigits\u003e | \u003cdigits\u003e.\u003cdigits\u003e | \u003cdigits\u003e. | .\u003cdigits\u003e\n\u003csign\u003e            ::= \"+\" | \"-\"\n\u003csignedNumber\u003e    ::= \u003cnumber\u003e | \u003csign\u003e\u003cnumber\u003e\n\u003csuffix\u003e          ::= \u003cbinarySI\u003e | \u003cdecimalExponent\u003e | \u003cdecimalSI\u003e\n\u003cbinarySI\u003e        ::= Ki | Mi | Gi | Ti | Pi | Ei\n  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)\n\u003cdecimalSI\u003e       ::= m | \"\" | k | M | G | T | P | E\n  (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)\n\u003cdecimalExponent\u003e ::= \"e\" \u003csignedNumber\u003e | \"E\" \u003csignedNumber\u003e\n\nNo matter which of the three exponent forms is used, no quantity may represent\na number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal\nplaces. Numbers larger or more precise will be capped or rounded up.\n(E.g.: 0.1m will rounded up to 1m.)\nThis may be extended in the future if we require larger or smaller quantities.\n\nWhen a Quantity is parsed from a string, it will remember the type of suffix\nit had, and will use the same type again when it is serialized.\n\nBefore serializing, Quantity will be put in \"canonical form\".\nThis means that Exponent/suffix will be adjusted up or down (with a\ncorresponding increase or decrease in Mantissa) such that:\n  a. No precision is lost\n  b. No fractional digits will be emitted\n  c. The exponent (or suffix) is as large as possible.\nThe sign will be omitted unless the number is negative.\n\nExamples:\n  1.5 will be serialized as \"1500m\"\n  1.5Gi will be serialized as \"1536Mi\"\n\nNote that the quantity will NEVER be internally represented by a\nfloating point number. That is the whole point of this exercise.\n\nNon-canonical values will still parse as long as they are well formed,\nbut will be re-emitted in their canonical form. (So always use canonical\nform, or don't diff.)\n\nThis format is intended to make it difficult to use these numbers without\nwriting some sort of special handling code in the hopes that that will\ncause implementors to also use a fixed point implementation.\n\n+protobuf=true\n+protobuf.embed=string\n+protobuf.options.marshal=false\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:deepcopy-gen=true\n+k8s:openapi-gen=true",
       "type": "object",
@@ -5472,6 +6120,9 @@
         },
         "namespace": {
           "type": "string"
+        },
+        "nodeFieldSelector": {
+          "type": "string"
         }
       }
     },
@@ -5482,6 +6133,23 @@
           "type": "string"
         },
         "namespace": {
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowStopRequest": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "nodeFieldSelector": {
           "type": "string"
         }
       }
@@ -5580,32 +6248,6 @@
     "HTTPBasic": {
       "description": "HTTP Basic authentication",
       "type": "basic"
-    }
-  },
-  "x-stream-definitions": {
-    "io.argoproj.workflow.v1alpha1.LogEntry": {
-      "properties": {
-        "error": {
-          "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
-        },
-        "result": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LogEntry"
-        }
-      },
-      "title": "Stream result of io.argoproj.workflow.v1alpha1.LogEntry",
-      "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.WorkflowWatchEvent": {
-      "properties": {
-        "error": {
-          "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
-        },
-        "result": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowWatchEvent"
-        }
-      },
-      "title": "Stream result of io.argoproj.workflow.v1alpha1.WorkflowWatchEvent",
-      "type": "object"
     }
   }
 }

@@ -201,10 +201,10 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 	return true
 }
 
-func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
-		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
 	}
 
 	defer func() {
@@ -259,7 +259,8 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 			// Can happen when dag.target was specified
 			continue
 		}
-		woc.processNodeOutputs(&scope, fmt.Sprintf("tasks.%s", task.Name), taskNode)
+		woc.buildLocalScope(&scope, fmt.Sprintf("tasks.%s", task.Name), taskNode)
+		woc.addOutputsToGlobalScope(taskNode.Outputs)
 	}
 	outputs, err := getTemplateOutputsFromScope(tmpl, &scope)
 	if err != nil {
@@ -273,8 +274,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 
 	woc.updateOutboundNodesForTargetTasks(dagCtx, targetTasks, nodeName)
 
-	_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
-	return node, nil
+	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded), nil
 }
 
 func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(dagCtx *dagContext, targetTasks []string, nodeName string) {
@@ -305,8 +305,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	node := dagCtx.GetTaskNode(taskName)
 	task := dagCtx.getTask(taskName)
 	if node != nil && node.Completed() {
-		// Run the node's onExit node, if any. Only leaf nodes will have their onExit nodes executed here. Nodes that
-		// have dependencies will have their onExit nodes executed below
+		// Run the node's onExit node, if any.
 		hasOnExitNode, onExitNode, err := woc.runOnExitNode(task.Name, task.OnExit, dagCtx.boundaryID, dagCtx.tmplCtx)
 		if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
 			// The onExit node is either not complete or has errored out, return.
@@ -320,25 +319,15 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	nodeName := dagCtx.taskNodeName(taskName)
 	for _, depName := range task.Dependencies {
 		depNode := dagCtx.GetTaskNode(depName)
-		if depNode != nil {
-			if depNode.Completed() {
-				depTask := dagCtx.getTask(depName)
-				// Run the node's onExit node, if any. Only nodes that have dependencies will have their onExit nodes
-				// executed here. Leaf nodes will have their onExit nodes executed above
-				hasOnExitNode, onExitNode, err := woc.runOnExitNode(depTask.Name, depTask.OnExit, dagCtx.boundaryID, dagCtx.tmplCtx)
-				if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
-					// The onExit node is either not complete or has errored out, return.
-					return
-				}
-
-				if !depNode.Successful() && !depTask.ContinuesOn(depNode.Phase) {
-					dependenciesSuccessful = false
-				}
-				continue
+		if depNode != nil && depNode.Completed() {
+			depTask := dagCtx.getTask(depName)
+			if !depNode.Successful() && !depTask.ContinuesOn(depNode.Phase) {
+				dependenciesSuccessful = false
 			}
+		} else {
+			dependenciesCompleted = false
+			dependenciesSuccessful = false
 		}
-		dependenciesCompleted = false
-		dependenciesSuccessful = false
 		// recurse our dependency
 		woc.executeDAGTask(dagCtx, depName)
 	}
@@ -435,7 +424,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		}
 
 		// Finally execute the template
-		_, _ = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, dagCtx.boundaryID)
+		_, _ = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID})
 	}
 
 	if taskGroupNode != nil {
@@ -454,15 +443,13 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 }
 
-// resolveDependencyReferences replaces any references to outputs of task dependencies, or artifacts in the inputs
-// NOTE: by now, input parameters should have been substituted throughout the template
-func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task *wfv1.DAGTask) (*wfv1.DAGTask, error) {
+func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv1.DAGTask) (*wfScope, error) {
 	// build up the scope
 	scope := wfScope{
 		tmpl:  dagCtx.tmpl,
 		scope: make(map[string]interface{}),
 	}
-	woc.addOutputsToScope("workflow", woc.wf.Status.Outputs, &scope)
+	woc.addOutputsToLocalScope("workflow", woc.wf.Status.Outputs, &scope)
 
 	ancestors := common.GetTaskAncestry(dagCtx, task.Name, dagCtx.tasks)
 	for _, ancestor := range ancestors {
@@ -487,13 +474,24 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 				return nil, errors.InternalWrapError(err)
 			}
 		} else {
-			woc.processNodeOutputs(&scope, prefix, ancestorNode)
+			woc.buildLocalScope(&scope, prefix, ancestorNode)
 		}
+	}
+	return &scope, nil
+}
+
+// resolveDependencyReferences replaces any references to outputs of task dependencies, or artifacts in the inputs
+// NOTE: by now, input parameters should have been substituted throughout the template
+func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task *wfv1.DAGTask) (*wfv1.DAGTask, error) {
+
+	scope, err := woc.buildLocalScopeFromTask(dagCtx, task)
+	if err != nil {
+		return nil, err
 	}
 
 	// Perform replacement
 	// Replace woc.volumes
-	err := woc.substituteParamsInVolumes(scope.replaceMap())
+	err = woc.substituteParamsInVolumes(scope.replaceMap())
 	if err != nil {
 		return nil, err
 	}

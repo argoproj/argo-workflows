@@ -3,6 +3,9 @@ package executor
 import (
 	"fmt"
 
+	"github.com/argoproj/argo/workflow/artifacts/gcs"
+	"github.com/argoproj/argo/workflow/artifacts/oss"
+
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/artifacts/artifactory"
 	"github.com/argoproj/argo/workflow/artifacts/git"
@@ -44,12 +47,13 @@ func NewDriver(art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error
 		}
 
 		driver := s3.S3ArtifactDriver{
-			Endpoint:  art.S3.Endpoint,
-			AccessKey: accessKey,
-			SecretKey: secretKey,
-			Secure:    art.S3.Insecure == nil || !*art.S3.Insecure,
-			Region:    art.S3.Region,
-			RoleARN:   art.S3.RoleARN,
+			Endpoint:    art.S3.Endpoint,
+			AccessKey:   accessKey,
+			SecretKey:   secretKey,
+			Secure:      art.S3.Insecure == nil || !*art.S3.Insecure,
+			Region:      art.S3.Region,
+			RoleARN:     art.S3.RoleARN,
+			UseSDKCreds: art.S3.UseSDKCreds,
 		}
 		return &driver, nil
 	}
@@ -105,6 +109,45 @@ func NewDriver(art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error
 	}
 	if art.Raw != nil {
 		return &raw.RawArtifactDriver{}, nil
+	}
+
+	if art.OSS != nil {
+		var accessKey string
+		var secretKey string
+
+		if art.OSS.AccessKeySecret.Name != "" {
+			accessKeyBytes, err := ri.GetSecret(art.OSS.AccessKeySecret.Name, art.OSS.AccessKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			accessKey = string(accessKeyBytes)
+			secretKeyBytes, err := ri.GetSecret(art.OSS.SecretKeySecret.Name, art.OSS.SecretKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			secretKey = string(secretKeyBytes)
+		}
+
+		driver := oss.OSSArtifactDriver{
+			Endpoint:  art.OSS.Endpoint,
+			AccessKey: accessKey,
+			SecretKey: secretKey,
+		}
+		return &driver, nil
+	}
+
+	if art.GCS != nil {
+		driver := gcs.ArtifactDriver{}
+		if art.GCS.ServiceAccountKeySecret.Name != "" {
+			serviceAccountKeyBytes, err := ri.GetSecret(art.GCS.ServiceAccountKeySecret.Name, art.GCS.ServiceAccountKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			serviceAccountKey := string(serviceAccountKeyBytes)
+			driver.ServiceAccountKey = serviceAccountKey
+		}
+		// key is not set, assume it is using Workload Idendity
+		return &driver, nil
 	}
 
 	return nil, ErrUnsupportedDriver

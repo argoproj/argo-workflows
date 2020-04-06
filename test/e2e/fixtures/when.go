@@ -9,12 +9,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/test/util"
 	"github.com/argoproj/argo/workflow/packer"
 )
 
@@ -23,15 +25,18 @@ type When struct {
 	diagnostics           *Diagnostics
 	wf                    *wfv1.Workflow
 	wfTemplates           []*wfv1.WorkflowTemplate
+	cwfTemplates          []*wfv1.ClusterWorkflowTemplate
 	cronWf                *wfv1.CronWorkflow
 	client                v1alpha1.WorkflowInterface
 	wfTemplateClient      v1alpha1.WorkflowTemplateInterface
+	cwfTemplateClient     v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient            v1alpha1.CronWorkflowInterface
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	workflowName          string
 	wfTemplateNames       []string
 	cronWorkflowName      string
 	kubeClient            kubernetes.Interface
+	resourceQuota         *corev1.ResourceQuota
 }
 
 func (w *When) SubmitWorkflow() *When {
@@ -62,6 +67,23 @@ func (w *When) CreateWorkflowTemplates() *When {
 			w.wfTemplateNames = append(w.wfTemplateNames, wfTmpl.Name)
 		}
 		log.WithField("template", wfTmpl.Name).Info("Workflow template created")
+	}
+	return w
+}
+
+func (w *When) CreateClusterWorkflowTemplates() *When {
+	if len(w.cwfTemplates) == 0 {
+		w.t.Fatal("No cluster workflow templates to create")
+	}
+	for _, cwfTmpl := range w.cwfTemplates {
+		log.WithField("template", cwfTmpl.Name).Info("Creating cluster workflow template")
+		wfTmpl, err := w.cwfTemplateClient.Create(cwfTmpl)
+		if err != nil {
+			w.t.Fatal(err)
+		} else {
+			w.wfTemplateNames = append(w.wfTemplateNames, wfTmpl.Name)
+		}
+		log.WithField("template", wfTmpl.Name).Info("Cluster Workflow template created")
 	}
 	return w
 }
@@ -173,6 +195,24 @@ func (w *When) RunCli(args []string, block func(t *testing.T, output string, err
 	return w
 }
 
+func (w *When) MemoryQuota(quota string) *When {
+	obj, err := util.CreateHardMemoryQuota(w.kubeClient, "argo", "memory-quota", quota)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	w.resourceQuota = obj
+	return w
+}
+
+func (w *When) DeleteQuota() *When {
+	err := util.DeleteQuota(w.kubeClient, w.resourceQuota)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	w.resourceQuota = nil
+	return w
+}
+
 func (w *When) Then() *Then {
 	return &Then{
 		t:                     w.t,
@@ -193,6 +233,7 @@ func (w *When) Given() *Given {
 		diagnostics:           w.diagnostics,
 		client:                w.client,
 		wfTemplateClient:      w.wfTemplateClient,
+		cwfTemplateClient:     w.cwfTemplateClient,
 		cronClient:            w.cronClient,
 		offloadNodeStatusRepo: w.offloadNodeStatusRepo,
 		wf:                    w.wf,

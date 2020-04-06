@@ -2,6 +2,21 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
+  name: clusterworkflowtemplates.argoproj.io
+spec:
+  group: argoproj.io
+  names:
+    kind: ClusterWorkflowTemplate
+    plural: clusterworkflowtemplates
+    shortNames:
+    - clusterwftmpl
+    - cwft
+  scope: Cluster
+  version: v1alpha1
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
   name: cronworkflows.argoproj.io
 spec:
   group: argoproj.io
@@ -148,6 +163,14 @@ rules:
   - events
   verbs:
   - create
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets
+  verbs:
+  - create
+  - get
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -178,6 +201,7 @@ rules:
   - get
   - list
   - watch
+  - delete
 - apiGroups:
   - ""
   resources:
@@ -221,6 +245,36 @@ rules:
   - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argo-clusterworkflowtemplate-role
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - clusterworkflowtemplates
+  - clusterworkflowtemplates/finalizers
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argo-server-clusterworkflowtemplate-role
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - clusterworkflowtemplates
+  - clusterworkflowtemplates/finalizers
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: argo-binding
@@ -256,21 +310,69 @@ subjects:
 - kind: ServiceAccount
   name: default
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argo-clusterworkflowtemplate-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argo-clusterworkflowtemplate-role
+subjects:
+- kind: ServiceAccount
+  name: argo
+  namespace: argo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argo-server-clusterworkflowtemplate-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argo-server-clusterworkflowtemplate-role
+subjects:
+- kind: ServiceAccount
+  name: argo-server
+  namespace: argo
+---
 apiVersion: v1
 data:
-  config: |
-    artifactRepository:
-      archiveLogs: true
-      s3:
-        bucket: my-bucket
-        endpoint: minio:9000
-        insecure: true
-        accessKeySecret:
-          name: my-minio-cred
-          key: accesskey
-        secretKeySecret:
-          name: my-minio-cred
-          key: secretkey
+  artifactRepository: |
+    archiveLogs: true
+    s3:
+      bucket: my-bucket
+      endpoint: minio:9000
+      insecure: true
+      accessKeySecret:
+        name: my-minio-cred
+        key: accesskey
+      secretKeySecret:
+        name: my-minio-cred
+        key: secretkey
+  containerRuntimeExecutor: pns
+  executor: |
+    imagePullPolicy: Never
+    resources:
+      requests:
+        cpu: 0.1
+        memory: 64Mi
+      limits:
+        cpu: 0.5
+        memory: 128Mi
+  featureFlags: |
+    resourcesDuration: true
+  links: |
+    - name: Example Workflow Link
+      scope: workflow
+      url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}
+    - name: Example Pod Link
+      scope: pod
+      url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
+  metricsConfig: |
+    enabled: true
+    path: /metrics
+    port: 9090
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
@@ -310,6 +412,18 @@ spec:
     targetPort: 9000
   selector:
     app: minio
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: workflow-controller-metrics
+spec:
+  ports:
+  - port: 9090
+    protocol: TCP
+    targetPort: 9090
+  selector:
+    app: workflow-controller
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -366,17 +480,11 @@ spec:
     spec:
       containers:
       - args:
-        - --configmap
-        - workflow-controller-configmap
         - --executor-image
         - argoproj/argoexec:latest
         - --namespaced
         - --loglevel
         - debug
-        - --executor-image-pull-policy
-        - Never
-        - --container-runtime-executor
-        - pns
         command:
         - workflow-controller
         env:
@@ -386,12 +494,12 @@ spec:
           value: 30s
         - name: WORKFLOW_GC_PERIOD
           value: 30s
+        - name: UPPERIO_DB_DEBUG
+          value: "1"
         - name: ARCHIVED_WORKFLOW_TTL
           value: 5m
         - name: ARCHIVED_WORKFLOW_GC_PERIOD
           value: 30s
-        - name: UPPERIO_DB_DEBUG
-          value: "1"
         image: argoproj/workflow-controller:latest
         imagePullPolicy: Never
         name: workflow-controller

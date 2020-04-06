@@ -84,3 +84,11 @@ rules:
   - events
   verbs:
   - create
+- apiGroups:
+    - "policy"
+  resources:
+    - poddisruptionbudgets
+  verbs:
+    - create
+    - get
+    - delete

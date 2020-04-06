@@ -2,6 +2,21 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
+  name: clusterworkflowtemplates.argoproj.io
+spec:
+  group: argoproj.io
+  names:
+    kind: ClusterWorkflowTemplate
+    plural: clusterworkflowtemplates
+    shortNames:
+    - clusterwftmpl
+    - cwft
+  scope: Cluster
+  version: v1alpha1
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
   name: cronworkflows.argoproj.io
 spec:
   group: argoproj.io
@@ -90,6 +105,8 @@ rules:
   - workflowtemplates/finalizers
   - cronworkflows
   - cronworkflows/finalizers
+  - clusterworkflowtemplates
+  - clusterworkflowtemplates/finalizers
   verbs:
   - create
   - delete
@@ -116,6 +133,8 @@ rules:
   - workflowtemplates/finalizers
   - cronworkflows
   - cronworkflows/finalizers
+  - clusterworkflowtemplates
+  - clusterworkflowtemplates/finalizers
   verbs:
   - create
   - delete
@@ -142,6 +161,8 @@ rules:
   - workflowtemplates/finalizers
   - cronworkflows
   - cronworkflows/finalizers
+  - clusterworkflowtemplates
+  - clusterworkflowtemplates/finalizers
   verbs:
   - get
   - list
@@ -198,6 +219,8 @@ rules:
   resources:
   - workflowtemplates
   - workflowtemplates/finalizers
+  - clusterworkflowtemplates
+  - clusterworkflowtemplates/finalizers
   verbs:
   - get
   - list
@@ -227,6 +250,14 @@ rules:
   - events
   verbs:
   - create
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets
+  verbs:
+  - create
+  - get
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -257,6 +288,7 @@ rules:
   - get
   - list
   - watch
+  - delete
 - apiGroups:
   - ""
   resources:
@@ -269,6 +301,7 @@ rules:
   - workflows
   - workflowtemplates
   - cronworkflows
+  - clusterworkflowtemplates
   verbs:
   - create
   - get
@@ -331,6 +364,18 @@ spec:
     targetPort: 2746
   selector:
     app: argo-server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: workflow-controller-metrics
+spec:
+  ports:
+  - port: 9090
+    protocol: TCP
+    targetPort: 9090
+  selector:
+    app: workflow-controller
 ---
 apiVersion: apps/v1
 kind: Deployment

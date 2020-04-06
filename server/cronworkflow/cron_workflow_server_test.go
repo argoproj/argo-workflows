@@ -4,28 +4,52 @@ import (
 	"context"
 	"testing"
 
-	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
-	"github.com/argoproj/argo/server/auth"
-
+	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wftFake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/server/auth"
 )
 
 func Test_cronWorkflowServiceServer(t *testing.T) {
-	cronWf := &wfv1.CronWorkflow{
-		ObjectMeta: v1.ObjectMeta{Namespace: "my-ns", Name: "my-name"},
+	cronWfRaw := `apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: my-name
+  namespace: my-ns
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: "Allow"
+  startingDeadlineSeconds: 0
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 2
+  workflowSpec:
+    podGC:
+      strategy: OnPodCompletion
+    entrypoint: whalesay
+    templates:
+      - name: whalesay
+        container:
+          image: python:alpine3.6
+          imagePullPolicy: IfNotPresent
+          command: ["sh", -c]
+          args: ["echo hello"]`
+
+	var cronWf wfv1.CronWorkflow
+	err := yaml.Unmarshal([]byte(cronWfRaw), &cronWf)
+	if err != nil {
+		panic(err)
 	}
 	wfClientset := wftFake.NewSimpleClientset()
-	server := NewCronWorkflowServer()
+	server := NewCronWorkflowServer("testinstanceid001")
 	ctx := context.WithValue(context.TODO(), auth.WfKey, wfClientset)
 
 	t.Run("CreateCronWorkflow", func(t *testing.T) {
 		created, err := server.CreateCronWorkflow(ctx, &cronworkflowpkg.CreateCronWorkflowRequest{
 			Namespace:    "my-ns",
-			CronWorkflow: cronWf,
+			CronWorkflow: &cronWf,
 		})
 		if assert.NoError(t, err) {
 			assert.NotNil(t, created)
@@ -44,7 +68,7 @@ func Test_cronWorkflowServiceServer(t *testing.T) {
 		}
 	})
 	t.Run("UpdateCronWorkflow", func(t *testing.T) {
-		cronWf, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", Name: "my-name", CronWorkflow: cronWf})
+		cronWf, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", Name: "my-name", CronWorkflow: &cronWf})
 		if assert.NoError(t, err) {
 			assert.NotNil(t, cronWf)
 		}

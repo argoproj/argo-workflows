@@ -3,17 +3,7 @@ kind: Kustomization
 
 bases:
   - ../../../../manifests/quick-start/mysql
-
-patchesJson6902:
-  - target:
-      version: v1
-      group: apps
-      kind: Deployment
-      name: workflow-controller
-    path: overlays/workflow-controller-deployment.yaml
-  - target:
-      version: v1
-      group: apps
-      kind: Deployment
-      name: argo-server
-    path: overlays/argo-server-deployment.yaml
+patchesStrategicMerge:
+  - ../mixins/argo-server-deployment.yaml
+  - ../mixins/workflow-controller-configmap.yaml
+  - ../mixins/workflow-controller-deployment.yaml

@@ -49,6 +49,8 @@ rules:
   resources:
   - workflowtemplates
   - workflowtemplates/finalizers
+  - clusterworkflowtemplates
+  - clusterworkflowtemplates/finalizers
   verbs:
   - get
   - list
@@ -78,3 +80,11 @@ rules:
   - events
   verbs:
   - create
+- apiGroups:
+    - "policy"
+  resources:
+    - poddisruptionbudgets
+  verbs:
+    - create
+    - get
+    - delete

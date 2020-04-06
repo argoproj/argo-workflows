@@ -18,6 +18,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -171,7 +172,10 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 		return nil, err
 	}
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace))
-	err = validate.ValidateWorkflow(wftmplGetter, wf, validate.ValidateOpts{})
+	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+
+	_, err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, validate.ValidateOpts{})
+
 	if err != nil {
 		return nil, err
 	}
@@ -337,8 +341,59 @@ func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error
 
 // ResumeWorkflow resumes a workflow by setting spec.suspend to nil and any suspended nodes to Successful.
 // Retries conflict errors
-func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error {
-	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string, nodeFieldSelector string) error {
+	if len(nodeFieldSelector) > 0 {
+		return updateWorkflowNodeByKey(wfIf, workflowName, nodeFieldSelector, wfv1.NodeSucceeded, "")
+	} else {
+		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+			wf, err := wfIf.Get(workflowName, metav1.GetOptions{})
+			if err != nil {
+				return false, err
+			}
+
+			err = packer.DecompressWorkflow(wf)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			workflowUpdated := false
+			if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
+				wf.Spec.Suspend = nil
+				workflowUpdated = true
+			}
+
+			// To resume a workflow with a suspended node we simply mark the node as Successful
+			for nodeID, node := range wf.Status.Nodes {
+				if node.IsActiveSuspendNode() {
+					node.Phase = wfv1.NodeSucceeded
+					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+					wf.Status.Nodes[nodeID] = node
+					workflowUpdated = true
+				}
+			}
+
+			if workflowUpdated {
+				_, err = wfIf.Update(wf)
+				if err != nil {
+					if apierr.IsConflict(err) {
+						return false, nil
+					}
+					return false, err
+				}
+			}
+			return true, nil
+		})
+		return err
+	}
+}
+
+func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, workflowName string, nodeFieldSelector string, phase wfv1.NodePhase, message string) error {
+	selector, err := fields.ParseSelector(nodeFieldSelector)
+
+	if err != nil {
+		return err
+	}
+	err = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		wf, err := wfIf.Get(workflowName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
@@ -349,21 +404,30 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error 
 			log.Fatal(err)
 		}
 
-		updated := false
-		if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
-			wf.Spec.Suspend = nil
-			updated = true
-		}
-		// To resume a workflow with a suspended node we simply mark the node as Successful
+		nodeUpdated := false
 		for nodeID, node := range wf.Status.Nodes {
 			if node.IsActiveSuspendNode() {
-				node.Phase = wfv1.NodeSucceeded
-				node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-				wf.Status.Nodes[nodeID] = node
-				updated = true
+				nodeFields := fields.Set{
+					"displayName": node.DisplayName,
+				}
+				if node.Inputs != nil {
+					for _, inParam := range node.Inputs.Parameters {
+						nodeFields[fmt.Sprintf("inputs.parameters.%s.value", inParam.Name)] = *inParam.Value
+					}
+				}
+
+				if selector.Matches(nodeFields) {
+					node.Phase = phase
+					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+					if len(message) > 0 {
+						node.Message = message
+					}
+					wf.Status.Nodes[nodeID] = node
+					nodeUpdated = true
+				}
 			}
 		}
-		if updated {
+		if nodeUpdated {
 			_, err = wfIf.Update(wf)
 			if err != nil {
 				if apierr.IsConflict(err) {
@@ -371,6 +435,8 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error 
 				}
 				return false, err
 			}
+		} else {
+			return true, fmt.Errorf("No nodes matching nodeFieldSelector: %s", nodeFieldSelector)
 		}
 		return true, nil
 	})
@@ -421,6 +487,8 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 		// if it was terminated, unset the deadline
 		newWF.Spec.ActiveDeadlineSeconds = nil
 	}
+
+	newWF.Spec.Shutdown = ""
 
 	// carry over user labels and annotations from previous workflow.
 	// skip any argoproj.io labels except for the controller instanceID label.
@@ -496,6 +564,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 		newWF.Status.StoredTemplates[id] = tmpl
 	}
 
+	newWF.Status.Conditions.UpsertCondition(wfv1.WorkflowCondition{Status: metav1.ConditionFalse, Type: wfv1.WorkflowConditionCompleted})
 	newWF.Status.Phase = wfv1.NodePending
 
 	return &newWF, nil
@@ -520,6 +589,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 
 	// Delete/reset fields which indicate workflow completed
 	delete(newWF.Labels, common.LabelKeyCompleted)
+	newWF.Status.Conditions.UpsertCondition(wfv1.WorkflowCondition{Status: metav1.ConditionFalse, Type: wfv1.WorkflowConditionCompleted})
 	newWF.ObjectMeta.Labels[common.LabelKeyPhase] = string(wfv1.NodeRunning)
 	newWF.Status.Phase = wfv1.NodeRunning
 	newWF.Status.Message = ""
@@ -592,19 +662,11 @@ func IsWorkflowSuspended(wf *wfv1.Workflow) bool {
 	return false
 }
 
-// IsWorkflowTerminated returns whether or not a workflow is considered terminated
-func IsWorkflowTerminated(wf *wfv1.Workflow) bool {
-	if wf.Spec.ActiveDeadlineSeconds != nil && *wf.Spec.ActiveDeadlineSeconds == 0 {
-		return true
-	}
-	return false
-}
-
-// TerminateWorkflow terminates a workflow by setting its activeDeadlineSeconds to 0
+// TerminateWorkflow terminates a workflow by setting its spec.shutdown to ShutdownStrategyTerminate
 func TerminateWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
 	patchObj := map[string]interface{}{
 		"spec": map[string]interface{}{
-			"activeDeadlineSeconds": 0,
+			"shutdown": wfv1.ShutdownStrategyTerminate,
 		},
 	}
 	var err error
@@ -612,18 +674,48 @@ func TerminateWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	for attempt := 0; attempt < 10; attempt++ {
+	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		_, err = wfClient.Patch(name, types.MergePatchType, patch)
 		if err != nil {
 			if !apierr.IsConflict(err) {
-				return err
+				return false, err
 			}
-		} else {
-			break
+			return false, nil
 		}
-		time.Sleep(100 * time.Millisecond)
-	}
+		return true, nil
+	})
 	return err
+}
+
+// StopWorkflow terminates a workflow by setting its spec.shutdown to ShutdownStrategyStop
+// Or terminates a single resume step referenced by nodeFieldSelector
+func StopWorkflow(wfClient v1alpha1.WorkflowInterface, name string, nodeFieldSelector string, message string) error {
+	if len(nodeFieldSelector) > 0 {
+		return updateWorkflowNodeByKey(wfClient, name, nodeFieldSelector, wfv1.NodeFailed, message)
+	} else {
+		patchObj := map[string]interface{}{
+			"spec": map[string]interface{}{
+				"shutdown": wfv1.ShutdownStrategyStop,
+			},
+		}
+		var err error
+		patch, err := json.Marshal(patchObj)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+		for attempt := 0; attempt < 10; attempt++ {
+			_, err = wfClient.Patch(name, types.MergePatchType, patch)
+			if err != nil {
+				if !apierr.IsConflict(err) {
+					return err
+				}
+			} else {
+				break
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+		return err
+	}
 }
 
 // Reads from stdin

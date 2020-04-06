@@ -56,12 +56,22 @@ func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 
 func (s *ArgoServerSuite) TestInfo() {
 	s.Run("Get", func() {
-		s.e(s.T()).GET("/api/v1/info").
+		json := s.e(s.T()).GET("/api/v1/info").
 			Expect().
 			Status(200).
-			JSON().
+			JSON()
+		json.
 			Path("$.managedNamespace").
 			Equal("argo")
+		json.
+			Path("$.links[0].name").
+			Equal("Example Workflow Link")
+		json.
+			Path("$.links[0].scope").
+			Equal("workflow")
+		json.
+			Path("$.links[0].url").
+			Equal("http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}")
 	})
 }
 
@@ -307,10 +317,7 @@ func (s *ArgoServerSuite) TestPermission() {
 					WithQuery("listOptions.labelSelector", "argo-e2e").
 					WithQuery("listOptions.fieldSelector", "metadata.namespace="+nsName).
 					Expect().
-					Status(200).
-					JSON().
-					Path("$.items").
-					Null()
+					Status(403)
 			})
 
 			// Test get archived wf with good token
@@ -462,6 +469,21 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			NotNull()
 	})
 
+	s.Run("ListWithFields", func() {
+		j := s.e(s.T()).GET("/api/v1/workflows/argo").
+			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
+			WithQuery("fields", "-items.status.nodes,items.status.finishedAt,items.status.startedAt").
+			Expect().
+			Status(200).
+			JSON()
+		j.
+			Path("$.items").
+			Array().
+			Length().
+			Equal(1)
+		j.Path("$.items[0].status").Object().ContainsKey("phase").NotContainsKey("nodes")
+	})
+
 	s.Run("Get", func() {
 		j := s.e(s.T()).GET("/api/v1/workflows/argo/test").
 			Expect().
@@ -478,6 +500,15 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 		s.e(s.T()).GET("/api/v1/workflows/argo/not-found").
 			Expect().
 			Status(404)
+	})
+
+	s.Run("GetWithFields", func() {
+		j := s.e(s.T()).GET("/api/v1/workflows/argo/test").
+			WithQuery("fields", "status.phase").
+			Expect().
+			Status(200).
+			JSON()
+		j.Path("$.status").Object().ContainsKey("phase").NotContainsKey("nodes")
 	})
 
 	s.Run("Suspend", func() {
@@ -520,7 +551,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			Status(200).
 			JSON().
 			Path("$.status.message").
-			Equal("terminated")
+			Equal("Stopped with strategy 'Terminate'")
 	})
 
 	s.Run("Delete", func() {
@@ -852,6 +883,7 @@ spec:
 	} {
 		s.Run(tt.name, func() {
 			path := s.e(s.T()).GET("/api/v1/archived-workflows").
+				WithQuery("listOptions.fieldSelector", "metadata.namespace=argo").
 				WithQuery("listOptions.labelSelector", tt.selector).
 				Expect().
 				Status(200).
@@ -871,6 +903,7 @@ spec:
 	s.Run("ListWithLimitAndOffset", func() {
 		j := s.e(s.T()).GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace=argo").
 			WithQuery("listOptions.limit", 1).
 			WithQuery("listOptions.offset", 1).
 			Expect().
@@ -884,6 +917,32 @@ spec:
 		j.
 			Path("$.metadata.continue").
 			Equal("1")
+	})
+
+	s.Run("ListWithMinStartedAtGood", func() {
+		fieldSelector := "metadata.namespace=argo,spec.startedAt>" + time.Now().Add(-1*time.Hour).Format(time.RFC3339) + ",spec.startedAt<" + time.Now().Add(1*time.Hour).Format(time.RFC3339)
+		s.e(s.T()).GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.fieldSelector", fieldSelector).
+			WithQuery("listOptions.limit", 2).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().
+			Length().
+			Equal(2)
+	})
+
+	s.Run("ListWithMinStartedAtBad", func() {
+		s.e(s.T()).GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace=argo,spec.startedAt>"+time.Now().Add(1*time.Hour).Format(time.RFC3339)).
+			WithQuery("listOptions.limit", 2).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").Null()
 	})
 
 	s.Run("Get", func() {

@@ -240,6 +240,14 @@
         "raw": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.RawArtifact",
           "title": "Raw contains raw artifact location details"
+        },
+        "oss": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSArtifact",
+          "title": "OSS contains OSS artifact location details"
+        },
+        "gcs": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GCSArtifact",
+          "title": "GCS contains GCS artifact location details"
         }
       },
       "description": "ArtifactLocation describes a location for a single or multiple artifacts.\nIt is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).\nIt is also used to describe the location of multiple artifacts such as the archive location\nof a single workflow step, which the executor will use as a default location to store its files."
@@ -312,6 +320,16 @@
         }
       },
       "description": "ContinueOn defines if a workflow should continue even if a task or step fails/errors.\nIt can be specified if the workflow should continue when the pod errors, fails or both."
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Counter": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "title": "Value is the value of the metric"
+        }
+      },
+      "title": "Counter is a Counter prometheus metric"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.DAGTask": {
       "type": "object",
@@ -400,6 +418,48 @@
         }
       },
       "description": "ExecutorConfig holds configurations of an executor container."
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GCSArtifact": {
+      "type": "object",
+      "properties": {
+        "gCSBucket": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GCSBucket"
+        },
+        "key": {
+          "type": "string",
+          "title": "Key is the path in the bucket where the artifact resides"
+        }
+      },
+      "title": "GCSArtifact is the location of a GCS artifact"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GCSBucket": {
+      "type": "object",
+      "properties": {
+        "bucket": {
+          "type": "string",
+          "title": "Bucket is the name of the bucket"
+        },
+        "serviceAccountKeySecret": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",
+          "title": "ServiceAccountKeySecret is the secret selector to the bucket's service account key"
+        }
+      },
+      "title": "GCSBucket contains the access information for interfacring with a GCS bucket"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Gauge": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "title": "Value is the value of the metric"
+        },
+        "realtime": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Realtime emits this metric in real time if applicable"
+        }
+      },
+      "title": "Gauge is a Gauge prometheus metric"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GitArtifact": {
       "type": "object",
@@ -522,6 +582,24 @@
       },
       "title": "HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container"
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Histogram": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "title": "Value is the value of the metric"
+        },
+        "buckets": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "format": "double"
+          },
+          "title": "Buckets is a list of bucket divisors for the histogram"
+        }
+      },
+      "title": "Histogram is a Histogram prometheus metric"
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Inputs": {
       "type": "object",
       "properties": {
@@ -626,6 +704,31 @@
       },
       "title": "Pod metdata"
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.MetricLabel": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "title": "MetricLabel is a single label for a prometheus metric"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metrics": {
+      "type": "object",
+      "properties": {
+        "prometheus": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Prometheus"
+          },
+          "title": "Prometheus is a list of prometheus metrics to be emitted"
+        }
+      },
+      "title": "Metrics are a list of metrics emitted from a Workflow/Template"
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.NodeStatus": {
       "type": "object",
       "properties": {
@@ -685,6 +788,14 @@
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
           "title": "Time at which this node completed"
         },
+        "resourcesDuration": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          },
+          "description": "ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes."
+        },
         "podIP": {
           "type": "string",
           "title": "PodIP captures the IP of the pod for daemoned steps"
@@ -722,6 +833,41 @@
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.NoneStrategy": {
       "type": "object",
       "description": "NoneStrategy indicates to skip tar process and upload the files or directory tree as independent\nfiles. Note that if the artifact is a directory, the artifact driver must support the ability to\nsave/load the directory appropriately."
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSArtifact": {
+      "type": "object",
+      "properties": {
+        "oSSBucket": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSBucket"
+        },
+        "key": {
+          "type": "string",
+          "title": "Key is the path in the bucket where the artifact resides"
+        }
+      },
+      "title": "OSSArtifact is the location of an OSS artifact"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSBucket": {
+      "type": "object",
+      "properties": {
+        "endpoint": {
+          "type": "string",
+          "title": "Endpoint is the hostname of the bucket endpoint"
+        },
+        "bucket": {
+          "type": "string",
+          "title": "Bucket is the name of the bucket"
+        },
+        "accessKeySecret": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",
+          "title": "AccessKeySecret is the secret selector to the bucket's access key"
+        },
+        "secretKeySecret": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",
+          "title": "SecretKeySecret is the secret selector to the bucket's secret key"
+        }
+      },
+      "title": "OSSBucket contains the access information required for interfacing with an OSS bucket"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Outputs": {
       "type": "object",
@@ -767,7 +913,7 @@
         },
         "default": {
           "type": "string",
-          "title": "Default is the default value to use for an input parameter if a value was not supplied"
+          "title": "Default is the default value to use for an input parameter if a value was not supplied\nDEPRECATED: This field is not used"
         },
         "value": {
           "type": "string",
@@ -792,6 +938,43 @@
         }
       },
       "title": "PodGC describes how to delete completed pods as they complete"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Prometheus": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Name is the name of the metric"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.MetricLabel"
+          },
+          "title": "Labels is a list of metric labels"
+        },
+        "help": {
+          "type": "string",
+          "title": "Help is a string that describes the metric"
+        },
+        "when": {
+          "type": "string",
+          "title": "When is a conditional statement that decides when to emit the metric"
+        },
+        "gauge": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Gauge",
+          "title": "Gauge is a gauge metric"
+        },
+        "histogram": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Histogram",
+          "title": "Histogram is a histogram metric"
+        },
+        "counter": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Counter",
+          "title": "Counter is a counter metric"
+        }
+      },
+      "title": "Prometheus is a prometheus metric to be emitted"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.RawArtifact": {
       "type": "object",
@@ -897,6 +1080,11 @@
         "roleARN": {
           "type": "string",
           "description": "RoleARN is the Amazon Resource Name (ARN) of the role to assume."
+        },
+        "useSDKCreds": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults."
         }
       },
       "title": "S3Bucket contains the access information required for interfacing with an S3 bucket"
@@ -966,6 +1154,13 @@
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TarStrategy": {
       "type": "object",
+      "properties": {
+        "compressionLevel": {
+          "type": "integer",
+          "format": "int32",
+          "description": "CompressionLevel specifies the gzip compression level to use for the artifact.\nDefaults to gzip.DefaultCompression."
+        }
+      },
       "title": "TarStrategy will tar and gzip the file or directory when saving"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Template": {
@@ -977,11 +1172,15 @@
         },
         "template": {
           "type": "string",
-          "description": "Template is the name of the template which is used as the base of this template."
+          "description": "Template is the name of the template which is used as the base of this template.\nDEPRECATED: This field is not used."
+        },
+        "arguments": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Arguments",
+          "description": "Arguments hold arguments to the template.\nDEPRECATED: This field is not used."
         },
         "templateRef": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TemplateRef",
-          "description": "TemplateRef is the reference to the template resource which is used as the base of this template."
+          "description": "TemplateRef is the reference to the template resource which is used as the base of this template.\nDEPRECATED: This field is not used."
         },
         "inputs": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Inputs",
@@ -1124,6 +1323,15 @@
         "podSpecPatch": {
           "type": "string",
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of\ncontainer fields which are not strings (e.g. resource limits)."
+        },
+        "resubmitPendingPods": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission"
+        },
+        "metrics": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metrics",
+          "title": "Metrics are a list of metrics emitted from this template"
         }
       },
       "title": "Template is a reusable and composable unit of execution in a workflow"
@@ -1143,6 +1351,11 @@
           "type": "boolean",
           "format": "boolean",
           "description": "RuntimeResolution skips validation at creation time.\nBy enabling this option, you can create the referred workflow template before the actual runtime."
+        },
+        "clusterscope": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate)."
         }
       },
       "description": "TemplateRef is a reference of template resource."
@@ -1179,6 +1392,10 @@
         "parameter": {
           "type": "string",
           "title": "Parameter reference to a step or dag task in which to retrieve an output parameter value from\n(e.g. '{{steps.mystep.outputs.myparam}}')"
+        },
+        "default": {
+          "type": "string",
+          "title": "Default specifies a value to be used if retrieving the value from the specified source fails"
         }
       },
       "title": "ValueFrom describes a location in which to obtain the value to a parameter"
@@ -1197,6 +1414,20 @@
         }
       },
       "title": "Workflow is the definition of a workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowCondition": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowList": {
       "type": "object",
@@ -1225,7 +1456,7 @@
         },
         "entrypoint": {
           "type": "string",
-          "title": "Entrypoint is a template reference to the starting point of the workflow"
+          "description": "Entrypoint is a template reference to the starting point of the workflow."
         },
         "arguments": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Arguments",
@@ -1321,7 +1552,7 @@
         },
         "ttlStrategy": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TTLStrategy",
-          "title": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it\nSucceeded or Failed. If this struct is set, once the Workflow finishes, it will be\ndeleted after the time to live expires. If this field is unset,\nthe controller config map will hold the default values\nUpdate"
+          "description": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it\nSucceeded or Failed. If this struct is set, once the Workflow finishes, it will be\ndeleted after the time to live expires. If this field is unset,\nthe controller config map will hold the default values."
         },
         "activeDeadlineSeconds": {
           "type": "string",
@@ -1364,6 +1595,18 @@
         "podSpecPatch": {
           "type": "string",
           "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of\ncontainer fields which are not strings (e.g. resource limits)."
+        },
+        "podDisruptionBudget": {
+          "$ref": "#/definitions/k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec",
+          "title": "PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.\nController will automatically add the selector with workflow name, if selector is empty.\nOptional: Defaults to empty.\n+optional"
+        },
+        "metrics": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metrics",
+          "title": "Metrics are a list of metrics emitted from this Workflow"
+        },
+        "shutdown": {
+          "type": "string",
+          "title": "Shutdown will shutdown the workflow according to its ShutdownStrategy"
         }
       },
       "description": "WorkflowSpec is the specification of a Workflow."
@@ -1419,6 +1662,21 @@
         "outputs": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Outputs",
           "title": "Outputs captures output values and artifact locations produced by the workflow via global outputs"
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowCondition"
+          },
+          "title": "Conditions is a list of conditions the Workflow may have"
+        },
+        "resourcesDuration": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          },
+          "title": "ResourcesDuration is the total for the workflow"
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"
@@ -3541,6 +3799,24 @@
         }
       },
       "description": "WindowsSecurityContextOptions contain Windows-specific options and credentials."
+    },
+    "k8s.io.api.policy.v1beta1.PodDisruptionBudgetSpec": {
+      "type": "object",
+      "properties": {
+        "minAvailable": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.util.intstr.IntOrString",
+          "title": "An eviction is allowed if at least \"minAvailable\" pods selected by\n\"selector\" will still be available after the eviction, i.e. even in the\nabsence of the evicted pod.  So for example you can prevent all voluntary\nevictions by specifying \"100%\".\n+optional"
+        },
+        "selector": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector",
+          "title": "Label query over pods whose evictions are managed by the disruption\nbudget.\n+optional"
+        },
+        "maxUnavailable": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.util.intstr.IntOrString",
+          "title": "An eviction is allowed if at most \"maxUnavailable\" pods selected by\n\"selector\" are unavailable after the eviction, i.e. even in absence of\nthe evicted pod. For example, one can prevent all voluntary evictions\nby specifying 0. This is a mutually exclusive setting with \"minAvailable\".\n+optional"
+        }
+      },
+      "description": "PodDisruptionBudgetSpec is a description of a PodDisruptionBudget."
     },
     "k8s.io.apimachinery.pkg.api.resource.Quantity": {
       "type": "object",

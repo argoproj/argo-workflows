@@ -6,10 +6,11 @@ import (
 	"hash/fnv"
 	"reflect"
 	"strings"
+	"time"
 
 	apiv1 "k8s.io/api/core/v1"
+	policyv1beta "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // TemplateType is the type of a template
@@ -64,28 +65,6 @@ const (
 	PodGCOnWorkflowCompletion PodGCStrategy = "OnWorkflowCompletion"
 	PodGCOnWorkflowSuccess    PodGCStrategy = "OnWorkflowSuccess"
 )
-
-// TemplateGetter is an interface to get templates.
-type TemplateGetter interface {
-	GetNamespace() string
-	GetName() string
-	GroupVersionKind() schema.GroupVersionKind
-	GetTemplateByName(name string) *Template
-	GetTemplateScope() string
-}
-
-// TemplateHolder is an interface for holders of templates.
-type TemplateHolder interface {
-	GetTemplateName() string
-	GetTemplateRef() *TemplateRef
-	IsResolvable() bool
-}
-
-// TemplateStorage is an interface of template storage getter and setter.
-type TemplateStorage interface {
-	GetStoredTemplate(templateScope string, holder TemplateHolder) *Template
-	SetStoredTemplate(templateScope string, holder TemplateHolder, tmpl *Template) (bool, error)
-}
 
 // Workflow is the definition of a workflow resource
 // +genclient
@@ -145,8 +124,8 @@ type WorkflowSpec struct {
 	// +patchMergeKey=name
 	Templates []Template `json:"templates" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,1,opt,name=templates"`
 
-	// Entrypoint is a template reference to the starting point of the workflow
-	Entrypoint string `json:"entrypoint" protobuf:"bytes,2,opt,name=entrypoint"`
+	// Entrypoint is a template reference to the starting point of the workflow.
+	Entrypoint string `json:"entrypoint,omitempty" protobuf:"bytes,2,opt,name=entrypoint"`
 
 	// Arguments contain the parameters and artifacts sent to the workflow entrypoint
 	// Parameters are referencable globally using the 'workflow' variable prefix.
@@ -237,8 +216,7 @@ type WorkflowSpec struct {
 	// TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
 	// Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be
 	// deleted after the time to live expires. If this field is unset,
-	// the controller config map will hold the default values
-	// Update
+	// the controller config map will hold the default values.
 	TTLStrategy *TTLStrategy `json:"ttlStrategy,omitempty" protobuf:"bytes,30,opt,name=ttlStrategy"`
 
 	// Optional duration in seconds relative to the workflow start time which the workflow is
@@ -276,7 +254,26 @@ type WorkflowSpec struct {
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,27,opt,name=podSpecPatch"`
+
+	//PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.
+	//Controller will automatically add the selector with workflow name, if selector is empty.
+	//Optional: Defaults to empty.
+	// +optional
+	PodDisruptionBudget *policyv1beta.PodDisruptionBudgetSpec `json:"podDisruptionBudget,omitempty" protobuf:"bytes,31,opt,name=podDisruptionBudget"`
+
+	// Metrics are a list of metrics emitted from this Workflow
+	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,32,opt,name=metrics"`
+
+	// Shutdown will shutdown the workflow according to its ShutdownStrategy
+	Shutdown ShutdownStrategy `json:"shutdown,omitempty" protobuf:"bytes,33,opt,name=shutdown,casttype=ShutdownStrategy"`
 }
+
+type ShutdownStrategy string
+
+const (
+	ShutdownStrategyTerminate ShutdownStrategy = "Terminate"
+	ShutdownStrategyStop      ShutdownStrategy = "Stop"
+)
 
 type ParallelSteps struct {
 	Steps []WorkflowStep `protobuf:"bytes,1,rep,name=steps"`
@@ -316,7 +313,6 @@ func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -334,9 +330,15 @@ type Template struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Template is the name of the template which is used as the base of this template.
+	// DEPRECATED: This field is not used.
 	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
+	// Arguments hold arguments to the template.
+	// DEPRECATED: This field is not used.
+	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
+
 	// TemplateRef is the reference to the template resource which is used as the base of this template.
+	// DEPRECATED: This field is not used.
 	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,4,opt,name=templateRef"`
 
 	// Inputs describe what inputs parameters and artifacts are supplied to this template
@@ -452,10 +454,17 @@ type Template struct {
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,31,opt,name=podSpecPatch"`
+
+	// ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission
+	ResubmitPendingPods *bool `json:"resubmitPendingPods,omitempty" protobuf:"varint,34,opt,name=resubmitPendingPods"`
+
+	// Metrics are a list of metrics emitted from this template
+	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,35,opt,name=metrics"`
 }
 
 var _ TemplateHolder = &Template{}
 
+// DEPRECATED: Templates should not be used at TemplateHolders
 func (tmpl *Template) GetTemplateName() string {
 	if tmpl.Template != "" {
 		return tmpl.Template
@@ -464,10 +473,12 @@ func (tmpl *Template) GetTemplateName() string {
 	}
 }
 
+// DEPRECATED: Templates should not be used at TemplateHolders
 func (tmpl *Template) GetTemplateRef() *TemplateRef {
 	return tmpl.TemplateRef
 }
 
+// DEPRECATED: Templates should not be used at TemplateHolders
 func (tmpl *Template) IsResolvable() bool {
 	return tmpl.Template != "" || tmpl.TemplateRef != nil
 }
@@ -507,6 +518,10 @@ type Inputs struct {
 	Artifacts Artifacts `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,opt,name=artifacts"`
 }
 
+func (in Inputs) IsEmpty() bool {
+	return len(in.Parameters) == 0 && len(in.Artifacts) == 0
+}
+
 // Pod metdata
 type Metadata struct {
 	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,1,opt,name=annotations"`
@@ -519,6 +534,7 @@ type Parameter struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Default is the default value to use for an input parameter if a value was not supplied
+	// DEPRECATED: This field is not used
 	Default *string `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
 
 	// Value is the literal value to use for the parameter.
@@ -531,6 +547,39 @@ type Parameter struct {
 	// GlobalName exports an output parameter to the global scope, making it available as
 	// '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,5,opt,name=globalName"`
+}
+
+func (p *Parameter) UnmarshalJSON(value []byte) error {
+	var candidate map[string]interface{}
+	err := json.Unmarshal(value, &candidate)
+	if err != nil {
+		return err
+	}
+	if val, ok := candidate["name"]; ok {
+		p.Name = fmt.Sprint(val)
+	}
+	if val, ok := candidate["default"]; ok {
+		stringVal := fmt.Sprint(val)
+		p.Default = &stringVal
+	}
+	if val, ok := candidate["value"]; ok {
+		stringVal := fmt.Sprint(val)
+		p.Value = &stringVal
+	}
+	if val, ok := candidate["valueFrom"]; ok {
+		strVal, err := json.Marshal(val)
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(strVal, &p.ValueFrom)
+		if err != nil {
+			return err
+		}
+	}
+	if val, ok := candidate["globalName"]; ok {
+		p.GlobalName = fmt.Sprint(val)
+	}
+	return nil
 }
 
 // ValueFrom describes a location in which to obtain the value to a parameter
@@ -547,6 +596,9 @@ type ValueFrom struct {
 	// Parameter reference to a step or dag task in which to retrieve an output parameter value from
 	// (e.g. '{{steps.mystep.outputs.myparam}}')
 	Parameter string `json:"parameter,omitempty" protobuf:"bytes,4,opt,name=parameter"`
+
+	// Default specifies a value to be used if retrieving the value from the specified source fails
+	Default string `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 }
 
 // Artifact indicates an artifact to place at a specified path
@@ -590,7 +642,11 @@ type ArchiveStrategy struct {
 }
 
 // TarStrategy will tar and gzip the file or directory when saving
-type TarStrategy struct{}
+type TarStrategy struct {
+	// CompressionLevel specifies the gzip compression level to use for the artifact.
+	// Defaults to gzip.DefaultCompression.
+	CompressionLevel *int32 `json:"compressionLevel,omitempty" protobuf:"varint,1,opt,name=compressionLevel"`
+}
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
 // files. Note that if the artifact is a directory, the artifact driver must support the ability to
@@ -622,6 +678,12 @@ type ArtifactLocation struct {
 
 	// Raw contains raw artifact location details
 	Raw *RawArtifact `json:"raw,omitempty" protobuf:"bytes,7,opt,name=raw"`
+
+	// OSS contains OSS artifact location details
+	OSS *OSSArtifact `json:"oss,omitempty" protobuf:"bytes,8,opt,name=oss"`
+
+	// GCS contains GCS artifact location details
+	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 }
 
 type ArtifactRepositoryRef struct {
@@ -741,6 +803,8 @@ type TemplateRef struct {
 	// RuntimeResolution skips validation at creation time.
 	// By enabling this option, you can create the referred workflow template before the actual runtime.
 	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
+	// ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+	ClusterScope bool `json:"clusterscope,omitempty" protobuf:"varint,4,opt,name=clusterscope"`
 }
 
 type ArgumentsProvider interface {
@@ -759,6 +823,10 @@ type Arguments struct {
 	// +patchStrategy=merge
 	// +patchMergeKey=name
 	Artifacts Artifacts `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
+}
+
+func (a Arguments) IsEmpty() bool {
+	return len(a.Parameters) == 0 && len(a.Artifacts) == 0
 }
 
 var _ ArgumentsProvider = &Arguments{}
@@ -827,6 +895,12 @@ type WorkflowStatus struct {
 
 	// Outputs captures output values and artifact locations produced by the workflow via global outputs
 	Outputs *Outputs `json:"outputs,omitempty" protobuf:"bytes,8,opt,name=outputs"`
+
+	// Conditions is a list of conditions the Workflow may have
+	Conditions WorkflowConditions `json:"conditions,omitempty" protobuf:"bytes,13,rep,name=conditions"`
+
+	// ResourcesDuration is the total for the workflow
+	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -865,6 +939,91 @@ type RetryStrategy struct {
 
 	// Backoff is a backoff strategy
 	Backoff *Backoff `json:"backoff,omitempty" protobuf:"bytes,3,opt,name=backoff,casttype=Backoff"`
+}
+
+// The amount of requested resource * the duration that request was used.
+// This is represented as duration in seconds, so can be converted to and from
+// duration (with loss of precision).
+type ResourceDuration int64
+
+func NewResourceDuration(d time.Duration) ResourceDuration {
+	return ResourceDuration(d.Seconds())
+}
+
+func (in ResourceDuration) Duration() time.Duration {
+	return time.Duration(in) * time.Second
+}
+
+func (in ResourceDuration) String() string {
+	return in.Duration().String()
+}
+
+// This contains each duration by request requested.
+// e.g. 100m CPU * 1h, 1Gi memory * 1h
+type ResourcesDuration map[apiv1.ResourceName]ResourceDuration
+
+func (in ResourcesDuration) Add(o ResourcesDuration) ResourcesDuration {
+	for n, d := range o {
+		in[n] += d
+	}
+	return in
+}
+
+func (in ResourcesDuration) String() string {
+	var parts []string
+	for n, d := range in {
+		parts = append(parts, fmt.Sprintf("%v*%s", d, n))
+	}
+	return strings.Join(parts, ",")
+}
+
+func (in ResourcesDuration) IsZero() bool {
+	return len(in) == 0
+}
+
+type WorkflowConditions []WorkflowCondition
+
+func (wc *WorkflowConditions) UpsertCondition(condition WorkflowCondition) {
+	for index, wfCondition := range *wc {
+		if wfCondition.Type == condition.Type {
+			(*wc)[index] = condition
+			return
+		}
+	}
+	*wc = append(*wc, condition)
+}
+
+func (wc *WorkflowConditions) UpsertConditionMessage(condition WorkflowCondition) {
+	for index, wfCondition := range *wc {
+		if wfCondition.Type == condition.Type {
+			(*wc)[index].Message += ", " + condition.Message
+			return
+		}
+	}
+	*wc = append(*wc, condition)
+}
+
+func (wc *WorkflowConditions) JoinConditions(conditions *WorkflowConditions) {
+	for _, condition := range *conditions {
+		wc.UpsertCondition(condition)
+	}
+}
+
+type WorkflowConditionType string
+
+const (
+	// WorkflowConditionCompleted is a signifies the workflow has completed
+	WorkflowConditionCompleted WorkflowConditionType = "Completed"
+	// WorkflowConditionSpecWarning is a warning on the current application spec
+	WorkflowConditionSpecWarning WorkflowConditionType = "SpecWarning"
+)
+
+type WorkflowCondition struct {
+	Type WorkflowConditionType `json:"type,omitempty" protobuf:"bytes,1,opt,name=type,casttype=WorkflowConditionType"`
+
+	Status metav1.ConditionStatus `json:"status,omitempty" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/apimachinery/pkg/apis/meta/v1.ConditionStatus"`
+
+	Message string `json:"message,omitempty" protobuf:"bytes,3,opt,name=message"`
 }
 
 // NodeStatus contains status information about an individual node in the workflow
@@ -917,6 +1076,9 @@ type NodeStatus struct {
 	// Time at which this node completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,11,opt,name=finishedAt"`
 
+	// ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
+	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,21,opt,name=resourcesDuration"`
+
 	// PodIP captures the IP of the pod for daemoned steps
 	PodIP string `json:"podIP,omitempty" protobuf:"bytes,12,opt,name=podIP"`
 
@@ -947,11 +1109,15 @@ type NodeStatus struct {
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
 }
 
-//func (n NodeStatus) String() string {
-//	return fmt.Sprintf("%s (%s)", n.Name, n.ID)
-//}
+func (n Nodes) GetResourcesDuration() ResourcesDuration {
+	i := ResourcesDuration{}
+	for _, status := range n {
+		i = i.Add(status.ResourcesDuration)
+	}
+	return i
+}
 
-func isCompletedPhase(phase NodePhase) bool {
+func (phase NodePhase) Completed() bool {
 	return phase == NodeSucceeded ||
 		phase == NodeFailed ||
 		phase == NodeError ||
@@ -959,27 +1125,40 @@ func isCompletedPhase(phase NodePhase) bool {
 }
 
 // Completed returns whether or not the workflow has completed execution
-func (ws *WorkflowStatus) Completed() bool {
-	return isCompletedPhase(ws.Phase)
+func (ws WorkflowStatus) Completed() bool {
+	return ws.Phase.Completed()
 }
 
 // Successful return whether or not the workflow has succeeded
-func (ws *WorkflowStatus) Successful() bool {
+func (ws WorkflowStatus) Successful() bool {
 	return ws.Phase == NodeSucceeded
 }
 
 // Failed return whether or not the workflow has failed
-func (ws *WorkflowStatus) Failed() bool {
+func (ws WorkflowStatus) Failed() bool {
 	return ws.Phase == NodeFailed
+}
+
+func (ws WorkflowStatus) StartTime() *metav1.Time {
+	return &ws.StartedAt
+}
+
+func (ws WorkflowStatus) FinishTime() *metav1.Time {
+	return &ws.FinishedAt
+}
+
+// Completed returns whether or not the node has completed execution
+func (n NodeStatus) Completed() bool {
+	return n.Phase.Completed() || n.IsDaemoned() && n.Phase != NodePending
 }
 
 func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
 	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
 }
 
-// Remove returns whether or not the node has completed execution
-func (n NodeStatus) Completed() bool {
-	return isCompletedPhase(n.Phase) || n.IsDaemoned() && n.Phase != NodePending
+// Pending returns whether or not the node is in pending state
+func (n NodeStatus) Pending() bool {
+	return n.Phase == NodePending
 }
 
 // IsDaemoned returns whether or not the node is deamoned
@@ -993,6 +1172,18 @@ func (n NodeStatus) IsDaemoned() bool {
 // Successful returns whether or not this node completed successfully
 func (n NodeStatus) Successful() bool {
 	return n.Phase == NodeSucceeded || n.Phase == NodeSkipped || n.IsDaemoned() && n.Phase != NodePending
+}
+
+func (n NodeStatus) Failed() bool {
+	return !n.Successful()
+}
+
+func (n NodeStatus) StartTime() *metav1.Time {
+	return &n.StartedAt
+}
+
+func (n NodeStatus) FinishTime() *metav1.Time {
+	return &n.FinishedAt
 }
 
 // CanRetry returns whether the node should be retried or not.
@@ -1042,6 +1233,9 @@ type S3Bucket struct {
 
 	// RoleARN is the Amazon Resource Name (ARN) of the role to assume.
 	RoleARN string `json:"roleARN,omitempty" protobuf:"bytes,7,opt,name=roleARN"`
+
+	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
+	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
 }
 
 // S3Artifact is the location of an S3 artifact
@@ -1184,6 +1378,55 @@ type HTTPArtifact struct {
 
 func (h *HTTPArtifact) HasLocation() bool {
 	return h != nil && h.URL != ""
+}
+
+// GCSBucket contains the access information for interfacring with a GCS bucket
+type GCSBucket struct {
+
+	// Bucket is the name of the bucket
+	Bucket string `json:"bucket" protobuf:"bytes,1,opt,name=bucket"`
+
+	// ServiceAccountKeySecret is the secret selector to the bucket's service account key
+	ServiceAccountKeySecret apiv1.SecretKeySelector `json:"serviceAccountKeySecret,omitempty" protobuf:"bytes,2,opt,name=serviceAccountKeySecret"`
+}
+
+// GCSArtifact is the location of a GCS artifact
+type GCSArtifact struct {
+	GCSBucket `json:",inline" protobuf:"bytes,1,opt,name=gCSBucket"`
+
+	// Key is the path in the bucket where the artifact resides
+	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+}
+
+func (g *GCSArtifact) HasLocation() bool {
+	return g != nil && g.Bucket != "" && g.Key != ""
+}
+
+// OSSBucket contains the access information required for interfacing with an OSS bucket
+type OSSBucket struct {
+	// Endpoint is the hostname of the bucket endpoint
+	Endpoint string `json:"endpoint" protobuf:"bytes,1,opt,name=endpoint"`
+
+	// Bucket is the name of the bucket
+	Bucket string `json:"bucket" protobuf:"bytes,2,opt,name=bucket"`
+
+	// AccessKeySecret is the secret selector to the bucket's access key
+	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret" protobuf:"bytes,3,opt,name=accessKeySecret"`
+
+	// SecretKeySecret is the secret selector to the bucket's secret key
+	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret" protobuf:"bytes,4,opt,name=secretKeySecret"`
+}
+
+// OSSArtifact is the location of an OSS artifact
+type OSSArtifact struct {
+	OSSBucket `json:",inline" protobuf:"bytes,1,opt,name=oSSBucket"`
+
+	// Key is the path in the bucket where the artifact resides
+	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+}
+
+func (o *OSSArtifact) HasLocation() bool {
+	return o != nil && o.Bucket != "" && o.Endpoint != "" && o.Key != ""
 }
 
 // ExecutorConfig holds configurations of an executor container.
@@ -1411,7 +1654,9 @@ func (a *Artifact) HasLocation() bool {
 		a.HTTP.HasLocation() ||
 		a.Artifactory.HasLocation() ||
 		a.Raw.HasLocation() ||
-		a.HDFS.HasLocation()
+		a.HDFS.HasLocation() ||
+		a.OSS.HasLocation() ||
+		a.GCS.HasLocation()
 }
 
 // GetTemplateByName retrieves a defined template by its name
@@ -1427,6 +1672,11 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 // GetTemplateScope returns the template scope of workflow.
 func (wf *Workflow) GetTemplateScope() string {
 	return ""
+}
+
+// GetAllTemplates returns the list of templates of workflow.
+func (wf *Workflow) GetAllTemplates() []Template {
+	return wf.Spec.Templates
 }
 
 // NodeID creates a deterministic node ID based on a node name
@@ -1512,4 +1762,130 @@ func (t *DAGTask) ContinuesOn(phase NodePhase) bool {
 // ContinuesOn returns whether the StepGroup should be proceeded if the task fails or errors.
 func (s *WorkflowStep) ContinuesOn(phase NodePhase) bool {
 	return continues(s.ContinueOn, phase)
+}
+
+type MetricType string
+
+const (
+	MetricTypeGauge     MetricType = "Gauge"
+	MetricTypeHistogram MetricType = "Histogram"
+	MetricTypeCounter   MetricType = "Counter"
+	MetricTypeUnknown   MetricType = "Unknown"
+)
+
+// Metrics are a list of metrics emitted from a Workflow/Template
+type Metrics struct {
+	// Prometheus is a list of prometheus metrics to be emitted
+	Prometheus []*Prometheus `json:"prometheus" protobuf:"bytes,1,rep,name=prometheus"`
+}
+
+// Prometheus is a prometheus metric to be emitted
+type Prometheus struct {
+	// Name is the name of the metric
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+	// Labels is a list of metric labels
+	Labels []*MetricLabel `json:"labels" protobuf:"bytes,2,rep,name=labels"`
+	// Help is a string that describes the metric
+	Help string `json:"help" protobuf:"bytes,3,opt,name=help"`
+	// When is a conditional statement that decides when to emit the metric
+	When string `json:"when" protobuf:"bytes,4,opt,name=when"`
+	// Gauge is a gauge metric
+	Gauge *Gauge `json:"gauge" protobuf:"bytes,5,opt,name=gauge"`
+	// Histogram is a histogram metric
+	Histogram *Histogram `json:"histogram" protobuf:"bytes,6,opt,name=histogram"`
+	// Counter is a counter metric
+	Counter *Counter `json:"counter" protobuf:"bytes,7,opt,name=counter"`
+}
+
+func (p *Prometheus) GetMetricLabels() map[string]string {
+	labels := make(map[string]string)
+	for _, label := range p.Labels {
+		labels[label.Key] = label.Value
+	}
+	return labels
+}
+
+func (p *Prometheus) GetMetricType() MetricType {
+	if p.Gauge != nil {
+		return MetricTypeGauge
+	}
+	if p.Histogram != nil {
+		return MetricTypeHistogram
+	}
+	if p.Counter != nil {
+		return MetricTypeCounter
+	}
+	return MetricTypeUnknown
+}
+
+func (p *Prometheus) GetValueString() string {
+	switch p.GetMetricType() {
+	case MetricTypeGauge:
+		return p.Gauge.Value
+	case MetricTypeCounter:
+		return p.Counter.Value
+	case MetricTypeHistogram:
+		return p.Histogram.Value
+	default:
+		return ""
+	}
+}
+
+func (p *Prometheus) SetValueString(val string) {
+	switch p.GetMetricType() {
+	case MetricTypeGauge:
+		p.Gauge.Value = val
+	case MetricTypeCounter:
+		p.Counter.Value = val
+	case MetricTypeHistogram:
+		p.Histogram.Value = val
+	}
+}
+
+func (p *Prometheus) GetDesc() string {
+	// This serves as a hash for the metric
+	// TODO: Make sure this is what we want to use as the hash
+	desc := p.Name + "{"
+	for key, val := range p.GetMetricLabels() {
+		desc += key + "=" + val + ","
+	}
+	if p.Histogram != nil {
+		for _, bucket := range p.Histogram.Buckets {
+			desc += "bucket=" + fmt.Sprint(bucket) + ","
+		}
+	}
+	desc += "}"
+	return desc
+}
+
+func (p *Prometheus) IsRealtime() bool {
+	return p.GetMetricType() == MetricTypeGauge && p.Gauge.Realtime != nil && *p.Gauge.Realtime
+}
+
+// MetricLabel is a single label for a prometheus metric
+type MetricLabel struct {
+	Key   string `json:"key" protobuf:"bytes,1,opt,name=key"`
+	Value string `json:"value" protobuf:"bytes,2,opt,name=value"`
+}
+
+// Gauge is a Gauge prometheus metric
+type Gauge struct {
+	// Value is the value of the metric
+	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
+	// Realtime emits this metric in real time if applicable
+	Realtime *bool `json:"realtime" protobuf:"varint,2,opt,name=realtime"`
+}
+
+// Histogram is a Histogram prometheus metric
+type Histogram struct {
+	// Value is the value of the metric
+	Value string `json:"value" protobuf:"bytes,3,opt,name=value"`
+	// Buckets is a list of bucket divisors for the histogram
+	Buckets []float64 `json:"buckets" protobuf:"fixed64,4,rep,name=buckets"`
+}
+
+// Counter is a Counter prometheus metric
+type Counter struct {
+	// Value is the value of the metric
+	Value string `json:"value" protobuf:"bytes,1,opt,name=value"`
 }

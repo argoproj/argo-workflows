@@ -30,6 +30,7 @@ const wf1 = `
         "generateName": "hello-world-",
         "generation": 5,
         "labels": {
+            "workflows.argoproj.io/controller-instanceid": "testinstanceid001",
             "workflows.argoproj.io/completed": "true",
             "workflows.argoproj.io/phase": "Succeeded"
         },
@@ -91,6 +92,7 @@ const wf2 = `
         "generateName": "hello-world-",
         "generation": 5,
         "labels": {
+            "workflows.argoproj.io/controller-instanceid": "testinstanceid001",
             "workflows.argoproj.io/completed": "true",
             "workflows.argoproj.io/phase": "Succeeded"
         },
@@ -152,6 +154,7 @@ const wf3 = `
         "generateName": "hello-world-",
         "generation": 5,
         "labels": {
+            "workflows.argoproj.io/controller-instanceid": "testinstanceid001",
             "workflows.argoproj.io/completed": "true",
             "workflows.argoproj.io/phase": "Succeeded"
         },
@@ -213,6 +216,7 @@ const wf4 = `
         "generateName": "hello-world-",
         "generation": 5,
         "labels": {
+            "workflows.argoproj.io/controller-instanceid": "testinstanceid001",
             "workflows.argoproj.io/completed": "true",
             "workflows.argoproj.io/phase": "Succeeded"
         },
@@ -274,6 +278,7 @@ const wf5 = `
         "generateName": "hello-world-",
         "generation": 5,
         "labels": {
+            "workflows.argoproj.io/controller-instanceid": "testinstanceid001",
             "workflows.argoproj.io/completed": "false",
             "workflows.argoproj.io/phase": "Running"
         },
@@ -334,7 +339,10 @@ const workflow = `
     "apiVersion": "argoproj.io/v1alpha1",
     "kind": "Workflow",
     "metadata": {
-      "generateName": "hello-world-"
+	  "generateName": "hello-world-",
+	  "labels": {
+        "workflows.argoproj.io/controller-instanceid": "testinstanceid001"
+	  }
     },
     "spec": {
       "entrypoint": "whalesay",
@@ -356,6 +364,7 @@ const workflow = `
   }
 }
 `
+const testInstanceID = "testinstanceid001"
 
 func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 
@@ -368,7 +377,7 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
 	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
 	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.UUIDVersion]v1alpha1.Nodes{}, nil)
-	server := NewWorkflowServer(offloadNodeStatusRepo)
+	server := NewWorkflowServer(testInstanceID, offloadNodeStatusRepo)
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := v1alpha.NewSimpleClientset(&wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
@@ -528,7 +537,7 @@ func TestTerminateWorkflow(t *testing.T) {
 	}
 	wf, err = server.TerminateWorkflow(ctx, &rsmWfReq)
 	assert.NotNil(t, wf)
-	assert.Equal(t, int64(0), *wf.Spec.ActiveDeadlineSeconds)
+	assert.Equal(t, v1alpha1.ShutdownStrategyTerminate, wf.Spec.Shutdown)
 	assert.Nil(t, err)
 
 	rsmWfReq = workflowpkg.WorkflowTerminateRequest{

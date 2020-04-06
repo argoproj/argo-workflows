@@ -87,7 +87,12 @@ func (woc *wfOperationCtx) hasPodSpecPatch(tmpl *wfv1.Template) bool {
 	return woc.wf.Spec.HasPodSpecPatch() || tmpl.HasPodSpecPatch()
 }
 
-func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, includeScriptOutput bool) (*apiv1.Pod, error) {
+type createWorkflowPodOpts struct {
+	includeScriptOutput bool
+	onExitPod           bool
+}
+
+func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 	tmpl = tmpl.DeepCopy()
@@ -131,6 +136,11 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			ActiveDeadlineSeconds: activeDeadlineSeconds,
 			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
 		},
+	}
+
+	if opts.onExitPod {
+		// This pod is part of an onExit handler, label it so
+		pod.ObjectMeta.Labels[common.LabelKeyOnExit] = "true"
 	}
 
 	if woc.wf.Spec.HostNetwork != nil {
@@ -186,7 +196,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	}
 
 	addSchedulingConstraints(pod, wfSpec, tmpl)
-	woc.addMetadata(pod, tmpl, includeScriptOutput)
+	woc.addMetadata(pod, tmpl, opts.includeScriptOutput)
 
 	err = addVolumeReferences(pod, woc.volumes, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {
@@ -291,6 +301,9 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			// controller fails to persist the workflow after creating the pod.
 			woc.log.Infof("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
 			return created, nil
+		}
+		if apierr.IsForbidden(err) {
+			return nil, err
 		}
 		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
 		return nil, errors.InternalWrapError(err)
@@ -471,6 +484,9 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 	}
 	if woc.controller.Config.Executor != nil {
 		exec.Args = woc.controller.Config.Executor.Args
+		if woc.controller.Config.Executor.SecurityContext != nil {
+			exec.SecurityContext = woc.controller.Config.Executor.SecurityContext.DeepCopy()
+		}
 	}
 	if isResourcesSpecified(woc.controller.Config.Executor) {
 		exec.Resources = woc.controller.Config.Executor.Resources
@@ -732,12 +748,17 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 			// We also add the user supplied mount paths to the init container,
 			// in case the executor needs to load artifacts to this volume
 			// instead of the artifacts volume
+			tmplVolumeMounts := []apiv1.VolumeMount{}
 			if tmpl.Container != nil {
-				for _, mnt := range tmpl.Container.VolumeMounts {
-					mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)
-					initCtr.VolumeMounts = append(initCtr.VolumeMounts, mnt)
-				}
+				tmplVolumeMounts = tmpl.Container.VolumeMounts
+			} else if tmpl.Script != nil {
+				tmplVolumeMounts = tmpl.Script.Container.VolumeMounts
 			}
+			for _, mnt := range tmplVolumeMounts {
+				mnt.MountPath = filepath.Join(common.ExecutorMainFilesystemDir, mnt.MountPath)
+				initCtr.VolumeMounts = append(initCtr.VolumeMounts, mnt)
+			}
+
 			pod.Spec.InitContainers[i] = initCtr
 			break
 		}
@@ -832,7 +853,7 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 	var needLocation bool
 
 	if tmpl.ArchiveLocation != nil {
-		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil {
+		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil || tmpl.ArchiveLocation.OSS != nil || tmpl.ArchiveLocation.GCS != nil {
 			// User explicitly set the location. nothing else to do.
 			return nil
 		}
@@ -887,6 +908,30 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 			HDFSConfig: hdfsLocation.HDFSConfig,
 			Path:       hdfsLocation.PathFormat,
 			Force:      hdfsLocation.Force,
+		}
+	} else if ossLocation := woc.artifactRepository.OSS; ossLocation != nil {
+		woc.log.Debugf("Setting OSS artifact repository information")
+		artLocationKey := ossLocation.KeyFormat
+		tmpl.ArchiveLocation.OSS = &wfv1.OSSArtifact{
+			OSSBucket: wfv1.OSSBucket{
+				Endpoint:        ossLocation.Endpoint,
+				AccessKeySecret: ossLocation.AccessKeySecret,
+				SecretKeySecret: ossLocation.SecretKeySecret,
+			},
+			Key: artLocationKey,
+		}
+	} else if gcsLocation := woc.artifactRepository.GCS; gcsLocation != nil {
+		woc.log.Debugf("Setting GCS artifact repository information")
+		artLocationKey := gcsLocation.KeyFormat
+		if artLocationKey == "" {
+			artLocationKey = common.DefaultArchivePattern
+		}
+		tmpl.ArchiveLocation.GCS = &wfv1.GCSArtifact{
+			GCSBucket: wfv1.GCSBucket{
+				Bucket:                  gcsLocation.Bucket,
+				ServiceAccountKeySecret: gcsLocation.ServiceAccountKeySecret,
+			},
+			Key: artLocationKey,
 		}
 	} else {
 		return errors.Errorf(errors.CodeBadRequest, "controller is not configured with a default archive location")
@@ -1078,6 +1123,11 @@ func createArchiveLocationSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Vo
 		createSecretVal(volMap, gitRepo.UsernameSecret, uniqueKeyMap)
 		createSecretVal(volMap, gitRepo.PasswordSecret, uniqueKeyMap)
 		createSecretVal(volMap, gitRepo.SSHPrivateKeySecret, uniqueKeyMap)
+	} else if ossRepo := tmpl.ArchiveLocation.OSS; ossRepo != nil {
+		createSecretVal(volMap, &ossRepo.AccessKeySecret, uniqueKeyMap)
+		createSecretVal(volMap, &ossRepo.SecretKeySecret, uniqueKeyMap)
+	} else if gcsRepo := tmpl.ArchiveLocation.GCS; gcsRepo != nil {
+		createSecretVal(volMap, &gcsRepo.ServiceAccountKeySecret, uniqueKeyMap)
 	}
 }
 
@@ -1095,6 +1145,11 @@ func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMa
 	} else if art.HDFS != nil {
 		createSecretVal(volMap, art.HDFS.KrbCCacheSecret, keyMap)
 		createSecretVal(volMap, art.HDFS.KrbKeytabSecret, keyMap)
+	} else if art.OSS != nil {
+		createSecretVal(volMap, &art.OSS.AccessKeySecret, keyMap)
+		createSecretVal(volMap, &art.OSS.SecretKeySecret, keyMap)
+	} else if art.GCS != nil {
+		createSecretVal(volMap, &art.GCS.ServiceAccountKeySecret, keyMap)
 	}
 }
 
