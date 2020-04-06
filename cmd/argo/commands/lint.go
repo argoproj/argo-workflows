@@ -5,13 +5,13 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	"github.com/argoproj/argo/workflow/validate"
-	"github.com/argoproj/pkg/errors"
 )
 
 func NewLintCommand() *cobra.Command {
@@ -47,6 +47,11 @@ func NewLintCommand() *cobra.Command {
 				errors.CheckError(err)
 				if stat.IsDir() {
 					_ = filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
+						// If there was an error with the walk, return
+						if err != nil {
+							return err
+						}
+
 						fileExt := filepath.Ext(info.Name())
 						switch fileExt {
 						case ".yaml", ".yml", ".json":
@@ -67,11 +72,8 @@ func NewLintCommand() *cobra.Command {
 						log.Warn(err)
 					}
 				}
-				err = nil
 			}
-			if invalidWfErr != nil {
-				errors.CheckError(invalidWfErr)
-			}
+			errors.CheckError(invalidWfErr)
 			fmt.Printf("Workflow manifests validated\n")
 		},
 	}
