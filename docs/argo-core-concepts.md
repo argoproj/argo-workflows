@@ -144,5 +144,3 @@ In this example `A` runs first. Once it is completed, `B` and `C` will run in pa
         dependencies: [B, C]
         template: echo
 ```
-
-## Running Workflows
