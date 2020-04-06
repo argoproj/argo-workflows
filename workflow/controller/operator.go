@@ -1199,7 +1199,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 		}
 		pvc, err := pvcClient.Create(&pvcTmpl)
 		if err != nil && apierr.IsAlreadyExists(err) {
-			woc.log.Infof("%s pvc has already exists. Workflow is re-using it", pvcTmpl.Name)
+			woc.log.Infof("%s pvc already exists. Workflow is re-using it", pvcTmpl.Name)
 			pvc, err = pvcClient.Get(pvcTmpl.Name, metav1.GetOptions{})
 			if err != nil {
 				return err
@@ -1213,7 +1213,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 				}
 			}
 			if !hasOwnerReference {
-				return errors.New(errors.CodeForbidden, "%s pvc has already exists with different ownerreference")
+				return errors.Errorf(errors.CodeForbidden, "%s pvc already exists with different ownerreference", pvcTmpl.Name)
 			}
 		}
 

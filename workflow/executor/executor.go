@@ -128,7 +128,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 				log.Warnf("Ignoring optional artifact '%s' which was not supplied", art.Name)
 				continue
 			} else {
-				return errors.New("required artifact %s not supplied", art.Name)
+				return errors.Errorf("", "required artifact %s not supplied", art.Name)
 			}
 		}
 		artDriver, err := we.InitDriver(&art)
