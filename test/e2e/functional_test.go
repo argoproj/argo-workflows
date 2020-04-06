@@ -77,6 +77,78 @@ spec:
 		})
 }
 
+func (s *FunctionalSuite) TestContinueOnFailDag() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: continue-on-failed-dag
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: workflow-ignore
+  parallelism: 2
+  templates:
+    - name: workflow-ignore
+      dag:
+        failFast: false
+        tasks:
+          - name: A
+            template: whalesay
+          - name: B
+            template: boom
+            continueOn:
+              failed: true
+            dependencies:
+              - A
+          - name: C
+            template: whalesay
+            dependencies:
+              - A
+          - name: D
+            template: whalesay
+            dependencies:
+              - B
+              - C
+
+    - name: boom
+      dag:
+        tasks:
+          - name: B-1
+            template: whalesplosion
+
+    - name: whalesay
+      container:
+        imagePullPolicy: IfNotPresent
+        image: docker/whalesay:latest
+
+    - name: whalesplosion
+      container:
+        imagePullPolicy: IfNotPresent
+        image: docker/whalesay:latest
+        command: ["sh", "-c", "sleep 10; exit 1"]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Len(t, status.Nodes, 6)
+
+			bStatus := status.Nodes.FindByDisplayName("B")
+			if assert.NotNil(t, bStatus) {
+				assert.Equal(t, wfv1.NodeFailed, bStatus.Phase)
+			}
+
+			dStatus := status.Nodes.FindByDisplayName("D")
+			if assert.NotNil(t, dStatus) {
+				assert.Equal(t, wfv1.NodeSucceeded, dStatus.Phase)
+			}
+		})
+}
+
 func (s *FunctionalSuite) TestFastFailOnPodTermination() {
 	// TODO: Test fails due to using a service account with insufficient permissions, skipping for now
 	// pods is forbidden: User "system:serviceaccount:argo:default" cannot list resource "pods" in API group "" in the namespace "argo"
