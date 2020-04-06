@@ -87,6 +87,7 @@ func (t *Then) expectAuditEvents(block func(*testing.T, []apiv1.Event)) *Then {
 	}
 	var events []apiv1.Event
 	for _, e := range eventList.Items {
+		t.diagnostics.Log(log.Fields{"event": e}, "Events")
 		if e.Namespace == Namespace && e.InvolvedObject.Kind == workflow.WorkflowKind {
 			events = append(events, e)
 		}
