@@ -1,14 +1,16 @@
 package fixtures
 
 import (
+	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 
-	executil "github.com/argoproj/pkg/exec"
 	log "github.com/sirupsen/logrus"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 )
@@ -17,13 +19,31 @@ func runCli(args []string) (string, error) {
 	runArgs := append([]string{"-n", Namespace}, args...)
 	cmd := exec.Command("../../dist/argo", runArgs...)
 	cmd.Env = os.Environ()
-	output, err := executil.RunCommandExt(cmd, executil.CmdOpts{Timeout: 30 * time.Second})
-	level := log.DebugLevel
+
+	// https://medium.com/@vCabbage/go-timeout-commands-with-os-exec-commandcontext-ba0c861ed738
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
+	cmd.Stderr = &buf
+	err := cmd.Start()
 	if err != nil {
-		level = log.ErrorLevel
+		return "", err
 	}
-	log.WithFields(log.Fields{"args": args, "output": output, "err": err}).Log(level, "Run CLI")
-	return output, err
+
+	done := make(chan error)
+	go func() { done <- cmd.Wait() }()
+
+	timeout := time.After(20 * time.Second)
+
+	select {
+	case <-timeout:
+		_ = cmd.Process.Kill()
+		return "", fmt.Errorf("timout")
+	case err := <-done:
+		// Command completed before timeout. Print output and error if it exists.
+		output := buf.String()
+		log.WithFields(log.Fields{"args": args, "output": output, "err": err}).Info("Run CLI")
+		return output, err
+	}
 }
 
 // LoadObject is used to load yaml to runtime.Object

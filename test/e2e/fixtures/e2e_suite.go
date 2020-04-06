@@ -226,6 +226,21 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 	return "", nil
 }
 
+func (s *E2ESuite) Run(name string, subtest func()) {
+	longName := s.T().Name() + "/" + name
+	log.Debug("=== RUN " + longName)
+	defer func() {
+		if s.T().Failed() {
+			log.Debug("=== FAIL " + longName)
+		} else if s.T().Skipped() {
+			log.Debug("=== SKIP " + longName)
+		} else {
+			log.Debug("=== PASS " + longName)
+		}
+	}()
+	s.Suite.Run(name, subtest)
+}
+
 func (s *E2ESuite) AfterTest(_, _ string) {
 	wfs, err := s.wfClient.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + Namespace, LabelSelector: Label})
 	s.CheckError(err)
@@ -282,7 +297,7 @@ func (s *E2ESuite) printPodDiagnostics(logCtx *log.Entry, namespace string, podN
 	logCtx.Debug("Pod manifest:")
 	s.printJSON(pod)
 	containers := append(pod.Spec.InitContainers, pod.Spec.Containers...)
-	logCtx.WithField("numContainers", len(containers)).Info()
+	logCtx.WithField("numContainers", len(containers)).Debug()
 	for _, container := range containers {
 		logCtx = logCtx.WithFields(log.Fields{"container": container.Name, "image": container.Image, "pod": pod.Name})
 		s.printPodLogs(logCtx, pod.Namespace, pod.Name, container.Name)
@@ -296,7 +311,7 @@ func (s *E2ESuite) printPodLogs(logCtx *log.Entry, namespace, pod, container str
 		return
 	}
 	defer func() { _ = stream.Close() }()
-	logCtx.Info("Container logs:")
+	logCtx.Debug("Container logs:")
 	scanner := bufio.NewScanner(stream)
 	log.Debug("---")
 	for scanner.Scan() {

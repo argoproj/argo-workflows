@@ -386,14 +386,14 @@ func (s *CLISuite) TestWorkflowLint() {
 	})
 	s.Run("LintFileEmptyParamDAG", func() {
 		s.Given().RunCli([]string{"lint", "expectedfailures/empty-parameter-dag.yaml"}, func(t *testing.T, output string, err error) {
-			if assert.Error(t, err) {
+			if assert.EqualError(t, err, "exit status 1") {
 				assert.Contains(t, output, "templates.abc.tasks.a templates.whalesay inputs.parameters.message was not supplied")
 			}
 		})
 	})
 	s.Run("LintFileEmptyParamSteps", func() {
 		s.Given().RunCli([]string{"lint", "expectedfailures/empty-parameter-steps.yaml"}, func(t *testing.T, output string, err error) {
-			if assert.Error(t, err) {
+			if assert.EqualError(t, err, "exit status 1") {
 				assert.Contains(t, output, "templates.abc.steps[0].a templates.whalesay inputs.parameters.message was not supplied")
 			}
 		})
@@ -509,7 +509,7 @@ func (s *CLISuite) TestTemplate() {
 	})
 	s.Run("Get", func() {
 		s.Given().RunCli([]string{"template", "get", "not-found"}, func(t *testing.T, output string, err error) {
-			if assert.Error(t, err) {
+			if assert.EqualError(t, err, "exit status 1") {
 				assert.Contains(t, output, `"not-found" not found`)
 
 			}
@@ -620,8 +620,9 @@ func (s *CLISuite) TestCron() {
 	})
 	s.Run("Get", func() {
 		s.Given().RunCli([]string{"cron", "get", "not-found"}, func(t *testing.T, output string, err error) {
-			if assert.Error(t, err) {
+			if assert.EqualError(t, err, "exit status 1") {
 				assert.Contains(t, output, `\"not-found\" not found`)
+
 			}
 		}).RunCli([]string{"cron", "get", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {

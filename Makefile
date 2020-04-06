@@ -324,7 +324,7 @@ endif
 clean-images:
 ifeq ($(K3D),true)
 	# Force import to K3D
-	find dist -type f -name '*-image' -mtime +5m | xargs rm -f
+	find dist -type f -name '*-image' -mtime +10m | xargs rm -f
 endif
 
 .PHONY: test-images
