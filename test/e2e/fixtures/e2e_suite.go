@@ -3,7 +3,7 @@ package fixtures
 import (
 	"bufio"
 	"encoding/base64"
-	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -36,7 +36,6 @@ func init() {
 
 type E2ESuite struct {
 	suite.Suite
-	Diagnostics       *Diagnostics
 	Persistence       *Persistence
 	RestConfig        *rest.Config
 	wfClient          v1alpha1.WorkflowInterface
@@ -49,14 +48,9 @@ type E2ESuite struct {
 func (s *E2ESuite) SetupSuite() {
 	var err error
 	s.RestConfig, err = kubeconfig.DefaultRestConfig()
-	if err != nil {
-		panic(err)
-	}
+	s.CheckError(err)
 	s.KubeClient, err = kubernetes.NewForConfig(s.RestConfig)
-	if err != nil {
-		panic(err)
-	}
-
+	s.CheckError(err)
 	s.wfClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().Workflows(Namespace)
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
@@ -68,24 +62,24 @@ func (s *E2ESuite) TearDownSuite() {
 	s.Persistence.Close()
 }
 
-func (s *E2ESuite) BeforeTest(_, _ string) {
-	s.Diagnostics = &Diagnostics{}
-
+func (s *E2ESuite) BeforeTest(suiteName, testName string) {
+	name := "/tmp/" + suiteName + "-" + testName + ".log"
+	file, err := os.Create(name)
+	s.CheckError(err)
+	err = diagnostics.setFile(file)
+	s.CheckError(err)
+	log.Infof("logging debug diagnostics to file://%s", name)
 	s.DeleteResources(Label)
 }
 
 func (s *E2ESuite) DeleteResources(label string) {
 	// delete all cron workflows
 	cronList, err := s.cronClient.List(metav1.ListOptions{LabelSelector: label})
-	if err != nil {
-		panic(err)
-	}
+	s.CheckError(err)
 	for _, cronWf := range cronList.Items {
-		log.WithFields(log.Fields{"cronWorkflow": cronWf.Name}).Info("Deleting cron workflow")
+		log.WithFields(log.Fields{"cronWorkflow": cronWf.Name}).Debug("Deleting cron workflow")
 		err = s.cronClient.Delete(cronWf.Name, nil)
-		if err != nil {
-			panic(err)
-		}
+		s.CheckError(err)
 	}
 
 	// It is possible for a pod to become orphaned. This means that it's parent workflow
@@ -97,16 +91,12 @@ func (s *E2ESuite) DeleteResources(label string) {
 	isTestWf := make(map[string]bool)
 	{
 		list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: label})
-		if err != nil {
-			panic(err)
-		}
+		s.CheckError(err)
 		for _, wf := range list.Items {
 			isTestWf[wf.Name] = false
 			if s.Persistence.IsEnabled() && wf.Status.IsOffloadNodeStatus() {
 				err := s.Persistence.offloadNodeStatusRepo.Delete(string(wf.UID), wf.Status.OffloadNodeStatusVersion)
-				if err != nil {
-					panic(err)
-				}
+				s.CheckError(err)
 			}
 		}
 	}
@@ -116,18 +106,12 @@ func (s *E2ESuite) DeleteResources(label string) {
 		if s.Persistence.IsEnabled() {
 			archive := s.Persistence.workflowArchive
 			parse, err := labels.ParseToRequirements(Label)
-			if err != nil {
-				panic(err)
-			}
+			s.CheckError(err)
 			workflows, err := archive.ListWorkflows(Namespace, time.Time{}, time.Time{}, parse, 0, 0)
-			if err != nil {
-				panic(err)
-			}
+			s.CheckError(err)
 			for _, workflow := range workflows {
 				err := archive.DeleteWorkflow(string(workflow.UID))
-				if err != nil {
-					panic(err)
-				}
+				s.CheckError(err)
 			}
 		}
 	}
@@ -135,23 +119,19 @@ func (s *E2ESuite) DeleteResources(label string) {
 	// delete all workflows
 	{
 		list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: Label})
-		if err != nil {
-			panic(err)
-		}
+		s.CheckError(err)
 		for _, wf := range list.Items {
 			logCtx := log.WithFields(log.Fields{"workflow": wf.Name})
-			logCtx.Infof("Deleting workflow")
+			logCtx.Debug("Deleting workflow")
 			err = s.wfClient.Delete(wf.Name, &metav1.DeleteOptions{})
-			if err != nil {
-				panic(err)
-			}
+			s.CheckError(err)
 			isTestWf[wf.Name] = true
 			for {
 				_, err := s.wfClient.Get(wf.Name, metav1.GetOptions{})
 				if errors.IsNotFound(err) {
 					break
 				}
-				logCtx.Info("Waiting for workflow to be deleted")
+				logCtx.Debug("Waiting for workflow to be deleted")
 				time.Sleep(1 * time.Second)
 			}
 		}
@@ -162,25 +142,23 @@ func (s *E2ESuite) DeleteResources(label string) {
 		podInterface := s.KubeClient.CoreV1().Pods(Namespace)
 		// it seems "argo delete" can leave pods behind
 		pods, err := podInterface.List(metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow"})
-		if err != nil {
-			panic(err)
-		}
+		s.CheckError(err)
 		for _, pod := range pods.Items {
 			workflow := pod.GetLabels()["workflows.argoproj.io/workflow"]
 			testPod, owned := isTestWf[workflow]
 			if testPod || !owned {
 				logCtx := log.WithFields(log.Fields{"workflow": workflow, "podName": pod.Name, "testPod": testPod, "owned": owned})
-				logCtx.Info("Deleting pod")
+				logCtx.Debug("Deleting pod")
 				err := podInterface.Delete(pod.Name, nil)
 				if !errors.IsNotFound(err) {
-					panic(err)
+					s.CheckError(err)
 				}
 				for {
 					_, err := podInterface.Get(pod.Name, metav1.GetOptions{})
 					if errors.IsNotFound(err) {
 						break
 					}
-					logCtx.Info("Waiting for pod to be deleted")
+					logCtx.Debug("Waiting for pod to be deleted")
 					time.Sleep(1 * time.Second)
 				}
 			}
@@ -189,41 +167,36 @@ func (s *E2ESuite) DeleteResources(label string) {
 
 	// delete all workflow templates
 	wfTmpl, err := s.wfTemplateClient.List(metav1.ListOptions{LabelSelector: label})
-	if err != nil {
-		panic(err)
-	}
+	s.CheckError(err)
+
 	for _, wfTmpl := range wfTmpl.Items {
-		log.WithField("template", wfTmpl.Name).Info("Deleting workflow template")
+		log.WithField("template", wfTmpl.Name).Debug("Deleting workflow template")
 		err = s.wfTemplateClient.Delete(wfTmpl.Name, nil)
-		if err != nil {
-			panic(err)
-		}
+		s.CheckError(err)
 	}
 
 	// delete all cluster workflow templates
 	cwfTmpl, err := s.cwfTemplateClient.List(metav1.ListOptions{LabelSelector: label})
-	if err != nil {
-		panic(err)
-	}
+	s.CheckError(err)
 	for _, cwfTmpl := range cwfTmpl.Items {
-		log.WithField("template", cwfTmpl.Name).Info("Deleting cluster workflow template")
+		log.WithField("template", cwfTmpl.Name).Debug("Deleting cluster workflow template")
 		err = s.cwfTemplateClient.Delete(cwfTmpl.Name, nil)
-		if err != nil {
-			panic(err)
-		}
+		s.CheckError(err)
 	}
 
 	// Delete all resourcequotas
 	rqList, err := s.KubeClient.CoreV1().ResourceQuotas(Namespace).List(metav1.ListOptions{LabelSelector: label})
-	if err != nil {
-		panic(err)
-	}
+	s.CheckError(err)
 	for _, rq := range rqList.Items {
-		log.WithField("resourcequota", rq.Name).Info("Deleting resource quota")
+		log.WithField("resourcequota", rq.Name).Debug("Deleting resource quota")
 		err = s.KubeClient.CoreV1().ResourceQuotas(Namespace).Delete(rq.Name, nil)
-		if err != nil {
-			panic(err)
-		}
+		s.CheckError(err)
+	}
+}
+
+func (s *E2ESuite) CheckError(err error) {
+	if err != nil {
+		s.T().Fatal(err)
 	}
 }
 
@@ -254,44 +227,31 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 }
 
 func (s *E2ESuite) AfterTest(_, _ string) {
-	if s.T().Failed() {
-		s.printDiagnostics()
-	}
-}
-
-func (s *E2ESuite) printDiagnostics() {
-	s.Diagnostics.Print()
 	wfs, err := s.wfClient.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + Namespace, LabelSelector: Label})
-	if err != nil {
-		s.T().Fatal(err)
-	}
+	s.CheckError(err)
 	for _, wf := range wfs.Items {
 		s.printWorkflowDiagnostics(wf.GetName())
 	}
+	err = diagnostics.Close()
+	s.CheckError(err)
 }
 
 func (s *E2ESuite) printWorkflowDiagnostics(name string) {
 	logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": name})
 	// print logs
 	wf, err := s.wfClient.Get(name, metav1.GetOptions{})
-	if err != nil {
-		s.T().Fatal(err)
-	}
+	s.CheckError(err)
 	err = packer.DecompressWorkflow(wf)
-	if err != nil {
-		s.T().Fatal(err)
-	}
+	s.CheckError(err)
 	if wf.Status.IsOffloadNodeStatus() {
 		offloaded, err := s.Persistence.offloadNodeStatusRepo.Get(string(wf.UID), wf.Status.OffloadNodeStatusVersion)
-		if err != nil {
-			s.T().Fatal(err)
-		}
+		s.CheckError(err)
 		wf.Status.Nodes = offloaded
 	}
-	logCtx.Info("Workflow metadata:")
-	printJSON(wf.ObjectMeta)
-	logCtx.Info("Workflow status:")
-	printJSON(wf.Status)
+	logCtx.Debug("Workflow metadata:")
+	s.printJSON(wf.ObjectMeta)
+	logCtx.Debug("Workflow status:")
+	s.printJSON(wf.Status)
 	for _, node := range wf.Status.Nodes {
 		if node.Type != "Pod" {
 			continue
@@ -301,15 +261,15 @@ func (s *E2ESuite) printWorkflowDiagnostics(name string) {
 	}
 }
 
-func printJSON(obj interface{}) {
+func (s *E2ESuite) printJSON(obj interface{}) {
 	// print status
 	bytes, err := yaml.Marshal(obj)
-	if err != nil {
-		panic(err)
+	s.CheckError(err)
+	log.Debug("---")
+	for _, line := range strings.Split(string(bytes), "\n") {
+		log.Debug("  " + line)
 	}
-	fmt.Println("---")
-	fmt.Println(string(bytes))
-	fmt.Println("---")
+	log.Debug("---")
 }
 
 func (s *E2ESuite) printPodDiagnostics(logCtx *log.Entry, namespace string, podName string) {
@@ -319,8 +279,8 @@ func (s *E2ESuite) printPodDiagnostics(logCtx *log.Entry, namespace string, podN
 		logCtx.Error("Cannot get pod")
 		return
 	}
-	logCtx.Info("Pod manifest:")
-	printJSON(pod)
+	logCtx.Debug("Pod manifest:")
+	s.printJSON(pod)
 	containers := append(pod.Spec.InitContainers, pod.Spec.Containers...)
 	logCtx.WithField("numContainers", len(containers)).Info()
 	for _, container := range containers {
@@ -338,17 +298,16 @@ func (s *E2ESuite) printPodLogs(logCtx *log.Entry, namespace, pod, container str
 	defer func() { _ = stream.Close() }()
 	logCtx.Info("Container logs:")
 	scanner := bufio.NewScanner(stream)
-	fmt.Println("---")
+	log.Debug("---")
 	for scanner.Scan() {
-		fmt.Println("  " + scanner.Text())
+		log.Debug("  " + scanner.Text())
 	}
-	fmt.Println("---")
+	log.Debug("---")
 }
 
 func (s *E2ESuite) Given() *Given {
 	return &Given{
 		t:                     s.T(),
-		diagnostics:           s.Diagnostics,
 		client:                s.wfClient,
 		wfTemplateClient:      s.wfTemplateClient,
 		cwfTemplateClient:     s.cwfTemplateClient,

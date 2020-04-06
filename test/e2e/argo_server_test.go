@@ -33,9 +33,15 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
 	var err error
 	s.bearerToken, err = s.GetServiceAccountToken()
-	if err != nil {
-		panic(err)
-	}
+	s.T().Fatal()
+	s.CheckError(err)
+}
+
+type httpLogger struct {
+}
+
+func (d *httpLogger) Logf(fmt string, args ...interface{}) {
+	log.Debugf(fmt, args...)
 }
 
 func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
@@ -44,7 +50,7 @@ func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 			BaseURL:  baseUrl,
 			Reporter: httpexpect.NewRequireReporter(t),
 			Printers: []httpexpect.Printer{
-				httpexpect.NewDebugPrinter(s.Diagnostics, true),
+				httpexpect.NewDebugPrinter(&httpLogger{}, true),
 			},
 		}).
 		Builder(func(req *httpexpect.Request) {

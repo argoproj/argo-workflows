@@ -22,7 +22,6 @@ import (
 
 type When struct {
 	t                     *testing.T
-	diagnostics           *Diagnostics
 	wf                    *wfv1.Workflow
 	wfTemplates           []*wfv1.WorkflowTemplate
 	cwfTemplates          []*wfv1.ClusterWorkflowTemplate
@@ -190,7 +189,7 @@ func (w *When) DeleteWorkflow() *When {
 }
 
 func (w *When) RunCli(args []string, block func(t *testing.T, output string, err error)) *When {
-	output, err := runCli(w.diagnostics, args)
+	output, err := runCli(args)
 	block(w.t, output, err)
 	return w
 }
@@ -216,7 +215,6 @@ func (w *When) DeleteQuota() *When {
 func (w *When) Then() *Then {
 	return &Then{
 		t:                     w.t,
-		diagnostics:           w.diagnostics,
 		workflowName:          w.workflowName,
 		wfTemplateNames:       w.wfTemplateNames,
 		cronWorkflowName:      w.cronWorkflowName,
@@ -230,7 +228,6 @@ func (w *When) Then() *Then {
 func (w *When) Given() *Given {
 	return &Given{
 		t:                     w.t,
-		diagnostics:           w.diagnostics,
 		client:                w.client,
 		wfTemplateClient:      w.wfTemplateClient,
 		cwfTemplateClient:     w.cwfTemplateClient,

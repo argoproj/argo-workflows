@@ -412,20 +412,14 @@ func (s *CLISuite) TestWorkflowLint() {
 	})
 	s.Run("LintDir", func() {
 		tmp, err := ioutil.TempDir("", "")
-		if err != nil {
-			s.T().Fatal(err)
-		}
+		s.CheckError(err)
 		defer func() { _ = os.RemoveAll(tmp) }()
 		// Read all content of src to data
 		data, err := ioutil.ReadFile("smoke/basic.yaml")
-		if err != nil {
-			s.T().Fatal(err)
-		}
+		s.CheckError(err)
 		// Write data to dst
 		err = ioutil.WriteFile(filepath.Join(tmp, "my-workflow.yaml"), data, 0644)
-		if err != nil {
-			s.T().Fatal(err)
-		}
+		s.CheckError(err)
 		s.Given().
 			RunCli([]string{"lint", tmp}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {

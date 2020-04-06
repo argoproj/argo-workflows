@@ -13,12 +13,16 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
-func runCli(diagnostics *Diagnostics, args []string) (string, error) {
+func runCli(args []string) (string, error) {
 	runArgs := append([]string{"-n", Namespace}, args...)
 	cmd := exec.Command("../../dist/argo", runArgs...)
 	cmd.Env = os.Environ()
 	output, err := executil.RunCommandExt(cmd, executil.CmdOpts{Timeout: 30 * time.Second})
-	diagnostics.Log(log.Fields{"args": args, "output": output, "err": err}, "Run CLI")
+	level := log.DebugLevel
+	if err != nil {
+		level = log.ErrorLevel
+	}
+	log.WithFields(log.Fields{"args": args, "output": output, "err": err}).Log(level, "Run CLI")
 	return output, err
 }
 

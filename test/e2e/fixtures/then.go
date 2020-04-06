@@ -17,7 +17,6 @@ import (
 
 type Then struct {
 	t                     *testing.T
-	diagnostics           *Diagnostics
 	workflowName          string
 	wfTemplateNames       []string
 	cronWorkflowName      string
@@ -87,7 +86,7 @@ func (t *Then) expectAuditEvents(block func(*testing.T, []apiv1.Event)) *Then {
 	}
 	var events []apiv1.Event
 	for _, e := range eventList.Items {
-		t.diagnostics.Log(log.Fields{"event": e}, "Events")
+		log.WithFields(log.Fields{"event": e}).Debug("Events")
 		if e.Namespace == Namespace && e.InvolvedObject.Kind == workflow.WorkflowKind {
 			events = append(events, e)
 		}
@@ -109,7 +108,7 @@ func (t *Then) ExpectAuditEvent(f func(apiv1.Event) bool) *Then {
 }
 
 func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err error)) *Then {
-	output, err := runCli(t.diagnostics, args)
+	output, err := runCli(args)
 	block(t.t, output, err)
 	return t
 }
@@ -117,7 +116,6 @@ func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err
 func (t *Then) When() *When {
 	return &When{
 		t:                     t.t,
-		diagnostics:           t.diagnostics,
 		client:                t.client,
 		cronClient:            t.cronClient,
 		offloadNodeStatusRepo: t.offloadNodeStatusRepo,

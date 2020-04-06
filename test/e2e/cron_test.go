@@ -77,9 +77,7 @@ func (s *CronSuite) TestBasicTimezone() {
 	// timezone was the same as the local timezone, a little-used timezone is used.
 	testTimezone := "Pacific/Niue"
 	testLocation, err := time.LoadLocation(testTimezone)
-	if err != nil {
-		s.T().Fatal(err)
-	}
+	s.CheckError(err)
 	hour, min, _ := time.Now().In(testLocation).Clock()
 	min++
 	if min == 60 {

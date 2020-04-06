@@ -104,9 +104,15 @@ commands:
       - save_go_cache
       - store_test_results:
           path: test-results
+          when: always
       - store_artifacts:
           path: test-results
           destination: .
+          when: always
+      - store_artifacts:
+          path: /tmp/*.log
+          destination: .
+          when: always
   go_junit_report:
     steps:
       - run:
@@ -137,9 +143,11 @@ jobs:
           command: bash <(curl -s https://codecov.io/bash) -f coverage.out
       - store_test_results:
           path: test-results
+          when: always
       - store_artifacts:
           path: test-results
           destination: .
+          when: always
       - run:
           name: Lint
           command: make lint

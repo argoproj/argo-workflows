@@ -16,7 +16,6 @@ import (
 
 type Given struct {
 	t                     *testing.T
-	diagnostics           *Diagnostics
 	client                v1alpha1.WorkflowInterface
 	wfTemplateClient      v1alpha1.WorkflowTemplateInterface
 	cwfTemplateClient     v1alpha1.ClusterWorkflowTemplateInterface
@@ -156,7 +155,7 @@ func (g *Given) CronWorkflow(text string) *Given {
 }
 
 func (g *Given) RunCli(args []string, block func(t *testing.T, output string, err error)) *Given {
-	output, err := runCli(g.diagnostics, args)
+	output, err := runCli(args)
 	block(g.t, output, err)
 	return g
 }
@@ -200,7 +199,6 @@ func (g *Given) ClusterWorkflowTemplate(text string) *Given {
 func (g *Given) When() *When {
 	return &When{
 		t:                     g.t,
-		diagnostics:           g.diagnostics,
 		wf:                    g.wf,
 		wfTemplates:           g.wfTemplates,
 		cwfTemplates:          g.cwfTemplates,
