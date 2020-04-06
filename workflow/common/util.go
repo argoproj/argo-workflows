@@ -100,7 +100,7 @@ func ContainerLogStream(config *rest.Config, namespace string, pod string, conta
 	case "http":
 		u.Scheme = "ws"
 	default:
-		return nil, errors.Errorf("Malformed URL %s", u.String())
+		return nil, errors.Errorf("", "Malformed URL %s", u.String())
 	}
 
 	log.Info(u.String())
