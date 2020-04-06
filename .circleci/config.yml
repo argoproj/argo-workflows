@@ -144,7 +144,7 @@ jobs:
           name: Lint
           command: make lint
       - run:
-          name: Check nothing needs commiting
+          name: Check nothing needs committing
           command: git diff --exit-code
   e2e-no-db:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
@@ -203,6 +203,9 @@ jobs:
       - run:
           name: Lint
           command: yarn lint
+      - run:
+          name: Check nothing needs committing
+          command: git diff --exit-code
 workflows:
   version: 2
   workflow:

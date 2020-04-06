@@ -8,6 +8,7 @@ bases:
 resources:
   - workflow-role.yaml
   - workflow-default-rolebinding.yaml
+  - cluster-workflow-template-rbac.yaml
 
 patchesStrategicMerge:
   - overlays/workflow-controller-configmap.yaml

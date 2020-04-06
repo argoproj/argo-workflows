@@ -83,7 +83,10 @@ func (d *dagContext) assertBranchFinished(targetTaskNames []string) bool {
 				return d.assertBranchFinished(taskObject.Dependencies)
 			}
 		} else if !taskNode.Successful() {
-			flag = true
+			taskObject := d.getTask(targetTaskName)
+			if !taskObject.ContinuesOn(taskNode.Phase) {
+				flag = true
+			}
 		}
 
 		// In failFast situation, if node is successful, it will run to leaf node, above

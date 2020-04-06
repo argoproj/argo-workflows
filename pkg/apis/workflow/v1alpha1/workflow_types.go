@@ -637,7 +637,11 @@ type ArchiveStrategy struct {
 }
 
 // TarStrategy will tar and gzip the file or directory when saving
-type TarStrategy struct{}
+type TarStrategy struct {
+	// CompressionLevel specifies the gzip compression level to use for the artifact.
+	// Defaults to gzip.DefaultCompression.
+	CompressionLevel *int32 `json:"compressionLevel,omitempty" protobuf:"varint,1,opt,name=compressionLevel"`
+}
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
 // files. Note that if the artifact is a directory, the artifact driver must support the ability to

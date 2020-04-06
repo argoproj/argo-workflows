@@ -17,7 +17,7 @@ export interface WorkflowListItemProps {
 }
 
 function wfDuration(workflow: models.WorkflowStatus, now: moment.Moment) {
-    const endTime = workflow.finishedAt ? moment(workflow.finishedAt) : now
+    const endTime = workflow.finishedAt ? moment(workflow.finishedAt) : now;
     return endTime.diff(moment(workflow.startedAt)) / 1000;
 }
 
@@ -66,9 +66,7 @@ export const WorkflowListItem = (props: WorkflowListItemProps) => (
                         <div className='workflow-list-item__content-details-row row'>
                             <div className='columns large-4'>DURATION:</div>
                             <div className='columns large-8'>
-                                <Ticker>
-                                    {now => <Duration durationMs={wfDuration(props.workflow.status, now)} />}
-                                </Ticker>
+                                <Ticker>{now => <Duration durationMs={wfDuration(props.workflow.status, now)} />}</Ticker>
                             </div>
                         </div>
                     </div>

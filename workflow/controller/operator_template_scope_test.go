@@ -472,7 +472,7 @@ spec:
 `
 
 func TestTemplateClusterScope(t *testing.T) {
-	//t.SkipNow()
+	t.SkipNow()
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates()

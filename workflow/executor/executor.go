@@ -3,6 +3,7 @@ package executor
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -69,7 +70,7 @@ type ContainerRuntimeExecutor interface {
 	GetFileContents(containerID string, sourcePath string) (string, error)
 
 	// CopyFile copies a source file in a container to a local path
-	CopyFile(containerID string, sourcePath string, destPath string) error
+	CopyFile(containerID string, sourcePath string, destPath string, compressionLevel int) error
 
 	// GetOutputStream returns the entirety of the container output as a io.Reader
 	// Used to capture script results as an output parameter, and to archive container logs
@@ -128,7 +129,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 				log.Warnf("Ignoring optional artifact '%s' which was not supplied", art.Name)
 				continue
 			} else {
-				return errors.New("required artifact %s not supplied", art.Name)
+				return errors.Errorf("", "required artifact %s not supplied", art.Name)
 			}
 		}
 		artDriver, err := we.InitDriver(&art)
@@ -313,6 +314,14 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 			Tar: &wfv1.TarStrategy{},
 		}
 	}
+	compressionLevel := gzip.NoCompression
+	if strategy.Tar != nil {
+		if l := strategy.Tar.CompressionLevel; l != nil {
+			compressionLevel = int(*l)
+		} else {
+			compressionLevel = gzip.DefaultCompression
+		}
+	}
 
 	if !we.isBaseImagePath(art.Path) {
 		// If we get here, we are uploading an artifact from a mirrored volume mount which the wait
@@ -332,7 +341,7 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 			return "", "", errors.InternalWrapError(err)
 		}
 		w := bufio.NewWriter(f)
-		err = archive.TarGzToWriter(mountedArtPath, w)
+		err = archive.TarGzToWriter(mountedArtPath, compressionLevel, w)
 		if err != nil {
 			return "", "", err
 		}
@@ -344,7 +353,7 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 	localArtPath := filepath.Join(tempOutArtDir, fileName)
 	log.Infof("Copying %s from container base image layer to %s", art.Path, localArtPath)
 
-	err := we.RuntimeExecutor.CopyFile(mainCtrID, art.Path, localArtPath)
+	err := we.RuntimeExecutor.CopyFile(mainCtrID, art.Path, localArtPath, compressionLevel)
 	if err != nil {
 		return "", "", err
 	}

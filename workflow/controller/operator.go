@@ -336,7 +336,7 @@ func (woc *wfOperationCtx) operate() {
 		onExitNode, err = woc.executeTemplate(onExitNodeName, &wfv1.WorkflowStep{Template: woc.wf.Spec.OnExit}, tmplCtx, woc.wf.Spec.Arguments, &executeTemplateOpts{onExitTemplate: true})
 		if err != nil {
 			// the error are handled in the callee so just log it.
-			woc.log.Errorf("%s error in exit template execution: %+v", woc.wf.Name, err)
+			woc.log.Errorf("error in exit template execution: %+v", err)
 			return
 		}
 		if onExitNode == nil || !onExitNode.Completed() {
@@ -1200,7 +1200,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 		}
 		pvc, err := pvcClient.Create(&pvcTmpl)
 		if err != nil && apierr.IsAlreadyExists(err) {
-			woc.log.Infof("%s pvc has already exists. Workflow is re-using it", pvcTmpl.Name)
+			woc.log.Infof("%s pvc already exists. Workflow is re-using it", pvcTmpl.Name)
 			pvc, err = pvcClient.Get(pvcTmpl.Name, metav1.GetOptions{})
 			if err != nil {
 				return err
@@ -1214,7 +1214,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 				}
 			}
 			if !hasOwnerReference {
-				return errors.New(errors.CodeForbidden, "%s pvc has already exists with different ownerreference")
+				return errors.Errorf(errors.CodeForbidden, "%s pvc already exists with different ownerreference", pvcTmpl.Name)
 			}
 		}
 
@@ -1931,6 +1931,14 @@ func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, 
 // buildLocalScope adds all of a nodes outputs to the local scope with the given prefix, as well
 // as the global scope, if specified with a globalName
 func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *wfv1.NodeStatus) {
+	// It may be that the node is a retry node, in which case we want to get the outputs of the last node
+	// in the retry group instead of the retry node itself.
+	if node.Type == wfv1.NodeTypeRetry {
+		if lastNode, err := woc.getLastChildNode(node); err == nil {
+			node = lastNode
+		}
+	}
+
 	if node.PodIP != "" {
 		key := fmt.Sprintf("%s.ip", prefix)
 		scope.addParamToScope(key, node.PodIP)
