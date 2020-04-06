@@ -9,18 +9,33 @@ import (
 )
 
 func Test_usageCapture_Add(t *testing.T) {
-	assert.Equal(t, usageMovingAvg{corev1.ResourceList{}, 1}, usageMovingAvg{}.Add(corev1.ResourceList{}))
+	t.Run("Empty", func(t *testing.T) {
+		assert.Equal(t, usageMovingAvg{corev1.ResourceList{}, 1}, usageMovingAvg{}.Add(corev1.ResourceList{}))
+	})
 
-	one := *resource.NewQuantity(1, resource.DecimalSI)
-	two := *resource.NewQuantity(2, resource.DecimalSI)
-	six := *resource.NewQuantity(6, resource.DecimalSI)
+	zero := *resource.NewQuantity(0, resource.DecimalSI)
+	two := *resource.NewQuantity(200, resource.DecimalSI)
+	four := *resource.NewQuantity(400, resource.DecimalSI)
 
-	assert.Equal(t, usageMovingAvg{corev1.ResourceList{corev1.ResourceCPU: one}, 1},
-		usageMovingAvg{}.Add(corev1.ResourceList{corev1.ResourceCPU: one}))
+	const cpu = corev1.ResourceCPU
+	const memory = corev1.ResourceMemory
 
-	// (1 * 3 + 6) / 4 =  9 / 4 = 2
-	assert.Equal(t, usageMovingAvg{corev1.ResourceList{corev1.ResourceCPU: two}, 4},
-		usageMovingAvg{
-			xs: corev1.ResourceList{corev1.ResourceCPU: one}, n: 3,
-		}.Add(corev1.ResourceList{corev1.ResourceCPU: six}))
+	t.Run("CPUAndMemory", func(t *testing.T) {
+		assert.Equal(t, usageMovingAvg{corev1.ResourceList{cpu: two, memory: two}, 2},
+			usageMovingAvg{}.
+				Add(corev1.ResourceList{cpu: two, memory: two}).
+				Add(corev1.ResourceList{cpu: two, memory: two}),
+		)
+	})
+
+	t.Run("Complex", func(t *testing.T) {
+		// (0+200+200+400)/400 = 2
+		assert.Equal(t, usageMovingAvg{corev1.ResourceList{cpu: two}, 4},
+			usageMovingAvg{}.
+				Add(corev1.ResourceList{cpu: four}).
+				Add(corev1.ResourceList{cpu: zero}).
+				Add(corev1.ResourceList{cpu: two}).
+				Add(corev1.ResourceList{cpu: two}),
+		)
+	})
 }

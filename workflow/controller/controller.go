@@ -295,18 +295,21 @@ func (wfc *WorkflowController) usageCollector(stopCh <-chan struct{}) {
 						logCtx.WithField("err", err).Error("Failed to get pod")
 						continue
 					}
-					if exists {
-						logCtx.WithField("podMetrics", m).Debug("Capturing pod usage")
-						// TODO - lock?
-						_, ok := wfc.usageCapture[key]
-						if !ok {
-							wfc.usageCapture[key] = map[string]usageMovingAvg{}
-						}
-						for _, c := range m.Containers {
-							wfc.usageCapture[key][c.Name] = wfc.usageCapture[key][c.Name].Add(c.Usage)
-						}
-						logCtx.WithField("usageCapture", wfc.usageCapture[key]).Debug("Captured pod usage")
+					if !exists {
+						continue
 					}
+					// there is no need to check to see if the pod is running, it would not have appeared
+					// in the metrics list if that was the case
+					logCtx.WithField("podMetrics", m).Debug("Capturing pod usage")
+					// TODO - lock?
+					_, ok := wfc.usageCapture[key]
+					if !ok {
+						wfc.usageCapture[key] = map[string]usageMovingAvg{}
+					}
+					for _, c := range m.Containers {
+						wfc.usageCapture[key][c.Name] = wfc.usageCapture[key][c.Name].Add(c.Usage)
+					}
+					logCtx.WithField("usageCapture", wfc.usageCapture[key]).Debug("Captured pod usage")
 				}
 			}
 		}

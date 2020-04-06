@@ -11,7 +11,7 @@ import (
 // https://en.wikipedia.org/wiki/Moving_average#Cumulative_moving_average
 type usageMovingAvg struct {
 	xs corev1.ResourceList
-	n  int
+	n  int64
 }
 
 func (a usageMovingAvg) String() string {
@@ -23,14 +23,19 @@ func (a usageMovingAvg) String() string {
 }
 
 func (a usageMovingAvg) Add(usage corev1.ResourceList) usageMovingAvg {
-	a1 := usageMovingAvg{
-		xs: corev1.ResourceList{},
-		n:  a.n + 1,
+	n := a.n
+	a1 := usageMovingAvg{xs: a.xs, n: n + 1}
+	if a1.xs == nil {
+		a1.xs = corev1.ResourceList{}
 	}
-	for n1, x1 := range usage {
-		an0 := a.xs[n1]
-		c := resource.NewQuantity((an0.Value()*int64(a1.n-1)+x1.Value())/int64(a1.n), x1.Format)
-		a1.xs[n1] = *c
+	for name, value := range usage {
+		// (x*n+value)/(n+1)
+		tmp := a.xs[name]
+		x := tmp.Value()
+		q := resource.NewQuantity(x*n, tmp.Format)
+		q.Add(value)
+		value = *resource.NewQuantity(q.Value()/(n+1), q.Format)
+		a1.xs[name] = value
 	}
 	return a1
 }
