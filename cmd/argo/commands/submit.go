@@ -5,9 +5,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/argoproj/pkg/errors"
+	argoJson "github.com/argoproj/pkg/json"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
