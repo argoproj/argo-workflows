@@ -108,16 +108,6 @@ Time is a wrapper around time.Time which supports correctmarshaling to YAML and 
 |`nanos`|`int32`|Non-negative fractions of a second at nanosecond resolution. Negativesecond values with fractions must still have non-negative nanos valuesthat count forward in time. Must be from 0 to 999,999,999inclusive. This field may be limited in precision depending on context.|
 |`seconds`|`int64`|Represents seconds of UTC time since Unix epoch1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to9999-12-31T23:59:59Z inclusive.|
 
-## Time
-
-Time is a wrapper around time.Time which supports correctmarshaling to YAML and JSON.  Wrappers are provided for manyof the factory methods that the time package offers.
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`nanos`|`int32`|Non-negative fractions of a second at nanosecond resolution. Negativesecond values with fractions must still have non-negative nanos valuesthat count forward in time. Must be from 0 to 999,999,999inclusive. This field may be limited in precision depending on context.|
-|`seconds`|`int64`|Represents seconds of UTC time since Unix epoch1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to9999-12-31T23:59:59Z inclusive.|
-
 ## Affinity
 
 Affinity is a group of affinity scheduling rules.
@@ -225,16 +215,6 @@ TTLStrategy is the strategy for the time to live depending on if the workflow su
 |`secondsAfterFailure`|`int32`||
 |`secondsAfterSuccess`|`int32`||
 
-## Time
-
-Time is a wrapper around time.Time which supports correctmarshaling to YAML and JSON.  Wrappers are provided for manyof the factory methods that the time package offers.
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`nanos`|`int32`|Non-negative fractions of a second at nanosecond resolution. Negativesecond values with fractions must still have non-negative nanos valuesthat count forward in time. Must be from 0 to 999,999,999inclusive. This field may be limited in precision depending on context.|
-|`seconds`|`int64`|Represents seconds of UTC time since Unix epoch1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to9999-12-31T23:59:59Z inclusive.|
-
 ## Outputs
 
 Outputs hold parameters, artifacts, and results from a step
@@ -245,16 +225,6 @@ Outputs hold parameters, artifacts, and results from a step
 |`artifacts`|`array`|Artifacts holds the list of output artifacts produced by a step|
 |`parameters`|`array`|Parameters holds the list of output parameters produced by a step|
 |`result`|`string`|Result holds the result (stdout) of a script template|
-
-## Time
-
-Time is a wrapper around time.Time which supports correctmarshaling to YAML and JSON.  Wrappers are provided for manyof the factory methods that the time package offers.
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`nanos`|`int32`|Non-negative fractions of a second at nanosecond resolution. Negativesecond values with fractions must still have non-negative nanos valuesthat count forward in time. Must be from 0 to 999,999,999inclusive. This field may be limited in precision depending on context.|
-|`seconds`|`int64`|Represents seconds of UTC time since Unix epoch1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to9999-12-31T23:59:59Z inclusive.|
 
 ## NodeAffinity
 
@@ -285,17 +255,6 @@ Pod anti affinity is a group of inter pod anti affinity scheduling rules.
 |:----------:|:----------:|---------------|
 |`preferredDuringSchedulingIgnoredDuringExecution`|`array`|The scheduler will prefer to schedule pods to nodes that satisfythe anti-affinity expressions specified by this field, but it may choosea node that violates one or more of the expressions. The node that ismost preferred is the one with the greatest sum of weights, i.e.for each node that meets all of the scheduling requirements (resourcerequest, requiredDuringScheduling anti-affinity expressions, etc.),compute a sum by iterating through the elements of this field and adding"weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; thenode(s) with the highest sum are the most preferred.+optional|
 |`requiredDuringSchedulingIgnoredDuringExecution`|`array`|If the anti-affinity requirements specified by this field are not met atscheduling time, the pod will not be scheduled onto the node.If the anti-affinity requirements specified by this field cease to be metat some point during pod execution (e.g. due to a pod label update), thesystem may or may not try to eventually evict the pod from its node.When there are multiple elements, the lists of nodes corresponding to eachpodAffinityTerm are intersected, i.e. all terms must be satisfied.+optional|
-
-## IntOrString
-
-
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`intVal`|`int32`||
-|`strVal`|`string`||
-|`type`|`int64`||
 
 ## IntOrString
 
