@@ -33,7 +33,6 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
 	var err error
 	s.bearerToken, err = s.GetServiceAccountToken()
-	s.T().Fatal()
 	s.CheckError(err)
 }
 
