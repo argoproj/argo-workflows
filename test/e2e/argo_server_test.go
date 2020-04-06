@@ -810,19 +810,6 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 			}
 		}
 	})
-
-	s.Run("PodLogsNotFound", func() {
-		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflows/argo/basic/not-found/log?logOptions.container=not-found", nil)
-		assert.NoError(s.T(), err)
-		req.Header.Set("Accept", "text/event-stream")
-		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
-		req.Close = true
-		resp, err := http.DefaultClient.Do(req)
-		if assert.NoError(s.T(), err) {
-			defer func() { _ = resp.Body.Close() }()
-			assert.Equal(s.T(), 404, resp.StatusCode)
-		}
-	})
 }
 
 func (s *ArgoServerSuite) TestArchivedWorkflowService() {
