@@ -107,7 +107,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	} else {
 		wfActiveDeadlineSeconds := int64((*wfDeadline).Sub(time.Now().UTC()).Seconds())
 		if wfActiveDeadlineSeconds < 0 {
-			return nil, nil
+			return nil, fmt.Errorf("Scheduling pod after workflow deadline %s", wfDeadline)
 		} else if tmpl.ActiveDeadlineSeconds == nil || wfActiveDeadlineSeconds < *tmpl.ActiveDeadlineSeconds {
 			activeDeadlineSeconds = &wfActiveDeadlineSeconds
 		} else {
