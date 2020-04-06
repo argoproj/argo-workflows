@@ -328,7 +328,7 @@ ifeq ($(K3D),true)
 endif
 
 .PHONY: test-images
-test-images: dist/controller-image dist/cli-image dist/executor-image dist/cowsay-v1-image dist/bitnami-kubectl-1.15.3-ol-7-r165-image dist/python-alpine3.6-image
+test-images: clean-images dist/controller-image dist/cli-image dist/executor-image dist/cowsay-v1-image dist/bitnami-kubectl-1.15.3-ol-7-r165-image dist/python-alpine3.6-image
 
 dist/cowsay-v1-image:
 	docker build -t cowsay:v1 test/e2e/images/cowsay
@@ -346,7 +346,7 @@ dist/python-alpine3.6-image:
 	touch dist/python-alpine3.6-image
 
 .PHONY: start
-start: status install down clean-images test-images wait-down up cli wait-up env
+start: status install down test-images wait-down up cli wait-up env
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 
