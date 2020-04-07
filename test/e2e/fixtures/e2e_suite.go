@@ -57,7 +57,7 @@ type E2ESuite struct {
 	KubeClient        kubernetes.Interface
 	// Guard-rail.
 	// A list of images that exist on the K3S node at the start of the test are probably those created as part
-	// of the Kubernetes system (e.g. k8s.gcr.io/pause:3.1) or K3S. This is populated at the start of each suite,
+	// of the Kubernetes system (e.g. k8s.gcr.io/pause:3.1) or K3S. This is populated at the start of each test,
 	// and checked at the end of each test.
 	images map[string]bool
 	// Guard-rail.
@@ -76,7 +76,6 @@ func (s *E2ESuite) SetupSuite() {
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
 	s.Persistence = newPersistence(s.KubeClient)
 	s.cwfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates()
-	s.images = s.listImages()
 }
 
 func (s *E2ESuite) listImages() map[string]bool {
@@ -112,6 +111,7 @@ func (s *E2ESuite) BeforeTest(suiteName, testName string) {
 	s.CheckError(err)
 	log.Infof("logging debug diagnostics to file://%s", name)
 	s.DeleteResources(Label)
+	s.images = s.listImages()
 	s.importImages()
 	numArchivedWorkflows := s.countArchivedWorkflows()
 	if s.numArchivedWorkflows > 0 && s.numArchivedWorkflows != numArchivedWorkflows {
