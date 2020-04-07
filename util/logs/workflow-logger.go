@@ -47,9 +47,10 @@ type workflowLogger struct {
 	ensureWeAreStreaming func(pod *corev1.Pod)
 	podWatch             watch.Interface
 	wfWatch              watch.Interface
+	stopCh               chan struct{}
 }
 
-func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeClient kubernetes.Interface, req request, sender sender) (WorkflowLogger, error) {
+func NewWorkflowLogger(wfClient versioned.Interface, kubeClient kubernetes.Interface, req request, sender sender) (WorkflowLogger, error) {
 
 	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace()).Get(req.GetName(), metav1.GetOptions{})
 	if err != nil {
@@ -76,10 +77,13 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 
 	logCtx.WithField("options", options).Debug("List options")
 
-	// keep a track of those we are logging, we also have a mutex to guard reads
+	// Keep a track of those we are logging, we also have a mutex to guard reads. Even if we stop streaming, we
+	// keep a marker here so we don't start again.
 	streamedPods := make(map[types.UID]bool)
 	var streamedPodsGuard sync.Mutex
 	var wg sync.WaitGroup
+	// We never send anything on this channel apart from closing it to indicate everyone should stop.
+	stopChan := make(chan struct{})
 
 	// this func start a stream if one is not already running
 	ensureWeAreStreaming := func(pod *corev1.Pod) {
@@ -104,8 +108,7 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 				scanner := bufio.NewScanner(stream)
 				for scanner.Scan() {
 					select {
-					case <-ctx.Done():
-						logCtx.Debug("Done")
+					case <-stopChan:
 						return
 					default:
 						content := scanner.Text()
@@ -145,6 +148,7 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 		ensureWeAreStreaming: ensureWeAreStreaming,
 		wfWatch:              wfWatch,
 		podWatch:             podWatch,
+		stopCh:               stopChan,
 	}, nil
 }
 
@@ -164,16 +168,17 @@ func (l *workflowLogger) Run(ctx context.Context) {
 	}
 
 	if !l.completed && l.follow {
-		// the purpose of this watch is to make sure we do not exit until the workflow is completed or deleted
+		// The purpose of this watch is to make sure we do not exit until the workflow is completed or deleted.
+		// When that happens, it signals we are done by closing the stop channel.
 		l.wg.Add(1)
 		go func() {
+			defer close(l.stopCh)
 			defer l.wg.Done()
-			defer l.logCtx.Debug("Workflow watch done")
+			defer l.logCtx.Debug("Done watching workflow events")
 			l.logCtx.Debug("Watching for workflow events")
 			for {
 				select {
 				case <-ctx.Done():
-					l.logCtx.Debug("Done")
 					return
 				case event := <-l.wfWatch.ResultChan():
 					wf, ok := event.Object.(*wfv1.Workflow)
@@ -183,22 +188,21 @@ func (l *workflowLogger) Run(ctx context.Context) {
 					}
 					l.logCtx.WithFields(log.Fields{"eventType": event.Type, "completed": wf.Status.Completed()}).Debug("Workflow event")
 					if event.Type == watch.Deleted || wf.Status.Completed() {
-						return // this will cause wg.Done and result in exit if all are done
+						return
 					}
 				}
 			}
 		}()
 
-		// the purpose of this watch is to start streaming any new pods
+		// The purpose of this watch is to start streaming any new pods that appear when we are running.
 		l.wg.Add(1)
 		go func() {
 			defer l.wg.Done()
-			defer l.logCtx.Debug("Pod watch done")
+			defer l.logCtx.Debug("Done watching pod events")
 			l.logCtx.Debug("Watching for pod events")
 			for {
 				select {
-				case <-ctx.Done():
-					l.logCtx.Debug("Done")
+				case <-l.stopCh:
 					return
 				case event := <-l.podWatch.ResultChan():
 					pod, ok := event.Object.(*corev1.Pod)
