@@ -127,8 +127,8 @@ jobs:
             sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
             sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
             sudo chmod +x /usr/local/bin/protoc
-            sudo find /usr/local/include -type f | xargs chmod a+r
-            sudo find /usr/local/include -type d | xargs chmod a+rx
+            sudo find /usr/local/include -type f | xargs sudo chmod a+r
+            sudo find /usr/local/include -type d | xargs sudo chmod a+rx
             rm -f $PROTOC_ZIP
             ls /usr/local/include/google/protobuf/
       - run: make codegen
@@ -201,27 +201,25 @@ jobs:
   ui:
     docker:
       - image: circleci/node:11.15.0
-    working_directory: ~/argo/ui
     steps:
       - checkout:
-          path: ~/argo
       - restore_cache:
           name: Restore Yarn cache
           keys:
-            - yarn-packages-v1-{{ checksum "yarn.lock" }}
+            - yarn-packages-v3-{{ checksum "yarn.lock" }}
       - run:
           name: Download dependencies
-          command: yarn install --frozen-lockfile --ignore-optional --non-interactive
-      - save_cache:
-          name: Save Yarn cache
-          key: yarn-packages-v1-{{ checksum "yarn.lock" }}
-          paths: [~/.cache/yarn, node_modules]
-          when: always
+          command: yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
       # - run: yarn test
       # - run: ./node_modules/.bin/codecov -p ..
-      - run: yarn build
-      - run: yarn lint
+      - run: yarn --cwd ui build
+      - run: yarn --cwd ui lint
       - run: git diff --exit-code
+      - save_cache:
+          name: Save Yarn cache
+          key: yarn-packages-v3-{{ checksum "yarn.lock" }}
+          paths: [~/.cache/yarn, node_modules]
+          when: always
 workflows:
   version: 2
   argo-workflow:
