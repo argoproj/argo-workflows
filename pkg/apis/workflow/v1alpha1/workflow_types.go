@@ -110,11 +110,14 @@ type WorkflowList struct {
 var _ TemplateGetter = &Workflow{}
 var _ TemplateStorage = &Workflow{}
 
-// TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed
+// TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed
 type TTLStrategy struct {
+	// SecondsAfterCompletion is the number of seconds to live after completion
 	SecondsAfterCompletion *int32 `json:"secondsAfterCompletion,omitempty" protobuf:"bytes,1,opt,name=secondsAfterCompletion"`
-	SecondsAfterSuccess    *int32 `json:"secondsAfterSuccess,omitempty" protobuf:"bytes,2,opt,name=secondsAfterSuccess"`
-	SecondsAfterFailure    *int32 `json:"secondsAfterFailure,omitempty" protobuf:"bytes,3,opt,name=secondsAfterFailure"`
+	// SecondsAfterSuccess is the number of seconds to live after success
+	SecondsAfterSuccess *int32 `json:"secondsAfterSuccess,omitempty" protobuf:"bytes,2,opt,name=secondsAfterSuccess"`
+	// SecondsAfterFailure is the number of seconds to live after failure
+	SecondsAfterFailure *int32 `json:"secondsAfterFailure,omitempty" protobuf:"bytes,3,opt,name=secondsAfterFailure"`
 }
 
 // WorkflowSpec is the specification of a Workflow.
@@ -632,6 +635,7 @@ type Artifact struct {
 
 // PodGC describes how to delete completed pods as they complete
 type PodGC struct {
+	// Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
 	Strategy PodGCStrategy `json:"strategy,omitempty" protobuf:"bytes,1,opt,name=strategy,casttype=PodGCStrategy"`
 }
 
@@ -923,9 +927,13 @@ const (
 	RetryPolicyOnError   RetryPolicy = "OnError"
 )
 
+// Backoff is a backoff strategy to use within retryStrategy
 type Backoff struct {
-	Duration    string `json:"duration,omitempty" protobuf:"varint,1,opt,name=duration"`
-	Factor      int32  `json:"factor,omitempty" protobuf:"varint,2,opt,name=factor"`
+	// Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")
+	Duration string `json:"duration,omitempty" protobuf:"varint,1,opt,name=duration"`
+	// Factor is a factor to multiply the base duration after each failed retry
+	Factor int32 `json:"factor,omitempty" protobuf:"varint,2,opt,name=factor"`
+	// MaxDuration is the maximum amount of time allowed for the backoff strategy
 	MaxDuration string `json:"maxDuration,omitempty" protobuf:"varint,3,opt,name=maxDuration"`
 }
 
@@ -1019,10 +1027,13 @@ const (
 )
 
 type WorkflowCondition struct {
+	// Type is the type of condition
 	Type WorkflowConditionType `json:"type,omitempty" protobuf:"bytes,1,opt,name=type,casttype=WorkflowConditionType"`
 
+	// Status is the status of the condition
 	Status metav1.ConditionStatus `json:"status,omitempty" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/apimachinery/pkg/apis/meta/v1.ConditionStatus"`
 
+	// Message is the condition message
 	Message string `json:"message,omitempty" protobuf:"bytes,3,opt,name=message"`
 }
 
