@@ -268,9 +268,9 @@ endif
 test: server/static/files.go
 	# Run unit tests
 ifeq ($(CI),false)
-	go test `go list ./... | grep -v 'test/e2e'`
+	go test -v `go list ./... | grep -v 'test/e2e'`
 else
-	go test -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
+	go test -v -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
 endif
 
 test/e2e/manifests/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
@@ -397,23 +397,23 @@ mysql-cli:
 .PHONY: test-e2e
 test-e2e: test-images cli
 	# Run E2E tests
-	go test -timeout 15m -v -count 1 -p 1 ./test/e2e/...
+	go test -v -timeout 15m -v -count 1 -p 1 ./test/e2e/...
 
 .PHONY: smoke
 smoke: test-images
 	# Run smoke tests
-	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
+	go test -v -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
 
 .PHONY: test-api
 test-api: test-images
 	# Run API tests
-	go test -timeout 1m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
+	go test -v -timeout 1m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
 
 .PHONY: test-cli
 test-cli: test-images cli
 	# Run CLI tests
-	go test -timeout 2m -v -count 1 -p 1 -run CLISuite ./test/e2e
-	go test -timeout 2m -v -count 1 -p 1 -run CLIWithServerSuite ./test/e2e
+	go test -v -timeout 2m -v -count 1 -p 1 -run CLISuite ./test/e2e
+	go test -v -timeout 2m -v -count 1 -p 1 -run CLIWithServerSuite ./test/e2e
 
 # clean
 
