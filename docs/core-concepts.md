@@ -1,5 +1,5 @@
 
-# Argo Basic Concepts
+# Core Concepts
 
 This page serves as an introduction into the core concepts of Argo.
 
