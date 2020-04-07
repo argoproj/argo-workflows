@@ -87,8 +87,6 @@ func NewWorkflowLogger(wfClient versioned.Interface, kubeClient kubernetes.Inter
 
 	// this func start a stream if one is not already running
 	ensureWeAreStreaming := func(pod *corev1.Pod) {
-		wg.Add(1)
-		defer wg.Done()
 		streamedPodsGuard.Lock()
 		defer streamedPodsGuard.Unlock()
 		logCtx := logCtx.WithField("podName", pod.GetName())
