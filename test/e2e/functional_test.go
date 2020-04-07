@@ -78,7 +78,7 @@ spec:
 }
 
 func (s *FunctionalSuite) TestContinueOnFailDag() {
-	// TODO
+	// https://github.com/argoproj/argo/issues/2624
 	s.T().SkipNow()
 	s.Given().
 		Workflow(`
@@ -171,7 +171,7 @@ func (s *FunctionalSuite) TestFastFailOnPodTermination() {
 }
 
 func (s *FunctionalSuite) TestEventOnNodeFail() {
-	// TODO
+	// https://github.com/argoproj/argo/issues/2626
 	s.T().SkipNow()
 	// Test whether an WorkflowFailed event (with appropriate message) is emitted in case of node failure
 	s.Given().
@@ -195,7 +195,7 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 }
 
 func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
-	// TODO
+	// https://github.com/argoproj/argo/issues/2626
 	s.T().SkipNow()
 	// Test whether an WorkflowSuccess event is emitted in case of successfully completed workflow
 	s.Given().
