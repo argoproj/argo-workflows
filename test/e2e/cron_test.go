@@ -25,7 +25,7 @@ type CronSuite struct {
 }
 
 func (s *CronSuite) SetupSuite() {
-	// TODO
+	// https://github.com/argoproj/argo/issues/2623
 	s.T().SkipNow()
 	s.E2ESuite.SetupSuite()
 	// Since tests run in parallel, delete all cron resources before the test suite is run
