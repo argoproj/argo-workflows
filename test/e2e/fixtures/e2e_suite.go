@@ -90,7 +90,7 @@ func (s *E2ESuite) listImages() map[string]bool {
 		for _, image := range node.Status.Images {
 			for _, n := range image.Names {
 				// We want to ignore hashes.
-				if !strings.Contains(n, "@sha256") {
+				if !strings.Contains(n, "@sha256") && strings.HasPrefix(n, "docker.io/") {
 					images[n] = true
 				}
 			}
@@ -352,7 +352,7 @@ func (s *E2ESuite) printWorkflowDiagnostics(name string) {
 	}
 	logCtx.Debug("Workflow metadata:")
 	s.printJSON(wf.ObjectMeta)
-	logCtx.Debug("Workflow:")
+	logCtx.Debug("Workflow status:")
 	s.printJSON(wf.Status)
 	for _, node := range wf.Status.Nodes {
 		if node.Type != "Pod" {
