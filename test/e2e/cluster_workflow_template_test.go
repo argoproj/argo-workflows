@@ -59,7 +59,6 @@ spec:
             - name: message
               value: hello from nested
 `).When().
-		CreateClusterWorkflowTemplates().
 		SubmitWorkflow().
 		WaitForWorkflow(30 * time.Second).
 		Then().
