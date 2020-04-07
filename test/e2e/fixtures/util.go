@@ -15,11 +15,22 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
-func runCli(args []string) (string, error) {
-	runArgs := append([]string{"-n", Namespace}, args...)
-	cmd := exec.Command("../../dist/argo", runArgs...)
+func runCli(name string, args ...string) (string, error) {
+	cmd := exec.Command(name, args...)
 	cmd.Env = os.Environ()
+	log.Info(cmd.String())
+	output, err := runWithTimeout(cmd)
+	// Command completed before timeout. Print output and error if it exists.
+	if err != nil {
+		log.Error(err)
+	}
+	for _, s := range strings.Split(output, "\n") {
+		log.Info(s)
+	}
+	return output, err
+}
 
+func runWithTimeout(cmd *exec.Cmd) (string, error) {
 	// https://medium.com/@vCabbage/go-timeout-commands-with-os-exec-commandcontext-ba0c861ed738
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
@@ -28,21 +39,15 @@ func runCli(args []string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	done := make(chan error)
 	go func() { done <- cmd.Wait() }()
-
-	timeout := time.After(20 * time.Second)
-
+	timeout := time.After(30 * time.Second)
 	select {
 	case <-timeout:
 		_ = cmd.Process.Kill()
-		return "", fmt.Errorf("timout")
+		return buf.String(), fmt.Errorf("timeout")
 	case err := <-done:
-		// Command completed before timeout. Print output and error if it exists.
-		output := buf.String()
-		log.WithFields(log.Fields{"args": args, "output": output, "err": err}).Info("Run CLI")
-		return output, err
+		return buf.String(), err
 	}
 }
 

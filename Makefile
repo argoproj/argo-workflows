@@ -320,33 +320,26 @@ else
 endif
 endif
 
-.PHONY: clean-images
-clean-images:
-ifeq ($(K3D),true)
-	# Force import to K3D
-	find dist -type f -name '*-image' -mtime +10m | xargs rm -f
-endif
-
 .PHONY: test-images
-test-images: clean-images dist/controller-image dist/cli-image dist/executor-image dist/cowsay-v1-image dist/bitnami-kubectl-1.15.3-ol-7-r165-image dist/python-alpine3.6-image
+test-images: dist/cowsay-v1 dist/bitnami-kubectl-1.15.3-ol-7-r165 dist/python-alpine3.6
 
-dist/cowsay-v1-image:
+dist/cowsay-v1:
 	docker build -t cowsay:v1 test/e2e/images/cowsay
 ifeq ($(K3D),true)
 	k3d import-images cowsay:v1
 endif
-	touch dist/cowsay-v1-image
+	touch dist/cowsay-v1
 
-dist/bitnami-kubectl-1.15.3-ol-7-r165-image:
+dist/bitnami-kubectl-1.15.3-ol-7-r165:
 	docker pull bitnami/kubectl:1.15.3-ol-7-r165
-	touch dist/bitnami-kubectl-1.15.3-ol-7-r165-image
+	touch dist/bitnami-kubectl-1.15.3-ol-7-r165
 
-dist/python-alpine3.6-image:
+dist/python-alpine3.6:
 	docker pull python:alpine3.6
-	touch dist/python-alpine3.6-image
+	touch dist/python-alpine3.6
 
 .PHONY: start
-start: status install down test-images wait-down up cli wait-up env
+start: status install down controller-image cli-image executor-image test-images wait-down up cli wait-up env
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 
@@ -408,7 +401,7 @@ mysql-cli:
 .PHONY: test-e2e
 test-e2e: test-images cli
 	# Run E2E tests
-	go test -timeout 20m -v -count 1 -p 1 ./test/e2e/...
+	go test -timeout 1h -v -count 1 -p 1 ./test/e2e/...
 
 .PHONY: smoke
 smoke: test-images

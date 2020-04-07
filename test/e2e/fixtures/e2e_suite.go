@@ -17,7 +17,6 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/cmd/argo/commands"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/kubeconfig"
@@ -29,10 +28,6 @@ const Label = "argo-e2e"
 
 // Cron tests run in parallel, so use a different label so they are not deleted when a new test runs
 const LabelCron = Label + "-cron"
-
-func init() {
-	_ = commands.NewCommand()
-}
 
 type E2ESuite struct {
 	suite.Suite
@@ -63,10 +58,13 @@ func (s *E2ESuite) TearDownSuite() {
 }
 
 func (s *E2ESuite) BeforeTest(suiteName, testName string) {
-	name := "/tmp/" + suiteName + "-" + testName + ".log"
-	file, err := os.Create(name)
+	dir := "/tmp/log/argo-e2e"
+	err := os.MkdirAll(dir, 0777)
 	s.CheckError(err)
-	err = diagnostics.setFile(file)
+	name := dir + "/" + suiteName + "-" + testName + ".log"
+	f, err := os.Create(name)
+	s.CheckError(err)
+	err = file.setFile(f)
 	s.CheckError(err)
 	log.Infof("logging debug diagnostics to file://%s", name)
 	s.DeleteResources(Label)
@@ -232,6 +230,7 @@ func (s *E2ESuite) Run(name string, subtest func()) {
 	defer func() {
 		if s.T().Failed() {
 			log.Debug("=== FAIL " + longName)
+			s.T().FailNow()
 		} else if s.T().Skipped() {
 			log.Debug("=== SKIP " + longName)
 		} else {
@@ -247,7 +246,7 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 	for _, wf := range wfs.Items {
 		s.printWorkflowDiagnostics(wf.GetName())
 	}
-	err = diagnostics.Close()
+	err = file.Close()
 	s.CheckError(err)
 }
 

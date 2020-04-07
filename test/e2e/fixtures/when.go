@@ -125,14 +125,14 @@ func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow)
 		case event := <-watch.ResultChan():
 			wf, ok := event.Object.(*wfv1.Workflow)
 			if ok {
-				logCtx.WithFields(log.Fields{"type": event.Type, "phase": wf.Status.Phase}).Info(wf.Status.Message)
+				logCtx.WithFields(log.Fields{"type": event.Type, "phase": wf.Status.Phase, "message": wf.Status.Message}).Info("...")
 				w.hydrateWorkflow(wf)
 				if test(wf) {
 					logCtx.Infof("Condition met")
 					return w
 				}
 			} else {
-				logCtx.Error("not ok")
+				w.t.Fatal("not ok")
 			}
 		case <-timeoutCh:
 			w.t.Fatalf("timeout after %v waiting for condition %s", timeout, condition)
@@ -189,8 +189,11 @@ func (w *When) DeleteWorkflow() *When {
 }
 
 func (w *When) RunCli(args []string, block func(t *testing.T, output string, err error)) *When {
-	output, err := runCli(args)
+	output, err := runCli("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
 	block(w.t, output, err)
+	if w.t.Failed() {
+		w.t.FailNow()
+	}
 	return w
 }
 
