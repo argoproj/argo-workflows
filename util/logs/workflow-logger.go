@@ -47,9 +47,10 @@ type workflowLogger struct {
 	ensureWeAreStreaming func(pod *corev1.Pod)
 	podWatch             watch.Interface
 	wfWatch              watch.Interface
+	stopCh               chan struct{}
 }
 
-func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeClient kubernetes.Interface, req request, sender sender) (WorkflowLogger, error) {
+func NewWorkflowLogger(wfClient versioned.Interface, kubeClient kubernetes.Interface, req request, sender sender) (WorkflowLogger, error) {
 
 	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace()).Get(req.GetName(), metav1.GetOptions{})
 	if err != nil {
@@ -76,31 +77,27 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 
 	logCtx.WithField("options", options).Debug("List options")
 
-	// keep a track of those we are logging, we also have a mutex to guard reads
+	// Keep a track of those we are logging, we also have a mutex to guard reads. Even if we stop streaming, we
+	// keep a marker here so we don't start again.
 	streamedPods := make(map[types.UID]bool)
 	var streamedPodsGuard sync.Mutex
 	var wg sync.WaitGroup
+	// We never send anything on this channel apart from closing it to indicate everyone should stop.
+	stopChan := make(chan struct{})
 
 	// this func start a stream if one is not already running
 	ensureWeAreStreaming := func(pod *corev1.Pod) {
-		wg.Add(1)
-		defer wg.Done()
 		streamedPodsGuard.Lock()
 		defer streamedPodsGuard.Unlock()
 		logCtx := logCtx.WithField("podName", pod.GetName())
-		defer logCtx.Debug("Pod logs stream done")
 		logCtx.WithFields(log.Fields{"podPhase": pod.Status.Phase, "alreadyStreaming": streamedPods[pod.UID]}).Debug("Ensuring pod logs stream")
 		if pod.Status.Phase != corev1.PodPending && !streamedPods[pod.UID] {
-			logCtx.WithField("logOptions", req.GetLogOptions()).Debug("Streaming pod logs")
 			streamedPods[pod.UID] = true
 			wg.Add(1)
 			go func(podName string) {
 				defer wg.Done()
-				defer func() {
-					streamedPodsGuard.Lock()
-					defer streamedPodsGuard.Unlock()
-					logCtx.Debug("Pod logs stream done")
-				}()
+				logCtx.Debug("Streaming pod logs")
+				defer logCtx.Debug("Pod logs stream done")
 				stream, err := podInterface.GetLogs(podName, req.GetLogOptions()).Stream()
 				if err != nil {
 					logCtx.WithField("err", err).Error("Unable to get pod logs")
@@ -109,8 +106,7 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 				scanner := bufio.NewScanner(stream)
 				for scanner.Scan() {
 					select {
-					case <-ctx.Done():
-						logCtx.Debug("Done")
+					case <-stopChan:
 						return
 					default:
 						content := scanner.Text()
@@ -129,13 +125,14 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 		}
 	}
 
-	logCtx.Debug("Listing workflow pods")
-	list, err := podInterface.List(options)
+	podWatch, err := podInterface.Watch(options)
 	if err != nil {
 		return nil, err
 	}
 
-	podWatch, err := podInterface.Watch(options)
+	// only list after we start the watch
+	logCtx.Debug("Listing workflow pods")
+	list, err := podInterface.List(options)
 	if err != nil {
 		return nil, err
 	}
@@ -149,6 +146,7 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 		ensureWeAreStreaming: ensureWeAreStreaming,
 		wfWatch:              wfWatch,
 		podWatch:             podWatch,
+		stopCh:               stopChan,
 	}, nil
 }
 
@@ -168,16 +166,17 @@ func (l *workflowLogger) Run(ctx context.Context) {
 	}
 
 	if !l.completed && l.follow {
-		// the purpose of this watch is to make sure we do not exit until we are complete
+		// The purpose of this watch is to make sure we do not exit until the workflow is completed or deleted.
+		// When that happens, it signals we are done by closing the stop channel.
 		l.wg.Add(1)
 		go func() {
+			defer close(l.stopCh)
 			defer l.wg.Done()
-			defer l.logCtx.Debug("Workflow watch done")
+			defer l.logCtx.Debug("Done watching workflow events")
 			l.logCtx.Debug("Watching for workflow events")
 			for {
 				select {
 				case <-ctx.Done():
-					l.logCtx.Debug("Done")
 					return
 				case event := <-l.wfWatch.ResultChan():
 					wf, ok := event.Object.(*wfv1.Workflow)
@@ -185,25 +184,23 @@ func (l *workflowLogger) Run(ctx context.Context) {
 						l.logCtx.Errorf("watch object was not a workflow %v", reflect.TypeOf(event.Object))
 						return
 					}
-					l.logCtx.WithFields(log.Fields{"eventType": event.Type, "podName": wf.GetName(), "completed": wf.Status.Completed()}).Debug("Workflow event")
-					// whenever a new pod appears, we start a goroutine to watch it
+					l.logCtx.WithFields(log.Fields{"eventType": event.Type, "completed": wf.Status.Completed()}).Debug("Workflow event")
 					if event.Type == watch.Deleted || wf.Status.Completed() {
-						return // this will cause wg.Done and result in exit if all are done
+						return
 					}
 				}
 			}
 		}()
 
-		// the purpose of this watch is to start streaming any new pods
+		// The purpose of this watch is to start streaming any new pods that appear when we are running.
 		l.wg.Add(1)
 		go func() {
 			defer l.wg.Done()
-			defer l.logCtx.Debug("Pod watch done")
+			defer l.logCtx.Debug("Done watching pod events")
 			l.logCtx.Debug("Watching for pod events")
 			for {
 				select {
-				case <-ctx.Done():
-					l.logCtx.Debug("Done")
+				case <-l.stopCh:
 					return
 				case event := <-l.podWatch.ResultChan():
 					pod, ok := event.Object.(*corev1.Pod)
@@ -212,11 +209,8 @@ func (l *workflowLogger) Run(ctx context.Context) {
 						return
 					}
 					l.logCtx.WithFields(log.Fields{"eventType": event.Type, "podName": pod.GetName(), "phase": pod.Status.Phase}).Debug("Pod event")
-					switch pod.Status.Phase {
-					case corev1.PodRunning:
+					if pod.Status.Phase == corev1.PodRunning {
 						l.ensureWeAreStreaming(pod)
-					case corev1.PodSucceeded, corev1.PodFailed:
-						return
 					}
 				}
 			}
@@ -227,5 +221,5 @@ func (l *workflowLogger) Run(ctx context.Context) {
 
 	l.logCtx.Debug("Waiting for work-group")
 	l.wg.Wait()
-	l.logCtx.Debug("Wait for work-group done")
+	l.logCtx.Debug("Work-group done")
 }
