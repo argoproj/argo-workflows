@@ -29,7 +29,7 @@ const Label = "argo-e2e"
 // Cron tests run in parallel, so use a different label so they are not deleted when a new test runs
 const LabelCron = Label + "-cron"
 
-var gitBranch string
+var imageTag string
 var k3d bool
 
 func init() {
@@ -37,13 +37,16 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	gitBranch = strings.TrimSpace(output)
+	imageTag = strings.TrimSpace(output)
+	if imageTag == "master" {
+		imageTag = "latest"
+	}
 	context, err := runCli("kubectl", "config", "current-context")
 	if err != nil {
 		panic(err)
 	}
 	k3d = strings.TrimSpace(context) == "k3s-default"
-	log.WithFields(log.Fields{"gitBranch": gitBranch, "k3d": k3d}).Info()
+	log.WithFields(log.Fields{"imageTag": imageTag, "k3d": k3d}).Info()
 }
 
 type E2ESuite struct {
@@ -129,7 +132,7 @@ func (s *E2ESuite) countWorkflows() int {
 func (s *E2ESuite) importImages() {
 	// If we are running K3D we should re-import these prior to running tests, as they may have been evicted.
 	if k3d {
-		for _, n := range []string{"docker.io/argoproj/argoexec:" + gitBranch, "docker.io/library/cowsay:v1"} {
+		for _, n := range []string{"docker.io/argoproj/argoexec:" + imageTag, "docker.io/library/cowsay:v1"} {
 			if !s.images[n] {
 				_, err := runCli("k3d", "import-images", n)
 				s.CheckError(err)
@@ -322,11 +325,9 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 	// Using an arbitrary image will result in slow and flakey tests as we can't really predict when they'll be
 	// downloaded or evicted. To keep tests fast and reliable you must use whitelisted images.
 	imageWhitelist := map[string]bool{
-		"docker.io/argoproj/argoexec:" + gitBranch: true,
-		"docker.io/library/cowsay:v1":              true,
-		"docker.io/library/python:alpine3.6":       true,
-		// why this different name?
-		"python:alpine3.6": true,
+		"docker.io/argoproj/argoexec:" + imageTag: true,
+		"docker.io/library/cowsay:v1":             true,
+		"docker.io/library/python:alpine3.6":      true,
 	}
 	for n := range s.listImages() {
 		if !s.images[n] && !imageWhitelist[n] {
