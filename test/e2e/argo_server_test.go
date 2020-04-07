@@ -623,7 +623,7 @@ spec:
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
+          image: cowsay:v1
           imagePullPolicy: IfNotPresent
           command: ["sh", -c]
           args: ["echo hello"]

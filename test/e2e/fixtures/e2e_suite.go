@@ -61,21 +61,45 @@ func (s *E2ESuite) importImages() {
 		branch, err := runCli("git", "rev-parse", "--abbrev-ref=loose", "HEAD")
 		s.CheckError(err)
 		branch = strings.TrimSpace(branch)
-		list, err := s.KubeClient.CoreV1().Nodes().List(metav1.ListOptions{})
-		s.CheckError(err)
-		images := make(map[string]bool)
-		// looks O^3, but is actually going to be O(n)
-		for _, node := range list.Items {
-			for _, image := range node.Status.Images {
-				for _, n := range image.Names {
-					images[n] = true
-				}
-			}
-		}
+		images := s.listImages(err)
 		for _, n := range []string{"docker.io/argoproj/argoexec:" + branch, "docker.io/library/cowsay:v1"} {
 			if !images[n] {
 				_, err := runCli("k3d", "import-images", n)
 				s.CheckError(err)
+			}
+		}
+	}
+}
+
+func (s *E2ESuite) listImages(err error) map[string]bool {
+	list, err := s.KubeClient.CoreV1().Nodes().List(metav1.ListOptions{})
+	s.CheckError(err)
+	images := make(map[string]bool)
+	// looks O^3, but is actually going to be O(n)
+	for _, node := range list.Items {
+		for _, image := range node.Status.Images {
+			for _, n := range image.Names {
+				images[n] = true
+			}
+		}
+	}
+	return images
+}
+
+func (s *E2ESuite) chechkImages() {
+
+	s.funcName()
+}
+
+func (s *E2ESuite) funcName() {
+	list, err := s.KubeClient.CoreV1().Nodes().List(metav1.ListOptions{})
+	s.CheckError(err)
+	images := make(map[string]bool)
+	// looks O^3, but is actually going to be O(n)
+	for _, node := range list.Items {
+		for _, image := range node.Status.Images {
+			for _, n := range image.Names {
+				images[n] = true
 			}
 		}
 	}

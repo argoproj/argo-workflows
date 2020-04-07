@@ -124,12 +124,12 @@ spec:
     - name: whalesay
       container:
         imagePullPolicy: IfNotPresent
-        image: docker/whalesay:latest
+        image: cowsay:v1
 
     - name: whalesplosion
       container:
         imagePullPolicy: IfNotPresent
-        image: docker/whalesay:latest
+        image: cowsay:v1
         command: ["sh", "-c", "sleep 10; exit 1"]
 `).
 		When().
@@ -438,7 +438,7 @@ spec:
 
   - name: generate
     container:
-      image: docker/whalesay:latest
+      image: cowsay:v1
       command: [sh, -c]
       args: ["
         echo 'my-output-parameter' > /tmp/my-output-parameter.txt

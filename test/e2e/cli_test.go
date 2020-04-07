@@ -434,7 +434,7 @@ func (s *CLISuite) TestWorkflowRetry() {
 		Workflow("@testdata/exit-1.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(15*time.Second).
+		WaitForWorkflow(20*time.Second).
 		Given().
 		RunCli([]string{"retry", "exit-1"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
