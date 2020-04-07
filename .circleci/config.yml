@@ -125,6 +125,7 @@ jobs:
             curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.11.1/$PROTOC_ZIP
             sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
             sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
+            sudo chmod +x /usr/local/bin/protoc
             rm -f $PROTOC_ZIP
       - run: make codegen
       - run: make manifests

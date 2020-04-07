@@ -329,6 +329,8 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 		"docker.io/argoproj/argoexec:" + gitBranch: true,
 		"docker.io/library/cowsay:v1":              true,
 		"docker.io/library/python:alpine3.6":       true,
+		// why this different name?
+		"python:alpine3.6":                         true,
 	}
 	for n := range s.listImages() {
 		if !s.images[n] && !imageWhitelist[n] {
