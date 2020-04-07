@@ -121,12 +121,13 @@ jobs:
       - run:
           name: Install protoc
           command: |
+            set -eux -o pipefail
             PROTOC_ZIP=protoc-3.11.1-linux-x86_64.zip
             curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.11.1/$PROTOC_ZIP
             sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
             sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
             sudo chmod +x /usr/local/bin/protoc
-            sudo find /usr/local/include -type ff | xargs chmod a+r
+            sudo find /usr/local/include -type f | xargs chmod a+r
             sudo find /usr/local/include -type d | xargs chmod a+rx
             rm -f $PROTOC_ZIP
             ls /usr/local/include/google/protobuf/
@@ -207,20 +208,20 @@ jobs:
       - restore_cache:
           name: Restore Yarn cache
           keys:
-            - yarn-packages-v2-{{ checksum "yarn.lock" }}
+            - yarn-packages-v1-{{ checksum "yarn.lock" }}
       - run:
           name: Download dependencies
           command: yarn install --frozen-lockfile --ignore-optional --non-interactive
+      - save_cache:
+          name: Save Yarn cache
+          key: yarn-packages-v1-{{ checksum "yarn.lock" }}
+          paths: [~/.cache/yarn, node_modules]
+          when: always
       # - run: yarn test
       # - run: ./node_modules/.bin/codecov -p ..
       - run: yarn build
       - run: yarn lint
       - run: git diff --exit-code
-      - save_cache:
-          name: Save Yarn cache
-          key: yarn-packages-v2-{{ checksum "yarn.lock" }}
-          paths: [~/.cache/yarn, node_modules]
-          when: always
 workflows:
   version: 2
   argo-workflow:
