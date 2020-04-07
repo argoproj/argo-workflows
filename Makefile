@@ -218,7 +218,7 @@ codegen: $(HOME)/go/bin/mockery
 
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
-	make api/openapi-spec/swagger.json
+	make docs
 	find . -path '*/mocks/*' -type f -not -path '*/vendor/*' -exec ./hack/update-mocks.sh {} ';'
 
 	rm -rf ./vendor
@@ -431,6 +431,10 @@ $(HOME)/go/bin/swagger:
 
 api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) dist/MANIFESTS_VERSION hack/swaggify.sh
 	swagger mixin -c 412 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
+
+.PHONY: docs
+docs: api/openapi-spec/swagger.json
+	python3 ./hack/docgen.py
 
 # pre-push
 
