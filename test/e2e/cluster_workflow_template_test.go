@@ -34,8 +34,9 @@ func (s *ClusterWorkflowTemplateSuite) TestSubmitClusterWorkflowTemplate() {
 
 func (s *ClusterWorkflowTemplateSuite) TestNestedClusterWorkflowTemplate() {
 	s.Given().
-		WorkflowTemplate("@testdata/cluster-workflow-template-nested-template.yaml").
+		ClusterWorkflowTemplate("@testdata/cluster-workflow-template-nested-template.yaml").
 		When().CreateClusterWorkflowTemplates()
+
 	s.Given().
 		Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
