@@ -29,6 +29,23 @@ const Label = "argo-e2e"
 // Cron tests run in parallel, so use a different label so they are not deleted when a new test runs
 const LabelCron = Label + "-cron"
 
+var gitBranch string
+var k3d bool
+
+func init() {
+	output, err := runCli("git", "rev-parse", "--abbrev-ref=loose", "HEAD")
+	if err != nil {
+		panic(err)
+	}
+	gitBranch = strings.TrimSpace(output)
+	context, err := runCli("kubectl", "config", "current-context")
+	if err != nil {
+		panic(err)
+	}
+	k3d = strings.TrimSpace(context) == "k3s-default"
+	log.WithFields(log.Fields{"gitBranch": gitBranch, "k3d": k3d}).Info()
+}
+
 type E2ESuite struct {
 	suite.Suite
 	Persistence       *Persistence
@@ -38,6 +55,10 @@ type E2ESuite struct {
 	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient        v1alpha1.CronWorkflowInterface
 	KubeClient        kubernetes.Interface
+	// A list of images that exist on the K3S node at the start of the test are probably those created as part
+	// of the core Kubernetes system (e.g. k8s.gcr.io/pause:3.1) or K3S. This is populated at the start of each suite,
+	// and checked at the end of each test.
+	images map[string]bool
 }
 
 func (s *E2ESuite) SetupSuite() {
@@ -51,27 +72,10 @@ func (s *E2ESuite) SetupSuite() {
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
 	s.Persistence = newPersistence(s.KubeClient)
 	s.cwfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates()
+	s.images = s.listImages()
 }
 
-func (s *E2ESuite) importImages() {
-	// if we are running K3D we should re-import these prior to running tests
-	context, err := runCli("kubectl", "config", "current-context")
-	s.CheckError(err)
-	if strings.TrimSpace(context) == "k3s-default" {
-		branch, err := runCli("git", "rev-parse", "--abbrev-ref=loose", "HEAD")
-		s.CheckError(err)
-		branch = strings.TrimSpace(branch)
-		images := s.listImages(err)
-		for _, n := range []string{"docker.io/argoproj/argoexec:" + branch, "docker.io/library/cowsay:v1"} {
-			if !images[n] {
-				_, err := runCli("k3d", "import-images", n)
-				s.CheckError(err)
-			}
-		}
-	}
-}
-
-func (s *E2ESuite) listImages(err error) map[string]bool {
+func (s *E2ESuite) listImages() map[string]bool {
 	list, err := s.KubeClient.CoreV1().Nodes().List(metav1.ListOptions{})
 	s.CheckError(err)
 	images := make(map[string]bool)
@@ -79,30 +83,14 @@ func (s *E2ESuite) listImages(err error) map[string]bool {
 	for _, node := range list.Items {
 		for _, image := range node.Status.Images {
 			for _, n := range image.Names {
-				images[n] = true
+				// We want to ignore hashes.
+				if !strings.Contains(n, "@sha256") {
+					images[n] = true
+				}
 			}
 		}
 	}
 	return images
-}
-
-func (s *E2ESuite) chechkImages() {
-
-	s.funcName()
-}
-
-func (s *E2ESuite) funcName() {
-	list, err := s.KubeClient.CoreV1().Nodes().List(metav1.ListOptions{})
-	s.CheckError(err)
-	images := make(map[string]bool)
-	// looks O^3, but is actually going to be O(n)
-	for _, node := range list.Items {
-		for _, image := range node.Status.Images {
-			for _, n := range image.Names {
-				images[n] = true
-			}
-		}
-	}
 }
 
 func (s *E2ESuite) TearDownSuite() {
@@ -121,6 +109,19 @@ func (s *E2ESuite) BeforeTest(suiteName, testName string) {
 	log.Infof("logging debug diagnostics to file://%s", name)
 	s.DeleteResources(Label)
 	s.importImages()
+}
+
+func (s *E2ESuite) importImages() {
+	// If we are running K3D we should re-import these prior to running tests, as they may have been evicted.
+	if k3d {
+		images := s.listImages()
+		for _, n := range []string{"docker.io/argoproj/argoexec:" + gitBranch, "docker.io/library/cowsay:v1"} {
+			if !images[n] {
+				_, err := runCli("k3d", "import-images", n)
+				s.CheckError(err)
+			}
+		}
+	}
 }
 
 func (s *E2ESuite) DeleteResources(label string) {
@@ -278,6 +279,7 @@ func (s *E2ESuite) GetServiceAccountToken() (string, error) {
 }
 
 func (s *E2ESuite) Run(name string, subtest func()) {
+	// This add demarcation to the logs making it easier to differentiate the output of different tests.
 	longName := s.T().Name() + "/" + name
 	log.Debug("=== RUN " + longName)
 	defer func() {
@@ -298,6 +300,17 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 	s.CheckError(err)
 	for _, wf := range wfs.Items {
 		s.printWorkflowDiagnostics(wf.GetName())
+	}
+	// Using an arbitrary image will result in slow and flakey tests (as we can't really predict when they'll be
+	// downloaded or evicted. You must only use whitelisted images.
+	imageWhitelist := map[string]bool{
+		"docker.io/argoproj/argoexec:" + gitBranch: true,
+		"docker.io/library/cowsay:v1":              true,
+	}
+	for n := range s.listImages() {
+		if !s.images[n] && !imageWhitelist[n] {
+			s.T().Fatalf("non-whitelisted image used in test %s", n)
+		}
 	}
 	err = file.Close()
 	s.CheckError(err)

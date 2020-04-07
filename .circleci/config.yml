@@ -48,8 +48,8 @@ commands:
     steps:
       - install_kustomize
       - run:
-          name: Install and start K3S v1.0.0
-          command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.0 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
+          name: Install and start K3S v1.0.1
+          command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.1 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
           background: true
       - restore_go_cache
       - install_golang
