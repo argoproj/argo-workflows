@@ -121,20 +121,14 @@ jobs:
       - run:
           name: Install protoc
           command: |
-            PROTOC_ZIP=protoc-3.7.1-linux-x86_64.zip
-            curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.7.1/$PROTOC_ZIP
+            PROTOC_ZIP=protoc-3.11.1-linux-x86_64.zip
+            curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.11.1/$PROTOC_ZIP
             sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
             sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
             rm -f $PROTOC_ZIP
-      - run:
-          name: Code manifests
-          command: make manifests
-      - run:
-          name: Code generate
-          command: make codegen
-      - run:
-          name: Check nothing needs committing
-          command: git diff --exit-code
+      - run: make codegen
+      - run: make manifests
+      - run: git diff --exit-code
   test:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
@@ -164,12 +158,8 @@ jobs:
           path: test-results
           destination: .
           when: always
-      - run:
-          name: Lint
-          command: make lint
-      - run:
-          name: Check nothing needs committing
-          command: git diff --exit-code
+      - run: make lint
+      - run: git diff --exit-code
   e2e-no-db:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
@@ -221,15 +211,9 @@ jobs:
           paths: [~/.cache/yarn, node_modules]
       # - run: yarn test
       # - run: ./node_modules/.bin/codecov -p ..
-      - run:
-          name: Build
-          command: yarn build
-      - run:
-          name: Lint
-          command: yarn lint
-      - run:
-          name: Check nothing needs committing
-          command: git diff --exit-code
+      - run: yarn build
+      - run: yarn lint
+      - run: git diff --exit-code
 workflows:
   version: 2
   workflow:
