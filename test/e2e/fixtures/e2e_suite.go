@@ -59,7 +59,7 @@ type E2ESuite struct {
 	// A list of images that exist on the K3S node at the start of the test are probably those created as part
 	// of the Kubernetes system (e.g. k8s.gcr.io/pause:3.1) or K3S. This is populated at the start of each suite,
 	// and checked at the end of each test.
-	images       map[string]bool
+	images map[string]bool
 	// Guard-rail.
 	// The number of archived workflows. If is changes between two tests, we have a problem.
 	numArchivedWorkflows int
@@ -114,7 +114,7 @@ func (s *E2ESuite) BeforeTest(suiteName, testName string) {
 	s.DeleteResources(Label)
 	s.importImages()
 	numArchivedWorkflows := s.countArchivedWorkflows()
-	if s.numArchivedWorkflows >0 && s.numArchivedWorkflows != numArchivedWorkflows {
+	if s.numArchivedWorkflows > 0 && s.numArchivedWorkflows != numArchivedWorkflows {
 		s.T().Fatal("there should almost never be a change to the number of archived workflows between tests, this means the last test (no the current test) is bad and needs fixing - note this guard-rail does not work across test suites")
 	}
 	s.numArchivedWorkflows = numArchivedWorkflows
@@ -194,6 +194,9 @@ func (s *E2ESuite) DeleteResources(label string) {
 			logCtx := log.WithFields(log.Fields{"workflow": wf.Name})
 			logCtx.Debug("Deleting workflow")
 			err = s.wfClient.Delete(wf.Name, &metav1.DeleteOptions{})
+			if errors.IsNotFound(err) {
+				continue
+			}
 			s.CheckError(err)
 			isTestWf[wf.Name] = true
 			for {
