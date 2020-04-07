@@ -87,7 +87,7 @@ func (s *E2ESuite) listImages() map[string]bool {
 		for _, image := range node.Status.Images {
 			for _, n := range image.Names {
 				// We want to ignore hashes.
-				if !strings.Contains(n, "@sha256") {
+				if !strings.Contains(n, "@sha256") && strings.HasPrefix(n, "docker.io/") {
 					images[n] = true
 				}
 			}
@@ -329,8 +329,6 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 		"docker.io/argoproj/argoexec:" + gitBranch: true,
 		"docker.io/library/cowsay:v1":              true,
 		"docker.io/library/python:alpine3.6":       true,
-		// why this different name?
-		"python:alpine3.6": true,
 	}
 	for n := range s.listImages() {
 		if !s.images[n] && !imageWhitelist[n] {
