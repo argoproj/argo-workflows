@@ -113,7 +113,7 @@ commands:
           destination: .
           when: always
       - store_artifacts:
-          path: /var/log/argo-e2e
+          path: /tmp/log/argo-e2e
           destination: .
           when: always
   go_junit_report:
