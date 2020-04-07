@@ -53,6 +53,34 @@ func (s *E2ESuite) SetupSuite() {
 	s.cwfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates()
 }
 
+func (s *E2ESuite) importImages() {
+	// if we are running K3D we should re-import these prior to running tests
+	context, err := runCli("kubectl", "config", "current-context")
+	s.CheckError(err)
+	if strings.TrimSpace(context) == "k3s-default" {
+		branch, err := runCli("git", "rev-parse", "--abbrev-ref=loose", "HEAD")
+		s.CheckError(err)
+		branch = strings.TrimSpace(branch)
+		list, err := s.KubeClient.CoreV1().Nodes().List(metav1.ListOptions{})
+		s.CheckError(err)
+		images := make(map[string]bool)
+		// looks O^3, but is actually going to be O(n)
+		for _, node := range list.Items {
+			for _, image := range node.Status.Images {
+				for _, n := range image.Names {
+					images[n] = true
+				}
+			}
+		}
+		for _, n := range []string{"docker.io/argoproj/argoexec:" + branch, "docker.io/library/cowsay:v1"} {
+			if !images[n] {
+				_, err := runCli("k3d", "import-images", n)
+				s.CheckError(err)
+			}
+		}
+	}
+}
+
 func (s *E2ESuite) TearDownSuite() {
 	s.Persistence.Close()
 }
@@ -68,6 +96,7 @@ func (s *E2ESuite) BeforeTest(suiteName, testName string) {
 	s.CheckError(err)
 	log.Infof("logging debug diagnostics to file://%s", name)
 	s.DeleteResources(Label)
+	s.importImages()
 }
 
 func (s *E2ESuite) DeleteResources(label string) {

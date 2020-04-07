@@ -25,7 +25,7 @@ type CronSuite struct {
 }
 
 func (s *CronSuite) SetupSuite() {
-	// TODO just skip for now
+	// TODO
 	s.T().SkipNow()
 	s.E2ESuite.SetupSuite()
 	// Since tests run in parallel, delete all cron resources before the test suite is run
@@ -34,7 +34,7 @@ func (s *CronSuite) SetupSuite() {
 
 func (s *CronSuite) TearDownSuite() {
 	s.E2ESuite.DeleteResources(fixtures.LabelCron)
-	s.Persistence.Close()
+	s.E2ESuite.TearDownSuite()
 }
 
 func (s *CronSuite) TestBasic() {

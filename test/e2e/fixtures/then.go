@@ -95,11 +95,11 @@ func (t *Then) expectAuditEvents(block func(*testing.T, []apiv1.Event)) *Then {
 	}
 	var events []apiv1.Event
 	for _, e := range eventList.Items {
-		log.WithFields(log.Fields{"event": e}).Info("Events")
 		if e.Namespace == Namespace && e.InvolvedObject.Kind == workflow.WorkflowKind {
 			events = append(events, e)
 		}
 	}
+	log.WithFields(log.Fields{"event": events}).Debug("Events")
 	block(t.t, events)
 	if t.t.Failed() {
 		t.t.FailNow()
