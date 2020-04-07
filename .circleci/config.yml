@@ -195,10 +195,10 @@ jobs:
       image: ubuntu-1604:201903-01
     steps:
       - checkout
-      - run: docker build .
+      - run: DOCKER_BUILDKIT=1 docker build .
   ui:
     docker:
-      - image: node:11.15.0
+      - image: circleci/node:11.15.0
     working_directory: ~/argo/ui
     steps:
       - checkout:
