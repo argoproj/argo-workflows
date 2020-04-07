@@ -202,7 +202,7 @@ jobs:
     docker:
       - image: circleci/node:11.15.0
     steps:
-      - checkout:
+      - checkout
       - restore_cache:
           name: Restore Yarn cache
           keys:
