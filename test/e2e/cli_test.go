@@ -168,6 +168,30 @@ func (s *CLISuite) TestLogs() {
 	})
 }
 
+// this test probably should be in the ArgoServerSuite, but it's just much easier to write the test
+// for the CLI
+func (s *CLISuite) TestLogProblems() {
+	s.Given().
+		Workflow(`@testdata/log-problems.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflowToStart(5*time.Second).
+		Then().
+		// logs should come in order
+		RunCli([]string{"logs", "log-problems", "--follow"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				lines := strings.Split(output, "\n")
+				if assert.Len(t, lines, 6) {
+					assert.Contains(t, lines[0], "one")
+					assert.Contains(t, lines[1], "two")
+					assert.Contains(t, lines[2], "three")
+					assert.Contains(t, lines[3], "four")
+					assert.Contains(t, lines[4], "five")
+				}
+			}
+		})
+}
+
 func (s *CLISuite) TestRoot() {
 	s.Run("Submit", func() {
 		s.Given().RunCli([]string{"submit", "smoke/basic.yaml"}, func(t *testing.T, output string, err error) {
