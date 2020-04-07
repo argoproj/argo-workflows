@@ -114,6 +114,7 @@ jobs:
     machine:
       image: ubuntu-1604:201903-01
     steps:
+      - install_kustomize
       - restore_go_cache
       - install_golang
       - checkout
@@ -125,6 +126,9 @@ jobs:
             sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
             sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
             rm -f $PROTOC_ZIP
+      - run:
+          name: Code manifests
+          command: make manifests
       - run:
           name: Code generate
           command: make codegen
