@@ -1,19 +1,18 @@
 package argo
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 
 	log "github.com/sirupsen/logrus"
-
-	"fmt"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-
-	"time"
 )
 
 type AuditLogger struct {
@@ -44,15 +43,11 @@ const (
 	EventReasonWorkflowNodeError     = "WorkflowNodeError"
 )
 
-func (l *AuditLogger) logEvent(objMeta ObjectRef, gvk schema.GroupVersionKind, info EventInfo, message string, logFields map[string]interface{}) {
+func (l *AuditLogger) logEvent(objMeta ObjectRef, gvk schema.GroupVersionKind, info EventInfo, message string, annotations map[string]string) {
 	logCtx := log.WithFields(log.Fields{
 		"type":   info.Type,
 		"reason": info.Reason,
 	})
-	for field, val := range logFields {
-		logCtx = logCtx.WithField(field, val)
-	}
-
 	switch gvk.Kind {
 	case "Workflow":
 		logCtx = logCtx.WithField("workflow", objMeta.Name)
@@ -62,7 +57,8 @@ func (l *AuditLogger) logEvent(objMeta ObjectRef, gvk schema.GroupVersionKind, i
 	t := metav1.Time{Time: time.Now()}
 	event := v1.Event{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("%v.%x", objMeta.Name, t.UnixNano()),
+			Name:        fmt.Sprintf("%v.%x", objMeta.Name, t.UnixNano()),
+			Annotations: annotations,
 		},
 		Source: v1.EventSource{
 			Component: l.component,
@@ -75,6 +71,7 @@ func (l *AuditLogger) logEvent(objMeta ObjectRef, gvk schema.GroupVersionKind, i
 			APIVersion:      gvk.Version,
 			UID:             objMeta.UID,
 		},
+
 		FirstTimestamp: t,
 		LastTimestamp:  t,
 		Count:          1,
@@ -90,14 +87,14 @@ func (l *AuditLogger) logEvent(objMeta ObjectRef, gvk schema.GroupVersionKind, i
 	}
 }
 
-func (l *AuditLogger) LogWorkflowEvent(workflow *v1alpha1.Workflow, info EventInfo, message string) {
+func (l *AuditLogger) LogWorkflowEvent(workflow *v1alpha1.Workflow, info EventInfo, message string, annotations map[string]string) {
 	objectMeta := ObjectRef{
 		Name:            workflow.ObjectMeta.Name,
 		Namespace:       workflow.ObjectMeta.Namespace,
 		ResourceVersion: workflow.ObjectMeta.ResourceVersion,
 		UID:             workflow.ObjectMeta.UID,
 	}
-	l.logEvent(objectMeta, v1alpha1.WorkflowSchemaGroupVersionKind, info, message, make(map[string]interface{}))
+	l.logEvent(objectMeta, v1alpha1.WorkflowSchemaGroupVersionKind, info, message, annotations)
 }
 
 func NewAuditLogger(ns string, kIf kubernetes.Interface, component string) *AuditLogger {
