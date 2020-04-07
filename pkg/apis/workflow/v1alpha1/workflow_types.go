@@ -1688,12 +1688,11 @@ func (wf *Workflow) NodeID(name string) string {
 
 // GetStoredTemplate retrieves a template from stored templates of the workflow.
 func (wf *Workflow) GetStoredTemplate(scope ResourceScope, resourceName string, caller TemplateReferenceHolder) *Template {
-	// Local templates aren't stored
-	if scope == ResourceScopeLocal {
+	tmplID, storageNeeded := wf.resolveTemplateReference(scope, resourceName, caller)
+	if !storageNeeded {
+		// Local templates aren't stored
 		return nil
 	}
-
-	tmplID := wf.getStoredTemplateName(scope, resourceName, caller)
 	if tmpl, ok := wf.Status.StoredTemplates[tmplID]; ok {
 		return &tmpl
 	}
@@ -1702,12 +1701,11 @@ func (wf *Workflow) GetStoredTemplate(scope ResourceScope, resourceName string, 
 
 // SetStoredTemplate stores a new template in stored templates of the workflow.
 func (wf *Workflow) SetStoredTemplate(scope ResourceScope, resourceName string, caller TemplateReferenceHolder, tmpl *Template) (bool, error) {
-	// Don't store local templates
-	if scope == ResourceScopeLocal {
+	tmplID, storageNeeded := wf.resolveTemplateReference(scope, resourceName, caller)
+	if !storageNeeded {
+		// Don't need to store local templates
 		return false, nil
 	}
-
-	tmplID := wf.getStoredTemplateName(scope, resourceName, caller)
 	if _, ok := wf.Status.StoredTemplates[tmplID]; !ok {
 		if wf.Status.StoredTemplates == nil {
 			wf.Status.StoredTemplates = map[string]Template{}
@@ -1718,15 +1716,25 @@ func (wf *Workflow) SetStoredTemplate(scope ResourceScope, resourceName string, 
 	return false, nil
 }
 
-// getStoredTemplateName returns the stored template name of a given template holder on the template scope.
-func (wf *Workflow) getStoredTemplateName(scope ResourceScope, resourceName string, caller TemplateReferenceHolder) string {
+// resolveTemplateReference resolves the stored template name of a given template holder on the template scope and determines
+// if it should be stored
+func (wf *Workflow) resolveTemplateReference(scope ResourceScope, resourceName string, caller TemplateReferenceHolder) (string, bool) {
 	tmplRef := caller.GetTemplateRef()
-	// We are calling an external WorkflowTemplate or ClusterWorkflowTemplate
 	if tmplRef != nil {
-		return fmt.Sprintf("%s/%s/%s", scope, tmplRef.Name, tmplRef.Template)
+		// We are calling an external WorkflowTemplate or ClusterWorkflowTemplate. Template storage is needed
+		// We need to determine if we're calling a WorkflowTemplate or a ClusterWorkflowTemplate
+		scope := ResourceScopeNamespaced
+		if tmplRef.ClusterScope {
+			scope = ResourceScopeCluster
+		}
+		return fmt.Sprintf("%s/%s/%s", scope, tmplRef.Name, tmplRef.Template), true
+	} else if scope != ResourceScopeLocal {
+		// Either a WorkflowTemplate or a ClusterWorkflowTemplate is calling a template inside itself. Template storage is needed
+		return fmt.Sprintf("%s/%s/%s", scope, resourceName, caller.GetTemplateName()), true
+	} else {
+		// A Workflow is calling a template inside itself. Template storage is not needed
+		return "", false
 	}
-	// Either a WorkflowTemplate or a ClusterWorkflowTemplate is calling a template inside itself
-	return fmt.Sprintf("%s/%s/%s", scope, resourceName, caller.GetTemplateName())
 }
 
 // ContinueOn defines if a workflow should continue even if a task or step fails/errors.
