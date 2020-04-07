@@ -130,6 +130,8 @@ jobs:
       - run: make codegen
       - run: make manifests
       - run: git diff --exit-code
+      - save_go_cache
+      - save_go_mod
   test:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
