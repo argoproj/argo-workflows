@@ -10,7 +10,7 @@ commands:
       - restore_cache:
           name: Restore go mod cache
           keys:
-            -  go-mod-v1-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
+            - go-mod-v1-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
   save_go_mod:
     steps:
       - save_cache:
@@ -117,6 +117,14 @@ jobs:
       - restore_go_cache
       - install_golang
       - checkout
+      - run:
+          name: Install protoc
+          command: |
+            PROTOC_ZIP=protoc-3.7.1-linux-x86_64.zip
+            curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.7.1/$PROTOC_ZIP
+            sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
+            sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
+            rm -f $PROTOC_ZIP
       - run:
           name: Code generate
           command: make codegen
