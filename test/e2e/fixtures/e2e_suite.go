@@ -65,7 +65,7 @@ type E2ESuite struct {
 	images map[string]bool
 	// Guard-rail.
 	// The number of archived workflows. If is changes between two tests, we have a problem.
-	numArchivedWorkflows int
+	numWorkflows int
 }
 
 func (s *E2ESuite) SetupSuite() {
@@ -116,28 +116,24 @@ func (s *E2ESuite) BeforeTest(suiteName, testName string) {
 	s.DeleteResources(Label)
 	s.images = s.listImages()
 	s.importImages()
-	numArchivedWorkflows := s.countArchivedWorkflows()
-	if s.numArchivedWorkflows > 0 && s.numArchivedWorkflows != numArchivedWorkflows {
-		s.T().Fatal("there should almost never be a change to the number of archived workflows between tests, this means the last test (no the current test) is bad and needs fixing - note this guard-rail does not work across test suites")
+	numWorkflows := s.countWorkflows()
+	if s.numWorkflows > 0 && s.numWorkflows != numWorkflows {
+		s.T().Fatal("there should almost never be a change to the number of workflows between tests, this means the last test (not the current test) is bad and needs fixing - note this guard-rail does not work across test suites")
 	}
-	s.numArchivedWorkflows = numArchivedWorkflows
+	s.numWorkflows = numWorkflows
 }
 
-func (s *E2ESuite) countArchivedWorkflows() int {
-	if s.Persistence.IsEnabled() {
-		workflows, err := s.Persistence.workflowArchive.ListWorkflows(Namespace, time.Time{}, time.Time{}, nil, 0, 0)
-		s.CheckError(err)
-		return len(workflows)
-	}
-	return 0
+func (s *E2ESuite) countWorkflows() int {
+	workflows, err := s.wfClient.List(metav1.ListOptions{})
+	s.CheckError(err)
+	return len(workflows.Items)
 }
 
 func (s *E2ESuite) importImages() {
 	// If we are running K3D we should re-import these prior to running tests, as they may have been evicted.
 	if k3d {
-		images := s.listImages()
 		for _, n := range []string{"docker.io/argoproj/argoexec:" + imageTag, "docker.io/library/cowsay:v1"} {
-			if !images[n] {
+			if !s.images[n] {
 				_, err := runCli("k3d", "import-images", n)
 				s.CheckError(err)
 			}
@@ -332,8 +328,6 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 		"docker.io/argoproj/argoexec:" + imageTag: true,
 		"docker.io/library/cowsay:v1":             true,
 		"docker.io/library/python:alpine3.6":      true,
-		// why this different name?
-		"python:alpine3.6": true,
 	}
 	for n := range s.listImages() {
 		if !s.images[n] && !imageWhitelist[n] {
