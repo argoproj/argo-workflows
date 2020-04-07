@@ -1688,7 +1688,7 @@ func (wf *Workflow) NodeID(name string) string {
 
 // GetStoredTemplate retrieves a template from stored templates of the workflow.
 func (wf *Workflow) GetStoredTemplate(scope ResourceScope, resourceName string, caller TemplateReferenceHolder) *Template {
-	tmplID, storageNeeded := wf.resolveTemplateReference(scope, resourceName, caller)
+	tmplID, storageNeeded := resolveTemplateReference(scope, resourceName, caller)
 	if !storageNeeded {
 		// Local templates aren't stored
 		return nil
@@ -1701,7 +1701,7 @@ func (wf *Workflow) GetStoredTemplate(scope ResourceScope, resourceName string, 
 
 // SetStoredTemplate stores a new template in stored templates of the workflow.
 func (wf *Workflow) SetStoredTemplate(scope ResourceScope, resourceName string, caller TemplateReferenceHolder, tmpl *Template) (bool, error) {
-	tmplID, storageNeeded := wf.resolveTemplateReference(scope, resourceName, caller)
+	tmplID, storageNeeded := resolveTemplateReference(scope, resourceName, caller)
 	if !storageNeeded {
 		// Don't need to store local templates
 		return false, nil
@@ -1718,19 +1718,19 @@ func (wf *Workflow) SetStoredTemplate(scope ResourceScope, resourceName string, 
 
 // resolveTemplateReference resolves the stored template name of a given template holder on the template scope and determines
 // if it should be stored
-func (wf *Workflow) resolveTemplateReference(scope ResourceScope, resourceName string, caller TemplateReferenceHolder) (string, bool) {
+func resolveTemplateReference(callerScope ResourceScope, resourceName string, caller TemplateReferenceHolder) (string, bool) {
 	tmplRef := caller.GetTemplateRef()
 	if tmplRef != nil {
 		// We are calling an external WorkflowTemplate or ClusterWorkflowTemplate. Template storage is needed
 		// We need to determine if we're calling a WorkflowTemplate or a ClusterWorkflowTemplate
-		scope := ResourceScopeNamespaced
+		referenceScope := ResourceScopeNamespaced
 		if tmplRef.ClusterScope {
-			scope = ResourceScopeCluster
+			referenceScope = ResourceScopeCluster
 		}
-		return fmt.Sprintf("%s/%s/%s", scope, tmplRef.Name, tmplRef.Template), true
-	} else if scope != ResourceScopeLocal {
+		return fmt.Sprintf("%s/%s/%s", referenceScope, tmplRef.Name, tmplRef.Template), true
+	} else if callerScope != ResourceScopeLocal {
 		// Either a WorkflowTemplate or a ClusterWorkflowTemplate is calling a template inside itself. Template storage is needed
-		return fmt.Sprintf("%s/%s/%s", scope, resourceName, caller.GetTemplateName()), true
+		return fmt.Sprintf("%s/%s/%s", callerScope, resourceName, caller.GetTemplateName()), true
 	} else {
 		// A Workflow is calling a template inside itself. Template storage is not needed
 		return "", false
