@@ -82,6 +82,14 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                             <ResourceSubmit<models.WorkflowTemplate>
                                 resourceName={'Workflow Template'}
                                 defaultResource={exampleWorkflowTemplate(this.namespace || 'default')}
+                                validate={wfValue => {
+                                    if (!wfValue || !wfValue.metadata) {
+                                        return 'Invalid WorkflowTemplate definition';
+                                    }
+                                    if (wfValue.metadata.namespace === undefined || wfValue.metadata.namespace === '') {
+                                        return 'Namespace is missing';
+                                    }
+                                }}
                                 onSubmit={wfTmpl => {
                                     return services.workflowTemplate
                                         .create(wfTmpl, wfTmpl.metadata.namespace)

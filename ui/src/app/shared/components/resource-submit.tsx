@@ -7,6 +7,7 @@ interface ResourceSubmitProps<T> {
     defaultResource: T;
     resourceName: string;
     onSubmit: (value: T) => Promise<void>;
+    validate?: (values: T) => any;
 }
 
 interface ResourceSubmitState {
@@ -26,6 +27,14 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                 <Formik
                     initialValues={{resource: this.props.defaultResource, resourceString: jsYaml.dump(this.props.defaultResource)}}
                     onSubmit={(values, {setSubmitting}) => {
+                        if (this.props.validate !== undefined) {
+                            const validateMsg = this.props.validate(values.resource);
+                            if (validateMsg !== undefined && validateMsg !== '') {
+                                this.setState({invalid: true, error: {message: validateMsg}});
+                                setSubmitting(false);
+                                return;
+                            }
+                        }
                         this.props
                             .onSubmit(values.resource)
                             .then(_ => setSubmitting(false))
