@@ -10,12 +10,12 @@ commands:
       - restore_cache:
           name: Restore go mod cache
           keys:
-            - go-mod-v1-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
+            - go-mod-v2-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
   save_go_mod:
     steps:
       - save_cache:
           name: Save go mod cache
-          key:  go-mod-v1-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
+          key:  go-mod-v2-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - /home/circleci/.go_workspace/go/pkg/mod
           when: always
@@ -32,7 +32,7 @@ commands:
     steps:
       - save_cache:
           name: Save Golang cache
-          key: go-v5-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+          key: go-v6-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - /home/circleci/.cache/go-build
             - /home/circleci/sdk/go1.13.4
@@ -42,8 +42,8 @@ commands:
       - restore_cache:
           name: Restore Golang cache
           keys:
-            - go-v5-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
-            - go-v5-master-{{ .Environment.CIRCLE_JOB }}
+            - go-v6-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+            - go-v6-master-{{ .Environment.CIRCLE_JOB }}
   e2e:
     steps:
       - install_kustomize
@@ -88,8 +88,6 @@ commands:
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
             make test-e2e 2>&1 | tee test-results/test.out
-      - save_go_mod
-      - save_go_cache
       - store_test_results:
           path: test-results
           when: always
@@ -103,6 +101,8 @@ commands:
           path: /tmp/log/argo-e2e
           destination: .
           when: always
+      - save_go_mod
+      - save_go_cache
   go_junit_report:
     steps:
       - run:
@@ -151,8 +151,6 @@ jobs:
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
             make test 2>&1 | tee test-results/test.out
-      - save_go_cache
-      - save_go_mod
       - run:
           name: Uploading code coverage
           command: bash <(curl -s https://codecov.io/bash) -f coverage.out
@@ -165,6 +163,8 @@ jobs:
           when: always
       - run: make lint
       - run: git diff --exit-code
+      - save_go_cache
+      - save_go_mod
   e2e-no-db:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
@@ -206,19 +206,20 @@ jobs:
       - restore_cache:
           name: Restore Yarn cache
           keys:
-            - yarn-packages-v1-{{ checksum "yarn.lock" }}
+            - yarn-packages-v2-{{ checksum "yarn.lock" }}
       - run:
           name: Download dependencies
           command: yarn install --frozen-lockfile --ignore-optional --non-interactive
-      - save_cache:
-          name: Save Yarn cache
-          key: yarn-packages-v1-{{ checksum "yarn.lock" }}
-          paths: [~/.cache/yarn, node_modules]
       # - run: yarn test
       # - run: ./node_modules/.bin/codecov -p ..
       - run: yarn build
       - run: yarn lint
       - run: git diff --exit-code
+      - save_cache:
+          name: Save Yarn cache
+          key: yarn-packages-v2-{{ checksum "yarn.lock" }}
+          paths: [~/.cache/yarn, node_modules]
+          when: always
 workflows:
   version: 2
   workflow:
