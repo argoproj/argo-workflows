@@ -29,7 +29,7 @@ const Label = "argo-e2e"
 // Cron tests run in parallel, so use a different label so they are not deleted when a new test runs
 const LabelCron = Label + "-cron"
 
-var gitBranch string
+var imageTag string
 var k3d bool
 
 func init() {
@@ -37,13 +37,16 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	gitBranch = strings.TrimSpace(output)
+	imageTag = strings.TrimSpace(output)
+	if imageTag == "master" {
+		imageTag = "latest"
+	}
 	context, err := runCli("kubectl", "config", "current-context")
 	if err != nil {
 		panic(err)
 	}
 	k3d = strings.TrimSpace(context) == "k3s-default"
-	log.WithFields(log.Fields{"gitBranch": gitBranch, "k3d": k3d}).Info()
+	log.WithFields(log.Fields{"imageTag": imageTag, "k3d": k3d}).Info()
 }
 
 type E2ESuite struct {
@@ -61,7 +64,7 @@ type E2ESuite struct {
 	images map[string]bool
 	// Guard-rail.
 	// The number of archived workflows. If is changes between two tests, we have a problem.
-	numArchivedWorkflows int
+	numWorkflows int
 }
 
 func (s *E2ESuite) SetupSuite() {
@@ -111,28 +114,24 @@ func (s *E2ESuite) BeforeTest(suiteName, testName string) {
 	s.DeleteResources(Label)
 	s.images = s.listImages()
 	s.importImages()
-	numArchivedWorkflows := s.countArchivedWorkflows()
-	if s.numArchivedWorkflows > 0 && s.numArchivedWorkflows != numArchivedWorkflows {
-		s.T().Fatal("there should almost never be a change to the number of archived workflows between tests, this means the last test (no the current test) is bad and needs fixing - note this guard-rail does not work across test suites")
+	numWorkflows := s.countWorkflows()
+	if s.numWorkflows > 0 && s.numWorkflows != numWorkflows {
+		s.T().Fatal("there should almost never be a change to the number of workflows between tests, this means the last test (not the current test) is bad and needs fixing - note this guard-rail does not work across test suites")
 	}
-	s.numArchivedWorkflows = numArchivedWorkflows
+	s.numWorkflows = numWorkflows
 }
 
-func (s *E2ESuite) countArchivedWorkflows() int {
-	if s.Persistence.IsEnabled() {
-		workflows, err := s.Persistence.workflowArchive.ListWorkflows(Namespace, time.Time{}, time.Time{}, nil, 0, 0)
-		s.CheckError(err)
-		return len(workflows)
-	}
-	return 0
+func (s *E2ESuite) countWorkflows() int {
+	workflows, err := s.wfClient.List(metav1.ListOptions{})
+	s.CheckError(err)
+	return len(workflows.Items)
 }
 
 func (s *E2ESuite) importImages() {
 	// If we are running K3D we should re-import these prior to running tests, as they may have been evicted.
 	if k3d {
-		images := s.listImages()
-		for _, n := range []string{"docker.io/argoproj/argoexec:" + gitBranch, "docker.io/library/cowsay:v1"} {
-			if !images[n] {
+		for _, n := range []string{"docker.io/argoproj/argoexec:" + imageTag, "docker.io/library/cowsay:v1"} {
+			if !s.images[n] {
 				_, err := runCli("k3d", "import-images", n)
 				s.CheckError(err)
 			}
@@ -315,11 +314,9 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 	// Using an arbitrary image will result in slow and flakey tests as we can't really predict when they'll be
 	// downloaded or evicted. To keep tests fast and reliable you must use whitelisted images.
 	imageWhitelist := map[string]bool{
-		"docker.io/argoproj/argoexec:" + gitBranch: true,
-		"docker.io/library/cowsay:v1":              true,
-		"docker.io/library/python:alpine3.6":       true,
-		// why this different name?
-		"python:alpine3.6": true,
+		"docker.io/argoproj/argoexec:" + imageTag: true,
+		"docker.io/library/cowsay:v1":             true,
+		"docker.io/library/python:alpine3.6":      true,
 	}
 	for n := range s.listImages() {
 		if !s.images[n] && !imageWhitelist[n] {
