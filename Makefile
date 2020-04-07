@@ -268,9 +268,9 @@ endif
 test: server/static/files.go
 	# Run unit tests
 ifeq ($(CI),false)
-	go test `go list ./... | grep -v 'test/e2e'`
+	go test -v `go list ./... | grep -v 'test/e2e'`
 else
-	go test -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
+	go test -v -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
 endif
 
 test/e2e/manifests/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
@@ -321,7 +321,7 @@ endif
 endif
 
 .PHONY: test-images
-test-images: dist/cowsay-v1 dist/bitnami-kubectl-1.15.3-ol-7-r165 dist/python-alpine3.6
+test-images: dist/cowsay-v1 dist/python-alpine3.6
 
 dist/cowsay-v1:
 	docker build -t cowsay:v1 test/e2e/images/cowsay
@@ -330,16 +330,12 @@ ifeq ($(K3D),true)
 endif
 	touch dist/cowsay-v1
 
-dist/bitnami-kubectl-1.15.3-ol-7-r165:
-	docker pull bitnami/kubectl:1.15.3-ol-7-r165
-	touch dist/bitnami-kubectl-1.15.3-ol-7-r165
-
 dist/python-alpine3.6:
 	docker pull python:alpine3.6
 	touch dist/python-alpine3.6
 
 .PHONY: start
-start: status install down controller-image cli-image executor-image wait-down up cli wait-up env
+start: status install down controller-image cli-image executor-image wait-down up cli test-images wait-up env
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 
@@ -401,17 +397,17 @@ mysql-cli:
 .PHONY: test-e2e
 test-e2e: test-images cli
 	# Run E2E tests
-	go test -timeout 20m -v -count 1 -p 1 ./test/e2e/...
+	go test -timeout 15m -v -count 1 -p 1 ./test/e2e/...
 
 .PHONY: smoke
 smoke: test-images
 	# Run smoke tests
-	go test -timeout 2m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
+	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
 
 .PHONY: test-api
 test-api: test-images
 	# Run API tests
-	go test -timeout 3m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
+	go test -timeout 1m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
 
 .PHONY: test-cli
 test-cli: test-images cli

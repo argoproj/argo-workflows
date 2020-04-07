@@ -22,7 +22,6 @@ import (
 
 type When struct {
 	t                     *testing.T
-	diagnostics           *Diagnostics
 	wf                    *wfv1.Workflow
 	wfTemplates           []*wfv1.WorkflowTemplate
 	cwfTemplates          []*wfv1.ClusterWorkflowTemplate
@@ -126,14 +125,14 @@ func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow)
 		case event := <-watch.ResultChan():
 			wf, ok := event.Object.(*wfv1.Workflow)
 			if ok {
-				logCtx.WithFields(log.Fields{"type": event.Type, "phase": wf.Status.Phase}).Info(wf.Status.Message)
+				logCtx.WithFields(log.Fields{"type": event.Type, "phase": wf.Status.Phase, "message": wf.Status.Message}).Info("...")
 				w.hydrateWorkflow(wf)
 				if test(wf) {
 					logCtx.Infof("Condition met")
 					return w
 				}
 			} else {
-				logCtx.Error("not ok")
+				w.t.Fatal("not ok")
 			}
 		case <-timeoutCh:
 			w.t.Fatalf("timeout after %v waiting for condition %s", timeout, condition)
@@ -190,8 +189,11 @@ func (w *When) DeleteWorkflow() *When {
 }
 
 func (w *When) RunCli(args []string, block func(t *testing.T, output string, err error)) *When {
-	output, err := runCli(w.diagnostics, args)
+	output, err := runCli("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
 	block(w.t, output, err)
+	if w.t.Failed() {
+		w.t.FailNow()
+	}
 	return w
 }
 
@@ -216,7 +218,6 @@ func (w *When) DeleteQuota() *When {
 func (w *When) Then() *Then {
 	return &Then{
 		t:                     w.t,
-		diagnostics:           w.diagnostics,
 		workflowName:          w.workflowName,
 		wfTemplateNames:       w.wfTemplateNames,
 		cronWorkflowName:      w.cronWorkflowName,
@@ -230,7 +231,6 @@ func (w *When) Then() *Then {
 func (w *When) Given() *Given {
 	return &Given{
 		t:                     w.t,
-		diagnostics:           w.diagnostics,
 		client:                w.client,
 		wfTemplateClient:      w.wfTemplateClient,
 		cwfTemplateClient:     w.cwfTemplateClient,
