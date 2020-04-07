@@ -389,7 +389,7 @@ func (s *ArgoServerSuite) TestLintWorkflow() {
 }
 
 func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
-	// TODO
+	// https://github.com/argoproj/argo/issues/2618
 	s.T().SkipNow()
 	s.e(s.T()).POST("/api/v1/workflows/argo").
 		WithQuery("createOptions.dryRun", "[All]").
@@ -924,7 +924,7 @@ spec:
 
 	s.Run("ListWithMinStartedAtGood", func() {
 		fieldSelector := "metadata.namespace=argo,spec.startedAt>" + time.Now().Add(-1*time.Hour).Format(time.RFC3339) + ",spec.startedAt<" + time.Now().Add(1*time.Hour).Format(time.RFC3339)
-		// TODO
+		// https://github.com/argoproj/argo/issues/2619
 		s.T().SkipNow()
 		s.e(s.T()).GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "argo-e2e").
@@ -940,7 +940,7 @@ spec:
 	})
 
 	s.Run("ListWithMinStartedAtBad", func() {
-		// TODO
+		// https://github.com/argoproj/argo/issues/2619
 		s.T().SkipNow()
 		s.e(s.T()).GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "argo-e2e").

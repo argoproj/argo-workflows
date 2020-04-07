@@ -272,7 +272,7 @@ func (s *CLISuite) TestRoot() {
 }
 
 func (s *CLISuite) TestWorkflowSuspendResume() {
-	// this test is flakey
+	// https://github.com/argoproj/argo/issues/2620
 	s.T().SkipNow()
 	s.Given().
 		Workflow("@testdata/sleep-3s.yaml").
@@ -303,6 +303,7 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 }
 
 func (s *CLISuite) TestNodeSuspendResume() {
+	// https://github.com/argoproj/argo/issues/2621
 	s.T().SkipNow()
 	s.Given().
 		Workflow("@testdata/node-suspend.yaml").
