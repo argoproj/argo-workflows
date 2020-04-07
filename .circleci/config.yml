@@ -222,7 +222,7 @@ jobs:
           when: always
 workflows:
   version: 2
-  workflow:
+  argo-workflow:
     jobs:
       - test
       - ui
