@@ -339,7 +339,7 @@ dist/python-alpine3.6:
 	touch dist/python-alpine3.6
 
 .PHONY: start
-start: status install down controller-image cli-image executor-image test-images wait-down up cli wait-up env
+start: status install down controller-image cli-image executor-image wait-down up cli test-images wait-up env
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 
