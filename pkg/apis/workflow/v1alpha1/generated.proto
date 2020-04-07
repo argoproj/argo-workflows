@@ -119,11 +119,15 @@ message ArtifactoryAuth {
   optional k8s.io.api.core.v1.SecretKeySelector passwordSecret = 2;
 }
 
+// Backoff is a backoff strategy to use within retryStrategy
 message Backoff {
+  // Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")
   optional string duration = 1;
 
+  // Factor is a factor to multiply the base duration after each failed retry
   optional int32 factor = 2;
 
+  // MaxDuration is the maximum amount of time allowed for the backoff strategy
   optional string maxDuration = 3;
 }
 
@@ -182,6 +186,7 @@ message CronWorkflowList {
   repeated CronWorkflow items = 2;
 }
 
+// CronWorkflowSpec is the specification of a CronWorkflow
 message CronWorkflowSpec {
   // WorkflowSpec is the spec of the workflow to be run
   optional WorkflowSpec workflowSpec = 1;
@@ -212,6 +217,7 @@ message CronWorkflowSpec {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 9;
 }
 
+// CronWorkflowStatus is the status of a CronWorkflow
 message CronWorkflowStatus {
   // Active is a list of active workflows stemming from this CronWorkflow
   repeated k8s.io.api.core.v1.ObjectReference active = 1;
@@ -643,6 +649,7 @@ message Parameter {
 
 // PodGC describes how to delete completed pods as they complete
 message PodGC {
+  // Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
   optional string strategy = 1;
 }
 
@@ -777,12 +784,15 @@ message SuspendTemplate {
   optional string duration = 1;
 }
 
-// TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed
+// TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed
 message TTLStrategy {
+  // SecondsAfterCompletion is the number of seconds to live after completion
   optional int32 secondsAfterCompletion = 1;
 
+  // SecondsAfterSuccess is the number of seconds to live after success
   optional int32 secondsAfterSuccess = 2;
 
+  // SecondsAfterFailure is the number of seconds to live after failure
   optional int32 secondsAfterFailure = 3;
 }
 
@@ -990,10 +1000,13 @@ message Workflow {
 }
 
 message WorkflowCondition {
+  // Type is the type of condition
   optional string type = 1;
 
+  // Status is the status of the condition
   optional string status = 2;
 
+  // Message is the condition message
   optional string message = 3;
 }
 
