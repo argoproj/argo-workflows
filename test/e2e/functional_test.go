@@ -79,6 +79,8 @@ spec:
 }
 
 func (s *FunctionalSuite) TestContinueOnFailDag() {
+	// TODO
+	s.T().SkipNow()
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
@@ -170,6 +172,8 @@ func (s *FunctionalSuite) TestFastFailOnPodTermination() {
 }
 
 func (s *FunctionalSuite) TestEventOnNodeFail() {
+	// TODO
+	s.T().SkipNow()
 	// Test whether an WorkflowFailed event (with appropriate message) is emitted in case of node failure
 	s.Given().
 		Workflow("@expectedfailures/failed-step-event.yaml").
@@ -190,6 +194,8 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 }
 
 func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
+	// TODO
+	s.T().SkipNow()
 	// Test whether an WorkflowSuccess event is emitted in case of successfully completed workflow
 	s.Given().
 		Workflow("@functional/success-event.yaml").
