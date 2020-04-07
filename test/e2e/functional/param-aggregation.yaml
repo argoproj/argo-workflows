@@ -38,7 +38,7 @@ spec:
       parameters:
       - name: num
     container:
-      image: alpine:latest
+      image: cowsay:v1
       command: [sh, -xc]
       args:
       - |
@@ -64,7 +64,7 @@ spec:
       parameters:
       - name: num
     container:
-      image: alpine:latest
+      image: cowsay:v1
       command: [sh, -c]
       args: ["echo $(({{inputs.parameters.num}}/2)) > /tmp/res"]
     outputs:
@@ -79,6 +79,6 @@ spec:
       parameters:
       - name: message
     container:
-      image: docker/whalesay:latest
+      image: cowsay:v1
       command: [cowsay]
       args: ["{{inputs.parameters.message}}"]
