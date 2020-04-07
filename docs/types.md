@@ -49,7 +49,7 @@ WorkflowSpec is the specification of a Workflow.
 |`suspend`|`boolean`|Suspend will suspend the workflow and prevent execution of any future steps in the workflow|
 |`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
-|`ttlSecondsAfterFinished`|`int32`|TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution(Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will bedeleted after ttlSecondsAfterFinished expires. If this field is unset,ttlSecondsAfterFinished will not expire. If this field is set to zero,ttlSecondsAfterFinished expires immediately after the Workflow finishes.DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
+|~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution(Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will bedeleted after ttlSecondsAfterFinished expires. If this field is unset,ttlSecondsAfterFinished will not expire. If this field is set to zero,ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference.The Workflow controller will create the claims at the beginning of the workflowand delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
@@ -159,7 +159,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`sidecars`|`Array<`[`UserContainer`](#usercontainer)`>`|Sidecars is a list of containers which run alongside the main containerSidecars are automatically killed when the main container completes|
 |`steps`|`Array<`[`ParallelSteps`](#parallelsteps)`>`|Steps define a series of sequential/parallel workflow steps|
 |`suspend`|[`SuspendTemplate`](#suspendtemplate)|SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time|
-|`template`|`string`|Template is the name of the template which is used as the base of this template.DEPRECATED: This field is not used.|
+|~`template`~|~`string`~|~Template is the name of the template which is used as the base of this template.~ DEPRECATED: This field is not used.|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is a reference of template resource.|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a template.|
@@ -208,12 +208,12 @@ NodeStatus contains status information about an individual node in the workflow
 |`podIP`|`string`|PodIP captures the IP of the pod for daemoned steps|
 |`resourcesDuration`|`Map< string , int64 >`|ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.|
 |`startedAt`|[`Time`](#time)|Time is a wrapper around time.Time which supports correctmarshaling to YAML and JSON.  Wrappers are provided for manyof the factory methods that the time package offers.|
-|`storedTemplateID`|`string`|StoredTemplateID is the ID of stored template.DEPRECATED: This value is not used anymore.|
+|~`storedTemplateID`~|~`string`~|~StoredTemplateID is the ID of stored template.~ DEPRECATED: This value is not used anymore.|
 |`templateName`|`string`|TemplateName is the template name which this node corresponds to.Not applicable to virtual nodes (e.g. Retry, StepGroup)|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is a reference of template resource.|
 |`templateScope`|`string`|TemplateScope is the template scope in which the template of this node was retrieved.|
 |`type`|`string`|Type indicates type of node|
-|`workflowTemplateName`|`string`|WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.DEPRECATED: This value is not used anymore.|
+|~`workflowTemplateName`~|~`string`~|~WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.~ DEPRECATED: This value is not used anymore.|
 
 ## Outputs
 
@@ -249,7 +249,7 @@ Parameter indicate a passed string parameter to a service template with an optio
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`default`|`string`|Default is the default value to use for an input parameter if a value was not suppliedDEPRECATED: This field is not used|
+|~`default`~|~`string`~|~Default is the default value to use for an input parameter if a value was not supplied~ DEPRECATED: This field is not used|
 |`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as'{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters|
 |`name`|`string`|Name is the parameter name|
 |`value`|`string`|Value is the literal value to use for the parameter.If specified in the context of an input parameter, the value takes precedence over any passed values|
