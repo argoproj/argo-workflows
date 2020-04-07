@@ -213,7 +213,7 @@ Workflow is the definition of a workflow resource
 
 - [`loops-maps.yaml`](../examples/loops-maps.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -230,7 +230,7 @@ CronWorkflow is the definition of a scheduled workflow resource
 
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -247,7 +247,7 @@ WorkflowTemplate is the definition of a workflow template resource
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -473,7 +473,7 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`loops-maps.yaml`](../examples/loops-maps.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -506,7 +506,7 @@ WorkflowSpec is the specification of a Workflow.
 |`suspend`|`boolean`|Suspend will suspend the workflow and prevent execution of any future steps in the workflow|
 |`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
-|~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution(Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will bedeleted after ttlSecondsAfterFinished expires. If this field is unset,ttlSecondsAfterFinished will not expire. If this field is set to zero,ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead. DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
+|~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution(Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will bedeleted after ttlSecondsAfterFinished expires. If this field is unset,ttlSecondsAfterFinished will not expire. If this field is set to zero,ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if itSucceeded or Failed. If this struct is set, once the Workflow finishes, it will bedeleted after the time to live expires. If this field is unset,the controller config map will hold the default values.|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference.The Workflow controller will create the claims at the beginning of the workflowand delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
@@ -514,7 +514,7 @@ WorkflowSpec is the specification of a Workflow.
 ## WorkflowStatus
 
 WorkflowStatus contains overall status information about a workflow
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -750,7 +750,7 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`loops-maps.yaml`](../examples/loops-maps.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -767,7 +767,7 @@ CronWorkflowSpec is the specification of a CronWorkflow
 ## CronWorkflowStatus
 
 CronWorkflowStatus is the status of a CronWorkflow
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -993,7 +993,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`loops-maps.yaml`](../examples/loops-maps.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -1114,7 +1114,7 @@ Arguments to a template
 
 - [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -1124,7 +1124,7 @@ Arguments to a template
 ## ArtifactRepositoryRef
 
 _No description available_
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -1134,7 +1134,7 @@ _No description available_
 ## ExecutorConfig
 
 ExecutorConfig holds configurations of an executor container.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -1149,7 +1149,7 @@ Metrics are a list of metrics emitted from a Workflow/Template
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -1164,7 +1164,7 @@ PodGC describes how to delete completed pods as they complete
 
 - [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -1387,14 +1387,14 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`loops-maps.yaml`](../examples/loops-maps.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`activeDeadlineSeconds`|`int64`|Optional duration in seconds relative to the StartTime that the pod may be active on a nodebefore the system actively tries to terminate the pod; value must be positive integerThis field is only applicable to container and script templates.|
 |`affinity`|[`Affinity`](#affinity)|Affinity sets the pod's scheduling constraintsOverrides the affinity set at the workflow level (if any)|
 |`archiveLocation`|[`ArtifactLocation`](#artifactlocation)|Location in which all files related to the step will be stored (logs, artifacts, etc...).Can be overridden by individual items in Outputs. If omitted, will use the defaultartifact repository location configured in the controller, appended with the<workflowname>/<nodename> in the key.|
-|~`arguments`~|~[`Arguments`](#arguments)~|~Arguments hold arguments to the template.~ DEPRECATED: This field is not used. DEPRECATED: This field is not used.|
+|~`arguments`~|~[`Arguments`](#arguments)~|~Arguments hold arguments to the template.~ DEPRECATED: This field is not used.|
 |`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.ServiceAccountName of ExecutorConfig must be specified if this value is false.|
 |`container`|[`Container`](#container)|Container is the main container image to run in the pod|
 |`daemon`|`boolean`|Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness|
@@ -1420,10 +1420,10 @@ Template is a reusable and composable unit of execution in a workflow
 |`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings.Optional: Defaults to empty.  See type description for default values of each field.+optional|
 |`serviceAccountName`|`string`|ServiceAccountName to apply to workflow pods|
 |`sidecars`|`Array<`[`UserContainer`](#usercontainer)`>`|Sidecars is a list of containers which run alongside the main containerSidecars are automatically killed when the main container completes|
-|`steps`|`Array<`[`ParallelSteps`](#parallelsteps)`>`|Steps define a series of sequential/parallel workflow steps|
+|`steps`|`Array<Array<`[`WorkflowStep`](#workflowstep)`>>`|Steps define a series of sequential/parallel workflow steps|
 |`suspend`|[`SuspendTemplate`](#suspendtemplate)|Suspend template subtype which can suspend a workflow when reaching the step|
-|~`template`~|~`string`~|~Template is the name of the template which is used as the base of this template.~ DEPRECATED: This field is not used. DEPRECATED: This field is not used.|
-|~`templateRef`~|~[`TemplateRef`](#templateref)~|~TemplateRef is the reference to the template resource which is used as the base of this template.~ DEPRECATED: This field is not used. DEPRECATED: This field is not used.|
+|~`template`~|~`string`~|~Template is the name of the template which is used as the base of this template.~ DEPRECATED: This field is not used.|
+|~`templateRef`~|~[`TemplateRef`](#templateref)~|~TemplateRef is the reference to the template resource which is used as the base of this template.~ DEPRECATED: This field is not used.|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a template.|
 
@@ -1436,7 +1436,7 @@ TTLStrategy is the strategy for the time to live depending on if the workflow su
 
 - [`gc-ttl.yaml`](../examples/gc-ttl.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -1447,7 +1447,7 @@ TTLStrategy is the strategy for the time to live depending on if the workflow su
 ## WorkflowCondition
 
 _No description available_
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -1458,7 +1458,7 @@ _No description available_
 ## NodeStatus
 
 NodeStatus contains status information about an individual node in the workflow
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -1477,12 +1477,12 @@ NodeStatus contains status information about an individual node in the workflow
 |`podIP`|`string`|PodIP captures the IP of the pod for daemoned steps|
 |`resourcesDuration`|`Map< string , int64 >`|ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.|
 |`startedAt`|[`Time`](#time)|Time at which this node started|
-|~`storedTemplateID`~|~`string`~|~StoredTemplateID is the ID of stored template.~ DEPRECATED: This value is not used anymore. DEPRECATED: This value is not used anymore.|
+|~`storedTemplateID`~|~`string`~|~StoredTemplateID is the ID of stored template.~ DEPRECATED: This value is not used anymore.|
 |`templateName`|`string`|TemplateName is the template name which this node corresponds to.Not applicable to virtual nodes (e.g. Retry, StepGroup)|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource which this node corresponds to.Not applicable to virtual nodes (e.g. Retry, StepGroup)|
 |`templateScope`|`string`|TemplateScope is the template scope in which the template of this node was retrieved.|
 |`type`|`string`|Type indicates type of node|
-|~`workflowTemplateName`~|~`string`~|~WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.~ DEPRECATED: This value is not used anymore. DEPRECATED: This value is not used anymore.|
+|~`workflowTemplateName`~|~`string`~|~WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.~ DEPRECATED: This value is not used anymore.|
 
 ## Outputs
 
@@ -1529,7 +1529,7 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -1582,7 +1582,7 @@ Artifact indicates an artifact to place at a specified path
 
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -1704,11 +1704,11 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|~`default`~|~`string`~|~Default is the default value to use for an input parameter if a value was not supplied~ DEPRECATED: This field is not used DEPRECATED: This field is not used|
+|~`default`~|~`string`~|~Default is the default value to use for an input parameter if a value was not supplied~ DEPRECATED: This field is not used|
 |`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as'{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters|
 |`name`|`string`|Name is the parameter name|
 |`value`|`string`|Value is the literal value to use for the parameter.If specified in the context of an input parameter, the value takes precedence over any passed values|
@@ -1723,7 +1723,7 @@ Prometheus is a prometheus metric to be emitted
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -1744,7 +1744,7 @@ ArtifactLocation describes a location for a single or multiple artifacts.It is u
 
 - [`archive-location.yaml`](../examples/archive-location.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -1801,7 +1801,7 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -1818,7 +1818,7 @@ UserContainer is a container specified by a user.
 
 - [`init-container.yaml`](../examples/init-container.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -1934,7 +1934,7 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2160,7 +2160,7 @@ Pod metdata
 
 - [`loops-maps.yaml`](../examples/loops-maps.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2184,7 +2184,7 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 
 - [`k8s-set-owner-reference.yaml`](../examples/k8s-set-owner-reference.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2220,7 +2220,7 @@ RetryStrategy provides controls on how to retry a workflow step
 
 - [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2261,16 +2261,16 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`container`|[`Container`](#container)|_No desription available_|
 |`source`|`string`|Source contains the source code of the script to execute|
 
-## ParallelSteps
+## WorkflowStep
 
-_No description available_
+WorkflowStep is a reference to a template to execute in a series of step
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -2384,6 +2384,20 @@ _No description available_
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 </details>
 
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`arguments`|[`Arguments`](#arguments)|Arguments hold arguments to the template|
+|`continueOn`|[`ContinueOn`](#continueon)|ContinueOn makes argo to proceed with the following step even if this step fails.Errors and Failed states can be specified|
+|`name`|`string`|Name of the step|
+|`onExit`|`string`|OnExit is a template reference which is invoked at the end of thetemplate, irrespective of the success, failure, or error of theprimary template.|
+|`template`|`string`|Template is the name of the template to execute as the step|
+|`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource to execute as the step.|
+|`when`|`string`|When is an expression in which the step should conditionally execute|
+|`withItems`|`Array<`[`Item`](#item)`>`|WithItems expands a step into multiple parallel steps from the items in the list|
+|`withParam`|`string`|WithParam expands a step into multiple parallel steps from the value in the parameter,which is expected to be a JSON list.|
+|`withSequence`|[`Sequence`](#sequence)|WithSequence expands a step into a numeric sequence|
+
 ## SuspendTemplate
 
 SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
@@ -2395,7 +2409,7 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2424,7 +2438,7 @@ TemplateRef is a reference of template resource.
 
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2444,7 +2458,7 @@ ArchiveStrategy describes how to archive files/directory when saving artifacts
 
 - [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2482,7 +2496,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 
 - [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2501,7 +2515,7 @@ Counter is a Counter prometheus metric
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2516,7 +2530,7 @@ Gauge is a Gauge prometheus metric
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2532,7 +2546,7 @@ Histogram is a Histogram prometheus metric
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2552,7 +2566,7 @@ MetricLabel is a single label for a prometheus metric
 
 - [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2568,7 +2582,7 @@ ArtifactoryArtifact is the location of an artifactory artifact
 
 - [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2584,7 +2598,7 @@ GCSArtifact is the location of a GCS artifact
 
 - [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2606,7 +2620,7 @@ GitArtifact is the location of an git artifact
 
 - [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2628,7 +2642,7 @@ HDFSArtifact is the location of an HDFS artifact
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2663,7 +2677,7 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 
 - [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2678,7 +2692,7 @@ OSSArtifact is the location of an OSS artifact
 
 - [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2696,7 +2710,7 @@ RawArtifact allows raw string content to be placed as an artifact in a container
 
 - [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2705,7 +2719,7 @@ RawArtifact allows raw string content to be placed as an artifact in a container
 ## S3Artifact
 
 S3Artifact is the location of an S3 artifact
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2755,7 +2769,7 @@ DAGTask represents a node in the graph during DAG execution
 
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2780,99 +2794,13 @@ Backoff is a backoff strategy to use within retryStrategy
 
 - [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`duration`|`string`|Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")|
 |`factor`|`int32`|Factor is a factor to multiply the base duration after each failed retry|
 |`maxDuration`|`string`|MaxDuration is the maximum amount of time allowed for the backoff strategy|
-
-## NoneStrategy
-
-NoneStrategy indicates to skip tar process and upload the files or directory tree as independentfiles. Note that if the artifact is a directory, the artifact driver must support the ability tosave/load the directory appropriately.
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
-
-- [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
-</details>
-
-## TarStrategy
-
-TarStrategy will tar and gzip the file or directory when saving
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
-</details>
-    
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact.Defaults to gzip.DefaultCompression.|
-
-## ArtifactoryAuth
-
-ArtifactoryAuth describes the secret selectors required for authenticating to artifactory
-    
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
-|`usernameSecret`|[`SecretKeySelector`](#secretkeyselector)|UsernameSecret is the secret selector to the repository username|
-
-## GCSBucket
-
-GCSBucket contains the access information for interfacring with a GCS bucket
-    
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`bucket`|`string`|Bucket is the name of the bucket|
-|`serviceAccountKeySecret`|[`SecretKeySelector`](#secretkeyselector)|ServiceAccountKeySecret is the secret selector to the bucket's service account key|
-
-## HDFSConfig
-
-HDFSConfig is configurations for HDFS
-    
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`addresses`|`Array< string >`|Addresses is accessible addresses of HDFS name nodes|
-|`hDFSKrbConfig`|[`HDFSKrbConfig`](#hdfskrbconfig)|_No desription available_|
-|`hdfsUser`|`string`|HDFSUser is the user to access HDFS file system.It is ignored if either ccache or keytab is used.|
-
-## OSSBucket
-
-OSSBucket contains the access information required for interfacing with an OSS bucket
-    
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
-|`bucket`|`string`|Bucket is the name of the bucket|
-|`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
-|`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
-
-## S3Bucket
-
-S3Bucket contains the access information required for interfacing with an S3 bucket
-    
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
-|`bucket`|`string`|Bucket is the name of the bucket|
-|`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
-|`insecure`|`boolean`|Insecure will connect to the service with TLS|
-|`region`|`string`|Region contains the optional bucket region|
-|`roleARN`|`string`|RoleARN is the Amazon Resource Name (ARN) of the role to assume.|
-|`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
-|`useSDKCreds`|`boolean`|UseSDKCreds tells the driver to figure out credentials based on sdk defaults.|
 
 ## ContinueOn
 
@@ -2887,7 +2815,7 @@ ContinueOn defines if a workflow should continue even if a task or step fails/er
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2925,7 +2853,7 @@ _No description available_
 
 - [`loops-maps.yaml`](../examples/loops-maps.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2945,7 +2873,7 @@ Sequence expands a workflow step into numeric range
 
 - [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2954,24 +2882,96 @@ Sequence expands a workflow step into numeric range
 |`format`|`string`|Format is a printf format string to format the value in the sequence|
 |`start`|`string`|Number at which to start the sequence (default: 0)|
 
-## HDFSKrbConfig
+## NoneStrategy
 
-HDFSKrbConfig is auth configurations for Kerberos
-    
+NoneStrategy indicates to skip tar process and upload the files or directory tree as independentfiles. Note that if the artifact is a directory, the artifact driver must support the ability tosave/load the directory appropriately.
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
+
+- [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
+</details>
+
+## TarStrategy
+
+TarStrategy will tar and gzip the file or directory when saving
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
+</details>
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`krbCCacheSecret`|[`SecretKeySelector`](#secretkeyselector)|KrbCCacheSecret is the secret selector for Kerberos ccacheEither ccache or keytab can be set to use Kerberos.|
-|`krbConfigConfigMap`|[`ConfigMapKeySelector`](#configmapkeyselector)|KrbConfig is the configmap selector for Kerberos config as stringIt must be set if either ccache or keytab is used.|
-|`krbKeytabSecret`|[`SecretKeySelector`](#secretkeyselector)|KrbKeytabSecret is the secret selector for Kerberos keytabEither ccache or keytab can be set to use Kerberos.|
-|`krbRealm`|`string`|KrbRealm is the Kerberos realm used with Kerberos keytabIt must be set if keytab is used.|
-|`krbServicePrincipalName`|`string`|KrbServicePrincipalName is the principal name of Kerberos serviceIt must be set if either ccache or keytab is used.|
-|`krbUsername`|`string`|KrbUsername is the Kerberos username used with Kerberos keytabIt must be set if keytab is used.|
+|`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact.Defaults to gzip.DefaultCompression.|
+
+## ArtifactoryAuth
+
+ArtifactoryAuth describes the secret selectors required for authenticating to artifactory
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
+|`usernameSecret`|[`SecretKeySelector`](#secretkeyselector)|UsernameSecret is the secret selector to the repository username|
+
+## GCSBucket
+
+GCSBucket contains the access information for interfacring with a GCS bucket
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`bucket`|`string`|Bucket is the name of the bucket|
+|`serviceAccountKeySecret`|[`SecretKeySelector`](#secretkeyselector)|ServiceAccountKeySecret is the secret selector to the bucket's service account key|
+
+## HDFSConfig
+
+HDFSConfig is configurations for HDFS
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`addresses`|`Array< string >`|Addresses is accessible addresses of HDFS name nodes|
+|`hDFSKrbConfig`|[`HDFSKrbConfig`](#hdfskrbconfig)|_No desription available_|
+|`hdfsUser`|`string`|HDFSUser is the user to access HDFS file system.It is ignored if either ccache or keytab is used.|
+
+## OSSBucket
+
+OSSBucket contains the access information required for interfacing with an OSS bucket
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
+|`bucket`|`string`|Bucket is the name of the bucket|
+|`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
+|`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
+
+## S3Bucket
+
+S3Bucket contains the access information required for interfacing with an S3 bucket
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
+|`bucket`|`string`|Bucket is the name of the bucket|
+|`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
+|`insecure`|`boolean`|Insecure will connect to the service with TLS|
+|`region`|`string`|Region contains the optional bucket region|
+|`roleARN`|`string`|RoleARN is the Amazon Resource Name (ARN) of the role to assume.|
+|`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
+|`useSDKCreds`|`boolean`|UseSDKCreds tells the driver to figure out credentials based on sdk defaults.|
 
 ## ItemValue
 
 _No description available_
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -2981,6 +2981,20 @@ _No description available_
 |`numVal`|`string`|_No desription available_|
 |`strVal`|`string`|_No desription available_|
 |`type`|`int64`|_No desription available_|
+
+## HDFSKrbConfig
+
+HDFSKrbConfig is auth configurations for Kerberos
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`krbCCacheSecret`|[`SecretKeySelector`](#secretkeyselector)|KrbCCacheSecret is the secret selector for Kerberos ccacheEither ccache or keytab can be set to use Kerberos.|
+|`krbConfigConfigMap`|[`ConfigMapKeySelector`](#configmapkeyselector)|KrbConfig is the configmap selector for Kerberos config as stringIt must be set if either ccache or keytab is used.|
+|`krbKeytabSecret`|[`SecretKeySelector`](#secretkeyselector)|KrbKeytabSecret is the secret selector for Kerberos keytabEither ccache or keytab can be set to use Kerberos.|
+|`krbRealm`|`string`|KrbRealm is the Kerberos realm used with Kerberos keytabIt must be set if keytab is used.|
+|`krbServicePrincipalName`|`string`|KrbServicePrincipalName is the principal name of Kerberos serviceIt must be set if either ccache or keytab is used.|
+|`krbUsername`|`string`|KrbUsername is the Kerberos username used with Kerberos keytabIt must be set if keytab is used.|
 
 # External Fields
 
@@ -3204,7 +3218,7 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`loops-maps.yaml`](../examples/loops-maps.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3222,13 +3236,13 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 |`namespace`|`string`|Namespace defines the space within each name must be unique. An empty namespace isequivalent to the "default" namespace, but "default" is the canonical representation.Not all objects are required to be scoped to a namespace - the value of this field forthose objects will be empty.Must be a DNS_LABEL.Cannot be updated.More info: http://kubernetes.io/docs/user-guide/namespaces+optional|
 |`ownerReferences`|`Array<`[`OwnerReference`](#ownerreference)`>`|List of objects depended by this object. If ALL objects in the list havebeen deleted, this object will be garbage collected. If this object is managed by a controller,then an entry in this list will point to this controller, with the controller field set to true.There cannot be more than one managing controller.+optional|
 |`resourceVersion`|`string`|An opaque value that represents the internal version of this object that canbe used by clients to determine when objects have changed. May be used for optimisticconcurrency, change detection, and the watch operation on a resource or set of resources.Clients must treat these values as opaque and passed unmodified back to the server.They may only be valid for a particular resource or set of resources.Populated by the system.Read-only.Value must be treated as opaque by clients and .More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency+optional|
-|~`selfLink`~|~`string`~|~SelfLink is a URL representing this object.Populated by the system.Read-only.~ DEPRECATEDKubernetes will stop propagating this field in 1.20 release and the field is plannedto be removed in 1.21 release.+optional DEPRECATEDKubernetes will stop propagating this field in 1.20 release and the field is plannedto be removed in 1.21 release.+optional|
+|~`selfLink`~|~`string`~|~SelfLink is a URL representing this object.Populated by the system.Read-only.~ DEPRECATEDKubernetes will stop propagating this field in 1.20 release and the field is plannedto be removed in 1.21 release.+optional|
 |`uid`|`string`|UID is the unique in time and space value for this object. It is typically generated bythe server on successful creation of a resource and is not allowed to change on PUToperations.Populated by the system.Read-only.More info: http://kubernetes.io/docs/user-guide/identifiers#uids+optional|
 
 ## Affinity
 
 Affinity is a group of affinity scheduling rules.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3245,7 +3259,7 @@ PodDNSConfig defines the DNS parameters of a pod in addition tothose generated f
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3256,7 +3270,7 @@ PodDNSConfig defines the DNS parameters of a pod in addition tothose generated f
 ## HostAlias
 
 HostAlias holds the mapping between IP and hostnames that will be injected as an entry in thepod's hosts file.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3272,7 +3286,7 @@ LocalObjectReference contains enough information to let you locate thereferenced
 
 - [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3281,7 +3295,7 @@ LocalObjectReference contains enough information to let you locate thereferenced
 ## PodDisruptionBudgetSpec
 
 PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3298,7 +3312,7 @@ PodSecurityContext holds pod-level security attributes and common container sett
 
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3314,7 +3328,7 @@ PodSecurityContext holds pod-level security attributes and common container sett
 ## Toleration
 
 The pod this Toleration is attached to tolerates any taint that matchesthe triple <key,value,effect> using the matching operator <operator>.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3345,7 +3359,7 @@ PersistentVolumeClaim is a user's request for and claim to a persistent volume
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3368,7 +3382,7 @@ Volume represents a named volume in a pod that may be accessed by any container 
 
 - [`init-container.yaml`](../examples/init-container.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3378,7 +3392,7 @@ Volume represents a named volume in a pod that may be accessed by any container 
 ## Time
 
 Time is a wrapper around time.Time which supports correctmarshaling to YAML and JSON.  Wrappers are provided for manyof the factory methods that the time package offers.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3388,7 +3402,7 @@ Time is a wrapper around time.Time which supports correctmarshaling to YAML and 
 ## ObjectReference
 
 ObjectReference contains enough information to let you inspect or modify the referred object.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3593,7 +3607,7 @@ A single application container that you want to run within a pod.
 
 - [`loops-maps.yaml`](../examples/loops-maps.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3631,7 +3645,7 @@ SecretKeySelector selects a key of a Secret.
 
 - [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3648,7 +3662,7 @@ Selects a key from a ConfigMap.
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3659,7 +3673,7 @@ Selects a key from a ConfigMap.
 ## ManagedFieldsEntry
 
 ManagedFieldsEntry is a workflow-id, a FieldSet and the group version of the resourcethat the fieldset applies to.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3679,7 +3693,7 @@ OwnerReference contains enough information to let you identify an owningobject. 
 
 - [`k8s-owner-reference.yaml`](../examples/k8s-owner-reference.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3693,7 +3707,7 @@ OwnerReference contains enough information to let you identify an owningobject. 
 ## NodeAffinity
 
 Node affinity is a group of node affinity scheduling rules.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3703,7 +3717,7 @@ Node affinity is a group of node affinity scheduling rules.
 ## PodAffinity
 
 Pod affinity is a group of inter pod affinity scheduling rules.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3713,7 +3727,7 @@ Pod affinity is a group of inter pod affinity scheduling rules.
 ## PodAntiAffinity
 
 Pod anti affinity is a group of inter pod anti affinity scheduling rules.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3729,7 +3743,7 @@ PodDNSConfigOption defines DNS resolver options of a pod.
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3739,7 +3753,7 @@ PodDNSConfigOption defines DNS resolver options of a pod.
 ## IntOrString
 
 _No description available_
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3750,7 +3764,7 @@ _No description available_
 ## LabelSelector
 
 A label selector is a label query over a set of resources. The result of matchLabels andmatchExpressions are ANDed. An empty label selector matches all objects. A nulllabel selector matches no objects.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3760,7 +3774,7 @@ A label selector is a label query over a set of resources. The result of matchLa
 ## SELinuxOptions
 
 SELinuxOptions are the labels to be applied to the container
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3772,7 +3786,7 @@ SELinuxOptions are the labels to be applied to the container
 ## Sysctl
 
 Sysctl defines a kernel parameter to be set
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3782,7 +3796,7 @@ Sysctl defines a kernel parameter to be set
 ## WindowsSecurityContextOptions
 
 WindowsSecurityContextOptions contain Windows-specific options and credentials.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4009,7 +4023,7 @@ PersistentVolumeClaimSpec describes the common attributes of storage devicesand 
 
 - [`loops-maps.yaml`](../examples/loops-maps.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4024,7 +4038,7 @@ PersistentVolumeClaimSpec describes the common attributes of storage devicesand 
 ## PersistentVolumeClaimStatus
 
 PersistentVolumeClaimStatus is the current status of a persistent volume claim.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4036,7 +4050,7 @@ PersistentVolumeClaimStatus is the current status of a persistent volume claim.
 ## VolumeSource
 
 Represents the source of a volume to mount.Only one of its members may be specified.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4053,7 +4067,7 @@ Represents the source of a volume to mount.Only one of its members may be specif
 |`flexVolume`|[`FlexVolumeSource`](#flexvolumesource)|FlexVolume represents a generic volume resource that isprovisioned/attached using an exec based plugin.+optional|
 |`flocker`|[`FlockerVolumeSource`](#flockervolumesource)|Flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running+optional|
 |`gcePersistentDisk`|[`GCEPersistentDiskVolumeSource`](#gcepersistentdiskvolumesource)|GCEPersistentDisk represents a GCE Disk resource that is attached to akubelet's host machine and then exposed to the pod.More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk+optional|
-|~`gitRepo`~|~[`GitRepoVolumeSource`](#gitrepovolumesource)~|~GitRepo represents a git repository at a particular revision.~ DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount anEmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDirinto the Pod's container.+optional DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount anEmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDirinto the Pod's container.+optional|
+|~`gitRepo`~|~[`GitRepoVolumeSource`](#gitrepovolumesource)~|~GitRepo represents a git repository at a particular revision.~ DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount anEmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDirinto the Pod's container.+optional|
 |`glusterfs`|[`GlusterfsVolumeSource`](#glusterfsvolumesource)|Glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.More info: https://examples.k8s.io/volumes/glusterfs/README.md+optional|
 |`hostPath`|[`HostPathVolumeSource`](#hostpathvolumesource)|HostPath represents a pre-existing file or directory on the hostmachine that is directly exposed to the container. This is generallyused for system agents or other privileged things that are allowedto see the host machine. Most containers will NOT need this.More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath---TODO(jonesdl) We need to restrict who can use host directory mounts and who can/can notmount host directories as read/write.+optional|
 |`iscsi`|[`ISCSIVolumeSource`](#iscsivolumesource)|ISCSI represents an ISCSI Disk resource that is attached to akubelet's host machine and then exposed to the pod.More info: https://examples.k8s.io/volumes/iscsi/README.md+optional|
@@ -4080,7 +4094,7 @@ EnvVar represents an environment variable present in a Container.
 
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4091,7 +4105,7 @@ EnvVar represents an environment variable present in a Container.
 ## EnvFromSource
 
 EnvFromSource represents the source of a set of ConfigMaps
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4102,7 +4116,7 @@ EnvFromSource represents the source of a set of ConfigMaps
 ## Lifecycle
 
 Lifecycle describes actions that the management system should take in response to container lifecycleevents. For the PostStart and PreStop lifecycle handlers, management of the container blocksuntil the action is complete, unless the container process fails, in which case the handler is aborted.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4112,7 +4126,7 @@ Lifecycle describes actions that the management system should take in response t
 ## Probe
 
 Probe describes a health check to be performed against a container to determine whether it isalive or ready to receive traffic.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4126,7 +4140,7 @@ Probe describes a health check to be performed against a container to determine 
 ## ContainerPort
 
 ContainerPort represents a network port in a single container.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4161,7 +4175,7 @@ ResourceRequirements describes the compute resource requirements.
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4177,7 +4191,7 @@ SecurityContext holds security configuration that will be applied to a container
 
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4195,7 +4209,7 @@ SecurityContext holds security configuration that will be applied to a container
 ## VolumeDevice
 
 volumeDevice describes a mapping of a raw block device within a container.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4225,7 +4239,7 @@ VolumeMount describes a mounting of a Volume within a container.
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4239,7 +4253,7 @@ VolumeMount describes a mounting of a Volume within a container.
 ## FieldsV1
 
 FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format.Each key is either a '.' representing the field itself, and will always map to an empty set,or a string representing a sub-field or item. The string will follow one of these four formats:'f:<name>', where <name> is the name of a field in a struct, or key in a map'v:<value>', where <value> is the exact json formatted value of a list item'i:<index>', where <index> is position of a item in a list'k:<keys>', where <keys> is a map of  a list item's key fields to their unique valuesIf a key maps to an empty Fields value, the field that key represents is part of the set.The exact format is defined in sigs.k8s.io/structured-merge-diff
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4248,7 +4262,7 @@ FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format.
 ## PreferredSchedulingTerm
 
 An empty preferred scheduling term matches all objects with implicit weight 0(i.e. it's a no-op). A null preferred scheduling term matches no objects (i.e. is also a no-op).
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4258,7 +4272,7 @@ An empty preferred scheduling term matches all objects with implicit weight 0(i.
 ## NodeSelector
 
 A node selector represents the union of the results of one or more label queriesover a set of nodes; that is, it represents the OR of the selectors representedby the node selector terms.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4267,7 +4281,7 @@ A node selector represents the union of the results of one or more label queries
 ## WeightedPodAffinityTerm
 
 The weights of all of the matched WeightedPodAffinityTerm fields are added per-node to find the most preferred node(s)
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4277,7 +4291,7 @@ The weights of all of the matched WeightedPodAffinityTerm fields are added per-n
 ## PodAffinityTerm
 
 Defines a set of pods (namely those matching the labelSelectorrelative to the given namespace(s)) that this pod should beco-located (affinity) or not co-located (anti-affinity) with,where co-located is defined as running on a node whose value ofthe label with key <topologyKey> matches that of any node on whicha pod of the set of pods is running
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4288,7 +4302,7 @@ Defines a set of pods (namely those matching the labelSelectorrelative to the gi
 ## LabelSelectorRequirement
 
 A label selector requirement is a selector that contains values, a key, and an operator thatrelates the key and values.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4299,7 +4313,7 @@ A label selector requirement is a selector that contains values, a key, and an o
 ## TypedLocalObjectReference
 
 TypedLocalObjectReference contains enough information to let you locate thetyped referenced object inside the same namespace.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4310,7 +4324,7 @@ TypedLocalObjectReference contains enough information to let you locate thetyped
 ## Quantity
 
 Quantity is a fixed-point representation of a number.It provides convenient marshaling/unmarshaling in JSON and YAML,in addition to String() and AsInt64() accessors.The serialization format is:<quantity>        ::= <signedNumber><suffix>  (Note that <suffix> may be empty, from the "" case in <decimalSI>.)<digit>           ::= 0 | 1 | ... | 9<digits>          ::= <digit> | <digit><digits><number>          ::= <digits> | <digits>.<digits> | <digits>. | .<digits><sign>            ::= "+" | "-"<signedNumber>    ::= <number> | <sign><number><suffix>          ::= <binarySI> | <decimalExponent> | <decimalSI><binarySI>        ::= Ki | Mi | Gi | Ti | Pi | Ei  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)<decimalSI>       ::= m | "" | k | M | G | T | P | E  (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)<decimalExponent> ::= "e" <signedNumber> | "E" <signedNumber>No matter which of the three exponent forms is used, no quantity may representa number greater than 2^63-1 in magnitude, nor may it have more than 3 decimalplaces. Numbers larger or more precise will be capped or rounded up.(E.g.: 0.1m will rounded up to 1m.)This may be extended in the future if we require larger or smaller quantities.When a Quantity is parsed from a string, it will remember the type of suffixit had, and will use the same type again when it is serialized.Before serializing, Quantity will be put in "canonical form".This means that Exponent/suffix will be adjusted up or down (with acorresponding increase or decrease in Mantissa) such that:  a. No precision is lost  b. No fractional digits will be emitted  c. The exponent (or suffix) is as large as possible.The sign will be omitted unless the number is negative.Examples:  1.5 will be serialized as "1500m"  1.5Gi will be serialized as "1536Mi"Note that the quantity will NEVER be internally represented by afloating point number. That is the whole point of this exercise.Non-canonical values will still parse as long as they are well formed,but will be re-emitted in their canonical form. (So always use canonicalform, or don't diff.)This format is intended to make it difficult to use these numbers withoutwriting some sort of special handling code in the hopes that that willcause implementors to also use a fixed point implementation.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4319,7 +4333,7 @@ Quantity is a fixed-point representation of a number.It provides convenient mars
 ## PersistentVolumeClaimCondition
 
 PersistentVolumeClaimCondition contails details about state of pvc
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4333,7 +4347,7 @@ PersistentVolumeClaimCondition contails details about state of pvc
 ## AWSElasticBlockStoreVolumeSource
 
 Represents a Persistent Disk resource in AWS.An AWS EBS disk must exist before mounting to a container. The diskmust also be in the same AWS zone as the kubelet. An AWS EBS diskcan only be mounted as read/write once. AWS EBS volumes supportownership management and SELinux relabeling.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4345,7 +4359,7 @@ Represents a Persistent Disk resource in AWS.An AWS EBS disk must exist before m
 ## AzureDiskVolumeSource
 
 AzureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4359,7 +4373,7 @@ AzureDisk represents an Azure Data Disk mount on the host and bind mount to the 
 ## AzureFileVolumeSource
 
 AzureFile represents an Azure File Service mount on the host and bind mount to the pod.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4370,7 +4384,7 @@ AzureFile represents an Azure File Service mount on the host and bind mount to t
 ## CephFSVolumeSource
 
 Represents a Ceph Filesystem mount that lasts the lifetime of a podCephfs volumes do not support ownership management or SELinux relabeling.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4384,7 +4398,7 @@ Represents a Ceph Filesystem mount that lasts the lifetime of a podCephfs volume
 ## CinderVolumeSource
 
 Represents a cinder volume resource in Openstack.A Cinder volume must exist before mounting to a container.The volume must also be in the same region as the kubelet.Cinder volumes support ownership management and SELinux relabeling.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4396,7 +4410,7 @@ Represents a cinder volume resource in Openstack.A Cinder volume must exist befo
 ## ConfigMapVolumeSource
 
 Adapts a ConfigMap into a volume.The contents of the target ConfigMap's Data field will be presented in avolume as files using the keys in the Data field as the file names, unlessthe items element is populated with specific mappings of keys to paths.ConfigMap volumes support ownership management and SELinux relabeling.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4408,7 +4422,7 @@ Adapts a ConfigMap into a volume.The contents of the target ConfigMap's Data fie
 ## CSIVolumeSource
 
 Represents a source location of a volume to mount, managed by an external CSI driver
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4421,7 +4435,7 @@ Represents a source location of a volume to mount, managed by an external CSI dr
 ## DownwardAPIVolumeSource
 
 DownwardAPIVolumeSource represents a volume containing downward API io.argoproj.workflow.v1alpha1.Downward API volumes support ownership management and SELinux relabeling.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4439,7 +4453,7 @@ Represents an empty directory for a pod.Empty directory volumes support ownershi
 
 - [`init-container.yaml`](../examples/init-container.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4449,7 +4463,7 @@ Represents an empty directory for a pod.Empty directory volumes support ownershi
 ## FCVolumeSource
 
 Represents a Fibre Channel volume.Fibre Channel volumes can only be mounted as read/write once.Fibre Channel volumes support ownership management and SELinux relabeling.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4462,7 +4476,7 @@ Represents a Fibre Channel volume.Fibre Channel volumes can only be mounted as r
 ## FlexVolumeSource
 
 FlexVolume represents a generic volume resource that isprovisioned/attached using an exec based plugin.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4475,7 +4489,7 @@ FlexVolume represents a generic volume resource that isprovisioned/attached usin
 ## FlockerVolumeSource
 
 Represents a Flocker volume mounted by the Flocker agent.One and only one of datasetName and datasetUUID should be set.Flocker volumes do not support ownership management or SELinux relabeling.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4485,7 +4499,7 @@ Represents a Flocker volume mounted by the Flocker agent.One and only one of dat
 ## GCEPersistentDiskVolumeSource
 
 Represents a Persistent Disk resource in Google Compute Engine.A GCE PD must exist before mounting to a container. The disk mustalso be in the same GCE project and zone as the kubelet. A GCE PDcan only be mounted as read/write once or read-only many times. GCEPDs support ownership management and SELinux relabeling.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4496,8 +4510,8 @@ Represents a Persistent Disk resource in Google Compute Engine.A GCE PD must exi
 
 ## GitRepoVolumeSource
 
-Represents a volume that is populated with the contents of a git repository.Git repo volumes do not support ownership management.Git repo volumes support SELinux relabeling.DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount anEmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDirinto the Pod's container. DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount anEmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDirinto the Pod's container.
-    
+Represents a volume that is populated with the contents of a git repository.Git repo volumes do not support ownership management.Git repo volumes support SELinux relabeling.DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount anEmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDirinto the Pod's container.
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4508,7 +4522,7 @@ Represents a volume that is populated with the contents of a git repository.Git 
 ## GlusterfsVolumeSource
 
 Represents a Glusterfs mount that lasts the lifetime of a pod.Glusterfs volumes do not support ownership management or SELinux relabeling.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4519,7 +4533,7 @@ Represents a Glusterfs mount that lasts the lifetime of a pod.Glusterfs volumes 
 ## HostPathVolumeSource
 
 Represents a host path mapped into a pod.Host path volumes do not support ownership management or SELinux relabeling.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4529,7 +4543,7 @@ Represents a host path mapped into a pod.Host path volumes do not support owners
 ## ISCSIVolumeSource
 
 Represents an ISCSI disk.ISCSI volumes can only be mounted as read/write once.ISCSI volumes support ownership management and SELinux relabeling.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4548,7 +4562,7 @@ Represents an ISCSI disk.ISCSI volumes can only be mounted as read/write once.IS
 ## NFSVolumeSource
 
 Represents an NFS mount that lasts the lifetime of a pod.NFS volumes do not support ownership management or SELinux relabeling.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4565,7 +4579,7 @@ PersistentVolumeClaimVolumeSource references the user's PVC in the same namespac
 
 - [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4575,7 +4589,7 @@ PersistentVolumeClaimVolumeSource references the user's PVC in the same namespac
 ## PhotonPersistentDiskVolumeSource
 
 Represents a Photon Controller persistent disk resource.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4585,7 +4599,7 @@ Represents a Photon Controller persistent disk resource.
 ## PortworxVolumeSource
 
 PortworxVolumeSource represents a Portworx volume resource.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4596,7 +4610,7 @@ PortworxVolumeSource represents a Portworx volume resource.
 ## ProjectedVolumeSource
 
 Represents a projected volume source
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4606,7 +4620,7 @@ Represents a projected volume source
 ## QuobyteVolumeSource
 
 Represents a Quobyte mount that lasts the lifetime of a pod.Quobyte volumes do not support ownership management or SELinux relabeling.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4620,7 +4634,7 @@ Represents a Quobyte mount that lasts the lifetime of a pod.Quobyte volumes do n
 ## RBDVolumeSource
 
 Represents a Rados Block Device mount that lasts the lifetime of a pod.RBD volumes support ownership management and SELinux relabeling.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4636,7 +4650,7 @@ Represents a Rados Block Device mount that lasts the lifetime of a pod.RBD volum
 ## ScaleIOVolumeSource
 
 ScaleIOVolumeSource represents a persistent ScaleIO volume
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4660,7 +4674,7 @@ Adapts a Secret into a volume.The contents of the target Secret's Data field wil
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4672,7 +4686,7 @@ Adapts a Secret into a volume.The contents of the target Secret's Data field wil
 ## StorageOSVolumeSource
 
 Represents a StorageOS persistent volume resource.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4685,7 +4699,7 @@ Represents a StorageOS persistent volume resource.
 ## VsphereVirtualDiskVolumeSource
 
 Represents a vSphere volume resource.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4725,7 +4739,7 @@ EnvVarSource represents a source for the value of an EnvVar.
 
 - [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4737,7 +4751,7 @@ EnvVarSource represents a source for the value of an EnvVar.
 ## ConfigMapEnvSource
 
 ConfigMapEnvSource selects a ConfigMap to populate the environmentvariables with.The contents of the target ConfigMap's Data field will represent thekey-value pairs as environment variables.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4747,7 +4761,7 @@ ConfigMapEnvSource selects a ConfigMap to populate the environmentvariables with
 ## SecretEnvSource
 
 SecretEnvSource selects a Secret to populate the environmentvariables with.The contents of the target Secret's Data field will represent thekey-value pairs as environment variables.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4757,7 +4771,7 @@ SecretEnvSource selects a Secret to populate the environmentvariables with.The c
 ## Handler
 
 Handler defines a specific action that should be takenTODO: pass structured data to these actions, and document that data here.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4768,7 +4782,7 @@ Handler defines a specific action that should be takenTODO: pass structured data
 ## Capabilities
 
 Adds and removes POSIX capabilities from running containers.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4778,7 +4792,7 @@ Adds and removes POSIX capabilities from running containers.
 ## NodeSelectorTerm
 
 A null or empty node selector term matches no objects. The requirements ofthem are ANDed.The TopologySelectorTerm type implements a subset of the NodeSelectorTerm.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4788,7 +4802,7 @@ A null or empty node selector term matches no objects. The requirements ofthem a
 ## KeyToPath
 
 Maps a string key to a path within a volume.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4799,7 +4813,7 @@ Maps a string key to a path within a volume.
 ## DownwardAPIVolumeFile
 
 DownwardAPIVolumeFile represents information to create the file containing the pod field
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4811,7 +4825,7 @@ DownwardAPIVolumeFile represents information to create the file containing the p
 ## VolumeProjection
 
 Projection that may be projected along with other supported volume types
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4823,7 +4837,7 @@ Projection that may be projected along with other supported volume types
 ## ObjectFieldSelector
 
 ObjectFieldSelector selects an APIVersioned field of an object.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4833,7 +4847,7 @@ ObjectFieldSelector selects an APIVersioned field of an object.
 ## ResourceFieldSelector
 
 ResourceFieldSelector represents container resources (cpu, memory) and their output format
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4844,7 +4858,7 @@ ResourceFieldSelector represents container resources (cpu, memory) and their out
 ## ExecAction
 
 ExecAction describes a "run in container" action.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4865,7 +4879,7 @@ HTTPGetAction describes an action based on HTTP Get requests.
 
 - [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4878,7 +4892,7 @@ HTTPGetAction describes an action based on HTTP Get requests.
 ## TCPSocketAction
 
 TCPSocketAction describes an action based on opening a socket
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4888,7 +4902,7 @@ TCPSocketAction describes an action based on opening a socket
 ## NodeSelectorRequirement
 
 A node selector requirement is a selector that contains values, a key, and an operatorthat relates the key and values.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4899,7 +4913,7 @@ A node selector requirement is a selector that contains values, a key, and an op
 ## ConfigMapProjection
 
 Adapts a ConfigMap into a projected volume.The contents of the target ConfigMap's Data field will be presented in aprojected volume as files using the keys in the Data field as the file names,unless the items element is populated with specific mappings of keys to paths.Note that this is identical to a configmap volume source without the defaultmode.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4910,7 +4924,7 @@ Adapts a ConfigMap into a projected volume.The contents of the target ConfigMap'
 ## DownwardAPIProjection
 
 Represents downward API info for projecting into a projected volume.Note that this is identical to a downwardAPI volume source without the defaultmode.
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4925,7 +4939,7 @@ Adapts a secret into a projected volume.The contents of the target Secret's Data
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 </details>
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4936,7 +4950,7 @@ Adapts a secret into a projected volume.The contents of the target Secret's Data
 ## ServiceAccountTokenProjection
 
 ServiceAccountTokenProjection represents a projected service account tokenvolume. This projection can be used to insert a service account token intothe pods runtime filesystem for use against APIs (Kubernetes API Server orotherwise).
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4947,7 +4961,7 @@ ServiceAccountTokenProjection represents a projected service account tokenvolume
 ## HTTPHeader
 
 HTTPHeader describes a custom header to be used in HTTP probes
-    
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
