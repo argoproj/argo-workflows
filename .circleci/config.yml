@@ -92,9 +92,6 @@ commands:
           command: make logs
           background: true
       - run:
-          name: Test images
-          command: make test-images
-      - run:
           name: Run smoke tests
           command: make smoke
       - run:
