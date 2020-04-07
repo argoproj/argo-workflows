@@ -306,10 +306,11 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 	imageWhitelist := map[string]bool{
 		"docker.io/argoproj/argoexec:" + gitBranch: true,
 		"docker.io/library/cowsay:v1":              true,
+		"docker.io/library/python:alpine3.6":       true,
 	}
 	for n := range s.listImages() {
 		if !s.images[n] && !imageWhitelist[n] {
-			s.T().Fatalf("non-whitelisted image used in test %s", n)
+			s.T().Fatalf("non-whitelisted image used in test: %s", n)
 		}
 	}
 	err = file.Close()
