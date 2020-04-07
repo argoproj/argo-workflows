@@ -522,7 +522,7 @@ func (s *CLISuite) TestTemplate() {
 		})
 	})
 	s.Run("Submittable-Template", func() {
-		s.Given().RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template"}, func(t *testing.T, output string, err error) {
+		s.Given().RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template", "-l", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")

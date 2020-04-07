@@ -55,10 +55,14 @@ type E2ESuite struct {
 	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient        v1alpha1.CronWorkflowInterface
 	KubeClient        kubernetes.Interface
+	// Guard-rail.
 	// A list of images that exist on the K3S node at the start of the test are probably those created as part
-	// of the core Kubernetes system (e.g. k8s.gcr.io/pause:3.1) or K3S. This is populated at the start of each suite,
+	// of the Kubernetes system (e.g. k8s.gcr.io/pause:3.1) or K3S. This is populated at the start of each suite,
 	// and checked at the end of each test.
-	images map[string]bool
+	images       map[string]bool
+	// Guard-rail.
+	// The number of archived workflows. If is changes between two tests, we have a problem.
+	numArchivedWorkflows int
 }
 
 func (s *E2ESuite) SetupSuite() {
@@ -109,6 +113,20 @@ func (s *E2ESuite) BeforeTest(suiteName, testName string) {
 	log.Infof("logging debug diagnostics to file://%s", name)
 	s.DeleteResources(Label)
 	s.importImages()
+	numArchivedWorkflows := s.countArchivedWorkflows()
+	if s.numArchivedWorkflows >0 && s.numArchivedWorkflows != numArchivedWorkflows {
+		s.T().Fatal("there should almost never be a change to the number of archived workflows between tests, this means the last test (no the current test) is bad and needs fixing - note this guard-rail does not work across test suites")
+	}
+	s.numArchivedWorkflows = numArchivedWorkflows
+}
+
+func (s *E2ESuite) countArchivedWorkflows() int {
+	if s.Persistence.IsEnabled() {
+		workflows, err := s.Persistence.workflowArchive.ListWorkflows(Namespace, time.Time{}, time.Time{}, nil, 0, 0)
+		s.CheckError(err)
+		return len(workflows)
+	}
+	return 0
 }
 
 func (s *E2ESuite) importImages() {
@@ -247,6 +265,7 @@ func (s *E2ESuite) DeleteResources(label string) {
 }
 
 func (s *E2ESuite) CheckError(err error) {
+	s.T().Helper()
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -301,8 +320,8 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 	for _, wf := range wfs.Items {
 		s.printWorkflowDiagnostics(wf.GetName())
 	}
-	// Using an arbitrary image will result in slow and flakey tests (as we can't really predict when they'll be
-	// downloaded or evicted. You must only use whitelisted images.
+	// Using an arbitrary image will result in slow and flakey tests as we can't really predict when they'll be
+	// downloaded or evicted. To keep tests fast and reliable you must use whitelisted images.
 	imageWhitelist := map[string]bool{
 		"docker.io/argoproj/argoexec:" + gitBranch: true,
 		"docker.io/library/cowsay:v1":              true,

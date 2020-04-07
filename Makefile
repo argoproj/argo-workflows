@@ -321,7 +321,7 @@ endif
 endif
 
 .PHONY: test-images
-test-images: dist/cowsay-v1 dist/bitnami-kubectl-1.15.3-ol-7-r165 dist/python-alpine3.6
+test-images: dist/cowsay-v1 dist/python-alpine3.6
 
 dist/cowsay-v1:
 	docker build -t cowsay:v1 test/e2e/images/cowsay
@@ -329,10 +329,6 @@ ifeq ($(K3D),true)
 	k3d import-images cowsay:v1
 endif
 	touch dist/cowsay-v1
-
-dist/bitnami-kubectl-1.15.3-ol-7-r165:
-	docker pull bitnami/kubectl:1.15.3-ol-7-r165
-	touch dist/bitnami-kubectl-1.15.3-ol-7-r165
 
 dist/python-alpine3.6:
 	docker pull python:alpine3.6
@@ -401,17 +397,17 @@ mysql-cli:
 .PHONY: test-e2e
 test-e2e: test-images cli
 	# Run E2E tests
-	go test -timeout 1h -v -count 1 -p 1 ./test/e2e/...
+	go test -timeout 15m -v -count 1 -p 1 ./test/e2e/...
 
 .PHONY: smoke
 smoke: test-images
 	# Run smoke tests
-	go test -timeout 2m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
+	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
 
 .PHONY: test-api
 test-api: test-images
 	# Run API tests
-	go test -timeout 3m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
+	go test -timeout 1m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
 
 .PHONY: test-cli
 test-cli: test-images cli
