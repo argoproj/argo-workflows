@@ -186,7 +186,7 @@ func (s *CLISuite) TestRoot() {
 				Workflow("@smoke/basic-generate-name.yaml").
 				When().
 				SubmitWorkflow().
-				WaitForWorkflow(15 * time.Second)
+				WaitForWorkflow(20 * time.Second)
 		}
 		s.Given().RunCli([]string{"list"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
@@ -270,7 +270,7 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 				assert.Contains(t, output, "workflow sleep-3s resumed")
 			}
 		}).
-		WaitForWorkflow(15 * time.Second).
+		WaitForWorkflow(20 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)

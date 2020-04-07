@@ -715,7 +715,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(15 * time.Second).
+		WaitForWorkflow(20 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
