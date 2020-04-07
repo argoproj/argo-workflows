@@ -675,7 +675,7 @@ spec:
     "spec": {
       "schedule": "1 * * * *",
       "workflowMetadata": {
-        "labels": {"argo-e2e": true}
+        "labels": {"argo-e2e": "true"}
       },
       "workflowSpec": {
         "entrypoint": "whalesay",
