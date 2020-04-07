@@ -756,9 +756,6 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				if woc.shouldPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
 				}
-				if woc.controller.Config.FeatureFlags.ResourcesDuration {
-					node.ResourcesDuration = resource.DurationForPod(pod, time.Now())
-				}
 				woc.onNodeComplete(&node)
 			}
 			if node.Successful() {
@@ -1008,6 +1005,9 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			// If we get here, the container is daemoned so the
 			// finishedAt might not have been set.
 			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+		}
+		if woc.controller.Config.FeatureFlags.ResourcesDuration {
+			node.ResourcesDuration = resource.DurationForPod(pod, time.Now())
 		}
 	}
 	if updated {
