@@ -48,12 +48,12 @@ const navItems = [
     {
         title: 'Workflow Templates',
         path: workflowTemplatesUrl,
-        iconClassName: 'fas fa-object-group'
+        iconClassName: 'fa fa-window-maximize'
     },
     {
         title: 'Cluster Workflow Templates',
         path: clusterWorkflowTemplatesUrl,
-        iconClassName: 'fa fa-clone'
+        iconClassName: 'fa fa-window-restore'
     },
     {
         title: 'Cron Workflows',
