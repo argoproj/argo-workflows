@@ -126,7 +126,8 @@ jobs:
             sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
             sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
             sudo chmod +x /usr/local/bin/protoc
-            sudo chmod -R a+rw /usr/local/include
+            sudo find /usr/local/include -type ff | xargs chmod a+r
+            sudo find /usr/local/include -type d | xargs chmod a+rx
             rm -f $PROTOC_ZIP
             ls /usr/local/include/google/protobuf/
       - run: make codegen
