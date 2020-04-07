@@ -15,7 +15,6 @@ import (
 
 type Then struct {
 	t                     *testing.T
-	diagnostics           *Diagnostics
 	workflowName          string
 	wfTemplateNames       []string
 	cronWorkflowName      string
@@ -50,6 +49,9 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 		wf.Status.Nodes = offloadedNodes
 	}
 	block(t.t, &wf.ObjectMeta, &wf.Status)
+	if t.t.Failed() {
+		t.t.FailNow()
+	}
 	return t
 
 }
@@ -64,6 +66,9 @@ func (t *Then) ExpectCron(block func(t *testing.T, cronWf *wfv1.CronWorkflow)) *
 		t.t.Fatal(err)
 	}
 	block(t.t, cronWf)
+	if t.t.Failed() {
+		t.t.FailNow()
+	}
 	return t
 }
 
@@ -75,6 +80,9 @@ func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(t *
 	}
 	log.Info("Checking expectation")
 	block(t.t, wfList)
+	if t.t.Failed() {
+		t.t.FailNow()
+	}
 	return t
 }
 
@@ -92,19 +100,24 @@ func (t *Then) ExpectAuditEvents(block func(*testing.T, *apiv1.EventList)) *Then
 		t.t.Fatal(err)
 	}
 	block(t.t, eventList)
+	if t.t.Failed() {
+		t.t.FailNow()
+	}
 	return t
 }
 
 func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err error)) *Then {
-	output, err := runCli(t.diagnostics, args)
+	output, err := runCli("../../dist/argo", append([]string{"-n", Namespace}, args...)...)
 	block(t.t, output, err)
+	if t.t.Failed() {
+		t.t.FailNow()
+	}
 	return t
 }
 
 func (t *Then) When() *When {
 	return &When{
 		t:                     t.t,
-		diagnostics:           t.diagnostics,
 		client:                t.client,
 		cronClient:            t.cronClient,
 		offloadNodeStatusRepo: t.offloadNodeStatusRepo,

@@ -22,10 +22,10 @@ spec:
         parameters:
           - name: message
       container:
-        image: alpine:3.7
+        image: cowsay:v1
         command: [sleep, "10"]
 
     - name: exit
       container:
-        image: alpine:3.7
+        image: cowsay:v1
         command: [echo, "one exit"]
