@@ -115,7 +115,7 @@ func (s *E2ESuite) BeforeTest(suiteName, testName string) {
 	s.importImages()
 	numArchivedWorkflows := s.countArchivedWorkflows()
 	if s.numArchivedWorkflows > 0 && s.numArchivedWorkflows != numArchivedWorkflows {
-		s.T().Fatal("there should almost never be a change to the number of archived workflows between tests, this means the last test (no the current test) is bad and needs fixing - note this guard-rail does not work across test suites")
+		s.T().Fatal("there should almost never be a change to the number of archived workflows between tests, this means the last test (not the current test) is bad and needs fixing - note this guard-rail does not work across test suites")
 	}
 	s.numArchivedWorkflows = numArchivedWorkflows
 }

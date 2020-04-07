@@ -252,7 +252,7 @@ func (s *CLISuite) TestRoot() {
 		s.Given().CronWorkflow("@testdata/basic.yaml").
 			When().
 			CreateCronWorkflow().
-			RunCli([]string{"submit", "--from", "cronwf/test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"submit", "--from", "cronwf/test-cron-wf-basic", "-l", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
 				assert.NoError(t, err)
 				assert.Contains(t, output, "Name:                test-cron-wf-basic-")
 				r := regexp.MustCompile(`Name:\s+?(test-cron-wf-basic-[a-z0-9]+)`)
@@ -262,7 +262,7 @@ func (s *CLISuite) TestRoot() {
 				}
 				createdWorkflowName = res[1]
 			}).
-			WaitForWorkflowName(createdWorkflowName, 15*time.Second).
+			WaitForWorkflowName(createdWorkflowName, 20*time.Second).
 			Then().
 			ExpectWorkflowName(createdWorkflowName, func(t *testing.T, metadata *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
 				assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
@@ -344,7 +344,7 @@ func (s *CLISuite) TestWorkflowDelete() {
 			Workflow("@smoke/basic.yaml").
 			When().
 			SubmitWorkflow().
-			WaitForWorkflow(15*time.Second).
+			WaitForWorkflow(20*time.Second).
 			Given().
 			RunCli([]string{"delete", "basic"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
@@ -357,7 +357,7 @@ func (s *CLISuite) TestWorkflowDelete() {
 			Workflow("@smoke/basic.yaml").
 			When().
 			SubmitWorkflow().
-			WaitForWorkflow(15*time.Second).
+			WaitForWorkflow(20*time.Second).
 			Given().
 			RunCli([]string{"delete", "--all", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
@@ -378,7 +378,7 @@ func (s *CLISuite) TestWorkflowDelete() {
 				}
 			}).
 			When().
-			WaitForWorkflow(15*time.Second).
+			WaitForWorkflow(20*time.Second).
 			Given().
 			RunCli([]string{"delete", "--completed", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
@@ -391,7 +391,7 @@ func (s *CLISuite) TestWorkflowDelete() {
 			Workflow("@smoke/basic.yaml").
 			When().
 			SubmitWorkflow().
-			WaitForWorkflow(15*time.Second).
+			WaitForWorkflow(20*time.Second).
 			Given().
 			RunCli([]string{"delete", "--older", "1d", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
@@ -583,7 +583,7 @@ func (s *CLISuite) TestWorkflowResubmit() {
 		Workflow("@testdata/exit-1.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(15*time.Second).
+		WaitForWorkflow(20*time.Second).
 		Given().
 		RunCli([]string{"resubmit", "--memoized", "exit-1"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
