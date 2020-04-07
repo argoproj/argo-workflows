@@ -33,7 +33,7 @@ func (s *ClusterWorkflowTemplateSuite) TestSubmitClusterWorkflowTemplate() {
 }
 
 func (s *ClusterWorkflowTemplateSuite) TestNestedClusterWorkflowTemplate() {
-	// TODO
+	// https://github.com/argoproj/argo/issues/2622
 	s.T().SkipNow()
 	s.Given().WorkflowTemplate("@smoke/cluster-workflow-template-whalesay-template.yaml").
 		WorkflowTemplate("@testdata/cluster-workflow-template-nested-template.yaml").
