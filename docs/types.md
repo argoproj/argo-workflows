@@ -235,8 +235,8 @@ CronWorkflow is the definition of a scheduled workflow resource
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`metadata`|[`ObjectMeta`](#objectmeta)|ObjectMeta is metadata that all persisted resources must have, which includes all objectsusers must create.|
-|`spec`|[`CronWorkflowSpec`](#cronworkflowspec)||
-|`status`|[`CronWorkflowStatus`](#cronworkflowstatus)||
+|`spec`|[`CronWorkflowSpec`](#cronworkflowspec)|CronWorkflowSpec is the specification of a CronWorkflow|
+|`status`|[`CronWorkflowStatus`](#cronworkflowstatus)|CronWorkflowStatus is the status of a CronWorkflow|
 
 ## WorkflowTemplate
 
@@ -507,7 +507,7 @@ WorkflowSpec is the specification of a Workflow.
 |`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution(Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will bedeleted after ttlSecondsAfterFinished expires. If this field is unset,ttlSecondsAfterFinished will not expire. If this field is set to zero,ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
-|`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed|
+|`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference.The Workflow controller will create the claims at the beginning of the workflowand delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
 
@@ -533,7 +533,7 @@ WorkflowStatus contains overall status information about a workflow
 
 ## CronWorkflowSpec
 
-_No description available_
+CronWorkflowSpec is the specification of a CronWorkflow
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -766,7 +766,7 @@ _No description available_
 
 ## CronWorkflowStatus
 
-_No description available_
+CronWorkflowStatus is the status of a CronWorkflow
     
 ### Fields
 | Field Name | Field Type | Description   |
@@ -1128,8 +1128,8 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`configMap`|`string`||
-|`key`|`string`||
+|`configMap`|`string`|_No desription available_|
+|`key`|`string`|_No desription available_|
 
 ## ExecutorConfig
 
@@ -1168,7 +1168,7 @@ PodGC describes how to delete completed pods as they complete
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`strategy`|`string`||
+|`strategy`|`string`|Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"|
 
 ## Template
 
@@ -1429,7 +1429,7 @@ Template is a reusable and composable unit of execution in a workflow
 
 ## TTLStrategy
 
-TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed
+TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -1440,9 +1440,9 @@ TTLStrategy is the strategy for the time to live depending on if the workflow su
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`secondsAfterCompletion`|`int32`||
-|`secondsAfterFailure`|`int32`||
-|`secondsAfterSuccess`|`int32`||
+|`secondsAfterCompletion`|`int32`|SecondsAfterCompletion is the number of seconds to live after completion|
+|`secondsAfterFailure`|`int32`|SecondsAfterFailure is the number of seconds to live after failure|
+|`secondsAfterSuccess`|`int32`|SecondsAfterSuccess is the number of seconds to live after success|
 
 ## WorkflowCondition
 
@@ -1451,9 +1451,9 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`message`|`string`||
-|`status`|`string`||
-|`type`|`string`||
+|`message`|`string`|Message is the condition message|
+|`status`|`string`|Status is the status of the condition|
+|`type`|`string`|Type is the type of condition|
 
 ## NodeStatus
 
@@ -2164,8 +2164,8 @@ Pod metdata
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`annotations`|`Map< string , string >`||
-|`labels`|`Map< string , string >`||
+|`annotations`|`Map< string , string >`|_No desription available_|
+|`labels`|`Map< string , string >`|_No desription available_|
 
 ## ResourceTemplate
 
@@ -2224,7 +2224,7 @@ RetryStrategy provides controls on how to retry a workflow step
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`backoff`|[`Backoff`](#backoff)||
+|`backoff`|[`Backoff`](#backoff)|Backoff is a backoff strategy to use within retryStrategy|
 |`limit`|`int32`|Limit is the maximum number of attempts when retrying a container|
 |`retryPolicy`|`string`|RetryPolicy is a policy of NodePhase statuses that will be retried|
 
@@ -2556,8 +2556,8 @@ MetricLabel is a single label for a prometheus metric
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`key`|`string`||
-|`value`|`string`||
+|`key`|`string`|_No desription available_|
+|`value`|`string`|_No desription available_|
 
 ## ArtifactoryArtifact
 
@@ -2773,7 +2773,7 @@ DAGTask represents a node in the graph during DAG execution
 
 ## Backoff
 
-_No description available_
+Backoff is a backoff strategy to use within retryStrategy
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -2784,9 +2784,9 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`duration`|`string`||
-|`factor`|`int32`||
-|`maxDuration`|`string`||
+|`duration`|`string`|Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")|
+|`factor`|`int32`|Factor is a factor to multiply the base duration after each failed retry|
+|`maxDuration`|`string`|MaxDuration is the maximum amount of time allowed for the backoff strategy|
 
 ## NoneStrategy
 
@@ -2929,12 +2929,12 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`boolVal`|`boolean`||
-|`listVal`|`Array<`[`ItemValue`](#itemvalue)`>`||
-|`mapVal`|[`ItemValue`](#itemvalue)||
-|`numVal`|`string`||
-|`strVal`|`string`||
-|`type`|`int64`||
+|`boolVal`|`boolean`|_No desription available_|
+|`listVal`|`Array<`[`ItemValue`](#itemvalue)`>`|_No desription available_|
+|`mapVal`|[`ItemValue`](#itemvalue)|_No desription available_|
+|`numVal`|`string`|_No desription available_|
+|`strVal`|`string`|_No desription available_|
+|`type`|`int64`|_No desription available_|
 
 ## Sequence
 
@@ -2975,12 +2975,12 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`boolVal`|`boolean`||
-|`listVal`|`Array< string >`||
-|`mapVal`|`Map< string , string >`||
-|`numVal`|`string`||
-|`strVal`|`string`||
-|`type`|`int64`||
+|`boolVal`|`boolean`|_No desription available_|
+|`listVal`|`Array< string >`|_No desription available_|
+|`mapVal`|`Map< string , string >`|_No desription available_|
+|`numVal`|`string`|_No desription available_|
+|`strVal`|`string`|_No desription available_|
+|`type`|`int64`|_No desription available_|
 
 # External Fields
 
@@ -3743,9 +3743,9 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`intVal`|`int32`||
-|`strVal`|`string`||
-|`type`|`int64`||
+|`intVal`|`int32`|_No desription available_|
+|`strVal`|`string`|_No desription available_|
+|`type`|`int64`|_No desription available_|
 
 ## LabelSelector
 
@@ -4314,7 +4314,7 @@ Quantity is a fixed-point representation of a number.It provides convenient mars
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`string`|`string`||
+|`string`|`string`|_No desription available_|
 
 ## PersistentVolumeClaimCondition
 
@@ -4327,8 +4327,8 @@ PersistentVolumeClaimCondition contails details about state of pvc
 |`lastTransitionTime`|[`Time`](#time)|Time is a wrapper around time.Time which supports correctmarshaling to YAML and JSON.  Wrappers are provided for manyof the factory methods that the time package offers.|
 |`message`|`string`|Human-readable message indicating details about last transition.+optional|
 |`reason`|`string`|Unique, this should be a short, machine understandable string that gives the reasonfor condition's last transition. If it reports "ResizeStarted" that means the underlyingpersistent volume is being resized.+optional|
-|`status`|`string`||
-|`type`|`string`||
+|`status`|`string`|_No desription available_|
+|`type`|`string`|_No desription available_|
 
 ## AWSElasticBlockStoreVolumeSource
 
