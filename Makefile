@@ -84,6 +84,15 @@ E2E_EXECUTOR     ?= pns
 SWAGGER_FILES    := $(shell find pkg/apiclient -name '*.swagger.json' | env LC_COLLATE=C sort)
 MOCK_FILES       := $(shell find . -maxdepth 4 -not -path '*/vendor/*' -path '*/mocks/*' -type f)
 
+define backup_go_mod
+	# Back-up go.*, but only if we have not already done this (because that would suggest we failed mid-codegen and the currenty go.* files are borked).
+	[[ -e dist/go.mod ]] || cp go.mod go.sum dist/
+endef
+define restore_go_mod
+	# Restore the back-ups.
+	mv dist/go.mod dist/go.sum .
+endef
+
 .PHONY: build
 build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
 
@@ -212,32 +221,26 @@ endif
 # generation
 
 $(HOME)/go/bin/mockery:
+	call backup_go_mod
 	go get github.com/vektra/mockery/.../
+	call restore_go_mod
 
 dist/update-mocks: $(HOME)/go/bin/mockery $(MOCK_FILES)
 	./hack/update-mocks.sh $(MOCK_FILES)
 	@mkdir -p dist
 	touch dist/update-mocks
 
-.PHONY: backup-go.mod
-backup-go.mod:
-	# Back-up go.*, but only if we have not already done this (because that would suggest we failed mid-codegen and the currenty go.* files are borked).
-	[[ -e dist/go.mod ]] || cp go.mod go.sum dist/
-
-.PHONY: restore-go.mod
-restore-go.mod:
-	# Restore the back-ups.
-	mv dist/go.mod dist/go.sum .
 
 .PHONY: codegen
-codegen: dist/update-mocks backup-go.mod
+codegen: dist/update-mocks
+	call backup_go_mod
 	# We need the folder for compatibility
 	go mod vendor
 	# Generate proto
 	./hack/generate-proto.sh
 	# Updated codegen
 	./hack/update-codegen.sh
-	make restore-go.mod
+	call restore_go_mod
 	make api/openapi-spec/swagger.json
 
 .PHONY: manifests
@@ -274,8 +277,8 @@ lint: server/static/files.go $(HOME)/go/bin/golangci-lint
 	go mod tidy
 	# Lint Go files
 	golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
-ifeq ($(CI),false)
 	# Lint UI files
+ifeq ($(CI),false)
 	yarn --cwd ui lint
 endif
 
@@ -442,9 +445,9 @@ clean:
 # swagger
 
 $(HOME)/go/bin/swagger:
-	make backup-go.mod
+	call backup_go_mod
 	go get github.com/go-swagger/go-swagger/cmd/swagger
-	make restore-go.mod
+	call restore_go_mod
 
 api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) dist/MANIFESTS_VERSION hack/swaggify.sh
 	swagger mixin -c 412 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json

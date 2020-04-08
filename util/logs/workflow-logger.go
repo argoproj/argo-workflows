@@ -49,8 +49,12 @@ type workflowLogger struct {
 	ensureWeAreStreaming func(pod *corev1.Pod)
 	podWatch             watch.Interface
 	wfWatch              watch.Interface
-	unsortedEntries      chan logEntry
-	sender               sender
+	// We cannot be sure what order entries will come in, because we do not know how Goroutine scheduling will occur.
+	// Rather than immediately send entries to the client, we send them them to this channel, and another Goroutine
+	// uses a ticker to periodically (every 1s) sort the message and send them in order.
+	// This channel is closed whenever there is no more work to be done.
+	unsortedEntries chan logEntry
+	sender          sender
 }
 
 func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeClient kubernetes.Interface, req request, sender sender) (WorkflowLogger, error) {
@@ -85,7 +89,7 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 	streamedPods := make(map[types.UID]bool)
 	var streamedPodsGuard sync.Mutex
 	var wg sync.WaitGroup
-	sortingCh := make(chan logEntry)
+	unsortedEntries := make(chan logEntry)
 	logOptions := req.GetLogOptions().DeepCopy()
 	logOptions.Timestamps = true
 
@@ -121,13 +125,13 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 							return
 						}
 						content := parts[1]
-						// you might ask - why don't we let the client do this? well, it is because
-						// this is the same as how this would work for
+						// You might ask - why don't we let the client do this? Well, it is because
+						// this is the same as how this works for `kubectl logs`
 						if req.GetLogOptions().Timestamps {
 							content = line
 						}
 						logCtx.WithFields(log.Fields{"time": timestamp, "content": content}).Debug("Log line")
-						sortingCh <- logEntry{PodName: podName, Content: content, timestamp: timestamp}
+						unsortedEntries <- logEntry{PodName: podName, Content: content, timestamp: timestamp}
 					}
 				}
 				logCtx.Debug("No more log lines to stream")
@@ -157,7 +161,7 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 		ensureWeAreStreaming: ensureWeAreStreaming,
 		wfWatch:              wfWatch,
 		podWatch:             podWatch,
-		unsortedEntries:      sortingCh,
+		unsortedEntries:      unsortedEntries,
 		sender:               sender,
 	}, nil
 }
@@ -168,6 +172,7 @@ func (l *workflowLogger) sortAndSend() {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 	entries := logEntries{}
+	// Ugly to have this func, but we use it in two places (normal operation and finishing up).
 	send := func() error {
 		sort.Sort(entries)
 		for len(entries) > 0 {
@@ -181,6 +186,7 @@ func (l *workflowLogger) sortAndSend() {
 		}
 		return nil
 	}
+	// This defer make sure we flush any remaining entries on exit.
 	defer func() {
 		err := send()
 		if err != nil {
@@ -197,6 +203,7 @@ func (l *workflowLogger) sortAndSend() {
 			}
 		case entry, ok := <-l.unsortedEntries:
 			if !ok {
+				// The fact this channel is closed indicates that we do not need to do any more work.
 				return
 			} else {
 				entries = append(entries, entry)
@@ -221,7 +228,7 @@ func (l *workflowLogger) Run(ctx context.Context) {
 	}
 
 	if !l.completed && l.follow {
-		// We never send anything on this channel apart from closing it to indicate everyone should stop.
+		// We never send anything on this channel apart from closing it to indicate we should stop waiting for new pods.
 		stopCh := make(chan struct{})
 		// The purpose of this watch is to make sure we do not exit until the workflow is completed or deleted.
 		// When that happens, it signals we are done by closing the stop channel.
@@ -279,6 +286,6 @@ func (l *workflowLogger) Run(ctx context.Context) {
 	l.logCtx.Debug("Waiting for work-group")
 	l.wg.Wait()
 	l.logCtx.Debug("Work-group done")
-	// tell the sorting channel to finish
+	// Tell the sorting Goroutine it can finish.
 	close(l.unsortedEntries)
 }
