@@ -79,6 +79,8 @@ spec:
 }
 
 func (s *FunctionalSuite) TestContinueOnFailDag() {
+	// https://github.com/argoproj/argo/issues/2624
+	s.T().SkipNow()
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
@@ -122,12 +124,12 @@ spec:
     - name: whalesay
       container:
         imagePullPolicy: IfNotPresent
-        image: docker/whalesay:latest
+        image: cowsay:v1
 
     - name: whalesplosion
       container:
         imagePullPolicy: IfNotPresent
-        image: docker/whalesay:latest
+        image: cowsay:v1
         command: ["sh", "-c", "sleep 10; exit 1"]
 `).
 		When().
@@ -170,6 +172,8 @@ func (s *FunctionalSuite) TestFastFailOnPodTermination() {
 }
 
 func (s *FunctionalSuite) TestEventOnNodeFail() {
+	// https://github.com/argoproj/argo/issues/2626
+	s.T().SkipNow()
 	// Test whether an WorkflowFailed event (with appropriate message) is emitted in case of node failure
 	s.Given().
 		Workflow("@expectedfailures/failed-step-event.yaml").
@@ -190,6 +194,8 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 }
 
 func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
+	// https://github.com/argoproj/argo/issues/2626
+	s.T().SkipNow()
 	// Test whether an WorkflowSuccess event is emitted in case of successfully completed workflow
 	s.Given().
 		Workflow("@functional/success-event.yaml").
@@ -432,7 +438,7 @@ spec:
 
   - name: generate
     container:
-      image: docker/whalesay:latest
+      image: cowsay:v1
       command: [sh, -c]
       args: ["
         echo 'my-output-parameter' > /tmp/my-output-parameter.txt

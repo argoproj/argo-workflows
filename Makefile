@@ -81,10 +81,14 @@ MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
 # The sort puts _.primary first in the list. 'env LC_COLLATE=C' makes sure underscore comes first in both Mac and Linux.
-SWAGGER_FILES    := $(shell find pkg -name '*.swagger.json' | env LC_COLLATE=C sort)
+SWAGGER_FILES    := $(shell find pkg/apiclient -name '*.swagger.json' | env LC_COLLATE=C sort)
+MOCK_FILES       := $(shell find . -maxdepth 4 -not -path '*/vendor/*' -path '*/mocks/*' -type f)
 
 .PHONY: build
 build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
+
+# https://stackoverflow.com/questions/4122831/disable-make-builtin-rules-and-variables-from-inside-the-make-file
+.SUFFIXES:
 
 .PHONY: status
 status:
@@ -210,27 +214,31 @@ endif
 $(HOME)/go/bin/mockery:
 	go get github.com/vektra/mockery/.../
 
+dist/update-mocks: $(HOME)/go/bin/mockery $(MOCK_FILES)
+	./hack/update-mocks.sh $(MOCK_FILES)
+	@mkdir -p dist
+	touch dist/update-mocks
+
 .PHONY: codegen
-codegen: $(HOME)/go/bin/mockery
-	# Generate code
+codegen: dist/update-mocks
+	# Back-up go.*, but only if we have not already done this (because that would suggest we failed mid-codegen and the currenty go.* files are borked).
+	[[ -e dist/go.mod ]] || cp go.mod go.sum dist/
 	# We need the folder for compatibility
 	go mod vendor
-
+	# Generate proto
 	./hack/generate-proto.sh
+	# Updated codegen
 	./hack/update-codegen.sh
+	# Restore the back-ups.
+	mv dist/go.mod dist/go.sum .
 	make api/openapi-spec/swagger.json
-	find . -path '*/mocks/*' -type f -not -path '*/vendor/*' -exec ./hack/update-mocks.sh {} ';'
-
-	rm -rf ./vendor
-	go mod tidy
-
 
 .PHONY: manifests
 manifests: status manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml manifests/quick-start-no-db.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml test/e2e/manifests/no-db.yaml
 
 # we use a different file to ./VERSION to force updating manifests after a `make clean`
 dist/MANIFESTS_VERSION:
-	mkdir -p dist
+	@mkdir -p dist
 	echo $(MANIFESTS_VERSION) > dist/MANIFESTS_VERSION
 
 manifests/install.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
@@ -268,9 +276,9 @@ endif
 test: server/static/files.go
 	# Run unit tests
 ifeq ($(CI),false)
-	go test `go list ./... | grep -v 'test/e2e'`
+	go test -v `go list ./... | grep -v 'test/e2e'`
 else
-	go test -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
+	go test -v -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
 endif
 
 test/e2e/manifests/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
@@ -321,7 +329,7 @@ endif
 endif
 
 .PHONY: test-images
-test-images: dist/cowsay-v1 dist/bitnami-kubectl-1.15.3-ol-7-r165 dist/python-alpine3.6
+test-images: dist/cowsay-v1 dist/python-alpine3.6
 
 dist/cowsay-v1:
 	docker build -t cowsay:v1 test/e2e/images/cowsay
@@ -330,16 +338,12 @@ ifeq ($(K3D),true)
 endif
 	touch dist/cowsay-v1
 
-dist/bitnami-kubectl-1.15.3-ol-7-r165:
-	docker pull bitnami/kubectl:1.15.3-ol-7-r165
-	touch dist/bitnami-kubectl-1.15.3-ol-7-r165
-
 dist/python-alpine3.6:
 	docker pull python:alpine3.6
 	touch dist/python-alpine3.6
 
 .PHONY: start
-start: status install down controller-image cli-image executor-image wait-down up cli wait-up env
+start: status install down controller-image cli-image executor-image wait-down up cli test-images wait-up env
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 
@@ -401,17 +405,17 @@ mysql-cli:
 .PHONY: test-e2e
 test-e2e: test-images cli
 	# Run E2E tests
-	go test -timeout 20m -v -count 1 -p 1 ./test/e2e/...
+	go test -timeout 15m -v -count 1 -p 1 ./test/e2e/...
 
 .PHONY: smoke
 smoke: test-images
 	# Run smoke tests
-	go test -timeout 2m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
+	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
 
 .PHONY: test-api
 test-api: test-images
 	# Run API tests
-	go test -timeout 3m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
+	go test -timeout 1m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
 
 .PHONY: test-cli
 test-cli: test-images cli
