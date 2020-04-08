@@ -59,7 +59,7 @@ func IsTooLargeError(err error) bool {
 	return err != nil && strings.HasPrefix(err.Error(), tooLarge)
 }
 
-func CompressWorkflow(wf *wfv1.Workflow) error {
+func CompressWorkflowIfNeeded(wf *wfv1.Workflow) error {
 	large, err := IsLargeWorkflow(wf)
 	if err != nil {
 		return err
