@@ -189,22 +189,6 @@ func (s *CLISuite) TestLogProblems() {
 					assert.Contains(t, lines[4], "five")
 				}
 			}
-		}).
-		When().
-		// next check for a completed workflow
-		WaitForWorkflow(20*time.Second).
-		Then().
-		RunCli([]string{"logs", "log-problems"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				lines := strings.Split(output, "\n")
-				if assert.Len(t, lines, 6) {
-					assert.Contains(t, lines[0], "one")
-					assert.Contains(t, lines[1], "two")
-					assert.Contains(t, lines[2], "three")
-					assert.Contains(t, lines[3], "four")
-					assert.Contains(t, lines[4], "five")
-				}
-			}
 		})
 }
 
