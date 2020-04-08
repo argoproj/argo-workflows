@@ -137,7 +137,7 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
         }
     }
 
-    private getWorkflow(template: models.WorkflowTemplate): models.Workflow {
+    private getWorkflowClassic(template: models.WorkflowTemplate): models.Workflow {
         return {
             metadata: {
                 generateName: template.metadata.name + '-',
@@ -155,5 +155,24 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
                     }))
             }
         };
+    }
+
+    private getWorkflowWithEntrypoint(template: models.WorkflowTemplate): models.Workflow {
+        return {
+            metadata: {
+                generateName: template.metadata.name + '-',
+                namespace: template.metadata.namespace
+            },
+            spec: template.spec
+        };
+    }
+
+    private getWorkflow(template: models.WorkflowTemplate): models.Workflow {
+        /* If a WorkflowTemplate has an entrypoint, we can treat it just like a regular Workflow */
+        if (!!template.spec.entrypoint) {
+            return this.getWorkflowWithEntrypoint(template)
+        } else {
+            return this.getWorkflowClassic(template);
+        }
     }
 }
