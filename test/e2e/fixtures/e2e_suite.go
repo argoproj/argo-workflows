@@ -97,7 +97,7 @@ func (s *E2ESuite) listImages() map[string]bool {
 		for _, image := range node.Status.Images {
 			for _, n := range image.Names {
 				// We want to ignore hashes.
-				if !strings.Contains(n, "@sha256") {
+				if !strings.Contains(n, "@sha256") && strings.HasPrefix(n, "docker.io/") {
 					images[n] = true
 				}
 			}
