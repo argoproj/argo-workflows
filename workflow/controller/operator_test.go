@@ -2682,3 +2682,57 @@ func TestRetryNodeOutputs(t *testing.T) {
 	woc.buildLocalScope(scope, "steps.influx", retryNode)
 	assert.Contains(t, scope.scope, "steps.influx.ip")
 }
+
+var containerOutputsResult = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-
+spec:
+  entrypoint: hello-hello-hello
+  templates:
+  - name: hello-hello-hello
+    steps:
+    - - name: hello1
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "hello1"}]
+    - - name: hello2
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "{{steps.hello1.outputs.result}}"}]
+
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:latest
+      command: [echo]
+      args: ["{{pod.name}}: {{inputs.parameters.message}}"]
+`
+
+func TestContainerOutputsResult(t *testing.T) {
+
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// operate the workflow. it should create a pod.
+	wf := unmarshalWF(containerOutputsResult)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+
+	assert.True(t, hasOutputResultRef("hello1", &wf.Spec.Templates[0]))
+	assert.False(t, hasOutputResultRef("hello2", &wf.Spec.Templates[0]))
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+
+	for _, node := range wf.Status.Nodes {
+		if strings.Contains(node.Name, "hello1") {
+			assert.True(t, getStepOrDAGTaskName(node.Name) == "hello1")
+		} else if strings.Contains(node.Name, "hello2") {
+			assert.True(t, getStepOrDAGTaskName(node.Name) == "hello2")
+		}
+	}
+}
