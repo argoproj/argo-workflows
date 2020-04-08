@@ -5,7 +5,9 @@ import (
 	"context"
 	"reflect"
 	"sort"
+	"strings"
 	"sync"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -47,6 +49,8 @@ type workflowLogger struct {
 	ensureWeAreStreaming func(pod *corev1.Pod)
 	podWatch             watch.Interface
 	wfWatch              watch.Interface
+	unsortedEntries      chan logEntry
+	sender               sender
 }
 
 func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeClient kubernetes.Interface, req request, sender sender) (WorkflowLogger, error) {
@@ -81,6 +85,9 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 	streamedPods := make(map[types.UID]bool)
 	var streamedPodsGuard sync.Mutex
 	var wg sync.WaitGroup
+	sortingCh := make(chan logEntry)
+	logOptions := req.GetLogOptions().DeepCopy()
+	logOptions.Timestamps = true
 
 	// this func start a stream if one is not already running
 	ensureWeAreStreaming := func(pod *corev1.Pod) {
@@ -95,7 +102,7 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 				defer wg.Done()
 				logCtx.Debug("Streaming pod logs")
 				defer logCtx.Debug("Pod logs stream done")
-				stream, err := podInterface.GetLogs(podName, req.GetLogOptions()).Stream()
+				stream, err := podInterface.GetLogs(podName, logOptions).Stream()
 				if err != nil {
 					logCtx.WithField("err", err).Error("Unable to get pod logs")
 					return
@@ -106,14 +113,21 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 					case <-ctx.Done():
 						return
 					default:
-						content := scanner.Text()
-						logCtx.WithField("content", content).Debug("Log line")
-						// we actually don't know the container name AFAIK
-						err = sender.Send(&workflowpkg.LogEntry{PodName: podName, Content: content})
+						line := scanner.Text()
+						parts := strings.SplitN(line, " ", 2)
+						timestamp, err := time.Parse(time.RFC3339, parts[0])
 						if err != nil {
-							logCtx.WithField("err", err).Error("Unable to send log entry")
+							logCtx.WithField("err", err).Error("Unable to get pod logs")
 							return
 						}
+						content := parts[1]
+						// you might ask - why don't we let the client do this? well, it is because
+						// this is the same as how this would work for
+						if req.GetLogOptions().Timestamps {
+							content = line
+						}
+						logCtx.WithFields(log.Fields{"time": timestamp, "content": content}).Debug("Log line")
+						sortingCh <- logEntry{PodName: podName, Content: content, timestamp: timestamp}
 					}
 				}
 				logCtx.Debug("No more log lines to stream")
@@ -143,7 +157,52 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 		ensureWeAreStreaming: ensureWeAreStreaming,
 		wfWatch:              wfWatch,
 		podWatch:             podWatch,
+		unsortedEntries:      sortingCh,
+		sender:               sender,
 	}, nil
+}
+
+func (l *workflowLogger) sortAndSend() {
+	defer l.logCtx.Debug("Done sorting entries")
+	l.logCtx.Debug("Sorting entries")
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+	entries := logEntries{}
+	send := func() error {
+		sort.Sort(entries)
+		for len(entries) > 0 {
+			// pop
+			var e logEntry
+			e, entries = entries[len(entries)-1], entries[:len(entries)-1]
+			err := l.sender.Send(&workflowpkg.LogEntry{Content: e.Content, PodName: e.PodName})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	defer func() {
+		err := send()
+		if err != nil {
+			log.Error(err)
+		}
+	}()
+	for {
+		select {
+		case <-ticker.C:
+			err := send()
+			if err != nil {
+				log.Error(err)
+				return
+			}
+		case entry, ok := <-l.unsortedEntries:
+			if !ok {
+				return
+			} else {
+				entries = append(entries, entry)
+			}
+		}
+	}
 }
 
 func (l *workflowLogger) Run(ctx context.Context) {
@@ -216,8 +275,10 @@ func (l *workflowLogger) Run(ctx context.Context) {
 	} else {
 		l.logCtx.Debug("Not starting watches")
 	}
-
+	go l.sortAndSend()
 	l.logCtx.Debug("Waiting for work-group")
 	l.wg.Wait()
 	l.logCtx.Debug("Work-group done")
+	// tell the sorting channel to finish
+	close(l.unsortedEntries)
 }
