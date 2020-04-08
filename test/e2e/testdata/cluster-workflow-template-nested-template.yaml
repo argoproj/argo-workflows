@@ -1,3 +1,19 @@
+kind: ClusterWorkflowTemplate
+metadata:
+  name: cluster-workflow-template-whalesay-template
+  labels:
+    argo-e2e: true
+spec:
+  templates:
+    - name: whalesay-template
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: docker/whalesay
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]
+---
 apiVersion: argoproj.io/v1alpha1
 kind: ClusterWorkflowTemplate
 metadata:
@@ -8,8 +24,9 @@ spec:
   templates:
     - name: whalesay-inner-template
       templateRef:
-        name: workflow-template-whalesay-template
+        name: cluster-workflow-template-whalesay-template
         template: whalesay-template
+        clusterscope: true
       inputs:
         parameters:
           - name: message
