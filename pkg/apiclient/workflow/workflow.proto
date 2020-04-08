@@ -194,7 +194,7 @@ service WorkflowService {
 
     rpc SubmitFromResource (WorkflowSubmitRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
-			put: "/api/v1/workflows/{namespace}/{resourceKind}/{resourceName}/submit"
+			post: "/api/v1/workflows/{namespace}/submit"
 			body: "*"
 		};
     }

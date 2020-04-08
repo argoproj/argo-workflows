@@ -1118,28 +1118,6 @@ func request_WorkflowService_SubmitFromResource_0(ctx context.Context, marshaler
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
 	}
 
-	val, ok = pathParams["resourceKind"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "resourceKind")
-	}
-
-	protoReq.ResourceKind, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "resourceKind", err)
-	}
-
-	val, ok = pathParams["resourceName"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "resourceName")
-	}
-
-	protoReq.ResourceName, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "resourceName", err)
-	}
-
 	msg, err := client.SubmitFromResource(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
@@ -1173,28 +1151,6 @@ func local_request_WorkflowService_SubmitFromResource_0(ctx context.Context, mar
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
-	}
-
-	val, ok = pathParams["resourceKind"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "resourceKind")
-	}
-
-	protoReq.ResourceKind, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "resourceKind", err)
-	}
-
-	val, ok = pathParams["resourceName"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "resourceName")
-	}
-
-	protoReq.ResourceName, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "resourceName", err)
 	}
 
 	msg, err := server.SubmitFromResource(ctx, &protoReq)
@@ -1441,7 +1397,7 @@ func RegisterWorkflowServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		return
 	})
 
-	mux.Handle("PUT", pattern_WorkflowService_SubmitFromResource_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_WorkflowService_SubmitFromResource_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -1762,7 +1718,7 @@ func RegisterWorkflowServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 
 	})
 
-	mux.Handle("PUT", pattern_WorkflowService_SubmitFromResource_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_WorkflowService_SubmitFromResource_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -1812,7 +1768,7 @@ var (
 
 	pattern_WorkflowService_PodLogs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"api", "v1", "workflows", "namespace", "name", "podName", "log"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_WorkflowService_SubmitFromResource_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"api", "v1", "workflows", "namespace", "resourceKind", "resourceName", "submit"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_WorkflowService_SubmitFromResource_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "workflows", "namespace", "submit"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (

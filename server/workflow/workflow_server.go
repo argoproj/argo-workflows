@@ -423,7 +423,7 @@ func (s *workflowServer) SubmitFromResource(ctx context.Context, req *workflowpk
 		wf = common.ConvertClusterWorkflowTemplateToWorkflow(wfTmpl)
 	default:
 
-		return nil, errors.Errorf(errors.CodeBadRequest, "Resource kind '%s' is not supported with --from", req.ResourceKind)
+		return nil, errors.Errorf(errors.CodeBadRequest, "Resource kind '%s' is not supported for submitting", req.ResourceKind)
 
 	}
 	s.setInstanceID(req.InstanceID, wf)

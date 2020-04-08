@@ -249,6 +249,38 @@
         ]
       }
     },
+    "/api/v1/workflows/{namespace}/submit": {
+      "post": {
+        "operationId": "SubmitFromResource",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workflow.WorkflowSubmitRequest"
+            }
+          }
+        ],
+        "tags": [
+          "WorkflowService"
+        ]
+      }
+    },
     "/api/v1/workflows/{namespace}/{name}": {
       "get": {
         "operationId": "GetWorkflow",
@@ -697,50 +729,6 @@
             "required": false,
             "type": "string",
             "format": "int64"
-          }
-        ],
-        "tags": [
-          "WorkflowService"
-        ]
-      }
-    },
-    "/api/v1/workflows/{namespace}/{resourceKind}/{resourceName}/submit": {
-      "put": {
-        "operationId": "SubmitFromResource",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "resourceKind",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "resourceName",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workflow.WorkflowSubmitRequest"
-            }
           }
         ],
         "tags": [
