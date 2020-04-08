@@ -194,7 +194,7 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 	if !ok {
 		return false
 	}
-	_, tmpl, err := d.tmplCtx.ResolveTemplate(&childNode)
+	_, tmpl, _, err := d.tmplCtx.ResolveTemplate(&childNode)
 	if err != nil {
 		return false
 	}
@@ -204,7 +204,7 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 	return true
 }
 
-func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
@@ -376,7 +376,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 
 	// The template scope of this dag.
-	dagTemplateScope := dagCtx.tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+	dagTemplateScope := dagCtx.tmplCtx.GetTemplateScope()
 
 	// First resolve/substitute params/artifacts from our dependencies
 	newTask, err := woc.resolveDependencyReferences(dagCtx, task)
@@ -468,10 +468,15 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv
 					ancestorNodes = append(ancestorNodes, node)
 				}
 			}
-			_, tmpl, err := dagCtx.tmplCtx.ResolveTemplate(ancestorNode)
+			_, tmpl, templateStored, err := dagCtx.tmplCtx.ResolveTemplate(ancestorNode)
 			if err != nil {
 				return nil, errors.InternalWrapError(err)
 			}
+			// A new template was stored during resolution, persist it
+			if templateStored {
+				woc.updated = true
+			}
+
 			err = woc.processAggregateNodeOutputs(tmpl, &scope, prefix, ancestorNodes)
 			if err != nil {
 				return nil, errors.InternalWrapError(err)
