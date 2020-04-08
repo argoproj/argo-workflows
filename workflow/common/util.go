@@ -653,13 +653,13 @@ func MergeReferredTemplate(tmpl *wfv1.Template, referred *wfv1.Template) (*wfv1.
 	return newTmpl, nil
 }
 
-// GetTemplateGetterString returns string of TemplateGetter.
-func GetTemplateGetterString(getter wfv1.TemplateGetter) string {
+// GetTemplateGetterString returns string of TemplateHolder.
+func GetTemplateGetterString(getter wfv1.TemplateHolder) string {
 	return fmt.Sprintf("%T (namespace=%s,name=%s)", getter, getter.GetNamespace(), getter.GetName())
 }
 
-// GetTemplateHolderString returns string of TemplateHolder.
-func GetTemplateHolderString(tmplHolder wfv1.TemplateHolder) string {
+// GetTemplateHolderString returns string of TemplateReferenceHolder.
+func GetTemplateHolderString(tmplHolder wfv1.TemplateReferenceHolder) string {
 	tmplName := tmplHolder.GetTemplateName()
 	tmplRef := tmplHolder.GetTemplateRef()
 	if tmplRef != nil {
