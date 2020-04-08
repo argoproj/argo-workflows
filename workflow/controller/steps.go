@@ -27,7 +27,7 @@ type stepsContext struct {
 	tmplCtx *templateresolution.Context
 }
 
-func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSteps, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
@@ -40,7 +40,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 	}()
 
 	// The template scope of this step.
-	stepTemplateScope := tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+	stepTemplateScope := tmplCtx.GetTemplateScope()
 
 	stepsCtx := stepsContext{
 		boundaryID: node.ID,
@@ -114,10 +114,15 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 				}
 				if len(childNodes) > 0 {
 					// Expanded child nodes should be created from the same template.
-					_, tmpl, err := stepsCtx.tmplCtx.ResolveTemplate(&childNodes[0])
+					_, tmpl, templateStored, err := stepsCtx.tmplCtx.ResolveTemplate(&childNodes[0])
 					if err != nil {
 						return node, err
 					}
+					// A new template was stored during resolution, persist it
+					if templateStored {
+						woc.updated = true
+					}
+
 					err = woc.processAggregateNodeOutputs(tmpl, stepsCtx.scope, prefix, childNodes)
 					if err != nil {
 						return node, err
@@ -196,7 +201,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	nodeSteps := make(map[string]wfv1.WorkflowStep)
 
 	// The template scope of this step group.
-	stepTemplateScope := stepsCtx.tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+	stepTemplateScope := stepsCtx.tmplCtx.GetTemplateScope()
 
 	// Kick off all parallel steps in the group
 	for _, step := range stepGroup {
@@ -382,7 +387,7 @@ func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.W
 			// Empty list
 			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
 			if woc.getNodeByName(childNodeName) == nil {
-				stepTemplateScope := stepsCtx.tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+				stepTemplateScope := stepsCtx.tmplCtx.GetTemplateScope()
 				skipReason := fmt.Sprint("Skipped, empty params")
 				woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
 				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
