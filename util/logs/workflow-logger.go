@@ -47,10 +47,9 @@ type workflowLogger struct {
 	ensureWeAreStreaming func(pod *corev1.Pod)
 	podWatch             watch.Interface
 	wfWatch              watch.Interface
-	stopCh               chan struct{}
 }
 
-func NewWorkflowLogger(wfClient versioned.Interface, kubeClient kubernetes.Interface, req request, sender sender) (WorkflowLogger, error) {
+func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeClient kubernetes.Interface, req request, sender sender) (WorkflowLogger, error) {
 
 	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace()).Get(req.GetName(), metav1.GetOptions{})
 	if err != nil {
@@ -82,8 +81,6 @@ func NewWorkflowLogger(wfClient versioned.Interface, kubeClient kubernetes.Inter
 	streamedPods := make(map[types.UID]bool)
 	var streamedPodsGuard sync.Mutex
 	var wg sync.WaitGroup
-	// We never send anything on this channel apart from closing it to indicate everyone should stop.
-	stopChan := make(chan struct{})
 
 	// this func start a stream if one is not already running
 	ensureWeAreStreaming := func(pod *corev1.Pod) {
@@ -106,7 +103,7 @@ func NewWorkflowLogger(wfClient versioned.Interface, kubeClient kubernetes.Inter
 				scanner := bufio.NewScanner(stream)
 				for scanner.Scan() {
 					select {
-					case <-stopChan:
+					case <-ctx.Done():
 						return
 					default:
 						content := scanner.Text()
@@ -146,7 +143,6 @@ func NewWorkflowLogger(wfClient versioned.Interface, kubeClient kubernetes.Inter
 		ensureWeAreStreaming: ensureWeAreStreaming,
 		wfWatch:              wfWatch,
 		podWatch:             podWatch,
-		stopCh:               stopChan,
 	}, nil
 }
 
@@ -166,11 +162,13 @@ func (l *workflowLogger) Run(ctx context.Context) {
 	}
 
 	if !l.completed && l.follow {
+		// We never send anything on this channel apart from closing it to indicate everyone should stop.
+		stopCh := make(chan struct{})
 		// The purpose of this watch is to make sure we do not exit until the workflow is completed or deleted.
 		// When that happens, it signals we are done by closing the stop channel.
 		l.wg.Add(1)
 		go func() {
-			defer close(l.stopCh)
+			defer close(stopCh)
 			defer l.wg.Done()
 			defer l.logCtx.Debug("Done watching workflow events")
 			l.logCtx.Debug("Watching for workflow events")
@@ -200,7 +198,7 @@ func (l *workflowLogger) Run(ctx context.Context) {
 			l.logCtx.Debug("Watching for pod events")
 			for {
 				select {
-				case <-l.stopCh:
+				case <-stopCh:
 					return
 				case event := <-l.podWatch.ResultChan():
 					pod, ok := event.Object.(*corev1.Pod)
