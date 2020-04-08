@@ -7,7 +7,7 @@ interface ResourceSubmitProps<T> {
     defaultResource: T;
     resourceName: string;
     onSubmit: (value: T) => Promise<void>;
-    validate?: (values: T) => {valid: boolean, message?: string};
+    validate?: (values: T) => {valid: boolean; message?: string};
 }
 
 interface ResourceSubmitState {
