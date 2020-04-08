@@ -86,7 +86,8 @@ MOCK_FILES       := $(shell find . -maxdepth 4 -not -path '*/vendor/*' -path '*/
 
 define backup_go_mod
 	# Back-up go.*, but only if we have not already done this (because that would suggest we failed mid-codegen and the currenty go.* files are borked).
-	[[ -e dist/go.mod ]] || cp go.mod go.sum dist/
+	@mkdir -p dist
+	[ -e dist/go.mod ] || cp go.mod go.sum dist/
 endef
 define restore_go_mod
 	# Restore the back-ups.
