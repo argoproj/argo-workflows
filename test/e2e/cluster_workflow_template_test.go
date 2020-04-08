@@ -22,10 +22,10 @@ func (s *ClusterWorkflowTemplateSuite) TestSubmitClusterWorkflowTemplate() {
 		WorkflowName("my-wf").
 		When().
 		CreateClusterWorkflowTemplates().
-		RunCli([]string{"submit", "--from", "clusterworkflowtemplate/cluster-workflow-template-whalesay-template", "--name", "my-wf"}, func(t *testing.T, output string, err error) {
+		RunCli([]string{"submit", "--from", "clusterworkflowtemplate/cluster-workflow-template-whalesay-template", "--name", "my-wf", "-l", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
 			assert.NoError(t, err)
 		}).
-		WaitForWorkflow(15 * time.Second).
+		WaitForWorkflow(20 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
 			assert.Equal(t, status.Phase, v1alpha1.NodeSucceeded)
@@ -33,6 +33,8 @@ func (s *ClusterWorkflowTemplateSuite) TestSubmitClusterWorkflowTemplate() {
 }
 
 func (s *ClusterWorkflowTemplateSuite) TestNestedClusterWorkflowTemplate() {
+	// https://github.com/argoproj/argo/issues/2622
+	s.T().SkipNow()
 	s.Given().WorkflowTemplate("@smoke/cluster-workflow-template-whalesay-template.yaml").
 		WorkflowTemplate("@testdata/cluster-workflow-template-nested-template.yaml").
 		Workflow(`apiVersion: argoproj.io/v1alpha1
@@ -59,7 +61,7 @@ spec:
 		WaitForWorkflow(30 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
-			assert.Equal(t, status.Phase, v1alpha1.NodeSucceeded)
+			assert.Equal(t, v1alpha1.NodeSucceeded, status.Phase)
 		})
 
 }
