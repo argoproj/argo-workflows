@@ -109,11 +109,12 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 defaultResource={exampleWorkflow(this.state.namespace)}
                                 validate={wfValue => {
                                     if (!wfValue || !wfValue.metadata) {
-                                        return 'Invalid Workflow definition';
+                                        return {valid: false, message: 'Invalid Workflow definition'};
                                     }
                                     if (wfValue.metadata.namespace === undefined || wfValue.metadata.namespace === '') {
-                                        return 'Namespace is missing';
+                                        return {valid: false, message: 'Namespace is missing'};
                                     }
+                                    return {valid: true}
                                 }}
                                 onSubmit={wfValue => {
                                     return services.workflows

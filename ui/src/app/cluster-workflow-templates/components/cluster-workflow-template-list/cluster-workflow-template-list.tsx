@@ -71,8 +71,9 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
                                 defaultResource={exampleClusterWorkflowTemplate()}
                                 validate={wfTmpl=> {
                                     if (!wfTmpl || !wfTmpl.metadata) {
-                                        return 'Invalid ClusterWorkflowTemplate definition';
+                                        return {valid:false, message: 'Invalid ClusterWorkflowTemplate definition'};
                                     }
+                                    return {valid: true}
                                 }}
                                 onSubmit={wfTmpl => {
                                     return services.clusterWorkflowTemplate.create(wfTmpl).then(wf => ctx.navigation.goto(uiUrl(`cluster-workflow-templates/${wf.metadata.name}`)));

@@ -85,11 +85,12 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                                 defaultResource={exampleCronWorkflow(this.namespace)}
                                 validate={wfValue => {
                                     if (!wfValue || !wfValue.metadata) {
-                                        return 'Invalid CronWorkflow definition';
+                                        return {valid: false, message: 'Invalid CronWorkflow definition'};
                                     }
                                     if (wfValue.metadata.namespace === undefined || wfValue.metadata.namespace === '') {
-                                        return 'Namespace is missing';
+                                        return {valid: false, message: 'Namespace is missing'};
                                     }
+                                    return {valid: true}
                                 }}
                                 onSubmit={cronWf => {
                                     return services.cronWorkflows
