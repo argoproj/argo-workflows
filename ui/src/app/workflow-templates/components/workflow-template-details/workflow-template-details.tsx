@@ -127,6 +127,16 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
             });
     }
 
+    private templateDefaultParameters(template: models.Template) {
+        if (!!template.inputs && !!template.inputs.parameters) {
+            const parametersWithPlaceholder =
+                template.inputs.parameters.map(p => (p.value === undefined) ? {...p, value: '!!! NEEDS TO BE SET'} : p);
+            return {root: {parameters: parametersWithPlaceholder}};
+        } else {
+            return {};
+        }
+    }
+
     private getWorkflow(template: models.WorkflowTemplate): models.Workflow {
         return {
             metadata: {
@@ -136,12 +146,13 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
             spec: {
                 entrypoint: template.spec.templates[0].name,
                 templates: template.spec.templates.map(t => ({
-                    name: t.name,
-                    templateRef: {
-                        name: template.metadata.name,
-                        template: t.name
-                    }
-                }))
+                        name: t.name,
+                        templateRef: {
+                            name: template.metadata.name,
+                            template: t.name
+                        },
+                        ...this.templateDefaultParameters(t)
+                    }))
             }
         };
     }
