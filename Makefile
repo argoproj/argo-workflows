@@ -219,18 +219,25 @@ dist/update-mocks: $(HOME)/go/bin/mockery $(MOCK_FILES)
 	@mkdir -p dist
 	touch dist/update-mocks
 
-.PHONY: codegen
-codegen: dist/update-mocks
+.PHONY: backup-go.mod
+backup-go.mod:
 	# Back-up go.*, but only if we have not already done this (because that would suggest we failed mid-codegen and the currenty go.* files are borked).
 	[[ -e dist/go.mod ]] || cp go.mod go.sum dist/
+
+.PHONY: restore-go.mod
+restore-go.mod:
+	# Restore the back-ups.
+	mv dist/go.mod dist/go.sum .
+
+.PHONY: codegen
+codegen: dist/update-mocks backup-go.mod
 	# We need the folder for compatibility
 	go mod vendor
 	# Generate proto
 	./hack/generate-proto.sh
 	# Updated codegen
 	./hack/update-codegen.sh
-	# Restore the back-ups.
-	mv dist/go.mod dist/go.sum .
+	make restore-go.mod
 	make api/openapi-spec/swagger.json
 
 .PHONY: manifests
@@ -435,7 +442,9 @@ clean:
 # swagger
 
 $(HOME)/go/bin/swagger:
+	make backup-go.mod
 	go get github.com/go-swagger/go-swagger/cmd/swagger
+	make restore-go.mod
 
 api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) dist/MANIFESTS_VERSION hack/swaggify.sh
 	swagger mixin -c 412 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
