@@ -216,6 +216,7 @@ $(HOME)/go/bin/mockery:
 
 dist/update-mocks: $(HOME)/go/bin/mockery $(MOCK_FILES)
 	./hack/update-mocks.sh $(MOCK_FILES)
+	@mkdir -p dist
 	touch dist/update-mocks
 
 .PHONY: codegen
@@ -237,7 +238,7 @@ manifests: status manifests/install.yaml manifests/namespace-install.yaml manife
 
 # we use a different file to ./VERSION to force updating manifests after a `make clean`
 dist/MANIFESTS_VERSION:
-	mkdir -p dist
+	@mkdir -p dist
 	echo $(MANIFESTS_VERSION) > dist/MANIFESTS_VERSION
 
 manifests/install.yaml: dist/MANIFESTS_VERSION $(MANIFESTS)
