@@ -39,7 +39,7 @@ type ClusterWorkflowTemplateList struct {
 	Items           ClusterWorkflowTemplates `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
-var _ TemplateGetter = &ClusterWorkflowTemplate{}
+var _ TemplateHolder = &ClusterWorkflowTemplate{}
 
 // GetTemplateByName retrieves a defined template by its name
 func (cwftmpl *ClusterWorkflowTemplate) GetTemplateByName(name string) *Template {
@@ -51,12 +51,12 @@ func (cwftmpl *ClusterWorkflowTemplate) GetTemplateByName(name string) *Template
 	return nil
 }
 
-// GetTemplateScope returns the template scope of workflow template.
-func (cwftmpl *ClusterWorkflowTemplate) GetTemplateScope() string {
-	return "cluster/" + cwftmpl.Name
+// GetResourceScope returns the template scope of workflow template.
+func (cwftmpl *ClusterWorkflowTemplate) GetResourceScope() ResourceScope {
+	return ResourceScopeCluster
 }
 
-// GetAllTemplates returns the list of templates of cluster workflow template
-func (cwftmpl *ClusterWorkflowTemplate) GetAllTemplates() []Template {
+// GetTemplates returns the list of templates of cluster workflow template
+func (cwftmpl *ClusterWorkflowTemplate) GetTemplates() []Template {
 	return cwftmpl.Spec.Templates
 }
