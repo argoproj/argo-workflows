@@ -191,7 +191,7 @@ func (s *CLISuite) TestLogProblems() {
 			}
 		}).
 		When().
-		// next check for a completed workflow
+		// Next check that all log entries and received and in the correct order.
 		WaitForWorkflow(20*time.Second).
 		Then().
 		RunCli([]string{"logs", "log-problems"}, func(t *testing.T, output string, err error) {

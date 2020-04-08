@@ -54,6 +54,9 @@ type workflowLogger struct {
 	// uses a ticker to periodically (every 1s) sort the message and send them in order.
 	// This channel is closed whenever there is no more work to be done.
 	unsortedEntries chan logEntry
+	// When sorting is complete and all entries have been flushed, then this channel is closed. Listed to this channel
+	// to wait until sorting is complete.
+	doneSorting     chan struct{}
 	sender          sender
 }
 
@@ -89,7 +92,8 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 	streamedPods := make(map[types.UID]bool)
 	var streamedPodsGuard sync.Mutex
 	var wg sync.WaitGroup
-	unsortedEntries := make(chan logEntry)
+	// A non-blocking channel for log entries to go down.
+	unsortedEntries := make(chan logEntry, 128)
 	logOptions := req.GetLogOptions().DeepCopy()
 	logOptions.Timestamps = true
 
@@ -162,11 +166,13 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 		wfWatch:              wfWatch,
 		podWatch:             podWatch,
 		unsortedEntries:      unsortedEntries,
+		doneSorting:          make(chan struct{}),
 		sender:               sender,
 	}, nil
 }
 
 func (l *workflowLogger) sortAndSend() {
+	defer close(l.doneSorting)
 	defer l.logCtx.Debug("Done sorting entries")
 	l.logCtx.Debug("Sorting entries")
 	ticker := time.NewTicker(1 * time.Second)
@@ -176,9 +182,9 @@ func (l *workflowLogger) sortAndSend() {
 	send := func() error {
 		sort.Sort(entries)
 		for len(entries) > 0 {
-			// pop
+			// head
 			var e logEntry
-			e, entries = entries[len(entries)-1], entries[:len(entries)-1]
+			e, entries = entries[0], entries[1:]
 			err := l.sender.Send(&workflowpkg.LogEntry{Content: e.Content, PodName: e.PodName})
 			if err != nil {
 				return err
@@ -195,18 +201,18 @@ func (l *workflowLogger) sortAndSend() {
 	}()
 	for {
 		select {
+		case entry, ok := <-l.unsortedEntries:
+			if !ok {
+				// The fact this channel is closed indicates that we need to finish-up.
+				return
+			} else {
+				entries = append(entries, entry)
+			}
 		case <-ticker.C:
 			err := send()
 			if err != nil {
 				log.Error(err)
 				return
-			}
-		case entry, ok := <-l.unsortedEntries:
-			if !ok {
-				// The fact this channel is closed indicates that we do not need to do any more work.
-				return
-			} else {
-				entries = append(entries, entry)
 			}
 		}
 	}
@@ -229,12 +235,12 @@ func (l *workflowLogger) Run(ctx context.Context) {
 
 	if !l.completed && l.follow {
 		// We never send anything on this channel apart from closing it to indicate we should stop waiting for new pods.
-		stopCh := make(chan struct{})
+		stopWatchingPods := make(chan struct{})
 		// The purpose of this watch is to make sure we do not exit until the workflow is completed or deleted.
 		// When that happens, it signals we are done by closing the stop channel.
 		l.wg.Add(1)
 		go func() {
-			defer close(stopCh)
+			defer close(stopWatchingPods)
 			defer l.wg.Done()
 			defer l.logCtx.Debug("Done watching workflow events")
 			l.logCtx.Debug("Watching for workflow events")
@@ -264,7 +270,7 @@ func (l *workflowLogger) Run(ctx context.Context) {
 			l.logCtx.Debug("Watching for pod events")
 			for {
 				select {
-				case <-stopCh:
+				case <-stopWatchingPods:
 					return
 				case event := <-l.podWatch.ResultChan():
 					pod, ok := event.Object.(*corev1.Pod)
@@ -286,6 +292,7 @@ func (l *workflowLogger) Run(ctx context.Context) {
 	l.logCtx.Debug("Waiting for work-group")
 	l.wg.Wait()
 	l.logCtx.Debug("Work-group done")
-	// Tell the sorting Goroutine it can finish.
 	close(l.unsortedEntries)
+	<-l.doneSorting
+	l.logCtx.Debug("Sorting done")
 }
