@@ -1,6 +1,8 @@
 # Versioning
 
-Argo Workflows does not use Semantic Versioning yet. This is because we have not introduced any breaking changes since v2.0.
+Argo Workflows does not use Semantic Versioning, even though we have not introduced any breaking changes since v2.
+
+Breaking changes will be communicated in the release notes.
 
 See:
 
