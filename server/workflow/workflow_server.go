@@ -338,7 +338,7 @@ func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflo
 	ctx := ws.Context()
 	wfClient := auth.GetWfClient(ctx)
 	kubeClient := auth.GetKubeClient(ctx)
-	logger, err := logs.NewWorkflowLogger(wfClient, kubeClient, req, ws)
+	logger, err := logs.NewWorkflowLogger(ctx, wfClient, kubeClient, req, ws)
 	if err != nil {
 		return err
 	}
