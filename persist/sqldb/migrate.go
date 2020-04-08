@@ -104,7 +104,10 @@ func (m migrate) Exec(ctx context.Context) error {
 		// ***
 		// THE CHANGES ABOVE THIS LINE MAY BE IN PER-PRODUCTION SYSTEMS - DO NOT CHANGE THEM
 		// ***
-		ansiSQLChange(`alter table argo_archived_workflows rename column id to uid`),
+		ternary(dbType == MySQL,
+			ansiSQLChange(`alter table argo_archived_workflows change column id uid varchar(128)`),
+			ansiSQLChange(`alter table argo_archived_workflows rename column id to uid`),
+		),
 		ternary(dbType == MySQL,
 			ansiSQLChange(`alter table argo_archived_workflows modify column uid varchar(128) not null`),
 			ansiSQLChange(`alter table argo_archived_workflows alter column uid set not null`),
@@ -147,7 +150,10 @@ func (m migrate) Exec(ctx context.Context) error {
 		ansiSQLChange(`alter table ` + m.tableName + ` drop column phase`),
 		ansiSQLChange(`alter table ` + m.tableName + ` drop column startedat`),
 		ansiSQLChange(`alter table ` + m.tableName + ` drop column finishedat`),
-		ansiSQLChange(`alter table ` + m.tableName + ` rename column id to uid`),
+		ternary(dbType == MySQL,
+			ansiSQLChange(`alter table `+m.tableName+` change column id uid varchar(128)`),
+			ansiSQLChange(`alter table `+m.tableName+` rename column id to uid`),
+		),
 		ternary(dbType == MySQL,
 			ansiSQLChange(`alter table `+m.tableName+` modify column uid varchar(128) not null`),
 			ansiSQLChange(`alter table `+m.tableName+` alter column uid set not null`),
