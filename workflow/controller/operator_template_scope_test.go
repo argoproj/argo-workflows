@@ -472,7 +472,7 @@ spec:
 `
 
 func TestTemplateClusterScope(t *testing.T) {
-	//t.SkipNow()
+	t.SkipNow()
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates()
@@ -496,7 +496,7 @@ func TestTemplateClusterScope(t *testing.T) {
 	node := findNodeByName(wf.Status.Nodes, "test-template-scope")
 	if assert.NotNil(t, node, "Node %s not found", "test-templte-scope") {
 		assert.Equal(t, wfv1.NodeTypeSteps, node.Type)
-		assert.Equal(t, "", node.TemplateScope)
+		assert.Equal(t, "local/test-template-scope", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0]")

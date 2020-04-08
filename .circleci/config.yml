@@ -10,12 +10,12 @@ commands:
       - restore_cache:
           name: Restore go mod cache
           keys:
-            -  go-mod-v1-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
+            - go-mod-v2-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
   save_go_mod:
     steps:
       - save_cache:
           name: Save go mod cache
-          key:  go-mod-v1-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
+          key:  go-mod-v2-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - /home/circleci/.go_workspace/go/pkg/mod
           when: always
@@ -32,7 +32,7 @@ commands:
     steps:
       - save_cache:
           name: Save Golang cache
-          key: go-v5-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+          key: go-v6-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - /home/circleci/.cache/go-build
             - /home/circleci/sdk/go1.13.4
@@ -42,14 +42,14 @@ commands:
       - restore_cache:
           name: Restore Golang cache
           keys:
-            - go-v5-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
-            - go-v5-master-{{ .Environment.CIRCLE_JOB }}
+            - go-v6-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+            - go-v6-master-{{ .Environment.CIRCLE_JOB }}
   e2e:
     steps:
       - install_kustomize
       - run:
-          name: Install and start K3S v1.0.0
-          command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.0 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
+          name: Install and start K3S v1.0.1
+          command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.1 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
           background: true
       - restore_go_cache
       - install_golang
@@ -66,14 +66,6 @@ commands:
             echo "  user:" >> ~/.kube/config
             echo "    token: xxxxxx" >> ~/.kube/config
       - run:
-          name: Watch Docker events, to help diagnose failures
-          command: docker events
-          background: true
-      - run:
-          name: Watch Kubernetes events, to help diagnose failures
-          command: kubectl -n argo get events --watch
-          background: true
-      - run:
           name: Start Argo
           command: mkdir dist && KUBECONFIG=~/.kube/config make start DB=$DB E2E_EXECUTOR=docker DEV_IMAGE=true
       - run:
@@ -83,10 +75,6 @@ commands:
       - run:
           name: Sleep for short while
           command: sleep 10s
-      - run:
-          name: Watch Kubernetes events, to help diagnose failures
-          command: kubectl -n argo get events --watch
-          background: true
       - run:
           name: Follow logs, to help diagnose failures
           command: make logs
@@ -100,19 +88,54 @@ commands:
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
             make test-e2e 2>&1 | tee test-results/test.out
-      - save_go_mod
-      - save_go_cache
       - store_test_results:
           path: test-results
+          when: always
       - store_artifacts:
+          name: Store test results
           path: test-results
           destination: .
+          when: always
+      - store_artifacts:
+          name: Store logs
+          path: /tmp/log/argo-e2e
+          destination: .
+          when: always
+      - save_go_mod
+      - save_go_cache
   go_junit_report:
     steps:
       - run:
           name: Install Go test report to Junit test report
           command: go get github.com/jstemmer/go-junit-report
 jobs:
+  codegen:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    machine:
+      image: ubuntu-1604:201903-01
+    steps:
+      - install_kustomize
+      - restore_go_cache
+      - install_golang
+      - checkout
+      - run:
+          name: Install protoc
+          command: |
+            set -eux -o pipefail
+            PROTOC_ZIP=protoc-3.11.1-linux-x86_64.zip
+            curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.11.1/$PROTOC_ZIP
+            sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
+            sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
+            sudo chmod +x /usr/local/bin/protoc
+            sudo find /usr/local/include -type f | xargs sudo chmod a+r
+            sudo find /usr/local/include -type d | xargs sudo chmod a+rx
+            rm -f $PROTOC_ZIP
+            ls /usr/local/include/google/protobuf/
+      - run: make codegen
+      - run: make manifests
+      - run: git diff --exit-code
+      - save_go_cache
+      - save_go_mod
   test:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
@@ -130,22 +153,20 @@ jobs:
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
             make test 2>&1 | tee test-results/test.out
-      - save_go_cache
-      - save_go_mod
       - run:
           name: Uploading code coverage
           command: bash <(curl -s https://codecov.io/bash) -f coverage.out
       - store_test_results:
           path: test-results
+          when: always
       - store_artifacts:
           path: test-results
           destination: .
-      - run:
-          name: Lint
-          command: make lint
-      - run:
-          name: Check nothing needs commiting
-          command: git diff --exit-code
+          when: always
+      - run: make lint
+      - run: git diff --exit-code
+      - save_go_cache
+      - save_go_mod
   e2e-no-db:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
@@ -176,39 +197,36 @@ jobs:
       image: ubuntu-1604:201903-01
     steps:
       - checkout
-      - run: docker build .
+      - run: DOCKER_BUILDKIT=1 docker build .
   ui:
     docker:
-      - image: node:11.15.0
-    working_directory: ~/argo/ui
+      - image: circleci/node:11.15.0
     steps:
-      - checkout:
-          path: ~/argo
+      - checkout
       - restore_cache:
           name: Restore Yarn cache
           keys:
-            - yarn-packages-v1-{{ checksum "yarn.lock" }}
+            - yarn-packages-v3-{{ checksum "yarn.lock" }}
       - run:
           name: Download dependencies
-          command: yarn install --frozen-lockfile --ignore-optional --non-interactive
-      - save_cache:
-          name: Save Yarn cache
-          key: yarn-packages-v1-{{ checksum "yarn.lock" }}
-          paths: [~/.cache/yarn, node_modules]
+          command: yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
       # - run: yarn test
       # - run: ./node_modules/.bin/codecov -p ..
-      - run:
-          name: Build
-          command: yarn build
-      - run:
-          name: Lint
-          command: yarn lint
+      - run: yarn --cwd ui build
+      - run: yarn --cwd ui lint
+      - run: git diff --exit-code
+      - save_cache:
+          name: Save Yarn cache
+          key: yarn-packages-v3-{{ checksum "yarn.lock" }}
+          paths: [~/.cache/yarn, node_modules]
+          when: always
 workflows:
   version: 2
-  workflow:
+  argo-workflow:
     jobs:
       - test
       - ui
+      - codegen
       - e2e-no-db
       - e2e-postgres
       - e2e-mysql

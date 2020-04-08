@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/argoproj/pkg/humanize"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,6 +25,8 @@ type CronSuite struct {
 }
 
 func (s *CronSuite) SetupSuite() {
+	// https://github.com/argoproj/argo/issues/2623
+	s.T().SkipNow()
 	s.E2ESuite.SetupSuite()
 	// Since tests run in parallel, delete all cron resources before the test suite is run
 	s.E2ESuite.DeleteResources(fixtures.LabelCron)
@@ -32,7 +34,7 @@ func (s *CronSuite) SetupSuite() {
 
 func (s *CronSuite) TearDownSuite() {
 	s.E2ESuite.DeleteResources(fixtures.LabelCron)
-	s.Persistence.Close()
+	s.E2ESuite.TearDownSuite()
 }
 
 func (s *CronSuite) TestBasic() {
@@ -77,9 +79,7 @@ func (s *CronSuite) TestBasicTimezone() {
 	// timezone was the same as the local timezone, a little-used timezone is used.
 	testTimezone := "Pacific/Niue"
 	testLocation, err := time.LoadLocation(testTimezone)
-	if err != nil {
-		s.T().Fatal(err)
-	}
+	s.CheckError(err)
 	hour, min, _ := time.Now().In(testLocation).Clock()
 	min++
 	if min == 60 {
@@ -395,7 +395,7 @@ func TestCronSuite(t *testing.T) {
 	} else {
 		toWait = time.Duration(90-sec) * time.Second
 	}
-	logrus.Infof("Waiting %s to start", humanize.Duration(toWait))
+	log.Infof("Waiting %s to start", humanize.Duration(toWait))
 	time.Sleep(toWait)
 	suite.Run(t, new(CronSuite))
 }
