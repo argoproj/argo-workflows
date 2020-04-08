@@ -10,18 +10,23 @@ spec:
   - name: hello-hello-hello
     steps:
     - - name: hello1
-        template: pass
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "hello1"}]
     - - name: hello2a
-        template: fail
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "hello2a"}]
+      - name: hello2b
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "hello2b"}]
 
-  - name: pass
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
     container:
-      image: alpine:latest
-      command: [sh, -c]
-      args: ["exit 0"]
-
-  - name: fail
-    container:
-      image: python:alpine3.6
-      command: ["python", -c]
-      args: ["import random; import sys; exit_code = random.choice([0, 1]); sys.exit(exit_code)"]
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
