@@ -90,7 +90,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                                     if (wfValue.metadata.namespace === undefined || wfValue.metadata.namespace === '') {
                                         return {valid: false, message: 'Namespace is missing'};
                                     }
-                                    return {valid: true}
+                                    return {valid: true};
                                 }}
                                 onSubmit={cronWf => {
                                     return services.cronWorkflows

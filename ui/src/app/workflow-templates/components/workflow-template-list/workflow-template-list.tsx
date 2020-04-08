@@ -89,7 +89,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                                     if (wfValue.metadata.namespace === undefined || wfValue.metadata.namespace === '') {
                                         return {valid: false, message: 'Namespace is missing'};
                                     }
-                                    return {valid: true}
+                                    return {valid: true};
                                 }}
                                 onSubmit={wfTmpl => {
                                     return services.workflowTemplate
