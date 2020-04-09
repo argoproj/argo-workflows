@@ -10,4 +10,4 @@ Please report security vulnerabilities by e-mailing:
 
 ## Public Disclosure
 
-TODO
+Security vulnerabilities will be disclosed via [release notes](docs/releasing.md).
