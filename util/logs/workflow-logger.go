@@ -41,6 +41,8 @@ type sender interface {
 	Send(entry *workflowpkg.LogEntry) error
 }
 
+var poison = logEntry{}
+
 type workflowLogger struct {
 	logCtx               *log.Entry
 	completed            bool
@@ -202,8 +204,8 @@ func (l *workflowLogger) sortAndSend() {
 	}()
 	for {
 		select {
-		case entry, ok := <-l.unsortedEntries:
-			if !ok {
+		case entry := <-l.unsortedEntries:
+			if entry == poison {
 				// The fact this channel is closed indicates that we need to finish-up.
 				return
 			} else {
@@ -300,7 +302,7 @@ func (l *workflowLogger) Run(ctx context.Context) {
 	l.logCtx.Debug("Waiting for work-group")
 	l.wg.Wait()
 	l.logCtx.Debug("Work-group done")
-	close(l.unsortedEntries)
+	l.unsortedEntries<-poison
 	<-l.doneSorting
 	l.logCtx.Debug("Sorting done")
 }
