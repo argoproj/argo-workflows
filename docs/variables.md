@@ -49,8 +49,9 @@ step.
 |----------|------------|
 | `status` | Phase status of the metric-emitting template |
 | `duration` | Duration of the metric-emitting template in seconds (only applicable in `Template`-level metrics, for `Workflow`-level use `workflow.duration`) |
-| `outputs.result` | Output result of the metric-emitting template |
+| `inputs.parameters.<NAME>` | Input parameter of the metric-emitting template |
 | `outputs.parameters.<NAME>` | Output parameter of the metric-emitting template |
+| `outputs.result` | Output result of the metric-emitting template |
 
 ### Realtime Metrics
 
