@@ -302,7 +302,7 @@ func (l *workflowLogger) Run(ctx context.Context) {
 	l.logCtx.Debug("Waiting for work-group")
 	l.wg.Wait()
 	l.logCtx.Debug("Work-group done")
-	l.unsortedEntries<-poison
+	l.unsortedEntries <- poison
 	<-l.doneSorting
 	l.logCtx.Debug("Sorting done")
 }
