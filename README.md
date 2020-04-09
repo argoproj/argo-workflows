@@ -1,4 +1,7 @@
 [![slack](https://img.shields.io/badge/slack-argoproj-brightgreen.svg?logo=slack)](https://argoproj.github.io/community/join-slack)
+[![CircleCI](https://circleci.com/gh/argoproj/argo.svg?style=svg)](https://circleci.com/gh/argoproj/argo)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=argoproj_argo&metric=alert_status)](https://sonarcloud.io/dashboard?id=argoproj_argo)
+[![Known Vulnerabilities](https://snyk.io/test/github/argoproj/argo/badge.svg)](https://snyk.io/test/github/argoproj/argo)
 
 # Argoproj - Get stuff done with Kubernetes
 
