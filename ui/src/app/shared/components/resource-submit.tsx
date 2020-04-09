@@ -7,6 +7,7 @@ interface ResourceSubmitProps<T> {
     defaultResource: T;
     resourceName: string;
     onSubmit: (value: T) => Promise<void>;
+    validate?: (values: T) => {valid: boolean; message?: string};
 }
 
 interface ResourceSubmitState {
@@ -26,6 +27,14 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                 <Formik
                     initialValues={{resource: this.props.defaultResource, resourceString: jsYaml.dump(this.props.defaultResource)}}
                     onSubmit={(values, {setSubmitting}) => {
+                        if (!this.props.validate) {
+                            const validateResult = this.props.validate(values.resource);
+                            if (!validateResult.valid) {
+                                this.setState({invalid: true, error: {message: validateResult.message}});
+                                setSubmitting(false);
+                                return;
+                            }
+                        }
                         this.props
                             .onSubmit(values.resource)
                             .then(_ => setSubmitting(false))
@@ -51,6 +60,15 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                 ) : (
                                     <p />
                                 )}
+
+                                {/* Workflow-level parameters*/}
+                                {this.props.resourceName === 'Workflow' &&
+                                    formikApi.values.resource &&
+                                    formikApi.values.resource.spec &&
+                                    formikApi.values.resource.spec.arguments &&
+                                    formikApi.values.resource.spec.arguments.parameters &&
+                                    this.renderParameterFields('Workflow Parameters', 'resource.spec.arguments', formikApi.values.resource.spec.arguments.parameters, formikApi)}
+
                                 <button type='button' className='argo-button argo-button--sm' id='uploadWf' onClick={() => document.getElementById('file').click()}>
                                     Upload {this.props.resourceName}{' '}
                                 </button>
@@ -108,14 +126,6 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                     onFocus={e => (e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px')}
                                     autoFocus={true}
                                 />
-
-                                {/* Workflow-level parameters*/}
-                                {this.props.resourceName === 'Workflow' &&
-                                    formikApi.values.resource &&
-                                    formikApi.values.resource.spec &&
-                                    formikApi.values.resource.spec.arguments &&
-                                    formikApi.values.resource.spec.arguments.parameters &&
-                                    this.renderParameterFields('Workflow Parameters', 'resource.spec.arguments', formikApi.values.resource.spec.arguments.parameters, formikApi)}
                             </div>
                         </form>
                     )}
@@ -142,7 +152,7 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
 
     private renderParameterFields(sectionTitle: string, path: string, parameters: models.Parameter[], formikApi: any): JSX.Element {
         return (
-            <div className='white-box__details' style={{paddingTop: '50px'}}>
+            <div className='white-box__details' style={{paddingTop: '10px'}}>
                 <h5>{sectionTitle}</h5>
                 {parameters.map((param: models.Parameter, index: number) => {
                     if (param != null) {
