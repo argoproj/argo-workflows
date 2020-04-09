@@ -24,6 +24,7 @@ codegen)
   ;;
 docker-build)
   # we only run on master as this rarely ever fails
+  circleci step halt
   exit
   ;;
 e2e-*)
