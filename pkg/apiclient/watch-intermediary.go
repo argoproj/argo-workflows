@@ -26,5 +26,5 @@ func (w watchIntermediary) Send(e *workflowpkg.WorkflowWatchEvent) error {
 }
 
 func newWatchIntermediary(ctx context.Context) *watchIntermediary {
-	return &watchIntermediary{newAbstractIntermediary(ctx), make(chan *workflowpkg.WorkflowWatchEvent, 64)}
+	return &watchIntermediary{newAbstractIntermediary(ctx), make(chan *workflowpkg.WorkflowWatchEvent)}
 }
