@@ -3,11 +3,11 @@ set -eux -o pipefail
 
 branch=$(git rev-parse --abbrev-ref=loose HEAD | sed 's/heads\///')
 job=$1
-sha1=$CIRCLE_SHA1
 
 # always run on master
 [ "$branch" = master ] && exit
 
+# tip - must use origin/master for CircleCI
 diffs=$(git diff --name-only origin/master)
 
 # do not run at all for docs only changes
@@ -16,17 +16,24 @@ if [ "$(echo "$diffs" | grep -v '.circleci/\|.github/\|assets/\|community/\|docs
   exit
 fi
 
+# if there are changes to this areas, we must run
+rx=
 case $job in
 codegen)
-  echo "$diffs" | grep -v'api\|manifests\\pkg' || circleci step halt
+  rx='api/\|manifests/\|pkg/'
   ;;
 e2e)
-  echo "$diffs" | grep -v 'manifests\|\.go' || circleci step halt
+  rx='manifests/\|\.go'
   ;;
 test)
-  echo "$diffs" | grep -v '\.go' || circleci step halt
+  rx='\.go'
   ;;
 ui)
-  echo "$diffs" | grep -v 'ui' || circleci step halt
+  rx='ui/'
   ;;
 esac
+
+if [ "$(echo "$diffs" | grep "$rx")" != "" ]; then
+  circleci step halt
+  exit
+fi
