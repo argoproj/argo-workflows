@@ -456,6 +456,13 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 		localScope["status"] = string(node.Phase)
 	}
 
+	if node.Inputs != nil {
+		for _, param := range node.Inputs.Parameters {
+			key := fmt.Sprintf("inputs.parameters.%s", param.Name)
+			localScope[key] = *param.Value
+		}
+	}
+
 	if node.Outputs != nil {
 		if node.Outputs.Result != nil {
 			localScope["outputs.result"] = *node.Outputs.Result
