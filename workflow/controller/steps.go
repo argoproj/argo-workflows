@@ -353,6 +353,18 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			return nil, errors.InternalWrapError(err)
 		}
 
+		// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
+		// the initial parameter resolution, since it's likely that the "when" clause will contain parameter references.
+		proceed, err := shouldExecute(newStep.When)
+		if err != nil {
+			return nil, err
+		}
+		if !proceed {
+			// We can simply return this WorkflowStep; the fact that it won't execute will be reconciled later on in execution
+			newStepGroup[i] = newStep
+			continue
+		}
+
 		// Step 2: replace all artifact references
 		for j, art := range newStep.Arguments.Artifacts {
 			if art.From == "" {
@@ -360,7 +372,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			}
 			resolvedArt, err := scope.resolveArtifact(art.From)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("unable to resolve references: %s", err)
 			}
 			resolvedArt.Name = art.Name
 			newStep.Arguments.Artifacts[j] = *resolvedArt
