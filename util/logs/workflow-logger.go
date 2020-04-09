@@ -24,7 +24,8 @@ import (
 
 // The goal of this class is to stream the logs of the workflow you want.
 // * If you request "follow" and the workflow is not completed: logs will be tailed until the workflow is completed or context done.
-// * Otherwise, it will print recent logs and exit
+// * Otherwise, it will print recent logs and exit.
+
 type WorkflowLogger interface {
 	Run(ctx context.Context)
 }
@@ -56,8 +57,8 @@ type workflowLogger struct {
 	unsortedEntries chan logEntry
 	// When sorting is complete and all entries have been flushed, then this channel is closed. Listed to this channel
 	// to wait until sorting is complete.
-	doneSorting     chan struct{}
-	sender          sender
+	doneSorting chan struct{}
+	sender      sender
 }
 
 func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeClient kubernetes.Interface, req request, sender sender) (WorkflowLogger, error) {
@@ -218,6 +219,13 @@ func (l *workflowLogger) sortAndSend() {
 	}
 }
 
+// This uses the following Goroutines:
+//
+// 1. One to wait for the workflow to finish, and then signal the second...
+// 2. One to watch for new pods in the workflow, and start Goroutines to log.
+// 3. One Goroutine per pod to stream logs to a channel.
+// 4. One to receive logs from the channel and sort them in time order.
+//
 func (l *workflowLogger) Run(ctx context.Context) {
 	defer l.wfWatch.Stop()
 	defer l.podWatch.Stop()
