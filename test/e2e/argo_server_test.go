@@ -834,7 +834,8 @@ func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 metadata:
   name: archie
   labels:
-    argo-e2e: 1
+    argo-e2e: true
+    foo: 1
 spec:
   entrypoint: run-archie
   templates:
@@ -855,7 +856,8 @@ spec:
 metadata:
   name: betty
   labels:
-    argo-e2e: 2
+    argo-e2e: true
+    foo: 2
 spec:
   entrypoint: run-betty
   templates:
@@ -873,22 +875,22 @@ spec:
 		selector string
 		wantLen  int
 	}{
-		{"ListDoesNotExist", "!argo-e2e", 0},
-		{"ListEquals", "argo-e2e=1", 1},
-		{"ListDoubleEquals", "argo-e2e==1", 1},
-		{"ListIn", "argo-e2e in (1)", 1},
-		{"ListNotEquals", "argo-e2e!=1", 1},
-		{"ListNotIn", "argo-e2e notin (1)", 1},
-		{"ListExists", "argo-e2e", 2},
-		{"ListGreaterThan0", "argo-e2e>0", 2},
-		{"ListGreaterThan1", "argo-e2e>1", 1},
-		{"ListLessThan1", "argo-e2e<1", 0},
-		{"ListLessThan2", "argo-e2e<2", 1},
+		{"ListDoesNotExist", "!foo", 0},
+		{"ListEquals", "foo=1", 1},
+		{"ListDoubleEquals", "foo==1", 1},
+		{"ListIn", "foo in (1)", 1},
+		{"ListNotEquals", "foo!=1", 1},
+		{"ListNotIn", "foo notin (1)", 1},
+		{"ListExists", "foo", 2},
+		{"ListGreaterThan0", "foo>0", 2},
+		{"ListGreaterThan1", "foo>1", 1},
+		{"ListLessThan1", "foo<1", 0},
+		{"ListLessThan2", "foo<2", 1},
 	} {
 		s.Run(tt.name, func() {
 			path := s.e(s.T()).GET("/api/v1/archived-workflows").
 				WithQuery("listOptions.fieldSelector", "metadata.namespace=argo").
-				WithQuery("listOptions.labelSelector", tt.selector).
+				WithQuery("listOptions.labelSelector", "argo-e2e,"+tt.selector).
 				Expect().
 				Status(200).
 				JSON().
