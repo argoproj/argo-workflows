@@ -507,16 +507,20 @@
       "type": "object",
       "properties": {
         "duration": {
-          "type": "string"
+          "type": "string",
+          "title": "Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. \"2m\", \"1h\")"
         },
         "factor": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "title": "Factor is a factor to multiply the base duration after each failed retry"
         },
         "maxDuration": {
-          "type": "string"
+          "type": "string",
+          "title": "MaxDuration is the maximum amount of time allowed for the backoff strategy"
         }
-      }
+      },
+      "title": "Backoff is a backoff strategy to use within retryStrategy"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ContinueOn": {
       "type": "object",
@@ -617,7 +621,8 @@
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta",
           "title": "WorkflowMetadata contains some metadata of the workflow to be run"
         }
-      }
+      },
+      "title": "CronWorkflowSpec is the specification of a CronWorkflow"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.CronWorkflowStatus": {
       "type": "object",
@@ -633,7 +638,8 @@
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
           "title": "LastScheduleTime is the last time the CronWorkflow was scheduled"
         }
-      }
+      },
+      "title": "CronWorkflowStatus is the status of a CronWorkflow"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.DAGTask": {
       "type": "object",
@@ -1137,7 +1143,8 @@
       "type": "object",
       "properties": {
         "strategy": {
-          "type": "string"
+          "type": "string",
+          "title": "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\""
         }
       },
       "title": "PodGC describes how to delete completed pods as they complete"
@@ -1342,18 +1349,21 @@
       "properties": {
         "secondsAfterCompletion": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "title": "SecondsAfterCompletion is the number of seconds to live after completion"
         },
         "secondsAfterSuccess": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "title": "SecondsAfterSuccess is the number of seconds to live after success"
         },
         "secondsAfterFailure": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "title": "SecondsAfterFailure is the number of seconds to live after failure"
         }
       },
-      "title": "TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed"
+      "title": "TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TarStrategy": {
       "type": "object",

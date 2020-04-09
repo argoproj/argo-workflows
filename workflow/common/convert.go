@@ -9,10 +9,6 @@ import (
 
 func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) *wfv1.Workflow {
 	wf := toWorkflow(cronWf.TypeMeta, cronWf.ObjectMeta, cronWf.Spec.WorkflowSpec)
-	wfLabel := wf.ObjectMeta.GetLabels()
-	if wfLabel == nil {
-		wf.Labels = make(map[string]string)
-	}
 	wf.Labels[LabelKeyCronWorkflow] = cronWf.Name
 	if cronWf.Spec.WorkflowMetadata != nil {
 		for key, label := range cronWf.Spec.WorkflowMetadata.Labels {
@@ -32,20 +28,12 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) *wfv1.Workflow {
 
 func ConvertWorkflowTemplateToWorkflow(template *wfv1.WorkflowTemplate) *wfv1.Workflow {
 	wf := toWorkflow(template.TypeMeta, template.ObjectMeta, template.Spec.WorkflowSpec)
-	wfLabel := wf.ObjectMeta.GetLabels()
-	if wfLabel == nil {
-		wf.Labels = make(map[string]string)
-	}
 	wf.Labels[LabelKeyWorkflowTemplate] = template.ObjectMeta.Name
 	return wf
 }
 
 func ConvertClusterWorkflowTemplateToWorkflow(template *wfv1.ClusterWorkflowTemplate) *wfv1.Workflow {
 	wf := toWorkflow(template.TypeMeta, template.ObjectMeta, template.Spec.WorkflowSpec)
-	wfLabel := wf.ObjectMeta.GetLabels()
-	if wfLabel == nil {
-		wf.Labels = make(map[string]string)
-	}
 	wf.Labels[LabelKeyClusterWorkflowTemplate] = template.ObjectMeta.Name
 
 	return wf
@@ -59,6 +47,8 @@ func toWorkflow(typeMeta metav1.TypeMeta, objectMeta metav1.ObjectMeta, spec wfv
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: objectMeta.GetName() + "-",
+			Labels:       make(map[string]string),
+			Annotations:  make(map[string]string),
 		},
 		Spec: spec,
 	}
@@ -66,5 +56,6 @@ func toWorkflow(typeMeta metav1.TypeMeta, objectMeta metav1.ObjectMeta, spec wfv
 	if instanceId, ok := objectMeta.GetLabels()[LabelKeyControllerInstanceID]; ok {
 		wf.ObjectMeta.GetLabels()[LabelKeyControllerInstanceID] = instanceId
 	}
+
 	return wf
 }

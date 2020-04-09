@@ -4,31 +4,26 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// TemplateGetter is an interface to get templates.
-type TemplateGetter interface {
+type ResourceScope string
+
+const (
+	ResourceScopeLocal      ResourceScope = "local"
+	ResourceScopeNamespaced ResourceScope = "namespaced"
+	ResourceScopeCluster    ResourceScope = "cluster"
+)
+
+// TemplateHolder is an object that holds templates; e.g. Workflow, WorkflowTemplate, and ClusterWorkflowTemplate
+type TemplateHolder interface {
 	GetNamespace() string
 	GetName() string
 	GroupVersionKind() schema.GroupVersionKind
 	GetTemplateByName(name string) *Template
-	GetTemplateScope() string
-	GetAllTemplates() []Template
+	GetResourceScope() ResourceScope
+	GetTemplates() []Template
 }
 
-// TemplateHolder is an interface for holders of templates.
-type TemplateHolder interface {
+// TemplateReferenceHolder is an object that holds a reference to other templates; e.g. WorkflowStep, DAGTask, and NodeStatus
+type TemplateReferenceHolder interface {
 	GetTemplateName() string
 	GetTemplateRef() *TemplateRef
-	IsResolvable() bool
-}
-
-// TemplateStorage is an interface of template storage getter and setter.
-type TemplateStorage interface {
-	GetStoredTemplate(templateScope string, holder TemplateHolder) *Template
-	SetStoredTemplate(templateScope string, holder TemplateHolder, tmpl *Template) (bool, error)
-}
-
-// WorkflowTemplateInterface is an simplified TemplateGetter
-type WorkflowTemplateInterface interface {
-	GetTemplateByName(name string) *Template
-	GetTemplateScope() string
 }
