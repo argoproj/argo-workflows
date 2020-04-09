@@ -39,7 +39,8 @@ type sender interface {
 
 func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient kubernetes.Interface, req request, sender sender) error {
 
-	_, err := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace()).Get(req.GetName(), metav1.GetOptions{})
+	wfInterface := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace())
+	_, err := wfInterface.Get(req.GetName(), metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -50,12 +51,12 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 
 	// we create a watch on the pods labelled with the workflow name,
 	// but we also filter by pod name if that was requested
-	options := metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + req.GetName()}
+	podListOptions := metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + req.GetName()}
 	if req.GetPodName() != "" {
-		options.FieldSelector = "metadata.name=" + req.GetPodName()
+		podListOptions.FieldSelector = "metadata.name=" + req.GetPodName()
 	}
 
-	logCtx.WithField("options", options).Debug("List options")
+	logCtx.WithField("options", podListOptions).Debug("List options")
 
 	// Keep a track of those we are logging, we also have a mutex to guard reads. Even if we stop streaming, we
 	// keep a marker here so we don't start again.
@@ -114,7 +115,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		}
 	}
 
-	podWatch, err := podInterface.Watch(options)
+	podWatch, err := podInterface.Watch(podListOptions)
 	if err != nil {
 		return err
 	}
@@ -122,7 +123,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 
 	// only list after we start the watch
 	logCtx.Debug("Listing workflow pods")
-	list, err := podInterface.List(options)
+	list, err := podInterface.List(podListOptions)
 	if err != nil {
 		return err
 	}
@@ -137,7 +138,8 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	}
 
 	if req.GetLogOptions().Follow {
-		wfWatch, err := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace()).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + req.GetName()})
+		wfListOptions := metav1.ListOptions{FieldSelector: "metadata.name=" + req.GetName()}
+		wfWatch, err := wfInterface.Watch(wfListOptions)
 		if err != nil {
 			return err
 		}
@@ -156,9 +158,14 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 				select {
 				case <-ctx.Done():
 					return
-				case event, ok := <-wfWatch.ResultChan():
-					if !ok {
-						return
+				case event, open := <-wfWatch.ResultChan():
+					if !open {
+						logCtx.Info("Re-establishing workflow watch")
+						wfWatch, err = wfInterface.Watch(wfListOptions)
+						if err != nil {
+							logCtx.Error(err)
+							return
+						}
 					}
 					wf, ok := event.Object.(*wfv1.Workflow)
 					if !ok {
@@ -183,9 +190,14 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 				select {
 				case <-stopWatchingPods:
 					return
-				case event, ok := <-podWatch.ResultChan():
-					if !ok {
-						return
+				case event, open := <-podWatch.ResultChan():
+					if !open {
+						logCtx.Info("Re-establishing pod watch")
+						podWatch, err = podInterface.Watch(podListOptions)
+						if err != nil {
+							logCtx.Error(err)
+							return
+						}
 					}
 					pod, ok := event.Object.(*corev1.Pod)
 					if !ok {
