@@ -1,3 +1,4 @@
+go run ./hack docgen
 
 
 # Argo Fields
@@ -6,225 +7,227 @@
 ## Workflow
 
 Workflow is the definition of a workflow resource
+
 <details>
 <summary>Examples (click to open)</summary>
 <br>
 
-- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
-
-- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
-
-- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
-
-- [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
-
-- [`coinflip.yaml`](../examples/coinflip.yaml)
-
-- [`init-container.yaml`](../examples/init-container.yaml)
-
-- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
-
-- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
-
-- [`steps.yaml`](../examples/workflow-template/steps.yaml)
-
-- [`suspend-template.yaml`](../examples/suspend-template.yaml)
-
-- [`dag.yaml`](../examples/workflow-template/dag.yaml)
-
-- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
-
-- [`retry-script.yaml`](../examples/retry-script.yaml)
-
-- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
-
-- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
-
-- [`node-selector.yaml`](../examples/node-selector.yaml)
-
-- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
-
-- [`retry-on-error.yaml`](../examples/retry-on-error.yaml)
-
-- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
-
-- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
-
-- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
-
-- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
-
-- [`gc-ttl.yaml`](../examples/gc-ttl.yaml)
-
-- [`loops-dag.yaml`](../examples/loops-dag.yaml)
-
-- [`output-parameter.yaml`](../examples/output-parameter.yaml)
-
-- [`resubmit.yaml`](../examples/resubmit.yaml)
-
-- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
-
-- [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
-
-- [`dag-nested.yaml`](../examples/dag-nested.yaml)
-
-- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
-
-- [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
-
-- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
-
-- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
-
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
-
-- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
-
-- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
-
-- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
-
-- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
-
 - [`archive-location.yaml`](../examples/archive-location.yaml)
-
-- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
-
-- [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
-
-- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
-
-- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
-
-- [`loops.yaml`](../examples/loops.yaml)
-
-- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
-
-- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
-
-- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
-
-- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
-
-- [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
-
-- [`global-parameters.yaml`](../examples/global-parameters.yaml)
-
-- [`global-outputs.yaml`](../examples/global-outputs.yaml)
-
-- [`ci.yaml`](../examples/ci.yaml)
-
-- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
-
-- [`k8s-owner-reference.yaml`](../examples/k8s-owner-reference.yaml)
-
-- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
-
-- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
-
-- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
-
-- [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
-
-- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
-
-- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
-
-- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
-
-- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
-
-- [`status-reference.yaml`](../examples/status-reference.yaml)
-
-- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
-
-- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
-
-- [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
-
-- [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
-
-- [`hello-world.yaml`](../examples/hello-world.yaml)
-
-- [`sidecar.yaml`](../examples/sidecar.yaml)
-
-- [`loops-maps.yaml`](../examples/loops-maps.yaml)
-
-- [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
-
-- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
-
-- [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
-
-- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
-
-- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
 - [`arguments-artifacts.yaml`](../examples/arguments-artifacts.yaml)
 
-- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
-
-- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
-
-- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
-
-- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+- [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
 
-- [`dag-targets.yaml`](../examples/dag-targets.yaml)
-
-- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
-
-- [`scripts-python.yaml`](../examples/scripts-python.yaml)
-
-- [`dns-config.yaml`](../examples/dns-config.yaml)
-
-- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
-
-- [`daemon-step.yaml`](../examples/daemon-step.yaml)
-
-- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
-
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
 
-- [`k8s-set-owner-reference.yaml`](../examples/k8s-set-owner-reference.yaml)
+- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
-- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
+- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
-- [`steps.yaml`](../examples/steps.yaml)
+- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
 
-- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+- [`ci.yaml`](../examples/ci.yaml)
 
-- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`retry-container.yaml`](../examples/retry-container.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`forever.yaml`](../examples/forever.yaml)
+- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
-- [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
-
-- [`secrets.yaml`](../examples/secrets.yaml)
+- [`coinflip.yaml`](../examples/coinflip.yaml)
 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
+- [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
+
+- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
+
+- [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
+
+- [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
+
+- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
+
+- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
+
+- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
+
+- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
+
+- [`dag-nested.yaml`](../examples/dag-nested.yaml)
+
+- [`dag-targets.yaml`](../examples/dag-targets.yaml)
+
+- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
+
+- [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
+
+- [`forever.yaml`](../examples/forever.yaml)
+
+- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
+
+- [`gc-ttl.yaml`](../examples/gc-ttl.yaml)
+
+- [`global-outputs.yaml`](../examples/global-outputs.yaml)
+
+- [`global-parameters.yaml`](../examples/global-parameters.yaml)
+
+- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-world.yaml`](../examples/hello-world.yaml)
+
+- [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
+
+- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
+
+- [`init-container.yaml`](../examples/init-container.yaml)
+
+- [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
+
+- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
+
+- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
+
+- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
+
+- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
+
+- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+
 - [`k8s-jobs.yaml`](../examples/k8s-jobs.yaml)
+
+- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
+
+- [`k8s-owner-reference.yaml`](../examples/k8s-owner-reference.yaml)
+
+- [`k8s-set-owner-reference.yaml`](../examples/k8s-set-owner-reference.yaml)
+
+- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
+
+- [`loops-dag.yaml`](../examples/loops-dag.yaml)
+
+- [`loops-maps.yaml`](../examples/loops-maps.yaml)
+
+- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
+
+- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
+
+- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
+
+- [`loops.yaml`](../examples/loops.yaml)
+
+- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
+
+- [`node-selector.yaml`](../examples/node-selector.yaml)
+
+- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
+
+- [`output-parameter.yaml`](../examples/output-parameter.yaml)
+
+- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
+
+- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
+
+- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
+
+- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
+
+- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
+
+- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+
+- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+
+- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
+
+- [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
+
+- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+
+- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
+
+- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
+
+- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`resubmit.yaml`](../examples/resubmit.yaml)
+
+- [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
+
+- [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
+
+- [`retry-container.yaml`](../examples/retry-container.yaml)
+
+- [`retry-on-error.yaml`](../examples/retry-on-error.yaml)
+
+- [`retry-script.yaml`](../examples/retry-script.yaml)
+
+- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
+
+- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
+
+- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
+
+- [`scripts-python.yaml`](../examples/scripts-python.yaml)
+
+- [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
+
+- [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
+
+- [`sidecar.yaml`](../examples/sidecar.yaml)
+
+- [`status-reference.yaml`](../examples/status-reference.yaml)
+
+- [`steps.yaml`](../examples/steps.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
+
+- [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
+
+- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
+
+- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
+
+- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
+
+- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`dag.yaml`](../examples/workflow-template/dag.yaml)
+
+- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
 
 - [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
 
-- [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
+- [`steps.yaml`](../examples/workflow-template/steps.yaml)
 </details>
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`metadata`|[`ObjectMeta`](#objectmeta)|_No desription available_|
-|`spec`|[`WorkflowSpec`](#workflowspec)|_No desription available_|
-|`status`|[`WorkflowStatus`](#workflowstatus)|_No desription available_|
+|`metadata`|[`ObjectMeta`](#objectmeta)|_No description available_|
+|`spec`|[`WorkflowSpec`](#workflowspec)|_No description available_|
+|`status`|[`WorkflowStatus`](#workflowstatus)|_No description available_|
 
 ## CronWorkflow
 
 CronWorkflow is the definition of a scheduled workflow resource
+
 <details>
 <summary>Examples (click to open)</summary>
 <br>
@@ -235,13 +238,14 @@ CronWorkflow is the definition of a scheduled workflow resource
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`metadata`|[`ObjectMeta`](#objectmeta)|_No desription available_|
-|`spec`|[`CronWorkflowSpec`](#cronworkflowspec)|_No desription available_|
-|`status`|[`CronWorkflowStatus`](#cronworkflowstatus)|_No desription available_|
+|`metadata`|[`ObjectMeta`](#objectmeta)|_No description available_|
+|`spec`|[`CronWorkflowSpec`](#cronworkflowspec)|_No description available_|
+|`status`|[`CronWorkflowStatus`](#cronworkflowstatus)|_No description available_|
 
 ## WorkflowTemplate
 
 WorkflowTemplate is the definition of a workflow template resource
+
 <details>
 <summary>Examples (click to open)</summary>
 <br>
@@ -252,227 +256,228 @@ WorkflowTemplate is the definition of a workflow template resource
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`metadata`|[`ObjectMeta`](#objectmeta)|_No desription available_|
-|`spec`|[`WorkflowTemplateSpec`](#workflowtemplatespec)|_No desription available_|
+|`metadata`|[`ObjectMeta`](#objectmeta)|_No description available_|
+|`spec`|[`WorkflowTemplateSpec`](#workflowtemplatespec)|_No description available_|
 
 ## WorkflowSpec
 
 WorkflowSpec is the specification of a Workflow.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
-
-- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
-
-- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
-
-- [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
-
-- [`coinflip.yaml`](../examples/coinflip.yaml)
-
-- [`init-container.yaml`](../examples/init-container.yaml)
-
-- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
-
-- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
-
-- [`steps.yaml`](../examples/workflow-template/steps.yaml)
-
-- [`suspend-template.yaml`](../examples/suspend-template.yaml)
-
-- [`dag.yaml`](../examples/workflow-template/dag.yaml)
-
-- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
-
-- [`retry-script.yaml`](../examples/retry-script.yaml)
-
-- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
-
-- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
-
-- [`node-selector.yaml`](../examples/node-selector.yaml)
-
-- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
-
-- [`retry-on-error.yaml`](../examples/retry-on-error.yaml)
-
-- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
-
-- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
-
-- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
-
-- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
-
-- [`gc-ttl.yaml`](../examples/gc-ttl.yaml)
-
-- [`loops-dag.yaml`](../examples/loops-dag.yaml)
-
-- [`output-parameter.yaml`](../examples/output-parameter.yaml)
-
-- [`resubmit.yaml`](../examples/resubmit.yaml)
-
-- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
-
-- [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
-
-- [`dag-nested.yaml`](../examples/dag-nested.yaml)
-
-- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
-
-- [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
-
-- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
-
-- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
-
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
-
-- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
-
-- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
-
-- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
-
-- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
-
 - [`archive-location.yaml`](../examples/archive-location.yaml)
-
-- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
-
-- [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
-
-- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
-
-- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
-
-- [`loops.yaml`](../examples/loops.yaml)
-
-- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
-
-- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
-
-- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
-
-- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
-
-- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
-
-- [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
-
-- [`global-parameters.yaml`](../examples/global-parameters.yaml)
-
-- [`global-outputs.yaml`](../examples/global-outputs.yaml)
-
-- [`ci.yaml`](../examples/ci.yaml)
-
-- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
-
-- [`k8s-owner-reference.yaml`](../examples/k8s-owner-reference.yaml)
-
-- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
-
-- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
-
-- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
-
-- [`testvolume.yaml`](../examples/testvolume.yaml)
-
-- [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
-
-- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
-
-- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
-
-- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
-
-- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
-
-- [`status-reference.yaml`](../examples/status-reference.yaml)
-
-- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
-
-- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
-
-- [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
-
-- [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
-
-- [`hello-world.yaml`](../examples/hello-world.yaml)
-
-- [`sidecar.yaml`](../examples/sidecar.yaml)
-
-- [`loops-maps.yaml`](../examples/loops-maps.yaml)
-
-- [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
-
-- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
-
-- [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
-
-- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
-
-- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
 - [`arguments-artifacts.yaml`](../examples/arguments-artifacts.yaml)
 
-- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
-
-- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
-
-- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
-
-- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+- [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
 
-- [`dag-targets.yaml`](../examples/dag-targets.yaml)
-
-- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
-
-- [`scripts-python.yaml`](../examples/scripts-python.yaml)
-
-- [`dns-config.yaml`](../examples/dns-config.yaml)
-
-- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
-
-- [`daemon-step.yaml`](../examples/daemon-step.yaml)
-
-- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
-
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
 
-- [`k8s-set-owner-reference.yaml`](../examples/k8s-set-owner-reference.yaml)
+- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
-- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
+- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
-- [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
+- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
 
-- [`steps.yaml`](../examples/steps.yaml)
+- [`ci.yaml`](../examples/ci.yaml)
 
-- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`retry-container.yaml`](../examples/retry-container.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`forever.yaml`](../examples/forever.yaml)
+- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
-- [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
-
-- [`secrets.yaml`](../examples/secrets.yaml)
+- [`coinflip.yaml`](../examples/coinflip.yaml)
 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
+- [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
+
+- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
+
+- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
+
+- [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
+
+- [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
+
+- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
+
+- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
+
+- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
+
+- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
+
+- [`dag-nested.yaml`](../examples/dag-nested.yaml)
+
+- [`dag-targets.yaml`](../examples/dag-targets.yaml)
+
+- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
+
+- [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
+
+- [`forever.yaml`](../examples/forever.yaml)
+
+- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
+
+- [`gc-ttl.yaml`](../examples/gc-ttl.yaml)
+
+- [`global-outputs.yaml`](../examples/global-outputs.yaml)
+
+- [`global-parameters.yaml`](../examples/global-parameters.yaml)
+
+- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-world.yaml`](../examples/hello-world.yaml)
+
+- [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
+
+- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
+
+- [`init-container.yaml`](../examples/init-container.yaml)
+
+- [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
+
+- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
+
+- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
+
+- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
+
+- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
+
+- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+
 - [`k8s-jobs.yaml`](../examples/k8s-jobs.yaml)
+
+- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
+
+- [`k8s-owner-reference.yaml`](../examples/k8s-owner-reference.yaml)
+
+- [`k8s-set-owner-reference.yaml`](../examples/k8s-set-owner-reference.yaml)
+
+- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
+
+- [`loops-dag.yaml`](../examples/loops-dag.yaml)
+
+- [`loops-maps.yaml`](../examples/loops-maps.yaml)
+
+- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
+
+- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
+
+- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
+
+- [`loops.yaml`](../examples/loops.yaml)
+
+- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
+
+- [`node-selector.yaml`](../examples/node-selector.yaml)
+
+- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
+
+- [`output-parameter.yaml`](../examples/output-parameter.yaml)
+
+- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
+
+- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
+
+- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
+
+- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
+
+- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
+
+- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+
+- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+
+- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
+
+- [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
+
+- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+
+- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
+
+- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
+
+- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`resubmit.yaml`](../examples/resubmit.yaml)
+
+- [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
+
+- [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
+
+- [`retry-container.yaml`](../examples/retry-container.yaml)
+
+- [`retry-on-error.yaml`](../examples/retry-on-error.yaml)
+
+- [`retry-script.yaml`](../examples/retry-script.yaml)
+
+- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
+
+- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
+
+- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
+
+- [`scripts-python.yaml`](../examples/scripts-python.yaml)
+
+- [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
+
+- [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
+
+- [`sidecar.yaml`](../examples/sidecar.yaml)
+
+- [`status-reference.yaml`](../examples/status-reference.yaml)
+
+- [`steps.yaml`](../examples/steps.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
+
+- [`testvolume.yaml`](../examples/testvolume.yaml)
+
+- [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
+
+- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
+
+- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
+
+- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
+
+- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`dag.yaml`](../examples/workflow-template/dag.yaml)
+
+- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
 
 - [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
 
-- [`templates.yaml`](../examples/workflow-template/templates.yaml)
+- [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
-- [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
+- [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -535,221 +540,222 @@ WorkflowStatus contains overall status information about a workflow
 ## CronWorkflowSpec
 
 CronWorkflowSpec is the specification of a CronWorkflow
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
-
-- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
-
-- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
-
-- [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
-
-- [`coinflip.yaml`](../examples/coinflip.yaml)
-
-- [`init-container.yaml`](../examples/init-container.yaml)
-
-- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
-
-- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
-
-- [`steps.yaml`](../examples/workflow-template/steps.yaml)
-
-- [`suspend-template.yaml`](../examples/suspend-template.yaml)
-
-- [`dag.yaml`](../examples/workflow-template/dag.yaml)
-
-- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
-
-- [`retry-script.yaml`](../examples/retry-script.yaml)
-
-- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
-
-- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
-
-- [`node-selector.yaml`](../examples/node-selector.yaml)
-
-- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
-
-- [`retry-on-error.yaml`](../examples/retry-on-error.yaml)
-
-- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
-
-- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
-
-- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
-
-- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
-
-- [`gc-ttl.yaml`](../examples/gc-ttl.yaml)
-
-- [`loops-dag.yaml`](../examples/loops-dag.yaml)
-
-- [`output-parameter.yaml`](../examples/output-parameter.yaml)
-
-- [`resubmit.yaml`](../examples/resubmit.yaml)
-
-- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
-
-- [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
-
-- [`dag-nested.yaml`](../examples/dag-nested.yaml)
-
-- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
-
-- [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
-
-- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
-
-- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
-
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
-
-- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
-
-- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
-
-- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
-
-- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
-
 - [`archive-location.yaml`](../examples/archive-location.yaml)
-
-- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
-
-- [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
-
-- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
-
-- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
-
-- [`loops.yaml`](../examples/loops.yaml)
-
-- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
-
-- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
-
-- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
-
-- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
-
-- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
-
-- [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
-
-- [`global-parameters.yaml`](../examples/global-parameters.yaml)
-
-- [`global-outputs.yaml`](../examples/global-outputs.yaml)
-
-- [`ci.yaml`](../examples/ci.yaml)
-
-- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
-
-- [`k8s-owner-reference.yaml`](../examples/k8s-owner-reference.yaml)
-
-- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
-
-- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
-
-- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
-
-- [`testvolume.yaml`](../examples/testvolume.yaml)
-
-- [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
-
-- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
-
-- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
-
-- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
-
-- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
-
-- [`status-reference.yaml`](../examples/status-reference.yaml)
-
-- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
-
-- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
-
-- [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
-
-- [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
-
-- [`hello-world.yaml`](../examples/hello-world.yaml)
-
-- [`sidecar.yaml`](../examples/sidecar.yaml)
-
-- [`loops-maps.yaml`](../examples/loops-maps.yaml)
-
-- [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
-
-- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
-
-- [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
-
-- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
-
-- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
 - [`arguments-artifacts.yaml`](../examples/arguments-artifacts.yaml)
 
-- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
-
-- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
-
-- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
-
-- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+- [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
 
-- [`dag-targets.yaml`](../examples/dag-targets.yaml)
-
-- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
-
-- [`scripts-python.yaml`](../examples/scripts-python.yaml)
-
-- [`dns-config.yaml`](../examples/dns-config.yaml)
-
-- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
-
-- [`daemon-step.yaml`](../examples/daemon-step.yaml)
-
-- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
-
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
 
-- [`k8s-set-owner-reference.yaml`](../examples/k8s-set-owner-reference.yaml)
+- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
-- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
+- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
-- [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
+- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
 
-- [`steps.yaml`](../examples/steps.yaml)
+- [`ci.yaml`](../examples/ci.yaml)
 
-- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`retry-container.yaml`](../examples/retry-container.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`forever.yaml`](../examples/forever.yaml)
+- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
-- [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
-
-- [`secrets.yaml`](../examples/secrets.yaml)
+- [`coinflip.yaml`](../examples/coinflip.yaml)
 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
+- [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
+
+- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
+
+- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
+
+- [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
+
+- [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
+
+- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
+
+- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
+
+- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
+
+- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
+
+- [`dag-nested.yaml`](../examples/dag-nested.yaml)
+
+- [`dag-targets.yaml`](../examples/dag-targets.yaml)
+
+- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
+
+- [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
+
+- [`forever.yaml`](../examples/forever.yaml)
+
+- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
+
+- [`gc-ttl.yaml`](../examples/gc-ttl.yaml)
+
+- [`global-outputs.yaml`](../examples/global-outputs.yaml)
+
+- [`global-parameters.yaml`](../examples/global-parameters.yaml)
+
+- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-world.yaml`](../examples/hello-world.yaml)
+
+- [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
+
+- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
+
+- [`init-container.yaml`](../examples/init-container.yaml)
+
+- [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
+
+- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
+
+- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
+
+- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
+
+- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
+
+- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+
 - [`k8s-jobs.yaml`](../examples/k8s-jobs.yaml)
+
+- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
+
+- [`k8s-owner-reference.yaml`](../examples/k8s-owner-reference.yaml)
+
+- [`k8s-set-owner-reference.yaml`](../examples/k8s-set-owner-reference.yaml)
+
+- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
+
+- [`loops-dag.yaml`](../examples/loops-dag.yaml)
+
+- [`loops-maps.yaml`](../examples/loops-maps.yaml)
+
+- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
+
+- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
+
+- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
+
+- [`loops.yaml`](../examples/loops.yaml)
+
+- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
+
+- [`node-selector.yaml`](../examples/node-selector.yaml)
+
+- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
+
+- [`output-parameter.yaml`](../examples/output-parameter.yaml)
+
+- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
+
+- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
+
+- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
+
+- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
+
+- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
+
+- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+
+- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+
+- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
+
+- [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
+
+- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+
+- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
+
+- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
+
+- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`resubmit.yaml`](../examples/resubmit.yaml)
+
+- [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
+
+- [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
+
+- [`retry-container.yaml`](../examples/retry-container.yaml)
+
+- [`retry-on-error.yaml`](../examples/retry-on-error.yaml)
+
+- [`retry-script.yaml`](../examples/retry-script.yaml)
+
+- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
+
+- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
+
+- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
+
+- [`scripts-python.yaml`](../examples/scripts-python.yaml)
+
+- [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
+
+- [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
+
+- [`sidecar.yaml`](../examples/sidecar.yaml)
+
+- [`status-reference.yaml`](../examples/status-reference.yaml)
+
+- [`steps.yaml`](../examples/steps.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
+
+- [`testvolume.yaml`](../examples/testvolume.yaml)
+
+- [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
+
+- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
+
+- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
+
+- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
+
+- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`dag.yaml`](../examples/workflow-template/dag.yaml)
+
+- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
 
 - [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
 
-- [`templates.yaml`](../examples/workflow-template/templates.yaml)
+- [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
-- [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
+- [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -778,342 +784,344 @@ CronWorkflowStatus is the status of a CronWorkflow
 ## WorkflowTemplateSpec
 
 WorkflowTemplateSpec is a spec of WorkflowTemplate.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
-
-- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
-
-- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
-
-- [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
-
-- [`coinflip.yaml`](../examples/coinflip.yaml)
-
-- [`init-container.yaml`](../examples/init-container.yaml)
-
-- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
-
-- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
-
-- [`steps.yaml`](../examples/workflow-template/steps.yaml)
-
-- [`suspend-template.yaml`](../examples/suspend-template.yaml)
-
-- [`dag.yaml`](../examples/workflow-template/dag.yaml)
-
-- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
-
-- [`retry-script.yaml`](../examples/retry-script.yaml)
-
-- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
-
-- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
-
-- [`node-selector.yaml`](../examples/node-selector.yaml)
-
-- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
-
-- [`retry-on-error.yaml`](../examples/retry-on-error.yaml)
-
-- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
-
-- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
-
-- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
-
-- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
-
-- [`gc-ttl.yaml`](../examples/gc-ttl.yaml)
-
-- [`loops-dag.yaml`](../examples/loops-dag.yaml)
-
-- [`output-parameter.yaml`](../examples/output-parameter.yaml)
-
-- [`resubmit.yaml`](../examples/resubmit.yaml)
-
-- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
-
-- [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
-
-- [`dag-nested.yaml`](../examples/dag-nested.yaml)
-
-- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
-
-- [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
-
-- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
-
-- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
-
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
-
-- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
-
-- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
-
-- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
-
-- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
-
 - [`archive-location.yaml`](../examples/archive-location.yaml)
-
-- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
-
-- [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
-
-- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
-
-- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
-
-- [`loops.yaml`](../examples/loops.yaml)
-
-- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
-
-- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
-
-- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
-
-- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
-
-- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
-
-- [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
-
-- [`global-parameters.yaml`](../examples/global-parameters.yaml)
-
-- [`global-outputs.yaml`](../examples/global-outputs.yaml)
-
-- [`ci.yaml`](../examples/ci.yaml)
-
-- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
-
-- [`k8s-owner-reference.yaml`](../examples/k8s-owner-reference.yaml)
-
-- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
-
-- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
-
-- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
-
-- [`testvolume.yaml`](../examples/testvolume.yaml)
-
-- [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
-
-- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
-
-- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
-
-- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
-
-- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
-
-- [`status-reference.yaml`](../examples/status-reference.yaml)
-
-- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
-
-- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
-
-- [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
-
-- [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
-
-- [`hello-world.yaml`](../examples/hello-world.yaml)
-
-- [`sidecar.yaml`](../examples/sidecar.yaml)
-
-- [`loops-maps.yaml`](../examples/loops-maps.yaml)
-
-- [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
-
-- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
-
-- [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
-
-- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
-
-- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
 - [`arguments-artifacts.yaml`](../examples/arguments-artifacts.yaml)
 
-- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
-
-- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
-
-- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
-
-- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+- [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
 
-- [`dag-targets.yaml`](../examples/dag-targets.yaml)
-
-- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
-
-- [`scripts-python.yaml`](../examples/scripts-python.yaml)
-
-- [`dns-config.yaml`](../examples/dns-config.yaml)
-
-- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
-
-- [`daemon-step.yaml`](../examples/daemon-step.yaml)
-
-- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
-
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
 
-- [`k8s-set-owner-reference.yaml`](../examples/k8s-set-owner-reference.yaml)
+- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
-- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
+- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
-- [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
+- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
 
-- [`steps.yaml`](../examples/steps.yaml)
+- [`ci.yaml`](../examples/ci.yaml)
 
-- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`retry-container.yaml`](../examples/retry-container.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`forever.yaml`](../examples/forever.yaml)
+- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
-- [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
-
-- [`secrets.yaml`](../examples/secrets.yaml)
+- [`coinflip.yaml`](../examples/coinflip.yaml)
 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
+- [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
+
+- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
+
+- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
+
+- [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
+
+- [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
+
+- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
+
+- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
+
+- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
+
+- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
+
+- [`dag-nested.yaml`](../examples/dag-nested.yaml)
+
+- [`dag-targets.yaml`](../examples/dag-targets.yaml)
+
+- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
+
+- [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
+
+- [`forever.yaml`](../examples/forever.yaml)
+
+- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
+
+- [`gc-ttl.yaml`](../examples/gc-ttl.yaml)
+
+- [`global-outputs.yaml`](../examples/global-outputs.yaml)
+
+- [`global-parameters.yaml`](../examples/global-parameters.yaml)
+
+- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-world.yaml`](../examples/hello-world.yaml)
+
+- [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
+
+- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
+
+- [`init-container.yaml`](../examples/init-container.yaml)
+
+- [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
+
+- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
+
+- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
+
+- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
+
+- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
+
+- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+
 - [`k8s-jobs.yaml`](../examples/k8s-jobs.yaml)
+
+- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
+
+- [`k8s-owner-reference.yaml`](../examples/k8s-owner-reference.yaml)
+
+- [`k8s-set-owner-reference.yaml`](../examples/k8s-set-owner-reference.yaml)
+
+- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
+
+- [`loops-dag.yaml`](../examples/loops-dag.yaml)
+
+- [`loops-maps.yaml`](../examples/loops-maps.yaml)
+
+- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
+
+- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
+
+- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
+
+- [`loops.yaml`](../examples/loops.yaml)
+
+- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
+
+- [`node-selector.yaml`](../examples/node-selector.yaml)
+
+- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
+
+- [`output-parameter.yaml`](../examples/output-parameter.yaml)
+
+- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
+
+- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
+
+- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
+
+- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
+
+- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
+
+- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+
+- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+
+- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
+
+- [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
+
+- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+
+- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
+
+- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
+
+- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`resubmit.yaml`](../examples/resubmit.yaml)
+
+- [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
+
+- [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
+
+- [`retry-container.yaml`](../examples/retry-container.yaml)
+
+- [`retry-on-error.yaml`](../examples/retry-on-error.yaml)
+
+- [`retry-script.yaml`](../examples/retry-script.yaml)
+
+- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
+
+- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
+
+- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
+
+- [`scripts-python.yaml`](../examples/scripts-python.yaml)
+
+- [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
+
+- [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
+
+- [`sidecar.yaml`](../examples/sidecar.yaml)
+
+- [`status-reference.yaml`](../examples/status-reference.yaml)
+
+- [`steps.yaml`](../examples/steps.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
+
+- [`testvolume.yaml`](../examples/testvolume.yaml)
+
+- [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
+
+- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
+
+- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
+
+- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
+
+- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`dag.yaml`](../examples/workflow-template/dag.yaml)
+
+- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
 
 - [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
 
-- [`templates.yaml`](../examples/workflow-template/templates.yaml)
+- [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
-- [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
+- [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`workflowSpec`|[`WorkflowSpec`](#workflowspec)|_No desription available_|
+|`workflowSpec`|[`WorkflowSpec`](#workflowspec)|_No description available_|
 
 ## Arguments
 
 Arguments to a template
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
-
-- [`dag-nested.yaml`](../examples/dag-nested.yaml)
-
-- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
+- [`arguments-artifacts.yaml`](../examples/arguments-artifacts.yaml)
 
 - [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
 
-- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
+- [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
+
+- [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
+
+- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
+
+- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
+
+- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
+
+- [`ci.yaml`](../examples/ci.yaml)
+
+- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
+
+- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
+
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+
+- [`conditionals.yaml`](../examples/conditionals.yaml)
+
+- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
+
+- [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
+
+- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
+
+- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
+
+- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
+
+- [`dag-nested.yaml`](../examples/dag-nested.yaml)
+
+- [`dag-targets.yaml`](../examples/dag-targets.yaml)
+
+- [`global-outputs.yaml`](../examples/global-outputs.yaml)
+
+- [`global-parameters.yaml`](../examples/global-parameters.yaml)
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
 
 - [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
 
-- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
-
-- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
-
-- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
-
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
-
-- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
-
-- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
-
-- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
-
-- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
-
-- [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
-
-- [`dag-targets.yaml`](../examples/dag-targets.yaml)
-
-- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
-
-- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
-
-- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
-
-- [`scripts-python.yaml`](../examples/scripts-python.yaml)
-
-- [`steps.yaml`](../examples/workflow-template/steps.yaml)
-
-- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
-
-- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
-
-- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
-
-- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
-
-- [`dag.yaml`](../examples/workflow-template/dag.yaml)
-
-- [`daemon-step.yaml`](../examples/daemon-step.yaml)
-
-- [`loops.yaml`](../examples/loops.yaml)
-
-- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
-
-- [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
-
-- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
-
-- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
-
-- [`loops-maps.yaml`](../examples/loops-maps.yaml)
-
-- [`steps.yaml`](../examples/steps.yaml)
-
-- [`global-parameters.yaml`](../examples/global-parameters.yaml)
-
-- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
-
-- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
-
-- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
-
-- [`node-selector.yaml`](../examples/node-selector.yaml)
-
-- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
-
-- [`ci.yaml`](../examples/ci.yaml)
-
-- [`global-outputs.yaml`](../examples/global-outputs.yaml)
-
-- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
-
-- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
-
-- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
-
 - [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
 
-- [`conditionals.yaml`](../examples/conditionals.yaml)
+- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
 
 - [`loops-dag.yaml`](../examples/loops-dag.yaml)
 
-- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
+- [`loops-maps.yaml`](../examples/loops-maps.yaml)
+
+- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
+
+- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
+
+- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
+
+- [`loops.yaml`](../examples/loops.yaml)
+
+- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
+
+- [`node-selector.yaml`](../examples/node-selector.yaml)
 
 - [`output-parameter.yaml`](../examples/output-parameter.yaml)
 
+- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
+
+- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
+
+- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
+
+- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+
+- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+
+- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
+
+- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+
+- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
+
+- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
+
+- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
+
+- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
+
+- [`scripts-python.yaml`](../examples/scripts-python.yaml)
+
+- [`steps.yaml`](../examples/steps.yaml)
+
+- [`dag.yaml`](../examples/workflow-template/dag.yaml)
+
+- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
+
+- [`steps.yaml`](../examples/workflow-template/steps.yaml)
+
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
-
-- [`arguments-artifacts.yaml`](../examples/arguments-artifacts.yaml)
-
-- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
 </details>
 
 ### Fields
@@ -1129,8 +1137,8 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`configMap`|`string`|_No desription available_|
-|`key`|`string`|_No desription available_|
+|`configMap`|`string`|_No description available_|
+|`key`|`string`|_No description available_|
 
 ## ExecutorConfig
 
@@ -1144,6 +1152,7 @@ ExecutorConfig holds configurations of an executor container.
 ## Metrics
 
 Metrics are a list of metrics emitted from a Workflow/Template
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -1159,6 +1168,7 @@ Metrics are a list of metrics emitted from a Workflow/Template
 ## PodGC
 
 PodGC describes how to delete completed pods as they complete
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -1174,219 +1184,220 @@ PodGC describes how to delete completed pods as they complete
 ## Template
 
 Template is a reusable and composable unit of execution in a workflow
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
-
-- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
-
-- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
-
-- [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
-
-- [`coinflip.yaml`](../examples/coinflip.yaml)
-
-- [`init-container.yaml`](../examples/init-container.yaml)
-
-- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
-
-- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
-
-- [`steps.yaml`](../examples/workflow-template/steps.yaml)
-
-- [`suspend-template.yaml`](../examples/suspend-template.yaml)
-
-- [`dag.yaml`](../examples/workflow-template/dag.yaml)
-
-- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
-
-- [`retry-script.yaml`](../examples/retry-script.yaml)
-
-- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
-
-- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
-
-- [`node-selector.yaml`](../examples/node-selector.yaml)
-
-- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
-
-- [`retry-on-error.yaml`](../examples/retry-on-error.yaml)
-
-- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
-
-- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
-
-- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
-
-- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
-
-- [`gc-ttl.yaml`](../examples/gc-ttl.yaml)
-
-- [`loops-dag.yaml`](../examples/loops-dag.yaml)
-
-- [`output-parameter.yaml`](../examples/output-parameter.yaml)
-
-- [`resubmit.yaml`](../examples/resubmit.yaml)
-
-- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
-
-- [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
-
-- [`dag-nested.yaml`](../examples/dag-nested.yaml)
-
-- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
-
-- [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
-
-- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
-
-- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
-
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
-
-- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
-
-- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
-
-- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
-
-- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
-
 - [`archive-location.yaml`](../examples/archive-location.yaml)
-
-- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
-
-- [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
-
-- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
-
-- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
-
-- [`loops.yaml`](../examples/loops.yaml)
-
-- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
-
-- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
-
-- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
-
-- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
-
-- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
-
-- [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
-
-- [`global-parameters.yaml`](../examples/global-parameters.yaml)
-
-- [`global-outputs.yaml`](../examples/global-outputs.yaml)
-
-- [`ci.yaml`](../examples/ci.yaml)
-
-- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
-
-- [`k8s-owner-reference.yaml`](../examples/k8s-owner-reference.yaml)
-
-- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
-
-- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
-
-- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
-
-- [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
-
-- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
-
-- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
-
-- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
-
-- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
-
-- [`status-reference.yaml`](../examples/status-reference.yaml)
-
-- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
-
-- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
-
-- [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
-
-- [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
-
-- [`hello-world.yaml`](../examples/hello-world.yaml)
-
-- [`sidecar.yaml`](../examples/sidecar.yaml)
-
-- [`loops-maps.yaml`](../examples/loops-maps.yaml)
-
-- [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
-
-- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
-
-- [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
-
-- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
-
-- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
 - [`arguments-artifacts.yaml`](../examples/arguments-artifacts.yaml)
 
-- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
-
-- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
-
-- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
-
-- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+- [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
 
-- [`dag-targets.yaml`](../examples/dag-targets.yaml)
-
-- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
-
-- [`scripts-python.yaml`](../examples/scripts-python.yaml)
-
-- [`dns-config.yaml`](../examples/dns-config.yaml)
-
-- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
-
-- [`daemon-step.yaml`](../examples/daemon-step.yaml)
-
-- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
-
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
 
-- [`k8s-set-owner-reference.yaml`](../examples/k8s-set-owner-reference.yaml)
+- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
-- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
+- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
-- [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
+- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
 
-- [`steps.yaml`](../examples/steps.yaml)
+- [`ci.yaml`](../examples/ci.yaml)
 
-- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`retry-container.yaml`](../examples/retry-container.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`forever.yaml`](../examples/forever.yaml)
+- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
-- [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
-
-- [`secrets.yaml`](../examples/secrets.yaml)
+- [`coinflip.yaml`](../examples/coinflip.yaml)
 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
+- [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
+
+- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
+
+- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
+
+- [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
+
+- [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
+
+- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
+
+- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
+
+- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
+
+- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
+
+- [`dag-nested.yaml`](../examples/dag-nested.yaml)
+
+- [`dag-targets.yaml`](../examples/dag-targets.yaml)
+
+- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
+
+- [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
+
+- [`forever.yaml`](../examples/forever.yaml)
+
+- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
+
+- [`gc-ttl.yaml`](../examples/gc-ttl.yaml)
+
+- [`global-outputs.yaml`](../examples/global-outputs.yaml)
+
+- [`global-parameters.yaml`](../examples/global-parameters.yaml)
+
+- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-world.yaml`](../examples/hello-world.yaml)
+
+- [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
+
+- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
+
+- [`init-container.yaml`](../examples/init-container.yaml)
+
+- [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
+
+- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
+
+- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
+
+- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
+
+- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
+
+- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+
 - [`k8s-jobs.yaml`](../examples/k8s-jobs.yaml)
+
+- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
+
+- [`k8s-owner-reference.yaml`](../examples/k8s-owner-reference.yaml)
+
+- [`k8s-set-owner-reference.yaml`](../examples/k8s-set-owner-reference.yaml)
+
+- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
+
+- [`loops-dag.yaml`](../examples/loops-dag.yaml)
+
+- [`loops-maps.yaml`](../examples/loops-maps.yaml)
+
+- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
+
+- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
+
+- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
+
+- [`loops.yaml`](../examples/loops.yaml)
+
+- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
+
+- [`node-selector.yaml`](../examples/node-selector.yaml)
+
+- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
+
+- [`output-parameter.yaml`](../examples/output-parameter.yaml)
+
+- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
+
+- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
+
+- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
+
+- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
+
+- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
+
+- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+
+- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+
+- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
+
+- [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
+
+- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+
+- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
+
+- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
+
+- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`resubmit.yaml`](../examples/resubmit.yaml)
+
+- [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
+
+- [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
+
+- [`retry-container.yaml`](../examples/retry-container.yaml)
+
+- [`retry-on-error.yaml`](../examples/retry-on-error.yaml)
+
+- [`retry-script.yaml`](../examples/retry-script.yaml)
+
+- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
+
+- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
+
+- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
+
+- [`scripts-python.yaml`](../examples/scripts-python.yaml)
+
+- [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
+
+- [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
+
+- [`sidecar.yaml`](../examples/sidecar.yaml)
+
+- [`status-reference.yaml`](../examples/status-reference.yaml)
+
+- [`steps.yaml`](../examples/steps.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
+
+- [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
+
+- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
+
+- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
+
+- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
+
+- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`dag.yaml`](../examples/workflow-template/dag.yaml)
+
+- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
 
 - [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
 
-- [`templates.yaml`](../examples/workflow-template/templates.yaml)
+- [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
-- [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
+- [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -1431,6 +1442,7 @@ Template is a reusable and composable unit of execution in a workflow
 ## TTLStrategy
 
 TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -1488,47 +1500,48 @@ NodeStatus contains status information about an individual node in the workflow
 ## Outputs
 
 Outputs hold parameters, artifacts, and results from a step
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
-
-- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
-
-- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
-
-- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
-
-- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
-
 - [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
-
-- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
 
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
-- [`global-outputs.yaml`](../examples/global-outputs.yaml)
+- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
+
+- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
 
-- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
+- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
 
-- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
+- [`global-outputs.yaml`](../examples/global-outputs.yaml)
+
+- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
 
 - [`k8s-jobs.yaml`](../examples/k8s-jobs.yaml)
 
-- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
-
-- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
-
-- [`output-parameter.yaml`](../examples/output-parameter.yaml)
+- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
 
 - [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
 
+- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
+
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
+
+- [`output-parameter.yaml`](../examples/output-parameter.yaml)
+
+- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+
+- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
 </details>
 
 ### Fields
@@ -1541,47 +1554,48 @@ Outputs hold parameters, artifacts, and results from a step
 ## Artifact
 
 Artifact indicates an artifact to place at a specified path
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
-
-- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
-
-- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
-
-- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
+- [`arguments-artifacts.yaml`](../examples/arguments-artifacts.yaml)
 
 - [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
 
-- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
-
-- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
-
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
-
-- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
-
-- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
 
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
-- [`global-outputs.yaml`](../examples/global-outputs.yaml)
+- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
+
+- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
 
 - [`ci.yaml`](../examples/ci.yaml)
 
-- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
-
 - [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
+
+- [`global-outputs.yaml`](../examples/global-outputs.yaml)
+
+- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
 
 - [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
 
-- [`arguments-artifacts.yaml`](../examples/arguments-artifacts.yaml)
+- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
+
+- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
+
+- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
+
+- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
+
+- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+
+- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
-
-- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
 </details>
 
 ### Fields
@@ -1599,111 +1613,112 @@ Artifact indicates an artifact to place at a specified path
 ## Parameter
 
 Parameter indicate a passed string parameter to a service template with an optional default value
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
-
-- [`dag-nested.yaml`](../examples/dag-nested.yaml)
-
-- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
-
 - [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
-
-- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
-
-- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
-
-- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
-
-- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
-
-- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
-
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
-
-- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
-
-- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
-
-- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
-
-- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
-
-- [`dag-targets.yaml`](../examples/dag-targets.yaml)
-
-- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
-
-- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
-
-- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
-
-- [`scripts-python.yaml`](../examples/scripts-python.yaml)
-
-- [`steps.yaml`](../examples/workflow-template/steps.yaml)
-
-- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
-
-- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
-
-- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
-
-- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
-
-- [`dag.yaml`](../examples/workflow-template/dag.yaml)
-
-- [`daemon-step.yaml`](../examples/daemon-step.yaml)
-
-- [`loops.yaml`](../examples/loops.yaml)
-
-- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
-
-- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
-
-- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
-
-- [`loops-maps.yaml`](../examples/loops-maps.yaml)
-
-- [`steps.yaml`](../examples/steps.yaml)
-
-- [`global-parameters.yaml`](../examples/global-parameters.yaml)
-
-- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
-
-- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
-- [`node-selector.yaml`](../examples/node-selector.yaml)
-
-- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
+- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
 
 - [`ci.yaml`](../examples/ci.yaml)
 
-- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
+- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`global-outputs.yaml`](../examples/global-outputs.yaml)
+- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
-
-- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
-
-- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
-
-- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
+- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
+
+- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
+
+- [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
+
+- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
+
+- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
+
+- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
+
+- [`dag-nested.yaml`](../examples/dag-nested.yaml)
+
+- [`dag-targets.yaml`](../examples/dag-targets.yaml)
+
+- [`global-outputs.yaml`](../examples/global-outputs.yaml)
+
+- [`global-parameters.yaml`](../examples/global-parameters.yaml)
+
+- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
+
 - [`k8s-jobs.yaml`](../examples/k8s-jobs.yaml)
+
+- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
+
+- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
 
 - [`loops-dag.yaml`](../examples/loops-dag.yaml)
 
+- [`loops-maps.yaml`](../examples/loops-maps.yaml)
+
+- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
+
+- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
+
+- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
+
+- [`loops.yaml`](../examples/loops.yaml)
+
+- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
+
+- [`node-selector.yaml`](../examples/node-selector.yaml)
+
 - [`output-parameter.yaml`](../examples/output-parameter.yaml)
 
-- [`templates.yaml`](../examples/workflow-template/templates.yaml)
+- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
 
-- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
+- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
+
+- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
+
+- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+
+- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+
+- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
+
+- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+
+- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
+
+- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
+
+- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
+
+- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
+
+- [`scripts-python.yaml`](../examples/scripts-python.yaml)
+
+- [`steps.yaml`](../examples/steps.yaml)
+
+- [`dag.yaml`](../examples/workflow-template/dag.yaml)
+
+- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
+
+- [`steps.yaml`](../examples/workflow-template/steps.yaml)
+
+- [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -1718,6 +1733,7 @@ Parameter indicate a passed string parameter to a service template with an optio
 ## Prometheus
 
 Prometheus is a prometheus metric to be emitted
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -1739,6 +1755,7 @@ Prometheus is a prometheus metric to be emitted
 ## ArtifactLocation
 
 ArtifactLocation describes a location for a single or multiple artifacts.It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).It is also used to describe the location of multiple artifacts such as the archive locationof a single workflow step, which the executor will use as a default location to store its files.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -1762,45 +1779,46 @@ ArtifactLocation describes a location for a single or multiple artifacts.It is u
 ## DAGTemplate
 
 DAGTemplate is a template subtype for directed acyclic graph templates
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
-
-- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
-
-- [`dag.yaml`](../examples/workflow-template/dag.yaml)
+- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
 - [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`dag-targets.yaml`](../examples/dag-targets.yaml)
-
-- [`dag-nested.yaml`](../examples/dag-nested.yaml)
-
-- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
-
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
-
-- [`loops-dag.yaml`](../examples/loops-dag.yaml)
-
-- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
-
-- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
-
-- [`templates.yaml`](../examples/workflow-template/templates.yaml)
-
-- [`resubmit.yaml`](../examples/resubmit.yaml)
-
-- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
-
-- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
 
 - [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
 
-- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
+- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
+
+- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
+
+- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
+
+- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
+
+- [`dag-nested.yaml`](../examples/dag-nested.yaml)
+
+- [`dag-targets.yaml`](../examples/dag-targets.yaml)
+
+- [`loops-dag.yaml`](../examples/loops-dag.yaml)
+
+- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
+
+- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+
+- [`resubmit.yaml`](../examples/resubmit.yaml)
+
+- [`dag.yaml`](../examples/workflow-template/dag.yaml)
+
+- [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -1813,6 +1831,7 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 ## UserContainer
 
 UserContainer is a container specified by a user.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -1823,117 +1842,118 @@ UserContainer is a container specified by a user.
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`container`|[`Container`](#container)|_No desription available_|
+|`container`|[`Container`](#container)|_No description available_|
 |`mirrorVolumeMounts`|`boolean`|MirrorVolumeMounts will mount the same volumes specified in the main containerto the container (including artifacts), at the same mountPaths. This enablesdind daemon to partially see the same filesystem as the main container inorder to use features such as docker volume binding|
 
 ## Inputs
 
 Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
-
-- [`dag-nested.yaml`](../examples/dag-nested.yaml)
-
-- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
+- [`arguments-artifacts.yaml`](../examples/arguments-artifacts.yaml)
 
 - [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
 
-- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
+- [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
+
+- [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
+
+- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
+
+- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
+
+- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
+
+- [`ci.yaml`](../examples/ci.yaml)
+
+- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
+
+- [`conditionals.yaml`](../examples/conditionals.yaml)
+
+- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
+
+- [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
+
+- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
+
+- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
+
+- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
+
+- [`dag-nested.yaml`](../examples/dag-nested.yaml)
+
+- [`dag-targets.yaml`](../examples/dag-targets.yaml)
+
+- [`global-outputs.yaml`](../examples/global-outputs.yaml)
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
 
 - [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
 
-- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+- [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
 
-- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
+- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
 
 - [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
 
-- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
-
-- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
-
-- [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
-
-- [`dag-targets.yaml`](../examples/dag-targets.yaml)
-
-- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
-
-- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
-
-- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
-
-- [`scripts-python.yaml`](../examples/scripts-python.yaml)
-
-- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
-
-- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
+- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
 
 - [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
 
-- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
-
-- [`daemon-step.yaml`](../examples/daemon-step.yaml)
-
-- [`loops.yaml`](../examples/loops.yaml)
-
-- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
-
-- [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
-
-- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
-
-- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
-
-- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
-
-- [`loops-maps.yaml`](../examples/loops-maps.yaml)
-
-- [`steps.yaml`](../examples/steps.yaml)
-
 - [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
-
-- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
-
-- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
-
-- [`node-selector.yaml`](../examples/node-selector.yaml)
-
-- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
-
-- [`ci.yaml`](../examples/ci.yaml)
-
-- [`global-outputs.yaml`](../examples/global-outputs.yaml)
-
-- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
-
-- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
-
-- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
 
 - [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
 
-- [`conditionals.yaml`](../examples/conditionals.yaml)
+- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
 
 - [`loops-dag.yaml`](../examples/loops-dag.yaml)
 
-- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
+- [`loops-maps.yaml`](../examples/loops-maps.yaml)
+
+- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
+
+- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
+
+- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
+
+- [`loops.yaml`](../examples/loops.yaml)
+
+- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
+
+- [`node-selector.yaml`](../examples/node-selector.yaml)
 
 - [`output-parameter.yaml`](../examples/output-parameter.yaml)
 
+- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
+
+- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
+
+- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
+
+- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+
+- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+
+- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
+
+- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+
+- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
+
+- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
+
+- [`scripts-python.yaml`](../examples/scripts-python.yaml)
+
+- [`steps.yaml`](../examples/steps.yaml)
+
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
-
-- [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
-
-- [`arguments-artifacts.yaml`](../examples/arguments-artifacts.yaml)
-
-- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
-
-- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
 </details>
 
 ### Fields
@@ -1945,243 +1965,245 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 ## Metadata
 
 Pod metdata
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
-
-- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
-
-- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
-
-- [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
-
-- [`coinflip.yaml`](../examples/coinflip.yaml)
-
-- [`init-container.yaml`](../examples/init-container.yaml)
-
-- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
-
-- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
-
-- [`steps.yaml`](../examples/workflow-template/steps.yaml)
-
-- [`suspend-template.yaml`](../examples/suspend-template.yaml)
-
-- [`dag.yaml`](../examples/workflow-template/dag.yaml)
-
-- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
-
-- [`retry-script.yaml`](../examples/retry-script.yaml)
-
-- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
-
-- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
-
-- [`node-selector.yaml`](../examples/node-selector.yaml)
-
-- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
-
-- [`retry-on-error.yaml`](../examples/retry-on-error.yaml)
-
-- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
-
-- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
-
-- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
-
-- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
-
-- [`gc-ttl.yaml`](../examples/gc-ttl.yaml)
-
-- [`loops-dag.yaml`](../examples/loops-dag.yaml)
-
-- [`output-parameter.yaml`](../examples/output-parameter.yaml)
-
-- [`resubmit.yaml`](../examples/resubmit.yaml)
-
-- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
-
-- [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
-
-- [`dag-nested.yaml`](../examples/dag-nested.yaml)
-
-- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
-
-- [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
-
-- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
-
-- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
-
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
-
-- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
-
-- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
-
-- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
-
-- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
-
 - [`archive-location.yaml`](../examples/archive-location.yaml)
-
-- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
-
-- [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
-
-- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
-
-- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
-
-- [`loops.yaml`](../examples/loops.yaml)
-
-- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
-
-- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
-
-- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
-
-- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
-
-- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
-
-- [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
-
-- [`global-parameters.yaml`](../examples/global-parameters.yaml)
-
-- [`global-outputs.yaml`](../examples/global-outputs.yaml)
-
-- [`ci.yaml`](../examples/ci.yaml)
-
-- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
-
-- [`k8s-owner-reference.yaml`](../examples/k8s-owner-reference.yaml)
-
-- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
-
-- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
-
-- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
-
-- [`testvolume.yaml`](../examples/testvolume.yaml)
-
-- [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
-
-- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
-
-- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
-
-- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
-
-- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
-
-- [`status-reference.yaml`](../examples/status-reference.yaml)
-
-- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
-
-- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
-
-- [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
-
-- [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
-
-- [`hello-world.yaml`](../examples/hello-world.yaml)
-
-- [`sidecar.yaml`](../examples/sidecar.yaml)
-
-- [`loops-maps.yaml`](../examples/loops-maps.yaml)
-
-- [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
-
-- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
-
-- [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
-
-- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
-
-- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
 - [`arguments-artifacts.yaml`](../examples/arguments-artifacts.yaml)
 
-- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
-
-- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
-
-- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
-
-- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+- [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
 
-- [`dag-targets.yaml`](../examples/dag-targets.yaml)
-
-- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
-
-- [`scripts-python.yaml`](../examples/scripts-python.yaml)
-
-- [`dns-config.yaml`](../examples/dns-config.yaml)
-
-- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
-
-- [`daemon-step.yaml`](../examples/daemon-step.yaml)
-
-- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
-
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
 
-- [`k8s-set-owner-reference.yaml`](../examples/k8s-set-owner-reference.yaml)
+- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
-- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
+- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
-- [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
+- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
 
-- [`steps.yaml`](../examples/steps.yaml)
+- [`ci.yaml`](../examples/ci.yaml)
 
-- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`retry-container.yaml`](../examples/retry-container.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`forever.yaml`](../examples/forever.yaml)
+- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
-- [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
-
-- [`secrets.yaml`](../examples/secrets.yaml)
+- [`coinflip.yaml`](../examples/coinflip.yaml)
 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
+- [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
+
+- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
+
+- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
+
+- [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
+
+- [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
+
+- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
+
+- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
+
+- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
+
+- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
+
+- [`dag-nested.yaml`](../examples/dag-nested.yaml)
+
+- [`dag-targets.yaml`](../examples/dag-targets.yaml)
+
+- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
+
+- [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
+
+- [`forever.yaml`](../examples/forever.yaml)
+
+- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
+
+- [`gc-ttl.yaml`](../examples/gc-ttl.yaml)
+
+- [`global-outputs.yaml`](../examples/global-outputs.yaml)
+
+- [`global-parameters.yaml`](../examples/global-parameters.yaml)
+
+- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-world.yaml`](../examples/hello-world.yaml)
+
+- [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
+
+- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
+
+- [`init-container.yaml`](../examples/init-container.yaml)
+
+- [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
+
+- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
+
+- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
+
+- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
+
+- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
+
+- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+
 - [`k8s-jobs.yaml`](../examples/k8s-jobs.yaml)
+
+- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
+
+- [`k8s-owner-reference.yaml`](../examples/k8s-owner-reference.yaml)
+
+- [`k8s-set-owner-reference.yaml`](../examples/k8s-set-owner-reference.yaml)
+
+- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
+
+- [`loops-dag.yaml`](../examples/loops-dag.yaml)
+
+- [`loops-maps.yaml`](../examples/loops-maps.yaml)
+
+- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
+
+- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
+
+- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
+
+- [`loops.yaml`](../examples/loops.yaml)
+
+- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
+
+- [`node-selector.yaml`](../examples/node-selector.yaml)
+
+- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
+
+- [`output-parameter.yaml`](../examples/output-parameter.yaml)
+
+- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
+
+- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
+
+- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
+
+- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
+
+- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
+
+- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+
+- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+
+- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
+
+- [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
+
+- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+
+- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
+
+- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
+
+- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`resubmit.yaml`](../examples/resubmit.yaml)
+
+- [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
+
+- [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
+
+- [`retry-container.yaml`](../examples/retry-container.yaml)
+
+- [`retry-on-error.yaml`](../examples/retry-on-error.yaml)
+
+- [`retry-script.yaml`](../examples/retry-script.yaml)
+
+- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
+
+- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
+
+- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
+
+- [`scripts-python.yaml`](../examples/scripts-python.yaml)
+
+- [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
+
+- [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
+
+- [`sidecar.yaml`](../examples/sidecar.yaml)
+
+- [`status-reference.yaml`](../examples/status-reference.yaml)
+
+- [`steps.yaml`](../examples/steps.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
+
+- [`testvolume.yaml`](../examples/testvolume.yaml)
+
+- [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
+
+- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
+
+- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
+
+- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
+
+- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`dag.yaml`](../examples/workflow-template/dag.yaml)
+
+- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
 
 - [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
 
-- [`templates.yaml`](../examples/workflow-template/templates.yaml)
+- [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
-- [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
+- [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`annotations`|`Map< string , string >`|_No desription available_|
-|`labels`|`Map< string , string >`|_No desription available_|
+|`annotations`|`Map< string , string >`|_No description available_|
+|`labels`|`Map< string , string >`|_No description available_|
 
 ## ResourceTemplate
 
 ResourceTemplate is a template subtype to manipulate kubernetes resources
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
-
-- [`k8s-set-owner-reference.yaml`](../examples/k8s-set-owner-reference.yaml)
-
 - [`k8s-jobs.yaml`](../examples/k8s-jobs.yaml)
 
+- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
+
 - [`k8s-owner-reference.yaml`](../examples/k8s-owner-reference.yaml)
+
+- [`k8s-set-owner-reference.yaml`](../examples/k8s-set-owner-reference.yaml)
 
 - [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
 </details>
@@ -2199,27 +2221,28 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 ## RetryStrategy
 
 RetryStrategy provides controls on how to retry a workflow step
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
+- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
 
-- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
-
 - [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
 
-- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
-
-- [`templates.yaml`](../examples/workflow-template/templates.yaml)
-
-- [`retry-script.yaml`](../examples/retry-script.yaml)
+- [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
 
 - [`retry-container.yaml`](../examples/retry-container.yaml)
 
 - [`retry-on-error.yaml`](../examples/retry-on-error.yaml)
+
+- [`retry-script.yaml`](../examples/retry-script.yaml)
+
+- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
+
+- [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -2232,157 +2255,159 @@ RetryStrategy provides controls on how to retry a workflow step
 ## ScriptTemplate
 
 ScriptTemplate is a template subtype to enable scripting through code steps
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
-
-- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
-
-- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
 
-- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
-
-- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
+- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
 - [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
 
-- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
-
-- [`status-reference.yaml`](../examples/status-reference.yaml)
-
-- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
-
-- [`scripts-python.yaml`](../examples/scripts-python.yaml)
+- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
 
 - [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
 
+- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+
 - [`retry-script.yaml`](../examples/retry-script.yaml)
+
+- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
+
+- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
+
+- [`scripts-python.yaml`](../examples/scripts-python.yaml)
+
+- [`status-reference.yaml`](../examples/status-reference.yaml)
 </details>
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`container`|[`Container`](#container)|_No desription available_|
+|`container`|[`Container`](#container)|_No description available_|
 |`source`|`string`|Source contains the source code of the script to execute|
 
 ## WorkflowStep
 
 WorkflowStep is a reference to a template to execute in a series of step
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
+- [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
 
-- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
+- [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
+
+- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
+
+- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
+
+- [`ci.yaml`](../examples/ci.yaml)
+
+- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
+
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+
+- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
+
+- [`coinflip.yaml`](../examples/coinflip.yaml)
+
+- [`conditionals.yaml`](../examples/conditionals.yaml)
+
+- [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
+
+- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
+
+- [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
+
+- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
+
+- [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
+
+- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
+
+- [`global-outputs.yaml`](../examples/global-outputs.yaml)
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
 
 - [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
 
-- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
+- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
 
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
-
-- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
-
-- [`coinflip.yaml`](../examples/coinflip.yaml)
-
-- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
-
-- [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
-
-- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
-
-- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
-
-- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
-
-- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
-
-- [`status-reference.yaml`](../examples/status-reference.yaml)
-
-- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
-
-- [`scripts-python.yaml`](../examples/scripts-python.yaml)
-
-- [`steps.yaml`](../examples/workflow-template/steps.yaml)
-
-- [`suspend-template.yaml`](../examples/suspend-template.yaml)
-
-- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
-
-- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
-
-- [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
-
-- [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
-
-- [`daemon-step.yaml`](../examples/daemon-step.yaml)
-
-- [`loops.yaml`](../examples/loops.yaml)
-
-- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
-
-- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
-
-- [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
-
-- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
-
-- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
-
-- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
-
-- [`steps.yaml`](../examples/steps.yaml)
+- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
 
 - [`loops-maps.yaml`](../examples/loops-maps.yaml)
 
-- [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
+- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
 
-- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
 
-- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
 
-- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
+- [`loops.yaml`](../examples/loops.yaml)
 
-- [`ci.yaml`](../examples/ci.yaml)
-
-- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
-
-- [`global-outputs.yaml`](../examples/global-outputs.yaml)
-
-- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
-
-- [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
-
-- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
-
-- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
-
-- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
-
-- [`conditionals.yaml`](../examples/conditionals.yaml)
-
-- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
-
-- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
+- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`output-parameter.yaml`](../examples/output-parameter.yaml)
 
-- [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
+- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
 
-- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
+- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
 
-- [`templates.yaml`](../examples/workflow-template/templates.yaml)
+- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
+
+- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
+
+- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+
+- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
+
+- [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
+
+- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
 
 - [`resubmit.yaml`](../examples/resubmit.yaml)
 
-- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
+- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
+
+- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
+
+- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
+
+- [`scripts-python.yaml`](../examples/scripts-python.yaml)
+
+- [`status-reference.yaml`](../examples/status-reference.yaml)
+
+- [`steps.yaml`](../examples/steps.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
+
+- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
+
+- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
+
+- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
+
+- [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
+
+- [`steps.yaml`](../examples/workflow-template/steps.yaml)
+
+- [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -2402,13 +2427,14 @@ WorkflowStep is a reference to a template to execute in a series of step
 ## SuspendTemplate
 
 SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`suspend-template.yaml`](../examples/suspend-template.yaml)
-
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
 </details>
 
 ### Fields
@@ -2419,25 +2445,26 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 ## TemplateRef
 
 TemplateRef is a reference of template resource.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
+
 - [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
-
-- [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
-
-- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
-
-- [`templates.yaml`](../examples/workflow-template/templates.yaml)
-
-- [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
-
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
+
+- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
+
+- [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
+
+- [`steps.yaml`](../examples/workflow-template/steps.yaml)
+
+- [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -2451,51 +2478,53 @@ TemplateRef is a reference of template resource.
 ## ArchiveStrategy
 
 ArchiveStrategy describes how to archive files/directory when saving artifacts
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
-
 - [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
+
+- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 </details>
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`none`|[`NoneStrategy`](#nonestrategy)|_No desription available_|
-|`tar`|[`TarStrategy`](#tarstrategy)|_No desription available_|
+|`none`|[`NoneStrategy`](#nonestrategy)|_No description available_|
+|`tar`|[`TarStrategy`](#tarstrategy)|_No description available_|
 
 ## ValueFrom
 
 ValueFrom describes a location in which to obtain the value to a parameter
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
-
-- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
-
-- [`secrets.yaml`](../examples/secrets.yaml)
-
-- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
-
-- [`k8s-jobs.yaml`](../examples/k8s-jobs.yaml)
-
-- [`output-parameter.yaml`](../examples/output-parameter.yaml)
-
-- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
-
-- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
-
-- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
-
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
+
+- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
 
 - [`global-outputs.yaml`](../examples/global-outputs.yaml)
 
-- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
+- [`k8s-jobs.yaml`](../examples/k8s-jobs.yaml)
+
+- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
+
+- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
+
+- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
+
+- [`output-parameter.yaml`](../examples/output-parameter.yaml)
+
+- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+
+- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+
+- [`secrets.yaml`](../examples/secrets.yaml)
 </details>
 
 ### Fields
@@ -2510,6 +2539,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 ## Counter
 
 Counter is a Counter prometheus metric
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -2525,6 +2555,7 @@ Counter is a Counter prometheus metric
 ## Gauge
 
 Gauge is a Gauge prometheus metric
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -2541,6 +2572,7 @@ Gauge is a Gauge prometheus metric
 ## Histogram
 
 Histogram is a Histogram prometheus metric
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -2557,13 +2589,14 @@ Histogram is a Histogram prometheus metric
 ## MetricLabel
 
 MetricLabel is a single label for a prometheus metric
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`forever.yaml`](../examples/forever.yaml)
-
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
+
+- [`forever.yaml`](../examples/forever.yaml)
 
 - [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
 </details>
@@ -2571,12 +2604,13 @@ MetricLabel is a single label for a prometheus metric
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`key`|`string`|_No desription available_|
-|`value`|`string`|_No desription available_|
+|`key`|`string`|_No description available_|
+|`value`|`string`|_No description available_|
 
 ## ArtifactoryArtifact
 
 ArtifactoryArtifact is the location of an artifactory artifact
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -2587,12 +2621,13 @@ ArtifactoryArtifact is the location of an artifactory artifact
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`artifactoryAuth`|[`ArtifactoryAuth`](#artifactoryauth)|_No desription available_|
+|`artifactoryAuth`|[`ArtifactoryAuth`](#artifactoryauth)|_No description available_|
 |`url`|`string`|URL of the artifact|
 
 ## GCSArtifact
 
 GCSArtifact is the location of a GCS artifact
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -2603,12 +2638,13 @@ GCSArtifact is the location of a GCS artifact
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`gCSBucket`|[`GCSBucket`](#gcsbucket)|_No desription available_|
+|`gCSBucket`|[`GCSBucket`](#gcsbucket)|_No description available_|
 |`key`|`string`|Key is the path in the bucket where the artifact resides|
 
 ## GitArtifact
 
 GitArtifact is the location of an git artifact
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -2617,9 +2653,9 @@ GitArtifact is the location of an git artifact
 
 - [`ci.yaml`](../examples/ci.yaml)
 
-- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
-
 - [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
+
+- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
 </details>
 
 ### Fields
@@ -2637,6 +2673,7 @@ GitArtifact is the location of an git artifact
 ## HDFSArtifact
 
 HDFSArtifact is the location of an HDFS artifact
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -2648,35 +2685,36 @@ HDFSArtifact is the location of an HDFS artifact
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`force`|`boolean`|Force copies a file forcibly even if it exists (default: false)|
-|`hDFSConfig`|[`HDFSConfig`](#hdfsconfig)|_No desription available_|
+|`hDFSConfig`|[`HDFSConfig`](#hdfsconfig)|_No description available_|
 |`path`|`string`|Path is a file path in HDFS|
 
 ## HTTPArtifact
 
 HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`daemon-step.yaml`](../examples/daemon-step.yaml)
-
-- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
-
-- [`sidecar.yaml`](../examples/sidecar.yaml)
-
-- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
+- [`arguments-artifacts.yaml`](../examples/arguments-artifacts.yaml)
 
 - [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
+- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
+
+- [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
 - [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
+
+- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
+
+- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
 
 - [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
 
-- [`arguments-artifacts.yaml`](../examples/arguments-artifacts.yaml)
-
 - [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
 
-- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
+- [`sidecar.yaml`](../examples/sidecar.yaml)
 </details>
 
 ### Fields
@@ -2687,6 +2725,7 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 ## OSSArtifact
 
 OSSArtifact is the location of an OSS artifact
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -2698,18 +2737,19 @@ OSSArtifact is the location of an OSS artifact
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`key`|`string`|Key is the path in the bucket where the artifact resides|
-|`oSSBucket`|[`OSSBucket`](#ossbucket)|_No desription available_|
+|`oSSBucket`|[`OSSBucket`](#ossbucket)|_No description available_|
 
 ## RawArtifact
 
 RawArtifact allows raw string content to be placed as an artifact in a container
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
-
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
+
+- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
 </details>
 
 ### Fields
@@ -2725,50 +2765,51 @@ S3Artifact is the location of an S3 artifact
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`key`|`string`|Key is the key in the bucket where the artifact resides|
-|`s3Bucket`|[`S3Bucket`](#s3bucket)|_No desription available_|
+|`s3Bucket`|[`S3Bucket`](#s3bucket)|_No description available_|
 
 ## DAGTask
 
 DAGTask represents a node in the graph during DAG execution
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
-
-- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
-
-- [`dag.yaml`](../examples/workflow-template/dag.yaml)
+- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
 - [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`dag-targets.yaml`](../examples/dag-targets.yaml)
-
-- [`dag-nested.yaml`](../examples/dag-nested.yaml)
-
-- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
-
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
-
-- [`loops-dag.yaml`](../examples/loops-dag.yaml)
-
-- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
-
-- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
-
-- [`templates.yaml`](../examples/workflow-template/templates.yaml)
-
-- [`resubmit.yaml`](../examples/resubmit.yaml)
-
-- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
-
-- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
 
 - [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
 
-- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
+- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
+
+- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
+
+- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
+
+- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
+
+- [`dag-nested.yaml`](../examples/dag-nested.yaml)
+
+- [`dag-targets.yaml`](../examples/dag-targets.yaml)
+
+- [`loops-dag.yaml`](../examples/loops-dag.yaml)
+
+- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
+
+- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+
+- [`resubmit.yaml`](../examples/resubmit.yaml)
+
+- [`dag.yaml`](../examples/workflow-template/dag.yaml)
+
+- [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -2789,6 +2830,7 @@ DAGTask represents a node in the graph during DAG execution
 ## Backoff
 
 Backoff is a backoff strategy to use within retryStrategy
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -2806,6 +2848,7 @@ Backoff is a backoff strategy to use within retryStrategy
 ## ContinueOn
 
 ContinueOn defines if a workflow should continue even if a task or step fails/errors.It can be specified if the workflow should continue when the pod errors, fails or both.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -2826,48 +2869,50 @@ ContinueOn defines if a workflow should continue even if a task or step fails/er
 ## Item
 
 
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
+- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
 
-- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+- [`ci.yaml`](../examples/ci.yaml)
 
-- [`loops.yaml`](../examples/loops.yaml)
-
-- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
-
-- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
-
-- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
+- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
 
 - [`loops-dag.yaml`](../examples/loops-dag.yaml)
 
 - [`loops-maps.yaml`](../examples/loops-maps.yaml)
 
+- [`loops.yaml`](../examples/loops.yaml)
+
+- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
+
+- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
+
+- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+
 - [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
 
-- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
+- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
 
-- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
-
-- [`ci.yaml`](../examples/ci.yaml)
+- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
 </details>
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`boolVal`|`boolean`|_No desription available_|
-|`listVal`|`Array<`[`ItemValue`](#itemvalue)`>`|_No desription available_|
-|`mapVal`|[`ItemValue`](#itemvalue)|_No desription available_|
-|`numVal`|`string`|_No desription available_|
-|`strVal`|`string`|_No desription available_|
-|`type`|`int64`|_No desription available_|
+|`boolVal`|`boolean`|_No description available_|
+|`listVal`|`Array<`[`ItemValue`](#itemvalue)`>`|_No description available_|
+|`mapVal`|[`ItemValue`](#itemvalue)|_No description available_|
+|`numVal`|`string`|_No description available_|
+|`strVal`|`string`|_No description available_|
+|`type`|`int64`|_No description available_|
 
 ## Sequence
 
 Sequence expands a workflow step into numeric range
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -2886,18 +2931,20 @@ Sequence expands a workflow step into numeric range
 ## NoneStrategy
 
 NoneStrategy indicates to skip tar process and upload the files or directory tree as independentfiles. Note that if the artifact is a directory, the artifact driver must support the ability tosave/load the directory appropriately.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
-
 - [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
+
+- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 </details>
 
 ## TarStrategy
 
 TarStrategy will tar and gzip the file or directory when saving
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -2938,7 +2985,7 @@ HDFSConfig is configurations for HDFS
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`addresses`|`Array< string >`|Addresses is accessible addresses of HDFS name nodes|
-|`hDFSKrbConfig`|[`HDFSKrbConfig`](#hdfskrbconfig)|_No desription available_|
+|`hDFSKrbConfig`|[`HDFSKrbConfig`](#hdfskrbconfig)|_No description available_|
 |`hdfsUser`|`string`|HDFSUser is the user to access HDFS file system.It is ignored if either ccache or keytab is used.|
 
 ## OSSBucket
@@ -2976,12 +3023,12 @@ S3Bucket contains the access information required for interfacing with an S3 buc
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`boolVal`|`boolean`|_No desription available_|
-|`listVal`|`Array< string >`|_No desription available_|
-|`mapVal`|`Map< string , string >`|_No desription available_|
-|`numVal`|`string`|_No desription available_|
-|`strVal`|`string`|_No desription available_|
-|`type`|`int64`|_No desription available_|
+|`boolVal`|`boolean`|_No description available_|
+|`listVal`|`Array< string >`|_No description available_|
+|`mapVal`|`Map< string , string >`|_No description available_|
+|`numVal`|`string`|_No description available_|
+|`strVal`|`string`|_No description available_|
+|`type`|`int64`|_No description available_|
 
 ## HDFSKrbConfig
 
@@ -3003,221 +3050,222 @@ HDFSKrbConfig is auth configurations for Kerberos
 ## ObjectMeta
 
 ObjectMeta is metadata that all persisted resources must have, which includes all objectsusers must create.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
-
-- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
-
-- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
-
-- [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
-
-- [`coinflip.yaml`](../examples/coinflip.yaml)
-
-- [`init-container.yaml`](../examples/init-container.yaml)
-
-- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
-
-- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
-
-- [`steps.yaml`](../examples/workflow-template/steps.yaml)
-
-- [`suspend-template.yaml`](../examples/suspend-template.yaml)
-
-- [`dag.yaml`](../examples/workflow-template/dag.yaml)
-
-- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
-
-- [`retry-script.yaml`](../examples/retry-script.yaml)
-
-- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
-
-- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
-
-- [`node-selector.yaml`](../examples/node-selector.yaml)
-
-- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
-
-- [`retry-on-error.yaml`](../examples/retry-on-error.yaml)
-
-- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
-
-- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
-
-- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
-
-- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
-
-- [`gc-ttl.yaml`](../examples/gc-ttl.yaml)
-
-- [`loops-dag.yaml`](../examples/loops-dag.yaml)
-
-- [`output-parameter.yaml`](../examples/output-parameter.yaml)
-
-- [`resubmit.yaml`](../examples/resubmit.yaml)
-
-- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
-
-- [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
-
-- [`dag-nested.yaml`](../examples/dag-nested.yaml)
-
-- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
-
-- [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
-
-- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
-
-- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
-
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
-
-- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
-
-- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
-
-- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
-
-- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
-
 - [`archive-location.yaml`](../examples/archive-location.yaml)
-
-- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
-
-- [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
-
-- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
-
-- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
-
-- [`loops.yaml`](../examples/loops.yaml)
-
-- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
-
-- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
-
-- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
-
-- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
-
-- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
-
-- [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
-
-- [`global-parameters.yaml`](../examples/global-parameters.yaml)
-
-- [`global-outputs.yaml`](../examples/global-outputs.yaml)
-
-- [`ci.yaml`](../examples/ci.yaml)
-
-- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
-
-- [`k8s-owner-reference.yaml`](../examples/k8s-owner-reference.yaml)
-
-- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
-
-- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
-
-- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
-
-- [`testvolume.yaml`](../examples/testvolume.yaml)
-
-- [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
-
-- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
-
-- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
-
-- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
-
-- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
-
-- [`status-reference.yaml`](../examples/status-reference.yaml)
-
-- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
-
-- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
-
-- [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
-
-- [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
-
-- [`hello-world.yaml`](../examples/hello-world.yaml)
-
-- [`sidecar.yaml`](../examples/sidecar.yaml)
-
-- [`loops-maps.yaml`](../examples/loops-maps.yaml)
-
-- [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
-
-- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
-
-- [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
-
-- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
-
-- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
 - [`arguments-artifacts.yaml`](../examples/arguments-artifacts.yaml)
 
-- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
-
-- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
-
-- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
-
-- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+- [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
 
-- [`dag-targets.yaml`](../examples/dag-targets.yaml)
-
-- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
-
-- [`scripts-python.yaml`](../examples/scripts-python.yaml)
-
-- [`dns-config.yaml`](../examples/dns-config.yaml)
-
-- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
-
-- [`daemon-step.yaml`](../examples/daemon-step.yaml)
-
-- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
-
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
 
-- [`k8s-set-owner-reference.yaml`](../examples/k8s-set-owner-reference.yaml)
+- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
-- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
+- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
-- [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
+- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
 
-- [`steps.yaml`](../examples/steps.yaml)
+- [`ci.yaml`](../examples/ci.yaml)
 
-- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`retry-container.yaml`](../examples/retry-container.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`forever.yaml`](../examples/forever.yaml)
+- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
-- [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
-
-- [`secrets.yaml`](../examples/secrets.yaml)
+- [`coinflip.yaml`](../examples/coinflip.yaml)
 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
+- [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
+
+- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
+
+- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
+
+- [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
+
+- [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
+
+- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
+
+- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
+
+- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
+
+- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
+
+- [`dag-nested.yaml`](../examples/dag-nested.yaml)
+
+- [`dag-targets.yaml`](../examples/dag-targets.yaml)
+
+- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
+
+- [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
+
+- [`forever.yaml`](../examples/forever.yaml)
+
+- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
+
+- [`gc-ttl.yaml`](../examples/gc-ttl.yaml)
+
+- [`global-outputs.yaml`](../examples/global-outputs.yaml)
+
+- [`global-parameters.yaml`](../examples/global-parameters.yaml)
+
+- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-world.yaml`](../examples/hello-world.yaml)
+
+- [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
+
+- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
+
+- [`init-container.yaml`](../examples/init-container.yaml)
+
+- [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
+
+- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
+
+- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
+
+- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
+
+- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
+
+- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+
 - [`k8s-jobs.yaml`](../examples/k8s-jobs.yaml)
+
+- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
+
+- [`k8s-owner-reference.yaml`](../examples/k8s-owner-reference.yaml)
+
+- [`k8s-set-owner-reference.yaml`](../examples/k8s-set-owner-reference.yaml)
+
+- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
+
+- [`loops-dag.yaml`](../examples/loops-dag.yaml)
+
+- [`loops-maps.yaml`](../examples/loops-maps.yaml)
+
+- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
+
+- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
+
+- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
+
+- [`loops.yaml`](../examples/loops.yaml)
+
+- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
+
+- [`node-selector.yaml`](../examples/node-selector.yaml)
+
+- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
+
+- [`output-parameter.yaml`](../examples/output-parameter.yaml)
+
+- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
+
+- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
+
+- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
+
+- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
+
+- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
+
+- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+
+- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+
+- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
+
+- [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
+
+- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+
+- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
+
+- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
+
+- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`resubmit.yaml`](../examples/resubmit.yaml)
+
+- [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
+
+- [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
+
+- [`retry-container.yaml`](../examples/retry-container.yaml)
+
+- [`retry-on-error.yaml`](../examples/retry-on-error.yaml)
+
+- [`retry-script.yaml`](../examples/retry-script.yaml)
+
+- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
+
+- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
+
+- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
+
+- [`scripts-python.yaml`](../examples/scripts-python.yaml)
+
+- [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
+
+- [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
+
+- [`sidecar.yaml`](../examples/sidecar.yaml)
+
+- [`status-reference.yaml`](../examples/status-reference.yaml)
+
+- [`steps.yaml`](../examples/steps.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
+
+- [`testvolume.yaml`](../examples/testvolume.yaml)
+
+- [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
+
+- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
+
+- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
+
+- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
+
+- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`dag.yaml`](../examples/workflow-template/dag.yaml)
+
+- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
 
 - [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
 
-- [`templates.yaml`](../examples/workflow-template/templates.yaml)
+- [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
-- [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
+- [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -3254,6 +3302,7 @@ Affinity is a group of affinity scheduling rules.
 ## PodDNSConfig
 
 PodDNSConfig defines the DNS parameters of a pod in addition tothose generated from DNSPolicy.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -3281,6 +3330,7 @@ HostAlias holds the mapping between IP and hostnames that will be injected as an
 ## LocalObjectReference
 
 LocalObjectReference contains enough information to let you locate thereferenced object inside the same namespace.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -3307,6 +3357,7 @@ PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.
 ## PodSecurityContext
 
 PodSecurityContext holds pod-level security attributes and common container settings.Some fields are also present in container.securityContext.  Field values ofcontainer.securityContext take precedence over field values of PodSecurityContext.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -3342,12 +3393,14 @@ The pod this Toleration is attached to tolerates any taint that matchesthe tripl
 ## PersistentVolumeClaim
 
 PersistentVolumeClaim is a user's request for and claim to a persistent volume
+
 <details>
 <summary>Examples (click to open)</summary>
 <br>
 
 - [`testvolume.yaml`](../examples/testvolume.yaml)
 </details>
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -3356,9 +3409,9 @@ PersistentVolumeClaim is a user's request for and claim to a persistent volume
 
 - [`ci.yaml`](../examples/ci.yaml)
 
-- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
-
 - [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
+
+- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 </details>
 
 ### Fields
@@ -3371,17 +3424,18 @@ PersistentVolumeClaim is a user's request for and claim to a persistent volume
 ## Volume
 
 Volume represents a named volume in a pod that may be accessed by any container in the pod.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
-
 - [`init-container.yaml`](../examples/init-container.yaml)
 
-- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
-
 - [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
+
+- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
 </details>
 
 ### Fields
@@ -3402,7 +3456,7 @@ Time is a wrapper around time.Time which supports correctmarshaling to YAML and 
 
 ## ObjectReference
 
-ObjectReference contains enough information to let you inspect or modify the referred object.
+ObjectReference contains enough information to let you inspect or modify the referred object.+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -3418,195 +3472,196 @@ ObjectReference contains enough information to let you inspect or modify the ref
 ## Container
 
 A single application container that you want to run within a pod.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
-
-- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
-
-- [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
-
-- [`coinflip.yaml`](../examples/coinflip.yaml)
-
-- [`init-container.yaml`](../examples/init-container.yaml)
-
-- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
-
-- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
-
-- [`suspend-template.yaml`](../examples/suspend-template.yaml)
-
-- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
-
-- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
-
-- [`node-selector.yaml`](../examples/node-selector.yaml)
-
-- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
-
-- [`retry-on-error.yaml`](../examples/retry-on-error.yaml)
-
-- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
-
-- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
-
-- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
-
-- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
-
-- [`gc-ttl.yaml`](../examples/gc-ttl.yaml)
-
-- [`loops-dag.yaml`](../examples/loops-dag.yaml)
-
-- [`output-parameter.yaml`](../examples/output-parameter.yaml)
-
-- [`resubmit.yaml`](../examples/resubmit.yaml)
-
-- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
-
-- [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
-
-- [`dag-nested.yaml`](../examples/dag-nested.yaml)
-
-- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
-
-- [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
-
-- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
-
-- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
-
-- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
-
-- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
-
-- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
-
-- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
-
 - [`archive-location.yaml`](../examples/archive-location.yaml)
-
-- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
-
-- [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
-
-- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
-
-- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
-
-- [`loops.yaml`](../examples/loops.yaml)
-
-- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
-
-- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
-
-- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
-
-- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
-
-- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
-
-- [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
-
-- [`global-parameters.yaml`](../examples/global-parameters.yaml)
-
-- [`global-outputs.yaml`](../examples/global-outputs.yaml)
-
-- [`ci.yaml`](../examples/ci.yaml)
-
-- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
-
-- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
-
-- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
-
-- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
-
-- [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
-
-- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
-
-- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
-
-- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
-
-- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
-
-- [`status-reference.yaml`](../examples/status-reference.yaml)
-
-- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
-
-- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
-
-- [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
-
-- [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
-
-- [`hello-world.yaml`](../examples/hello-world.yaml)
-
-- [`sidecar.yaml`](../examples/sidecar.yaml)
-
-- [`loops-maps.yaml`](../examples/loops-maps.yaml)
-
-- [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
-
-- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
-
-- [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
-
-- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
-
-- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
 - [`arguments-artifacts.yaml`](../examples/arguments-artifacts.yaml)
 
-- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
-
-- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
-
-- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
+- [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
 
-- [`dag-targets.yaml`](../examples/dag-targets.yaml)
-
-- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
-
-- [`scripts-python.yaml`](../examples/scripts-python.yaml)
-
-- [`dns-config.yaml`](../examples/dns-config.yaml)
-
-- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
-
-- [`daemon-step.yaml`](../examples/daemon-step.yaml)
-
-- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
-
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
 
-- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
+- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
-- [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
+- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
-- [`steps.yaml`](../examples/steps.yaml)
+- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
 
-- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+- [`ci.yaml`](../examples/ci.yaml)
 
-- [`retry-container.yaml`](../examples/retry-container.yaml)
+- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`forever.yaml`](../examples/forever.yaml)
+- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
-- [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
-
-- [`secrets.yaml`](../examples/secrets.yaml)
+- [`coinflip.yaml`](../examples/coinflip.yaml)
 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
-- [`templates.yaml`](../examples/workflow-template/templates.yaml)
+- [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
+
+- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
+
+- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
+
+- [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
+
+- [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
+
+- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
+
+- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
+
+- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
+
+- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
+
+- [`dag-nested.yaml`](../examples/dag-nested.yaml)
+
+- [`dag-targets.yaml`](../examples/dag-targets.yaml)
+
+- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
+
+- [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
+
+- [`forever.yaml`](../examples/forever.yaml)
+
+- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
+
+- [`gc-ttl.yaml`](../examples/gc-ttl.yaml)
+
+- [`global-outputs.yaml`](../examples/global-outputs.yaml)
+
+- [`global-parameters.yaml`](../examples/global-parameters.yaml)
+
+- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-world.yaml`](../examples/hello-world.yaml)
+
+- [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
+
+- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
+
+- [`init-container.yaml`](../examples/init-container.yaml)
 
 - [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
+
+- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
+
+- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
+
+- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
+
+- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
+
+- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+
+- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
+
+- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
+
+- [`loops-dag.yaml`](../examples/loops-dag.yaml)
+
+- [`loops-maps.yaml`](../examples/loops-maps.yaml)
+
+- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
+
+- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
+
+- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
+
+- [`loops.yaml`](../examples/loops.yaml)
+
+- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
+
+- [`node-selector.yaml`](../examples/node-selector.yaml)
+
+- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
+
+- [`output-parameter.yaml`](../examples/output-parameter.yaml)
+
+- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
+
+- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
+
+- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
+
+- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
+
+- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
+
+- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+
+- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
+
+- [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
+
+- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
+
+- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
+
+- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
+
+- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`resubmit.yaml`](../examples/resubmit.yaml)
+
+- [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
+
+- [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
+
+- [`retry-container.yaml`](../examples/retry-container.yaml)
+
+- [`retry-on-error.yaml`](../examples/retry-on-error.yaml)
+
+- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
+
+- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
+
+- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
+
+- [`scripts-python.yaml`](../examples/scripts-python.yaml)
+
+- [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
+
+- [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
+
+- [`sidecar.yaml`](../examples/sidecar.yaml)
+
+- [`status-reference.yaml`](../examples/status-reference.yaml)
+
+- [`steps.yaml`](../examples/steps.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
+
+- [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
+
+- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
+
+- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
+
+- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
+
+- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -3638,6 +3693,7 @@ A single application container that you want to run within a pod.
 ## SecretKeySelector
 
 SecretKeySelector selects a key of a Secret.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -3657,6 +3713,7 @@ SecretKeySelector selects a key of a Secret.
 ## ConfigMapKeySelector
 
 Selects a key from a ConfigMap.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -3688,6 +3745,7 @@ ManagedFieldsEntry is a workflow-id, a FieldSet and the group version of the res
 ## OwnerReference
 
 OwnerReference contains enough information to let you identify an owningobject. An owning object must be in the same namespace as the dependent, orbe cluster-scoped, so there is no namespace field.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -3738,6 +3796,7 @@ Pod anti affinity is a group of inter pod anti affinity scheduling rules.
 ## PodDNSConfigOption
 
 PodDNSConfigOption defines DNS resolver options of a pod.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -3758,9 +3817,9 @@ PodDNSConfigOption defines DNS resolver options of a pod.
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`intVal`|`int32`|_No desription available_|
-|`strVal`|`string`|_No desription available_|
-|`type`|`int64`|_No desription available_|
+|`intVal`|`int32`|_No description available_|
+|`strVal`|`string`|_No description available_|
+|`type`|`int64`|_No description available_|
 
 ## LabelSelector
 
@@ -3808,221 +3867,222 @@ WindowsSecurityContextOptions contain Windows-specific options and credentials.
 ## PersistentVolumeClaimSpec
 
 PersistentVolumeClaimSpec describes the common attributes of storage devicesand allows a Source for provider-specific attributes
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
-
-- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
-
-- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
-
-- [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
-
-- [`coinflip.yaml`](../examples/coinflip.yaml)
-
-- [`init-container.yaml`](../examples/init-container.yaml)
-
-- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
-
-- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
-
-- [`steps.yaml`](../examples/workflow-template/steps.yaml)
-
-- [`suspend-template.yaml`](../examples/suspend-template.yaml)
-
-- [`dag.yaml`](../examples/workflow-template/dag.yaml)
-
-- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
-
-- [`retry-script.yaml`](../examples/retry-script.yaml)
-
-- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
-
-- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
-
-- [`node-selector.yaml`](../examples/node-selector.yaml)
-
-- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
-
-- [`retry-on-error.yaml`](../examples/retry-on-error.yaml)
-
-- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
-
-- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
-
-- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
-
-- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
-
-- [`gc-ttl.yaml`](../examples/gc-ttl.yaml)
-
-- [`loops-dag.yaml`](../examples/loops-dag.yaml)
-
-- [`output-parameter.yaml`](../examples/output-parameter.yaml)
-
-- [`resubmit.yaml`](../examples/resubmit.yaml)
-
-- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
-
-- [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
-
-- [`dag-nested.yaml`](../examples/dag-nested.yaml)
-
-- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
-
-- [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
-
-- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
-
-- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
-
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
-
-- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
-
-- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
-
-- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
-
-- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
-
 - [`archive-location.yaml`](../examples/archive-location.yaml)
-
-- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
-
-- [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
-
-- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
-
-- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
-
-- [`loops.yaml`](../examples/loops.yaml)
-
-- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
-
-- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
-
-- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
-
-- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
-
-- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
-
-- [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
-
-- [`global-parameters.yaml`](../examples/global-parameters.yaml)
-
-- [`global-outputs.yaml`](../examples/global-outputs.yaml)
-
-- [`ci.yaml`](../examples/ci.yaml)
-
-- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
-
-- [`k8s-owner-reference.yaml`](../examples/k8s-owner-reference.yaml)
-
-- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
-
-- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
-
-- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
-
-- [`testvolume.yaml`](../examples/testvolume.yaml)
-
-- [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
-
-- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
-
-- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
-
-- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
-
-- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
-
-- [`status-reference.yaml`](../examples/status-reference.yaml)
-
-- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
-
-- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
-
-- [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
-
-- [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
-
-- [`hello-world.yaml`](../examples/hello-world.yaml)
-
-- [`sidecar.yaml`](../examples/sidecar.yaml)
-
-- [`loops-maps.yaml`](../examples/loops-maps.yaml)
-
-- [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
-
-- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
-
-- [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
-
-- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
-
-- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
 - [`arguments-artifacts.yaml`](../examples/arguments-artifacts.yaml)
 
-- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
-
-- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
-
-- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
-
-- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+- [`arguments-parameters.yaml`](../examples/arguments-parameters.yaml)
 
 - [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
 
-- [`dag-targets.yaml`](../examples/dag-targets.yaml)
-
-- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
-
-- [`scripts-python.yaml`](../examples/scripts-python.yaml)
-
-- [`dns-config.yaml`](../examples/dns-config.yaml)
-
-- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
-
-- [`daemon-step.yaml`](../examples/daemon-step.yaml)
-
-- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
-
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
 
-- [`k8s-set-owner-reference.yaml`](../examples/k8s-set-owner-reference.yaml)
+- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
-- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
+- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
-- [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
+- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
 
-- [`steps.yaml`](../examples/steps.yaml)
+- [`ci.yaml`](../examples/ci.yaml)
 
-- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
 
-- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
-- [`retry-container.yaml`](../examples/retry-container.yaml)
+- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
-- [`forever.yaml`](../examples/forever.yaml)
+- [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
-- [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
-
-- [`secrets.yaml`](../examples/secrets.yaml)
+- [`coinflip.yaml`](../examples/coinflip.yaml)
 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
+- [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
+
+- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
+
+- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
+
+- [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
+
+- [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
+
+- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
+
+- [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
+
+- [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
+
+- [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
+
+- [`dag-nested.yaml`](../examples/dag-nested.yaml)
+
+- [`dag-targets.yaml`](../examples/dag-targets.yaml)
+
+- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
+
+- [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
+
+- [`forever.yaml`](../examples/forever.yaml)
+
+- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
+
+- [`gc-ttl.yaml`](../examples/gc-ttl.yaml)
+
+- [`global-outputs.yaml`](../examples/global-outputs.yaml)
+
+- [`global-parameters.yaml`](../examples/global-parameters.yaml)
+
+- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-world.yaml`](../examples/hello-world.yaml)
+
+- [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
+
+- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
+
+- [`init-container.yaml`](../examples/init-container.yaml)
+
+- [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
+
+- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
+
+- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
+
+- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
+
+- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
+
+- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+
 - [`k8s-jobs.yaml`](../examples/k8s-jobs.yaml)
+
+- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
+
+- [`k8s-owner-reference.yaml`](../examples/k8s-owner-reference.yaml)
+
+- [`k8s-set-owner-reference.yaml`](../examples/k8s-set-owner-reference.yaml)
+
+- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
+
+- [`loops-dag.yaml`](../examples/loops-dag.yaml)
+
+- [`loops-maps.yaml`](../examples/loops-maps.yaml)
+
+- [`loops-param-argument.yaml`](../examples/loops-param-argument.yaml)
+
+- [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
+
+- [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
+
+- [`loops.yaml`](../examples/loops.yaml)
+
+- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
+
+- [`node-selector.yaml`](../examples/node-selector.yaml)
+
+- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
+
+- [`output-parameter.yaml`](../examples/output-parameter.yaml)
+
+- [`parallelism-limit.yaml`](../examples/parallelism-limit.yaml)
+
+- [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
+
+- [`parallelism-nested-workflow.yaml`](../examples/parallelism-nested-workflow.yaml)
+
+- [`parallelism-nested.yaml`](../examples/parallelism-nested.yaml)
+
+- [`parallelism-template-limit.yaml`](../examples/parallelism-template-limit.yaml)
+
+- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+
+- [`parameter-aggregation-script.yaml`](../examples/parameter-aggregation-script.yaml)
+
+- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
+
+- [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
+
+- [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+
+- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
+
+- [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
+
+- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`resubmit.yaml`](../examples/resubmit.yaml)
+
+- [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
+
+- [`retry-container-to-completion.yaml`](../examples/retry-container-to-completion.yaml)
+
+- [`retry-container.yaml`](../examples/retry-container.yaml)
+
+- [`retry-on-error.yaml`](../examples/retry-on-error.yaml)
+
+- [`retry-script.yaml`](../examples/retry-script.yaml)
+
+- [`retry-with-steps.yaml`](../examples/retry-with-steps.yaml)
+
+- [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
+
+- [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
+
+- [`scripts-python.yaml`](../examples/scripts-python.yaml)
+
+- [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
+
+- [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
+
+- [`sidecar.yaml`](../examples/sidecar.yaml)
+
+- [`status-reference.yaml`](../examples/status-reference.yaml)
+
+- [`steps.yaml`](../examples/steps.yaml)
+
+- [`suspend-template.yaml`](../examples/suspend-template.yaml)
+
+- [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
+
+- [`testvolume.yaml`](../examples/testvolume.yaml)
+
+- [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
+
+- [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
+
+- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
+
+- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
+
+- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`dag.yaml`](../examples/workflow-template/dag.yaml)
+
+- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
 
 - [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
 
-- [`templates.yaml`](../examples/workflow-template/templates.yaml)
+- [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
-- [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
+- [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
 ### Fields
@@ -4087,6 +4147,7 @@ Represents the source of a volume to mount.Only one of its members may be specif
 ## EnvVar
 
 EnvVar represents an environment variable present in a Container.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -4154,27 +4215,28 @@ ContainerPort represents a network port in a single container.
 ## ResourceRequirements
 
 ResourceRequirements describes the compute resource requirements.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
-
-- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
-
-- [`testvolume.yaml`](../examples/testvolume.yaml)
-
-- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
-
-- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
-
-- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
-
-- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
 
 - [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
 
 - [`ci.yaml`](../examples/ci.yaml)
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
+
+- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
+
+- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
+
+- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`testvolume.yaml`](../examples/testvolume.yaml)
+
+- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 </details>
 
 ### Fields
@@ -4186,6 +4248,7 @@ ResourceRequirements describes the compute resource requirements.
 ## SecurityContext
 
 SecurityContext holds security configuration that will be applied to a container.Some fields are present in both SecurityContext and PodSecurityContext.  When bothare set, the values in SecurityContext take precedence.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -4220,9 +4283,16 @@ volumeDevice describes a mapping of a raw block device within a container.
 ## VolumeMount
 
 VolumeMount describes a mounting of a Volume within a container.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
+
+- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
+
+- [`ci.yaml`](../examples/ci.yaml)
+
+- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
 
 - [`init-container.yaml`](../examples/init-container.yaml)
 
@@ -4233,12 +4303,6 @@ VolumeMount describes a mounting of a Volume within a container.
 - [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
-
-- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
-
-- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
-
-- [`ci.yaml`](../examples/ci.yaml)
 </details>
 
 ### Fields
@@ -4329,7 +4393,7 @@ Quantity is a fixed-point representation of a number.It provides convenient mars
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`string`|`string`|_No desription available_|
+|`string`|`string`|_No description available_|
 
 ## PersistentVolumeClaimCondition
 
@@ -4342,8 +4406,8 @@ PersistentVolumeClaimCondition contails details about state of pvc
 |`lastTransitionTime`|[`Time`](#time)|Last time the condition transitioned from one status to another.|
 |`message`|`string`|Human-readable message indicating details about last transition.|
 |`reason`|`string`|Unique, this should be a short, machine understandable string that gives the reasonfor condition's last transition. If it reports "ResizeStarted" that means the underlyingpersistent volume is being resized.|
-|`status`|`string`|_No desription available_|
-|`type`|`string`|_No desription available_|
+|`status`|`string`|_No description available_|
+|`type`|`string`|_No description available_|
 
 ## AWSElasticBlockStoreVolumeSource
 
@@ -4417,7 +4481,7 @@ Adapts a ConfigMap into a volume.The contents of the target ConfigMap's Data fie
 |:----------:|:----------:|---------------|
 |`defaultMode`|`int32`|Optional: mode bits to use on created files by default. Must be avalue between 0 and 0777. Defaults to 0644.Directories within the path are not affected by this setting.This might be in conflict with other options that affect the filemode, like fsGroup, and the result can be other mode bits set.|
 |`items`|`Array<`[`KeyToPath`](#keytopath)`>`|If unspecified, each key-value pair in the Data field of the referencedConfigMap will be projected into the volume as a file whose name is thekey and content is the value. If specified, the listed keys will beprojected into the specified paths, and unlisted keys will not bepresent. If a key is specified which is not present in the ConfigMap,the volume setup will error unless it is marked optional. Paths must berelative and may not contain the '..' path or start with '..'.|
-|`localObjectReference`|[`LocalObjectReference`](#localobjectreference)|_No desription available_|
+|`localObjectReference`|[`LocalObjectReference`](#localobjectreference)|_No description available_|
 |`optional`|`boolean`|Specify whether the ConfigMap or its keys must be defined|
 
 ## CSIVolumeSource
@@ -4446,13 +4510,14 @@ DownwardAPIVolumeSource represents a volume containing downward API io.argoproj.
 ## EmptyDirVolumeSource
 
 Represents an empty directory for a pod.Empty directory volumes support ownership management and SELinux relabeling.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
-
 - [`init-container.yaml`](../examples/init-container.yaml)
+
+- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
 </details>
 
 ### Fields
@@ -4574,6 +4639,7 @@ Represents an NFS mount that lasts the lifetime of a pod.NFS volumes do not supp
 ## PersistentVolumeClaimVolumeSource
 
 PersistentVolumeClaimVolumeSource references the user's PVC in the same namespace.This volume finds the bound PV and mounts that volume for the pod. APersistentVolumeClaimVolumeSource is, essentially, a wrapper around anothertype of volume that is owned by someone else (the system).
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -4669,6 +4735,7 @@ ScaleIOVolumeSource represents a persistent ScaleIO volume
 ## SecretVolumeSource
 
 Adapts a Secret into a volume.The contents of the target Secret's Data field will be presented in a volumeas files using the keys in the Data field as the file names.Secret volumes support ownership management and SELinux relabeling.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -4712,33 +4779,34 @@ Represents a vSphere volume resource.
 ## EnvVarSource
 
 EnvVarSource represents a source for the value of an EnvVar.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
-
-- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
-
-- [`secrets.yaml`](../examples/secrets.yaml)
-
-- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
-
-- [`k8s-jobs.yaml`](../examples/k8s-jobs.yaml)
-
-- [`output-parameter.yaml`](../examples/output-parameter.yaml)
-
-- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
-
-- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
-
-- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
-
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
+
+- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
 
 - [`global-outputs.yaml`](../examples/global-outputs.yaml)
 
-- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
+- [`k8s-jobs.yaml`](../examples/k8s-jobs.yaml)
+
+- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
+
+- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
+
+- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
+
+- [`output-parameter.yaml`](../examples/output-parameter.yaml)
+
+- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+
+- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+
+- [`secrets.yaml`](../examples/secrets.yaml)
 </details>
 
 ### Fields
@@ -4868,17 +4936,18 @@ ExecAction describes a "run in container" action.
 ## HTTPGetAction
 
 HTTPGetAction describes an action based on HTTP Get requests.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`daemon-step.yaml`](../examples/daemon-step.yaml)
+- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
 
-- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
+- [`daemon-step.yaml`](../examples/daemon-step.yaml)
 
 - [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
 
-- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
+- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
 </details>
 
 ### Fields
@@ -4919,7 +4988,7 @@ Adapts a ConfigMap into a projected volume.The contents of the target ConfigMap'
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`items`|`Array<`[`KeyToPath`](#keytopath)`>`|If unspecified, each key-value pair in the Data field of the referencedConfigMap will be projected into the volume as a file whose name is thekey and content is the value. If specified, the listed keys will beprojected into the specified paths, and unlisted keys will not bepresent. If a key is specified which is not present in the ConfigMap,the volume setup will error unless it is marked optional. Paths must berelative and may not contain the '..' path or start with '..'.|
-|`localObjectReference`|[`LocalObjectReference`](#localobjectreference)|_No desription available_|
+|`localObjectReference`|[`LocalObjectReference`](#localobjectreference)|_No description available_|
 |`optional`|`boolean`|Specify whether the ConfigMap or its keys must be defined|
 
 ## DownwardAPIProjection
@@ -4934,6 +5003,7 @@ Represents downward API info for projecting into a projected volume.Note that th
 ## SecretProjection
 
 Adapts a secret into a projected volume.The contents of the target Secret's Data field will be presented in aprojected volume as files using the keys in the Data field as the file names.Note that this is identical to a secret volume source without the defaultmode.
+
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
@@ -4945,7 +5015,7 @@ Adapts a secret into a projected volume.The contents of the target Secret's Data
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`items`|`Array<`[`KeyToPath`](#keytopath)`>`|If unspecified, each key-value pair in the Data field of the referencedSecret will be projected into the volume as a file whose name is thekey and content is the value. If specified, the listed keys will beprojected into the specified paths, and unlisted keys will not bepresent. If a key is specified which is not present in the Secret,the volume setup will error unless it is marked optional. Paths must berelative and may not contain the '..' path or start with '..'.|
-|`localObjectReference`|[`LocalObjectReference`](#localobjectreference)|_No desription available_|
+|`localObjectReference`|[`LocalObjectReference`](#localobjectreference)|_No description available_|
 |`optional`|`boolean`|Specify whether the Secret or its key must be defined|
 
 ## ServiceAccountTokenProjection

@@ -455,7 +455,7 @@ api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) dist/MANI
 
 .PHONY: docs
 docs: api/openapi-spec/swagger.json
-	python3 ./hack/docgen.py
+	go run ./hack docgen
 
 # pre-push
 
