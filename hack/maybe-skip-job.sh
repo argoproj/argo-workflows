@@ -10,8 +10,8 @@ sha1=$CIRCLE_SHA1
 
 diffs=$(git diff --name-only master..$sha1)
 
-if [ "$(echo $diffs | grep -v '.circleci/\|.github/\|assets/\|community/\|docs/\|examples/\|hooks')" = "" ]; then
-  @echo "do not run at all for docs only changes"
+# do not run at all for docs only changes
+if [ "$(echo "$diffs" | grep -v '.circleci/\|.github/\|assets/\|community/\|docs/\|examples/\|hooks')" = "" ]; then
   circleci step halt
   exit
 fi
