@@ -322,15 +322,15 @@ func (c *DocGeneratorContext) generate() string {
 
 	out := fmt.Sprintf(sectionHeader, "Argo Fields")
 	for len(c.queue) > 0 {
-		temp := c.queue[0]
-		c.queue = c.queue[1:]
+		var temp string
+		temp, c.queue = c.queue[0], c.queue[1:]
 		out += c.getTemplate(temp)
 	}
 
 	out += fmt.Sprintf(sectionHeader, "External Fields")
 	for len(c.external) > 0 {
-		temp := c.external[0]
-		c.external = c.external[1:]
+		var temp string
+		temp, c.external = c.external[0], c.external[1:]
 		out += c.getTemplate(temp)
 	}
 
