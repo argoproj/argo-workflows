@@ -184,10 +184,10 @@ func (woc *wfOperationCtx) operate() {
 		if err != nil {
 			msg := fmt.Sprintf("Unable to create PDB resource for workflow, %s error: %s", woc.wf.Name, err)
 			woc.markWorkflowFailed(msg)
-			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg, nil)
+			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg)
 			return
 		}
-		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: argo.EventReasonWorkflowRunning}, "Workflow Running", nil)
+		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: argo.EventReasonWorkflowRunning}, "Workflow Running")
 		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.controller.GetContainerRuntimeExecutor()}
 		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
 		cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
@@ -197,7 +197,7 @@ func (woc *wfOperationCtx) operate() {
 		if err != nil {
 			msg := fmt.Sprintf("invalid spec: %s", err.Error())
 			woc.markWorkflowFailed(msg)
-			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg, nil)
+			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg)
 			return
 		}
 		// If we received conditions during validation (such as SpecWarnings), add them to the Workflow object
@@ -222,7 +222,7 @@ func (woc *wfOperationCtx) operate() {
 		}
 		if err != nil {
 			woc.log.Errorf("%s error: %+v", woc.wf.ObjectMeta.Name, err)
-			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowTimedOut}, "Workflow timed out", nil)
+			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowTimedOut}, "Workflow timed out")
 
 			// TODO: we need to re-add to the workqueue, but should happen in caller
 			return
@@ -248,7 +248,7 @@ func (woc *wfOperationCtx) operate() {
 			msg := fmt.Sprintf("Failed to load artifact repository configMap: %+v", err)
 			woc.log.Errorf(msg)
 			woc.markWorkflowError(err, true)
-			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg, nil)
+			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg)
 			return
 		}
 	}
@@ -266,7 +266,7 @@ func (woc *wfOperationCtx) operate() {
 		msg := fmt.Sprintf("%s pvc create error: %+v", woc.wf.ObjectMeta.Name, err)
 		woc.log.Errorf(msg)
 		woc.markWorkflowError(err, true)
-		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg, nil)
+		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg)
 		return
 	}
 
@@ -286,9 +286,9 @@ func (woc *wfOperationCtx) operate() {
 		woc.log.Errorf(msg)
 		switch err {
 		case ErrDeadlineExceeded:
-			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowTimedOut}, msg, nil)
+			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowTimedOut}, msg)
 		default:
-			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg, nil)
+			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg)
 		}
 
 		return
@@ -352,7 +352,7 @@ func (woc *wfOperationCtx) operate() {
 		// markCompletion so that we can retry PVC deletion (TODO: use workqueue.ReAdd())
 		// This error phase may be cleared if a subsequent delete attempt is successful.
 		woc.markWorkflowError(err, false)
-		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg, nil)
+		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg)
 		return
 	}
 
@@ -372,17 +372,17 @@ func (woc *wfOperationCtx) operate() {
 			// if main workflow succeeded, but the exit node was unsuccessful
 			// the workflow is now considered unsuccessful.
 			woc.markWorkflowPhase(onExitNode.Phase, true, onExitNode.Message)
-			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, onExitNode.Message, nil)
+			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, onExitNode.Message)
 		} else {
 			woc.markWorkflowSuccess()
-			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: argo.EventReasonWorkflowSucceeded}, "Workflow completed", nil)
+			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: argo.EventReasonWorkflowSucceeded}, "Workflow completed")
 		}
 	case wfv1.NodeFailed:
 		woc.markWorkflowFailed(workflowMessage)
-		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, workflowMessage, nil)
+		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, workflowMessage)
 	case wfv1.NodeError:
 		woc.markWorkflowPhase(wfv1.NodeError, true, workflowMessage)
-		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, workflowMessage, nil)
+		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, workflowMessage)
 	default:
 		// NOTE: we should never make it here because if the the node was 'Running'
 		// we should have returned earlier.
@@ -1684,26 +1684,7 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 }
 
 func (woc *wfOperationCtx) onNodeComplete(node *wfv1.NodeStatus) {
-	woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: nodePhaseReason(node.Phase)}, nodeMessage(node), map[string]string{
-		common.AnnotationKeyNodeType: string(node.Type),
-		common.AnnotationKeyNodeName: node.Name,
-	})
-}
-
-func nodePhaseReason(phase wfv1.NodePhase) string {
-	return map[wfv1.NodePhase]string{
-		wfv1.NodeError:     argo.EventReasonWorkflowNodeError,
-		wfv1.NodeFailed:    argo.EventReasonWorkflowNodeFailed,
-		wfv1.NodeSucceeded: argo.EventReasonWorkflowNodeSucceeded,
-	}[phase]
-}
-
-func nodeMessage(node *wfv1.NodeStatus) string {
-	message := fmt.Sprintf("%v node %s", node.Phase, node.Name)
-	if node.Message != "" {
-		message = message + ": " + node.Message
-	}
-	return message
+	woc.auditLogger.LogWorkflowNodeEvent(woc.wf, node)
 }
 
 // markNodeError is a convenience method to mark a node with an error and set the message from the error
