@@ -206,7 +206,7 @@ jobs:
       - restore_cache:
           name: Restore Yarn cache
           keys:
-            - yarn-packages-v3-{{ checksum "yarn.lock" }}
+            - yarn-packages-v3-{{ checksum "ui/yarn.lock" }}
       - run:
           name: Download dependencies
           command: yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
@@ -217,7 +217,7 @@ jobs:
       - run: git diff --exit-code
       - save_cache:
           name: Save Yarn cache
-          key: yarn-packages-v3-{{ checksum "yarn.lock" }}
+          key: yarn-packages-v3-{{ checksum "ui/yarn.lock" }}
           paths: [~/.cache/yarn, node_modules]
           when: always
 workflows:

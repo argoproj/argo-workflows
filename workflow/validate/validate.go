@@ -690,14 +690,6 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
-			stepBytes, err := json.Marshal(stepGroup)
-			if err != nil {
-				return errors.InternalWrapError(err)
-			}
-			err = resolveAllVariables(scope, string(stepBytes))
-			if err != nil {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
-			}
 			err = validateArguments(fmt.Sprintf("templates.%s.steps[%d].%s.arguments.", tmpl.Name, i, step.Name), step.Arguments)
 			if err != nil {
 				return err
@@ -707,6 +699,15 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
 			resolvedTemplates[step.Name] = resolvedTmpl
+		}
+
+		stepBytes, err := json.Marshal(stepGroup)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+		err = resolveAllVariables(scope, string(stepBytes))
+		if err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps %s", tmpl.Name, err.Error())
 		}
 
 		for _, step := range stepGroup.Steps {

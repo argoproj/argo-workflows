@@ -3,7 +3,6 @@ package sqldb
 import (
 	"context"
 	"encoding/json"
-	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -182,7 +181,7 @@ func (r *workflowArchive) GetWorkflow(uid string) (*wfv1.Workflow, error) {
 		And(db.Cond{"uid": uid}).
 		One(archivedWf)
 	if err != nil {
-		if strings.Contains(err.Error(), "no more rows") {
+		if err == db.ErrNoMoreRows {
 			return nil, nil
 		}
 		return nil, err
