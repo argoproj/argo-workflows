@@ -8,23 +8,23 @@ branch=$(git rev-parse --abbrev-ref=loose HEAD | sed 's/heads\///')
 
 fork_point=$(git merge-base --fork-point master)
 
-# use a variable rather than function so we exit soon as possible
-skip_job='circleci step halt && exit'
-
 # do not run at all for docs only changes
-git diff --name-only "$fork_point" | grep -v '.circleci/\|.github/\|assets/\|community/\|docs/\|examples/\|hooks' || $skip_job
+if [ "$(git diff --name-only "$fork_point" | grep -v '.circleci/\|.github/\|assets/\|community/\|docs/\|examples/\|hooks')" = "" ]; then
+  circleci step halt
+  exit
+fi
 
 case $1 in
 codegen)
-  git diff --name-only --exit-code "$fork_point" api manifests pkg || $skip_job
+  git diff --name-only --exit-code "$fork_point" api manifests pkg || circleci step halt
   ;;
 e2e)
-  git diff --name-only --exit-code "$fork_point" manifests test/e2e/manifests '*.go' || $skip_job
+  git diff --name-only --exit-code "$fork_point" manifests test/e2e/manifests '*.go' || circleci step halt
   ;;
 test)
-  git diff --name-only --exit-code "$fork_point" '*.go' || $skip_job
+  git diff --name-only --exit-code "$fork_point" '*.go' || circleci step halt
   ;;
 ui)
-  git diff --name-only --exit-code "$fork_point" ui || $skip_job
+  git diff --name-only --exit-code "$fork_point" ui || circleci step halt
   ;;
 esac
