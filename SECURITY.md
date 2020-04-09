@@ -12,6 +12,6 @@ Please report security vulnerabilities by e-mailing:
 
 Security vulnerabilities will be disclosed via [release notes](docs/releasing.md).
 
-## Security Alerts
+## Vulnerability Scanning
 
-See [Github security alerts](https://github.com/argoproj/argo/network/alerts).
+See [static code analysis](static-code-analysis.md).
