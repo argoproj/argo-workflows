@@ -114,6 +114,9 @@ jobs:
     machine:
       image: ubuntu-1604:201903-01
     steps:
+      - run:
+          name: Skip job if no code generation changes
+          command: git diff --exit-code $(git merge-base --fork-point master) pkg api || circleci step halt
       - install_kustomize
       - restore_go_cache
       - install_golang
