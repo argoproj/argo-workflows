@@ -2317,9 +2317,7 @@ spec:
   onExit: exit-handler
   templates:
   - name: intentional-fail
-    container:
-      image: alpine:latest
-      args: ["echo intentional failure; exit 1"]
+    suspend: {}
   - name: exit-handler
     container:
       image: alpine:latest
