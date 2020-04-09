@@ -20,7 +20,7 @@ fi
 rx=
 case $job in
 codegen)
-  rx='api/|manifests/|pkg/'
+  rx='api/\|manifests/\|pkg/'
   ;;
 docker-build)
   # we only run on master as this rarely ever fails
@@ -28,7 +28,7 @@ docker-build)
   exit
   ;;
 e2e-*)
-  rx='manifests/|\.go'
+  rx='manifests/\|\.go'
   ;;
 test)
   rx='\.go'
