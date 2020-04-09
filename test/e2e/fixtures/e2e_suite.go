@@ -7,6 +7,13 @@ import (
 	"strings"
 	"time"
 
+	// load the azure plugin (required to authenticate against AKS clusters).
+	_ "k8s.io/client-go/plugin/pkg/client/auth/azure"
+	// load the gcp plugin (required to authenticate against GKE clusters).
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	// load the oidc plugin (required to authenticate with OpenID Connect).
+	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
@@ -90,7 +97,7 @@ func (s *E2ESuite) listImages() map[string]bool {
 		for _, image := range node.Status.Images {
 			for _, n := range image.Names {
 				// We want to ignore hashes.
-				if !strings.Contains(n, "@sha256") {
+				if !strings.Contains(n, "@sha256") && strings.HasPrefix(n, "docker.io/") {
 					images[n] = true
 				}
 			}
