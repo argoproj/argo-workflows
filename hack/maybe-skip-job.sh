@@ -8,7 +8,7 @@ sha1=$CIRCLE_SHA1
 # always run on master
 [ "$branch" = master ] && exit
 
-diffs=$(git diff --name-only master..$sha1)
+diffs=$(git diff --name-only origin/master)
 
 # do not run at all for docs only changes
 if [ "$(echo "$diffs" | grep -v '.circleci/\|.github/\|assets/\|community/\|docs/\|examples/\|hooks')" = "" ]; then
