@@ -22,6 +22,10 @@ case $job in
 codegen)
   rx='api/\|manifests/\|pkg/'
   ;;
+docker-build)
+  # we only run on master as this rarely ever fails
+  exit
+  ;;
 e2e)
   rx='manifests/\|\.go'
   ;;
@@ -33,7 +37,7 @@ ui)
   ;;
 esac
 
-if [ "$(echo "$diffs" | grep "$rx")" != "" ]; then
+if [ "$(echo "$diffs" | grep "$rx")" = "" ]; then
   circleci step halt
   exit
 fi
