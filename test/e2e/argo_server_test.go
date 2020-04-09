@@ -1134,7 +1134,11 @@ func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
 	})
 
 	s.Run("SubmitWFT", func() {
-		s.e(s.T()).PUT("/api/v1/workflows/argo/workflowtemplate/test/submit").
+		s.e(s.T()).POST("/api/v1/workflows/argo/submit").
+			WithBytes([]byte(`{
+			  "resourceKind": "WorkflowTemplate",
+			  "resourceName": "test"
+			}`)).
 			Expect().
 			Status(200)
 	})
@@ -1170,7 +1174,11 @@ func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
 			Status(200)
 	})
 	s.Run("SubmitWFT", func() {
-		s.e(s.T()).PUT("/api/v1/workflows/argo/cronworkflow/test/submit").
+		s.e(s.T()).POST("/api/v1/workflows/argo/submit").
+			WithBytes([]byte(`{
+			  "resourceKind": "cronworkflow",
+			  "resourceName": "test"
+			}`)).
 			Expect().
 			Status(200)
 	})
