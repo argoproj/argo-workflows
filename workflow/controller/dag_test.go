@@ -40,3 +40,14 @@ func TestDagDisableFailFast(t *testing.T) {
 	woc.operate()
 	assert.Equal(t, string(wfv1.NodeFailed), string(woc.wf.Status.Phase))
 }
+
+func TestGetDagTaskFromNode(t *testing.T) {
+	task := wfv1.DAGTask{Name: "test-task"}
+	d := dagContext{
+		boundaryID: "test-boundary",
+		tasks:      []wfv1.DAGTask{task},
+	}
+	node := wfv1.NodeStatus{Name: d.taskNodeName(task.Name)}
+	taskFromNode := d.getTaskFromNode(&node)
+	assert.Equal(t, &task, taskFromNode)
+}
