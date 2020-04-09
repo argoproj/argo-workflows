@@ -6,8 +6,8 @@ import (
 
 type logEntry struct {
 	timestamp time.Time
-	PodName   string
-	Content   string
+	podName   string
+	content   string
 }
 
 type logEntries []logEntry

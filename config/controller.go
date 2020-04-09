@@ -51,7 +51,7 @@ func parseConfigMap(cm *apiv1.ConfigMap) (Config, error) {
 		return emptyConfig, nil
 	}
 	// The key in the configmap to retrieve workflow configuration from.
-	// Content encoding is expected to be YAML.
+	// content encoding is expected to be YAML.
 	var config Config
 	rawConfig, ok := cm.Data["config"]
 	if ok && len(cm.Data) != 1 {

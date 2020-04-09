@@ -3,6 +3,7 @@ package logs
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"reflect"
 	"sort"
 	"strings"
@@ -26,10 +27,6 @@ import (
 // * If you request "follow" and the workflow is not completed: logs will be tailed until the workflow is completed or context done.
 // * Otherwise, it will print recent logs and exit.
 
-type WorkflowLogger interface {
-	Run(ctx context.Context)
-}
-
 type request interface {
 	GetNamespace() string
 	GetName() string
@@ -41,40 +38,11 @@ type sender interface {
 	Send(entry *workflowpkg.LogEntry) error
 }
 
-var poison = logEntry{}
+func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient kubernetes.Interface, req request, sender sender) error {
 
-type workflowLogger struct {
-	logCtx               *log.Entry
-	completed            bool
-	follow               bool
-	wg                   *sync.WaitGroup
-	initialPods          []corev1.Pod
-	ensureWeAreStreaming func(pod *corev1.Pod)
-	podWatch             watch.Interface
-	wfWatch              watch.Interface
-	// We cannot be sure what order entries will come in, because we do not know how Goroutine scheduling will occur.
-	// Rather than immediately send entries to the client, we send them them to this channel, and another Goroutine
-	// uses a ticker to periodically (every 1s) sort the message and send them in order.
-	// This channel is closed whenever there is no more work to be done.
-	unsortedEntries chan logEntry
-	// When sorting is complete and all entries have been flushed, then this channel is closed. Listed to this channel
-	// to wait until sorting is complete.
-	doneSorting chan struct{}
-	sender      sender
-}
-
-func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeClient kubernetes.Interface, req request, sender sender) (WorkflowLogger, error) {
-
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace()).Get(req.GetName(), metav1.GetOptions{})
+	_, err := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace()).Get(req.GetName(), metav1.GetOptions{})
 	if err != nil {
-		return nil, err
-	}
-
-	completed := wf.Status.Completed()
-
-	wfWatch, err := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace()).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + req.GetName()})
-	if err != nil {
-		return nil, err
+		return err
 	}
 
 	podInterface := kubeClient.CoreV1().Pods(req.GetNamespace())
@@ -137,8 +105,8 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 						if req.GetLogOptions().Timestamps {
 							content = line
 						}
-						logCtx.WithFields(log.Fields{"time": timestamp, "content": content}).Debug("Log line")
-						unsortedEntries <- logEntry{PodName: podName, Content: content, timestamp: timestamp}
+						logCtx.WithFields(log.Fields{"timestamp": timestamp, "content": content}).Debug("Log line")
+						unsortedEntries <- logEntry{podName: podName, content: content, timestamp: timestamp}
 					}
 				}
 				logCtx.Debug("No more log lines to stream")
@@ -149,122 +117,58 @@ func NewWorkflowLogger(ctx context.Context, wfClient versioned.Interface, kubeCl
 
 	podWatch, err := podInterface.Watch(options)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	defer podWatch.Stop()
 
 	// only list after we start the watch
 	logCtx.Debug("Listing workflow pods")
 	list, err := podInterface.List(options)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &workflowLogger{
-		logCtx:               logCtx,
-		initialPods:          list.Items,
-		completed:            completed,
-		follow:               req.GetLogOptions().Follow,
-		wg:                   &wg,
-		ensureWeAreStreaming: ensureWeAreStreaming,
-		wfWatch:              wfWatch,
-		podWatch:             podWatch,
-		unsortedEntries:      unsortedEntries,
-		doneSorting:          make(chan struct{}),
-		sender:               sender,
-	}, nil
-}
-
-func (l *workflowLogger) sortAndSend() {
-	defer close(l.doneSorting)
-	defer l.logCtx.Debug("Done sorting entries")
-	l.logCtx.Debug("Sorting entries")
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-	entries := logEntries{}
-	// Ugly to have this func, but we use it in two places (normal operation and finishing up).
-	send := func() error {
-		sort.Sort(entries)
-		for len(entries) > 0 {
-			// head
-			var e logEntry
-			e, entries = entries[0], entries[1:]
-			err := l.sender.Send(&workflowpkg.LogEntry{Content: e.Content, PodName: e.PodName})
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-	// This defer make sure we flush any remaining entries on exit.
-	defer func() {
-		err := send()
-		if err != nil {
-			log.Error(err)
-		}
-	}()
-	for {
-		select {
-		case entry := <-l.unsortedEntries:
-			if entry == poison {
-				// The fact this channel is closed indicates that we need to finish-up.
-				return
-			} else {
-				entries = append(entries, entry)
-			}
-		case <-ticker.C:
-			err := send()
-			if err != nil {
-				log.Error(err)
-				return
-			}
-		}
-	}
-}
-
-// This uses the following Goroutines:
-//
-// 1. One to wait for the workflow to finish, and then signal the second...
-// 2. One to watch for new pods in the workflow, and start Goroutines to log.
-// 3. One Goroutine per pod to stream logs to a channel.
-// 4. One to receive logs from the channel and sort them in time order.
-//
-func (l *workflowLogger) Run(ctx context.Context) {
-	defer l.wfWatch.Stop()
-	defer l.podWatch.Stop()
-
-	l.logCtx.WithFields(log.Fields{"completed": l.completed, "follow": l.follow}).Debug("Running")
-
-	// print logs by start time-ish
-	sort.Slice(l.initialPods, func(i, j int) bool {
-		return l.initialPods[i].Status.StartTime.Before(l.initialPods[j].Status.StartTime)
+	// start watches by start-time
+	sort.Slice(list.Items, func(i, j int) bool {
+		return list.Items[i].Status.StartTime.Before(list.Items[j].Status.StartTime)
 	})
 
-	for _, pod := range l.initialPods {
-		l.ensureWeAreStreaming(&pod)
+	for _, pod := range list.Items {
+		ensureWeAreStreaming(&pod)
 	}
 
-	if !l.completed && l.follow {
+	errCh := make(chan error, 1)
+
+	if req.GetLogOptions().Follow {
+		wfWatch, err := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace()).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + req.GetName()})
+		if err != nil {
+			return err
+		}
+		defer wfWatch.Stop()
 		// We never send anything on this channel apart from closing it to indicate we should stop waiting for new pods.
 		stopWatchingPods := make(chan struct{})
 		// The purpose of this watch is to make sure we do not exit until the workflow is completed or deleted.
 		// When that happens, it signals we are done by closing the stop channel.
-		l.wg.Add(1)
+		wg.Add(1)
 		go func() {
 			defer close(stopWatchingPods)
-			defer l.wg.Done()
-			defer l.logCtx.Debug("Done watching workflow events")
-			l.logCtx.Debug("Watching for workflow events")
+			defer wg.Done()
+			defer logCtx.Debug("Done watching workflow events")
+			logCtx.Debug("Watching for workflow events")
 			for {
 				select {
 				case <-ctx.Done():
 					return
-				case event := <-l.wfWatch.ResultChan():
-					wf, ok := event.Object.(*wfv1.Workflow)
+				case event, ok := <-wfWatch.ResultChan():
 					if !ok {
-						l.logCtx.Errorf("watch object was not a workflow %v", reflect.TypeOf(event.Object))
 						return
 					}
-					l.logCtx.WithFields(log.Fields{"eventType": event.Type, "completed": wf.Status.Completed()}).Debug("Workflow event")
+					wf, ok := event.Object.(*wfv1.Workflow)
+					if !ok {
+						errCh <- fmt.Errorf("watch object was not a workflow %v", reflect.TypeOf(event.Object))
+						return
+					}
+					logCtx.WithFields(log.Fields{"eventType": event.Type, "completed": wf.Status.Completed()}).Debug("Workflow event")
 					if event.Type == watch.Deleted || wf.Status.Completed() {
 						return
 					}
@@ -273,36 +177,94 @@ func (l *workflowLogger) Run(ctx context.Context) {
 		}()
 
 		// The purpose of this watch is to start streaming any new pods that appear when we are running.
-		l.wg.Add(1)
+		wg.Add(1)
 		go func() {
-			defer l.wg.Done()
-			defer l.logCtx.Debug("Done watching pod events")
-			l.logCtx.Debug("Watching for pod events")
+			defer wg.Done()
+			defer logCtx.Debug("Done watching pod events")
+			logCtx.Debug("Watching for pod events")
 			for {
 				select {
 				case <-stopWatchingPods:
 					return
-				case event := <-l.podWatch.ResultChan():
-					pod, ok := event.Object.(*corev1.Pod)
+				case event, ok := <-podWatch.ResultChan():
 					if !ok {
-						l.logCtx.Errorf("watch object was not a pod %v", reflect.TypeOf(event.Object))
 						return
 					}
-					l.logCtx.WithFields(log.Fields{"eventType": event.Type, "podName": pod.GetName(), "phase": pod.Status.Phase}).Debug("Pod event")
+					pod, ok := event.Object.(*corev1.Pod)
+					if !ok {
+						errCh <- fmt.Errorf("watch object was not a pod %v", reflect.TypeOf(event.Object))
+						return
+					}
+					logCtx.WithFields(log.Fields{"eventType": event.Type, "podName": pod.GetName(), "phase": pod.Status.Phase}).Debug("Pod event")
 					if pod.Status.Phase == corev1.PodRunning {
-						l.ensureWeAreStreaming(pod)
+						ensureWeAreStreaming(pod)
 					}
 				}
 			}
 		}()
 	} else {
-		l.logCtx.Debug("Not starting watches")
+		logCtx.Debug("Not starting watches")
 	}
-	go l.sortAndSend()
-	l.logCtx.Debug("Waiting for work-group")
-	l.wg.Wait()
-	l.logCtx.Debug("Work-group done")
-	l.unsortedEntries <- poison
-	<-l.doneSorting
-	l.logCtx.Debug("Sorting done")
+
+	doneSorting := make(chan struct{})
+	go func() {
+		defer close(doneSorting)
+		defer logCtx.Debug("Done sorting entries")
+		logCtx.Debug("Sorting entries")
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
+		entries := logEntries{}
+		// Ugly to have this func, but we use it in two places (normal operation and finishing up).
+		send := func() error {
+			sort.Sort(entries)
+			for len(entries) > 0 {
+				// head
+				var e logEntry
+				e, entries = entries[0], entries[1:]
+				logCtx.WithFields(log.Fields{"timestamp": e.timestamp, "content": e.content}).Debug("Sending entry")
+				err := sender.Send(&workflowpkg.LogEntry{Content: e.content, PodName: e.podName})
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+		// This defer make sure we flush any remaining entries on exit.
+		defer func() {
+			err := send()
+			if err != nil {
+				errCh <- err
+			}
+		}()
+		for {
+			select {
+			case entry, ok := <-unsortedEntries:
+				if !ok {
+					// The fact this channel is closed indicates that we need to finish-up.
+					return
+				} else {
+					entries = append(entries, entry)
+				}
+			case <-ticker.C:
+				err := send()
+				if err != nil {
+					errCh <- err
+					return
+				}
+			}
+		}
+	}()
+
+	logCtx.Debug("Waiting for work-group")
+	wg.Wait()
+	logCtx.Debug("Work-group done")
+	close(unsortedEntries)
+	<-doneSorting
+	logCtx.Debug("Sorting done")
+	select {
+	case err := <-errCh:
+		return err
+	default:
+		return nil
+	}
 }
