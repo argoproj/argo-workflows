@@ -1,4 +1,3 @@
-go run ./hack docgen
 
 
 # Argo Fields
