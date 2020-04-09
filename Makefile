@@ -242,7 +242,7 @@ codegen: dist/update-mocks
 	# Updated codegen
 	./hack/update-codegen.sh
 	$(call restore_go_mod)
-	make api/openapi-spec/swagger.json
+	make docs
 
 .PHONY: manifests
 manifests: status manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml manifests/quick-start-no-db.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml test/e2e/manifests/no-db.yaml
@@ -452,6 +452,10 @@ $(HOME)/go/bin/swagger:
 
 api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) dist/MANIFESTS_VERSION hack/swaggify.sh
 	swagger mixin -c 412 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
+
+.PHONY: docs
+docs: api/openapi-spec/swagger.json
+	go run ./hack docgen
 
 # pre-push
 
