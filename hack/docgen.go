@@ -334,6 +334,7 @@ func (c *DocGeneratorContext) generate() string {
 		out += c.getTemplate(temp)
 	}
 
+	out += "\n"
 	return out
 }
 
