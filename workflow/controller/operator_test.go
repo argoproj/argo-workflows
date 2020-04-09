@@ -2319,7 +2319,7 @@ spec:
   - name: intentional-fail
     container:
       image: alpine:latest
-      command: [sh, -c, sleep 10]
+      args: ["echo intentional failure; exit 1"]
   - name: exit-handler
     container:
       image: alpine:latest
@@ -2339,9 +2339,17 @@ func TestStepsOnExitTimeout(t *testing.T) {
 
 	woc.operate()
 	woc.operate()
-	woc.operate()
 
-	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	onExitNodeIsPresent := false
+	for _, node := range wf.Status.Nodes {
+		if strings.Contains(node.Name, "onExit") && node.Phase == wfv1.NodePending {
+			onExitNodeIsPresent = true
+			break
+		}
+	}
+	assert.True(t, onExitNodeIsPresent)
 }
 
 var invalidSpec = `
