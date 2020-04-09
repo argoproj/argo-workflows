@@ -26,5 +26,5 @@ func (c *logsIntermediary) Recv() (*workflowpkg.LogEntry, error) {
 }
 
 func newLogsIntermediary(ctx context.Context) *logsIntermediary {
-	return &logsIntermediary{newAbstractIntermediary(ctx), make(chan *workflowpkg.LogEntry, 64)}
+	return &logsIntermediary{newAbstractIntermediary(ctx), make(chan *workflowpkg.LogEntry)}
 }
