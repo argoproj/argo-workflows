@@ -10,12 +10,6 @@ job=$1
 # tip - must use origin/master for CircleCI
 diffs=$(git diff --name-only origin/master)
 
-# do not run at all for docs only changes
-if [ "$(echo "$diffs" | grep -v '.circleci/\|.github/\|assets/\|community/\|docs/\|examples/\|hooks')" = "" ]; then
-  circleci step halt
-  exit
-fi
-
 # if there are changes to this areas, we must run
 rx=
 case $job in
