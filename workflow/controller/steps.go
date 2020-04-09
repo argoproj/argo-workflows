@@ -357,7 +357,14 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 		// the initial parameter resolution, since it's likely that the "when" clause will contain parameter references.
 		proceed, err := shouldExecute(newStep.When)
 		if err != nil {
-			return nil, err
+			// If we got an error, it might be because our "when" clause contains a task-expansion parameter (e.g. {{item}}).
+			// Since we don't perform task-expansion until later and task-expansion parameters won't get resolved here,
+			// we continue execution as normal
+			if newStep.ShouldExpand() {
+				proceed = true
+			} else {
+				return nil, err
+			}
 		}
 		if !proceed {
 			// We can simply return this WorkflowStep; the fact that it won't execute will be reconciled later on in execution
@@ -387,7 +394,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.WorkflowStep, stepsCtx *stepsContext) ([]wfv1.WorkflowStep, error) {
 	newStepGroup := make([]wfv1.WorkflowStep, 0)
 	for _, step := range stepGroup {
-		if len(step.WithItems) == 0 && step.WithParam == "" && step.WithSequence == nil {
+		if !step.ShouldExpand() {
 			newStepGroup = append(newStepGroup, step)
 			continue
 		}
