@@ -46,17 +46,21 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 		// Check if we are past the workflow deadline. If we are, and the pod is still pending
 		// then we should simply delete it and mark the pod as Failed
 		if woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline) {
-			woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
-			err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
-			if err == nil {
-				wfNodesLock.Lock()
-				defer wfNodesLock.Unlock()
-				node := woc.wf.Status.Nodes[pod.Name]
-				woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("step exceeded workflow deadline %s", *woc.workflowDeadline))
-				return nil
+			//pods that are part of an onExit handler aren't subject to the deadline
+			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
+			if !onExitPod {
+				woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
+				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
+				if err == nil {
+					wfNodesLock.Lock()
+					defer wfNodesLock.Unlock()
+					node := woc.wf.Status.Nodes[pod.Name]
+					woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("step exceeded workflow deadline %s", *woc.workflowDeadline))
+					return nil
+				}
+				// If we fail to delete the pod, fall back to setting the annotation
+				woc.log.Warnf("Failed to delete %s/%s: %v", pod.Namespace, pod.Name, err)
 			}
-			// If we fail to delete the pod, fall back to setting the annotation
-			woc.log.Warnf("Failed to delete %s/%s: %v", pod.Namespace, pod.Name, err)
 		}
 	}
 
