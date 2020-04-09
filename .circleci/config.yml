@@ -46,6 +46,8 @@ commands:
             - go-v6-master-{{ .Environment.CIRCLE_JOB }}
   e2e:
     steps:
+      - checkout
+      - run: ./hack/maybe-skip-job.sh codegen
       - install_kustomize
       - run:
           name: Install and start K3S v1.0.1
@@ -54,7 +56,6 @@ commands:
       - restore_go_cache
       - install_golang
       - go_junit_report
-      - checkout
       - restore_go_mod
       - run:
           name: Create KUBECONFIG
@@ -114,13 +115,11 @@ jobs:
     machine:
       image: ubuntu-1604:201903-01
     steps:
-      - run:
-          name: Skip job if no code generation changes
-          command: git diff --exit-code $(git merge-base --fork-point master) pkg api || circleci step halt
+      - checkout
+      - run: ./hack/maybe-skip-job.sh codegen
       - install_kustomize
       - restore_go_cache
       - install_golang
-      - checkout
       - run:
           name: Install protoc
           command: |
@@ -144,11 +143,12 @@ jobs:
     machine:
       image: ubuntu-1604:201903-01
     steps:
+      - checkout
+      - run: ./hack/maybe-skip-job.sh test
       - install_kustomize
       - restore_go_cache
       - install_golang
       - go_junit_report
-      - checkout
       - restore_go_mod
       - run:
           name: Run tests
@@ -200,12 +200,14 @@ jobs:
       image: ubuntu-1604:201903-01
     steps:
       - checkout
+      - run: ./hack/maybe-skip-job.sh docker-build
       - run: DOCKER_BUILDKIT=1 docker build .
   ui:
     docker:
       - image: circleci/node:11.15.0
     steps:
       - checkout
+      - run: ./hack/maybe-skip-job.sh ui
       - restore_cache:
           name: Restore Yarn cache
           keys:
