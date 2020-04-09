@@ -338,12 +338,7 @@ func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflo
 	ctx := ws.Context()
 	wfClient := auth.GetWfClient(ctx)
 	kubeClient := auth.GetKubeClient(ctx)
-	logger, err := logs.NewWorkflowLogger(ctx, wfClient, kubeClient, req, ws)
-	if err != nil {
-		return err
-	}
-	logger.Run(ctx)
-	return nil
+	return logs.WorkflowLogs(ctx, wfClient, kubeClient, req, ws)
 }
 
 func (s *workflowServer) withInstanceID(opt metav1.ListOptions) metav1.ListOptions {
