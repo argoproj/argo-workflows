@@ -3,7 +3,7 @@ commands:
   maybe_skip_job:
     steps:
     - run:
-        name: Maybe skip job in not relevant
+        name: Maybe skip job if not relevant
         command: ./hack/maybe-skip-job.sh $CIRCLE_JOB
   install_kustomize:
     steps:
