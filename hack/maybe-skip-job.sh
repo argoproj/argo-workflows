@@ -26,7 +26,7 @@ docker-build)
   # we only run on master as this rarely ever fails
   exit
   ;;
-e2e)
+e2e-*)
   rx='manifests/\|\.go'
   ;;
 test)
