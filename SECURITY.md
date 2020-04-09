@@ -11,3 +11,7 @@ Please report security vulnerabilities by e-mailing:
 ## Public Disclosure
 
 Security vulnerabilities will be disclosed via [release notes](docs/releasing.md).
+
+## Security Alerts
+
+See [Github security alerts](https://github.com/argoproj/argo/network/alerts).
