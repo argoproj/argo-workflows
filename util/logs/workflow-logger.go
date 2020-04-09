@@ -3,7 +3,6 @@ package logs
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"reflect"
 	"sort"
 	"strings"
@@ -83,7 +82,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 				defer logCtx.Debug("Pod logs stream done")
 				stream, err := podInterface.GetLogs(podName, logOptions).Stream()
 				if err != nil {
-					logCtx.WithField("err", err).Error("Unable to get pod logs")
+					logCtx.Error(err)
 					return
 				}
 				scanner := bufio.NewScanner(stream)
@@ -96,7 +95,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 						parts := strings.SplitN(line, " ", 2)
 						timestamp, err := time.Parse(time.RFC3339, parts[0])
 						if err != nil {
-							logCtx.WithField("err", err).Error("Unable to get pod logs")
+							logCtx.Error(err)
 							return
 						}
 						content := parts[1]
@@ -137,8 +136,6 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		ensureWeAreStreaming(&pod)
 	}
 
-	errCh := make(chan error, 1)
-
 	if req.GetLogOptions().Follow {
 		wfWatch, err := wfClient.ArgoprojV1alpha1().Workflows(req.GetNamespace()).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + req.GetName()})
 		if err != nil {
@@ -165,7 +162,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					}
 					wf, ok := event.Object.(*wfv1.Workflow)
 					if !ok {
-						errCh <- fmt.Errorf("watch object was not a workflow %v", reflect.TypeOf(event.Object))
+						logCtx.Errorf("watch object was not a workflow %v", reflect.TypeOf(event.Object))
 						return
 					}
 					logCtx.WithFields(log.Fields{"eventType": event.Type, "completed": wf.Status.Completed()}).Debug("Workflow event")
@@ -192,7 +189,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					}
 					pod, ok := event.Object.(*corev1.Pod)
 					if !ok {
-						errCh <- fmt.Errorf("watch object was not a pod %v", reflect.TypeOf(event.Object))
+						logCtx.Errorf("watch object was not a pod %v", reflect.TypeOf(event.Object))
 						return
 					}
 					logCtx.WithFields(log.Fields{"eventType": event.Type, "podName": pod.GetName(), "phase": pod.Status.Phase}).Debug("Pod event")
@@ -233,7 +230,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 		defer func() {
 			err := send()
 			if err != nil {
-				errCh <- err
+				logCtx.Error(err)
 			}
 		}()
 		for {
@@ -248,7 +245,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 			case <-ticker.C:
 				err := send()
 				if err != nil {
-					errCh <- err
+					logCtx.Error(err)
 					return
 				}
 			}
@@ -260,11 +257,6 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 	logCtx.Debug("Work-group done")
 	close(unsortedEntries)
 	<-doneSorting
-	logCtx.Debug("Sorting done")
-	select {
-	case err := <-errCh:
-		return err
-	default:
-		return nil
-	}
+	logCtx.Debug("Done-done")
+	return nil
 }
