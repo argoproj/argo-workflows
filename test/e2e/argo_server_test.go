@@ -779,7 +779,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 			}
 		}()
 		if assert.Equal(s.T(), 200, resp.StatusCode) {
-			assert.Equal(s.T(), resp.Header.Get("content-Type"), "text/event-stream")
+			assert.Equal(s.T(), resp.Header.Get("Content-Type"), "text/event-stream")
 			scanner := bufio.NewScanner(resp.Body)
 			for scanner.Scan() {
 				line := scanner.Text()
@@ -811,7 +811,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 		if assert.NoError(s.T(), err) {
 			defer func() { _ = resp.Body.Close() }()
 			if assert.Equal(s.T(), 200, resp.StatusCode) {
-				assert.Equal(s.T(), resp.Header.Get("content-Type"), "text/event-stream")
+				assert.Equal(s.T(), resp.Header.Get("Content-Type"), "text/event-stream")
 				s := bufio.NewScanner(resp.Body)
 				for s.Scan() {
 					line := s.Text()
