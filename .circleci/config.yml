@@ -1,5 +1,10 @@
 version: 2.1
 commands:
+  maybe_skip_job:
+    steps:
+    - run:
+        name: Maybe skip job in not relevant
+        command: ./hack/maybe-skip-job.sh $CIRCLE_JOB
   install_kustomize:
     steps:
       - run:
@@ -47,7 +52,7 @@ commands:
   e2e:
     steps:
       - checkout
-      - run: ./hack/maybe-skip-job.sh codegen
+      - maybe_skip_job
       - install_kustomize
       - run:
           name: Install and start K3S v1.0.1
@@ -116,7 +121,7 @@ jobs:
       image: ubuntu-1604:201903-01
     steps:
       - checkout
-      - run: ./hack/maybe-skip-job.sh codegen
+      - maybe_skip_job
       - install_kustomize
       - restore_go_cache
       - install_golang
@@ -144,7 +149,7 @@ jobs:
       image: ubuntu-1604:201903-01
     steps:
       - checkout
-      - run: ./hack/maybe-skip-job.sh test
+      - maybe_skip_job
       - install_kustomize
       - restore_go_cache
       - install_golang
@@ -200,14 +205,14 @@ jobs:
       image: ubuntu-1604:201903-01
     steps:
       - checkout
-      - run: ./hack/maybe-skip-job.sh docker-build
+      - maybe_skip_job
       - run: DOCKER_BUILDKIT=1 docker build .
   ui:
     docker:
       - image: circleci/node:11.15.0
     steps:
       - checkout
-      - run: ./hack/maybe-skip-job.sh ui
+      - maybe_skip_job
       - restore_cache:
           name: Restore Yarn cache
           keys:
