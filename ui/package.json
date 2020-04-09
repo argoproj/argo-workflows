@@ -24,7 +24,7 @@
         "prop-types": "^15.7.2",
         "react": "^16.9.0",
         "react-datepicker": "^2.14.0",
-        "react-dom": "^16.8.3",
+        "react-dom": "^16.9.0",
         "react-form": "2.16.0",
         "react-moment": "^0.9.7",
         "react-router-dom": "^4.2.2",
