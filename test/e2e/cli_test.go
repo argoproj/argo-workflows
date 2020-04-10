@@ -386,16 +386,14 @@ func (s *CLISuite) TestWorkflowDelete() {
 			Workflow("@smoke/basic.yaml").
 			When().
 			SubmitWorkflow().
-			Given().
+			WaitForWorkflow(20*time.Second).
 			RunCli([]string{"delete", "--completed", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					// nothing should be deleted yet
 					assert.NotContains(t, output, "deleted")
 				}
 			}).
-			When().
-			WaitForWorkflow(20*time.Second).
-			Given().
+			Then().
 			RunCli([]string{"delete", "--completed", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, "Workflow 'basic' deleted")
