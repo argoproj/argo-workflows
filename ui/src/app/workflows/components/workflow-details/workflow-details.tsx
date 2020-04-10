@@ -36,6 +36,7 @@ export const defaultNodesToDisplay = [
     'phase:Error',
     'type:Pod',
     'type:Steps',
+    'type:DAG',
     'type:Retry',
     'type:Skipped',
     'type:Suspend'
@@ -117,12 +118,12 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                 {content: () => <span>Type</span>},
                 {value: 'type:Pod', label: 'Pod'},
                 {value: 'type:Steps', label: 'Steps'},
-                {value: 'type:StepGroup', label: 'StepGroup'},
                 {value: 'type:DAG', label: 'DAG'},
-                {value: 'type:TaskGroup', label: 'TaskGroup'},
                 {value: 'type:Retry', label: 'Retry'},
                 {value: 'type:Skipped', label: 'Skipped'},
-                {value: 'type:Suspend', label: 'Suspend'}
+                {value: 'type:Suspend', label: 'Suspend'},
+                {value: 'type:TaskGroup', label: 'TaskGroup'},
+                {value: 'type:StepGroup', label: 'StepGroup'}
             ],
             selectedValues: this.state.workflowDagRenderOptions.nodesToDisplay,
             selectionChanged: items => {
