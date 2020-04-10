@@ -34,3 +34,4 @@ Some use-case specific documentation is available:
 * [Workflow Executors](workflow-executors.md)
 * [Workflow RBAC](workflow-rbac.md)
 * [Workflow Templates](workflow-templates.md)
+* [Workflow Notifications](workflow-notifications.md)
