@@ -387,12 +387,6 @@ func (s *CLISuite) TestWorkflowDelete() {
 			When().
 			SubmitWorkflow().
 			WaitForWorkflow(20*time.Second).
-			RunCli([]string{"delete", "--completed", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
-				if assert.NoError(t, err) {
-					// nothing should be deleted yet
-					assert.NotContains(t, output, "deleted")
-				}
-			}).
 			Then().
 			RunCli([]string{"delete", "--completed", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
