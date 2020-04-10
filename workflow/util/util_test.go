@@ -461,7 +461,6 @@ func TestRetryWorkflowCompressed(t *testing.T) {
 	assert.NotEmpty(t, wf.Status.CompressedNodes)
 }
 
-
 func TestRetryWorkflowOffloaded(t *testing.T) {
 	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := unmarshalWF(failedWf)
