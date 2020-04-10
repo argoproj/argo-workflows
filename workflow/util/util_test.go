@@ -9,11 +9,13 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/argoproj/argo/persist/sqldb"
+	"github.com/argoproj/argo/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakeClientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/workflow/packer"
@@ -297,6 +299,31 @@ func TestResumeWorkflowCompressed(t *testing.T) {
 	assert.NotEmpty(t, wf.Status.CompressedNodes)
 }
 
+func TestResumeWorkflowOffloaded(t *testing.T) {
+	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	origWf := unmarshalWF(suspendedWf)
+
+	origNodes := origWf.Status.Nodes
+
+	origWf.Status.Nodes = nil
+	origWf.Status.OffloadNodeStatusVersion = "123"
+
+	_, err := wfIf.Create(origWf)
+	assert.NoError(t, err)
+
+	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
+	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
+	offloadNodeStatusRepo.On("Get", "4f08d325-dc5a-43a3-9986-259e259e6ea3", "123").Return(origNodes, nil)
+	offloadNodeStatusRepo.On("Save", "4f08d325-dc5a-43a3-9986-259e259e6ea3", mock.Anything, mock.Anything).Return("1234", nil)
+
+	err = ResumeWorkflow(wfIf, "suspend", "", offloadNodeStatusRepo)
+	assert.NoError(t, err)
+
+	wf, err := wfIf.Get("suspend", metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, "1234", wf.Status.OffloadNodeStatusVersion)
+}
+
 var failedWf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -432,4 +459,33 @@ func TestRetryWorkflowCompressed(t *testing.T) {
 	wf, err := RetryWorkflow(kubeCs, wfIf, origWf, sqldb.ExplosiveOffloadNodeStatusRepo)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, wf.Status.CompressedNodes)
+}
+
+
+func TestRetryWorkflowOffloaded(t *testing.T) {
+	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	origWf := unmarshalWF(failedWf)
+	kubeCs := fake.NewSimpleClientset()
+	_, err := kubeCs.CoreV1().Pods("").Create(&v1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "fail-template-2878444447"}})
+	assert.NoError(t, err)
+
+	origNodes := origWf.Status.Nodes
+
+	origWf.Status.Nodes = nil
+	origWf.Status.OffloadNodeStatusVersion = "123"
+
+	_, err = wfIf.Create(origWf)
+	assert.NoError(t, err)
+
+	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
+	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
+	offloadNodeStatusRepo.On("Get", "7e74dbb9-d681-4c22-9bed-a581ec28383f", "123").Return(origNodes, nil)
+	offloadNodeStatusRepo.On("Save", "7e74dbb9-d681-4c22-9bed-a581ec28383f", mock.Anything, mock.Anything).Return("1234", nil)
+
+	_, err = RetryWorkflow(kubeCs, wfIf, origWf, offloadNodeStatusRepo)
+	assert.NoError(t, err)
+
+	wf, err := wfIf.Get("fail-template", metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, "1234", wf.Status.OffloadNodeStatusVersion)
 }
