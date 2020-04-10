@@ -1690,10 +1690,6 @@ func (wf *Workflow) GetResourceScope() ResourceScope {
 	return ResourceScopeLocal
 }
 
-// GetTemplates returns the list of templates of workflow.
-func (wf *Workflow) GetTemplates() []Template {
-	return wf.Spec.Templates
-}
 
 // NodeID creates a deterministic node ID based on a node name
 func (wf *Workflow) NodeID(name string) string {

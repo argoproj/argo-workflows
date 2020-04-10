@@ -60,7 +60,3 @@ func (wftmpl *WorkflowTemplate) GetResourceScope() ResourceScope {
 	return ResourceScopeNamespaced
 }
 
-// GetTemplates returns the list of templates of workflow template
-func (wftmpl *WorkflowTemplate) GetTemplates() []Template {
-	return wftmpl.Spec.Templates
-}
