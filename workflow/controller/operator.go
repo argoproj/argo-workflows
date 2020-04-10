@@ -1863,7 +1863,7 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 					log.Warnf("Optional artifact '%s' was not found; it won't be available as an output", art.Name)
 					continue
 				}
-				return nil, err
+				return nil, fmt.Errorf("unable to resolve outputs from scope: %s", err)
 			}
 			resolvedArt.Name = art.Name
 			outputs.Artifacts = append(outputs.Artifacts, *resolvedArt)

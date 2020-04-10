@@ -242,7 +242,7 @@ codegen: dist/update-mocks
 	# Updated codegen
 	./hack/update-codegen.sh
 	$(call restore_go_mod)
-	make api/openapi-spec/swagger.json
+	make docs
 
 .PHONY: manifests
 manifests: status manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml manifests/quick-start-no-db.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml test/e2e/manifests/no-db.yaml
@@ -292,11 +292,15 @@ else
 	go test -v -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
 endif
 
+dist/VERSION:
+	@mkdir -p dist
+	echo $(MANIFESTS_VERSION) > dist/VERSION
+
 test/e2e/manifests/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
 	# Create Postgres e2e manifests
 	kustomize build --load_restrictor=LoadRestrictionsNone test/e2e/manifests/postgres | ./hack/auto-gen-msg.sh > test/e2e/manifests/postgres.yaml
 
-dist/postgres.yaml: test/e2e/manifests/postgres.yaml
+dist/postgres.yaml: test/e2e/manifests/postgres.yaml dist/VERSION
 	# Create Postgres e2e manifests
 	cat test/e2e/manifests/postgres.yaml | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/postgres.yaml
 
@@ -312,7 +316,7 @@ test/e2e/manifests/no-db.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
 	# Create no DB e2e manifests
 	kustomize build --load_restrictor=LoadRestrictionsNone test/e2e/manifests/no-db | ./hack/auto-gen-msg.sh > test/e2e/manifests/no-db.yaml
 
-dist/no-db.yaml: test/e2e/manifests/no-db.yaml
+dist/no-db.yaml: test/e2e/manifests/no-db.yaml dist/VERSION
 	# Create no DB e2e manifests
 	# We additionlly disable ALWAY_OFFLOAD_NODE_STATUS
 	cat test/e2e/manifests/no-db.yaml | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | sed 's/"true"/"false"/' > dist/no-db.yaml
@@ -321,7 +325,7 @@ test/e2e/manifests/mysql.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
 	# Create MySQL e2e manifests
 	kustomize build --load_restrictor=LoadRestrictionsNone test/e2e/manifests/mysql | ./hack/auto-gen-msg.sh > test/e2e/manifests/mysql.yaml
 
-dist/mysql.yaml: test/e2e/manifests/mysql.yaml
+dist/mysql.yaml: test/e2e/manifests/mysql.yaml dist/VERSION
 	# Create MySQL e2e manifests
 	cat test/e2e/manifests/mysql.yaml | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/mysql.yaml
 
@@ -452,6 +456,10 @@ $(HOME)/go/bin/swagger:
 
 api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) dist/MANIFESTS_VERSION hack/swaggify.sh
 	swagger mixin -c 412 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
+
+.PHONY: docs
+docs: api/openapi-spec/swagger.json
+	go run ./hack docgen
 
 # pre-push
 
