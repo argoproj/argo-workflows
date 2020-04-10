@@ -1,6 +1,11 @@
 ignore:
+  - "**/*.pb*.go"
+  - "**/*generated*"
+  - "**/*_test.go"
+  - "pkg/apis/client/.*"
+  - "pkg/client/.*"
   - "server/static/files.go"
-  - "pkg/client"
+  - "vendor/.*"
 coverage:
   status:
     # we've found this not to be useful
