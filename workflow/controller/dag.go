@@ -83,7 +83,10 @@ func (d *dagContext) assertBranchFinished(targetTaskNames []string) bool {
 				return d.assertBranchFinished(taskObject.Dependencies)
 			}
 		} else if !taskNode.Successful() {
-			flag = true
+			taskObject := d.getTask(targetTaskName)
+			if !taskObject.ContinuesOn(taskNode.Phase) {
+				flag = true
+			}
 		}
 
 		// In failFast situation, if node is successful, it will run to leaf node, above
@@ -191,7 +194,7 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 	if !ok {
 		return false
 	}
-	_, tmpl, err := d.tmplCtx.ResolveTemplate(&childNode)
+	_, tmpl, _, err := d.tmplCtx.ResolveTemplate(&childNode)
 	if err != nil {
 		return false
 	}
@@ -201,7 +204,7 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 	return true
 }
 
-func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
@@ -373,7 +376,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 
 	// The template scope of this dag.
-	dagTemplateScope := dagCtx.tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+	dagTemplateScope := dagCtx.tmplCtx.GetTemplateScope()
 
 	// First resolve/substitute params/artifacts from our dependencies
 	newTask, err := woc.resolveDependencyReferences(dagCtx, task)
@@ -465,10 +468,15 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv
 					ancestorNodes = append(ancestorNodes, node)
 				}
 			}
-			_, tmpl, err := dagCtx.tmplCtx.ResolveTemplate(ancestorNode)
+			_, tmpl, templateStored, err := dagCtx.tmplCtx.ResolveTemplate(ancestorNode)
 			if err != nil {
 				return nil, errors.InternalWrapError(err)
 			}
+			// A new template was stored during resolution, persist it
+			if templateStored {
+				woc.updated = true
+			}
+
 			err = woc.processAggregateNodeOutputs(tmpl, &scope, prefix, ancestorNodes)
 			if err != nil {
 				return nil, errors.InternalWrapError(err)
@@ -510,6 +518,24 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 	err = json.Unmarshal([]byte(newTaskStr), &newTask)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
+	}
+
+	// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
+	// the initial parameter resolution, since it's likely that the "when" clause will contain parameter references.
+	proceed, err := shouldExecute(newTask.When)
+	if err != nil {
+		// If we got an error, it might be because our "when" clause contains a task-expansion parameter (e.g. {{item}}).
+		// Since we don't perform task-expansion until later and task-expansion parameters won't get resolved here,
+		// we continue execution as normal
+		if newTask.ShouldExpand() {
+			proceed = true
+		} else {
+			return nil, err
+		}
+	}
+	if !proceed {
+		// We can simply return here; the fact that this task won't execute will be reconciled later on in execution
+		return &newTask, nil
 	}
 
 	// replace all artifact references

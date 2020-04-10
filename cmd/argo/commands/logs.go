@@ -24,7 +24,7 @@ func NewLogsCommand() *cobra.Command {
 	)
 	logOptions := &corev1.PodLogOptions{}
 	var command = &cobra.Command{
-		Use:   "logs POD|WORKFLOW",
+		Use:   "logs WORKFLOW [POD]",
 		Short: "view logs of a pod or workflow",
 		Example: `# Print the logs of a workflow:
 
@@ -100,7 +100,7 @@ func NewLogsCommand() *cobra.Command {
 					return
 				}
 				errors.CheckError(err)
-				fmt.Println(ansiFormat(fmt.Sprintf("%s: %s", event.PodName, event.Content), ansiColorCode(podName)))
+				fmt.Println(ansiFormat(fmt.Sprintf("%s: %s", event.PodName, event.Content), ansiColorCode(event.PodName)))
 			}
 		},
 	}

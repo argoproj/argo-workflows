@@ -21,9 +21,7 @@ type CLIWithServerSuite struct {
 func (s *CLIWithServerSuite) BeforeTest(suiteName, testName string) {
 	s.CLISuite.BeforeTest(suiteName, testName)
 	token, err := s.GetServiceAccountToken()
-	if err != nil {
-		panic(err)
-	}
+	s.CheckError(err)
 	_ = os.Setenv("ARGO_SERVER", "localhost:2746")
 	_ = os.Setenv("ARGO_TOKEN", token)
 }

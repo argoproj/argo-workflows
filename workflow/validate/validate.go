@@ -199,12 +199,12 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 }
 
 // ValidateWorkflow accepts a workflow template and performs validation against it.
-func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl wfv1.TemplateGetter) error {
+func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl wfv1.TemplateHolder) error {
 	ctx := newTemplateValidationCtx(nil, ValidateOpts{})
 	tmplCtx := templateresolution.NewContext(wftmplGetter, cwftmplGetter, wftmpl, nil)
 
 	// Check if all templates can be resolved.
-	for _, template := range wftmpl.GetAllTemplates() {
+	for _, template := range wftmpl.GetTemplates() {
 		_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
@@ -363,7 +363,7 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 }
 
 // validateTemplateHolder validates a template holder and returns the validated template.
-func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.TemplateHolder, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider, extraScope map[string]interface{}) (*wfv1.Template, error) {
+func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider, extraScope map[string]interface{}) (*wfv1.Template, error) {
 	tmplRef := tmplHolder.GetTemplateRef()
 	tmplName := tmplHolder.GetTemplateName()
 	if tmplRef != nil {
@@ -396,7 +396,7 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 		}
 	}
 
-	tmplCtx, resolvedTmpl, err := tmplCtx.ResolveTemplate(tmplHolder)
+	tmplCtx, resolvedTmpl, _, err := tmplCtx.ResolveTemplate(tmplHolder)
 	if err != nil {
 		if argoerr, ok := err.(errors.ArgoError); ok && argoerr.Code() == errors.CodeNotFound {
 			if tmplRef != nil {
@@ -687,14 +687,6 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
-			stepBytes, err := json.Marshal(stepGroup)
-			if err != nil {
-				return errors.InternalWrapError(err)
-			}
-			err = resolveAllVariables(scope, string(stepBytes))
-			if err != nil {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
-			}
 			err = validateArguments(fmt.Sprintf("templates.%s.steps[%d].%s.arguments.", tmpl.Name, i, step.Name), step.Arguments)
 			if err != nil {
 				return err
@@ -704,6 +696,15 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
 			resolvedTemplates[step.Name] = resolvedTmpl
+		}
+
+		stepBytes, err := json.Marshal(stepGroup)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+		err = resolveAllVariables(scope, string(stepBytes))
+		if err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps %s", tmpl.Name, err.Error())
 		}
 
 		for _, step := range stepGroup.Steps {
@@ -767,7 +768,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 	if tmpl.Daemon != nil && *tmpl.Daemon {
 		scope[fmt.Sprintf("%s.ip", prefix)] = true
 	}
-	if tmpl.Script != nil {
+	if tmpl.Script != nil || tmpl.Container != nil {
 		scope[fmt.Sprintf("%s.outputs.result", prefix)] = true
 	}
 	for _, param := range tmpl.Outputs.Parameters {
@@ -798,6 +799,8 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 	}
 	if aggregate {
 		switch tmpl.GetType() {
+		// Not that we don't also include TemplateTypeContainer here, even though it uses `outputs.result` it uses
+		// `outputs.parameters` as its aggregator.
 		case wfv1.TemplateTypeScript:
 			scope[fmt.Sprintf("%s.outputs.result", prefix)] = true
 		default:
