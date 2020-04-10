@@ -14,9 +14,9 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
+	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
-	"github.com/argoproj/argo/util/argo"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -848,7 +848,7 @@ func TestSuspendResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow and operate again. two pods should be able to be scheduled
-	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, "")
+	err = util.ResumeWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "")
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -1167,7 +1167,7 @@ func TestSuspendTemplate(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
-	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, "")
+	err = util.ResumeWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "")
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -1240,7 +1240,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow, but with non-matching selector
-	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, "inputs.paramaters.param1.value=value2")
+	err = util.ResumeWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "inputs.paramaters.param1.value=value2")
 	assert.Error(t, err)
 
 	// operate the workflow. nothing should have happened
@@ -1252,7 +1252,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.True(t, util.IsWorkflowSuspended(wf))
 
 	// resume the workflow, but with matching selector
-	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1")
+	err = util.ResumeWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1")
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -2562,17 +2562,6 @@ func TestNestedOptionalOutputArtifacts(t *testing.T) {
 	woc.operate()
 
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
-}
-
-func Test_nodePhaseReason(t *testing.T) {
-	assert.Equal(t, argo.EventReasonWorkflowNodeError, nodePhaseReason(wfv1.NodeError))
-	assert.Equal(t, argo.EventReasonWorkflowNodeFailed, nodePhaseReason(wfv1.NodeFailed))
-	assert.Equal(t, argo.EventReasonWorkflowNodeSucceeded, nodePhaseReason(wfv1.NodeSucceeded))
-}
-
-func Test_nodeMessage(t *testing.T) {
-	assert.Equal(t, "Succeeded node my-node", nodeMessage(&wfv1.NodeStatus{Phase: wfv1.NodeSucceeded, Name: "my-node"}))
-	assert.Equal(t, "Succeeded node my-node: my-message", nodeMessage(&wfv1.NodeStatus{Phase: wfv1.NodeSucceeded, Name: "my-node", Message: "my-message"}))
 }
 
 //  TestPodSpecLogForFailedPods tests PodSpec logging configuration

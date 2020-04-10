@@ -464,7 +464,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	// try and compress nodes if needed
 	nodes := woc.wf.Status.Nodes
 
-	err := packer.CompressWorkflow(woc.wf)
+	err := packer.CompressWorkflowIfNeeded(woc.wf)
 	if packer.IsTooLargeError(err) || os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true" {
 		if woc.controller.offloadNodeStatusRepo.IsEnabled() {
 			offloadVersion, err := woc.controller.offloadNodeStatusRepo.Save(string(woc.wf.UID), woc.wf.Namespace, nodes)
@@ -754,6 +754,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				if woc.shouldPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
 				}
+				woc.onNodeComplete(&node)
 			}
 			if node.Successful() {
 				woc.succeededPods[pod.ObjectMeta.Name] = true
@@ -1675,27 +1676,15 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 		woc.log.Infof("node %s finished: %s", node, node.FinishedAt)
 		woc.updated = true
 	}
-	if woc.updated && node.Phase.Completed() {
-		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: nodePhaseReason(node.Phase)}, nodeMessage(node))
+	if woc.updated && node.Completed() {
+		woc.onNodeComplete(node)
 	}
 	woc.wf.Status.Nodes[node.ID] = *node
 	return node
 }
 
-func nodePhaseReason(phase wfv1.NodePhase) string {
-	return map[wfv1.NodePhase]string{
-		wfv1.NodeError:     argo.EventReasonWorkflowNodeError,
-		wfv1.NodeFailed:    argo.EventReasonWorkflowNodeFailed,
-		wfv1.NodeSucceeded: argo.EventReasonWorkflowNodeSucceeded,
-	}[phase]
-}
-
-func nodeMessage(node *wfv1.NodeStatus) string {
-	message := fmt.Sprintf("%v node %s", node.Phase, node.Name)
-	if node.Message != "" {
-		message = message + ": " + node.Message
-	}
-	return message
+func (woc *wfOperationCtx) onNodeComplete(node *wfv1.NodeStatus) {
+	woc.auditLogger.LogWorkflowNodeEvent(woc.wf, node)
 }
 
 // markNodeError is a convenience method to mark a node with an error and set the message from the error
