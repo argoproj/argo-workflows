@@ -193,6 +193,8 @@ Workflow is the definition of a workflow resource
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`stress.yaml`](../examples/stress.yaml)
+
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
@@ -452,6 +454,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`stress.yaml`](../examples/stress.yaml)
+
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
@@ -532,9 +536,10 @@ WorkflowStatus contains overall status information about a workflow
 |`outputs`|[`Outputs`](#outputs)|Outputs captures output values and artifact locations produced by the workflow via global outputs|
 |`persistentVolumeClaims`|`Array<`[`Volume`](#volume)`>`|PersistentVolumeClaims tracks all PVCs that were created as part of the io.argoproj.workflow.v1alpha1.The contents of this list are drained at the end of the workflow.|
 |`phase`|`string`|Phase a simple, high-level summary of where the workflow is in its lifecycle.|
-|`resourcesDuration`|`Map< string , int64 >`|ResourcesDuration is the total for the workflow|
+|`resourcesDuration`|`Map< string , int64 >`|ResourcesDuration is the total for the workflowALPHA|
 |`startedAt`|[`Time`](#time)|Time at which this workflow started|
 |`storedTemplates`|[`Template`](#template)|StoredTemplates is a mapping between a template ref and the node's status.|
+|`usage`|`Map< string , int64 >`|Usage is the estimated usage of the resourceALPHA|
 
 ## CronWorkflowSpec
 
@@ -729,6 +734,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`status-reference.yaml`](../examples/status-reference.yaml)
 
 - [`steps.yaml`](../examples/steps.yaml)
+
+- [`stress.yaml`](../examples/stress.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
@@ -973,6 +980,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`status-reference.yaml`](../examples/status-reference.yaml)
 
 - [`steps.yaml`](../examples/steps.yaml)
+
+- [`stress.yaml`](../examples/stress.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
@@ -1374,6 +1383,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`stress.yaml`](../examples/stress.yaml)
+
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
@@ -1487,13 +1498,14 @@ NodeStatus contains status information about an individual node in the workflow
 |`outputs`|[`Outputs`](#outputs)|Outputs captures output parameter values and artifact locations produced by this template invocation|
 |`phase`|`string`|Phase a simple, high-level summary of where the node is in its lifecycle.Can be used as a state machine.|
 |`podIP`|`string`|PodIP captures the IP of the pod for daemoned steps|
-|`resourcesDuration`|`Map< string , int64 >`|ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.|
+|`resourcesDuration`|`Map< string , int64 >`|ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.ALPHA|
 |`startedAt`|[`Time`](#time)|Time at which this node started|
 |~`storedTemplateID`~|~`string`~|~StoredTemplateID is the ID of stored template.~ DEPRECATED: This value is not used anymore.|
 |`templateName`|`string`|TemplateName is the template name which this node corresponds to.Not applicable to virtual nodes (e.g. Retry, StepGroup)|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource which this node corresponds to.Not applicable to virtual nodes (e.g. Retry, StepGroup)|
 |`templateScope`|`string`|TemplateScope is the template scope in which the template of this node was retrieved.|
 |`type`|`string`|Type indicates type of node|
+|`usage`|`Map< string , int64 >`|Usage is an estimate of the actual usage of a pod. This is populated when the nodes completes.ALPHA|
 |~`workflowTemplateName`~|~`string`~|~WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.~ DEPRECATED: This value is not used anymore.|
 
 ## Outputs
@@ -2154,6 +2166,8 @@ Pod metdata
 - [`status-reference.yaml`](../examples/status-reference.yaml)
 
 - [`steps.yaml`](../examples/steps.yaml)
+
+- [`stress.yaml`](../examples/stress.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
@@ -3240,6 +3254,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`stress.yaml`](../examples/stress.yaml)
+
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
@@ -3645,6 +3661,8 @@ A single application container that you want to run within a pod.
 - [`status-reference.yaml`](../examples/status-reference.yaml)
 
 - [`steps.yaml`](../examples/steps.yaml)
+
+- [`stress.yaml`](../examples/stress.yaml)
 
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
@@ -4057,6 +4075,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devicesand 
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`stress.yaml`](../examples/stress.yaml)
+
 - [`suspend-template.yaml`](../examples/suspend-template.yaml)
 
 - [`template-on-exit.yaml`](../examples/template-on-exit.yaml)
@@ -4232,6 +4252,8 @@ ResourceRequirements describes the compute resource requirements.
 - [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`stress.yaml`](../examples/stress.yaml)
 
 - [`testvolume.yaml`](../examples/testvolume.yaml)
 
