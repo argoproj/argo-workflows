@@ -291,7 +291,7 @@ func TestResumeWorkflowCompressed(t *testing.T) {
 	_, err = wfIf.Create(origWf)
 	assert.NoError(t, err)
 
-	err = ResumeWorkflow(wfIf, "suspend", "", sqldb.ExplosiveOffloadNodeStatusRepo)
+	err = ResumeWorkflow(wfIf, sqldb.ExplosiveOffloadNodeStatusRepo, "suspend", "")
 	assert.NoError(t, err)
 
 	wf, err := wfIf.Get("suspend", metav1.GetOptions{})
@@ -316,7 +316,7 @@ func TestResumeWorkflowOffloaded(t *testing.T) {
 	offloadNodeStatusRepo.On("Get", "4f08d325-dc5a-43a3-9986-259e259e6ea3", "123").Return(origNodes, nil)
 	offloadNodeStatusRepo.On("Save", "4f08d325-dc5a-43a3-9986-259e259e6ea3", mock.Anything, mock.Anything).Return("1234", nil)
 
-	err = ResumeWorkflow(wfIf, "suspend", "", offloadNodeStatusRepo)
+	err = ResumeWorkflow(wfIf, offloadNodeStatusRepo, "suspend", "")
 	assert.NoError(t, err)
 
 	wf, err := wfIf.Get("suspend", metav1.GetOptions{})
@@ -456,7 +456,7 @@ func TestRetryWorkflowCompressed(t *testing.T) {
 
 	clearFunc = packer.SetMaxWorkflowSize(1557)
 	defer clearFunc()
-	wf, err := RetryWorkflow(kubeCs, wfIf, origWf, sqldb.ExplosiveOffloadNodeStatusRepo)
+	wf, err := RetryWorkflow(kubeCs, sqldb.ExplosiveOffloadNodeStatusRepo, wfIf, origWf)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, wf.Status.CompressedNodes)
 }
@@ -481,7 +481,7 @@ func TestRetryWorkflowOffloaded(t *testing.T) {
 	offloadNodeStatusRepo.On("Get", "7e74dbb9-d681-4c22-9bed-a581ec28383f", "123").Return(origNodes, nil)
 	offloadNodeStatusRepo.On("Save", "7e74dbb9-d681-4c22-9bed-a581ec28383f", mock.Anything, mock.Anything).Return("1234", nil)
 
-	_, err = RetryWorkflow(kubeCs, wfIf, origWf, offloadNodeStatusRepo)
+	_, err = RetryWorkflow(kubeCs, offloadNodeStatusRepo, wfIf, origWf)
 	assert.NoError(t, err)
 
 	wf, err := wfIf.Get("fail-template", metav1.GetOptions{})

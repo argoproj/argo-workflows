@@ -342,7 +342,7 @@ func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error
 
 // ResumeWorkflow resumes a workflow by setting spec.suspend to nil and any suspended nodes to Successful.
 // Retries conflict errors
-func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string, nodeFieldSelector string, repo sqldb.OffloadNodeStatusRepo) error {
+func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, repo sqldb.OffloadNodeStatusRepo, workflowName string, nodeFieldSelector string) error {
 	if len(nodeFieldSelector) > 0 {
 		return updateWorkflowNodeByKey(wfIf, workflowName, nodeFieldSelector, wfv1.NodeSucceeded, "")
 	} else {
@@ -354,7 +354,7 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string, nodeFi
 
 			err = packer.DecompressWorkflow(wf)
 			if err != nil {
-				log.Fatalf("unable to decompress workflow: %s", err)
+				return false, fmt.Errorf("unable to decompress workflow: %s", err)
 			}
 
 			workflowUpdated := false
@@ -404,7 +404,7 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string, nodeFi
 
 				err = packer.CompressWorkflowIfNeeded(wf)
 				if err != nil {
-					log.Fatalf("unable to compress workflow: %s", err)
+					return false, fmt.Errorf("unable to compress workflow: %s", err)
 				}
 
 				_, err = wfIf.Update(wf)
@@ -612,7 +612,7 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 }
 
 // RetryWorkflow updates a workflow, deleting all failed steps as well as the onExit node (and children)
-func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow, repo sqldb.OffloadNodeStatusRepo) (*wfv1.Workflow, error) {
+func RetryWorkflow(kubeClient kubernetes.Interface, repo sqldb.OffloadNodeStatusRepo, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow) (*wfv1.Workflow, error) {
 	switch wf.Status.Phase {
 	case wfv1.NodeFailed, wfv1.NodeError:
 	default:
@@ -621,7 +621,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 
 	err := packer.DecompressWorkflow(wf)
 	if err != nil {
-		log.Fatalf("unable to decompress workflow: %s", err)
+		return nil, fmt.Errorf("unable to decompress workflow: %s", err)
 	}
 
 	newWF := wf.DeepCopy()
@@ -713,7 +713,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 
 	err = packer.CompressWorkflowIfNeeded(newWF)
 	if err != nil {
-		log.Fatalf("unable to compress workflow: %s", err)
+		return nil, fmt.Errorf("unable to compress workflow: %s", err)
 	}
 
 	return wfClient.Update(newWF)
