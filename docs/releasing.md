@@ -31,19 +31,4 @@ If this is GA:
 
 * [ ] Update the `stable` tag
 * [ ] Update the [Homebrew tap](https://github.com/argoproj/homebrew-tap).
-    
-## Validation
-
-K3D tip: you'll need to import the images:
-
-    k3d import-images argoproj/argocli:v2.5.0-rc6 argoproj/argoexec:v2.5.0-rc6 argoproj/workflow-controller:v2.5.0-rc6
-
-Install Argo locally:
-
-    kubectl create ns argo
-    kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/v2.5.0-rc6/manifests/quick-start-postgres.yaml
-    make pf-bg 
-
-Maybe run e2e tests?
-
-    make test-e2e
+ 
