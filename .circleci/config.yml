@@ -221,7 +221,6 @@ jobs:
           name: Download dependencies
           command: yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
       # - run: yarn test
-      # - run: ./node_modules/.bin/codecov -p ..
       - run: yarn --cwd ui build
       - run: yarn --cwd ui lint
       - run: git diff --exit-code
@@ -234,7 +233,7 @@ workflows:
   version: 2
   argo-workflow:
     jobs:
-      - test
+      - test:
           context: sonarcloud
       - ui
       - codegen
