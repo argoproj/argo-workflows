@@ -463,7 +463,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	// try and compress nodes if needed
 	nodes := woc.wf.Status.Nodes
 
-	err := packer.CompressWorkflow(woc.wf)
+	err := packer.CompressWorkflowIfNeeded(woc.wf)
 	if packer.IsTooLargeError(err) || os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true" {
 		if woc.controller.offloadNodeStatusRepo.IsEnabled() {
 			offloadVersion, err := woc.controller.offloadNodeStatusRepo.Save(string(woc.wf.UID), woc.wf.Namespace, nodes)
