@@ -389,11 +389,11 @@ func (s *ArgoServerSuite) TestLintWorkflow() {
 }
 
 func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
-	// https://github.com/argoproj/argo/issues/2618
-	s.T().SkipNow()
 	s.e(s.T()).POST("/api/v1/workflows/argo").
-		WithQuery("createOptions.dryRun", "[All]").
 		WithBytes([]byte(`{
+  "createOptions": {
+    "dryRun": ["All"]
+  },
   "workflow": {
     "metadata": {
       "name": "test",
@@ -418,8 +418,9 @@ func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
 		Expect().
 		Status(200).
 		JSON().
-		Path("$.status").
-		Null()
+		Path("$.metadata").
+		Object().
+		NotContainsKey("uid")
 }
 
 func (s *ArgoServerSuite) TestWorkflowService() {
@@ -833,7 +834,8 @@ func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 metadata:
   name: archie
   labels:
-    argo-e2e: 1
+    argo-e2e: true
+    foo: 1
 spec:
   entrypoint: run-archie
   templates:
@@ -854,7 +856,8 @@ spec:
 metadata:
   name: betty
   labels:
-    argo-e2e: 2
+    argo-e2e: true
+    foo: 2
 spec:
   entrypoint: run-betty
   templates:
@@ -872,22 +875,22 @@ spec:
 		selector string
 		wantLen  int
 	}{
-		{"ListDoesNotExist", "!argo-e2e", 0},
-		{"ListEquals", "argo-e2e=1", 1},
-		{"ListDoubleEquals", "argo-e2e==1", 1},
-		{"ListIn", "argo-e2e in (1)", 1},
-		{"ListNotEquals", "argo-e2e!=1", 1},
-		{"ListNotIn", "argo-e2e notin (1)", 1},
-		{"ListExists", "argo-e2e", 2},
-		{"ListGreaterThan0", "argo-e2e>0", 2},
-		{"ListGreaterThan1", "argo-e2e>1", 1},
-		{"ListLessThan1", "argo-e2e<1", 0},
-		{"ListLessThan2", "argo-e2e<2", 1},
+		{"ListDoesNotExist", "!foo", 0},
+		{"ListEquals", "foo=1", 1},
+		{"ListDoubleEquals", "foo==1", 1},
+		{"ListIn", "foo in (1)", 1},
+		{"ListNotEquals", "foo!=1", 1},
+		{"ListNotIn", "foo notin (1)", 1},
+		{"ListExists", "foo", 2},
+		{"ListGreaterThan0", "foo>0", 2},
+		{"ListGreaterThan1", "foo>1", 1},
+		{"ListLessThan1", "foo<1", 0},
+		{"ListLessThan2", "foo<2", 1},
 	} {
 		s.Run(tt.name, func() {
 			path := s.e(s.T()).GET("/api/v1/archived-workflows").
 				WithQuery("listOptions.fieldSelector", "metadata.namespace=argo").
-				WithQuery("listOptions.labelSelector", tt.selector).
+				WithQuery("listOptions.labelSelector", "argo-e2e,"+tt.selector).
 				Expect().
 				Status(200).
 				JSON().
@@ -924,8 +927,6 @@ spec:
 
 	s.Run("ListWithMinStartedAtGood", func() {
 		fieldSelector := "metadata.namespace=argo,spec.startedAt>" + time.Now().Add(-1*time.Hour).Format(time.RFC3339) + ",spec.startedAt<" + time.Now().Add(1*time.Hour).Format(time.RFC3339)
-		// https://github.com/argoproj/argo/issues/2619
-		s.T().SkipNow()
 		s.e(s.T()).GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "argo-e2e").
 			WithQuery("listOptions.fieldSelector", fieldSelector).
@@ -940,8 +941,6 @@ spec:
 	})
 
 	s.Run("ListWithMinStartedAtBad", func() {
-		// https://github.com/argoproj/argo/issues/2619
-		s.T().SkipNow()
 		s.e(s.T()).GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "argo-e2e").
 			WithQuery("listOptions.fieldSelector", "metadata.namespace=argo,spec.startedAt>"+time.Now().Add(1*time.Hour).Format(time.RFC3339)).

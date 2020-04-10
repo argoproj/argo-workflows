@@ -1,5 +1,10 @@
 version: 2.1
 commands:
+  maybe_skip_job:
+    steps:
+    - run:
+        name: Maybe skip job if not relevant
+        command: ./hack/maybe-skip-job.sh $CIRCLE_JOB
   install_kustomize:
     steps:
       - run:
@@ -46,6 +51,8 @@ commands:
             - go-v6-master-{{ .Environment.CIRCLE_JOB }}
   e2e:
     steps:
+      - checkout
+      - maybe_skip_job
       - install_kustomize
       - run:
           name: Install and start K3S v1.0.1
@@ -54,7 +61,6 @@ commands:
       - restore_go_cache
       - install_golang
       - go_junit_report
-      - checkout
       - restore_go_mod
       - run:
           name: Create KUBECONFIG
@@ -114,10 +120,11 @@ jobs:
     machine:
       image: ubuntu-1604:201903-01
     steps:
+      - checkout
+      - maybe_skip_job
       - install_kustomize
       - restore_go_cache
       - install_golang
-      - checkout
       - run:
           name: Install protoc
           command: |
@@ -141,11 +148,12 @@ jobs:
     machine:
       image: ubuntu-1604:201903-01
     steps:
+      - checkout
+      - maybe_skip_job
       - install_kustomize
       - restore_go_cache
       - install_golang
       - go_junit_report
-      - checkout
       - restore_go_mod
       - run:
           name: Run tests
@@ -197,16 +205,18 @@ jobs:
       image: ubuntu-1604:201903-01
     steps:
       - checkout
+      - maybe_skip_job
       - run: DOCKER_BUILDKIT=1 docker build .
   ui:
     docker:
       - image: circleci/node:11.15.0
     steps:
       - checkout
+      - maybe_skip_job
       - restore_cache:
           name: Restore Yarn cache
           keys:
-            - yarn-packages-v3-{{ checksum "yarn.lock" }}
+            - yarn-packages-v3-{{ checksum "ui/yarn.lock" }}
       - run:
           name: Download dependencies
           command: yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
@@ -217,7 +227,7 @@ jobs:
       - run: git diff --exit-code
       - save_cache:
           name: Save Yarn cache
-          key: yarn-packages-v3-{{ checksum "yarn.lock" }}
+          key: yarn-packages-v3-{{ checksum "ui/yarn.lock" }}
           paths: [~/.cache/yarn, node_modules]
           when: always
 workflows:

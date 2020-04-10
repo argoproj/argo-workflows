@@ -2306,6 +2306,50 @@ func TestStepsOnExitFailures(t *testing.T) {
 	assert.Contains(t, woc.globalParams[common.GlobalVarWorkflowFailures], `[{\"displayName\":\"exit-handlers\",\"message\":\"Unexpected pod phase for exit-handlers: \",\"templateName\":\"intentional-fail\",\"phase\":\"Error\",\"podName\":\"exit-handlers\"`)
 }
 
+var onExitTimeout = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: exit-handlers
+spec:
+  entrypoint: intentional-fail
+  activeDeadlineSeconds: 0
+  onExit: exit-handler
+  templates:
+  - name: intentional-fail
+    suspend: {}
+  - name: exit-handler
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}}."]
+`
+
+func TestStepsOnExitTimeout(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// Test list expansion
+	wf := unmarshalWF(onExitTimeout)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	woc.operate()
+
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	onExitNodeIsPresent := false
+	for _, node := range wf.Status.Nodes {
+		if strings.Contains(node.Name, "onExit") && node.Phase == wfv1.NodePending {
+			onExitNodeIsPresent = true
+			break
+		}
+	}
+	assert.True(t, onExitNodeIsPresent)
+}
+
 var invalidSpec = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -2681,4 +2725,58 @@ func TestRetryNodeOutputs(t *testing.T) {
 	}
 	woc.buildLocalScope(scope, "steps.influx", retryNode)
 	assert.Contains(t, scope.scope, "steps.influx.ip")
+}
+
+var containerOutputsResult = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-
+spec:
+  entrypoint: hello-hello-hello
+  templates:
+  - name: hello-hello-hello
+    steps:
+    - - name: hello1
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "hello1"}]
+    - - name: hello2
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "{{steps.hello1.outputs.result}}"}]
+
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:latest
+      command: [echo]
+      args: ["{{pod.name}}: {{inputs.parameters.message}}"]
+`
+
+func TestContainerOutputsResult(t *testing.T) {
+
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// operate the workflow. it should create a pod.
+	wf := unmarshalWF(containerOutputsResult)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+
+	assert.True(t, hasOutputResultRef("hello1", &wf.Spec.Templates[0]))
+	assert.False(t, hasOutputResultRef("hello2", &wf.Spec.Templates[0]))
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+
+	for _, node := range wf.Status.Nodes {
+		if strings.Contains(node.Name, "hello1") {
+			assert.True(t, getStepOrDAGTaskName(node.Name) == "hello1")
+		} else if strings.Contains(node.Name, "hello2") {
+			assert.True(t, getStepOrDAGTaskName(node.Name) == "hello2")
+		}
+	}
 }
