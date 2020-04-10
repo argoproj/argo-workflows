@@ -3,6 +3,7 @@
 We use the following static code analysis tools:
 
 * golangci-lint and tslint for compile time linting
+* [codecov.io](https://codecov.io/gh/argoproj/argo) - for code coverage
 * [snyk.io](https://app.snyk.io/org/argoproj/projects) - for image scanning
 * [sonarcloud.io](https://sonarcloud.io/organizations/argoproj-1/projects) - for code scans and security alerts
 
