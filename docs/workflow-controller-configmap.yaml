@@ -4,7 +4,7 @@ kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
 data:
-  config: |
+  config: |   # This is optional in v2.7+, see docs/workflow-controller-configmap.md
     # instanceID is a label selector to limit the controller's watch to a specific instance. It
     # contains an arbitrary value that is carried forward into its pod labels, under the key
     # workflows.argoproj.io/controller-instanceid, for the purposes of workflow segregation. This
@@ -30,6 +30,18 @@ data:
     #   mountPath: /kubeconfig/mount/path
     #   # volume name when mounting the secret, default to kubeconfig
     #   volumeName: kube-config-volume
+
+    links:
+      - name: Example Workflow Link
+        scope: workflow
+        url: http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}
+      - name: Example Pod Link
+        scope: pod
+        url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
+
+    featureFlags:
+      # Enable resource duration
+      resourcesDuration: false
 
     # artifactRepository defines the default location to be used as the artifact repository for
     # container artifacts.
@@ -111,6 +123,7 @@ data:
 
     # metricsConfig controls the path and port for prometheus metrics
     metricsConfig:
+      disableLegacy: false  # Switch to "true" to disable legacy metrics. "false" by default
       enabled: true
       path: /metrics
       port: 8080
@@ -158,7 +171,15 @@ data:
       #     name: argo-mysql-config
       #     key: password
 
-    # default workflow spec, follow the workflow spec, more info: https://github.com/argoproj/argo/blob/master/examples/README.md#the-structure-of-workflow-specs
+    # Default values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
+    # See more: docs/default-workflow-specs.yaml
     workflowDefaults:
-      ttlStrategy:
-        secondsAfterCompletion: 10
+      metadata:
+        annotations:
+          argo: workflows
+        labels:
+          foo: bar
+      spec:
+        ttlStrategy:
+          secondsAfterSuccess: 5
+        parallelism: 3

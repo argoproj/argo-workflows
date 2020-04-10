@@ -6,10 +6,16 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
+	clusterworkflowtmplpkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
+)
+
+const (
+	// MaxGRPCMessageSize contains max grpc message size supported by the client
+	MaxClientGRPCMessageSize = 100 * 1024 * 1024
 )
 
 type argoServerClient struct {
@@ -40,8 +46,12 @@ func (a *argoServerClient) NewArchivedWorkflowServiceClient() (workflowarchivepk
 	return workflowarchivepkg.NewArchivedWorkflowServiceClient(a.ClientConn), nil
 }
 
+func (a *argoServerClient) NewClusterWorkflowTemplateServiceClient() clusterworkflowtmplpkg.ClusterWorkflowTemplateServiceClient {
+	return clusterworkflowtmplpkg.NewClusterWorkflowTemplateServiceClient(a.ClientConn)
+}
+
 func NewClientConn(argoServer string) (*grpc.ClientConn, error) {
-	conn, err := grpc.Dial(argoServer, grpc.WithInsecure())
+	conn, err := grpc.Dial(argoServer, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxClientGRPCMessageSize)), grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}

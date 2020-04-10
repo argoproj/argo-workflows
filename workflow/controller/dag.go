@@ -51,6 +51,15 @@ func (d *dagContext) taskNodeName(taskName string) string {
 	return fmt.Sprintf("%s.%s", d.boundaryName, taskName)
 }
 
+func (d *dagContext) getTaskFromNode(node *wfv1.NodeStatus) *wfv1.DAGTask {
+	for _, task := range d.tasks {
+		if node.Name == d.taskNodeName(task.Name) {
+			return &task
+		}
+	}
+	panic("task from node " + node.Name + " does not exist")
+}
+
 // taskNodeID formulates the node ID for a dag task
 func (d *dagContext) taskNodeID(taskName string) string {
 	nodeName := d.taskNodeName(taskName)
@@ -83,7 +92,10 @@ func (d *dagContext) assertBranchFinished(targetTaskNames []string) bool {
 				return d.assertBranchFinished(taskObject.Dependencies)
 			}
 		} else if !taskNode.Successful() {
-			flag = true
+			taskObject := d.getTask(targetTaskName)
+			if !taskObject.ContinuesOn(taskNode.Phase) {
+				flag = true
+			}
 		}
 
 		// In failFast situation, if node is successful, it will run to leaf node, above
@@ -109,9 +121,10 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 		if node.Successful() {
 			continue
 		}
-		// failed retry attempts should not factor into the overall unsuccessful phase of the dag
+		// Failed retry attempts should not factor into the overall unsuccessful phase of the dag
 		// because the subsequent attempt may have succeeded
-		if unsuccessfulPhase == "" && !isRetryAttempt(node, nodes) {
+		// Furthermore, if the node failed but ContinuesOn its phase, it should also not factor into the overall phase of the dag
+		if unsuccessfulPhase == "" && !(isRetryAttempt(node, nodes) || d.getTaskFromNode(&node).ContinuesOn(node.Phase)) {
 			unsuccessfulPhase = node.Phase
 		}
 		if node.Type == wfv1.NodeTypeRetry && d.hasMoreRetries(&node) {
@@ -191,7 +204,7 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 	if !ok {
 		return false
 	}
-	_, tmpl, err := d.tmplCtx.ResolveTemplate(&childNode)
+	_, tmpl, _, err := d.tmplCtx.ResolveTemplate(&childNode)
 	if err != nil {
 		return false
 	}
@@ -201,10 +214,10 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 	return true
 }
 
-func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
-		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
 	}
 
 	defer func() {
@@ -259,7 +272,8 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 			// Can happen when dag.target was specified
 			continue
 		}
-		woc.processNodeOutputs(&scope, fmt.Sprintf("tasks.%s", task.Name), taskNode)
+		woc.buildLocalScope(&scope, fmt.Sprintf("tasks.%s", task.Name), taskNode)
+		woc.addOutputsToGlobalScope(taskNode.Outputs)
 	}
 	outputs, err := getTemplateOutputsFromScope(tmpl, &scope)
 	if err != nil {
@@ -273,8 +287,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 
 	woc.updateOutboundNodesForTargetTasks(dagCtx, targetTasks, nodeName)
 
-	_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
-	return node, nil
+	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded), nil
 }
 
 func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(dagCtx *dagContext, targetTasks []string, nodeName string) {
@@ -373,7 +386,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 
 	// The template scope of this dag.
-	dagTemplateScope := dagCtx.tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+	dagTemplateScope := dagCtx.tmplCtx.GetTemplateScope()
 
 	// First resolve/substitute params/artifacts from our dependencies
 	newTask, err := woc.resolveDependencyReferences(dagCtx, task)
@@ -424,7 +437,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		}
 
 		// Finally execute the template
-		_, _ = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, dagCtx.boundaryID)
+		_, _ = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID})
 	}
 
 	if taskGroupNode != nil {
@@ -443,15 +456,13 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 }
 
-// resolveDependencyReferences replaces any references to outputs of task dependencies, or artifacts in the inputs
-// NOTE: by now, input parameters should have been substituted throughout the template
-func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task *wfv1.DAGTask) (*wfv1.DAGTask, error) {
+func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv1.DAGTask) (*wfScope, error) {
 	// build up the scope
 	scope := wfScope{
 		tmpl:  dagCtx.tmpl,
 		scope: make(map[string]interface{}),
 	}
-	woc.addOutputsToScope("workflow", woc.wf.Status.Outputs, &scope)
+	woc.addOutputsToLocalScope("workflow", woc.wf.Status.Outputs, &scope)
 
 	ancestors := common.GetTaskAncestry(dagCtx, task.Name, dagCtx.tasks)
 	for _, ancestor := range ancestors {
@@ -467,22 +478,38 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 					ancestorNodes = append(ancestorNodes, node)
 				}
 			}
-			_, tmpl, err := dagCtx.tmplCtx.ResolveTemplate(ancestorNode)
+			_, tmpl, templateStored, err := dagCtx.tmplCtx.ResolveTemplate(ancestorNode)
 			if err != nil {
 				return nil, errors.InternalWrapError(err)
 			}
+			// A new template was stored during resolution, persist it
+			if templateStored {
+				woc.updated = true
+			}
+
 			err = woc.processAggregateNodeOutputs(tmpl, &scope, prefix, ancestorNodes)
 			if err != nil {
 				return nil, errors.InternalWrapError(err)
 			}
 		} else {
-			woc.processNodeOutputs(&scope, prefix, ancestorNode)
+			woc.buildLocalScope(&scope, prefix, ancestorNode)
 		}
+	}
+	return &scope, nil
+}
+
+// resolveDependencyReferences replaces any references to outputs of task dependencies, or artifacts in the inputs
+// NOTE: by now, input parameters should have been substituted throughout the template
+func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task *wfv1.DAGTask) (*wfv1.DAGTask, error) {
+
+	scope, err := woc.buildLocalScopeFromTask(dagCtx, task)
+	if err != nil {
+		return nil, err
 	}
 
 	// Perform replacement
 	// Replace woc.volumes
-	err := woc.substituteParamsInVolumes(scope.replaceMap())
+	err = woc.substituteParamsInVolumes(scope.replaceMap())
 	if err != nil {
 		return nil, err
 	}
@@ -501,6 +528,24 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 	err = json.Unmarshal([]byte(newTaskStr), &newTask)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
+	}
+
+	// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
+	// the initial parameter resolution, since it's likely that the "when" clause will contain parameter references.
+	proceed, err := shouldExecute(newTask.When)
+	if err != nil {
+		// If we got an error, it might be because our "when" clause contains a task-expansion parameter (e.g. {{item}}).
+		// Since we don't perform task-expansion until later and task-expansion parameters won't get resolved here,
+		// we continue execution as normal
+		if newTask.ShouldExpand() {
+			proceed = true
+		} else {
+			return nil, err
+		}
+	}
+	if !proceed {
+		// We can simply return here; the fact that this task won't execute will be reconciled later on in execution
+		return &newTask, nil
 	}
 
 	// replace all artifact references

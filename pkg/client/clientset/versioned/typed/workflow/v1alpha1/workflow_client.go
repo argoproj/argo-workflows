@@ -10,6 +10,7 @@ import (
 
 type ArgoprojV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	ClusterWorkflowTemplatesGetter
 	CronWorkflowsGetter
 	WorkflowsGetter
 	WorkflowTemplatesGetter
@@ -18,6 +19,10 @@ type ArgoprojV1alpha1Interface interface {
 // ArgoprojV1alpha1Client is used to interact with features provided by the argoproj.io group.
 type ArgoprojV1alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *ArgoprojV1alpha1Client) ClusterWorkflowTemplates() ClusterWorkflowTemplateInterface {
+	return newClusterWorkflowTemplates(c)
 }
 
 func (c *ArgoprojV1alpha1Client) CronWorkflows(namespace string) CronWorkflowInterface {

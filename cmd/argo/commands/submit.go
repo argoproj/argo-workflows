@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	clusterworkflowtmplpkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
@@ -142,6 +143,15 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *util.Subm
 			log.Fatalf("Unable to get workflow template '%s': %s", name, err)
 		}
 		workflowToSubmit = common.ConvertWorkflowTemplateToWorkflow(template)
+	case workflow.ClusterWorkflowTemplateKind, workflow.ClusterWorkflowTemplateSingular, workflow.ClusterWorkflowTemplatePlural, workflow.ClusterWorkflowTemplateShortName:
+		serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
+		template, err := serviceClient.GetClusterWorkflowTemplate(ctx, &clusterworkflowtmplpkg.ClusterWorkflowTemplateGetRequest{
+			Name: name,
+		})
+		if err != nil {
+			log.Fatalf("Unable to get cluster workflow template '%s': %s", name, err)
+		}
+		workflowToSubmit = common.ConvertClusterWorkflowTemplateToWorkflow(template)
 	default:
 		log.Fatalf("Resource kind '%s' is not supported with --from", kind)
 	}

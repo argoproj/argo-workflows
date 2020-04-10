@@ -129,7 +129,7 @@ Add the following:
 ```yaml
 data:
   config: |
-    artifactRepository:
+    artifactRepository: |
       s3:
         bucket: my-bucket
         endpoint: argo-artifacts:9000

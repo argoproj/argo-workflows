@@ -33,9 +33,14 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
 	var err error
 	s.bearerToken, err = s.GetServiceAccountToken()
-	if err != nil {
-		panic(err)
-	}
+	s.CheckError(err)
+}
+
+type httpLogger struct {
+}
+
+func (d *httpLogger) Logf(fmt string, args ...interface{}) {
+	log.Debugf(fmt, args...)
 }
 
 func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
@@ -44,7 +49,7 @@ func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 			BaseURL:  baseUrl,
 			Reporter: httpexpect.NewRequireReporter(t),
 			Printers: []httpexpect.Printer{
-				httpexpect.NewDebugPrinter(s.Diagnostics, true),
+				httpexpect.NewDebugPrinter(&httpLogger{}, true),
 			},
 		}).
 		Builder(func(req *httpexpect.Request) {
@@ -56,12 +61,22 @@ func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 
 func (s *ArgoServerSuite) TestInfo() {
 	s.Run("Get", func() {
-		s.e(s.T()).GET("/api/v1/info").
+		json := s.e(s.T()).GET("/api/v1/info").
 			Expect().
 			Status(200).
-			JSON().
+			JSON()
+		json.
 			Path("$.managedNamespace").
 			Equal("argo")
+		json.
+			Path("$.links[0].name").
+			Equal("Example Workflow Link")
+		json.
+			Path("$.links[0].scope").
+			Equal("workflow")
+		json.
+			Path("$.links[0].url").
+			Equal("http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}")
 	})
 }
 
@@ -307,10 +322,7 @@ func (s *ArgoServerSuite) TestPermission() {
 					WithQuery("listOptions.labelSelector", "argo-e2e").
 					WithQuery("listOptions.fieldSelector", "metadata.namespace="+nsName).
 					Expect().
-					Status(200).
-					JSON().
-					Path("$.items").
-					Null()
+					Status(403)
 			})
 
 			// Test get archived wf with good token
@@ -378,8 +390,10 @@ func (s *ArgoServerSuite) TestLintWorkflow() {
 
 func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
 	s.e(s.T()).POST("/api/v1/workflows/argo").
-		WithQuery("createOptions.dryRun", "[All]").
 		WithBytes([]byte(`{
+  "createOptions": {
+    "dryRun": ["All"]
+  },
   "workflow": {
     "metadata": {
       "name": "test",
@@ -402,7 +416,11 @@ func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
   }
 }`)).
 		Expect().
-		Status(200)
+		Status(200).
+		JSON().
+		Path("$.metadata").
+		Object().
+		NotContainsKey("uid")
 }
 
 func (s *ArgoServerSuite) TestWorkflowService() {
@@ -544,7 +562,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			Status(200).
 			JSON().
 			Path("$.status.message").
-			Equal("terminated")
+			Equal("Stopped with strategy 'Terminate'")
 	})
 
 	s.Run("Delete", func() {
@@ -604,6 +622,9 @@ spec:
   startingDeadlineSeconds: 0
   successfulJobsHistoryLimit: 4
   failedJobsHistoryLimit: 2
+  workflowMetadata:
+    labels:
+      argo-e2e: true
   workflowSpec:
     podGC:
       strategy: OnPodCompletion
@@ -611,7 +632,7 @@ spec:
     templates:
       - name: whalesay
         container:
-          image: python:alpine3.6
+          image: cowsay:v1
           imagePullPolicy: IfNotPresent
           command: ["sh", -c]
           args: ["echo hello"]
@@ -654,6 +675,9 @@ spec:
     },
     "spec": {
       "schedule": "1 * * * *",
+      "workflowMetadata": {
+        "labels": {"argo-e2e": "true"}
+      },
       "workflowSpec": {
         "entrypoint": "whalesay",
         "templates": [
@@ -692,7 +716,7 @@ func (s *ArgoServerSuite) TestArtifactServer() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(15 * time.Second).
+		WaitForWorkflow(20 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
@@ -798,19 +822,6 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 			}
 		}
 	})
-
-	s.Run("PodLogsNotFound", func() {
-		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflows/argo/basic/not-found/log?logOptions.container=not-found", nil)
-		assert.NoError(s.T(), err)
-		req.Header.Set("Accept", "text/event-stream")
-		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
-		req.Close = true
-		resp, err := http.DefaultClient.Do(req)
-		if assert.NoError(s.T(), err) {
-			defer func() { _ = resp.Body.Close() }()
-			assert.Equal(s.T(), 404, resp.StatusCode)
-		}
-	})
 }
 
 func (s *ArgoServerSuite) TestArchivedWorkflowService() {
@@ -823,7 +834,8 @@ func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 metadata:
   name: archie
   labels:
-    argo-e2e: 1
+    argo-e2e: true
+    foo: 1
 spec:
   entrypoint: run-archie
   templates:
@@ -844,7 +856,8 @@ spec:
 metadata:
   name: betty
   labels:
-    argo-e2e: 2
+    argo-e2e: true
+    foo: 2
 spec:
   entrypoint: run-betty
   templates:
@@ -862,21 +875,22 @@ spec:
 		selector string
 		wantLen  int
 	}{
-		{"ListDoesNotExist", "!argo-e2e", 0},
-		{"ListEquals", "argo-e2e=1", 1},
-		{"ListDoubleEquals", "argo-e2e==1", 1},
-		{"ListIn", "argo-e2e in (1)", 1},
-		{"ListNotEquals", "argo-e2e!=1", 1},
-		{"ListNotIn", "argo-e2e notin (1)", 1},
-		{"ListExists", "argo-e2e", 2},
-		{"ListGreaterThan0", "argo-e2e>0", 2},
-		{"ListGreaterThan1", "argo-e2e>1", 1},
-		{"ListLessThan1", "argo-e2e<1", 0},
-		{"ListLessThan2", "argo-e2e<2", 1},
+		{"ListDoesNotExist", "!foo", 0},
+		{"ListEquals", "foo=1", 1},
+		{"ListDoubleEquals", "foo==1", 1},
+		{"ListIn", "foo in (1)", 1},
+		{"ListNotEquals", "foo!=1", 1},
+		{"ListNotIn", "foo notin (1)", 1},
+		{"ListExists", "foo", 2},
+		{"ListGreaterThan0", "foo>0", 2},
+		{"ListGreaterThan1", "foo>1", 1},
+		{"ListLessThan1", "foo<1", 0},
+		{"ListLessThan2", "foo<2", 1},
 	} {
 		s.Run(tt.name, func() {
 			path := s.e(s.T()).GET("/api/v1/archived-workflows").
-				WithQuery("listOptions.labelSelector", tt.selector).
+				WithQuery("listOptions.fieldSelector", "metadata.namespace=argo").
+				WithQuery("listOptions.labelSelector", "argo-e2e,"+tt.selector).
 				Expect().
 				Status(200).
 				JSON().
@@ -895,6 +909,7 @@ spec:
 	s.Run("ListWithLimitAndOffset", func() {
 		j := s.e(s.T()).GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace=argo").
 			WithQuery("listOptions.limit", 1).
 			WithQuery("listOptions.offset", 1).
 			Expect().
@@ -908,6 +923,32 @@ spec:
 		j.
 			Path("$.metadata.continue").
 			Equal("1")
+	})
+
+	s.Run("ListWithMinStartedAtGood", func() {
+		fieldSelector := "metadata.namespace=argo,spec.startedAt>" + time.Now().Add(-1*time.Hour).Format(time.RFC3339) + ",spec.startedAt<" + time.Now().Add(1*time.Hour).Format(time.RFC3339)
+		s.e(s.T()).GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.fieldSelector", fieldSelector).
+			WithQuery("listOptions.limit", 2).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().
+			Length().
+			Equal(2)
+	})
+
+	s.Run("ListWithMinStartedAtBad", func() {
+		s.e(s.T()).GET("/api/v1/archived-workflows").
+			WithQuery("listOptions.labelSelector", "argo-e2e").
+			WithQuery("listOptions.fieldSelector", "metadata.namespace=argo,spec.startedAt>"+time.Now().Add(1*time.Hour).Format(time.RFC3339)).
+			WithQuery("listOptions.limit", 2).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").Null()
 	})
 
 	s.Run("Get", func() {
@@ -996,7 +1037,9 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 
 		// make sure list options work correctly
 		s.Given().
-			WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml")
+			WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
+			When().
+			CreateWorkflowTemplates()
 
 		s.e(s.T()).GET("/api/v1/workflow-templates/argo").
 			WithQuery("listOptions.labelSelector", "argo-e2e=subject").
