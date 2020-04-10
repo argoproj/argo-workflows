@@ -1,10 +1,12 @@
 version: 2.1
+orbs:
+  sonarcloud: sonarsource/sonarcloud@1.0.1
 commands:
   maybe_skip_job:
     steps:
-    - run:
-        name: Maybe skip job if not relevant
-        command: ./hack/maybe-skip-job.sh $CIRCLE_JOB
+      - run:
+          name: Maybe skip job if not relevant
+          command: ./hack/maybe-skip-job.sh $CIRCLE_JOB
   install_kustomize:
     steps:
       - run:
@@ -161,9 +163,7 @@ jobs:
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
             make test 2>&1 | tee test-results/test.out
-      - run:
-          name: Uploading code coverage
-          command: bash <(curl -s https://codecov.io/bash) -f coverage.out
+      - sonarcloud/scan
       - store_test_results:
           path: test-results
           when: always
@@ -235,6 +235,7 @@ workflows:
   argo-workflow:
     jobs:
       - test
+          context: sonarcloud
       - ui
       - codegen
       - e2e-no-db
