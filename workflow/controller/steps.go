@@ -353,6 +353,25 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			return nil, errors.InternalWrapError(err)
 		}
 
+		// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
+		// the initial parameter resolution, since it's likely that the "when" clause will contain parameter references.
+		proceed, err := shouldExecute(newStep.When)
+		if err != nil {
+			// If we got an error, it might be because our "when" clause contains a task-expansion parameter (e.g. {{item}}).
+			// Since we don't perform task-expansion until later and task-expansion parameters won't get resolved here,
+			// we continue execution as normal
+			if newStep.ShouldExpand() {
+				proceed = true
+			} else {
+				return nil, err
+			}
+		}
+		if !proceed {
+			// We can simply return this WorkflowStep; the fact that it won't execute will be reconciled later on in execution
+			newStepGroup[i] = newStep
+			continue
+		}
+
 		// Step 2: replace all artifact references
 		for j, art := range newStep.Arguments.Artifacts {
 			if art.From == "" {
@@ -360,7 +379,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			}
 			resolvedArt, err := scope.resolveArtifact(art.From)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("unable to resolve references: %s", err)
 			}
 			resolvedArt.Name = art.Name
 			newStep.Arguments.Artifacts[j] = *resolvedArt
@@ -375,7 +394,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.WorkflowStep, stepsCtx *stepsContext) ([]wfv1.WorkflowStep, error) {
 	newStepGroup := make([]wfv1.WorkflowStep, 0)
 	for _, step := range stepGroup {
-		if len(step.WithItems) == 0 && step.WithParam == "" && step.WithSequence == nil {
+		if !step.ShouldExpand() {
 			newStepGroup = append(newStepGroup, step)
 			continue
 		}
@@ -459,6 +478,13 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 
 	if node.Phase != "" {
 		localScope["status"] = string(node.Phase)
+	}
+
+	if node.Inputs != nil {
+		for _, param := range node.Inputs.Parameters {
+			key := fmt.Sprintf("inputs.parameters.%s", param.Name)
+			localScope[key] = *param.Value
+		}
 	}
 
 	if node.Outputs != nil {
