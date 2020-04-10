@@ -515,6 +515,24 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 		return nil, errors.InternalWrapError(err)
 	}
 
+	// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
+	// the initial parameter resolution, since it's likely that the "when" clause will contain parameter references.
+	proceed, err := shouldExecute(newTask.When)
+	if err != nil {
+		// If we got an error, it might be because our "when" clause contains a task-expansion parameter (e.g. {{item}}).
+		// Since we don't perform task-expansion until later and task-expansion parameters won't get resolved here,
+		// we continue execution as normal
+		if newTask.ShouldExpand() {
+			proceed = true
+		} else {
+			return nil, err
+		}
+	}
+	if !proceed {
+		// We can simply return here; the fact that this task won't execute will be reconciled later on in execution
+		return &newTask, nil
+	}
+
 	// replace all artifact references
 	for j, art := range newTask.Arguments.Artifacts {
 		if art.From == "" {
