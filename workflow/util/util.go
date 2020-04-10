@@ -711,7 +711,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 		newWF.Status.StoredTemplates[id] = tmpl
 	}
 
-	err = packer.CompressWorkflowIfNeeded(wf)
+	err = packer.CompressWorkflowIfNeeded(newWF)
 	if err != nil {
 		log.Fatalf("unable to compress workflow: %s", err)
 	}
