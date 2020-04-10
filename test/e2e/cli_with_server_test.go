@@ -97,7 +97,6 @@ func (s *CLIWithServerSuite) TestArchive() {
 	})
 }
 
-
 func (s *CLIWithServerSuite) TestWorkflowRetryPersistence() {
 	if !s.Persistence.IsEnabled() {
 		// Persistence is disabled for this test, but it is enabled for the Argo Server in this test suite.
