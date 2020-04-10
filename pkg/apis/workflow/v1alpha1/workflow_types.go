@@ -753,6 +753,10 @@ func (step *WorkflowStep) GetTemplateRef() *TemplateRef {
 	return step.TemplateRef
 }
 
+func (step *WorkflowStep) ShouldExpand() bool {
+	return len(step.WithItems) != 0 || step.WithParam != "" || step.WithSequence != nil
+}
+
 // Sequence expands a workflow step into numeric range
 type Sequence struct {
 	// Count is number of elements in the sequence (default: 0). Not to be used with end
@@ -1588,6 +1592,10 @@ func (t *DAGTask) GetTemplateName() string {
 
 func (t *DAGTask) GetTemplateRef() *TemplateRef {
 	return t.TemplateRef
+}
+
+func (t *DAGTask) ShouldExpand() bool {
+	return len(t.WithItems) != 0 || t.WithParam != "" || t.WithSequence != nil
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
