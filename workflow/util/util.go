@@ -366,7 +366,7 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, repo sqldb.OffloadNodeStatu
 			nodes := wf.Status.Nodes
 			if wf.Status.IsOffloadNodeStatus() {
 				if !repo.IsEnabled() {
-					return false, fmt.Errorf(sqldb.OffloadNodeStatusDisabledWarning)
+					return false, fmt.Errorf(sqldb.OffloadNodeStatusDisabled)
 				}
 				var err error
 				nodes, err = repo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
@@ -389,7 +389,7 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, repo sqldb.OffloadNodeStatu
 			if workflowUpdated {
 				if wf.Status.IsOffloadNodeStatus() {
 					if !repo.IsEnabled() {
-						return false, fmt.Errorf(sqldb.OffloadNodeStatusDisabledWarning)
+						return false, fmt.Errorf(sqldb.OffloadNodeStatusDisabled)
 					}
 					offloadVersion, err := repo.Save(string(wf.UID), wf.Namespace, newNodes)
 					if err != nil {
@@ -645,7 +645,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, repo sqldb.OffloadNodeStatus
 	nodes := wf.Status.Nodes
 	if wf.Status.IsOffloadNodeStatus() {
 		if !repo.IsEnabled() {
-			return nil, fmt.Errorf(sqldb.OffloadNodeStatusDisabledWarning)
+			return nil, fmt.Errorf(sqldb.OffloadNodeStatusDisabled)
 		}
 		var err error
 		nodes, err = repo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
@@ -693,7 +693,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, repo sqldb.OffloadNodeStatus
 
 	if wf.Status.IsOffloadNodeStatus() {
 		if !repo.IsEnabled() {
-			return nil, fmt.Errorf(sqldb.OffloadNodeStatusDisabledWarning)
+			return nil, fmt.Errorf(sqldb.OffloadNodeStatusDisabled)
 		}
 		offloadVersion, err := repo.Save(string(newWF.UID), newWF.Namespace, newNodes)
 		if err != nil {
