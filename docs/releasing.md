@@ -6,7 +6,7 @@ Allow 1h to do a release.
 
 Cherry-pick your changes from master onto the release branch.
 
-Mandatory: the release branch must be green [in CircleCI](https://app.circleci.com/github/argoproj/argo/pipelines).
+The release branch should be green [in CircleCI](https://app.circleci.com/github/argoproj/argo/pipelines) before you start.
 
 ## Release
 
