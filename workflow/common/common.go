@@ -30,6 +30,8 @@ const (
 
 	// AnnotationKeyNodeName is the pod metadata annotation key containing the workflow node name
 	AnnotationKeyNodeName = workflow.WorkflowFullName + "/node-name"
+	// AnnotationKeyNodeName is the node's type
+	AnnotationKeyNodeType = workflow.WorkflowFullName + "/node-type"
 
 	// AnnotationKeyNodeMessage is the pod metadata annotation key the executor will use to
 	// communicate errors encountered by the executor during artifact load/save, etc...
@@ -57,6 +59,8 @@ const (
 	LabelKeyCronWorkflow = workflow.WorkflowFullName + "/cron-workflow"
 	// LabelKeyWorkflowTemplate is a label applied to Workflows that are submitted from Workflowtemplate
 	LabelKeyWorkflowTemplate = workflow.WorkflowFullName + "/workflow-template"
+	// LabelKeyWorkflowTemplate is a label applied to Workflows that are submitted from ClusterWorkflowtemplate
+	LabelKeyClusterWorkflowTemplate = workflow.WorkflowFullName + "/cluster-workflow-template"
 	// LabelKeyOnExit is a label applied to Pods that are run from onExit nodes, so that they are not shut down when stopping a Workflow
 	LabelKeyOnExit = workflow.WorkflowFullName + "/on-exit"
 

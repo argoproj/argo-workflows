@@ -2,6 +2,7 @@ package archive
 
 import (
 	"bufio"
+	"compress/gzip"
 	"crypto/rand"
 	"encoding/hex"
 	"os"
@@ -31,36 +32,110 @@ func tempFile(dir, prefix, suffix string) (*os.File, error) {
 }
 
 func TestTarDirectory(t *testing.T) {
-	f, err := tempFile(os.TempDir()+"/argo-test", "dir-", ".tgz")
-	assert.NoError(t, err)
-	log.Infof("Taring to %s", f.Name())
-	w := bufio.NewWriter(f)
+	tests := []struct {
+		name    string
+		src     string
+		level   int
+		wantErr bool
+	}{
+		{
+			"dir_missing",
+			"./fake/dir",
+			gzip.NoCompression,
+			true,
+		},
+		{
+			"level_default",
+			"../../test/e2e",
+			gzip.DefaultCompression,
+			false,
+		},
+		{
+			"level_none",
+			"../../test/e2e",
+			gzip.NoCompression,
+			false,
+		},
+		{
+			"level_out_of_range",
+			"../../test/e2e",
+			-5,
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f, err := tempFile(os.TempDir()+"/argo-test", "dir-"+tt.name+"-", ".tgz")
+			assert.NoError(t, err)
 
-	err = TarGzToWriter("../../test/e2e", w)
-	assert.NoError(t, err)
+			log.Infof("Taring to %s", f.Name())
 
-	err = f.Close()
-	assert.NoError(t, err)
+			err = TarGzToWriter(tt.src, tt.level, bufio.NewWriter(f))
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			err = os.Remove(f.Name())
+			assert.NoError(t, err)
+
+			err = f.Close()
+			assert.NoError(t, err)
+		})
+	}
 }
 
 func TestTarFile(t *testing.T) {
-	data, err := tempFile(os.TempDir()+"/argo-test", "file-", "")
-	assert.NoError(t, err)
-	_, err = data.WriteString("hello world")
-	assert.NoError(t, err)
-	data.Close()
+	tests := []struct {
+		name    string
+		level   int
+		wantErr bool
+	}{
+		{
+			"level_default",
+			gzip.DefaultCompression,
+			false,
+		},
+		{
+			"level_none",
+			gzip.NoCompression,
+			false,
+		},
+		{
+			"level_out_of_range",
+			-5,
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := tempFile(os.TempDir()+"/argo-test", "file-"+tt.name+"-", "")
+			assert.NoError(t, err)
+			_, err = data.WriteString("hello world")
+			assert.NoError(t, err)
+			err = data.Close()
+			assert.NoError(t, err)
 
-	dataTarPath := data.Name() + ".tgz"
-	f, err := os.Create(dataTarPath)
-	assert.NoError(t, err)
-	log.Infof("Taring to %s", f.Name())
-	w := bufio.NewWriter(f)
+			dataTarPath := data.Name() + ".tgz"
+			f, err := os.Create(dataTarPath)
+			assert.NoError(t, err)
 
-	err = TarGzToWriter(data.Name(), w)
-	assert.NoError(t, err)
-	err = os.Remove(data.Name())
-	assert.NoError(t, err)
+			log.Infof("Taring to %s", f.Name())
 
-	err = f.Close()
-	assert.NoError(t, err)
+			err = TarGzToWriter(data.Name(), tt.level, bufio.NewWriter(f))
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			err = os.Remove(data.Name())
+			assert.NoError(t, err)
+			err = f.Close()
+			assert.NoError(t, err)
+			err = os.Remove(f.Name())
+			assert.NoError(t, err)
+		})
+	}
 }

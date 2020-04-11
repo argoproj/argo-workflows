@@ -70,6 +70,7 @@ type WorkflowController struct {
 	// only complete (i.e. not running) workflows
 	completedWfInformer   cache.SharedIndexInformer
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
+	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
 	wfQueue               workqueue.RateLimitingInterface
 	podQueue              workqueue.RateLimitingInterface
@@ -83,10 +84,11 @@ type WorkflowController struct {
 }
 
 const (
-	workflowResyncPeriod         = 20 * time.Minute
-	workflowTemplateResyncPeriod = 20 * time.Minute
-	workflowMetricsResyncPeriod  = 1 * time.Minute
-	podResyncPeriod              = 30 * time.Minute
+	workflowResyncPeriod                = 20 * time.Minute
+	workflowTemplateResyncPeriod        = 20 * time.Minute
+	workflowMetricsResyncPeriod         = 1 * time.Minute
+	podResyncPeriod                     = 30 * time.Minute
+	clusterWorkflowTemplateResyncPeriod = 20 * time.Minute
 )
 
 // NewWorkflowController instantiates a new WorkflowController
@@ -169,6 +171,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	wfc.incompleteWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.incompleteWorkflowTweakListOptions)
 	wfc.completedWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.completedWorkflowTweakListOptions)
 	wfc.wftmplInformer = wfc.newWorkflowTemplateInformer()
+	wfc.cwftmplInformer = wfc.newClusterWorkflowTemplateInformer()
 
 	wfc.addWorkflowInformerHandler()
 	wfc.podInformer = wfc.newPodInformer()
@@ -177,13 +180,14 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.incompleteWfInformer.Run(ctx.Done())
 	go wfc.completedWfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
+	go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
 	go wfc.podLabeler(ctx.Done())
 	go wfc.podGarbageCollector(ctx.Done())
 	go wfc.periodicWorkflowGarbageCollector(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
-	for _, informer := range []cache.SharedIndexInformer{wfc.incompleteWfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
+	for _, informer := range []cache.SharedIndexInformer{wfc.incompleteWfInformer, wfc.wftmplInformer.Informer(), wfc.cwftmplInformer.Informer(), wfc.podInformer} {
 		if !cache.WaitForCacheSync(ctx.Done(), informer.HasSynced) {
 			log.Error("Timed out waiting for caches to sync")
 			return
@@ -647,6 +651,10 @@ func (wfc *WorkflowController) setWorkflowDefaults(wf *wfv1.Workflow) error {
 
 func (wfc *WorkflowController) newWorkflowTemplateInformer() wfextvv1alpha1.WorkflowTemplateInformer {
 	return wfextv.NewSharedInformerFactoryWithOptions(wfc.wfclientset, workflowTemplateResyncPeriod, wfextv.WithNamespace(wfc.GetManagedNamespace())).Argoproj().V1alpha1().WorkflowTemplates()
+}
+
+func (wfc *WorkflowController) newClusterWorkflowTemplateInformer() wfextvv1alpha1.ClusterWorkflowTemplateInformer {
+	return wfextv.NewSharedInformerFactoryWithOptions(wfc.wfclientset, clusterWorkflowTemplateResyncPeriod).Argoproj().V1alpha1().ClusterWorkflowTemplates()
 }
 
 func (wfc *WorkflowController) GetManagedNamespace() string {

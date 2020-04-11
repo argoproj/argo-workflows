@@ -3,7 +3,6 @@ kind: Kustomization
 
 bases:
   - ../../../../manifests/quick-start/postgres
-
 patchesStrategicMerge:
   - ../mixins/argo-server-deployment.yaml
   - ../mixins/workflow-controller-configmap.yaml

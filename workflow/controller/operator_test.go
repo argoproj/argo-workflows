@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
+	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
 	"github.com/argoproj/argo/workflow/common"
@@ -847,7 +848,7 @@ func TestSuspendResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow and operate again. two pods should be able to be scheduled
-	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, "")
+	err = util.ResumeWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "")
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -1166,7 +1167,7 @@ func TestSuspendTemplate(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
-	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, "")
+	err = util.ResumeWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "")
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -1239,7 +1240,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow, but with non-matching selector
-	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, "inputs.paramaters.param1.value=value2")
+	err = util.ResumeWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "inputs.paramaters.param1.value=value2")
 	assert.Error(t, err)
 
 	// operate the workflow. nothing should have happened
@@ -1251,7 +1252,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.True(t, util.IsWorkflowSuspended(wf))
 
 	// resume the workflow, but with matching selector
-	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1")
+	err = util.ResumeWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1")
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -2305,6 +2306,50 @@ func TestStepsOnExitFailures(t *testing.T) {
 	assert.Contains(t, woc.globalParams[common.GlobalVarWorkflowFailures], `[{\"displayName\":\"exit-handlers\",\"message\":\"Unexpected pod phase for exit-handlers: \",\"templateName\":\"intentional-fail\",\"phase\":\"Error\",\"podName\":\"exit-handlers\"`)
 }
 
+var onExitTimeout = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: exit-handlers
+spec:
+  entrypoint: intentional-fail
+  activeDeadlineSeconds: 0
+  onExit: exit-handler
+  templates:
+  - name: intentional-fail
+    suspend: {}
+  - name: exit-handler
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}}."]
+`
+
+func TestStepsOnExitTimeout(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// Test list expansion
+	wf := unmarshalWF(onExitTimeout)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	woc.operate()
+
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	onExitNodeIsPresent := false
+	for _, node := range wf.Status.Nodes {
+		if strings.Contains(node.Name, "onExit") && node.Phase == wfv1.NodePending {
+			onExitNodeIsPresent = true
+			break
+		}
+	}
+	assert.True(t, onExitNodeIsPresent)
+}
+
 var invalidSpec = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -2554,5 +2599,173 @@ func TestPodSpecLogForAllPods(t *testing.T) {
 	for _, node := range woc.wf.Status.Nodes {
 		assert.True(t, woc.shouldPrintPodSpec(node))
 	}
+}
 
+var retryNodeOutputs = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: daemon-step-dvbnn
+spec:
+  arguments: {}
+  entrypoint: daemon-example
+  templates:
+  - arguments: {}
+    inputs: {}
+    metadata: {}
+    name: daemon-example
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: influx
+        template: influxdb
+  - arguments: {}
+    container:
+      image: influxdb:1.2
+      name: ""
+      readinessProbe:
+        httpGet:
+          path: /ping
+          port: 8086
+      resources: {}
+    daemon: true
+    inputs: {}
+    metadata: {}
+    name: influxdb
+    outputs: {}
+    retryStrategy:
+      limit: 10
+status:
+  finishedAt: null
+  nodes:
+    daemon-step-dvbnn:
+      children:
+      - daemon-step-dvbnn-1159996203
+      displayName: daemon-step-dvbnn
+      finishedAt: "2020-04-02T16:29:24Z"
+      id: daemon-step-dvbnn
+      name: daemon-step-dvbnn
+      outboundNodes:
+      - daemon-step-dvbnn-2254877734
+      phase: Succeeded
+      startedAt: "2020-04-02T16:29:18Z"
+      templateName: daemon-example
+      type: Steps
+    daemon-step-dvbnn-1159996203:
+      boundaryID: daemon-step-dvbnn
+      children:
+      - daemon-step-dvbnn-3639466923
+      displayName: '[0]'
+      finishedAt: "2020-04-02T16:29:24Z"
+      id: daemon-step-dvbnn-1159996203
+      name: daemon-step-dvbnn[0]
+      phase: Succeeded
+      startedAt: "2020-04-02T16:29:18Z"
+      templateName: daemon-example
+      type: StepGroup
+    daemon-step-dvbnn-2254877734:
+      boundaryID: daemon-step-dvbnn
+      daemoned: true
+      displayName: influx(0)
+      finishedAt: "2020-04-02T16:29:24Z"
+      id: daemon-step-dvbnn-2254877734
+      name: daemon-step-dvbnn[0].influx(0)
+      phase: Running
+      podIP: 172.17.0.8
+      resourcesDuration:
+        cpu: 10
+        memory: 0
+      startedAt: "2020-04-02T16:29:18Z"
+      templateName: influxdb
+      type: Pod
+    daemon-step-dvbnn-3639466923:
+      boundaryID: daemon-step-dvbnn
+      children:
+      - daemon-step-dvbnn-2254877734
+      displayName: influx
+      finishedAt: "2020-04-02T16:29:24Z"
+      id: daemon-step-dvbnn-3639466923
+      name: daemon-step-dvbnn[0].influx
+      phase: Succeeded
+      startedAt: "2020-04-02T16:29:18Z"
+      templateName: influxdb
+      type: Retry
+  phase: Succeeded
+  startedAt: "2020-04-02T16:29:18Z"
+
+`
+
+// This tests to see if the outputs of the last child node of a retry node are added correctly to the scope
+func TestRetryNodeOutputs(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(retryNodeOutputs)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	retryNode := woc.getNodeByName("daemon-step-dvbnn[0].influx")
+	assert.NotNil(t, retryNode)
+	fmt.Println(retryNode)
+	scope := &wfScope{
+		scope: make(map[string]interface{}),
+	}
+	woc.buildLocalScope(scope, "steps.influx", retryNode)
+	assert.Contains(t, scope.scope, "steps.influx.ip")
+}
+
+var containerOutputsResult = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-
+spec:
+  entrypoint: hello-hello-hello
+  templates:
+  - name: hello-hello-hello
+    steps:
+    - - name: hello1
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "hello1"}]
+    - - name: hello2
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "{{steps.hello1.outputs.result}}"}]
+
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:latest
+      command: [echo]
+      args: ["{{pod.name}}: {{inputs.parameters.message}}"]
+`
+
+func TestContainerOutputsResult(t *testing.T) {
+
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// operate the workflow. it should create a pod.
+	wf := unmarshalWF(containerOutputsResult)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+
+	assert.True(t, hasOutputResultRef("hello1", &wf.Spec.Templates[0]))
+	assert.False(t, hasOutputResultRef("hello2", &wf.Spec.Templates[0]))
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+
+	for _, node := range wf.Status.Nodes {
+		if strings.Contains(node.Name, "hello1") {
+			assert.True(t, getStepOrDAGTaskName(node.Name) == "hello1")
+		} else if strings.Contains(node.Name, "hello2") {
+			assert.True(t, getStepOrDAGTaskName(node.Name) == "hello2")
+		}
+	}
 }
