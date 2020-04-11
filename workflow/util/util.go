@@ -753,7 +753,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, repo sqldb.OffloadNodeStatus
 	if err != nil {
 		return nil, fmt.Errorf("unable to compress workflow: %s", err)
 	}
-	
+
 	return wfClient.Update(newWF)
 }
 
