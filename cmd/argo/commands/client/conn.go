@@ -18,20 +18,21 @@ import (
 
 var argoServer string
 
-var Config clientcmd.ClientConfig
+var overrides = clientcmd.ConfigOverrides{}
 
-var ExplicitPath string
+var explicitPath string
 
 func AddKubectlFlagsToCmd(cmd *cobra.Command) {
-	// The "usual" clientcmd/kubectl flags
+	kflags := clientcmd.RecommendedConfigOverrideFlags("")
+	cmd.PersistentFlags().StringVar(&explicitPath, "kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
+	clientcmd.BindOverrideFlags(&overrides, cmd.PersistentFlags(), kflags)
+}
+
+func GetConfig() clientcmd.ClientConfig {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-	overrides := clientcmd.ConfigOverrides{}
-	kflags := clientcmd.RecommendedConfigOverrideFlags("")
-	cmd.PersistentFlags().StringVar(&ExplicitPath, "kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
-	loadingRules.ExplicitPath = ExplicitPath
-	clientcmd.BindOverrideFlags(&overrides, cmd.PersistentFlags(), kflags)
-	Config = clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
+	loadingRules.ExplicitPath = explicitPath
+	return clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
 }
 
 func AddArgoServerFlagsToCmd(cmd *cobra.Command) {
@@ -41,7 +42,7 @@ func AddArgoServerFlagsToCmd(cmd *cobra.Command) {
 func NewAPIClient() (context.Context, apiclient.Client) {
 	ctx, client, err := apiclient.NewClient(argoServer, func() string {
 		return GetAuthString()
-	}, Config)
+	}, GetConfig())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -49,7 +50,7 @@ func NewAPIClient() (context.Context, apiclient.Client) {
 }
 
 func Namespace() string {
-	namespace, _, err := Config.Namespace()
+	namespace, _, err := GetConfig().Namespace()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -63,11 +64,11 @@ func GetUser() wfv1.User {
 }
 
 func GetAuthString() string {
-	restConfig, err := Config.ClientConfig()
+	restConfig, err := GetConfig().ClientConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
-	authString, err := kubeconfig.GetAuthString(restConfig, ExplicitPath)
+	authString, err := kubeconfig.GetAuthString(restConfig, explicitPath)
 	if err != nil {
 		log.Fatal(err)
 	}

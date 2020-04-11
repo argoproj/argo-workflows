@@ -244,6 +244,10 @@
         "oss": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSArtifact",
           "title": "OSS contains OSS artifact location details"
+        },
+        "gcs": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GCSArtifact",
+          "title": "GCS contains GCS artifact location details"
         }
       },
       "description": "ArtifactLocation describes a location for a single or multiple artifacts.\nIt is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).\nIt is also used to describe the location of multiple artifacts such as the archive location\nof a single workflow step, which the executor will use as a default location to store its files."
@@ -290,27 +294,20 @@
       "type": "object",
       "properties": {
         "duration": {
-          "type": "string"
+          "type": "string",
+          "title": "Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. \"2m\", \"1h\")"
         },
         "factor": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "title": "Factor is a factor to multiply the base duration after each failed retry"
         },
         "maxDuration": {
-          "type": "string"
+          "type": "string",
+          "title": "MaxDuration is the maximum amount of time allowed for the backoff strategy"
         }
-      }
-    },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Condition": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string"
-        },
-        "type": {
-          "type": "string"
-        }
-      }
+      },
+      "title": "Backoff is a backoff strategy to use within retryStrategy"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ContinueOn": {
       "type": "object",
@@ -425,6 +422,33 @@
         }
       },
       "description": "ExecutorConfig holds configurations of an executor container."
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GCSArtifact": {
+      "type": "object",
+      "properties": {
+        "gCSBucket": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GCSBucket"
+        },
+        "key": {
+          "type": "string",
+          "title": "Key is the path in the bucket where the artifact resides"
+        }
+      },
+      "title": "GCSArtifact is the location of a GCS artifact"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GCSBucket": {
+      "type": "object",
+      "properties": {
+        "bucket": {
+          "type": "string",
+          "title": "Bucket is the name of the bucket"
+        },
+        "serviceAccountKeySecret": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",
+          "title": "ServiceAccountKeySecret is the secret selector to the bucket's service account key"
+        }
+      },
+      "title": "GCSBucket contains the access information for interfacring with a GCS bucket"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Gauge": {
       "type": "object",
@@ -914,7 +938,8 @@
       "type": "object",
       "properties": {
         "strategy": {
-          "type": "string"
+          "type": "string",
+          "title": "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\""
         }
       },
       "title": "PodGC describes how to delete completed pods as they complete"
@@ -1119,21 +1144,31 @@
       "properties": {
         "secondsAfterCompletion": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "title": "SecondsAfterCompletion is the number of seconds to live after completion"
         },
         "secondsAfterSuccess": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "title": "SecondsAfterSuccess is the number of seconds to live after success"
         },
         "secondsAfterFailure": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "title": "SecondsAfterFailure is the number of seconds to live after failure"
         }
       },
-      "title": "TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed"
+      "title": "TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TarStrategy": {
       "type": "object",
+      "properties": {
+        "compressionLevel": {
+          "type": "integer",
+          "format": "int32",
+          "description": "CompressionLevel specifies the gzip compression level to use for the artifact.\nDefaults to gzip.DefaultCompression."
+        }
+      },
       "title": "TarStrategy will tar and gzip the file or directory when saving"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Template": {
@@ -1324,6 +1359,11 @@
           "type": "boolean",
           "format": "boolean",
           "description": "RuntimeResolution skips validation at creation time.\nBy enabling this option, you can create the referred workflow template before the actual runtime."
+        },
+        "clusterscope": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate)."
         }
       },
       "description": "TemplateRef is a reference of template resource."
@@ -1360,6 +1400,10 @@
         "parameter": {
           "type": "string",
           "title": "Parameter reference to a step or dag task in which to retrieve an output parameter value from\n(e.g. '{{steps.mystep.outputs.myparam}}')"
+        },
+        "default": {
+          "type": "string",
+          "title": "Default specifies a value to be used if retrieving the value from the specified source fails"
         }
       },
       "title": "ValueFrom describes a location in which to obtain the value to a parameter"
@@ -1378,6 +1422,23 @@
         }
       },
       "title": "Workflow is the definition of a workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowCondition": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "title": "Type is the type of condition"
+        },
+        "status": {
+          "type": "string",
+          "title": "Status is the status of the condition"
+        },
+        "message": {
+          "type": "string",
+          "title": "Message is the condition message"
+        }
+      }
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowList": {
       "type": "object",
@@ -1502,7 +1563,7 @@
         },
         "ttlStrategy": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TTLStrategy",
-          "title": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it\nSucceeded or Failed. If this struct is set, once the Workflow finishes, it will be\ndeleted after the time to live expires. If this field is unset,\nthe controller config map will hold the default values\nUpdate"
+          "description": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it\nSucceeded or Failed. If this struct is set, once the Workflow finishes, it will be\ndeleted after the time to live expires. If this field is unset,\nthe controller config map will hold the default values."
         },
         "activeDeadlineSeconds": {
           "type": "string",
@@ -1613,12 +1674,20 @@
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Outputs",
           "title": "Outputs captures output values and artifact locations produced by the workflow via global outputs"
         },
-        "condition": {
+        "conditions": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Condition"
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowCondition"
           },
-          "title": "Condition for k8s conditions https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties"
+          "title": "Conditions is a list of conditions the Workflow may have"
+        },
+        "resourcesDuration": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          },
+          "title": "ResourcesDuration is the total for the workflow"
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"

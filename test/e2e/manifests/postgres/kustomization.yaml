@@ -3,14 +3,7 @@ kind: Kustomization
 
 bases:
   - ../../../../manifests/quick-start/postgres
-
 patchesStrategicMerge:
-  - overlays/argo-server-deployment.yaml
-
-patchesJson6902:
-  - target:
-      version: v1
-      group: apps
-      kind: Deployment
-      name: workflow-controller
-    path: overlays/workflow-controller-deployment.yaml
+  - ../mixins/argo-server-deployment.yaml
+  - ../mixins/workflow-controller-configmap.yaml
+  - ../mixins/workflow-controller-deployment.yaml

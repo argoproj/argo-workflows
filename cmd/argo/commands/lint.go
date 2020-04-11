@@ -5,8 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/argoproj/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	"github.com/argoproj/pkg/errors"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
@@ -40,25 +42,39 @@ func NewLintCommand() *cobra.Command {
 				return nil
 			}
 
+			var invalidWfErr error
 			for _, file := range args {
 				stat, err := os.Stat(file)
 				errors.CheckError(err)
 				if stat.IsDir() {
-					err := filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
+					_ = filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
+						// If there was an error with the walk, return
+						if err != nil {
+							return err
+						}
+
 						fileExt := filepath.Ext(info.Name())
 						switch fileExt {
 						case ".yaml", ".yml", ".json":
 						default:
 							return nil
 						}
-						return lint(path)
+						err = lint(path)
+						if err != nil {
+							invalidWfErr = fmt.Errorf("Invalid workflow/workflows found")
+							log.Warn(err)
+						}
+						return nil
 					})
-					errors.CheckError(err)
 				} else {
 					err := lint(file)
-					errors.CheckError(err)
+					if err != nil {
+						invalidWfErr = fmt.Errorf("Invalid workflow/workflows found")
+						log.Warn(err)
+					}
 				}
 			}
+			errors.CheckError(invalidWfErr)
 			fmt.Printf("Workflow manifests validated\n")
 		},
 	}

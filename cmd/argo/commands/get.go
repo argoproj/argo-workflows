@@ -107,8 +107,8 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 	if !wf.Status.StartedAt.IsZero() {
 		fmt.Printf(fmtStr, "Duration:", humanize.RelativeDuration(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time))
 	}
-	if !wf.Status.Nodes.GetResourcesRequested().IsZero() {
-		fmt.Printf(fmtStr, "ResourcesDuration:", wf.Status.Nodes.GetResourcesRequested())
+	if !wf.Status.ResourcesDuration.IsZero() {
+		fmt.Printf(fmtStr, "ResourcesDuration:", wf.Status.ResourcesDuration)
 	}
 
 	if len(wf.Spec.Arguments.Parameters) > 0 {
@@ -150,9 +150,9 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 		fmt.Println()
 		// apply a dummy FgDefault format to align tab writer with the rest of the columns
 		if getArgs.output == "wide" {
-			_, _ = fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\tRESOURCESDURATION\n", ansiFormat("STEP", FgDefault))
+			_, _ = fmt.Fprintf(w, "%s\tTEMPLATE\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\tRESOURCESDURATION\n", ansiFormat("STEP", FgDefault))
 		} else {
-			_, _ = fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tMESSAGE\tRESOURCESDURATION\n", ansiFormat("STEP", FgDefault))
+			_, _ = fmt.Fprintf(w, "%s\tTEMPLATE\tPODNAME\tDURATION\tMESSAGE\n", ansiFormat("STEP", FgDefault))
 		}
 
 		// Convert Nodes to Render Trees
@@ -438,25 +438,25 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, get
 	if node.IsActiveSuspendNode() {
 		nodeName = fmt.Sprintf("%s %s", nodeTypeIconMap[node.Type], node.DisplayName)
 	}
+	templateName := ""
 	if node.TemplateRef != nil {
-		nodeName = fmt.Sprintf("%s (%s/%s)", nodeName, node.TemplateRef.Name, node.TemplateRef.Template)
+		templateName = fmt.Sprintf("%s/%s", node.TemplateRef.Name, node.TemplateRef.Template)
 	} else if node.TemplateName != "" {
-		nodeName = fmt.Sprintf("%s (%s)", nodeName, node.TemplateName)
+		templateName = node.TemplateName
 	}
 	var args []interface{}
 	duration := humanize.RelativeDurationShort(node.StartedAt.Time, node.FinishedAt.Time)
 	if node.Type == wfv1.NodeTypePod {
-		args = []interface{}{nodePrefix, nodeName, node.ID, duration, node.Message}
+		args = []interface{}{nodePrefix, nodeName, templateName, node.ID, duration, node.Message}
 	} else {
-		args = []interface{}{nodePrefix, nodeName, "", "", node.Message}
+		args = []interface{}{nodePrefix, nodeName, templateName, "", "", node.Message}
 	}
 	if getArgs.output == "wide" {
 		msg := args[len(args)-1]
 		args[len(args)-1] = getArtifactsString(node)
 		args = append(args, msg, node.ResourcesDuration)
-		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\n", args...)
+		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\t%s\n", args...)
 	} else {
-		args = append(args, node.ResourcesDuration)
 		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\n", args...)
 	}
 }
