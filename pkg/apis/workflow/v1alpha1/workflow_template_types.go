@@ -38,14 +38,11 @@ type WorkflowTemplateList struct {
 	Items           WorkflowTemplates `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
-var _ TemplateGetter = &WorkflowTemplate{}
+var _ TemplateHolder = &WorkflowTemplate{}
 
 // WorkflowTemplateSpec is a spec of WorkflowTemplate.
 type WorkflowTemplateSpec struct {
-	// Templates is a list of workflow templates.
-	Templates []Template `json:"templates" protobuf:"bytes,1,rep,name=templates"`
-	// Arguments hold arguments to the template.
-	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`
+	WorkflowSpec `json:",inline" protobuf:"bytes,1,opt,name=workflowSpec"`
 }
 
 // GetTemplateByName retrieves a defined template by its name
@@ -58,7 +55,12 @@ func (wftmpl *WorkflowTemplate) GetTemplateByName(name string) *Template {
 	return nil
 }
 
-// GetTemplateScope returns the template scope of workflow template.
-func (wftmpl *WorkflowTemplate) GetTemplateScope() string {
-	return wftmpl.Name
+// GetResourceScope returns the template scope of workflow template.
+func (wftmpl *WorkflowTemplate) GetResourceScope() ResourceScope {
+	return ResourceScopeNamespaced
+}
+
+// GetTemplates returns the list of templates of workflow template
+func (wftmpl *WorkflowTemplate) GetTemplates() []Template {
+	return wftmpl.Spec.Templates
 }

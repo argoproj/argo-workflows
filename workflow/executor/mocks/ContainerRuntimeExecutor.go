@@ -13,13 +13,13 @@ type ContainerRuntimeExecutor struct {
 	mock.Mock
 }
 
-// CopyFile provides a mock function with given fields: containerID, sourcePath, destPath
-func (_m *ContainerRuntimeExecutor) CopyFile(containerID string, sourcePath string, destPath string) error {
-	ret := _m.Called(containerID, sourcePath, destPath)
+// CopyFile provides a mock function with given fields: containerID, sourcePath, destPath, compressionLevel
+func (_m *ContainerRuntimeExecutor) CopyFile(containerID string, sourcePath string, destPath string, compressionLevel int) error {
+	ret := _m.Called(containerID, sourcePath, destPath, compressionLevel)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string, string) error); ok {
-		r0 = rf(containerID, sourcePath, destPath)
+	if rf, ok := ret.Get(0).(func(string, string, string, int) error); ok {
+		r0 = rf(containerID, sourcePath, destPath, compressionLevel)
 	} else {
 		r0 = ret.Error(0)
 	}

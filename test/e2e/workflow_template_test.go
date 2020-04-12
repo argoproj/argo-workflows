@@ -16,6 +16,22 @@ type WorkflowTemplateSuite struct {
 	fixtures.E2ESuite
 }
 
+func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplate() {
+	s.Given().
+		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
+		WorkflowName("my-wf").
+		When().
+		CreateWorkflowTemplates().
+		RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template", "--name", "my-wf", "-l", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+		}).
+		WaitForWorkflow(20 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *v1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			assert.Equal(t, status.Phase, v1alpha1.NodeSucceeded)
+		})
+}
+
 func (s *WorkflowTemplateSuite) TestNestedWorkflowTemplate() {
 	s.Given().WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
 		WorkflowTemplate("@testdata/workflow-template-nested-template.yaml").

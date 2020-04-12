@@ -27,6 +27,7 @@ rules:
       - get
       - list
       - watch
+      - delete
   - apiGroups:
       - ""
     resources:
@@ -39,6 +40,7 @@ rules:
       - workflows
       - workflowtemplates
       - cronworkflows
+      - clusterworkflowtemplates
     verbs:
       - create
       - get

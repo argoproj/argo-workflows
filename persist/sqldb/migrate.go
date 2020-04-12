@@ -104,7 +104,10 @@ func (m migrate) Exec(ctx context.Context) error {
 		// ***
 		// THE CHANGES ABOVE THIS LINE MAY BE IN PER-PRODUCTION SYSTEMS - DO NOT CHANGE THEM
 		// ***
-		ansiSQLChange(`alter table argo_archived_workflows rename column id to uid`),
+		ternary(dbType == MySQL,
+			ansiSQLChange(`alter table argo_archived_workflows change column id uid varchar(128)`),
+			ansiSQLChange(`alter table argo_archived_workflows rename column id to uid`),
+		),
 		ternary(dbType == MySQL,
 			ansiSQLChange(`alter table argo_archived_workflows modify column uid varchar(128) not null`),
 			ansiSQLChange(`alter table argo_archived_workflows alter column uid set not null`),
@@ -147,7 +150,10 @@ func (m migrate) Exec(ctx context.Context) error {
 		ansiSQLChange(`alter table ` + m.tableName + ` drop column phase`),
 		ansiSQLChange(`alter table ` + m.tableName + ` drop column startedat`),
 		ansiSQLChange(`alter table ` + m.tableName + ` drop column finishedat`),
-		ansiSQLChange(`alter table ` + m.tableName + ` rename column id to uid`),
+		ternary(dbType == MySQL,
+			ansiSQLChange(`alter table `+m.tableName+` change column id uid varchar(128)`),
+			ansiSQLChange(`alter table `+m.tableName+` rename column id to uid`),
+		),
 		ternary(dbType == MySQL,
 			ansiSQLChange(`alter table `+m.tableName+` modify column uid varchar(128) not null`),
 			ansiSQLChange(`alter table `+m.tableName+` alter column uid set not null`),
@@ -215,6 +221,32 @@ func (m migrate) Exec(ctx context.Context) error {
 			ansiSQLChange(`alter table `+m.tableName+` modify column nodes json not null`),
 			ansiSQLChange(`alter table `+m.tableName+` alter column nodes type json using nodes::json`),
 		),
+		// add instanceid column to table argo_archived_workflows
+		ansiSQLChange(`alter table argo_archived_workflows add column instanceid varchar(64)`),
+		ansiSQLChange(`update argo_archived_workflows set instanceid = '' where instanceid is null`),
+		ternary(dbType == MySQL,
+			ansiSQLChange(`alter table argo_archived_workflows modify column instanceid varchar(64) not null`),
+			ansiSQLChange(`alter table argo_archived_workflows alter column instanceid set not null`),
+		),
+		// drop argo_archived_workflows index
+		ternary(dbType == MySQL,
+			ansiSQLChange(`drop index argo_archived_workflows_i1 on argo_archived_workflows`),
+			ansiSQLChange(`drop index argo_archived_workflows_i1`),
+		),
+		// add argo_archived_workflows index
+		ansiSQLChange(`create index argo_archived_workflows_i1 on argo_archived_workflows (clustername,instanceid,namespace)`),
+		// drop m.tableName indexes
+		// xxx_i1 is not needed because xxx_i2 already covers it, drop both and recreat an index named xxx_i1
+		ternary(dbType == MySQL,
+			ansiSQLChange(`drop index `+m.tableName+`_i1 on `+m.tableName),
+			ansiSQLChange(`drop index `+m.tableName+`_i1`),
+		),
+		ternary(dbType == MySQL,
+			ansiSQLChange(`drop index `+m.tableName+`_i2 on `+m.tableName),
+			ansiSQLChange(`drop index `+m.tableName+`_i2`),
+		),
+		// add m.tableName index
+		ansiSQLChange(`create index ` + m.tableName + `_i1 on ` + m.tableName + ` (clustername,namespace,updatedat)`),
 	} {
 		err := m.applyChange(ctx, changeSchemaVersion, change)
 		if err != nil {

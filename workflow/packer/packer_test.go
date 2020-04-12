@@ -21,7 +21,7 @@ func TestDecompressWorkflow(t *testing.T) {
 				Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}},
 			},
 		}
-		err := CompressWorkflow(wf)
+		err := CompressWorkflowIfNeeded(wf)
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wf)
 			assert.NotEmpty(t, wf.Status.Nodes)
@@ -40,7 +40,7 @@ func TestDecompressWorkflow(t *testing.T) {
 				Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}, "bar": wfv1.NodeStatus{}},
 			},
 		}
-		err := CompressWorkflow(wf)
+		err := CompressWorkflowIfNeeded(wf)
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wf)
 			assert.Empty(t, wf.Status.Nodes)
@@ -55,11 +55,14 @@ func TestDecompressWorkflow(t *testing.T) {
 	})
 	t.Run("TooLargeToCompressWorkflow", func(t *testing.T) {
 		wf := &wfv1.Workflow{
+			Spec: wfv1.WorkflowSpec{
+				Entrypoint: "main",
+			},
 			Status: wfv1.WorkflowStatus{
 				Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{}, "bar": wfv1.NodeStatus{}, "baz": wfv1.NodeStatus{}, "qux": wfv1.NodeStatus{}},
 			},
 		}
-		err := CompressWorkflow(wf)
+		err := CompressWorkflowIfNeeded(wf)
 		if assert.Error(t, err) {
 			assert.True(t, IsTooLargeError(err))
 			// if too large, we want the original back please

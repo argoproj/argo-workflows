@@ -27,7 +27,7 @@ func (k *KubeletExecutor) GetFileContents(containerID string, sourcePath string)
 	return "", errors.Errorf(errors.CodeNotImplemented, "GetFileContents() is not implemented in the kubelet executor.")
 }
 
-func (k *KubeletExecutor) CopyFile(containerID string, sourcePath string, destPath string) error {
+func (k *KubeletExecutor) CopyFile(containerID string, sourcePath string, destPath string, compressionLevel int) error {
 	return errors.Errorf(errors.CodeNotImplemented, "CopyFile() is not implemented in the kubelet executor.")
 }
 

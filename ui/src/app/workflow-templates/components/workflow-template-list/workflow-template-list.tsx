@@ -12,6 +12,7 @@ import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {exampleWorkflowTemplate} from '../../../shared/examples';
 import {services} from '../../../shared/services';
+import {Utils} from '../../../shared/utils';
 
 require('./workflow-template-list.scss');
 
@@ -31,6 +32,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
         this.setState({namespace});
         history.pushState(null, '', uiUrl('workflow-templates/' + namespace));
         this.fetchWorkflowTemplates();
+        Utils.setCurrentNamespace(namespace);
     }
 
     private get sidePanel() {
@@ -43,7 +45,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = {loading: true, namespace: this.props.match.params.namespace || ''};
+        this.state = {loading: true, namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || ''};
     }
 
     public componentDidMount(): void {
@@ -80,6 +82,15 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                             <ResourceSubmit<models.WorkflowTemplate>
                                 resourceName={'Workflow Template'}
                                 defaultResource={exampleWorkflowTemplate(this.namespace || 'default')}
+                                validate={wfValue => {
+                                    if (!wfValue || !wfValue.metadata) {
+                                        return {valid: false, message: 'Invalid WorkflowTemplate definition'};
+                                    }
+                                    if (wfValue.metadata.namespace === undefined || wfValue.metadata.namespace === '') {
+                                        return {valid: false, message: 'Namespace is missing'};
+                                    }
+                                    return {valid: true};
+                                }}
                                 onSubmit={wfTmpl => {
                                     return services.workflowTemplate
                                         .create(wfTmpl, wfTmpl.metadata.namespace)

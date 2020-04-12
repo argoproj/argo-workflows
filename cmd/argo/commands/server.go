@@ -39,7 +39,7 @@ See %s`, help.ArgoSever),
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
 
-			config, err := client.Config.ClientConfig()
+			config, err := client.GetConfig().ClientConfig()
 			if err != nil {
 				return err
 			}

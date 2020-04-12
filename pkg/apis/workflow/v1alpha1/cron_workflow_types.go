@@ -24,6 +24,7 @@ type CronWorkflowList struct {
 	Items           []CronWorkflow `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
+// CronWorkflowSpec is the specification of a CronWorkflow
 type CronWorkflowSpec struct {
 	// WorkflowSpec is the spec of the workflow to be run
 	WorkflowSpec WorkflowSpec `json:"workflowSpec" protobuf:"bytes,1,opt,name=workflowSpec,casttype=WorkflowSpec"`
@@ -42,8 +43,11 @@ type CronWorkflowSpec struct {
 	FailedJobsHistoryLimit *int32 `json:"failedJobsHistoryLimit,omitempty" protobuf:"varint,7,opt,name=failedJobsHistoryLimit"`
 	// Timezone is the timezone against which the cron schedule will be calculated, e.g. "Asia/Tokyo". Default is machine's local time.
 	Timezone string `json:"timezone,omitempty" protobuf:"bytes,8,opt,name=timezone"`
+	// WorkflowMetadata contains some metadata of the workflow to be run
+	WorkflowMetadata *metav1.ObjectMeta `json:"workflowMetadata,omitempty" protobuf:"bytes,9,opt,name=workflowMeta"`
 }
 
+// CronWorkflowStatus is the status of a CronWorkflow
 type CronWorkflowStatus struct {
 	// Active is a list of active workflows stemming from this CronWorkflow
 	Active []v1.ObjectReference `json:"active,omitempty" protobuf:"bytes,1,rep,name=active"`

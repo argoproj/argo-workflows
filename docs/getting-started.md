@@ -11,56 +11,16 @@ the workflows. Here are the requirements and steps to run the workflows.
 
 ## 1. Download the Argo CLI
 
-### Mac
+Download the latest Argo CLI from our [releases page](https://github.com/argoproj/argo/releases).
 
-Available via `brew`
-```sh
-brew install argoproj/tap/argo
-```
-And via `curl`
-```sh
-# Download the binary
-curl -sLO https://github.com/argoproj/argo/releases/download/v2.5.2/argo-darwin-amd64
-
-# Make binary executable
-chmod +x argo-darwin-amd64
-
-# Move binary to path
-mv ./argo-darwin-amd64 /usr/local/bin/argo
-
-# Test installation
-argo version
-```
-
-### Linux
-
-Available via `curl`
-```sh
-# Download the binary
-curl -sLO https://github.com/argoproj/argo/releases/download/v2.5.2/argo-linux-amd64
-
-# Make binary executable
-chmod +x argo-linux-amd64
-
-# Move binary to path
-mv ./argo-linux-amd64 /usr/local/bin/argo
-
-# Test installation
-argo version
-```
-
-### Binaries
-
-You can download the latest and previous Argo binaries from our [releases page](https://github.com/argoproj/argo/releases/).
-
-## 2. Install the Controller and UI
+## 2. Install the Controller
 
 ```sh
 kubectl create namespace argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/v2.5.2/manifests/install.yaml
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/manifests/install.yaml
 ```
 
-Namespaced installs as well as installs with MinIO and/or a database built in [are also available](https://github.com/argoproj/argo/tree/v2.5.2/manifests). 
+Namespaced installs as well as installs with MinIO and/or a database built in [are also available](https://github.com/argoproj/argo/tree/stable/manifests). 
 
 Examples below will assume you've installed argo in the `argo` namespace. If you have not, adjust 
 the commands accordingly.
@@ -169,7 +129,7 @@ Add the following:
 ```yaml
 data:
   config: |
-    artifactRepository:
+    artifactRepository: |
       s3:
         bucket: my-bucket
         endpoint: argo-artifacts:9000
@@ -205,6 +165,9 @@ kubectl -n argo port-forward deployment/argo-server 2746:2746
 ```
 
 Then visit: http://127.0.0.1:2746
+
+See the [Argo Server documentation](./argo-server.md) for config options, authentication,
+managed namespaces, etc.
 
 > v2.4 and before
 

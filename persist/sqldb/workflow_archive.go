@@ -3,7 +3,6 @@ package sqldb
 import (
 	"context"
 	"encoding/json"
-	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -21,6 +20,7 @@ const archiveLabelsTableName = archiveTableName + "_labels"
 
 type archivedWorkflowMetadata struct {
 	ClusterName string         `db:"clustername"`
+	InstanceID  string         `db:"instanceid"`
 	UID         string         `db:"uid"`
 	Name        string         `db:"name"`
 	Namespace   string         `db:"namespace"`
@@ -44,7 +44,7 @@ type archivedWorkflowLabelRecord struct {
 
 type WorkflowArchive interface {
 	ArchiveWorkflow(wf *wfv1.Workflow) error
-	ListWorkflows(namespace string, labelRequirements labels.Requirements, limit, offset int) (wfv1.Workflows, error)
+	ListWorkflows(namespace string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements, limit, offset int) (wfv1.Workflows, error)
 	GetWorkflow(uid string) (*wfv1.Workflow, error)
 	DeleteWorkflow(uid string) error
 }
@@ -52,11 +52,13 @@ type WorkflowArchive interface {
 type workflowArchive struct {
 	session     sqlbuilder.Database
 	clusterName string
+	instanceID  string
 	dbType      dbType
 }
 
-func NewWorkflowArchive(session sqlbuilder.Database, clusterName string) WorkflowArchive {
-	return &workflowArchive{session: session, clusterName: clusterName, dbType: dbTypeFor(session)}
+// NewWorkflowArchive returns a new workflowArchive
+func NewWorkflowArchive(session sqlbuilder.Database, clusterName string, instanceID string) WorkflowArchive {
+	return &workflowArchive{session: session, clusterName: clusterName, instanceID: instanceID, dbType: dbTypeFor(session)}
 }
 
 func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
@@ -67,13 +69,19 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 		return err
 	}
 	return r.session.Tx(context.Background(), func(sess sqlbuilder.Tx) error {
-		// We assume that we're much more likely to be inserting rows that updating them, so we try and insert,
-		// and if that fails, then we update.
-		// There is no check for race condition here, last writer wins.
+		_, err := sess.
+			DeleteFrom(archiveTableName).
+			Where(db.Cond{"clustername": r.clusterName}).
+			And(db.Cond{"uid": wf.UID}).
+			Exec()
+		if err != nil {
+			return err
+		}
 		_, err = sess.Collection(archiveTableName).
 			Insert(&archivedWorkflowRecord{
 				archivedWorkflowMetadata: archivedWorkflowMetadata{
 					ClusterName: r.clusterName,
+					InstanceID:  r.instanceID,
 					UID:         string(wf.UID),
 					Name:        wf.Name,
 					Namespace:   wf.Namespace,
@@ -84,29 +92,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 				Workflow: string(workflow),
 			})
 		if err != nil {
-			if isDuplicateKeyError(err) {
-				res, err := sess.
-					Update(archiveTableName).
-					Set("workflow", string(workflow)).
-					Set("phase", wf.Status.Phase).
-					Set("startedat", wf.Status.StartedAt.Time).
-					Set("finishedat", wf.Status.FinishedAt.Time).
-					Where(db.Cond{"clustername": r.clusterName}).
-					And(db.Cond{"uid": wf.UID}).
-					Exec()
-				if err != nil {
-					return err
-				}
-				rowsAffected, err := res.RowsAffected()
-				if err != nil {
-					return err
-				}
-				if rowsAffected != 1 {
-					logCtx.WithField("rowsAffected", rowsAffected).Warn("Expected exactly one row affected")
-				}
-			} else {
-				return err
-			}
+			return err
 		}
 
 		// insert the labels
@@ -119,28 +105,14 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 					Value:       value,
 				})
 			if err != nil {
-				if isDuplicateKeyError(err) {
-					_, err = sess.
-						Update(archiveLabelsTableName).
-						Set("value", value).
-						Where(db.Cond{"clustername": r.clusterName}).
-						And(db.Cond{"uid": wf.UID}).
-						And(db.Cond{"name": key}).
-						Exec()
-					if err != nil {
-						return err
-					}
-				} else {
-					return err
-				}
+				return err
 			}
-
 		}
 		return nil
 	})
 }
 
-func (r *workflowArchive) ListWorkflows(namespace string, labelRequirements labels.Requirements, limit int, offset int) (wfv1.Workflows, error) {
+func (r *workflowArchive) ListWorkflows(namespace string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements, limit int, offset int) (wfv1.Workflows, error) {
 	var archivedWfs []archivedWorkflowMetadata
 	clause, err := labelsClause(r.dbType, labelRequirements)
 	if err != nil {
@@ -150,7 +122,9 @@ func (r *workflowArchive) ListWorkflows(namespace string, labelRequirements labe
 		Select("name", "namespace", "uid", "phase", "startedat", "finishedat").
 		From(archiveTableName).
 		Where(db.Cond{"clustername": r.clusterName}).
+		And(db.Cond{"instanceid": r.instanceID}).
 		And(namespaceEqual(namespace)).
+		And(startedAtClause(minStartedAt, maxStartedAt)).
 		And(clause).
 		OrderBy("-startedat").
 		Limit(limit).
@@ -178,6 +152,17 @@ func (r *workflowArchive) ListWorkflows(namespace string, labelRequirements labe
 	return wfs, nil
 }
 
+func startedAtClause(from, to time.Time) db.Compound {
+	var conds []db.Compound
+	if !from.IsZero() {
+		conds = append(conds, db.Cond{"startedat > ": from})
+	}
+	if !to.IsZero() {
+		conds = append(conds, db.Cond{"startedat < ": to})
+	}
+	return db.And(conds...)
+}
+
 func namespaceEqual(namespace string) db.Cond {
 	if namespace == "" {
 		return db.Cond{}
@@ -192,10 +177,11 @@ func (r *workflowArchive) GetWorkflow(uid string) (*wfv1.Workflow, error) {
 		Select("workflow").
 		From(archiveTableName).
 		Where(db.Cond{"clustername": r.clusterName}).
+		And(db.Cond{"instanceid": r.instanceID}).
 		And(db.Cond{"uid": uid}).
 		One(archivedWf)
 	if err != nil {
-		if strings.Contains(err.Error(), "no more rows") {
+		if err == db.ErrNoMoreRows {
 			return nil, nil
 		}
 		return nil, err
@@ -212,6 +198,7 @@ func (r *workflowArchive) DeleteWorkflow(uid string) error {
 	rs, err := r.session.
 		DeleteFrom(archiveTableName).
 		Where(db.Cond{"clustername": r.clusterName}).
+		And(db.Cond{"instanceid": r.instanceID}).
 		And(db.Cond{"uid": uid}).
 		Exec()
 	if err != nil {

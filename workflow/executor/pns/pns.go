@@ -117,7 +117,7 @@ func (p *PNSExecutor) exitChroot() error {
 }
 
 // CopyFile copies a source file in a container to a local path
-func (p *PNSExecutor) CopyFile(containerID string, sourcePath string, destPath string) (err error) {
+func (p *PNSExecutor) CopyFile(containerID string, sourcePath string, destPath string, compressionLevel int) (err error) {
 	destFile, err := os.Create(destPath)
 	if err != nil {
 		return err
@@ -139,7 +139,7 @@ func (p *PNSExecutor) CopyFile(containerID string, sourcePath string, destPath s
 		return err
 	}
 
-	err = archive.TarGzToWriter(sourcePath, w)
+	err = archive.TarGzToWriter(sourcePath, compressionLevel, w)
 	return err
 }
 

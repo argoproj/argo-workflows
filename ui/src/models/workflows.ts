@@ -1,10 +1,6 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
 import * as moment from 'moment';
 
-export interface Info {
-    managedNamespace?: string;
-}
-
 /**
  * Arguments to a template
  */
@@ -664,6 +660,11 @@ export interface NodeStatus {
     finishedAt: kubernetes.Time;
 
     /**
+     * How much resource was used.
+     */
+    resourcesDuration?: {[resource: string]: number};
+
+    /**
      * PodIP captures the IP of the pod for daemoned steps
      */
     podIP: string;
@@ -762,11 +763,29 @@ export interface WorkflowStatus {
 
     compressedNodes: string;
 
-    /*
+    /**
      * StoredTemplates is a mapping between a template ref and the node's status.
      */
     storedTemplates: {[name: string]: Template};
+
+    /**
+     * ResourcesDuration tracks how much resources were used.
+     */
+    resourcesDuration?: {[resource: string]: number};
+
+    /**
+     * Conditions is a list of WorkflowConditions
+     */
+    conditions?: WorkflowCondition[];
 }
+
+export interface WorkflowCondition {
+    type: WorkflowConditionType;
+    status: ConditionStatus;
+    message: string;
+}
+export type WorkflowConditionType = 'Completed' | 'SpecWarning';
+export type ConditionStatus = 'True' | 'False' | 'Unknown;';
 
 /**
  * WorkflowList is list of Workflow resources
@@ -802,7 +821,7 @@ export interface WorkflowSpec {
     /**
      * Entrypoint is a template reference to the starting point of the workflow
      */
-    entrypoint: string;
+    entrypoint?: string;
     /**
      * ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images in pods that reference this ServiceAccount.
      * ImagePullSecrets are distinct from Secrets because Secrets can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet.

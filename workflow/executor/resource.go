@@ -143,9 +143,10 @@ func (we *WorkflowExecutor) WaitResource(resourceNamespace string, resourceName 
 		} else {
 			log.Warnf("Waiting for resource %s resulted in error %v", resourceName, err)
 		}
+		return err
 	}
 
-	return err
+	return nil
 }
 
 func checkIfResourceDeleted(resourceName string, resourceNamespace string) bool {
@@ -308,10 +309,15 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 		log.Info(cmd.Args)
 		out, err := cmd.Output()
 		if err != nil {
-			if exErr, ok := err.(*exec.ExitError); ok {
-				log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
+			// We have a default value to use instead of returning an error
+			if param.ValueFrom.Default != "" {
+				out = []byte(param.ValueFrom.Default)
+			} else {
+				if exErr, ok := err.(*exec.ExitError); ok {
+					log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
+				}
+				return errors.InternalWrapError(err)
 			}
-			return errors.InternalWrapError(err)
 		}
 		output := string(out)
 		we.Template.Outputs.Parameters[i].Value = &output

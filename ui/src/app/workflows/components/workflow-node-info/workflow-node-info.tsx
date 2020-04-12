@@ -5,6 +5,7 @@ import * as React from 'react';
 
 import * as models from '../../../../models';
 import {Timestamp} from '../../../shared/components/timestamp';
+import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 
@@ -18,6 +19,7 @@ function nodeDuration(node: models.NodeStatus, now: moment.Moment) {
 interface Props {
     node: models.NodeStatus;
     workflow: models.Workflow;
+    links: models.Link[];
     archived: boolean;
     onShowContainerLogs: (nodeId: string, container: string) => any;
     onShowYaml?: (nodeId: string) => any;
@@ -71,7 +73,12 @@ export const WorkflowNodeSummary = (props: Props) => {
     if (props.node.type === 'Pod') {
         attributes.splice(2, 0, {title: 'POD NAME', value: props.node.id});
     }
-    const template = Utils.getResolvedTemplates(props.workflow, props.node);
+    if (props.node.resourcesDuration) {
+        attributes.push({
+            title: 'RESOURCES DURATION',
+            value: <ResourcesDuration resourcesDuration={props.node.resourcesDuration} />
+        });
+    }
     return (
         <div className='white-box'>
             <div className='white-box__details'>{<AttributeRows attributes={attributes} />}</div>
@@ -79,11 +86,21 @@ export const WorkflowNodeSummary = (props: Props) => {
                 <button className='argo-button argo-button--base-o' onClick={() => props.onShowYaml && props.onShowYaml(props.node.id)}>
                     YAML
                 </button>{' '}
-                {template && (template.container || template.script) && (
+                {props.node.type === 'Pod' && (
                     <button className='argo-button argo-button--base-o' onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.node.id, 'main')}>
                         LOGS
                     </button>
                 )}
+                {props.links &&
+                    props.links
+                        .filter(link => link.scope === 'pod')
+                        .map(link => (
+                            <a
+                                className='argo-button argo-button--base-o'
+                                href={link.url.replace('${metadata.namespace}', props.workflow.metadata.namespace).replace('${metadata.name}', props.node.id)}>
+                                <i className='fa fa-link' /> {link.name}
+                            </a>
+                        ))}
             </div>
         </div>
     );
@@ -118,6 +135,10 @@ export const WorkflowNodeInputs = (props: {inputs: models.Inputs}) => {
     );
 };
 
+function hasEnv(container: models.kubernetes.Container | models.Sidecar | models.Script): container is models.kubernetes.Container | models.Sidecar {
+    return (container as models.kubernetes.Container | models.Sidecar).env !== undefined;
+}
+
 export const WorkflowNodeContainer = (props: {
     nodeId: string;
     container: models.kubernetes.Container | models.Sidecar | models.Script;
@@ -136,7 +157,13 @@ export const WorkflowNodeContainer = (props: {
             : {
                   title: 'ARGS',
                   value: <span className='workflow-node-info__multi-line'>{(container.args || []).join(' ')}</span>
+              },
+        hasEnv(container)
+            ? {
+                  title: 'ENV',
+                  value: <span className='workflow-node-info__multi-line'>{(container.env || []).map(e => `${e.name}=${e.value}`).join('\n')}</span>
               }
+            : {title: 'ENV', value: <span className='workflow-node-info__multi-line' />}
     ];
     return (
         <div className='white-box'>
