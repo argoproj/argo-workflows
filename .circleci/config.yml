@@ -163,6 +163,7 @@ jobs:
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
             make test 2>&1 | tee test-results/test.out
+      - run: echo "sonar.pullrequest.branch=$CIRCLE_BRANCH" >> sonar-project.properties
       - sonarcloud/scan
       - store_test_results:
           path: test-results
