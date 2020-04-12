@@ -421,6 +421,20 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, repo sqldb.OffloadNodeStatu
 	}
 }
 
+func selectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
+	nodeFields := fields.Set{
+		"displayName":  node.DisplayName,
+		"templateName": node.TemplateName,
+	}
+	if node.Inputs != nil {
+		for _, inParam := range node.Inputs.Parameters {
+			nodeFields[fmt.Sprintf("inputs.parameters.%s.value", inParam.Name)] = *inParam.Value
+		}
+	}
+
+	return selector.Matches(nodeFields)
+}
+
 func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, workflowName string, nodeFieldSelector string, phase wfv1.NodePhase, message string) error {
 	selector, err := fields.ParseSelector(nodeFieldSelector)
 
@@ -441,16 +455,7 @@ func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, workflowName strin
 		nodeUpdated := false
 		for nodeID, node := range wf.Status.Nodes {
 			if node.IsActiveSuspendNode() {
-				nodeFields := fields.Set{
-					"displayName": node.DisplayName,
-				}
-				if node.Inputs != nil {
-					for _, inParam := range node.Inputs.Parameters {
-						nodeFields[fmt.Sprintf("inputs.parameters.%s.value", inParam.Name)] = *inParam.Value
-					}
-				}
-
-				if selector.Matches(nodeFields) {
+				if selectorMatchesNode(selector, node) {
 					node.Phase = phase
 					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 					if len(message) > 0 {
@@ -612,7 +617,7 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 }
 
 // RetryWorkflow updates a workflow, deleting all failed steps as well as the onExit node (and children)
-func RetryWorkflow(kubeClient kubernetes.Interface, repo sqldb.OffloadNodeStatusRepo, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow) (*wfv1.Workflow, error) {
+func RetryWorkflow(kubeClient kubernetes.Interface, repo sqldb.OffloadNodeStatusRepo, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
 	switch wf.Status.Phase {
 	case wfv1.NodeFailed, wfv1.NodeError:
 	default:
@@ -634,12 +639,12 @@ func RetryWorkflow(kubeClient kubernetes.Interface, repo sqldb.OffloadNodeStatus
 	newWF.Status.Phase = wfv1.NodeRunning
 	newWF.Status.Message = ""
 	newWF.Status.FinishedAt = metav1.Time{}
+	newWF.Spec.Shutdown = ""
 	if newWF.Spec.ActiveDeadlineSeconds != nil && *newWF.Spec.ActiveDeadlineSeconds == 0 {
 		// if it was terminated, unset the deadline
 		newWF.Spec.ActiveDeadlineSeconds = nil
 	}
 
-	// Iterate the previous nodes. If it was successful Pod carry it forward
 	newNodes := make(map[string]wfv1.NodeStatus)
 	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
 	nodes := wf.Status.Nodes
@@ -654,10 +659,22 @@ func RetryWorkflow(kubeClient kubernetes.Interface, repo sqldb.OffloadNodeStatus
 		}
 	}
 
+	// Get all children of nodes that match filter
+	nodeIDsToReset, err := getNodeIDsToReset(restartSuccessful, nodeFieldSelector, nodes)
+	if err != nil {
+		return nil, err
+	}
+
+	// Iterate the previous nodes. If it was successful Pod carry it forward
 	for _, node := range nodes {
+		doForceResetNode := false
+		if _, present := nodeIDsToReset[node.ID]; present {
+			// if we are resetting this node then don't carry it across regardless of its phase
+			doForceResetNode = true
+		}
 		switch node.Phase {
 		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
-			if !strings.HasPrefix(node.Name, onExitNodeName) {
+			if !strings.HasPrefix(node.Name, onExitNodeName) && !doForceResetNode {
 				newNodes[node.ID] = node
 				continue
 			}
@@ -717,6 +734,37 @@ func RetryWorkflow(kubeClient kubernetes.Interface, repo sqldb.OffloadNodeStatus
 	}
 
 	return wfClient.Update(newWF)
+}
+
+func getNodeIDsToReset(restartSuccessful bool, nodeFieldSelector string, nodes wfv1.Nodes) (map[string]bool, error) {
+	nodeIDsToReset := make(map[string]bool)
+	if !restartSuccessful || len(nodeFieldSelector) == 0 {
+		return nodeIDsToReset, nil
+	}
+
+	selector, err := fields.ParseSelector(nodeFieldSelector)
+	if err != nil {
+		return nil, err
+	} else {
+		for _, node := range nodes {
+			if selectorMatchesNode(selector, node) {
+				//traverse all children of the node
+				var queue []string
+				queue = append(queue, node.ID)
+
+				for len(queue) > 0 {
+					childNode := queue[0]
+					//if the child isn't already in nodeIDsToReset then we add it and traverse its children
+					if _, present := nodeIDsToReset[childNode]; !present {
+						nodeIDsToReset[childNode] = true
+						queue = append(queue, nodes[childNode].Children...)
+					}
+					queue = queue[1:]
+				}
+			}
+		}
+	}
+	return nodeIDsToReset, nil
 }
 
 var errSuspendedCompletedWorkflow = errors.Errorf(errors.CodeBadRequest, "cannot suspend completed workflows")
