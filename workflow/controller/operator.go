@@ -797,11 +797,18 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	// It is now impossible to infer pod status. The only thing we can do at this point is to mark
 	// the node with Error.
 	for nodeID, node := range woc.wf.Status.Nodes {
-		if node.Type != wfv1.NodeTypePod || node.Completed() || node.StartedAt.IsZero() || node.Pending() {
+		if node.Type != wfv1.NodeTypePod || node.Completed() || node.StartedAt.IsZero() {
 			// node is not a pod, it is already complete, or it can be re-run.
 			continue
 		}
-		if _, ok := seenPods[nodeID]; !ok {
+
+		_, isSeen := seenPods[nodeID]
+
+		if node.Pending() && isSeen {
+			continue
+		}
+
+		if !isSeen {
 			node.Message = "pod deleted"
 			node.Phase = wfv1.NodeError
 			woc.wf.Status.Nodes[nodeID] = node
