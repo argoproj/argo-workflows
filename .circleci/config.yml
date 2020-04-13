@@ -186,6 +186,7 @@ jobs:
       image: ubuntu-1604:201903-01
     environment:
       DB: no-db
+    resource_class: large
     steps:
       - e2e
   e2e-postgres:
