@@ -622,7 +622,7 @@ message Outputs {
   optional string result = 3;
 
   // ExitCode holds the exit code of a script template
-  optional int32 exitCode = 4;
+  optional string exitCode = 4;
 }
 
 message ParallelSteps {

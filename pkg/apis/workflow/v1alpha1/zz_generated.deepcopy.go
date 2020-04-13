@@ -1097,7 +1097,7 @@ func (in *Outputs) DeepCopyInto(out *Outputs) {
 	}
 	if in.ExitCode != nil {
 		in, out := &in.ExitCode, &out.ExitCode
-		*out = new(int32)
+		*out = new(string)
 		**out = **in
 	}
 	return

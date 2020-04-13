@@ -14,7 +14,7 @@ import (
 	executil "github.com/argoproj/pkg/exec"
 	gops "github.com/mitchellh/go-ps"
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -219,25 +219,23 @@ func (p *PNSExecutor) GetOutputStream(containerID string, combinedOutput bool) (
 	if !combinedOutput {
 		log.Warn("non combined output unsupported")
 	}
-	opts := v1.PodLogOptions{
+	opts := corev1.PodLogOptions{
 		Container: common.MainContainerName,
 		Follow:    true,
 	}
 	return p.clientset.CoreV1().Pods(p.namespace).GetLogs(p.podName, &opts).Stream()
 }
 
-func (p *PNSExecutor) GetExitCode(containerID string) (int, error) {
-	opts := metav1.GetOptions{}
-	pod, err := p.clientset.CoreV1().Pods(p.namespace).Get(p.podName, opts)
+func (p *PNSExecutor) GetExitCode(containerID string) (string, error) {
+	log.Infof("Getting exit code of %s", containerID)
+	_, containerStatus, err := p.GetContainerStatus(containerID)
 	if err != nil {
-		return 0, errors.InternalWrapError(err, "Could not get POD")
+		return "", fmt.Errorf("could not get container status: %s", err)
 	}
-	for _, containerStatus := range pod.Status.ContainerStatuses {
-		if containerStatus.ContainerID == containerID {
-			return int(containerStatus.LastTerminationState.Terminated.ExitCode), nil
-		}
+	if containerStatus.State.Terminated != nil {
+		return fmt.Sprint(containerStatus.State.Terminated.ExitCode), nil
 	}
-	return 0, fmt.Errorf("could not find container with id: %s", containerID)
+	return "", nil
 }
 
 // Kill a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
@@ -369,6 +367,20 @@ func (p *PNSExecutor) updateCtrIDMap() {
 			p.pidToCtrID[pid] = containerID
 		}
 	}
+}
+
+func (p *PNSExecutor) GetContainerStatus(containerID string) (*corev1.Pod, *corev1.ContainerStatus, error) {
+	pod, err := p.clientset.CoreV1().Pods(p.namespace).Get(p.podName, metav1.GetOptions{})
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not get pod: %s", err)
+	}
+	for _, containerStatus := range pod.Status.ContainerStatuses {
+		if execcommon.GetContainerID(&containerStatus) != containerID {
+			continue
+		}
+		return pod, &containerStatus, nil
+	}
+	return nil, nil, errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod %s", containerID, p.podName))
 }
 
 // parseContainerID parses the containerID of a pid

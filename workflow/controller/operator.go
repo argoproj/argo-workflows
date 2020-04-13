@@ -1965,9 +1965,9 @@ func (woc *wfOperationCtx) addOutputsToLocalScope(prefix string, outputs *wfv1.O
 		}
 	}
 	if prefix != "workflow" && outputs.ExitCode != nil {
-		key := fmt.Sprintf("%s.outputs.exitCode", prefix)
+		key := fmt.Sprintf("%s.exitCode", prefix)
 		if scope != nil {
-			scope.addParamToScope(key, fmt.Sprint(*outputs.ExitCode))
+			scope.addParamToScope(key, *outputs.ExitCode)
 		}
 	}
 	for _, param := range outputs.Parameters {

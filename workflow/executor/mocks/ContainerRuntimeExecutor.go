@@ -28,14 +28,14 @@ func (_m *ContainerRuntimeExecutor) CopyFile(containerID string, sourcePath stri
 }
 
 // GetExitCode provides a mock function with given fields: containerID
-func (_m *ContainerRuntimeExecutor) GetExitCode(containerID string) (int, error) {
+func (_m *ContainerRuntimeExecutor) GetExitCode(containerID string) (string, error) {
 	ret := _m.Called(containerID)
 
-	var r0 int
-	if rf, ok := ret.Get(0).(func(string) int); ok {
+	var r0 string
+	if rf, ok := ret.Get(0).(func(string) string); ok {
 		r0 = rf(containerID)
 	} else {
-		r0 = ret.Get(0).(int)
+		r0 = ret.Get(0).(string)
 	}
 
 	var r1 error

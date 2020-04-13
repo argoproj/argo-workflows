@@ -1559,7 +1559,7 @@ Outputs hold parameters, artifacts, and results from a step
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`artifacts`|`Array<`[`Artifact`](#artifact)`>`|Artifacts holds the list of output artifacts produced by a step|
-|`exitCode`|`int32`|ExitCode holds the exit code of a script template|
+|`exitCode`|`string`|ExitCode holds the exit code of a script template|
 |`parameters`|`Array<`[`Parameter`](#parameter)`>`|Parameters holds the list of output parameters produced by a step|
 |`result`|`string`|Result holds the result (stdout) of a script template|
 
@@ -2882,6 +2882,8 @@ ContinueOn defines if a workflow should continue even if a task or step fails/er
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
 - [`status-reference.yaml`](../examples/status-reference.yaml)
+
+- [`steps.yaml`](../examples/steps.yaml)
 </details>
 
 ### Fields

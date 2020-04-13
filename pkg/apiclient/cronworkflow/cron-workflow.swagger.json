@@ -1100,8 +1100,7 @@
           "title": "Result holds the result (stdout) of a script template"
         },
         "exitCode": {
-          "type": "integer",
-          "format": "int32",
+          "type": "string",
           "title": "ExitCode holds the exit code of a script template"
         }
       },

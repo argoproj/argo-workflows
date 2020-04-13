@@ -1,6 +1,7 @@
 package k8sapi
 
 import (
+	"fmt"
 	"io"
 
 	log "github.com/sirupsen/logrus"
@@ -41,13 +42,16 @@ func (k *K8sAPIExecutor) GetOutputStream(containerID string, combinedOutput bool
 	return k.client.getLogsAsStream(containerID)
 }
 
-func (k *K8sAPIExecutor) GetExitCode(containerID string) (int, error) {
+func (k *K8sAPIExecutor) GetExitCode(containerID string) (string, error) {
 	log.Infof("Getting exit code of %s", containerID)
 	_, status, err := k.client.GetContainerStatus(containerID)
 	if err != nil {
-		return 0, errors.InternalWrapError(err, "Could not get container status")
+		return "", errors.InternalWrapError(err, "Could not get container status")
 	}
-	return int(status.LastTerminationState.Terminated.ExitCode), nil
+	if status != nil && status.State.Terminated != nil {
+		return fmt.Sprint(status.State.Terminated.ExitCode), nil
+	}
+	return "", nil
 }
 
 func (k *K8sAPIExecutor) WaitInit() error {

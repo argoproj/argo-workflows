@@ -9,24 +9,36 @@ spec:
   templates:
   - name: hello-hello-hello
     steps:
-    - - name: hello1
-        template: whalesay
+    - - name: pass
+        template: pass
+      - name: fail
+        template: fail
+        continueOn:
+          failed: true
+    - - name: exit-codes
+        template: print
         arguments:
-          parameters: [{name: message, value: "hello1"}]
-    - - name: hello2a
-        template: whalesay
-        arguments:
-          parameters: [{name: message, value: "hello2a"}]
-      - name: hello2b
-        template: whalesay
-        arguments:
-          parameters: [{name: message, value: "hello2b"}]
+          parameters:
+            - name: message
+              value: "Pass: {{steps.pass.exitCode}} Fail: {{steps.fail.exitCode}}"
 
-  - name: whalesay
+  - name: print
     inputs:
       parameters:
-      - name: message
+        - name: message
     container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["{{inputs.parameters.message}}"]
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo {{inputs.parameters.message}}"]
+
+  - name: pass
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["exit 0"]
+
+  - name: fail
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["exit 7"]

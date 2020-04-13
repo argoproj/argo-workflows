@@ -1,6 +1,7 @@
 package kubelet
 
 import (
+	"fmt"
 	"io"
 
 	log "github.com/sirupsen/logrus"
@@ -38,12 +39,16 @@ func (k *KubeletExecutor) GetOutputStream(containerID string, combinedOutput boo
 	return k.cli.GetLogStream(containerID)
 }
 
-func (k *KubeletExecutor) GetExitCode(containerID string) (int, error) {
+func (k *KubeletExecutor) GetExitCode(containerID string) (string, error) {
+	log.Infof("Getting exit code of %s", containerID)
 	_, status, err := k.cli.GetContainerStatus(containerID)
 	if err != nil {
-		return 0, errors.InternalWrapError(err, "Could not get container status")
+		return "", errors.InternalWrapError(err, "Could not get container status")
 	}
-	return int(status.LastTerminationState.Terminated.ExitCode), nil
+	if status != nil && status.State.Terminated != nil {
+		return fmt.Sprint(status.State.Terminated.ExitCode), nil
+	}
+	return "", nil
 }
 
 func (k *KubeletExecutor) WaitInit() error {
