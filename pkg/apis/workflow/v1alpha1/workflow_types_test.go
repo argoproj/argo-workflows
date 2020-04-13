@@ -59,7 +59,7 @@ func TestNodes_GetResourcesDuration(t *testing.T) {
 }
 
 func TestWorkflowConditions_UpsertConditionMessage(t *testing.T) {
-	wfCond := WorkflowConditions{WorkflowCondition{Type:WorkflowConditionCompleted, Message:"Hello"}}
-	wfCond.UpsertConditionMessage(WorkflowCondition{Type:WorkflowConditionCompleted, Message:"world!"})
+	wfCond := WorkflowConditions{WorkflowCondition{Type: WorkflowConditionCompleted, Message: "Hello"}}
+	wfCond.UpsertConditionMessage(WorkflowCondition{Type: WorkflowConditionCompleted, Message: "world!"})
 	assert.Equal(t, "Hello, world!", wfCond[0].Message)
 }
