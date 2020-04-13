@@ -1030,18 +1030,19 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		prefix := fmt.Sprintf("tasks.%s", task.Name)
 		ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false, false)
 		resolvedTemplates[task.Name] = resolvedTmpl
-		dupDependencies := make(map[string]bool)
-		for j, depName := range common.GetTaskDependencies(common.GetTaskDepends(&task)) {
-			if _, ok := dupDependencies[depName]; ok {
-				return errors.Errorf(errors.CodeBadRequest,
-					"templates.%s.tasks.%s.dependencies[%d] dependency '%s' duplicated",
-					tmpl.Name, task.Name, j, depName)
-			}
-			dupDependencies[depName] = true
-			if _, ok := nameToTask[depName]; !ok {
+		for j, operand := range common.ParseDependsLogic(common.GetTaskDepends(&task)) {
+			if _, ok := nameToTask[operand.TaskName]; !ok {
 				return errors.Errorf(errors.CodeBadRequest,
 					"templates.%s.tasks.%s.dependencies[%d] dependency '%s' not defined",
-					tmpl.Name, task.Name, j, depName)
+					tmpl.Name, task.Name, j, operand.TaskName)
+			}
+			switch operand.TaskResult {
+			case common.TaskResultSucceeded, "", common.TaskResultFailed, common.TaskResultSkipped,
+				common.TaskResultCompleted, common.TaskResultAny, common.TaskResultSuccessful:
+				// Do nothing
+			default:
+				return fmt.Errorf("templates.%s.tasks.%s.dependencies[%d] unknown result condition '%s' (for operand '%s')",
+					tmpl.Name, task.Name, j, operand.TaskResult, operand.String())
 			}
 		}
 	}
@@ -1125,7 +1126,7 @@ func verifyNoCycles(tmpl *wfv1.Template, nameToTask map[string]wfv1.DAGTask) err
 			return nil
 		}
 		task := nameToTask[taskName]
-		for _, depName := range common.GetTaskDependencies(common.GetTaskDepends(&task)) {
+		for _, depName := range common.GetTaskDependencies(&task) {
 			for _, name := range cycle {
 				if name == depName {
 					return errors.Errorf(errors.CodeBadRequest,

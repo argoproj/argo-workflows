@@ -20,18 +20,20 @@ const (
 )
 
 type DependsOperand struct {
-	Task      string
-	Result    TaskResult
-	Satisfied bool
+	TaskName   string
+	TaskResult TaskResult
+	Satisfied  bool
 }
 
 func (d *DependsOperand) String() string {
-	if d.Result != "" {
-		return fmt.Sprintf("%s%s%s", d.Task, taskResultSeparator, d.Result)
+	if d.TaskResult != "" {
+		return fmt.Sprintf("%s%s%s", d.TaskName, taskResultSeparator, d.TaskResult)
 	}
-	return d.Task
+	return d.TaskName
 }
 
+// An interface to sort by descending string length value. This is needed when replacing operands with their boolean
+// results
 type ByDescendingStringLength []DependsOperand
 
 func (b ByDescendingStringLength) Len() int {
@@ -54,9 +56,9 @@ func ParseDependsLogic(depends string) []DependsOperand {
 		if matchGroup[1] != "" {
 			split := strings.Split(matchGroup[1], taskResultSeparator)
 			task, result := split[0], split[1]
-			out = append(out, DependsOperand{Task: task, Result: TaskResult(result)})
+			out = append(out, DependsOperand{TaskName: task, TaskResult: TaskResult(result)})
 		} else if matchGroup[2] != "" {
-			out = append(out, DependsOperand{Task: matchGroup[2]})
+			out = append(out, DependsOperand{TaskName: matchGroup[2]})
 		}
 	}
 	return out

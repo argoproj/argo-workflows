@@ -13,12 +13,16 @@ type Context interface {
 	GetTaskNode(taskName string) *wfv1.NodeStatus
 }
 
-func GetTaskDependencies(depends string) []string {
-	var dependencies []string
-	for _, depends := range ParseDependsLogic(depends) {
-		dependencies = append(dependencies, depends.Task)
+func GetTaskDependencies(dagTask *wfv1.DAGTask) []string {
+	if dagTask.Depends != "" {
+		var dependencies []string
+		for _, depends := range ParseDependsLogic(dagTask.Depends) {
+			dependencies = append(dependencies, depends.TaskName)
+		}
+		return dependencies
 	}
-	return dependencies
+
+	return dagTask.Dependencies
 }
 
 func GetTaskDepends(dagTask *wfv1.DAGTask) string {
@@ -26,6 +30,7 @@ func GetTaskDepends(dagTask *wfv1.DAGTask) string {
 		return dagTask.Depends
 	}
 
+	// For backwards compatibility, "dependencies: [A, B]" is equivalent to "depends: A.Successful && B.Successful"
 	var dependencies []string
 	for _, dependency := range dagTask.Dependencies {
 		dependencies = append(dependencies, fmt.Sprintf("%s.%s", dependency, TaskResultSuccessful))
@@ -46,7 +51,7 @@ func GetTaskAncestry(ctx Context, taskName string, tasks []wfv1.DAGTask) []strin
 	getAncestry = func(currTask string) {
 		if !visitedFlag[currTask] {
 			task := taskByName[currTask]
-			for _, depTask := range GetTaskDependencies(GetTaskDepends(&task)) {
+			for _, depTask := range GetTaskDependencies(&task) {
 				getAncestry(depTask)
 			}
 			if currTask != taskName {

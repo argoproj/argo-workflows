@@ -90,7 +90,7 @@ func (d *dagContext) assertBranchFinished(targetTaskNames []string) bool {
 			if taskObject != nil {
 				// Make sure all the dependency node have one failed
 				// Recursive check until top root node
-				return d.assertBranchFinished(common.GetTaskDependencies(common.GetTaskDepends(taskObject)))
+				return d.assertBranchFinished(common.GetTaskDependencies(taskObject))
 			}
 		} else if !taskNode.Successful() {
 			taskObject := d.getTask(targetTaskName)
@@ -334,7 +334,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	// Check if our dependencies completed. If not, recurse our parents executing them if necessary
 	nodeName := dagCtx.taskNodeName(taskName)
 	depends := common.GetTaskDepends(task)
-	taskDependencies := common.GetTaskDependencies(depends)
+	taskDependencies := common.GetTaskDependencies(task)
 
 	taskGroupNode := woc.getNodeByName(nodeName)
 	if taskGroupNode != nil && taskGroupNode.Type != wfv1.NodeTypeTaskGroup {
@@ -364,7 +364,6 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 
 	if depends != "" {
-		fmt.Printf("SIMON Evaluating depends logic for '%s'\n", task.Name)
 		execute, proceed, err := evaluateDependsLogic(depends, dagCtx)
 		if err != nil {
 			woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
@@ -418,7 +417,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		node = dagCtx.GetTaskNode(t.Name)
 		taskNodeName := dagCtx.taskNodeName(t.Name)
 		if node == nil {
-			woc.log.Infof("All of node %s dependencies %s completed", taskNodeName, common.GetTaskDependencies(common.GetTaskDepends(task)))
+			woc.log.Infof("All of node %s dependencies %s completed", taskNodeName, common.GetTaskDependencies(task))
 			// Add the child relationship from our dependency's outbound nodes to this node.
 			connectDependencies(taskNodeName)
 
@@ -570,7 +569,7 @@ func findLeafTaskNames(tasks []wfv1.DAGTask) []string {
 		if _, ok := taskIsLeaf[task.Name]; !ok {
 			taskIsLeaf[task.Name] = true
 		}
-		for _, dependency := range common.GetTaskDependencies(common.GetTaskDepends(&task)) {
+		for _, dependency := range common.GetTaskDependencies(&task) {
 			taskIsLeaf[dependency] = false
 		}
 	}
@@ -622,19 +621,20 @@ func (woc *wfOperationCtx) expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error)
 }
 
 // evaluateDependsLogic returns whether a node should execute and proceed. proceed means that all of its dependencies are
-// completed and execute means that given the results of its dependencies, this node should execute. Therefore the logic
-// for execution is the material conditional: proceed -> execute
+// completed and execute means that given the results of its dependencies, this node should execute.
 func evaluateDependsLogic(logic string, dagCtx *dagContext) (bool, bool, error) {
 	var evaluatedDependsLogic []common.DependsOperand
 	depends := common.ParseDependsLogic(logic)
 	for _, operand := range depends {
 
-		depNode := dagCtx.GetTaskNode(operand.Task)
+		// If the task is still running, we should not proceed.
+		depNode := dagCtx.GetTaskNode(operand.TaskName)
 		if depNode == nil || !depNode.Completed() {
 			return false, false, nil
 		}
 
-		switch operand.Result {
+		switch operand.TaskResult {
+		// An empty TaskResult means Succeeded
 		case common.TaskResultSucceeded, "":
 			operand.Satisfied = depNode.Phase == wfv1.NodeSucceeded
 		case common.TaskResultFailed:
@@ -646,21 +646,23 @@ func evaluateDependsLogic(logic string, dagCtx *dagContext) (bool, bool, error) 
 		case common.TaskResultAny:
 			operand.Satisfied = depNode.Phase == wfv1.NodeSucceeded || depNode.Phase == wfv1.NodeFailed || depNode.Phase == wfv1.NodeSkipped
 		case common.TaskResultSuccessful:
-			operand.Satisfied = depNode.Successful() && !dagCtx.getTask(operand.Task).ContinuesOn(depNode.Phase)
+			operand.Satisfied = depNode.Successful() && !dagCtx.getTask(operand.TaskName).ContinuesOn(depNode.Phase)
 		default:
-			return false, false, fmt.Errorf("unknown result condition '%s' for task '%s'", operand.Result, operand.Task)
+			return false, false, fmt.Errorf("unknown result condition '%s' for task '%s'", operand.TaskResult, operand.TaskName)
 		}
 
 		evaluatedDependsLogic = append(evaluatedDependsLogic, operand)
 	}
 
-	replacedLogic := logic
+	// Replace operands with boolean values indicating if they are satisfied. We make string replacements in order of
+	// largest string length value to smallest. This is necessary to avoid replacing a subset of a larger string if it
+	// happens to be the case that a smaller, valid string is found within it.
 	sort.Sort(common.ByDescendingStringLength(evaluatedDependsLogic))
 	for _, operand := range evaluatedDependsLogic {
-		replacedLogic = strings.Replace(replacedLogic, operand.String(), fmt.Sprintf("%t", operand.Satisfied), -1)
+		logic = strings.Replace(logic, operand.String(), fmt.Sprintf("%t", operand.Satisfied), -1)
 	}
 
-	execute, err := common.EvaluateExpression(replacedLogic)
+	execute, err := common.EvaluateExpression(logic)
 	if err != nil {
 		return false, false, fmt.Errorf("error evaluating expression: %s", err)
 	}
