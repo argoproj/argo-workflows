@@ -39,35 +39,6 @@ func TestDAGCycle(t *testing.T) {
 	}
 }
 
-var duplicateDependencies = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: dag-dup-depends-
-spec:
-  entrypoint: cycle
-  templates:
-  - name: echo
-    container:
-      image: alpine:3.7
-      command: [echo, hello]
-  - name: cycle
-    dag:
-      tasks:
-      - name: A
-        template: echo
-      - name: B
-        dependencies: [A, A]
-        template: echo
-`
-
-func TestDuplicateDependencies(t *testing.T) {
-	_, err := validate(duplicateDependencies)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "duplicate")
-	}
-}
-
 var dagUndefinedTemplate = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
