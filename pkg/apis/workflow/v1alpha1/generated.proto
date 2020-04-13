@@ -778,6 +778,41 @@ message Sequence {
   optional string format = 4;
 }
 
+// SubmitOpts are workflow submission options
+message SubmitOpts {
+  optional string name = 1;
+
+  // --name
+  optional string generateName = 2;
+
+  // --generate-name
+  optional string instanceID = 3;
+
+  // --instanceid
+  optional string entrypoint = 4;
+
+  // --entrypoint
+  repeated string parameters = 5;
+
+  // --parameter
+  optional string parameterFile = 6;
+
+  // --parameter-file
+  optional string serviceAccount = 7;
+
+  // --serviceaccount
+  optional bool dryRun = 8;
+
+  // --dry-run
+  optional bool serverDryRun = 9;
+
+  // --server-dry-run
+  optional string labels = 10;
+
+  // --labels
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference ownerReference = 11;
+}
+
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
 message SuspendTemplate {
   // Duration is the seconds to wait before automatically resuming a template

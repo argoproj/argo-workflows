@@ -29,7 +29,7 @@ type cliSubmitOpts struct {
 
 func NewSubmitCommand() *cobra.Command {
 	var (
-		submitOpts    util.SubmitOpts
+		submitOpts    wfv1.SubmitOpts
 		cliSubmitOpts cliSubmitOpts
 		priority      int32
 		from          string
@@ -85,7 +85,7 @@ func NewSubmitCommand() *cobra.Command {
 	return command
 }
 
-func submitWorkflowsFromFile(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
+func submitWorkflowsFromFile(filePaths []string, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
 	fileContents, err := util.ReadManifest(filePaths...)
 	errors.CheckError(err)
 
@@ -98,7 +98,7 @@ func submitWorkflowsFromFile(filePaths []string, submitOpts *util.SubmitOpts, cl
 	submitWorkflows(workflows, submitOpts, cliOpts)
 }
 
-func validateOptions(workflows []wfv1.Workflow, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
+func validateOptions(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
 	if cliOpts.watch {
 		if len(workflows) > 1 {
 			log.Fatalf("Cannot watch more than one workflow")
@@ -139,7 +139,7 @@ func validateOptions(workflows []wfv1.Workflow, submitOpts *util.SubmitOpts, cli
 	}
 }
 
-func submitWorkflowFromResource(resourceIdentifier string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
+func submitWorkflowFromResource(resourceIdentifier string, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
 
 	parts := strings.SplitN(resourceIdentifier, "/", 2)
 	if len(parts) != 2 {
@@ -155,10 +155,10 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *util.Subm
 	validateOptions([]wfv1.Workflow{tempwf}, submitOpts, cliOpts)
 
 	created, err := apiClient.NewWorkflowServiceClient().SubmitFromResource(ctx, &workflowpkg.WorkflowSubmitRequest{
-		Namespace:    namespace,
-		ResourceKind: kind,
-		ResourceName: name,
-		InstanceID:   submitOpts.InstanceID,
+		Namespace:     namespace,
+		ResourceKind:  kind,
+		ResourceName:  name,
+		SubmitOptions: submitOpts,
 	})
 	if err != nil {
 		log.Fatalf("Failed to submit workflow: %v", err)
@@ -168,7 +168,7 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *util.Subm
 	waitOrWatch([]string{created.Name}, *cliOpts)
 }
 
-func submitWorkflows(workflows []wfv1.Workflow, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
+func submitWorkflows(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
 
 	ctx, apiClient := client.NewAPIClient()
 	serviceClient := apiClient.NewWorkflowServiceClient()

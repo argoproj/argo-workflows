@@ -1730,6 +1730,60 @@
       },
       "title": "Sequence expands a workflow step into numeric range"
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SubmitOpts": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "generateName": {
+          "type": "string",
+          "title": "--name"
+        },
+        "instanceID": {
+          "type": "string",
+          "title": "--generate-name"
+        },
+        "entrypoint": {
+          "type": "string",
+          "title": "--instanceid"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "--entrypoint"
+        },
+        "parameterFile": {
+          "type": "string",
+          "title": "--parameter"
+        },
+        "serviceAccount": {
+          "type": "string",
+          "title": "--parameter-file"
+        },
+        "dryRun": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "--serviceaccount"
+        },
+        "serverDryRun": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "--dry-run"
+        },
+        "labels": {
+          "type": "string",
+          "title": "--server-dry-run"
+        },
+        "ownerReference": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference",
+          "title": "--labels"
+        }
+      },
+      "title": "SubmitOpts are workflow submission options"
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SuspendTemplate": {
       "type": "object",
       "properties": {
@@ -5014,8 +5068,8 @@
         "resourceName": {
           "type": "string"
         },
-        "instanceID": {
-          "type": "string"
+        "submitOptions": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SubmitOpts"
         },
         "createOptions": {
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions"

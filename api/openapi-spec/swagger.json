@@ -2847,6 +2847,60 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.SubmitOpts": {
+      "type": "object",
+      "title": "SubmitOpts are workflow submission options",
+      "properties": {
+        "dryRun": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "--serviceaccount"
+        },
+        "entrypoint": {
+          "type": "string",
+          "title": "--instanceid"
+        },
+        "generateName": {
+          "type": "string",
+          "title": "--name"
+        },
+        "instanceID": {
+          "type": "string",
+          "title": "--generate-name"
+        },
+        "labels": {
+          "type": "string",
+          "title": "--server-dry-run"
+        },
+        "name": {
+          "type": "string"
+        },
+        "ownerReference": {
+          "title": "--labels",
+          "$ref": "#/definitions/io.k8s.api.core.v1.OwnerReference"
+        },
+        "parameterFile": {
+          "type": "string",
+          "title": "--parameter"
+        },
+        "parameters": {
+          "type": "array",
+          "title": "--entrypoint",
+          "items": {
+            "type": "string"
+          }
+        },
+        "serverDryRun": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "--dry-run"
+        },
+        "serviceAccount": {
+          "type": "string",
+          "title": "--parameter-file"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.SuspendTemplate": {
       "type": "object",
       "title": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time",
@@ -6212,9 +6266,6 @@
         "createOptions": {
           "$ref": "#/definitions/io.k8s.api.core.v1.CreateOptions"
         },
-        "instanceID": {
-          "type": "string"
-        },
         "namespace": {
           "type": "string"
         },
@@ -6223,6 +6274,9 @@
         },
         "resourceName": {
           "type": "string"
+        },
+        "submitOptions": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SubmitOpts"
         }
       }
     },
