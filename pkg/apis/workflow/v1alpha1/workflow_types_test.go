@@ -57,3 +57,9 @@ func TestNodes_GetResourcesDuration(t *testing.T) {
 		"bar": NodeStatus{ResourcesDuration: ResourcesDuration{corev1.ResourceMemory: 2}},
 	}.GetResourcesDuration())
 }
+
+func TestWorkflowConditions_UpsertConditionMessage(t *testing.T) {
+	wfCond := WorkflowConditions{WorkflowCondition{Type:WorkflowConditionCompleted, Message:"Hello"}}
+	wfCond.UpsertConditionMessage(WorkflowCondition{Type:WorkflowConditionCompleted, Message:"world!"})
+	assert.Equal(t, "Hello, world!", wfCond[0].Message)
+}
