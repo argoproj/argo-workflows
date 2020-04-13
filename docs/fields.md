@@ -2817,7 +2817,7 @@ DAGTask represents a node in the graph during DAG execution
 |`arguments`|[`Arguments`](#arguments)|Arguments are the parameter and artifact arguments to the template|
 |`continueOn`|[`ContinueOn`](#continueon)|ContinueOn makes argo to proceed with the following step even if this step fails.Errors and Failed states can be specified|
 |`dependencies`|`Array< string >`|Dependencies are name of other targets which this depends on|
-|`depends`|[`Depends`](#depends)|Depends are name of other targets which this depends on|
+|`depends`|`string`|Depends are name of other targets which this depends on|
 |`name`|`string`|Name is the name of the target|
 |`onExit`|`string`|OnExit is a template reference which is invoked at the end of thetemplate, irrespective of the success, failure, or error of theprimary template.|
 |`template`|`string`|Name of template to execute|
@@ -3015,23 +3015,6 @@ S3Bucket contains the access information required for interfacing with an S3 buc
 |`roleARN`|`string`|RoleARN is the Amazon Resource Name (ARN) of the role to assume.|
 |`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
 |`useSDKCreds`|`boolean`|UseSDKCreds tells the driver to figure out credentials based on sdk defaults.|
-
-## Depends
-
-_No description available_
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`and`|`Array<`[`Depends`](#depends)`>`|_No description available_|
-|`any`|`string`|_No description available_|
-|`completed`|`string`|_No description available_|
-|`failed`|`string`|_No description available_|
-|`not`|[`Depends`](#depends)|_No description available_|
-|`or`|`Array<`[`Depends`](#depends)`>`|_No description available_|
-|`skipped`|`string`|_No description available_|
-|`succeeded`|`string`|_No description available_|
-|`successful`|`string`|_No description available_|
 
 ## ItemValue
 

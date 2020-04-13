@@ -1,6 +1,8 @@
 package common
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -11,68 +13,24 @@ type Context interface {
 	GetTaskNode(taskName string) *wfv1.NodeStatus
 }
 
-func GetTaskDependencies(logic *wfv1.Depends) []string {
-	if logic == nil {
-		return []string{}
+func GetTaskDependencies(depends string) []string {
+	var dependencies []string
+	for _, depends := range ParseDependsLogic(depends) {
+		dependencies = append(dependencies, depends.Task)
 	}
-
-	// Single dependency case (base cases)
-	if logic.Succeeded != "" {
-		return []string{logic.Succeeded}
-	}
-	if logic.Failed != "" {
-		return []string{logic.Failed}
-	}
-	if logic.Skipped != "" {
-		return []string{logic.Skipped}
-	}
-	if logic.Completed != "" {
-		return []string{logic.Completed}
-	}
-	if logic.Any != "" {
-		return []string{logic.Any}
-	}
-	if logic.Successful != "" {
-		return []string{logic.Successful}
-	}
-
-	// Multi-dependency case (recursive cases)
-	if len(logic.And) > 0 {
-		var out []string
-		for _, node := range logic.And {
-			out = append(out, GetTaskDependencies(&node)...)
-		}
-		return out
-	}
-	if len(logic.Or) > 0 {
-		var out []string
-		for _, node := range logic.Or {
-			out = append(out, GetTaskDependencies(&node)...)
-		}
-		return out
-	}
-	if logic.Not != nil {
-		return GetTaskDependencies(logic.Not)
-	}
-	return []string{}
+	return dependencies
 }
 
-func GetTaskDepends(dagTask *wfv1.DAGTask) *wfv1.Depends {
-	if dagTask.Depends != nil {
+func GetTaskDepends(dagTask *wfv1.DAGTask) string {
+	if dagTask.Depends != "" {
 		return dagTask.Depends
 	}
 
-	if len(dagTask.Dependencies) > 0 {
-		depends := &wfv1.Depends{
-			And: make([]wfv1.Depends, 0),
-		}
-		for _, dependency := range dagTask.Dependencies {
-			depends.And = append(depends.And, wfv1.Depends{Successful: dependency})
-		}
-		return depends
+	var dependencies []string
+	for _, dependency := range dagTask.Dependencies {
+		dependencies = append(dependencies, fmt.Sprintf("%s.%s", dependency, TaskResultSuccessful))
 	}
-
-	return nil
+	return strings.Join(dependencies, " && ")
 }
 
 // GetTaskAncestry returns a list of taskNames which are ancestors of this task.

@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/valyala/fasttemplate"
@@ -341,7 +342,6 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 	// connectDependencies is a helper to connect our dependencies to current task as children
 	connectDependencies := func(taskNodeName string) {
-		woc.log.Infof("SIMON Task dependencies of '%s' are '%s'", task.Name, taskDependencies)
 		if len(taskDependencies) == 0 || taskGroupNode != nil {
 			// if we had no dependencies, then we are a root task, and we should connect the
 			// boundary node as our parent
@@ -355,9 +355,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			// Otherwise, add all outbound nodes of our dependencies as parents to this node
 			for _, depName := range taskDependencies {
 				depNode := dagCtx.GetTaskNode(depName)
-				woc.log.Infof("SIMON depNode of '%s' is '%v'", depName, depNode)
 				outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
-				woc.log.Infof("DAG outbound nodes of %s are %s", depNode, outboundNodeIDs)
 				for _, outNodeID := range outboundNodeIDs {
 					woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, taskNodeName)
 				}
@@ -365,9 +363,14 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		}
 	}
 
-	if depends != nil {
+	if depends != "" {
 		fmt.Printf("SIMON Evaluating depends logic for '%s'\n", task.Name)
-		execute, proceed := evaluateDependsLogic(*depends, dagCtx)
+		execute, proceed, err := evaluateDependsLogic(depends, dagCtx)
+		if err != nil {
+			woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
+			connectDependencies(nodeName)
+			return
+		}
 		if !proceed {
 			// This node's dependencies are not completed yet, recurse into them, then return
 			for _, dep := range taskDependencies {
@@ -621,85 +624,46 @@ func (woc *wfOperationCtx) expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error)
 // evaluateDependsLogic returns whether a node should execute and proceed. proceed means that all of its dependencies are
 // completed and execute means that given the results of its dependencies, this node should execute. Therefore the logic
 // for execution is the material conditional: proceed -> execute
-func evaluateDependsLogic(logic wfv1.Depends, dagCtx *dagContext) (bool, bool) {
-	// Single dependency case (base cases)
-	if logic.Succeeded != "" {
-		return evaluateDependsLeaf(logic.Succeeded, dagCtx, func(status *wfv1.NodeStatus) bool {
-			return status.Phase == wfv1.NodeSucceeded
-		})
-	}
-	if logic.Failed != "" {
-		return evaluateDependsLeaf(logic.Failed, dagCtx, func(status *wfv1.NodeStatus) bool {
-			return status.Phase == wfv1.NodeFailed
-		})
-	}
-	if logic.Skipped != "" {
-		return evaluateDependsLeaf(logic.Skipped, dagCtx, func(status *wfv1.NodeStatus) bool {
-			return status.Phase == wfv1.NodeSkipped
-		})
-	}
-	if logic.Completed != "" {
-		return evaluateDependsLeaf(logic.Completed, dagCtx, func(status *wfv1.NodeStatus) bool {
-			return status.Phase == wfv1.NodeSucceeded || status.Phase == wfv1.NodeFailed
-		})
-	}
-	if logic.Any != "" {
-		return evaluateDependsLeaf(logic.Any, dagCtx, func(status *wfv1.NodeStatus) bool {
-			return status.Phase == wfv1.NodeSucceeded || status.Phase == wfv1.NodeFailed || status.Phase == wfv1.NodeSkipped
-		})
-	}
-	if logic.Successful != "" {
-		return evaluateDependsLeaf(logic.Successful, dagCtx, func(status *wfv1.NodeStatus) bool {
-			return status.Successful() && !dagCtx.getTask(logic.Successful).ContinuesOn(status.Phase)
-		})
+func evaluateDependsLogic(logic string, dagCtx *dagContext) (bool, bool, error) {
+	var evaluatedDependsLogic []common.DependsOperand
+	depends := common.ParseDependsLogic(logic)
+	for _, operand := range depends {
+
+		depNode := dagCtx.GetTaskNode(operand.Task)
+		if depNode == nil || !depNode.Completed() {
+			return false, false, nil
+		}
+
+		switch operand.Result {
+		case common.TaskResultSucceeded, "":
+			operand.Satisfied = depNode.Phase == wfv1.NodeSucceeded
+		case common.TaskResultFailed:
+			operand.Satisfied = depNode.Phase == wfv1.NodeFailed
+		case common.TaskResultSkipped:
+			operand.Satisfied = depNode.Phase == wfv1.NodeSkipped
+		case common.TaskResultCompleted:
+			operand.Satisfied = depNode.Phase == wfv1.NodeSucceeded || depNode.Phase == wfv1.NodeFailed
+		case common.TaskResultAny:
+			operand.Satisfied = depNode.Phase == wfv1.NodeSucceeded || depNode.Phase == wfv1.NodeFailed || depNode.Phase == wfv1.NodeSkipped
+		case common.TaskResultSuccessful:
+			operand.Satisfied = depNode.Successful() && !dagCtx.getTask(operand.Task).ContinuesOn(depNode.Phase)
+		default:
+			return false, false, fmt.Errorf("unknown result condition '%s' for task '%s'", operand.Result, operand.Task)
+		}
+
+		evaluatedDependsLogic = append(evaluatedDependsLogic, operand)
 	}
 
-	// Multi-dependency case (recursive cases)
-	if len(logic.And) > 0 {
-		fmt.Printf("SIMON Evaluating AND conditions\n")
-		execute := true
-		for _, node := range logic.And {
-			nodeExecute, nodeProceed := evaluateDependsLogic(node, dagCtx)
-			if !nodeProceed {
-				fmt.Printf("SIMON Evaluating AND conditions done: don't proceed\n")
-				return false, false
-			}
-			execute = execute && nodeExecute
-		}
-		fmt.Printf("SIMON Evaluating AND conditions done: proceed. Execute: %t\n", execute)
-		return execute, true
+	replacedLogic := logic
+	sort.Sort(common.ByDescendingStringLength(evaluatedDependsLogic))
+	for _, operand := range evaluatedDependsLogic {
+		replacedLogic = strings.Replace(replacedLogic, operand.String(), fmt.Sprintf("%t", operand.Satisfied), -1)
 	}
-	if len(logic.Or) > 0 {
-		fmt.Printf("SIMON Evaluating OR conditions\n")
-		execute := false
-		for _, node := range logic.Or {
-			fmt.Printf("SIMON Evaluating OR conditions done: don't proceed\n")
-			nodeExecute, nodeProceed := evaluateDependsLogic(node, dagCtx)
-			if !nodeProceed {
-				return false, false
-			}
-			execute = execute || nodeExecute
-		}
-		fmt.Printf("SIMON Evaluating OR conditions done: proceed. Execute: %t\n", execute)
-		return execute, true
-	}
-	if logic.Not != nil {
-		fmt.Printf("SIMON Evaluating NOT conditions\n")
-		execute, proceed := evaluateDependsLogic(*logic.Not, dagCtx)
-		return !execute, proceed
-	}
-	return false, false
-}
 
-func evaluateDependsLeaf(dependencyName string, dagCtx *dagContext, evalFunc func(phase *wfv1.NodeStatus) bool) (bool, bool) {
-	fmt.Printf("SIMON Evaluating leaf condition '%s'\n", dependencyName)
-	depNode := dagCtx.GetTaskNode(dependencyName)
-	if depNode == nil || !depNode.Completed() {
-		// Node hasn't been run yet, or is still running. Don't execute, but also signify that we're still waiting (don't proceed)
-		fmt.Printf("SIMON Don't proceed\n")
-		return false, false
+	execute, err := common.EvaluateExpression(replacedLogic)
+	if err != nil {
+		return false, false, fmt.Errorf("error evaluating expression: %s", err)
 	}
-	res := evalFunc(depNode)
-	fmt.Printf("SIMON Proceed. Execute: %t\n", res)
-	return res, true
+
+	return execute, true, nil
 }

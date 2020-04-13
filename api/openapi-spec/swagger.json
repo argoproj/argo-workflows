@@ -2028,8 +2028,8 @@
           }
         },
         "depends": {
-          "title": "Depends are name of other targets which this depends on",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Depends"
+          "type": "string",
+          "title": "Depends are name of other targets which this depends on"
         },
         "name": {
           "type": "string",
@@ -2087,44 +2087,6 @@
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAGTask"
           }
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.Depends": {
-      "type": "object",
-      "properties": {
-        "and": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Depends"
-          }
-        },
-        "any": {
-          "type": "string"
-        },
-        "completed": {
-          "type": "string"
-        },
-        "failed": {
-          "type": "string"
-        },
-        "not": {
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Depends"
-        },
-        "or": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Depends"
-          }
-        },
-        "skipped": {
-          "type": "string"
-        },
-        "succeeded": {
-          "type": "string"
-        },
-        "successful": {
-          "type": "string"
         }
       }
     },

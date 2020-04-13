@@ -588,7 +588,7 @@
           "description": "OnExit is a template reference which is invoked at the end of the\ntemplate, irrespective of the success, failure, or error of the\nprimary template."
         },
         "depends": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Depends",
+          "type": "string",
           "title": "Depends are name of other targets which this depends on"
         }
       },
@@ -615,44 +615,6 @@
         }
       },
       "title": "DAGTemplate is a template subtype for directed acyclic graph templates"
-    },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Depends": {
-      "type": "object",
-      "properties": {
-        "succeeded": {
-          "type": "string"
-        },
-        "failed": {
-          "type": "string"
-        },
-        "skipped": {
-          "type": "string"
-        },
-        "completed": {
-          "type": "string"
-        },
-        "any": {
-          "type": "string"
-        },
-        "successful": {
-          "type": "string"
-        },
-        "and": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Depends"
-          }
-        },
-        "or": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Depends"
-          }
-        },
-        "not": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Depends"
-        }
-      }
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ExecutorConfig": {
       "type": "object",

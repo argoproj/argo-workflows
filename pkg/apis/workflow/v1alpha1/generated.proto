@@ -266,7 +266,7 @@ message DAGTask {
   optional string onExit = 11;
 
   // Depends are name of other targets which this depends on
-  optional Depends depends = 12;
+  optional string depends = 12;
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -286,26 +286,6 @@ message DAGTemplate {
   // completion (either success or failure), regardless of the failed outcomes of branches in the DAG.
   // More info and example about this feature at https://github.com/argoproj/argo/issues/1442
   optional bool failFast = 3;
-}
-
-message Depends {
-  optional string succeeded = 1;
-
-  optional string failed = 2;
-
-  optional string skipped = 3;
-
-  optional string completed = 4;
-
-  optional string any = 5;
-
-  optional string successful = 9;
-
-  repeated Depends and = 6;
-
-  repeated Depends or = 7;
-
-  optional Depends not = 8;
 }
 
 // ExecutorConfig holds configurations of an executor container.

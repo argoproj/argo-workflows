@@ -8,28 +8,13 @@ spec:
   - name: workflow
     dag:
       tasks:
-      - name: A
+      - name: A.simon
         template: whalesay
-      - name: B
+      - name: B/simon
         dependencies: [A]
         template: intentional-fail
         continueOn:
           failed: true
-      - name: C
-        dependencies: [A]
-        template: whalesay
-      - name: D
-        dependencies: [B, C]
-        template: whalesay
-      - name: E
-        dependencies: [A]
-        template: intentional-fail
-      - name: F
-        dependencies: [A]
-        template: whalesay
-      - name: G
-        dependencies: [E, F]
-        template: whalesay
 
   - name: whalesay
     container:
