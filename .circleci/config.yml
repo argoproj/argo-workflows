@@ -121,7 +121,6 @@ jobs:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
       image: ubuntu-1604:201903-01
-    resource_class: large
     steps:
       - checkout
       - maybe_skip_job
@@ -150,7 +149,6 @@ jobs:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
       image: ubuntu-1604:201903-01
-    resource_class: large
     steps:
       - checkout
       - maybe_skip_job
@@ -186,7 +184,6 @@ jobs:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
       image: ubuntu-1604:201903-01
-    resource_class: large
     environment:
       DB: no-db
     steps:
@@ -195,7 +192,6 @@ jobs:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
       image: ubuntu-1604:201903-01
-    resource_class: large
     environment:
       DB: postgres
     steps:
@@ -204,7 +200,6 @@ jobs:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
       image: ubuntu-1604:201903-01
-    resource_class: large
     environment:
       DB: mysql
     steps:
