@@ -38,7 +38,7 @@ type ValidateOpts struct {
 
 	// IgnoreEntryPoint indicates to skip/ignore the EntryPoint validation on workflow spec.
 	// Entrypoint is optional for WorkflowTemplate and ClusterWorkflowTemplate
-	IgnoreEntryPoint bool
+	IgnoreEntrypoint bool
 }
 
 // templateValidationCtx is the context for validating a workflow spec
