@@ -14,9 +14,7 @@ import (
 func TestCanI(t *testing.T) {
 	kubeClient := &kubefake.Clientset{}
 
-	//schema.GroupVersionResource
 	kubeClient.AddReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-		//var resource authorizationv1.SelfSubjectAccessReview
 		selfSubjectAccessReview := reflect.ValueOf(action).FieldByName("Object").Elem().Elem().Field(2).Field(0).Elem()
 		resource := selfSubjectAccessReview.FieldByName("Resource").String()
 		verb := selfSubjectAccessReview.FieldByName("Verb").String()

@@ -185,7 +185,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.podGarbageCollector(ctx.Done())
 	go wfc.periodicWorkflowGarbageCollector(ctx.Done())
 
-	// Check Controller has RBAC for ClusterWorkflowTemplate
+	// Check if the controller has RBAC access to ClusterWorkflowTemplates
 	cwftAllowed, err := authutil.CanI(wfc.kubeclientset, "get, list, watch", "ClusterWorkflowTemplate", wfc.namespace, "")
 	if err != nil {
 		log.Error(err)
