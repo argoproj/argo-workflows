@@ -163,9 +163,11 @@ jobs:
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
             make test 2>&1 | tee test-results/test.out
-      - run: rm -Rf ui
-      - run: echo "sonar.pullrequest.branch=$CIRCLE_BRANCH" >> sonar-project.properties
-      - run: echo "sonar.pullrequest.key=$CIRCLE_PR_NUMBER" >> sonar-project.properties
+      - run: |
+          # ignore the UI code, as we want analysis on the Golang code, and Sonar thinks this is a Node project
+          rm -Rf ui
+          echo "sonar.pullrequest.branch=$CIRCLE_BRANCH" >> sonar-project.properties
+          echo "sonar.pullrequest.key=$CIRCLE_PR_NUMBER" >> sonar-project.properties
       - sonarcloud/scan
       - store_test_results:
           path: test-results
@@ -236,6 +238,7 @@ workflows:
   version: 2
   argo-workflow:
     jobs:
+      - test
       - ui
       - codegen
       - e2e-no-db
