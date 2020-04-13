@@ -30,8 +30,8 @@ func TestCanI(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.True(t, allowed)
 	}
-	Notallowed, err := CanI(kubeClient, "list", "workflow", "", "")
+	notAllowed, err := CanI(kubeClient, "list", "workflow", "", "")
 	if assert.NoError(t, err) {
-		assert.False(t, Notallowed)
+		assert.False(t, notAllowed)
 	}
 }

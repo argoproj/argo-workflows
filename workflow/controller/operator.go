@@ -2370,7 +2370,7 @@ func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resou
 	if woc.controller.cwftmplInformer != nil {
 		ctx = templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), woc.controller.cwftmplInformer.Lister(), woc.wf, woc.wf)
 	} else {
-		ctx = templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), nil, woc.wf, woc.wf)
+		ctx = templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), &templateresolution.NullClusterWorkflowTemplateGetter{}, woc.wf, woc.wf)
 	}
 	switch scope {
 	case wfv1.ResourceScopeNamespaced:

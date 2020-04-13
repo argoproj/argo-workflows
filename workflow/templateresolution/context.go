@@ -1,8 +1,6 @@
 package templateresolution
 
 import (
-	"reflect"
-
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -51,6 +49,13 @@ type ClusterWorkflowTemplateGetter interface {
 
 func WrapClusterWorkflowTemplateInterface(clusterClientset v1alpha1.ClusterWorkflowTemplateInterface) ClusterWorkflowTemplateGetter {
 	return &clusterWorkflowTemplateInterfaceWrapper{clientset: clusterClientset}
+}
+
+type NullClusterWorkflowTemplateGetter struct{}
+
+func (n *NullClusterWorkflowTemplateGetter) Get(name string) (*wfv1.ClusterWorkflowTemplate, error) {
+	return nil, errors.Errorf("", "invalid spec: clusterworkflowtemplates.argoproj.io `%s` is "+
+		"forbidden: User cannot get resource 'clusterworkflowtemplates' in API group argoproj.io at the cluster scope", name)
 }
 
 // Get retrieves the WorkflowTemplate of a given name.
@@ -107,7 +112,7 @@ func (ctx *Context) GetTemplateByName(name string) (*wfv1.Template, error) {
 
 func (ctx *Context) GetTemplateGetterFromRef(tmplRef *wfv1.TemplateRef) (wfv1.TemplateHolder, error) {
 	if tmplRef.ClusterScope {
-		return ctx.GetClusterWorkflowTemplate(tmplRef.Name)
+		return ctx.cwftmplGetter.Get(tmplRef.Name)
 	}
 	return ctx.wftmplGetter.Get(tmplRef.Name)
 }
@@ -119,7 +124,7 @@ func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Templat
 	var wftmpl wfv1.TemplateHolder
 	var err error
 	if tmplRef.ClusterScope {
-		wftmpl, err = ctx.GetClusterWorkflowTemplate(tmplRef.Name)
+		wftmpl, err = ctx.cwftmplGetter.Get(tmplRef.Name)
 	} else {
 		wftmpl, err = ctx.wftmplGetter.Get(tmplRef.Name)
 	}
@@ -283,16 +288,9 @@ func (ctx *Context) WithWorkflowTemplate(name string) (*Context, error) {
 
 // WithWorkflowTemplate creates new context with a wfv1.TemplateHolder.
 func (ctx *Context) WithClusterWorkflowTemplate(name string) (*Context, error) {
-	cwftmpl, err := ctx.GetClusterWorkflowTemplate(name)
+	cwftmpl, err := ctx.cwftmplGetter.Get(name)
 	if err != nil {
 		return nil, err
 	}
 	return ctx.WithTemplateBase(cwftmpl), nil
-}
-
-func (ctx *Context) GetClusterWorkflowTemplate(name string) (*wfv1.ClusterWorkflowTemplate, error) {
-	if ctx.cwftmplGetter == nil && reflect.ValueOf(ctx.cwftmplGetter).IsNil() {
-		return nil, errors.Errorf(errors.CodeBadRequest, "Cannot access clusterworkflowtemplates resource")
-	}
-	return ctx.cwftmplGetter.Get(name)
 }
