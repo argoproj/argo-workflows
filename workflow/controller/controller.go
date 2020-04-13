@@ -199,7 +199,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 			return
 		}
 	} else {
-		log.Warnf("Controller doen't have a RBAC for ClusterWorkflowTemplate")
+		log.Warnf("Controller doesn't have RBAC access for ClusterWorkflowTemplates")
 	}
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
