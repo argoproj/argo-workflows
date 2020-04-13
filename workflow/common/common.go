@@ -30,6 +30,8 @@ const (
 
 	// AnnotationKeyNodeName is the pod metadata annotation key containing the workflow node name
 	AnnotationKeyNodeName = workflow.WorkflowFullName + "/node-name"
+	// AnnotationKeyNodeName is the node's type
+	AnnotationKeyNodeType = workflow.WorkflowFullName + "/node-type"
 
 	// AnnotationKeyNodeMessage is the pod metadata annotation key the executor will use to
 	// communicate errors encountered by the executor during artifact load/save, etc...

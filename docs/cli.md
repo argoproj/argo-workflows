@@ -8,7 +8,7 @@ argo --help
 
 # Argo Server
 
-![alpha](assets/alpha.svg)
+![GA](assets/ga.svg)
 
 > v2.5 and after
 

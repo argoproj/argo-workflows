@@ -97,6 +97,26 @@ func (s *CLIWithServerSuite) TestArchive() {
 	})
 }
 
+func (s *CLIWithServerSuite) TestWorkflowRetryPersistence() {
+	if !s.Persistence.IsEnabled() {
+		// Persistence is disabled for this test, but it is enabled for the Argo Server in this test suite.
+		// When this is the case, this behavior is tested in cli_test.go
+		s.T().SkipNow()
+	}
+	s.Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(20*time.Second).
+		Given().
+		RunCli([]string{"retry", "exit-1"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+			}
+		})
+}
+
 func TestCLIWithServerSuite(t *testing.T) {
 	suite.Run(t, new(CLIWithServerSuite))
 }
