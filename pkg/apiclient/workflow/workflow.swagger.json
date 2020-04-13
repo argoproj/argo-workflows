@@ -4943,6 +4943,13 @@
         },
         "namespace": {
           "type": "string"
+        },
+        "restartSuccesful": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "nodeFieldSelector": {
+          "type": "string"
         }
       }
     },

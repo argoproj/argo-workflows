@@ -218,7 +218,7 @@ func (woc *wfOperationCtx) operate() {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation()
 		if err == nil {
-			err = woc.failSuspendedNodesAfterDeadline()
+			err = woc.failSuspendedNodesAfterDeadlineOrShutdown()
 		}
 		if err != nil {
 			woc.log.Errorf("%s error: %+v", woc.wf.ObjectMeta.Name, err)
@@ -464,7 +464,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	// try and compress nodes if needed
 	nodes := woc.wf.Status.Nodes
 
-	err := packer.CompressWorkflow(woc.wf)
+	err := packer.CompressWorkflowIfNeeded(woc.wf)
 	if packer.IsTooLargeError(err) || os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true" {
 		if woc.controller.offloadNodeStatusRepo.IsEnabled() {
 			offloadVersion, err := woc.controller.offloadNodeStatusRepo.Save(string(woc.wf.UID), woc.wf.Namespace, nodes)
@@ -636,6 +636,17 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return woc.markNodePhase(node.Name, wfv1.NodeSucceeded), true, nil
 	}
 
+	if woc.wf.Spec.Shutdown != "" || (woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)) {
+		var message string
+		if woc.wf.Spec.Shutdown != "" {
+			message = fmt.Sprintf("Stopped with strategy '%s'", woc.wf.Spec.Shutdown)
+		} else {
+			message = fmt.Sprintf("retry exceeded workflow deadline %s", *woc.workflowDeadline)
+		}
+		woc.log.Infoln(message)
+		return woc.markNodePhase(node.Name, lastChildNode.Phase, message), true, nil
+	}
+
 	if retryStrategy.Backoff != nil {
 		// Process max duration limit
 		if retryStrategy.Backoff.MaxDuration != "" && len(node.Children) > 0 {
@@ -754,6 +765,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				if woc.shouldPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
 				}
+				woc.onNodeComplete(&node)
 			}
 			if node.Successful() {
 				woc.succeededPods[pod.ObjectMeta.Name] = true
@@ -807,11 +819,17 @@ func (woc *wfOperationCtx) shouldPrintPodSpec(node wfv1.NodeStatus) bool {
 }
 
 //fails any suspended nodes if the workflow deadline has passed
-func (woc *wfOperationCtx) failSuspendedNodesAfterDeadline() error {
-	if woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline) {
+func (woc *wfOperationCtx) failSuspendedNodesAfterDeadlineOrShutdown() error {
+	if woc.wf.Spec.Shutdown != "" || (woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline)) {
 		for _, node := range woc.wf.Status.Nodes {
 			if node.IsActiveSuspendNode() {
-				woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("step exceeded workflow deadline %s", *woc.workflowDeadline))
+				var message string
+				if woc.wf.Spec.Shutdown != "" {
+					message = fmt.Sprintf("Stopped with strategy '%s'", woc.wf.Spec.Shutdown)
+				} else {
+					message = fmt.Sprintf("step exceeded workflow deadline %s", *woc.workflowDeadline)
+				}
+				woc.markNodePhase(node.Name, wfv1.NodeFailed, message)
 			}
 		}
 	}
@@ -1675,27 +1693,15 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 		woc.log.Infof("node %s finished: %s", node, node.FinishedAt)
 		woc.updated = true
 	}
-	if woc.updated && node.Phase.Completed() {
-		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeNormal, Reason: nodePhaseReason(node.Phase)}, nodeMessage(node))
+	if woc.updated && node.Completed() {
+		woc.onNodeComplete(node)
 	}
 	woc.wf.Status.Nodes[node.ID] = *node
 	return node
 }
 
-func nodePhaseReason(phase wfv1.NodePhase) string {
-	return map[wfv1.NodePhase]string{
-		wfv1.NodeError:     argo.EventReasonWorkflowNodeError,
-		wfv1.NodeFailed:    argo.EventReasonWorkflowNodeFailed,
-		wfv1.NodeSucceeded: argo.EventReasonWorkflowNodeSucceeded,
-	}[phase]
-}
-
-func nodeMessage(node *wfv1.NodeStatus) string {
-	message := fmt.Sprintf("%v node %s", node.Phase, node.Name)
-	if node.Message != "" {
-		message = message + ": " + node.Message
-	}
-	return message
+func (woc *wfOperationCtx) onNodeComplete(node *wfv1.NodeStatus) {
+	woc.auditLogger.LogWorkflowNodeEvent(woc.wf, node)
 }
 
 // markNodeError is a convenience method to mark a node with an error and set the message from the error
