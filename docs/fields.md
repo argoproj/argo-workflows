@@ -2882,8 +2882,6 @@ ContinueOn defines if a workflow should continue even if a task or step fails/er
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
 - [`status-reference.yaml`](../examples/status-reference.yaml)
-
-- [`steps.yaml`](../examples/steps.yaml)
 </details>
 
 ### Fields
