@@ -439,12 +439,14 @@ mysql-cli:
 .PHONY: test-e2e
 test-e2e: test-images cli
 	# Run E2E tests
+	@mkdir -p test-results
 	go test -timeout 15m -v -count 1 -p 1 ./test/e2e/... 2>&1 | tee test-results/test.out
 
 .PHONY: smoke
 smoke: test-images
 	# Run smoke tests
-	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
+	@mkdir -p test-results
+	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: test-api
 test-api: test-images

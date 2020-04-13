@@ -87,13 +87,10 @@ commands:
           command: make logs
           background: true
       - run:
-          name: Run smoke tests
-          command: make smoke
-      - run:
           name: Run tests
           command: |
             trap 'make test-results/junit.xml' EXIT
-            make test-e2e
+            make smoke test-e2e
       - store_test_results:
           path: test-results
           when: always
