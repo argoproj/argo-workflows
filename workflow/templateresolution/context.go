@@ -1,6 +1,8 @@
 package templateresolution
 
 import (
+	"reflect"
+
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -105,7 +107,7 @@ func (ctx *Context) GetTemplateByName(name string) (*wfv1.Template, error) {
 
 func (ctx *Context) GetTemplateGetterFromRef(tmplRef *wfv1.TemplateRef) (wfv1.TemplateHolder, error) {
 	if tmplRef.ClusterScope {
-		return ctx.cwftmplGetter.Get(tmplRef.Name)
+		return ctx.GetClusterWorkflowTemplate(tmplRef.Name)
 	}
 	return ctx.wftmplGetter.Get(tmplRef.Name)
 }
@@ -117,7 +119,7 @@ func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Templat
 	var wftmpl wfv1.TemplateHolder
 	var err error
 	if tmplRef.ClusterScope {
-		wftmpl, err = ctx.cwftmplGetter.Get(tmplRef.Name)
+		wftmpl, err = ctx.GetClusterWorkflowTemplate(tmplRef.Name)
 	} else {
 		wftmpl, err = ctx.wftmplGetter.Get(tmplRef.Name)
 	}
@@ -281,9 +283,16 @@ func (ctx *Context) WithWorkflowTemplate(name string) (*Context, error) {
 
 // WithWorkflowTemplate creates new context with a wfv1.TemplateHolder.
 func (ctx *Context) WithClusterWorkflowTemplate(name string) (*Context, error) {
-	cwftmpl, err := ctx.cwftmplGetter.Get(name)
+	cwftmpl, err := ctx.GetClusterWorkflowTemplate(name)
 	if err != nil {
 		return nil, err
 	}
 	return ctx.WithTemplateBase(cwftmpl), nil
+}
+
+func (ctx *Context) GetClusterWorkflowTemplate(name string) (*wfv1.ClusterWorkflowTemplate, error) {
+	if ctx.cwftmplGetter == nil && reflect.ValueOf(ctx.cwftmplGetter).IsNil() {
+		return nil, errors.Errorf(errors.CodeBadRequest, "Cannot access clusterworkflowtemplates resource")
+	}
+	return ctx.cwftmplGetter.Get(name)
 }

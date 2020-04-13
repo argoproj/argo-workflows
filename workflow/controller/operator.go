@@ -2360,8 +2360,12 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 
 // createTemplateContext creates a new template context.
 func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resourceName string) (*templateresolution.Context, error) {
-	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), woc.controller.cwftmplInformer.Lister(), woc.wf, woc.wf)
-
+	var ctx *templateresolution.Context
+	if woc.controller.cwftmplInformer != nil {
+		ctx = templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), woc.controller.cwftmplInformer.Lister(), woc.wf, woc.wf)
+	} else {
+		ctx = templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), nil, woc.wf, woc.wf)
+	}
 	switch scope {
 	case wfv1.ResourceScopeNamespaced:
 		return ctx.WithWorkflowTemplate(resourceName)
