@@ -62,7 +62,6 @@ commands:
           background: true
       - restore_go_cache
       - install_golang
-      - go_junit_report
       - restore_go_mod
       - run:
           name: Create KUBECONFIG
@@ -93,9 +92,8 @@ commands:
       - run:
           name: Run tests
           command: |
-            mkdir -p test-results
-            trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
-            make test-e2e 2>&1 | tee test-results/test.out
+            trap 'make test-results/junit.xml' EXIT
+            make test-e2e
       - store_test_results:
           path: test-results
           when: always
@@ -111,11 +109,6 @@ commands:
           when: always
       - save_go_mod
       - save_go_cache
-  go_junit_report:
-    steps:
-      - run:
-          name: Install Go test report to Junit test report
-          command: go get github.com/jstemmer/go-junit-report
 jobs:
   codegen:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
@@ -155,14 +148,12 @@ jobs:
       - install_kustomize
       - restore_go_cache
       - install_golang
-      - go_junit_report
       - restore_go_mod
       - run:
           name: Run tests
           command: |
-            mkdir -p test-results
-            trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
-            make test 2>&1 | tee test-results/test.out
+            trap 'make test-results/junit.xml' EXIT
+            make test
       - run: |
           cp sonar-project.properties dist/
           echo "sonar.pullrequest.branch=$CIRCLE_BRANCH" >> sonar-project.properties
