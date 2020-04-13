@@ -36,7 +36,7 @@ type ValidateOpts struct {
 	// out of the base image layer. If unspecified, will use docker executor validation
 	ContainerRuntimeExecutor string
 
-	// IgnoreEntryPoint indicates to skip/ignore the EntryPoint validation on workflow spec.
+	// IgnoreEntrypoint indicates to skip/ignore the EntryPoint validation on workflow spec.
 	// Entrypoint is optional for WorkflowTemplate and ClusterWorkflowTemplate
 	IgnoreEntrypoint bool
 }
