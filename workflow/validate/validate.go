@@ -138,7 +138,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		ctx.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*wf.Spec.Priority))
 	}
 
-	if !opts.IgnoreEntryPoint && wf.Spec.Entrypoint == "" {
+	if !opts.IgnoreEntrypoint && wf.Spec.Entrypoint == "" {
 		return nil, errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
 	}
 
@@ -170,7 +170,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		}
 	}
 
-	if !opts.IgnoreEntryPoint {
+	if !opts.IgnoreEntrypoint {
 		_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.Entrypoint}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
 		if err != nil {
 			return nil, err
@@ -207,13 +207,13 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 // ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
 func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate) (*wfv1.WorkflowConditions, error) {
 	wf := common.ConvertWorkflowTemplateToWorkflow(wftmpl)
-	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntryPoint: true})
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "" })
 }
 
 // ValidateClusterWorkflowTemplate accepts a cluster workflow template and performs validation against it.
 func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate) (*wfv1.WorkflowConditions, error) {
 	wf := common.ConvertClusterWorkflowTemplateToWorkflow(cwftmpl)
-	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntryPoint: true})
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == ""})
 }
 
 // ValidateCronWorkflow validates a CronWorkflow
