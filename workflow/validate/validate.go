@@ -36,7 +36,7 @@ type ValidateOpts struct {
 	// out of the base image layer. If unspecified, will use docker executor validation
 	ContainerRuntimeExecutor string
 
-	// IgnoreEntryPoint indicates to skip/ignore the EntryPoint validation on workflow spec.
+	// IgnoreEntrypoint indicates to skip/ignore the EntryPoint validation on workflow spec.
 	// Entrypoint is optional for WorkflowTemplate and ClusterWorkflowTemplate
 	IgnoreEntrypoint bool
 }
@@ -207,7 +207,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 // ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
 func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate) (*wfv1.WorkflowConditions, error) {
 	wf := common.ConvertWorkflowTemplateToWorkflow(wftmpl)
-	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "" })
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == ""})
 }
 
 // ValidateClusterWorkflowTemplate accepts a cluster workflow template and performs validation against it.
