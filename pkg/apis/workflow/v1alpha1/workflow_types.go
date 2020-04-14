@@ -1037,6 +1037,8 @@ const (
 	WorkflowConditionCompleted WorkflowConditionType = "Completed"
 	// WorkflowConditionSpecWarning is a warning on the current application spec
 	WorkflowConditionSpecWarning WorkflowConditionType = "SpecWarning"
+	// WorkflowConditionMetricsError is an error during metric emission
+	WorkflowConditionMetricsError WorkflowConditionType = "MetricsError"
 )
 
 type WorkflowCondition struct {
