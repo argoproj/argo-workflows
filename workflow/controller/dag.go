@@ -51,6 +51,15 @@ func (d *dagContext) taskNodeName(taskName string) string {
 	return fmt.Sprintf("%s.%s", d.boundaryName, taskName)
 }
 
+func (d *dagContext) getTaskFromNode(node *wfv1.NodeStatus) *wfv1.DAGTask {
+	for _, task := range d.tasks {
+		if node.Name == d.taskNodeName(task.Name) {
+			return &task
+		}
+	}
+	panic("task from node " + node.Name + " does not exist")
+}
+
 // taskNodeID formulates the node ID for a dag task
 func (d *dagContext) taskNodeID(taskName string) string {
 	nodeName := d.taskNodeName(taskName)
@@ -112,9 +121,10 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 		if node.Successful() {
 			continue
 		}
-		// failed retry attempts should not factor into the overall unsuccessful phase of the dag
+		// Failed retry attempts should not factor into the overall unsuccessful phase of the dag
 		// because the subsequent attempt may have succeeded
-		if unsuccessfulPhase == "" && !isRetryAttempt(node, nodes) {
+		// Furthermore, if the node failed but ContinuesOn its phase, it should also not factor into the overall phase of the dag
+		if unsuccessfulPhase == "" && !(isRetryAttempt(node, nodes) || d.getTaskFromNode(&node).ContinuesOn(node.Phase)) {
 			unsuccessfulPhase = node.Phase
 		}
 		if node.Type == wfv1.NodeTypeRetry && d.hasMoreRetries(&node) {
@@ -155,10 +165,11 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 	// There are no currently running tasks. Now check if our dependencies were met
 	for _, depName := range targetTasks {
 		depNode := d.GetTaskNode(depName)
+		depTask := d.getTask(depName)
 		if depNode == nil {
 			return wfv1.NodeRunning
 		}
-		if !depNode.Successful() {
+		if !depNode.Successful() && !depTask.ContinuesOn(depNode.Phase) {
 			// we should theoretically never get here since it would have been caught in first loop
 			return depNode.Phase
 		}
