@@ -36,12 +36,12 @@ func NewWorkflowServer(instanceID string, offloadNodeStatusRepo sqldb.OffloadNod
 }
 
 func (s *workflowServer) setInstanceID(instanceID string, wf *v1alpha1.Workflow) {
-	if len(instanceID) > 0 || len(s.instanceID) > 0 {
+	if instanceID != "" || s.instanceID != "" {
 		labels := wf.GetLabels()
 		if labels == nil {
 			labels = make(map[string]string)
 		}
-		if len(instanceID) > 0 {
+		if instanceID != "" {
 			labels[common.LabelKeyControllerInstanceID] = instanceID
 		} else {
 			labels[common.LabelKeyControllerInstanceID] = s.instanceID

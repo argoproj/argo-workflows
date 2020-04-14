@@ -8,14 +8,13 @@ import (
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/pkg/errors"
-	argoJson "github.com/argoproj/pkg/json"
-
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/pkg/errors"
+	argoJson "github.com/argoproj/pkg/json"
 )
 
 // cliSubmitOpts holds submission options specific to CLI submission (e.g. controlling output)
