@@ -1,13 +1,14 @@
 # How to setup your dev environment
 ## Pre-requisites:
 
-* Golang (v1.13.4)
-* Yarn: `brew install yarn`
+* Dep. `brew install dep`
+* Golang
+* Yarn. `brew install yarn`
 * Docker
-* [Kustomize](https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md) (v3.5.4)
-* [protoc](http://google.github.io/proto-lens/installing-protoc.html): `brew install protoc` (v3.11.1)
+* [Kustomize](https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md)
+* [protoc](http://google.github.io/proto-lens/installing-protoc.html) `brew install protoc`
 * `jq`
-* [Swagger](https://swagger.io/docs/open-source-tools/swagger-codegen/): `brew install swagger-codegen`
+* [Swagger codegen](https://swagger.io/docs/open-source-tools/swagger-codegen/) `brew install swagger-codegen`
 * Kubernetes Cluster (we recommend Docker for Desktop + K3D, as this will allow you to test RBAC set-up, and is also fast)
 
 Useful:
