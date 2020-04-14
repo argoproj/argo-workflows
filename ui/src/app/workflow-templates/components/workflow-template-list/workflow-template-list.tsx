@@ -84,10 +84,10 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                                 defaultResource={exampleWorkflowTemplate(this.namespace || 'default')}
                                 validate={wfValue => {
                                     if (!wfValue || !wfValue.metadata) {
-                                        return {valid: false, message: 'Invalid WorkflowTemplate definition'};
+                                        return {valid: false, message: 'Invalid WorkflowTemplate: metadata cannot be blank'};
                                     }
-                                    if (wfValue.metadata.namespace === undefined || wfValue.metadata.namespace === '') {
-                                        return {valid: false, message: 'Namespace is missing'};
+                                    if (!wfValue.metadata.namespace) {
+                                        return {valid: false, message: 'Invalid WorkflowTemplate: metadata.namespace cannot be blank'};
                                     }
                                     return {valid: true};
                                 }}
