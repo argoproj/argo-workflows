@@ -165,10 +165,11 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 	// There are no currently running tasks. Now check if our dependencies were met
 	for _, depName := range targetTasks {
 		depNode := d.GetTaskNode(depName)
+		depTask := d.getTask(depName)
 		if depNode == nil {
 			return wfv1.NodeRunning
 		}
-		if !depNode.Successful() {
+		if !depNode.Successful() && !depTask.ContinuesOn(depNode.Phase) {
 			// we should theoretically never get here since it would have been caught in first loop
 			return depNode.Phase
 		}
