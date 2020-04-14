@@ -57,3 +57,15 @@ func WriteTeriminateMessage(message string) {
 		panic(err)
 	}
 }
+
+
+// overwriting duplicate keys, you should handle that if there is a need
+func MergeMaps(maps ...map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	for _, mapItem := range maps {
+		for key, val := range mapItem {
+			result[key] = val
+		}
+	}
+	return result
+}

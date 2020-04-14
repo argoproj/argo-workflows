@@ -1703,7 +1703,6 @@ func (wf *Workflow) GetArguments() Arguments {
 	return wf.Spec.Arguments
 }
 
-
 // NodeID creates a deterministic node ID based on a node name
 func (wf *Workflow) NodeID(name string) string {
 	if name == wf.ObjectMeta.Name {

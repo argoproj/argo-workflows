@@ -61,7 +61,6 @@ func (cwftmpl *ClusterWorkflowTemplate) GetTemplates() []Template {
 	return cwftmpl.Spec.Templates
 }
 
-
 // GetArguments returns the Arguments.
 func (cwftmpl *ClusterWorkflowTemplate) GetArguments() Arguments {
 	return cwftmpl.Spec.Arguments
