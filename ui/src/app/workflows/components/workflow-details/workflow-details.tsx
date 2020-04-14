@@ -11,7 +11,7 @@ import {uiUrl} from '../../../shared/base';
 import {services} from '../../../shared/services';
 
 import {WorkflowArtifacts, WorkflowDag, WorkflowDagRenderOptions, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowSummaryPanel, WorkflowTimeline, WorkflowYamlViewer} from '..';
-import {hasWarningCondition} from '../../../shared/conditions-panel';
+import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Consumer, ContextApis} from '../../../shared/context';
 import {Utils} from '../../../shared/utils';
 import {WorkflowDagRenderOptionsPanel} from '../workflow-dag/workflow-dag-render-options-panel';
@@ -36,6 +36,7 @@ export const defaultNodesToDisplay = [
     'phase:Error',
     'type:Pod',
     'type:Steps',
+    'type:DAG',
     'type:Retry',
     'type:Skipped',
     'type:Suspend'
@@ -117,12 +118,12 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                 {content: () => <span>Type</span>},
                 {value: 'type:Pod', label: 'Pod'},
                 {value: 'type:Steps', label: 'Steps'},
-                {value: 'type:StepGroup', label: 'StepGroup'},
                 {value: 'type:DAG', label: 'DAG'},
-                {value: 'type:TaskGroup', label: 'TaskGroup'},
                 {value: 'type:Retry', label: 'Retry'},
                 {value: 'type:Skipped', label: 'Skipped'},
-                {value: 'type:Suspend', label: 'Suspend'}
+                {value: 'type:Suspend', label: 'Suspend'},
+                {value: 'type:TaskGroup', label: 'TaskGroup'},
+                {value: 'type:StepGroup', label: 'StepGroup'}
             ],
             selectedValues: this.state.workflowDagRenderOptions.nodesToDisplay,
             selectionChanged: items => {
@@ -162,7 +163,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                                     )}
                                     <a className={classNames({active: this.selectedTabKey === 'summary'})} onClick={() => this.selectTab('summary')}>
                                         <i className='fa fa-columns' />
-                                        {this.state.workflow && this.state.workflow.status.conditions && hasWarningCondition(this.state.workflow.status.conditions) && (
+                                        {this.state.workflow && this.state.workflow.status.conditions && hasWarningConditionBadge(this.state.workflow.status.conditions) && (
                                             <span className='badge' />
                                         )}
                                     </a>

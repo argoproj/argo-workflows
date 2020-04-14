@@ -102,7 +102,7 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 			}
 			wf.Status.Nodes = offloadedNodes
 		} else {
-			log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn(sqldb.OffloadNodeStatusDisabledWarning)
+			log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn(sqldb.OffloadNodeStatusDisabled)
 		}
 	}
 	err = packer.DecompressWorkflow(wf)
@@ -134,7 +134,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 				if s.offloadNodeStatusRepo.IsEnabled() {
 					wfList.Items[i].Status.Nodes = offloadedNodes[sqldb.UUIDVersion{UID: string(wf.UID), Version: wf.GetOffloadNodeStatusVersion()}]
 				} else {
-					log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn("Workflow has offloaded nodes, but offloading has been disabled")
+					log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn(sqldb.OffloadNodeStatusDisabled)
 				}
 			}
 		}
@@ -182,7 +182,7 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 				}
 				wf.Status.Nodes = offloadedNodes
 			} else {
-				log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn(sqldb.OffloadNodeStatusDisabledWarning)
+				log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn(sqldb.OffloadNodeStatusDisabled)
 			}
 		}
 		logCtx.Debug("Sending event")
@@ -220,7 +220,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 		return nil, err
 	}
 
-	wf, err = util.RetryWorkflow(kubeClient, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wf)
+	wf, err = util.RetryWorkflow(kubeClient, s.offloadNodeStatusRepo, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wf, req.RestartSuccesful, req.NodeFieldSelector)
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +254,7 @@ func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return nil, err
 	}
 
-	err = util.ResumeWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), req.Name, req.NodeFieldSelector)
+	err = util.ResumeWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), s.offloadNodeStatusRepo, req.Name, req.NodeFieldSelector)
 	if err != nil {
 		log.Warnf("Failed to resume %s: %+v", req.Name, err)
 		return nil, err
@@ -342,12 +342,7 @@ func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflo
 	ctx := ws.Context()
 	wfClient := auth.GetWfClient(ctx)
 	kubeClient := auth.GetKubeClient(ctx)
-	logger, err := logs.NewWorkflowLogger(ctx, wfClient, kubeClient, req, ws)
-	if err != nil {
-		return err
-	}
-	logger.Run(ctx)
-	return nil
+	return logs.WorkflowLogs(ctx, wfClient, kubeClient, req, ws)
 }
 
 func (s *workflowServer) withInstanceID(opt metav1.ListOptions) metav1.ListOptions {

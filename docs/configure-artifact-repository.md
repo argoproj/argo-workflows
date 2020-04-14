@@ -284,6 +284,7 @@ configuring the default artifact repository described previously.
           secretKeySecret:
             name: my-gcs-s3-credentials
             key: secretKey
+          region: my-GCS-storage-bucket-region
     container:
       image: debian:latest
       command: [sh, -c]

@@ -40,3 +40,74 @@ func TestDagDisableFailFast(t *testing.T) {
 	woc.operate()
 	assert.Equal(t, string(wfv1.NodeFailed), string(woc.wf.Status.Phase))
 }
+
+func TestGetDagTaskFromNode(t *testing.T) {
+	task := wfv1.DAGTask{Name: "test-task"}
+	d := dagContext{
+		boundaryID: "test-boundary",
+		tasks:      []wfv1.DAGTask{task},
+	}
+	node := wfv1.NodeStatus{Name: d.taskNodeName(task.Name)}
+	taskFromNode := d.getTaskFromNode(&node)
+	assert.Equal(t, &task, taskFromNode)
+}
+
+var artifactResolutionWhenSkippedDAG = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: conditional-artifact-passing-
+spec:
+  entrypoint: artifact-example
+  templates:
+  - name: artifact-example
+    dag:
+      tasks:
+      - name: generate-artifact
+        template: whalesay
+        when: "false"
+      - name: consume-artifact
+        dependencies: [generate-artifact]
+        template: print-message
+        when: "false"
+        arguments:
+          artifacts:
+          - name: message
+            from: "{{tasks.generate-artifact.outputs.artifacts.hello-art}}"
+
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["sleep 1; cowsay hello world | tee /tmp/hello_world.txt"]
+    outputs:
+      artifacts:
+      - name: hello-art
+        path: /tmp/hello_world.txt
+
+  - name: print-message
+    inputs:
+      artifacts:
+      - name: message
+        path: /tmp/message
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["cat /tmp/message"]
+
+`
+
+// Tests ability to reference workflow parameters from within top level spec fields (e.g. spec.volumes)
+func TestArtifactResolutionWhenSkippedDAG(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := unmarshalWF(artifactResolutionWhenSkippedDAG)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+}
