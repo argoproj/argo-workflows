@@ -8,6 +8,7 @@ const path = require('path');
 const isProd = process.env.NODE_ENV === 'production';
 
 const config = {
+    mode: isProd ? 'production' : 'development',
     entry: './src/app/index.tsx',
     output: {
         filename: '[name].[chunkhash].js',

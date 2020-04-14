@@ -88,7 +88,8 @@ E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
 # The sort puts _.primary first in the list. 'env LC_COLLATE=C' makes sure underscore comes first in both Mac and Linux.
 SWAGGER_FILES    := $(shell find pkg/apiclient -name '*.swagger.json' | env LC_COLLATE=C sort)
-MOCK_FILES       := $(shell find . -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
+MOCK_FILES       := $(shell find persist workflow -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
+UI_FILES         := $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 
 define backup_go_mod
 	# Back-up go.*, but only if we have not already done this (because that would suggest we failed mid-codegen and the currenty go.* files are borked).
@@ -115,30 +116,28 @@ status:
 .PHONY: cli
 cli: dist/argo
 
-ui/node_modules: ui/package.json ui/yarn.lock
+ui/dist/node_modules.marker: ui/package.json ui/yarn.lock
 	# Get UI dependencies
+	@mkdir -p ui/node_modules
 ifeq ($(CI),false)
 	yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
-else
-	mkdir -p ui/node_modules
 endif
-	touch ui/node_modules
+	touch ui/dist/node_modules.marker
 
-ui/dist/app: ui/node_modules ui/src
+ui/dist/index.html: ui/dist/node_modules.marker ui/src
 	# Build UI
+	@mkdir -p ui/dist/app
 ifeq ($(CI),false)
 	yarn --cwd ui build
 else
-	mkdir -p ui/dist/app
 	echo "Built without static files" > ui/dist/app/index.html
 endif
-	touch ui/dist/app
 
 $(HOME)/go/bin/staticfiles:
 	# Install the "staticfiles" tool
 	go get bou.ke/staticfiles
 
-server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/app
+server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/index.html
 	# Pack UI into a Go file.
 	staticfiles -o server/static/files.go ui/dist/app
 
@@ -350,6 +349,9 @@ dist/mysql.yaml: test/e2e/manifests/mysql.yaml $(VERSION_FILE)
 
 .PHONY: install
 install: dist/postgres.yaml dist/mysql.yaml dist/no-db.yaml
+ifeq ($(K3D),true)
+	k3d start
+endif
 	# Install quick-start
 	kubectl apply -f test/e2e/manifests/argo-ns.yaml
 ifeq ($(DB),postgres)
@@ -380,6 +382,9 @@ dist/python-alpine3.6:
 start: status install down controller-image cli-image executor-image wait-down up cli test-images wait-up env
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
+
+.PHONY: run
+run: start pf
 
 .PHONY: down
 down:
