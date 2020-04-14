@@ -23,3 +23,26 @@ To run Argo Workflows locally for development: [running locally](running-locally
 ### Test Policy
 
 Changes without either unit or e2e tests are unlikely to be accepted. See [the pull request template](../.github/pull_request_template.md.)
+
+### Running Sonar Locally
+
+Install the scanner:
+
+```
+brew install sonar-scanner
+```
+
+Run the tests:
+
+```
+make test CI=true
+make test-reports/test-report.out
+```
+
+Perform a scan:
+
+```
+# the key is PR number (e.g. "2666"), the branch is the CI branch, e.g. "pull/2666"
+SONAR_TOKEN=... sonar-scanner -Dsonar.pullrequest.key=... -Dsonar.pullrequest.branch=... 
+```
+ 
