@@ -20,6 +20,7 @@ type TemplateHolder interface {
 	GetTemplateByName(name string) *Template
 	GetResourceScope() ResourceScope
 	GetTemplates() []Template
+	GetArguments() Arguments
 }
 
 // TemplateReferenceHolder is an object that holds a reference to other templates; e.g. WorkflowStep, DAGTask, and NodeStatus

@@ -1892,6 +1892,11 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		*out = new(Metrics)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.WorkflowTemplateRef != nil {
+		in, out := &in.WorkflowTemplateRef, &out.WorkflowTemplateRef
+		*out = new(TemplateRef)
+		**out = **in
+	}
 	return
 }
 

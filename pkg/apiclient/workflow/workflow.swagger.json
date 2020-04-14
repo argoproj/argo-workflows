@@ -2187,6 +2187,10 @@
         "shutdown": {
           "type": "string",
           "title": "Shutdown will shutdown the workflow according to its ShutdownStrategy"
+        },
+        "workflowTemplateRef": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TemplateRef",
+          "title": "workflowTemplateRef holds WorkflowTemplate reference -TODO-Bala update comments"
         }
       },
       "description": "WorkflowSpec is the specification of a Workflow."

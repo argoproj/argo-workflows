@@ -237,7 +237,16 @@ func (woc *wfOperationCtx) operate() {
 		woc.activePods = woc.countActivePods()
 	}
 
-	woc.setGlobalParameters()
+	// Create a starting template context.
+	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
+	if err != nil {
+		msg := fmt.Sprintf("Failed to create a template context: %+v", err)
+		woc.log.Errorf(msg)
+		woc.markWorkflowError(err, true)
+		return
+	}
+
+	woc.setGlobalParameters(tmplCtx)
 
 	if woc.wf.Spec.ArtifactRepositoryRef != nil {
 		repoReference := woc.wf.Spec.ArtifactRepositoryRef
@@ -253,7 +262,7 @@ func (woc *wfOperationCtx) operate() {
 		}
 	}
 
-	err := woc.substituteParamsInVolumes(woc.globalParams)
+	err = woc.substituteParamsInVolumes(woc.globalParams)
 	if err != nil {
 		msg := fmt.Sprintf("%s volumes global param substitution error: %+v", woc.wf.ObjectMeta.Name, err)
 		woc.log.Errorf(msg)
@@ -270,16 +279,20 @@ func (woc *wfOperationCtx) operate() {
 		return
 	}
 
-	// Create a starting template context.
-	tmplCtx, err := woc.createTemplateContext(wfv1.ResourceScopeLocal, "")
-	if err != nil {
-		msg := fmt.Sprintf("Failed to create a template context: %+v", err)
-		woc.log.Errorf(msg)
-		woc.markWorkflowError(err, true)
-		return
-	}
 
-	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{Template: woc.wf.Spec.Entrypoint}, tmplCtx, woc.wf.Spec.Arguments, &executeTemplateOpts{})
+	var node *wfv1.NodeStatus
+
+	if woc.wf.Spec.WorkflowTemplateRef != nil {
+		tmpl, err := tmplCtx.GetTemplateGetterFromRef(woc.wf.Spec.WorkflowTemplateRef)
+		if err != nil {
+
+		}
+		args := tmpl.GetArguments()
+		node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{TemplateRef: woc.wf.Spec.WorkflowTemplateRef}, tmplCtx, args, &executeTemplateOpts{})
+
+	}else {
+		node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{Template: woc.wf.Spec.Entrypoint}, tmplCtx, woc.wf.Spec.Arguments, &executeTemplateOpts{})
+	}
 	if err != nil {
 		msg := fmt.Sprintf("%s error in entry template execution: %+v", woc.wf.Name, err)
 		// the error are handled in the callee so just log it.
@@ -411,7 +424,7 @@ func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
 }
 
 // setGlobalParameters sets the globalParam map with global parameters
-func (woc *wfOperationCtx) setGlobalParameters() {
+func (woc *wfOperationCtx) setGlobalParameters(ctx *templateresolution.Context) {
 	woc.globalParams[common.GlobalVarWorkflowName] = woc.wf.ObjectMeta.Name
 	woc.globalParams[common.GlobalVarWorkflowNamespace] = woc.wf.ObjectMeta.Namespace
 	woc.globalParams[common.GlobalVarWorkflowUID] = string(woc.wf.ObjectMeta.UID)
@@ -427,6 +440,16 @@ func (woc *wfOperationCtx) setGlobalParameters() {
 	if workflowParameters, err := json.Marshal(woc.wf.Spec.Arguments.Parameters); err == nil {
 		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
 	}
+	if woc.wf.Spec.WorkflowTemplateRef != nil {
+		tmpl, err := ctx.GetTemplateGetterFromRef(woc.wf.Spec.WorkflowTemplateRef)
+		if err != nil {
+
+		}
+		for _, param := range tmpl.GetArguments().Parameters {
+			woc.globalParams["workflow.parameters."+param.Name] = *param.Value
+		}
+	}
+
 	for _, param := range woc.wf.Spec.Arguments.Parameters {
 		woc.globalParams["workflow.parameters."+param.Name] = *param.Value
 	}

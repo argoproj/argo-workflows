@@ -268,6 +268,9 @@ type WorkflowSpec struct {
 
 	// Shutdown will shutdown the workflow according to its ShutdownStrategy
 	Shutdown ShutdownStrategy `json:"shutdown,omitempty" protobuf:"bytes,33,opt,name=shutdown,casttype=ShutdownStrategy"`
+
+	// workflowTemplateRef holds WorkflowTemplate reference -TODO-Bala update comments
+	WorkflowTemplateRef *TemplateRef `json:"workflowTemplateRef,omitempty" protobuf:"bytes,34,opt,name=workflowTemplateRef,casttype=TemplateRef"`
 }
 
 type ShutdownStrategy string
@@ -1694,6 +1697,12 @@ func (wf *Workflow) GetResourceScope() ResourceScope {
 func (wf *Workflow) GetTemplates() []Template {
 	return wf.Spec.Templates
 }
+
+// GetArguments returns the Arguments.
+func (wf *Workflow) GetArguments() Arguments {
+	return wf.Spec.Arguments
+}
+
 
 // NodeID creates a deterministic node ID based on a node name
 func (wf *Workflow) NodeID(name string) string {

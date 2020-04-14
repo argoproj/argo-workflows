@@ -134,9 +134,9 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		ctx.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*wf.Spec.Priority))
 	}
 
-	if wf.Spec.Entrypoint == "" {
-		return nil, errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
-	}
+	//if wf.Spec.Entrypoint == "" {
+	//	return nil, errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
+	//}
 
 	// Make sure that templates are not defined with deprecated fields
 	for _, template := range wf.Spec.Templates {
@@ -166,7 +166,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		}
 	}
 
-	_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.Entrypoint}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
+	//_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.Entrypoint}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
 	if err != nil {
 		return nil, err
 	}

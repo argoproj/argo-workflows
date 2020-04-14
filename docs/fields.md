@@ -515,6 +515,7 @@ WorkflowSpec is the specification of a Workflow.
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if itSucceeded or Failed. If this struct is set, once the Workflow finishes, it will bedeleted after the time to live expires. If this field is unset,the controller config map will hold the default values.|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference.The Workflow controller will create the claims at the beginning of the workflowand delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
+|`workflowTemplateRef`|[`TemplateRef`](#templateref)|workflowTemplateRef holds WorkflowTemplate reference -TODO-Bala update comments|
 
 ## WorkflowStatus
 
@@ -1455,6 +1456,18 @@ TTLStrategy is the strategy for the time to live depending on if the workflow su
 |`secondsAfterCompletion`|`int32`|SecondsAfterCompletion is the number of seconds to live after completion|
 |`secondsAfterFailure`|`int32`|SecondsAfterFailure is the number of seconds to live after failure|
 |`secondsAfterSuccess`|`int32`|SecondsAfterSuccess is the number of seconds to live after success|
+
+## TemplateRef
+
+TemplateRef is a reference of template resource.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`clusterscope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).|
+|`name`|`string`|Name is the resource name of the template.|
+|`runtimeResolution`|`boolean`|RuntimeResolution skips validation at creation time.By enabling this option, you can create the referred workflow template before the actual runtime.|
+|`template`|`string`|Template is the name of referred template in the resource.|
 
 ## WorkflowCondition
 
@@ -2440,39 +2453,6 @@ SuspendTemplate is a template subtype to suspend a workflow at a predetermined p
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`duration`|`string`|Duration is the seconds to wait before automatically resuming a template|
-
-## TemplateRef
-
-TemplateRef is a reference of template resource.
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`cluster-wftmpl-dag.yaml`](../examples/cluster-workflow-template/cluster-wftmpl-dag.yaml)
-
-- [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
-
-- [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
-
-- [`dag.yaml`](../examples/workflow-template/dag.yaml)
-
-- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
-
-- [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
-
-- [`steps.yaml`](../examples/workflow-template/steps.yaml)
-
-- [`templates.yaml`](../examples/workflow-template/templates.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`clusterscope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).|
-|`name`|`string`|Name is the resource name of the template.|
-|`runtimeResolution`|`boolean`|RuntimeResolution skips validation at creation time.By enabling this option, you can create the referred workflow template before the actual runtime.|
-|`template`|`string`|Template is the name of referred template in the resource.|
 
 ## ArchiveStrategy
 

@@ -64,3 +64,8 @@ func (wftmpl *WorkflowTemplate) GetResourceScope() ResourceScope {
 func (wftmpl *WorkflowTemplate) GetTemplates() []Template {
 	return wftmpl.Spec.Templates
 }
+
+// GetArguments returns the Arguments.
+func (wf *WorkflowTemplate) GetArguments() Arguments {
+	return wf.Spec.Arguments
+}
