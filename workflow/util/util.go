@@ -488,7 +488,7 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-func randString(n int) string {
+func RandString(n int) string {
 	b := make([]byte, n)
 	for i := range b {
 		b[i] = letters[rand.Intn(len(letters))]
@@ -516,7 +516,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 		default:
 			return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to resubmit in memoized mode")
 		}
-		newWF.ObjectMeta.Name = newWF.ObjectMeta.GenerateName + randString(5)
+		newWF.ObjectMeta.Name = newWF.ObjectMeta.GenerateName + RandString(5)
 	}
 
 	// carry over the unmodified spec

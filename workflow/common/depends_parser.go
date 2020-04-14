@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -34,17 +35,17 @@ func (d *DependsOperand) String() string {
 
 // An interface to sort by descending string length value. This is needed when replacing operands with their boolean
 // results
-type ByDescendingStringLength []DependsOperand
+type byDescendingStringLength []DependsOperand
 
-func (b ByDescendingStringLength) Len() int {
+func (b byDescendingStringLength) Len() int {
 	return len(b)
 }
 
-func (b ByDescendingStringLength) Less(i, j int) bool {
+func (b byDescendingStringLength) Less(i, j int) bool {
 	return len(b[i].String()) > len(b[j].String())
 }
 
-func (b ByDescendingStringLength) Swap(i, j int) {
+func (b byDescendingStringLength) Swap(i, j int) {
 	b[i], b[j] = b[j], b[i]
 }
 
@@ -62,4 +63,15 @@ func ParseDependsLogic(depends string) []DependsOperand {
 		}
 	}
 	return out
+}
+
+func ReplaceDependsLogic(logic string, operands []DependsOperand) string {
+	// Replace operands with boolean values indicating if they are satisfied. We make string replacements in order of
+	// largest string length value to smallest. This is necessary to avoid replacing a subset of a larger string if it
+	// happens to be the case that a smaller, valid string is found within it.
+	sort.Sort(byDescendingStringLength(operands))
+	for _, operand := range operands {
+		logic = strings.Replace(logic, operand.String(), fmt.Sprintf("%t", operand.Satisfied), -1)
+	}
+	return logic
 }

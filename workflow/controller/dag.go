@@ -3,7 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/valyala/fasttemplate"
@@ -655,13 +654,7 @@ func evaluateDependsLogic(logic string, dagCtx *dagContext) (bool, bool, error) 
 		evaluatedDependsLogic = append(evaluatedDependsLogic, operand)
 	}
 
-	// Replace operands with boolean values indicating if they are satisfied. We make string replacements in order of
-	// largest string length value to smallest. This is necessary to avoid replacing a subset of a larger string if it
-	// happens to be the case that a smaller, valid string is found within it.
-	sort.Sort(common.ByDescendingStringLength(evaluatedDependsLogic))
-	for _, operand := range evaluatedDependsLogic {
-		logic = strings.Replace(logic, operand.String(), fmt.Sprintf("%t", operand.Satisfied), -1)
-	}
+	logic = common.ReplaceDependsLogic(logic, evaluatedDependsLogic)
 
 	execute, err := common.EvaluateExpression(logic)
 	if err != nil {
