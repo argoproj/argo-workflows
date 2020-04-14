@@ -21,20 +21,27 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
         this.state = {invalid: false};
     }
 
+    private extractAndValidate(formikApi: any, resource: any) {
+        formikApi.setFieldValue('resource', resource);
+        if (!this.props.validate) {
+            const validateResult = this.props.validate(resource);
+            if (!validateResult.valid) {
+                this.setState({invalid: true, error: {message: validateResult.message}});
+                return;
+            }
+        }
+        this.setState({
+            error: undefined,
+            invalid: false
+        });
+    }
+
     public render() {
         return (
             <div>
                 <Formik
                     initialValues={{resource: this.props.defaultResource, resourceString: jsYaml.dump(this.props.defaultResource)}}
                     onSubmit={(values, {setSubmitting}) => {
-                        if (!this.props.validate) {
-                            const validateResult = this.props.validate(values.resource);
-                            if (!validateResult.valid) {
-                                this.setState({invalid: true, error: {message: validateResult.message}});
-                                setSubmitting(false);
-                                return;
-                            }
-                        }
                         this.props
                             .onSubmit(values.resource)
                             .then(_ => setSubmitting(false))
@@ -80,11 +87,7 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                     onChange={e => {
                                         try {
                                             this.readFile(e.target.files, (newResource: string) => {
-                                                formikApi.setFieldValue('resource', jsYaml.load(e.currentTarget.value));
-                                                this.setState({
-                                                    error: undefined,
-                                                    invalid: false
-                                                });
+                                                this.extractAndValidate(formikApi, jsYaml.load(e.currentTarget.value));
                                                 formikApi.setFieldValue('resourceString', newResource);
                                             });
                                         } catch (e) {
@@ -108,11 +111,7 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                     onBlur={e => {
                                         formikApi.handleBlur(e);
                                         try {
-                                            formikApi.setFieldValue('resource', jsYaml.load(e.currentTarget.value));
-                                            this.setState({
-                                                error: undefined,
-                                                invalid: false
-                                            });
+                                            this.extractAndValidate(formikApi, jsYaml.load(e.currentTarget.value));
                                         } catch (e) {
                                             this.setState({
                                                 error: {
