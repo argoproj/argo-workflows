@@ -784,7 +784,7 @@ export interface WorkflowCondition {
     status: ConditionStatus;
     message: string;
 }
-export type WorkflowConditionType = 'Completed' | 'SpecWarning';
+export type WorkflowConditionType = 'Completed' | 'SpecWarning' | 'MetricsError';
 export type ConditionStatus = 'True' | 'False' | 'Unknown;';
 
 /**
