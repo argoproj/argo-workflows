@@ -5,9 +5,11 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -141,6 +143,38 @@ func (d *DockerExecutor) GetOutputStream(containerID string, combinedOutput bool
 	}()
 
 	return &cmdCloser{Reader: reader, cmd: cmd}, nil
+}
+
+func (d *DockerExecutor) GetExitCode(containerID string) (string, error) {
+	cmd := exec.Command("docker", "inspect", containerID, "--format='{{.State.ExitCode}}'")
+	log.Info(cmd.Args)
+	reader, err := cmd.StdoutPipe()
+	if err != nil {
+		return "", errors.InternalWrapError(err, "Could not pipe STDOUT")
+	}
+	err = cmd.Start()
+	if err != nil {
+		return "", errors.InternalWrapError(err, "Could not start command")
+	}
+	defer func() { _ = reader.Close() }()
+	bytes, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return "", errors.InternalWrapError(err, "Could not read from STDOUT")
+	}
+	out := string(bytes)
+
+	// Trims off a single newline for user convenience
+	outputLen := len(out)
+	if outputLen > 0 && out[outputLen-1] == '\n' {
+		out = out[:outputLen-1]
+	}
+	exitCode := strings.Trim(out, `'`)
+	// Ensure exit code is an int
+	_, err = strconv.Atoi(exitCode)
+	if err != nil {
+		return "", errors.InternalWrapError(err, "Could not parse exit code")
+	}
+	return exitCode, nil
 }
 
 func (d *DockerExecutor) WaitInit() error {
