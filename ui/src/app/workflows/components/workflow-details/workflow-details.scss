@@ -2,6 +2,8 @@
 
 .workflow-details {
 
+    overflow-y: scroll;
+
     &, & > .row {
         height: calc(100vh - 2 * #{$top-bar-height});
     }
