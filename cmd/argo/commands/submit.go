@@ -14,7 +14,7 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/pkg/errors"
-	argoJson "github.com/argoproj/pkg/json"
+	argojson "github.com/argoproj/pkg/json"
 )
 
 // cliSubmitOpts holds submission options specific to CLI submission (e.g. controlling output)
@@ -214,11 +214,11 @@ func submitWorkflows(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cli
 // unmarshalWorkflows unmarshals the input bytes as either json or yaml
 func unmarshalWorkflows(wfBytes []byte, strict bool) []wfv1.Workflow {
 	var wf wfv1.Workflow
-	var jsonOpts []argoJson.JSONOpt
+	var jsonOpts []argojson.JSONOpt
 	if strict {
-		jsonOpts = append(jsonOpts, argoJson.DisallowUnknownFields)
+		jsonOpts = append(jsonOpts, argojson.DisallowUnknownFields)
 	}
-	err := argoJson.Unmarshal(wfBytes, &wf, jsonOpts...)
+	err := argojson.Unmarshal(wfBytes, &wf, jsonOpts...)
 	if err == nil {
 		return []wfv1.Workflow{wf}
 	}
