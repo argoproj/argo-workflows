@@ -1,3 +1,4 @@
+SHELL=/bin/bash -o pipefail
 
 OUTPUT_IMAGE_OS ?= linux
 OUTPUT_IMAGE_ARCH ?= amd64
@@ -87,7 +88,7 @@ E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
 # The sort puts _.primary first in the list. 'env LC_COLLATE=C' makes sure underscore comes first in both Mac and Linux.
 SWAGGER_FILES    := $(shell find pkg/apiclient -name '*.swagger.json' | env LC_COLLATE=C sort)
-MOCK_FILES       := $(shell find . -maxdepth 4 -not -path '*/vendor/*' -path '*/mocks/*' -type f)
+MOCK_FILES       := $(shell find . -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
 
 define backup_go_mod
 	# Back-up go.*, but only if we have not already done this (because that would suggest we failed mid-codegen and the currenty go.* files are borked).
@@ -292,14 +293,23 @@ ifeq ($(CI),false)
 	yarn --cwd ui lint
 endif
 
+# for local we have a faster target that prints to stdout, does not use json, and can cache because it has no coverage
 .PHONY: test
 test: server/static/files.go
-	# Run unit tests
-ifeq ($(CI),false)
-	go test -v `go list ./... | grep -v 'test/e2e'`
-else
-	go test -v -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
-endif
+	@mkdir -p test-results
+	go test -v -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'` 2>&1 | tee test-results/test.out
+
+test-results/test-report.json: test-results/test.out
+	cat test-results/test.out | go tool test2json > test-results/test-report.json
+
+$(HOME)/go/bin/go-junit-report:
+	$(call backup_go_mod)
+	go get github.com/jstemmer/go-junit-report
+	$(call restore_go_mod)
+
+# note that we do not have a dependency on test.out, we assume you did correctly create this
+test-results/junit.xml: $(HOME)/go/bin/go-junit-report test-results/test.out
+	cat test-results/test.out | go-junit-report > test-results/junit.xml
 
 $(VERSION_FILE):
 	@mkdir -p dist
@@ -429,12 +439,14 @@ mysql-cli:
 .PHONY: test-e2e
 test-e2e: test-images cli
 	# Run E2E tests
-	go test -timeout 15m -v -count 1 -p 1 ./test/e2e/...
+	@mkdir -p test-results
+	go test -timeout 15m -v -count 1 -p 1 ./test/e2e/... 2>&1 | tee test-results/test.out
 
 .PHONY: smoke
 smoke: test-images
 	# Run smoke tests
-	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
+	@mkdir -p test-results
+	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: test-api
 test-api: test-images
@@ -467,7 +479,7 @@ $(HOME)/go/bin/swagger:
 swagger: api/openapi-spec/swagger.json
 
 api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) $(MANIFEST_VERSION_FILE) hack/swaggify.sh
-	swagger mixin -c 412 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
+	swagger mixin -c 611 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
 
 .PHONY: docs
 docs: swagger
