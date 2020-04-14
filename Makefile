@@ -478,7 +478,7 @@ clean:
 
 $(HOME)/go/bin/swagger:
 	$(call backup_go_mod)
-	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.23.0
+	go get github.com/go-swagger/go-swagger/cmd/swagger@v0.23.0
 	$(call restore_go_mod)
 
 .PHONY: swagger
