@@ -55,4 +55,3 @@ func (cwftmpl *ClusterWorkflowTemplate) GetTemplateByName(name string) *Template
 func (cwftmpl *ClusterWorkflowTemplate) GetResourceScope() ResourceScope {
 	return ResourceScopeCluster
 }
-

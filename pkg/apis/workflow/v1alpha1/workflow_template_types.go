@@ -59,4 +59,3 @@ func (wftmpl *WorkflowTemplate) GetTemplateByName(name string) *Template {
 func (wftmpl *WorkflowTemplate) GetResourceScope() ResourceScope {
 	return ResourceScopeNamespaced
 }
-
