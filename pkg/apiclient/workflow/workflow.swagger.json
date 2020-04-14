@@ -1587,6 +1587,13 @@
         "failureCondition": {
           "type": "string",
           "title": "FailureCondition is a label selector expression which describes the conditions\nof the k8s resource in which the step was considered failed"
+        },
+        "flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Flags is a set of additional options passed to kubectl before submitting a resource\nI.e. to disable resource validation:\nflags: [\n\t\"--validate=false\"  # disable resource validation\n]"
         }
       },
       "title": "ResourceTemplate is a template subtype to manipulate kubernetes resources"

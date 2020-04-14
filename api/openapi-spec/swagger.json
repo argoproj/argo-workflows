@@ -2689,6 +2689,13 @@
           "type": "string",
           "title": "FailureCondition is a label selector expression which describes the conditions\nof the k8s resource in which the step was considered failed"
         },
+        "flags": {
+          "type": "array",
+          "title": "Flags is a set of additional options passed to kubectl before submitting a resource\nI.e. to disable resource validation:\nflags: [\n\t\"--validate=false\"  # disable resource validation\n]",
+          "items": {
+            "type": "string"
+          }
+        },
         "manifest": {
           "type": "string",
           "title": "Manifest contains the kubernetes manifest"
