@@ -125,7 +125,7 @@ endif
 	@mkdirp -p ui/dist
 	touch ui/dist/node_modules.marker
 
-ui/dist/index.html: ui/dist/node_modules.marker ui/src
+ui/dist/app/index.html: ui/dist/node_modules.marker ui/src
 	# Build UI
 	@mkdir -p ui/dist/app
 ifeq ($(CI),false)
@@ -138,7 +138,7 @@ $(HOME)/go/bin/staticfiles:
 	# Install the "staticfiles" tool
 	go get bou.ke/staticfiles
 
-server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/index.html
+server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
 	staticfiles -o server/static/files.go ui/dist/app
 
@@ -478,7 +478,7 @@ clean:
 
 $(HOME)/go/bin/swagger:
 	$(call backup_go_mod)
-	go get github.com/go-swagger/go-swagger/cmd/swagger
+	go install github.com/go-swagger/go-swagger/cmd/swagger@v0.23.0
 	$(call restore_go_mod)
 
 .PHONY: swagger
