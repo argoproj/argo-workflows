@@ -125,6 +125,8 @@ Workflow is the definition of a workflow resource
 
 - [`loops.yaml`](../examples/loops.yaml)
 
+- [`massive-workflow.yaml`](../examples/massive-workflow.yaml)
+
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
@@ -383,6 +385,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
 
 - [`loops.yaml`](../examples/loops.yaml)
+
+- [`massive-workflow.yaml`](../examples/massive-workflow.yaml)
 
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
@@ -662,6 +666,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`loops.yaml`](../examples/loops.yaml)
 
+- [`massive-workflow.yaml`](../examples/massive-workflow.yaml)
+
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
@@ -905,6 +911,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
 
 - [`loops.yaml`](../examples/loops.yaml)
+
+- [`massive-workflow.yaml`](../examples/massive-workflow.yaml)
 
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
@@ -1305,6 +1313,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
 
 - [`loops.yaml`](../examples/loops.yaml)
+
+- [`massive-workflow.yaml`](../examples/massive-workflow.yaml)
 
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
@@ -1807,6 +1817,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`loops-dag.yaml`](../examples/loops-dag.yaml)
 
+- [`massive-workflow.yaml`](../examples/massive-workflow.yaml)
+
 - [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
 
 - [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
@@ -2087,6 +2099,8 @@ Pod metdata
 
 - [`loops.yaml`](../examples/loops.yaml)
 
+- [`massive-workflow.yaml`](../examples/massive-workflow.yaml)
+
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
@@ -2355,6 +2369,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
 
 - [`loops.yaml`](../examples/loops.yaml)
+
+- [`massive-workflow.yaml`](../examples/massive-workflow.yaml)
 
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
@@ -2798,6 +2814,8 @@ DAGTask represents a node in the graph during DAG execution
 
 - [`loops-dag.yaml`](../examples/loops-dag.yaml)
 
+- [`massive-workflow.yaml`](../examples/massive-workflow.yaml)
+
 - [`parallelism-nested-dag.yaml`](../examples/parallelism-nested-dag.yaml)
 
 - [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
@@ -2917,6 +2935,8 @@ Sequence expands a workflow step into numeric range
 <br>
 
 - [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
+
+- [`massive-workflow.yaml`](../examples/massive-workflow.yaml)
 </details>
 
 ### Fields
@@ -3171,6 +3191,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
 
 - [`loops.yaml`](../examples/loops.yaml)
+
+- [`massive-workflow.yaml`](../examples/massive-workflow.yaml)
 
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
@@ -3584,6 +3606,8 @@ A single application container that you want to run within a pod.
 
 - [`loops.yaml`](../examples/loops.yaml)
 
+- [`massive-workflow.yaml`](../examples/massive-workflow.yaml)
+
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
@@ -3988,6 +4012,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devicesand 
 - [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
 
 - [`loops.yaml`](../examples/loops.yaml)
+
+- [`massive-workflow.yaml`](../examples/massive-workflow.yaml)
 
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 

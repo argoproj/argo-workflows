@@ -122,6 +122,7 @@ ui/dist/node_modules.marker: ui/package.json ui/yarn.lock
 ifeq ($(CI),false)
 	yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
 endif
+	@mkdirp -p ui/dist
 	touch ui/dist/node_modules.marker
 
 ui/dist/index.html: ui/dist/node_modules.marker ui/src
