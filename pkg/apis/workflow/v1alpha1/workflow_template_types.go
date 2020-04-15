@@ -63,3 +63,8 @@ func (wftmpl *WorkflowTemplate) GetResourceScope() ResourceScope {
 func (wf *WorkflowTemplate) GetArguments() Arguments {
 	return wf.Spec.Arguments
 }
+
+// GetEntrypoint returns the Entrypoint.
+func (wf *WorkflowTemplate) GetEntrypoint() string {
+	return wf.Spec.Entrypoint
+}

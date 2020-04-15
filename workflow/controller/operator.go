@@ -283,12 +283,22 @@ func (woc *wfOperationCtx) operate() {
 	var node *wfv1.NodeStatus
 
 	if woc.wf.Spec.WorkflowTemplateRef != nil {
+		topLevelTmplRef := woc.wf.Spec.WorkflowTemplateRef
 		tmpl, err := tmplCtx.GetTemplateGetterFromRef(woc.wf.Spec.WorkflowTemplateRef)
 		if err != nil {
 
 		}
 		args := tmpl.GetArguments()
-		node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{TemplateRef: woc.wf.Spec.WorkflowTemplateRef}, tmplCtx, args, &executeTemplateOpts{})
+
+		if topLevelTmplRef.Template == "" {
+			topLevelTmplRef.Template = tmpl.GetEntrypoint()
+		}
+
+		if woc.wf.Spec.Entrypoint != "" {
+			topLevelTmplRef.Template = woc.wf.Spec.Entrypoint
+		}
+
+		node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{TemplateRef: topLevelTmplRef}, tmplCtx, args, &executeTemplateOpts{})
 
 	}else {
 		node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{Template: woc.wf.Spec.Entrypoint}, tmplCtx, woc.wf.Spec.Arguments, &executeTemplateOpts{})

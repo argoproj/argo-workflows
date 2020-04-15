@@ -60,3 +60,8 @@ func (cwftmpl *ClusterWorkflowTemplate) GetResourceScope() ResourceScope {
 func (cwftmpl *ClusterWorkflowTemplate) GetArguments() Arguments {
 	return cwftmpl.Spec.Arguments
 }
+
+// GetEntrypoint returns the Entrypoint.
+func (cwftmpl *ClusterWorkflowTemplate) GetEntrypoint() string {
+	return cwftmpl.Spec.Entrypoint
+}

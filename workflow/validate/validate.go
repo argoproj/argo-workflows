@@ -137,10 +137,30 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	if wf.Spec.Priority != nil {
 		ctx.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*wf.Spec.Priority))
 	}
-
-	//if wf.Spec.Entrypoint == "" {
-	//	return nil, errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
-	//}
+	var entrypoint = wf.Spec.Entrypoint
+	var topLevelTmplRef = wf.Spec.WorkflowTemplateRef
+	if entrypoint == "" && wf.Spec.WorkflowTemplateRef != nil{
+		entrypoint = wf.Spec.WorkflowTemplateRef.Template
+		if entrypoint == "" {
+			if wf.Spec.WorkflowTemplateRef.ClusterScope{
+				tmpl, err := cwftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
+				if err != nil{
+					return nil, err
+				}
+				entrypoint = tmpl.GetEntrypoint()
+			}else{
+				tmpl, err := wftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
+				if err != nil{
+					return nil, err
+				}
+				entrypoint = tmpl.GetEntrypoint()
+			}
+			topLevelTmplRef.Template = entrypoint
+		}
+	}
+	if !opts.IgnoreEntrypoint && entrypoint == "" {
+		return nil, errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
+	}
 
 	// Make sure that templates are not defined with deprecated fields
 	for _, template := range wf.Spec.Templates {
@@ -171,7 +191,8 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	}
 
 	if !opts.IgnoreEntrypoint {
-		_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.Entrypoint}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
+		if topLevelTmplRef != nil
+		_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: entrypoint}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
 		if err != nil {
 			return nil, err
 		}
