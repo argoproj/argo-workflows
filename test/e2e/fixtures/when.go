@@ -238,7 +238,7 @@ func (w *When) Given() *Given {
 		offloadNodeStatusRepo: w.offloadNodeStatusRepo,
 		wf:                    w.wf,
 		wfTemplates:           w.wfTemplates,
-		cwfTemplates:		   w.cwfTemplates,
+		cwfTemplates:          w.cwfTemplates,
 		cronWf:                w.cronWf,
 		workflowName:          w.workflowName,
 		kubeClient:            w.kubeClient,
