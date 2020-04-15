@@ -204,7 +204,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	<-ctx.Done()
 }
 
-func (wfc *WorkflowController)createClusterWorkflowTemplateInformer(ctx context.Context){
+func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
 	// Check if the controller has RBAC access to ClusterWorkflowTemplates
 	cwftAllowed, err := authutil.CanI(wfc.kubeclientset, "get, list, watch", "ClusterWorkflowTemplate", wfc.namespace, "")
 	if err != nil {

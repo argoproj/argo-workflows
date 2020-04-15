@@ -325,7 +325,7 @@ func TestNamespacedController(t *testing.T) {
 			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: allowed},
 		}, nil
 	})
-	
+
 	controller := newController()
 	controller.kubeclientset = &kubeClient
 	controller.cwftmplInformer = nil
