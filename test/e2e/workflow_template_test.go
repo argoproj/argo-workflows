@@ -35,10 +35,11 @@ func (s *WorkflowTemplateSuite) TestSubmitWorkflowTemplate() {
 func (s *WorkflowTemplateSuite) TestNestedWorkflowTemplate() {
 	s.Given().
 		WorkflowTemplate("@testdata/workflow-template-nested-template.yaml").
+		When().Given().
+		WorkflowTemplate("@smoke/workflow-template-whalesay-template.yaml").
 		When().
-		CreateWorkflowTemplates()
-
-	s.Given().
+		CreateWorkflowTemplates().
+		Given().
 		Workflow(`apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -59,7 +60,6 @@ spec:
             - name: message
               value: "hello from nested"
 `).When().
-		CreateWorkflowTemplates().
 		SubmitWorkflow().
 		WaitForWorkflow(30 * time.Second).
 		Then().

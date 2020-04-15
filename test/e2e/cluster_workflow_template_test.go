@@ -35,8 +35,8 @@ func (s *ClusterWorkflowTemplateSuite) TestSubmitClusterWorkflowTemplate() {
 func (s *ClusterWorkflowTemplateSuite) TestNestedClusterWorkflowTemplate() {
 	s.Given().
 		ClusterWorkflowTemplate("@testdata/cluster-workflow-template-nested-template.yaml").
-		When().CreateClusterWorkflowTemplates().Given().
-		ClusterWorkflowTemplate("@testdata/cluster-workflow-template-whalesay-template.yaml").
+		When().Given().
+		ClusterWorkflowTemplate("@smoke/cluster-workflow-template-whalesay-template.yaml").
 		When().CreateClusterWorkflowTemplates().
 		Given().
 		WorkflowName("cwft-wf").
