@@ -36,12 +36,16 @@ func (s *ClusterWorkflowTemplateSuite) TestNestedClusterWorkflowTemplate() {
 	s.Given().
 		ClusterWorkflowTemplate("@testdata/cluster-workflow-template-nested-template.yaml").
 		When().CreateClusterWorkflowTemplates().Given().
+		ClusterWorkflowTemplate("@testdata/cluster-workflow-template-whalesay-template.yaml").
+		When().CreateClusterWorkflowTemplates().
+		Given().
 		WorkflowName("cwft-wf").
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: cwft-wf
+  namespace: argo
   labels:
     argo-e2e: true
 spec:
