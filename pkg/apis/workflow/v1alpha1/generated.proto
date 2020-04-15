@@ -620,6 +620,9 @@ message Outputs {
 
   // Result holds the result (stdout) of a script template
   optional string result = 3;
+
+  // ExitCode holds the exit code of a script template
+  optional string exitCode = 4;
 }
 
 message ParallelSteps {
