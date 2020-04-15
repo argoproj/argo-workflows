@@ -1,37 +1,28 @@
-import { AppContext, NotificationType, Page, SlidingPanel, TopBarFilter } from "argo-ui";
-import * as classNames from "classnames";
-import * as PropTypes from "prop-types";
-import * as React from "react";
-import { RouteComponentProps } from "react-router";
-import { Subscription } from "rxjs";
+import {AppContext, NotificationType, Page, SlidingPanel, TopBarFilter} from 'argo-ui';
+import * as classNames from 'classnames';
+import * as PropTypes from 'prop-types';
+import * as React from 'react';
+import {RouteComponentProps} from 'react-router';
+import {Subscription} from 'rxjs';
 
-import { Link, NodePhase, Workflow } from "../../../../models";
-import { uiUrl } from "../../../shared/base";
-import { services } from "../../../shared/services";
+import {Link, NodePhase, Workflow} from '../../../../models';
+import {uiUrl} from '../../../shared/base';
+import {services} from '../../../shared/services';
 
-import {
-    WorkflowArtifacts,
-    WorkflowDag,
-    WorkflowDagRenderOptions,
-    WorkflowLogsViewer,
-    WorkflowNodeInfo,
-    WorkflowSummaryPanel,
-    WorkflowTimeline,
-    WorkflowYamlViewer
-} from "..";
-import { hasWarningConditionBadge } from "../../../shared/conditions-panel";
-import { Consumer, ContextApis } from "../../../shared/context";
-import { Utils } from "../../../shared/utils";
-import { WorkflowDagRenderOptionsPanel } from "../workflow-dag/workflow-dag-render-options-panel";
-import { WorkflowParametersPanel } from "../workflow-parameters-panel";
-import { WorkflowYamlPanel } from "./workflow-yaml-panel";
+import {WorkflowArtifacts, WorkflowDag, WorkflowDagRenderOptions, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowSummaryPanel, WorkflowTimeline, WorkflowYamlViewer} from '..';
+import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
+import {Consumer, ContextApis} from '../../../shared/context';
+import {Utils} from '../../../shared/utils';
+import {WorkflowDagRenderOptionsPanel} from '../workflow-dag/workflow-dag-render-options-panel';
+import {WorkflowParametersPanel} from '../workflow-parameters-panel';
+import {WorkflowYamlPanel} from './workflow-yaml-panel';
 
-require("./workflow-details.scss");
+require('./workflow-details.scss');
 
 function parseSidePanelParam(param: string) {
-    const [type, nodeId, container] = (param || "").split(":");
-    if (type === "logs" || type === "yaml") {
-        return { type, nodeId, container: container || "main" };
+    const [type, nodeId, container] = (param || '').split(':');
+    if (type === 'logs' || type === 'yaml') {
+        return {type, nodeId, container: container || 'main'};
     }
     return null;
 }
@@ -300,14 +291,14 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
             return;
         }
         services.workflows
-          .delete(this.props.match.params.name, this.props.match.params.namespace)
-          .then(() => ctx.navigation.goto(uiUrl(`workflows/`)))
-          .catch(() => {
-              this.appContext.apis.notifications.show({
-                  content: "Unable to delete workflow",
-                  type: NotificationType.Error
-              });
-          });
+            .delete(this.props.match.params.name, this.props.match.params.namespace)
+            .then(() => ctx.navigation.goto(uiUrl(`workflows/`)))
+            .catch(() => {
+                this.appContext.apis.notifications.show({
+                    content: 'Unable to delete workflow',
+                    type: NotificationType.Error
+                });
+            });
     }
 
     private stopWorkflow(ctx: ContextApis) {
@@ -315,14 +306,14 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
             return;
         }
         services.workflows
-          .stop(this.props.match.params.name, this.props.match.params.namespace)
-          .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
-          .catch(() => {
-              this.appContext.apis.notifications.show({
-                  content: "Unable to terminate workflow",
-                  type: NotificationType.Error
-              });
-          });
+            .stop(this.props.match.params.name, this.props.match.params.namespace)
+            .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
+            .catch(() => {
+                this.appContext.apis.notifications.show({
+                    content: 'Unable to terminate workflow',
+                    type: NotificationType.Error
+                });
+            });
     }
 
     private terminateWorkflow(ctx: ContextApis) {
@@ -330,38 +321,38 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
             return;
         }
         services.workflows
-          .terminate(this.props.match.params.name, this.props.match.params.namespace)
-          .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
-          .catch(() => {
-              this.appContext.apis.notifications.show({
-                  content: "Unable to terminate workflow",
-                  type: NotificationType.Error
-              });
-          });
+            .terminate(this.props.match.params.name, this.props.match.params.namespace)
+            .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
+            .catch(() => {
+                this.appContext.apis.notifications.show({
+                    content: 'Unable to terminate workflow',
+                    type: NotificationType.Error
+                });
+            });
     }
 
     private resumeWorkflow(ctx: ContextApis) {
         services.workflows
-          .resume(this.props.match.params.name, this.props.match.params.namespace)
-          .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
-          .catch(() => {
-              this.appContext.apis.notifications.show({
-                  content: "Unable to resume workflow",
-                  type: NotificationType.Error
-              });
-          });
+            .resume(this.props.match.params.name, this.props.match.params.namespace)
+            .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
+            .catch(() => {
+                this.appContext.apis.notifications.show({
+                    content: 'Unable to resume workflow',
+                    type: NotificationType.Error
+                });
+            });
     }
 
     private suspendWorkflow(ctx: ContextApis) {
         services.workflows
-          .suspend(this.props.match.params.name, this.props.match.params.namespace)
-          .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
-          .catch(() => {
-              this.appContext.apis.notifications.show({
-                  content: "Unable to suspend workflow",
-                  type: NotificationType.Error
-              });
-          });
+            .suspend(this.props.match.params.name, this.props.match.params.namespace)
+            .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
+            .catch(() => {
+                this.appContext.apis.notifications.show({
+                    content: 'Unable to suspend workflow',
+                    type: NotificationType.Error
+                });
+            });
     }
 
     private resubmitWorkflow(ctx: ContextApis) {
@@ -369,26 +360,26 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
             return;
         }
         services.workflows
-          .resubmit(this.props.match.params.name, this.props.match.params.namespace)
-          .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
-          .catch(() => {
-              this.appContext.apis.notifications.show({
-                  content: "Unable to resubmit workflow",
-                  type: NotificationType.Error
-              });
-          });
+            .resubmit(this.props.match.params.name, this.props.match.params.namespace)
+            .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
+            .catch(() => {
+                this.appContext.apis.notifications.show({
+                    content: 'Unable to resubmit workflow',
+                    type: NotificationType.Error
+                });
+            });
     }
 
     private retryWorkflow(ctx: ContextApis) {
         services.workflows
-          .retry(this.props.match.params.name, this.props.match.params.namespace)
-          .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
-          .catch(() => {
-              this.appContext.apis.notifications.show({
-                  content: "Unable to retry workflow",
-                  type: NotificationType.Error
-              });
-          });
+            .retry(this.props.match.params.name, this.props.match.params.namespace)
+            .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
+            .catch(() => {
+                this.appContext.apis.notifications.show({
+                    content: 'Unable to retry workflow',
+                    type: NotificationType.Error
+                });
+            });
     }
 
     private openNodeYaml(nodeId: string) {
@@ -430,16 +421,16 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
         return (
             <div className='argo-container'>
                 <div className='workflow-details__content'>
-                    <WorkflowSummaryPanel workflow={this.state.workflow}/>
+                    <WorkflowSummaryPanel workflow={this.state.workflow} />
                     {this.state.workflow.spec.arguments && this.state.workflow.spec.arguments.parameters && (
-                      <React.Fragment>
-                          <h6>Parameters</h6>
-                          <WorkflowParametersPanel parameters={this.state.workflow.spec.arguments.parameters}/>
-                      </React.Fragment>
+                        <React.Fragment>
+                            <h6>Parameters</h6>
+                            <WorkflowParametersPanel parameters={this.state.workflow.spec.arguments.parameters} />
+                        </React.Fragment>
                     )}
                     <h6>Artifacts</h6>
-                    <WorkflowArtifacts workflow={this.state.workflow} archived={false}/>
-                    <WorkflowYamlPanel workflow={this.state.workflow}/>
+                    <WorkflowArtifacts workflow={this.state.workflow} archived={false} />
+                    <WorkflowYamlPanel workflow={this.state.workflow} />
                 </div>
             </div>
         );
