@@ -66,6 +66,12 @@ DB                    ?= postgres
 K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 ARGO_TOKEN            = $(shell kubectl -n argo get secret -o name | grep argo-server | xargs kubectl -n argo get -o jsonpath='{.data.token}' | base64 --decode)
 
+ifeq ($(CI),true)
+TEST_OPTS := -coverprofile=coverage.out
+else
+TEST_OPTS :=
+endif
+
 override LDFLAGS += \
   -X github.com/argoproj/argo.version=$(VERSION) \
   -X github.com/argoproj/argo.buildDate=${BUILD_DATE} \
@@ -297,7 +303,7 @@ endif
 .PHONY: test
 test: server/static/files.go
 	@mkdir -p test-results
-	go test -v -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'` 2>&1 | tee test-results/test.out
+	go test -v $(TEST_OPTS) `go list ./... | grep -v 'test/e2e'` 2>&1 | tee test-results/test.out
 
 test-results/test-report.json: test-results/test.out
 	cat test-results/test.out | go tool test2json > test-results/test-report.json
