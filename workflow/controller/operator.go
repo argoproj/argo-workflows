@@ -1964,6 +1964,12 @@ func (woc *wfOperationCtx) addOutputsToLocalScope(prefix string, outputs *wfv1.O
 			scope.addParamToScope(key, *outputs.Result)
 		}
 	}
+	if prefix != "workflow" && outputs.ExitCode != nil {
+		key := fmt.Sprintf("%s.exitCode", prefix)
+		if scope != nil {
+			scope.addParamToScope(key, *outputs.ExitCode)
+		}
+	}
 	for _, param := range outputs.Parameters {
 		key := fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)
 		if scope != nil {
@@ -2404,20 +2410,20 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 		// might be realtime ({{workflow.duration}} will not be substituted the same way if it's realtime or if it isn't).
 		metricTmplBytes, err := json.Marshal(metricTmpl)
 		if err != nil {
-			woc.log.Errorf("unable to substitute parameters for metric '%s' (marshal): %s", metricTmpl.Name, err)
+			woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s' (marshal): %s", metricTmpl.Name, err))
 			continue
 		}
 		fstTmpl := fasttemplate.New(string(metricTmplBytes), "{{", "}}")
 		replacedValue, err := common.Replace(fstTmpl, localScope, false)
 		if err != nil {
-			woc.log.Errorf("unable to substitute parameters for metric '%s': %s", metricTmpl.Name, err)
+			woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricTmpl.Name, err))
 			continue
 		}
 
 		var metricTmplSubstituted wfv1.Prometheus
 		err = json.Unmarshal([]byte(replacedValue), &metricTmplSubstituted)
 		if err != nil {
-			woc.log.Errorf("unable to substitute parameters for metric '%s' (unmarshal): %s", metricTmpl.Name, err)
+			woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s' (unmarshal): %s", metricTmpl.Name, err))
 			continue
 		}
 		// Only substitute non-value fields here. Value field substitution happens below
@@ -2428,7 +2434,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 
 		proceed, err := shouldExecute(metricTmpl.When)
 		if err != nil {
-			woc.log.Errorf("unable to compute 'when' clause for metric '%s': %s", woc.wf.ObjectMeta.Name, err)
+			woc.reportMetricEmissionError(fmt.Sprintf("unable to compute 'when' clause for metric '%s': %s", woc.wf.ObjectMeta.Name, err))
 			continue
 		}
 		if !proceed {
@@ -2439,13 +2445,13 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			// Finally substitute value parameters
 			value := metricTmpl.Gauge.Value
 			if !(strings.HasPrefix(value, "{{") && strings.HasSuffix(value, "}}")) {
-				woc.log.Errorf("real time metrics can only be used with metric variables")
+				woc.reportMetricEmissionError(fmt.Sprintf("real time metrics can only be used with metric variables"))
 				continue
 			}
 			value = strings.TrimSuffix(strings.TrimPrefix(value, "{{"), "}}")
 			valueFunc, ok := realTimeScope[value]
 			if !ok {
-				woc.log.Errorf("'%s' is not available as a real time metric", value)
+				woc.reportMetricEmissionError(fmt.Sprintf("'%s' is not available as a real time metric", value))
 				continue
 			}
 			updatedMetric := metrics.ConstructRealTimeGaugeMetric(metricTmpl, valueFunc)
@@ -2458,7 +2464,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			fstTmpl = fasttemplate.New(metricSpec.GetValueString(), "{{", "}}")
 			replacedValue, err := common.Replace(fstTmpl, localScope, false)
 			if err != nil {
-				woc.log.Errorf("unable to substitute parameters for metric '%s': %s", metricSpec.Name, err)
+				woc.reportMetricEmissionError(fmt.Sprintf("unable to substitute parameters for metric '%s': %s", metricSpec.Name, err))
 				continue
 			}
 			metricSpec.SetValueString(replacedValue)
@@ -2467,13 +2473,24 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			// It is valid to pass a nil metric to ConstructOrUpdateMetric, in that case the metric will be created for us
 			updatedMetric, err := metrics.ConstructOrUpdateMetric(metric, metricSpec)
 			if err != nil {
-				woc.log.Errorf("could not compute metric '%s': %s", metricSpec.Name, err)
+				woc.reportMetricEmissionError(fmt.Sprintf("could not compute metric '%s': %s", metricSpec.Name, err))
 				continue
 			}
 			woc.controller.Metrics[metricSpec.GetDesc()] = updatedMetric
 			continue
 		}
 	}
+}
+
+func (woc *wfOperationCtx) reportMetricEmissionError(errorString string) {
+	woc.wf.Status.Conditions.UpsertConditionMessage(
+		wfv1.WorkflowCondition{
+			Status:  metav1.ConditionTrue,
+			Type:    wfv1.WorkflowConditionMetricsError,
+			Message: errorString,
+		})
+	woc.updated = true
+	woc.log.Error(errorString)
 }
 
 func (woc *wfOperationCtx) createPDBResource() error {
