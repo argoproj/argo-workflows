@@ -964,6 +964,10 @@
         "result": {
           "type": "string",
           "title": "Result holds the result (stdout) of a script template"
+        },
+        "exitCode": {
+          "type": "string",
+          "title": "ExitCode holds the exit code of a script template"
         }
       },
       "title": "Outputs hold parameters, artifacts, and results from a step"

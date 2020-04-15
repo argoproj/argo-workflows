@@ -19,7 +19,6 @@ type TemplateHolder interface {
 	GroupVersionKind() schema.GroupVersionKind
 	GetTemplateByName(name string) *Template
 	GetResourceScope() ResourceScope
-	GetTemplates() []Template
 	GetArguments() Arguments
 }
 

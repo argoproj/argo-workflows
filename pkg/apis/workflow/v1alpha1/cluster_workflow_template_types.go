@@ -56,11 +56,6 @@ func (cwftmpl *ClusterWorkflowTemplate) GetResourceScope() ResourceScope {
 	return ResourceScopeCluster
 }
 
-// GetTemplates returns the list of templates of cluster workflow template
-func (cwftmpl *ClusterWorkflowTemplate) GetTemplates() []Template {
-	return cwftmpl.Spec.Templates
-}
-
 // GetArguments returns the Arguments.
 func (cwftmpl *ClusterWorkflowTemplate) GetArguments() Arguments {
 	return cwftmpl.Spec.Arguments

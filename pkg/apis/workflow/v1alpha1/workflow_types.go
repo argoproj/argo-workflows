@@ -707,6 +707,9 @@ type Outputs struct {
 
 	// Result holds the result (stdout) of a script template
 	Result *string `json:"result,omitempty" protobuf:"bytes,3,opt,name=result"`
+
+	// ExitCode holds the exit code of a script template
+	ExitCode *string `json:"exitCode,omitempty" protobuf:"bytes,4,opt,name=exitCode"`
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step
@@ -1022,6 +1025,8 @@ const (
 	WorkflowConditionCompleted WorkflowConditionType = "Completed"
 	// WorkflowConditionSpecWarning is a warning on the current application spec
 	WorkflowConditionSpecWarning WorkflowConditionType = "SpecWarning"
+	// WorkflowConditionMetricsError is an error during metric emission
+	WorkflowConditionMetricsError WorkflowConditionType = "MetricsError"
 )
 
 type WorkflowCondition struct {
@@ -1638,6 +1643,9 @@ func (out *Outputs) HasOutputs() bool {
 	if out.Result != nil {
 		return true
 	}
+	if out.ExitCode != nil {
+		return true
+	}
 	if len(out.Artifacts) > 0 {
 		return true
 	}
@@ -1693,10 +1701,6 @@ func (wf *Workflow) GetResourceScope() ResourceScope {
 	return ResourceScopeLocal
 }
 
-// GetTemplates returns the list of templates of workflow.
-func (wf *Workflow) GetTemplates() []Template {
-	return wf.Spec.Templates
-}
 
 // GetArguments returns the Arguments.
 func (wf *Workflow) GetArguments() Arguments {
