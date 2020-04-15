@@ -6,7 +6,7 @@
 * Yarn. `brew install yarn`
 * Docker
 * [Kustomize](https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md)
-* [protoc](http://google.github.io/proto-lens/installing-protoc.html) `brew install protoc`
+* [protoc](http://google.github.io/proto-lens/installing-protoc.html) `brew install protobuf`
 * `jq`
 * [Swagger codegen](https://swagger.io/docs/open-source-tools/swagger-codegen/) `brew install swagger-codegen`
 * Kubernetes Cluster (we recommend Docker for Desktop + K3D, as this will allow you to test RBAC set-up, and is also fast)
