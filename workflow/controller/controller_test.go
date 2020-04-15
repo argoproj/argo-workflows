@@ -268,12 +268,12 @@ func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, workflow, unmarshalWF(helloWorldWf))
 	controllerDefaults := newControllerWithDefaults()
-	defautWorkflowSpec := unmarshalWF(helloWorldWf)
-	err = controllerDefaults.setWorkflowDefaults(defautWorkflowSpec)
+	defaultWorkflowSpec := unmarshalWF(helloWorldWf)
+	err = controllerDefaults.setWorkflowDefaults(defaultWorkflowSpec)
 	assert.NoError(t, err)
-	assert.Equal(t, defautWorkflowSpec.Spec.HostNetwork, &ans)
-	assert.NotEqual(t, defautWorkflowSpec, unmarshalWF(helloWorldWf))
-	assert.Equal(t, *defautWorkflowSpec.Spec.HostNetwork, true)
+	assert.Equal(t, defaultWorkflowSpec.Spec.HostNetwork, &ans)
+	assert.NotEqual(t, defaultWorkflowSpec, unmarshalWF(helloWorldWf))
+	assert.Equal(t, *defaultWorkflowSpec.Spec.HostNetwork, true)
 }
 
 func TestAddingWorkflowDefaultComplex(t *testing.T) {
