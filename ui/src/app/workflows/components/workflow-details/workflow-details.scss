@@ -2,35 +2,37 @@
 
 .workflow-details {
 
-    &, & > .row {
-        height: calc(100vh - 2 * #{$top-bar-height});
-    }
+  overflow-y: scroll;
 
-    &__content {
-        padding: 1em;
-    }
+  &, & > .row {
+    height: calc(100vh - 2 * #{$top-bar-height});
+  }
 
-    &__topbar-buttons {
-        display: inline-block;
-        white-space: nowrap;
+  &__content {
+    padding: 1em;
+  }
 
-        a {
-            vertical-align: middle;
-            text-align: center;
-            line-height: 1em;
-            padding: 0.5em;
-            font-size: 1.1em;
-            border: 1px solid transparent;
-            display: inline-block;
-            width: 2em;
-            margin-right: 0.5em;
-            color: $argo-color-gray-8;
-    
-            &.active {
-                background-color: $argo-color-gray-3;
-                border: 1px solid $argo-color-gray-4;
-                border-radius: 5px;
-                cursor: default;
+  &__topbar-buttons {
+    display: inline-block;
+    white-space: nowrap;
+
+    a {
+      vertical-align: middle;
+      text-align: center;
+      line-height: 1em;
+      padding: 0.5em;
+      font-size: 1.1em;
+      border: 1px solid transparent;
+      display: inline-block;
+      width: 2em;
+      margin-right: 0.5em;
+      color: $argo-color-gray-8;
+
+      &.active {
+        background-color: $argo-color-gray-3;
+        border: 1px solid $argo-color-gray-4;
+        border-radius: 5px;
+        cursor: default;
             }
         }
     }
