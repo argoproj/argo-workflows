@@ -102,11 +102,11 @@ helm install argo-artifacts stable/minio \
 
 Login to the Minio UI using a web browser (port 9000) after exposing obtaining the external IP using `kubectl`.
 ```sh
-kubectl -n argo get service argo-artifacts -o wide
+kubectl get service argo-artifacts -o wide
 ```
 On Minikube:
 ```sh
-minikube -n argo service --url argo-artifacts
+minikube service --url argo-artifacts
 ```
 
 NOTE: When minio is installed via Helm, it uses the following hard-wired default credentials,
@@ -132,7 +132,7 @@ data:
     artifactRepository: |
       s3:
         bucket: my-bucket
-        endpoint: argo-artifacts:9000
+        endpoint: argo-artifacts.default:9000
         insecure: true
         # accessKeySecret and secretKeySecret are secret selectors.
         # It references the k8s secret named 'argo-artifacts'
