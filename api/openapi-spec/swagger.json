@@ -2468,6 +2468,10 @@
           "type": "string",
           "title": "Name is unique name in the node tree used to generate the node ID"
         },
+        "nodeName": {
+          "type": "string",
+          "title": "NodeName is the name of the host on which the workflow is running"
+        },
         "outboundNodes": {
           "description": "OutboundNodes tracks the node IDs which are considered \"outbound\" nodes to a template invocation.\nFor every invocation of a template, there are nodes which we considered as \"outbound\". Essentially,\nthese are last nodes in the execution sequence to run, before the template is considered completed.\nThese nodes are then connected as parents to a following step.\n\nIn the case of single pod steps (i.e. container, script, resource templates), this list will be nil\nsince the pod itself is already considered the \"outbound\" node.\nIn the case of DAGs, outbound nodes are the \"target\" tasks (tasks with no children).\nIn the case of steps, outbound nodes are all the containers involved in the last step group.\nNOTE: since templates are composable, the list of outbound nodes are carried upwards when\na DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of\na template, will be a superset of the outbound nodes of its last children.",
           "type": "array",

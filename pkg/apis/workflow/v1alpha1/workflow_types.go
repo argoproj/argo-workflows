@@ -1118,6 +1118,9 @@ type NodeStatus struct {
 	// a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
 	// a template, will be a superset of the outbound nodes of its last children.
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
+
+	// NodeName is the name of the host on which the workflow is running
+	NodeName string `json:"nodeName,omitempty" protobuf:"bytes,22,rep,name=nodeName"`
 }
 
 func (n Nodes) GetResourcesDuration() ResourcesDuration {

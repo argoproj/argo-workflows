@@ -720,6 +720,11 @@ export interface NodeStatus {
      * TemplateScope is the template scope in which the template of this node was retrieved.
      */
     templateScope?: string;
+
+    /**
+     * Name of the machine (node in Kubernetes parlance) on which the workflow-node is running.
+     */
+    nodeName: string;
 }
 
 export interface TemplateRef {

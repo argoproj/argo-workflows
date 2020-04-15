@@ -1645,6 +1645,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		BoundaryID:    boundaryID,
 		Phase:         phase,
 		StartedAt:     metav1.Time{Time: time.Now().UTC()},
+		NodeName:      "TODO",
 	}
 
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
