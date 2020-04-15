@@ -1511,7 +1511,7 @@ spec:
       parameters:
       - name: param
         valueFrom:
-          parameter: p
+          parameter: "{{steps.non-path-resource-out-param.outputs.parameters.json}}"
   - name: non-path-resource-out-param
     resource:
       action: create
@@ -1524,10 +1524,10 @@ spec:
       parameters:
       - name: json
         valueFrom:
-          jsonPath: json
+          jsonPath: '{.metadata.name}'
       - name: jqfliter
         valueFrom:
-          jqFilter: jq
+          jqFilter: .
 `
 
 // TestBaseImageOutputVerify verifies we error when we detect the condition when the container
