@@ -151,7 +151,7 @@ ifeq ($(DEV_IMAGE),true)
 	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli -f Dockerfile.dev .
 	rm -f argo
 else
-	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli .
+	docker build --no-cache -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli .
 endif
 	touch dist/cli-image
 ifeq ($(K3D),true)
@@ -176,7 +176,7 @@ ifeq ($(DEV_IMAGE),true)
 	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller -f Dockerfile.dev .
 	rm -f workflow-controller
 else
-	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller .
+	docker build --no-cache -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller .
 endif
 	touch dist/controller-image
 ifeq ($(K3D),true)
@@ -198,7 +198,7 @@ ifeq ($(DEV_IMAGE),true)
 	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec -f Dockerfile.dev .
 	rm -f argoexec
 else
-	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec .
+	docker build --no-cache -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec .
 endif
 	touch dist/executor-image
 ifeq ($(K3D),true)
