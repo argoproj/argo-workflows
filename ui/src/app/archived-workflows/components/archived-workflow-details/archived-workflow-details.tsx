@@ -1,34 +1,35 @@
-import {NotificationType, Page, SlidingPanel} from 'argo-ui';
-import * as classNames from 'classnames';
-import * as React from 'react';
-import {RouteComponentProps} from 'react-router';
-import {Link, Workflow} from '../../../../models';
-import {uiUrl} from '../../../shared/base';
-import {BasePage} from '../../../shared/components/base-page';
-import {Loading} from '../../../shared/components/loading';
-import {YamlEditor} from '../../../shared/components/yaml/yaml-editor';
-import {services} from '../../../shared/services';
+import { NotificationType, Page, SlidingPanel } from "argo-ui";
+import * as classNames from "classnames";
+import * as React from "react";
+import { RouteComponentProps } from "react-router";
+import { Link, Workflow } from "../../../../models";
+import { uiUrl } from "../../../shared/base";
+import { BasePage } from "../../../shared/components/base-page";
+import { Loading } from "../../../shared/components/loading";
+import { YamlEditor } from "../../../shared/components/yaml/yaml-editor";
+import { services } from "../../../shared/services";
 import {
-    defaultWorkflowDagRenderOptions,
-    WorkflowArtifacts,
-    WorkflowDag,
-    WorkflowDagRenderOptions,
-    WorkflowLogsViewer,
-    WorkflowNodeInfo,
-    WorkflowParametersPanel,
-    WorkflowSummaryPanel,
-    WorkflowTimeline,
-    WorkflowYamlViewer
-} from '../../../workflows/components';
-import {WorkflowDagRenderOptionsPanel} from '../../../workflows/components/workflow-dag/workflow-dag-render-options-panel';
+  defaultWorkflowDagRenderOptions,
+  WorkflowArtifacts,
+  WorkflowDag,
+  WorkflowDagRenderOptions,
+  WorkflowLogsViewer,
+  WorkflowNodeInfo,
+  WorkflowParametersPanel,
+  WorkflowSummaryPanel,
+  WorkflowTimeline,
+  WorkflowYamlViewer
+} from "../../../workflows/components";
+import { WorkflowDagRenderOptionsPanel } from "../../../workflows/components/workflow-dag/workflow-dag-render-options-panel";
+import { WorkflowYamlPanel } from "../../../workflows/components/workflow-details/workflow-yaml-panel";
 
-require('../../../workflows/components/workflow-details/workflow-details.scss');
+require("../../../workflows/components/workflow-details/workflow-details.scss");
 
 interface State {
-    workflowDagRenderOptions: WorkflowDagRenderOptions;
-    workflow?: Workflow;
-    links?: Link[];
-    error?: Error;
+  workflowDagRenderOptions: WorkflowDagRenderOptions;
+  workflow?: Workflow;
+  links?: Link[];
+  error?: Error;
 }
 
 export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, State> {
@@ -150,19 +151,20 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
         return (
             <>
                 {this.tab === 'summary' ? (
-                    <div className='argo-container'>
-                        <div className='workflow-details__content'>
-                            <WorkflowSummaryPanel workflow={this.state.workflow} />
-                            {this.state.workflow.spec.arguments && this.state.workflow.spec.arguments.parameters && (
-                                <React.Fragment>
-                                    <h6>Parameters</h6>
-                                    <WorkflowParametersPanel parameters={this.state.workflow.spec.arguments.parameters} />
-                                </React.Fragment>
-                            )}
-                            <h6>Artifacts</h6>
-                            <WorkflowArtifacts workflow={this.state.workflow} archived={true} />
-                        </div>
+                  <div className='argo-container'>
+                    <div className='workflow-details__content'>
+                      <WorkflowSummaryPanel workflow={this.state.workflow}/>
+                      {this.state.workflow.spec.arguments && this.state.workflow.spec.arguments.parameters && (
+                        <React.Fragment>
+                          <h6>Parameters</h6>
+                          <WorkflowParametersPanel parameters={this.state.workflow.spec.arguments.parameters}/>
+                        </React.Fragment>
+                      )}
+                      <h6>Artifacts</h6>
+                      <WorkflowArtifacts workflow={this.state.workflow} archived={true}/>
+                      <WorkflowYamlPanel workflow={this.state.workflow}/>
                     </div>
+                  </div>
                 ) : (
                     <div>
                         <div className='workflow-details__graph-container'>
