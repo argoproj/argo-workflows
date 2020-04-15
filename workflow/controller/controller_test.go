@@ -2,16 +2,19 @@ package controller
 
 import (
 	"context"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-
 	"github.com/stretchr/testify/assert"
+	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/yaml"
@@ -120,6 +123,7 @@ func newController() *WorkflowController {
 		wftmplInformer:  wftmplInformer,
 		cwftmplInformer: cwftmplInformer,
 		wfQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		podQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		wfArchive:       sqldb.NullWorkflowArchive,
 		Metrics:         make(map[string]prometheus.Metric),
 	}
@@ -307,4 +311,44 @@ func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
 	assert.NotContains(t, workflow.Labels, "foo")
 	assert.Contains(t, workflow.Labels, "label")
 	assert.Contains(t, workflow.Annotations, "annotation")
+}
+
+func TestNamespacedController(t *testing.T) {
+	kubeClient := fake.Clientset{}
+
+	kubeClient.AddReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		selfSubjectAccessReview := reflect.ValueOf(action).FieldByName("Object").Elem().Elem().Field(2).Field(0).Elem()
+		resource := selfSubjectAccessReview.FieldByName("Resource").String()
+		verb := selfSubjectAccessReview.FieldByName("Verb").String()
+		allowed := resource == "clusterWorkflowTemplate" && verb == "get"
+		return true, &authorizationv1.SelfSubjectAccessReview{
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: allowed},
+		}, nil
+	})
+	
+	controller := newController()
+	controller.kubeclientset = &kubeClient
+	controller.cwftmplInformer = nil
+	controller.createClusterWorkflowTemplateInformer(context.TODO())
+	assert.Nil(t, controller.cwftmplInformer)
+}
+
+func TestClusterController(t *testing.T) {
+	kubeClient := fake.Clientset{}
+
+	kubeClient.AddReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		selfSubjectAccessReview := reflect.ValueOf(action).FieldByName("Object").Elem().Elem().Field(2).Field(0).Elem()
+		resource := selfSubjectAccessReview.FieldByName("Resource").String()
+		verb := selfSubjectAccessReview.FieldByName("Verb").String()
+		allowed := resource == "ClusterWorkflowTemplate" && verb == "get, list, watch"
+		return true, &authorizationv1.SelfSubjectAccessReview{
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: allowed},
+		}, nil
+	})
+
+	controller := newController()
+	controller.kubeclientset = &kubeClient
+	controller.cwftmplInformer = nil
+	controller.createClusterWorkflowTemplateInformer(context.TODO())
+	assert.NotNil(t, controller.cwftmplInformer)
 }

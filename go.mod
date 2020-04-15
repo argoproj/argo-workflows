@@ -96,6 +96,7 @@ require (
 	k8s.io/client-go v0.0.0-20191225075139-73fd2ddc9180
 	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
 	k8s.io/utils v0.0.0-20191218082557-f07c713de883
+	sigs.k8s.io/structured-merge-diff v0.0.0-20190525122527-15d366b2352e
 	sigs.k8s.io/yaml v1.1.0
 	upper.io/db.v3 v3.6.3+incompatible
 )

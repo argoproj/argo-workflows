@@ -185,22 +185,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.podGarbageCollector(ctx.Done())
 	go wfc.periodicWorkflowGarbageCollector(ctx.Done())
 
-	// Check if the controller has RBAC access to ClusterWorkflowTemplates
-	cwftAllowed, err := authutil.CanI(wfc.kubeclientset, "get, list, watch", "ClusterWorkflowTemplate", wfc.namespace, "")
-	if err != nil {
-		log.Error(err)
-	}
-
-	if cwftAllowed {
-		wfc.cwftmplInformer = wfc.newClusterWorkflowTemplateInformer()
-		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
-		if !cache.WaitForCacheSync(ctx.Done(), wfc.cwftmplInformer.Informer().HasSynced) {
-			log.Error("Timed out waiting for caches to sync")
-			return
-		}
-	} else {
-		log.Warnf("Controller doesn't have RBAC access for ClusterWorkflowTemplates")
-	}
+	wfc.createClusterWorkflowTemplateInformer(ctx)
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	for _, informer := range []cache.SharedIndexInformer{wfc.incompleteWfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
@@ -217,6 +202,25 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
 	}
 	<-ctx.Done()
+}
+
+func (wfc *WorkflowController)createClusterWorkflowTemplateInformer(ctx context.Context){
+	// Check if the controller has RBAC access to ClusterWorkflowTemplates
+	cwftAllowed, err := authutil.CanI(wfc.kubeclientset, "get, list, watch", "ClusterWorkflowTemplate", wfc.namespace, "")
+	if err != nil {
+		log.Error(err)
+	}
+
+	if cwftAllowed {
+		wfc.cwftmplInformer = wfc.newClusterWorkflowTemplateInformer()
+		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
+		if !cache.WaitForCacheSync(ctx.Done(), wfc.cwftmplInformer.Informer().HasSynced) {
+			log.Error("Timed out waiting for caches to sync")
+			return
+		}
+	} else {
+		log.Warnf("Controller doesn't have RBAC access for ClusterWorkflowTemplates")
+	}
 }
 
 func (wfc *WorkflowController) UpdateConfig() {
