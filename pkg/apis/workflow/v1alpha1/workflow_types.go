@@ -704,6 +704,9 @@ type Outputs struct {
 
 	// Result holds the result (stdout) of a script template
 	Result *string `json:"result,omitempty" protobuf:"bytes,3,opt,name=result"`
+
+	// ExitCode holds the exit code of a script template
+	ExitCode *string `json:"exitCode,omitempty" protobuf:"bytes,4,opt,name=exitCode"`
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step
@@ -1644,6 +1647,9 @@ func (out *Outputs) HasOutputs() bool {
 	if out.Result != nil {
 		return true
 	}
+	if out.ExitCode != nil {
+		return true
+	}
 	if len(out.Artifacts) > 0 {
 		return true
 	}
@@ -1697,11 +1703,6 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 // GetResourceScope returns the template scope of workflow.
 func (wf *Workflow) GetResourceScope() ResourceScope {
 	return ResourceScopeLocal
-}
-
-// GetTemplates returns the list of templates of workflow.
-func (wf *Workflow) GetTemplates() []Template {
-	return wf.Spec.Templates
 }
 
 // NodeID creates a deterministic node ID based on a node name

@@ -69,6 +69,8 @@ Workflow is the definition of a workflow resource
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
+- [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
+
 - [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
 
 - [`forever.yaml`](../examples/forever.yaml)
@@ -331,6 +333,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
 
@@ -614,6 +618,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
+- [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
+
 - [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
 
 - [`forever.yaml`](../examples/forever.yaml)
@@ -862,6 +868,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
+- [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
+
 - [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
 
 - [`forever.yaml`](../examples/forever.yaml)
@@ -1070,6 +1078,8 @@ Arguments to a template
 
 - [`dag-targets.yaml`](../examples/dag-targets.yaml)
 
+- [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
+
 - [`global-outputs.yaml`](../examples/global-outputs.yaml)
 
 - [`global-parameters.yaml`](../examples/global-parameters.yaml)
@@ -1267,6 +1277,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
 
@@ -1569,6 +1581,7 @@ Outputs hold parameters, artifacts, and results from a step
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`artifacts`|`Array<`[`Artifact`](#artifact)`>`|Artifacts holds the list of output artifacts produced by a step|
+|`exitCode`|`string`|ExitCode holds the exit code of a script template|
 |`parameters`|`Array<`[`Parameter`](#parameter)`>`|Parameters holds the list of output parameters produced by a step|
 |`result`|`string`|Result holds the result (stdout) of a script template|
 
@@ -1672,6 +1685,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`dag-nested.yaml`](../examples/dag-nested.yaml)
 
 - [`dag-targets.yaml`](../examples/dag-targets.yaml)
+
+- [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
 - [`global-outputs.yaml`](../examples/global-outputs.yaml)
 
@@ -1912,6 +1927,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`dag-targets.yaml`](../examples/dag-targets.yaml)
 
+- [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
+
 - [`global-outputs.yaml`](../examples/global-outputs.yaml)
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
@@ -2056,6 +2073,8 @@ Pod metdata
 - [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
 
@@ -2300,6 +2319,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
+- [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
+
 - [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
 
 - [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
@@ -2366,6 +2387,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
 - [`dag-diamond-steps.yaml`](../examples/dag-diamond-steps.yaml)
+
+- [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
 
@@ -2897,6 +2920,8 @@ ContinueOn defines if a workflow should continue even if a task or step fails/er
 
 - [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
 
+- [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
+
 - [`resource-flags.yaml`](../examples/resource-flags.yaml)
 
 - [`status-reference.yaml`](../examples/status-reference.yaml)
@@ -3158,6 +3183,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
 
@@ -3581,6 +3608,8 @@ A single application container that you want to run within a pod.
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
 
+- [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
+
 - [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
 
 - [`forever.yaml`](../examples/forever.yaml)
@@ -3979,6 +4008,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devicesand 
 - [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
 
 - [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
 
 - [`exit-handlers.yaml`](../examples/exit-handlers.yaml)
 

@@ -12,7 +12,7 @@
   "info": {
     "description": "Argo",
     "title": "Argo",
-    "version": "latest"
+    "version": "b31f1769"
   },
   "host": "localhost:2746",
   "paths": {
@@ -2574,6 +2574,10 @@
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Artifact"
           }
+        },
+        "exitCode": {
+          "type": "string",
+          "title": "ExitCode holds the exit code of a script template"
         },
         "parameters": {
           "type": "array",
