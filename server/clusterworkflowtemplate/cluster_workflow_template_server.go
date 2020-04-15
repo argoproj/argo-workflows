@@ -29,7 +29,7 @@ func (cwts *ClusterWorkflowTemplateServer) CreateClusterWorkflowTemplate(ctx con
 
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
-	err := validate.ValidateWorkflowTemplate(nil, cwftmplGetter, req.Template)
+	_, err := validate.ValidateClusterWorkflowTemplate(nil, cwftmplGetter, req.Template)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (cwts *ClusterWorkflowTemplateServer) LintClusterWorkflowTemplate(ctx conte
 
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
-	err := validate.ValidateWorkflowTemplate(nil, cwftmplGetter, req.Template)
+	_, err := validate.ValidateClusterWorkflowTemplate(nil, cwftmplGetter, req.Template)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (cwts *ClusterWorkflowTemplateServer) UpdateClusterWorkflowTemplate(ctx con
 	wfClient := auth.GetWfClient(ctx)
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
-	err := validate.ValidateWorkflowTemplate(nil, cwftmplGetter, req.Template)
+	_, err := validate.ValidateClusterWorkflowTemplate(nil, cwftmplGetter, req.Template)
 	if err != nil {
 		return nil, err
 	}

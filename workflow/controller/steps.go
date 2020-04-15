@@ -324,8 +324,9 @@ func shouldExecute(when string) (bool, error) {
 // are concerned with:
 // 1) dereferencing output.parameters from previous steps
 // 2) dereferencing output.result from previous steps
-// 2) dereferencing artifacts from previous steps
-// 3) dereferencing artifacts from inputs
+// 3) dereferencing output.exitCode from previous steps
+// 4) dereferencing artifacts from previous steps
+// 5) dereferencing artifacts from inputs
 func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scope *wfScope) ([]wfv1.WorkflowStep, error) {
 	newStepGroup := make([]wfv1.WorkflowStep, len(stepGroup))
 

@@ -180,6 +180,10 @@ export interface Outputs {
      * Result holds the result (stdout) of a script template
      */
     result?: string;
+    /**
+     * ExitCode holds the exit code of a script template
+     */
+    exitCode?: number;
 }
 
 /**
@@ -780,7 +784,7 @@ export interface WorkflowCondition {
     status: ConditionStatus;
     message: string;
 }
-export type WorkflowConditionType = 'Completed' | 'SpecWarning';
+export type WorkflowConditionType = 'Completed' | 'SpecWarning' | 'MetricsError';
 export type ConditionStatus = 'True' | 'False' | 'Unknown;';
 
 /**
