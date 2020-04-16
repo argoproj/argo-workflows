@@ -208,7 +208,7 @@ func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context
 	// Check if the controller has RBAC access to ClusterWorkflowTemplates
 	cwftAllowed, err := authutil.CanI(wfc.kubeclientset, "get, list, watch", "ClusterWorkflowTemplate", wfc.namespace, "")
 	if err != nil {
-		log.Error(err)
+		log.Fatal(err)
 	}
 
 	if cwftAllowed {

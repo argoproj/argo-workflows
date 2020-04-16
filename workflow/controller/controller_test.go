@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"reflect"
 	"testing"
 	"time"
 
@@ -315,12 +314,8 @@ func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
 
 func TestNamespacedController(t *testing.T) {
 	kubeClient := fake.Clientset{}
-
+	allowed := false
 	kubeClient.AddReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-		selfSubjectAccessReview := reflect.ValueOf(action).FieldByName("Object").Elem().Elem().Field(2).Field(0).Elem()
-		resource := selfSubjectAccessReview.FieldByName("Resource").String()
-		verb := selfSubjectAccessReview.FieldByName("Verb").String()
-		allowed := resource == "clusterWorkflowTemplate" && verb == "get"
 		return true, &authorizationv1.SelfSubjectAccessReview{
 			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: allowed},
 		}, nil
@@ -335,12 +330,8 @@ func TestNamespacedController(t *testing.T) {
 
 func TestClusterController(t *testing.T) {
 	kubeClient := fake.Clientset{}
-
+	allowed := true
 	kubeClient.AddReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
-		selfSubjectAccessReview := reflect.ValueOf(action).FieldByName("Object").Elem().Elem().Field(2).Field(0).Elem()
-		resource := selfSubjectAccessReview.FieldByName("Resource").String()
-		verb := selfSubjectAccessReview.FieldByName("Verb").String()
-		allowed := resource == "ClusterWorkflowTemplate" && verb == "get, list, watch"
 		return true, &authorizationv1.SelfSubjectAccessReview{
 			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: allowed},
 		}, nil
