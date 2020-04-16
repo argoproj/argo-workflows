@@ -8,6 +8,7 @@ require (
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/aliyun/aliyun-oss-go-sdk v2.0.6+incompatible
+	github.com/antonmedv/expr v1.8.2
 	github.com/argoproj/pkg v0.0.0-20200318225345-d3be5f29b1a8
 	github.com/aws/aws-sdk-go v1.27.1 // indirect
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
@@ -67,7 +68,7 @@ require (
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spf13/cobra v0.0.4-0.20181021141114-fe5e611709b0
-	github.com/stretchr/testify v1.4.0
+	github.com/stretchr/testify v1.5.1
 	github.com/tidwall/gjson v1.3.5
 	github.com/valyala/fasthttp v0.0.0-20171207120941-e5f51c11919d // indirect
 	github.com/valyala/fasttemplate v1.1.0

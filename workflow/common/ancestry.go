@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -13,19 +14,50 @@ type Context interface {
 	GetTaskNode(taskName string) *wfv1.NodeStatus
 }
 
+type TaskResult string
+
+const (
+	TaskResultSucceeded  TaskResult = "Succeeded"
+	TaskResultFailed     TaskResult = "Failed"
+	TaskResultSkipped    TaskResult = "Skipped"
+	TaskResultCompleted  TaskResult = "Completed"
+	TaskResultAny        TaskResult = "Any"
+	TaskResultSuccessful TaskResult = "Successful"
+)
+
+type TaskDependency struct {
+	TaskName   string
+	TaskResult TaskResult
+}
+
+var (
+	// TODO: This should use validate.workflowFieldNameFmt, but we can't import it here because an import cycle would be created
+	taskNameRegex   = regexp.MustCompile(`([a-zA-Z0-9][-a-zA-Z0-9]*?\.[A-Z][a-z]+)|([a-zA-Z0-9][-a-zA-Z0-9]*)`)
+	taskResultRegex = regexp.MustCompile(`([a-zA-Z0-9][-a-zA-Z0-9]*?\.[A-Z][a-z]+)`)
+)
+
 func GetTaskDependencies(dagTask *wfv1.DAGTask) []string {
 	if dagTask.Depends != "" {
-		var dependencies []string
-		for _, depends := range ParseDependsLogic(dagTask.Depends) {
-			dependencies = append(dependencies, depends.TaskName)
-		}
-		return dependencies
+		return GetTaskDependenciesFromDepends(dagTask.Depends)
 	}
-
 	return dagTask.Dependencies
 }
 
-func GetTaskDepends(dagTask *wfv1.DAGTask) string {
+func GetTaskDependenciesFromDepends(depends string) []string {
+	matches := taskNameRegex.FindAllStringSubmatch(depends, -1)
+	var out []string
+	for _, matchGroup := range matches {
+		if matchGroup[1] != "" {
+			split := strings.Split(matchGroup[1], ".")
+			out = append(out, split[0])
+		} else if matchGroup[2] != "" {
+			out = append(out, matchGroup[2])
+		}
+	}
+	return out
+}
+
+func GetTaskDependsLogic(dagTask *wfv1.DAGTask) string {
 	if dagTask.Depends != "" {
 		return dagTask.Depends
 	}
@@ -75,6 +107,27 @@ func GetTaskAncestry(ctx Context, taskName string, tasks []wfv1.DAGTask) []strin
 	}
 
 	return ancestry
+}
+
+func ValidateTaskResults(dagTask *wfv1.DAGTask) error {
+	// If a user didn't specify a depends expression, there are no task results to validate
+	if dagTask.Depends == "" {
+		return nil
+	}
+
+	matches := taskResultRegex.FindAllStringSubmatch(dagTask.Depends, -1)
+	for _, matchGroup := range matches {
+		split := strings.Split(matchGroup[1], ".")
+		taskName, taskResult := split[0], TaskResult(split[1])
+		switch taskResult {
+		case TaskResultSucceeded, TaskResultFailed, TaskResultSkipped, TaskResultCompleted, TaskResultAny,
+			TaskResultSuccessful:
+			// Do nothing
+		default:
+			return fmt.Errorf("task result '%s' for task '%s' is invalid", taskResult, taskName)
+		}
+	}
+	return nil
 }
 
 // getTimeFinished returns the finishedAt time of the corresponding node.

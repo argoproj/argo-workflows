@@ -1028,26 +1028,27 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 
 	// Verify dependencies for all tasks can be resolved as well as template names
 	for _, task := range tmpl.DAG.Tasks {
+
 		resolvedTmpl, err := ctx.validateTemplateHolder(&task, tmplCtx, &FakeArguments{}, map[string]interface{}{})
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
+
+		resolvedTemplates[task.Name] = resolvedTmpl
+
 		prefix := fmt.Sprintf("tasks.%s", task.Name)
 		ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false, false)
-		resolvedTemplates[task.Name] = resolvedTmpl
-		for j, operand := range common.ParseDependsLogic(common.GetTaskDepends(&task)) {
-			if _, ok := nameToTask[operand.TaskName]; !ok {
+
+		err = common.ValidateTaskResults(&task)
+		if err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
+		}
+
+		for j, depName := range common.GetTaskDependencies(&task) {
+			if _, ok := nameToTask[depName]; !ok {
 				return errors.Errorf(errors.CodeBadRequest,
 					"templates.%s.tasks.%s.dependencies[%d] dependency '%s' not defined",
-					tmpl.Name, task.Name, j, operand.TaskName)
-			}
-			switch operand.TaskResult {
-			case common.TaskResultSucceeded, "", common.TaskResultFailed, common.TaskResultSkipped,
-				common.TaskResultCompleted, common.TaskResultAny, common.TaskResultSuccessful:
-				// Do nothing
-			default:
-				return fmt.Errorf("templates.%s.tasks.%s.dependencies[%d] unknown result condition '%s' (for operand '%s')",
-					tmpl.Name, task.Name, j, operand.TaskResult, operand.String())
+					tmpl.Name, task.Name, j, depName)
 			}
 		}
 	}

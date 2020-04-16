@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Knetic/govaluate"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
@@ -696,20 +695,4 @@ func SplitClusterWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.Clus
 		manifests = append(manifests, cwftmpl)
 	}
 	return manifests, nil
-}
-
-func EvaluateExpression(expression string) (bool, error) {
-	exp, err := govaluate.NewEvaluableExpression(expression)
-	if err != nil {
-		return false, fmt.Errorf("unable to parse expression: %s", err)
-	}
-	result, err := exp.Evaluate(nil)
-	if err != nil {
-		return false, fmt.Errorf("unable to evaluate expression: %s", err)
-	}
-	resultBool, ok := result.(bool)
-	if !ok {
-		return false, fmt.Errorf("unable to cast expression: %s", err)
-	}
-	return resultBool, nil
 }

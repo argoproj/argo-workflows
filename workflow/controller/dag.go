@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/antonmedv/expr"
 	"github.com/valyala/fasttemplate"
 
 	"github.com/argoproj/argo/errors"
@@ -333,7 +334,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 
 	// Check if our dependencies completed. If not, recurse our parents executing them if necessary
 	nodeName := dagCtx.taskNodeName(taskName)
-	depends := common.GetTaskDepends(task)
+	depends := common.GetTaskDependsLogic(task)
 	taskDependencies := common.GetTaskDependencies(task)
 
 	taskGroupNode := woc.getNodeByName(nodeName)
@@ -620,45 +621,53 @@ func (woc *wfOperationCtx) expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error)
 	return expandedTasks, nil
 }
 
+type TaskResults struct {
+	Succeeded  bool `json:"Succeeded"`
+	Failed     bool `json:"Failed"`
+	Skipped    bool `json:"Skipped"`
+	Completed  bool `json:"Completed"`
+	Any        bool `json:"Any"`
+	Successful bool `json:"Successful"`
+}
+
 // evaluateDependsLogic returns whether a node should execute and proceed. proceed means that all of its dependencies are
 // completed and execute means that given the results of its dependencies, this node should execute.
 func evaluateDependsLogic(logic string, dagCtx *dagContext) (bool, bool, error) {
-	var evaluatedDependsLogic []common.DependsOperand
-	depends := common.ParseDependsLogic(logic)
-	for _, operand := range depends {
+	evalScope := make(map[string]TaskResults)
+
+	for _, taskName := range common.GetTaskDependenciesFromDepends(logic) {
 
 		// If the task is still running, we should not proceed.
-		depNode := dagCtx.GetTaskNode(operand.TaskName)
+		depNode := dagCtx.GetTaskNode(taskName)
 		if depNode == nil || !depNode.Completed() {
 			return false, false, nil
 		}
 
-		switch operand.TaskResult {
-		// An empty TaskResult means Succeeded
-		case common.TaskResultSucceeded, "":
-			operand.Satisfied = depNode.Phase == wfv1.NodeSucceeded
-		case common.TaskResultFailed:
-			operand.Satisfied = depNode.Phase == wfv1.NodeFailed
-		case common.TaskResultSkipped:
-			operand.Satisfied = depNode.Phase == wfv1.NodeSkipped
-		case common.TaskResultCompleted:
-			operand.Satisfied = depNode.Phase == wfv1.NodeSucceeded || depNode.Phase == wfv1.NodeFailed
-		case common.TaskResultAny:
-			operand.Satisfied = depNode.Phase == wfv1.NodeSucceeded || depNode.Phase == wfv1.NodeFailed || depNode.Phase == wfv1.NodeSkipped
-		case common.TaskResultSuccessful:
-			operand.Satisfied = depNode.Successful() && !dagCtx.getTask(operand.TaskName).ContinuesOn(depNode.Phase)
-		default:
-			return false, false, fmt.Errorf("unknown result condition '%s' for task '%s'", operand.TaskResult, operand.TaskName)
+		evalTaskName := strings.Replace(taskName, "-", "_", -1)
+
+		if _, ok := evalScope[evalTaskName]; ok {
+			continue
 		}
 
-		evaluatedDependsLogic = append(evaluatedDependsLogic, operand)
+		evalScope[evalTaskName] = TaskResults{
+			Succeeded:  depNode.Phase == wfv1.NodeSucceeded,
+			Failed:     depNode.Phase == wfv1.NodeFailed,
+			Skipped:    depNode.Phase == wfv1.NodeSkipped,
+			Completed:  depNode.Phase == wfv1.NodeSucceeded || depNode.Phase == wfv1.NodeFailed,
+			Any:        depNode.Phase == wfv1.NodeSucceeded || depNode.Phase == wfv1.NodeFailed || depNode.Phase == wfv1.NodeSkipped,
+			Successful: depNode.Successful() && !dagCtx.getTask(taskName).ContinuesOn(depNode.Phase),
+		}
 	}
 
-	logic = common.ReplaceDependsLogic(logic, evaluatedDependsLogic)
+	evalLogic := strings.Replace(logic, "-", "_", -1)
 
-	execute, err := common.EvaluateExpression(logic)
+	result, err := expr.Eval(evalLogic, evalScope)
 	if err != nil {
-		return false, false, fmt.Errorf("error evaluating expression: %s", err)
+		return false, false, fmt.Errorf("unable to evaluate expression '%s': %s", evalLogic, err)
+	}
+	execute, ok := result.(bool)
+	if !ok {
+		return false, false, fmt.Errorf("unable to cast expression result '%s': %s", result, err)
 	}
 
 	return execute, true, nil
