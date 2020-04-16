@@ -33,30 +33,36 @@ func (s *ClusterWorkflowTemplateSuite) TestSubmitClusterWorkflowTemplate() {
 }
 
 func (s *ClusterWorkflowTemplateSuite) TestNestedClusterWorkflowTemplate() {
-	// https://github.com/argoproj/argo/issues/2622
-	s.T().SkipNow()
-	s.Given().WorkflowTemplate("@smoke/cluster-workflow-template-whalesay-template.yaml").
-		WorkflowTemplate("@testdata/cluster-workflow-template-nested-template.yaml").
-		Workflow(`apiVersion: argoproj.io/v1alpha1
+	s.Given().
+		ClusterWorkflowTemplate("@testdata/cluster-workflow-template-nested-template.yaml").
+		When().Given().
+		ClusterWorkflowTemplate("@smoke/cluster-workflow-template-whalesay-template.yaml").
+		When().CreateClusterWorkflowTemplates().
+		Given().
+		WorkflowName("cwft-wf").
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: workflow-template-nested-
+  name: cwft-wf
+  namespace: argo
   labels:
     argo-e2e: true
 spec:
   entrypoint: whalesay
   templates:
   - name: whalesay
-    inputs:
-      parameters:
-      - name: message
-        value: hello from nested
-    templateRef:
-      name: cluster-workflow-template-nested-template
-      template: whalesay-template
-      clusterscope: true
+    steps:
+    - - name: call-whalesay-template
+        templateRef:
+          name: cluster-workflow-template-nested-template 
+          template: whalesay-template
+          clusterscope: true
+        arguments:
+          parameters:
+          - name: message
+            value: hello from nested
 `).When().
-		CreateClusterWorkflowTemplates().
 		SubmitWorkflow().
 		WaitForWorkflow(30 * time.Second).
 		Then().
