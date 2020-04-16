@@ -163,6 +163,10 @@ Workflow is the definition of a workflow resource
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
 
+- [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
+
+- [`resource-flags.yaml`](../examples/resource-flags.yaml)
+
 - [`resubmit.yaml`](../examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
@@ -423,6 +427,10 @@ WorkflowSpec is the specification of a Workflow.
 - [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
+
+- [`resource-flags.yaml`](../examples/resource-flags.yaml)
 
 - [`resubmit.yaml`](../examples/resubmit.yaml)
 
@@ -704,6 +712,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
 
+- [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
+
+- [`resource-flags.yaml`](../examples/resource-flags.yaml)
+
 - [`resubmit.yaml`](../examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
@@ -950,6 +962,10 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
 
+- [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
+
+- [`resource-flags.yaml`](../examples/resource-flags.yaml)
+
 - [`resubmit.yaml`](../examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
@@ -1115,6 +1131,8 @@ Arguments to a template
 - [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
 - [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
 
@@ -1353,6 +1371,10 @@ Template is a reusable and composable unit of execution in a workflow
 - [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
+
+- [`resource-flags.yaml`](../examples/resource-flags.yaml)
 
 - [`resubmit.yaml`](../examples/resubmit.yaml)
 
@@ -1718,6 +1740,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
 
+- [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
+
 - [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
 
 - [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
@@ -1961,6 +1985,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
 
+- [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
+
 - [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
 
 - [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
@@ -2142,6 +2168,10 @@ Pod metdata
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
 
+- [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
+
+- [`resource-flags.yaml`](../examples/resource-flags.yaml)
+
 - [`resubmit.yaml`](../examples/resubmit.yaml)
 
 - [`retry-backoff.yaml`](../examples/retry-backoff.yaml)
@@ -2224,6 +2254,10 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 - [`k8s-set-owner-reference.yaml`](../examples/k8s-set-owner-reference.yaml)
 
 - [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
+
+- [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
+
+- [`resource-flags.yaml`](../examples/resource-flags.yaml)
 </details>
 
 ### Fields
@@ -2231,6 +2265,7 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 |:----------:|:----------:|---------------|
 |`action`|`string`|Action is the action to perform to the resource.Must be one of: get, create, apply, delete, replace, patch|
 |`failureCondition`|`string`|FailureCondition is a label selector expression which describes the conditionsof the k8s resource in which the step was considered failed|
+|`flags`|`Array< string >`|Flags is a set of additional options passed to kubectl before submitting a resourceI.e. to disable resource validation:flags: [	"--validate=false"  # disable resource validation]|
 |`manifest`|`string`|Manifest contains the kubernetes manifest|
 |`mergeStrategy`|`string`|MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"Must be one of: strategic, merge, json|
 |`setOwnerReference`|`boolean`|SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.|
@@ -2398,6 +2433,10 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
 
 - [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
+
+- [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
+
+- [`resource-flags.yaml`](../examples/resource-flags.yaml)
 
 - [`resubmit.yaml`](../examples/resubmit.yaml)
 
@@ -2621,6 +2660,8 @@ MetricLabel is a single label for a prometheus metric
 - [`forever.yaml`](../examples/forever.yaml)
 
 - [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
+
+- [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 </details>
 
 ### Fields
@@ -2880,6 +2921,8 @@ ContinueOn defines if a workflow should continue even if a task or step fails/er
 - [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
+
+- [`resource-flags.yaml`](../examples/resource-flags.yaml)
 
 - [`status-reference.yaml`](../examples/status-reference.yaml)
 </details>
@@ -3234,6 +3277,10 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
+
+- [`resource-flags.yaml`](../examples/resource-flags.yaml)
 
 - [`resubmit.yaml`](../examples/resubmit.yaml)
 
@@ -4055,6 +4102,10 @@ PersistentVolumeClaimSpec describes the common attributes of storage devicesand 
 - [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
+
+- [`resource-flags.yaml`](../examples/resource-flags.yaml)
 
 - [`resubmit.yaml`](../examples/resubmit.yaml)
 

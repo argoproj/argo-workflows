@@ -709,6 +709,13 @@ message ResourceTemplate {
   // FailureCondition is a label selector expression which describes the conditions
   // of the k8s resource in which the step was considered failed
   optional string failureCondition = 6;
+
+  // Flags is a set of additional options passed to kubectl before submitting a resource
+  // I.e. to disable resource validation:
+  // flags: [
+  // 	"--validate=false"  # disable resource validation
+  // ]
+  repeated string flags = 7;
 }
 
 // RetryStrategy provides controls on how to retry a workflow step
