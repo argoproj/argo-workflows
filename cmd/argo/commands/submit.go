@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/pkg/errors"
-	argojson "github.com/argoproj/pkg/json"
+	argoJson "github.com/argoproj/pkg/json"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
@@ -215,11 +215,11 @@ func submitWorkflows(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cli
 // unmarshalWorkflows unmarshals the input bytes as either json or yaml
 func unmarshalWorkflows(wfBytes []byte, strict bool) []wfv1.Workflow {
 	var wf wfv1.Workflow
-	var jsonOpts []argojson.JSONOpt
+	var jsonOpts []argoJson.JSONOpt
 	if strict {
-		jsonOpts = append(jsonOpts, argojson.DisallowUnknownFields)
+		jsonOpts = append(jsonOpts, argoJson.DisallowUnknownFields)
 	}
-	err := argojson.Unmarshal(wfBytes, &wf, jsonOpts...)
+	err := argoJson.Unmarshal(wfBytes, &wf, jsonOpts...)
 	if err == nil {
 		return []wfv1.Workflow{wf}
 	}
