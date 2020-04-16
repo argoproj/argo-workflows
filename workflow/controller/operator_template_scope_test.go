@@ -445,7 +445,7 @@ spec:
     templateRef:
       name: test-template-scope-1
       template: steps
-      clusterscope: true
+      clusterScope: true
 `
 
 var testTemplateClusterScopeWorkflowTemplateYaml1 = `
