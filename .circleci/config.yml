@@ -153,8 +153,10 @@ jobs:
             make test
       - run: |
           cp sonar-project.properties dist/
-          echo "sonar.pullrequest.branch=$CIRCLE_BRANCH" >> sonar-project.properties
-          echo "sonar.pullrequest.key=$CIRCLE_PR_NUMBER" >> sonar-project.properties
+          if [ $CIRCLE_BRANCH = master ]; then
+            echo "sonar.pullrequest.branch=$CIRCLE_BRANCH" >> sonar-project.properties
+            echo "sonar.pullrequest.key=$CIRCLE_PR_NUMBER" >> sonar-project.properties
+          endif
       - sonarcloud/scan
       - run: cp dist/sonar-project.properties .
       - store_test_results:
