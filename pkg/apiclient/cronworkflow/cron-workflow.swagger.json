@@ -1576,7 +1576,7 @@
           "format": "boolean",
           "description": "RuntimeResolution skips validation at creation time.\nBy enabling this option, you can create the referred workflow template before the actual runtime."
         },
-        "clusterscope": {
+        "clusterScope": {
           "type": "boolean",
           "format": "boolean",
           "description": "ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate)."
