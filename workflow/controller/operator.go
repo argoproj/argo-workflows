@@ -797,11 +797,30 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	// It is now impossible to infer pod status. The only thing we can do at this point is to mark
 	// the node with Error.
 	for nodeID, node := range woc.wf.Status.Nodes {
-		if node.Type != wfv1.NodeTypePod || node.Completed() || node.StartedAt.IsZero() || node.Pending() {
+		if node.Type != wfv1.NodeTypePod || node.Completed() || node.StartedAt.IsZero() {
 			// node is not a pod, it is already complete, or it can be re-run.
 			continue
 		}
 		if _, ok := seenPods[nodeID]; !ok {
+
+			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
+			// again instead of marking it as an error. Check if that's the case.
+			if node.Pending() {
+				tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
+				if err != nil {
+					return err
+				}
+				_, tmpl, _, err := tmplCtx.ResolveTemplate(&node)
+				if err != nil {
+					return err
+				}
+
+				if tmpl.ResubmitPendingPods != nil && *tmpl.ResubmitPendingPods {
+					// We want to resubmit. Continue and do not mark as error.
+					continue
+				}
+			}
+
 			node.Message = "pod deleted"
 			node.Phase = wfv1.NodeError
 			woc.wf.Status.Nodes[nodeID] = node
