@@ -3132,7 +3132,7 @@
       "description": "TemplateRef is a reference of template resource.",
       "type": "object",
       "properties": {
-        "clusterscope": {
+        "clusterScope": {
           "description": "ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).",
           "type": "boolean",
           "format": "boolean"

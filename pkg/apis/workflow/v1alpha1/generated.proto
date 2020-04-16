@@ -1002,7 +1002,7 @@ message TemplateRef {
   optional bool runtimeResolution = 3;
 
   // ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
-  optional bool clusterscope = 4;
+  optional bool clusterScope = 4;
 }
 
 // UserContainer is a container specified by a user.
