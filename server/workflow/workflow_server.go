@@ -394,7 +394,7 @@ func (s *workflowServer) validateInstanceID(wf *v1alpha1.Workflow) bool {
 	return false
 }
 
-func (s *workflowServer) SubmitFromResource(ctx context.Context, req *workflowpkg.WorkflowSubmitRequest) (*v1alpha1.Workflow, error) {
+func (s *workflowServer) SubmitFromResource(ctx context.Context, req *workflowpkg.WorkflowSubmitFromRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	var wf *v1alpha1.Workflow
 	switch req.ResourceKind {

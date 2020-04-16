@@ -1172,7 +1172,7 @@
         }
       }
     },
-    "/api/v1/workflows/{namespace}/submit": {
+    "/api/v1/workflows/{namespace}/submit-from": {
       "post": {
         "tags": [
           "WorkflowService"
@@ -1190,7 +1190,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSubmitRequest"
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSubmitFromRequest"
             }
           }
         ],
@@ -6272,7 +6272,7 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.WorkflowSubmitRequest": {
+    "io.argoproj.workflow.v1alpha1.WorkflowSubmitFromRequest": {
       "type": "object",
       "properties": {
         "createOptions": {

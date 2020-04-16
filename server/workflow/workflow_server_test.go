@@ -442,12 +442,56 @@ const cronwf = `
   }
 }
 `
+const clusterworkflowtmpl = `
+{
+  "apiVersion": "argoproj.io/v1alpha1",
+  "kind": "ClusterWorkflowTemplate",
+  "metadata": {
+    "name": "cluster-workflow-template-whalesay-template",
+    "namespace": "workflows"
+  },
+  "spec": {
+    "entrypoint": "whalesay-template",
+    "arguments": {
+      "parameters": [
+        {
+          "name": "message",
+          "value": "hello world"
+        }
+      ]
+    },
+    "templates": [
+      {
+        "name": "whalesay-template",
+        "inputs": {
+          "parameters": [
+            {
+              "name": "message"
+            }
+          ]
+        },
+        "container": {
+          "image": "docker/whalesay",
+          "command": [
+            "cowsay"
+          ],
+          "args": [
+            "{{inputs.parameters.message}}"
+          ]
+        }
+      }
+    ]
+  }
+}
+`
+
 const testInstanceID = "testinstanceid001"
 
 func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 
 	var wfObj1, wfObj2, wfObj3, wfObj4, wfObj5 v1alpha1.Workflow
 	var wftmpl v1alpha1.WorkflowTemplate
+	var cwfTmpl v1alpha1.ClusterWorkflowTemplate
 	var cronwfObj v1alpha1.CronWorkflow
 
 	_ = json.Unmarshal([]byte(wf1), &wfObj1)
@@ -457,13 +501,14 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	_ = json.Unmarshal([]byte(wf5), &wfObj5)
 	_ = json.Unmarshal([]byte(workflowtmpl), &wftmpl)
 	_ = json.Unmarshal([]byte(cronwf), &cronwfObj)
+	_ = json.Unmarshal([]byte(clusterworkflowtmpl), &cwfTmpl)
 
 	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
 	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
 	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.UUIDVersion]v1alpha1.Nodes{}, nil)
 	server := NewWorkflowServer(testInstanceID, offloadNodeStatusRepo)
 	kubeClientSet := fake.NewSimpleClientset()
-	wfClientset := v1alpha.NewSimpleClientset(&wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &wftmpl, &cronwfObj)
+	wfClientset := v1alpha.NewSimpleClientset(&wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &wftmpl, &cronwfObj, &cwfTmpl)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
 	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet)
 	return server, ctx
@@ -650,23 +695,35 @@ func TestResubmitWorkflow(t *testing.T) {
 func TestSubmitWorkflowFromResource(t *testing.T) {
 
 	server, ctx := getWorkflowServer()
-
-	wf, err := server.SubmitFromResource(ctx, &workflowpkg.WorkflowSubmitRequest{
-		Namespace:    "workflows",
-		ResourceKind: "workflowtemplate",
-		ResourceName: "workflow-template-whalesay-template",
+	t.Run("SubmitFromWorkflowTemplate", func(t *testing.T) {
+		wf, err := server.SubmitFromResource(ctx, &workflowpkg.WorkflowSubmitFromRequest{
+			Namespace:    "workflows",
+			ResourceKind: "workflowtemplate",
+			ResourceName: "workflow-template-whalesay-template",
+		})
+		if assert.NoError(t, err) {
+			assert.NotNil(t, wf)
+		}
 	})
-	if assert.NoError(t, err) {
-		assert.NotNil(t, wf)
-	}
-
-	wf, err = server.SubmitFromResource(ctx, &workflowpkg.WorkflowSubmitRequest{
-		Namespace:    "workflows",
-		ResourceKind: "cronworkflow",
-		ResourceName: "hello-world",
+	t.Run("SubmitFromCronWorkflow", func(t *testing.T) {
+		wf, err := server.SubmitFromResource(ctx, &workflowpkg.WorkflowSubmitFromRequest{
+			Namespace:    "workflows",
+			ResourceKind: "cronworkflow",
+			ResourceName: "hello-world",
+		})
+		if assert.NoError(t, err) {
+			assert.NotNil(t, wf)
+		}
 	})
-	if assert.NoError(t, err) {
-		assert.NotNil(t, wf)
-	}
+	t.Run("SubmitFromClusterWorkflowTemplate", func(t *testing.T) {
+		wf, err := server.SubmitFromResource(ctx, &workflowpkg.WorkflowSubmitFromRequest{
+			Namespace:    "workflows",
+			ResourceKind: "ClusterWorkflowTemplate",
+			ResourceName: "cluster-workflow-template-whalesay-template",
+		})
+		if assert.NoError(t, err) {
+			assert.NotNil(t, wf)
+		}
+	})
 
 }

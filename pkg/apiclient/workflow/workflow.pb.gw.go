@@ -1089,7 +1089,7 @@ func request_WorkflowService_PodLogs_0(ctx context.Context, marshaler runtime.Ma
 }
 
 func request_WorkflowService_SubmitFromResource_0(ctx context.Context, marshaler runtime.Marshaler, client WorkflowServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq WorkflowSubmitRequest
+	var protoReq WorkflowSubmitFromRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -1124,7 +1124,7 @@ func request_WorkflowService_SubmitFromResource_0(ctx context.Context, marshaler
 }
 
 func local_request_WorkflowService_SubmitFromResource_0(ctx context.Context, marshaler runtime.Marshaler, server WorkflowServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq WorkflowSubmitRequest
+	var protoReq WorkflowSubmitFromRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -1768,7 +1768,7 @@ var (
 
 	pattern_WorkflowService_PodLogs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"api", "v1", "workflows", "namespace", "name", "podName", "log"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_WorkflowService_SubmitFromResource_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "workflows", "namespace", "submit"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_WorkflowService_SubmitFromResource_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "workflows", "namespace", "submit-from"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (

@@ -154,7 +154,7 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *wfv1.Subm
 
 	validateOptions([]wfv1.Workflow{tempwf}, submitOpts, cliOpts)
 
-	created, err := apiClient.NewWorkflowServiceClient().SubmitFromResource(ctx, &workflowpkg.WorkflowSubmitRequest{
+	created, err := apiClient.NewWorkflowServiceClient().SubmitFromResource(ctx, &workflowpkg.WorkflowSubmitFromRequest{
 		Namespace:     namespace,
 		ResourceKind:  kind,
 		ResourceName:  name,
