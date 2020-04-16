@@ -31,6 +31,7 @@ WORKDIR /tmp
 # Install docker
 ENV DOCKER_CHANNEL stable
 ENV DOCKER_VERSION 18.09.1
+
 RUN if [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "amd64" ]; then \
         wget -O docker.tgz https://download.docker.com/linux/static/${DOCKER_CHANNEL}/x86_64/docker-${DOCKER_VERSION}.tgz; \
     elif [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "arm64" ]; then \
@@ -61,7 +62,7 @@ ARG IMAGE_ARCH=amd64
 ENV KUBECTL_VERSION=1.15.1
 ENV JQ_VERSION=1.6
 RUN apt-get update && \
-    apt-get --no-install-recommends install -y curl ca-certificates apt-utils apt-transport-https procps git tar mime-support && \
+    apt-get --no-install-recommends install -y curl procps git apt-utils apt-transport-https ca-certificates tar mime-support && \
     apt-get clean \
     && rm -rf \
         /var/lib/apt/lists/* \
