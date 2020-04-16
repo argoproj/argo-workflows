@@ -21,6 +21,7 @@ import {
     WorkflowYamlViewer
 } from '../../../workflows/components';
 import {WorkflowDagRenderOptionsPanel} from '../../../workflows/components/workflow-dag/workflow-dag-render-options-panel';
+import {WorkflowYamlPanel} from '../../../workflows/components/workflow-details/workflow-yaml-panel';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
@@ -161,6 +162,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                             )}
                             <h6>Artifacts</h6>
                             <WorkflowArtifacts workflow={this.state.workflow} archived={true} />
+                            <WorkflowYamlPanel workflow={this.state.workflow} />
                         </div>
                     </div>
                 ) : (
