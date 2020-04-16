@@ -19,7 +19,7 @@ diffs=$(git diff --name-only origin/master)
 rx=
 case $job in
 codegen)
-  rx='api/\|hack/\|manifests/\|pkg/'
+  rx='api/\|hack/\|examples/\|manifests/\|pkg/'
   ;;
 docker-build)
   # we only run on master as this rarely ever fails
