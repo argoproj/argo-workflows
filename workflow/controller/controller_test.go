@@ -322,7 +322,7 @@ func TestNamespacedController(t *testing.T) {
 	})
 
 	controller := newController()
-	controller.kubeclientset = &kubeClient
+	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.Nil(t, controller.cwftmplInformer)
@@ -338,7 +338,7 @@ func TestClusterController(t *testing.T) {
 	})
 
 	controller := newController()
-	controller.kubeclientset = &kubeClient
+	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.NotNil(t, controller.cwftmplInformer)
