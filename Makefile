@@ -12,6 +12,9 @@ GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo
 
 export DOCKER_BUILDKIT = 1
 
+# To allow you to build with cache for debugging purposes.
+DOCKER_BUILDS_OPTS     := --no-cache
+
 # docker image publishing options
 IMAGE_NAMESPACE       ?= argoproj
 
@@ -66,6 +69,12 @@ DB                    ?= postgres
 K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 ARGO_TOKEN            = $(shell kubectl -n argo get secret -o name | grep argo-server | xargs kubectl -n argo get -o jsonpath='{.data.token}' | base64 --decode)
 
+ifeq ($(CI),true)
+TEST_OPTS := -coverprofile=coverage.out
+else
+TEST_OPTS :=
+endif
+
 override LDFLAGS += \
   -X github.com/argoproj/argo.version=$(VERSION) \
   -X github.com/argoproj/argo.buildDate=${BUILD_DATE} \
@@ -88,7 +97,8 @@ E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
 # The sort puts _.primary first in the list. 'env LC_COLLATE=C' makes sure underscore comes first in both Mac and Linux.
 SWAGGER_FILES    := $(shell find pkg/apiclient -name '*.swagger.json' | env LC_COLLATE=C sort)
-MOCK_FILES       := $(shell find . -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
+MOCK_FILES       := $(shell find persist workflow -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
+UI_FILES         := $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 
 define backup_go_mod
 	# Back-up go.*, but only if we have not already done this (because that would suggest we failed mid-codegen and the currenty go.* files are borked).
@@ -115,30 +125,29 @@ status:
 .PHONY: cli
 cli: dist/argo
 
-ui/node_modules: ui/package.json ui/yarn.lock
+ui/dist/node_modules.marker: ui/package.json ui/yarn.lock
 	# Get UI dependencies
+	@mkdir -p ui/node_modules
 ifeq ($(CI),false)
 	yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
-else
-	mkdir -p ui/node_modules
 endif
-	touch ui/node_modules
+	@mkdir -p ui/dist
+	touch ui/dist/node_modules.marker
 
-ui/dist/app: ui/node_modules ui/src
+ui/dist/app/index.html: ui/dist/node_modules.marker ui/src
 	# Build UI
+	@mkdir -p ui/dist/app
 ifeq ($(CI),false)
 	yarn --cwd ui build
 else
-	mkdir -p ui/dist/app
 	echo "Built without static files" > ui/dist/app/index.html
 endif
-	touch ui/dist/app
 
 $(HOME)/go/bin/staticfiles:
 	# Install the "staticfiles" tool
 	go get bou.ke/staticfiles
 
-server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/app
+server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
 	staticfiles -o server/static/files.go ui/dist/app
 
@@ -165,7 +174,7 @@ ifeq ($(DEV_IMAGE),true)
 	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli -f Dockerfile.dev --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	rm -f argo
 else
-	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
+	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 endif
 ifeq ($(K3D),true)
 	k3d import-images $(IMAGE_NAMESPACE)/argocli:$(VERSION)
@@ -193,7 +202,7 @@ ifeq ($(DEV_IMAGE),true)
 	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller -f Dockerfile.dev --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	rm -f workflow-controller
 else
-	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
+	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 endif
 ifeq ($(K3D),true)
 	k3d import-images $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
@@ -218,7 +227,7 @@ ifeq ($(DEV_IMAGE),true)
 	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec -f Dockerfile.dev --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	rm -f argoexec
 else
-	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
+	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 endif
 ifeq ($(K3D),true)
 	k3d import-images $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
@@ -297,7 +306,7 @@ endif
 .PHONY: test
 test: server/static/files.go
 	@mkdir -p test-results
-	go test -v -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'` 2>&1 | tee test-results/test.out
+	go test -v $(TEST_OPTS) `go list ./... | grep -v 'test/e2e'` 2>&1 | tee test-results/test.out
 
 test-results/test-report.json: test-results/test.out
 	cat test-results/test.out | go tool test2json > test-results/test-report.json
@@ -350,6 +359,9 @@ dist/mysql.yaml: test/e2e/manifests/mysql.yaml $(VERSION_FILE)
 
 .PHONY: install
 install: dist/postgres.yaml dist/mysql.yaml dist/no-db.yaml
+ifeq ($(K3D),true)
+	k3d start
+endif
 	# Install quick-start
 	kubectl apply -f test/e2e/manifests/argo-ns.yaml
 ifeq ($(DB),postgres)
@@ -380,6 +392,9 @@ dist/python-alpine3.6:
 start: status install down controller-image cli-image executor-image wait-down up cli test-images wait-up env
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
+
+.PHONY: run
+run: start pf
 
 .PHONY: down
 down:
@@ -472,7 +487,7 @@ clean:
 
 $(HOME)/go/bin/swagger:
 	$(call backup_go_mod)
-	go get github.com/go-swagger/go-swagger/cmd/swagger
+	go get github.com/go-swagger/go-swagger/cmd/swagger@v0.23.0
 	$(call restore_go_mod)
 
 .PHONY: swagger
