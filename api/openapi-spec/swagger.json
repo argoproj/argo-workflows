@@ -12,7 +12,7 @@
   "info": {
     "description": "Workflow Service API performs CRUD actions against application resources",
     "title": "Argo",
-    "version": "v2.6.3"
+    "version": "v2.6.4"
   },
   "host": "localhost:2746",
   "paths": {
