@@ -623,6 +623,9 @@ message Outputs {
 
   // Result holds the result (stdout) of a script template
   optional string result = 3;
+
+  // ExitCode holds the exit code of a script template
+  optional string exitCode = 4;
 }
 
 message ParallelSteps {
@@ -709,6 +712,13 @@ message ResourceTemplate {
   // FailureCondition is a label selector expression which describes the conditions
   // of the k8s resource in which the step was considered failed
   optional string failureCondition = 6;
+
+  // Flags is a set of additional options passed to kubectl before submitting a resource
+  // I.e. to disable resource validation:
+  // flags: [
+  // 	"--validate=false"  # disable resource validation
+  // ]
+  repeated string flags = 7;
 }
 
 // RetryStrategy provides controls on how to retry a workflow step
@@ -957,7 +967,7 @@ message TemplateRef {
   optional bool runtimeResolution = 3;
 
   // ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
-  optional bool clusterscope = 4;
+  optional bool clusterScope = 4;
 }
 
 // UserContainer is a container specified by a user.

@@ -2579,6 +2579,10 @@
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Artifact"
           }
         },
+        "exitCode": {
+          "type": "string",
+          "title": "ExitCode holds the exit code of a script template"
+        },
         "parameters": {
           "type": "array",
           "title": "Parameters holds the list of output parameters produced by a step\n+patchStrategy=merge\n+patchMergeKey=name",
@@ -2692,6 +2696,13 @@
         "failureCondition": {
           "type": "string",
           "title": "FailureCondition is a label selector expression which describes the conditions\nof the k8s resource in which the step was considered failed"
+        },
+        "flags": {
+          "type": "array",
+          "title": "Flags is a set of additional options passed to kubectl before submitting a resource\nI.e. to disable resource validation:\nflags: [\n\t\"--validate=false\"  # disable resource validation\n]",
+          "items": {
+            "type": "string"
+          }
         },
         "manifest": {
           "type": "string",
@@ -3038,7 +3049,7 @@
       "description": "TemplateRef is a reference of template resource.",
       "type": "object",
       "properties": {
-        "clusterscope": {
+        "clusterScope": {
           "description": "ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).",
           "type": "boolean",
           "format": "boolean"
