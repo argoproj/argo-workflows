@@ -91,16 +91,16 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 <div>{this.renderQuery(ctx)}</div>
                                 <div>
                                     <WorkflowFilters
-                                        workflows={this.state.workflows}
-                                        namespace={this.state.namespace}
-                                        phaseItems={Object.values(models.NODE_PHASE)}
-                                        selectedPhases={this.state.selectedPhases}
-                                        selectedLabels={this.state.selectedLabels}
-                                        onChange={(namespace, selectedPhases, selectedLabels) => this.changeFilters(namespace, selectedPhases, selectedLabels)}
+                                      workflows={this.state.workflows}
+                                      namespace={this.state.namespace}
+                                      phaseItems={Object.values(models.NODE_PHASE)}
+                                      selectedPhases={this.state.selectedPhases}
+                                      selectedLabels={this.state.selectedLabels}
+                                      onChange={(namespace, selectedPhases, selectedLabels) => this.changeFilters(namespace, selectedPhases, selectedLabels)}
                                     />
                                 </div>
                             </div>
-                            <div className='columns small-12 xlarge-10'>{this.renderWorkflows(ctx)}</div>
+                            <div className='columns small-12 xlarge-10'>{this.renderWorkflows()}</div>
                         </div>
                         <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
                             <ResourceSubmit<models.Workflow>
