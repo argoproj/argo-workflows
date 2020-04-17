@@ -383,6 +383,7 @@ data:
       maxOpenConns: 0
     nodeStatusOffLoad: true
     archive: true
+    archiveTTL: 3m
     postgresql:
       host: postgres
       port: 5432
@@ -577,8 +578,6 @@ spec:
           value: 30s
         - name: UPPERIO_DB_DEBUG
           value: "1"
-        - name: ARCHIVED_WORKFLOW_TTL
-          value: 5m
         - name: ARCHIVED_WORKFLOW_GC_PERIOD
           value: 30s
         image: argoproj/workflow-controller:latest
