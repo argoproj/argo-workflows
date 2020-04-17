@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/argoproj/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -40,19 +41,27 @@ func watchWorkflow(wfName string) {
 	namespace := client.Namespace()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	stream, err := serviceClient.WatchWorkflows(ctx, &workflowpkg.WatchWorkflowsRequest{
+	req := &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{
 			FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", wfName)).String(),
 		},
-	})
+	}
+	stream, err := serviceClient.WatchWorkflows(ctx, req)
 	errors.CheckError(err)
 	for {
 		event, err := stream.Recv()
 		errors.CheckError(err)
 		wf := event.Object
 		if wf == nil {
-			break
+			log.Debug("Re-establishing workflow watch")
+			stream, err = serviceClient.WatchWorkflows(ctx, req)
+			if err != nil {
+				errors.CheckError(err)
+				return
+			}
+			continue
+
 		}
 		printWorkflowStatus(wf)
 		if !wf.Status.FinishedAt.IsZero() {
