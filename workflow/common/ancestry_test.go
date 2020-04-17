@@ -1,7 +1,6 @@
 package common
 
 import (
-	"reflect"
 	"testing"
 	"time"
 
@@ -29,7 +28,67 @@ func (d *testContext) GetTaskDependencies(taskName string) []string {
 }
 
 func (d *testContext) GetTaskFinishedAtTime(taskName string) time.Time {
-	return d.status[taskName]
+	if finished, ok := d.status[taskName]; ok {
+		return finished
+	}
+	return time.Now()
+}
+
+func TestGetTaskAncestryForValidation(t *testing.T) {
+	type args struct {
+		ctx      DagContext
+		taskName string
+	}
+
+	testTasks := []*wfv1.DAGTask{
+		{
+			Name:         "task1",
+			Dependencies: make([]string, 0),
+		},
+		{
+			Name:         "task2",
+			Dependencies: []string{"task1"},
+		},
+		{
+			Name:         "task3",
+			Dependencies: []string{"task1"},
+		},
+		{
+			Name:         "task4",
+			Dependencies: []string{"task2", "task3"},
+		},
+	}
+
+	ctx := &testContext{
+		testTasks: testTasks,
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "one task",
+			args: args{
+				ctx:      ctx,
+				taskName: "task2",
+			},
+			want: []string{"task1"},
+		},
+		{
+			name: "multiple tasks",
+			args: args{
+				ctx:      ctx,
+				taskName: "task4",
+			},
+			want: []string{"task1", "task2", "task3"},
+		},
+	}
+	for _, tt := range tests {
+		res := GetTaskAncestry(tt.args.ctx, tt.args.taskName)
+		assert.Equal(t, tt.want, res)
+	}
 }
 
 func TestGetTaskAncestryForGlobalArtifacts(t *testing.T) {
@@ -90,11 +149,8 @@ func TestGetTaskAncestryForGlobalArtifacts(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := GetTaskAncestry(tt.args.ctx, tt.args.taskName); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetTaskAncestry() = %v, want %v", got, tt.want)
-			}
-		})
+		res := GetTaskAncestry(tt.args.ctx, tt.args.taskName)
+		assert.Equal(t, tt.want, res)
 	}
 }
 
