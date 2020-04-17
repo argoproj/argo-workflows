@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/robfig/cron"
 	"github.com/sirupsen/logrus"
@@ -1011,6 +1012,30 @@ func validateWorkflowFieldNames(slice interface{}) error {
 	return nil
 }
 
+type dagValidationContext struct {
+	tasks        map[string]wfv1.DAGTask
+	dependencies map[string][]string
+}
+
+func (d *dagValidationContext) GetTask(taskName string) *wfv1.DAGTask {
+	task := d.tasks[taskName]
+	return &task
+}
+
+func (d *dagValidationContext) GetTaskDependencies(taskName string) []string {
+	if dependencies, ok := d.dependencies[taskName]; ok {
+		return dependencies
+	}
+	task := d.GetTask(taskName)
+	dependencies, _ := common.GetTaskDependencies(task)
+	d.dependencies[taskName] = dependencies
+	return d.dependencies[taskName]
+}
+
+func (d *dagValidationContext) GetTaskFinishedAtTime(taskName string) time.Time {
+	return time.Now()
+}
+
 func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmplCtx *templateresolution.Context, tmpl *wfv1.Template) error {
 	err := validateNonLeaf(tmpl)
 	if err != nil {
@@ -1024,6 +1049,12 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 	for _, task := range tmpl.DAG.Tasks {
 		nameToTask[task.Name] = task
 	}
+
+	dagValidationCtx := &dagValidationContext{
+		tasks:        nameToTask,
+		dependencies: make(map[string][]string),
+	}
+
 	resolvedTemplates := make(map[string]*wfv1.Template)
 
 	// Verify dependencies for all tasks can be resolved as well as template names
@@ -1044,8 +1075,8 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
 
-		for j, depName := range common.GetTaskDependencies(&task) {
-			if _, ok := nameToTask[depName]; !ok {
+		for j, depName := range dagValidationCtx.GetTaskDependencies(task.Name) {
+			if _, ok := dagValidationCtx.tasks[depName]; !ok {
 				return errors.Errorf(errors.CodeBadRequest,
 					"templates.%s.tasks.%s.dependencies[%d] dependency '%s' not defined",
 					tmpl.Name, task.Name, j, depName)
@@ -1053,7 +1084,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		}
 	}
 
-	if err = verifyNoCycles(tmpl, nameToTask); err != nil {
+	if err = verifyNoCycles(tmpl, dagValidationCtx); err != nil {
 		return err
 	}
 
@@ -1061,7 +1092,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.targets %s", tmpl.Name, err.Error())
 	}
-	if err = validateDAGTargets(tmpl, nameToTask); err != nil {
+	if err = validateDAGTargets(tmpl, dagValidationCtx.tasks); err != nil {
 		return err
 	}
 
@@ -1078,9 +1109,9 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		for k, v := range scope {
 			taskScope[k] = v
 		}
-		ancestry := common.GetTaskAncestry(nil, task.Name, tmpl.DAG.Tasks)
+		ancestry := common.GetTaskAncestry(dagValidationCtx, task.Name)
 		for _, ancestor := range ancestry {
-			ancestorTask := nameToTask[ancestor]
+			ancestorTask := dagValidationCtx.GetTask(ancestor)
 			resolvedTmpl := resolvedTemplates[ancestor]
 			ancestorPrefix := fmt.Sprintf("tasks.%s", ancestor)
 			aggregate := len(ancestorTask.WithItems) > 0 || ancestorTask.WithParam != ""
@@ -1124,15 +1155,15 @@ func validateDAGTargets(tmpl *wfv1.Template, nameToTask map[string]wfv1.DAGTask)
 }
 
 // verifyNoCycles verifies there are no cycles in the DAG graph
-func verifyNoCycles(tmpl *wfv1.Template, nameToTask map[string]wfv1.DAGTask) error {
+func verifyNoCycles(tmpl *wfv1.Template, ctx *dagValidationContext) error {
 	visited := make(map[string]bool)
 	var noCyclesHelper func(taskName string, cycle []string) error
 	noCyclesHelper = func(taskName string, cycle []string) error {
 		if _, ok := visited[taskName]; ok {
 			return nil
 		}
-		task := nameToTask[taskName]
-		for _, depName := range common.GetTaskDependencies(&task) {
+		task := ctx.GetTask(taskName)
+		for _, depName := range ctx.GetTaskDependencies(task.Name) {
 			for _, name := range cycle {
 				if name == depName {
 					return errors.Errorf(errors.CodeBadRequest,

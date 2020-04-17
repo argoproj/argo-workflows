@@ -3,15 +3,17 @@ package common
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-type Context interface {
-	// GetTaskNode returns the node status of a task.
-	GetTaskNode(taskName string) *wfv1.NodeStatus
+type DagContext interface {
+	GetTask(taskName string) *wfv1.DAGTask
+	GetTaskDependencies(taskName string) []string
+	GetTaskFinishedAtTime(taskName string) time.Time
 }
 
 type TaskResult string
@@ -25,88 +27,48 @@ const (
 	TaskResultSuccessful TaskResult = "Successful"
 )
 
-type TaskDependency struct {
-	TaskName   string
-	TaskResult TaskResult
-}
-
 var (
 	// TODO: This should use validate.workflowFieldNameFmt, but we can't import it here because an import cycle would be created
 	taskNameRegex   = regexp.MustCompile(`([a-zA-Z0-9][-a-zA-Z0-9]*?\.[A-Z][a-z]+)|([a-zA-Z0-9][-a-zA-Z0-9]*)`)
 	taskResultRegex = regexp.MustCompile(`([a-zA-Z0-9][-a-zA-Z0-9]*?\.[A-Z][a-z]+)`)
 )
 
-func GetTaskDependencies(dagTask *wfv1.DAGTask) []string {
-	if dagTask.Depends != "" {
-		return GetTaskDependenciesFromDepends(dagTask.Depends)
-	}
-	return dagTask.Dependencies
-}
-
-func GetTaskDependenciesFromDepends(depends string) []string {
-	matches := taskNameRegex.FindAllStringSubmatch(depends, -1)
-	var out []string
+func GetTaskDependencies(task *wfv1.DAGTask) ([]string, string) {
+	depends := getTaskDependsLogic(task)
+	matches := taskNameRegex.FindAllStringSubmatchIndex(depends, -1)
+	var indicesToAppendSucceeded []int
+	dependencies := make(map[string]bool)
 	for _, matchGroup := range matches {
-		if matchGroup[1] != "" {
-			split := strings.Split(matchGroup[1], ".")
-			out = append(out, split[0])
-		} else if matchGroup[2] != "" {
-			out = append(out, matchGroup[2])
+		// We have matched a taskName.TaskResult
+		if matchGroup[2] != -1 {
+			match := depends[matchGroup[2]:matchGroup[3]]
+			split := strings.Split(match, ".")
+			dependencies[split[0]] = true
+		} else if matchGroup[4] != -1 {
+			match := depends[matchGroup[4]:matchGroup[5]]
+			dependencies[match] = true
+			indicesToAppendSucceeded = append(indicesToAppendSucceeded, matchGroup[5])
 		}
 	}
-	return out
-}
 
-func GetTaskDependsLogic(dagTask *wfv1.DAGTask) string {
-	if dagTask.Depends != "" {
-		return dagTask.Depends
+	var out []string
+	for dependency := range dependencies {
+		out = append(out, dependency)
 	}
 
-	// For backwards compatibility, "dependencies: [A, B]" is equivalent to "depends: A.Successful && B.Successful"
-	var dependencies []string
-	for _, dependency := range dagTask.Dependencies {
-		dependencies = append(dependencies, fmt.Sprintf("%s.%s", dependency, TaskResultSuccessful))
-	}
-	return strings.Join(dependencies, " && ")
-}
-
-// GetTaskAncestry returns a list of taskNames which are ancestors of this task.
-// The list is ordered by the tasks finished time.
-func GetTaskAncestry(ctx Context, taskName string, tasks []wfv1.DAGTask) []string {
-	taskByName := make(map[string]wfv1.DAGTask)
-	for _, task := range tasks {
-		taskByName[task.Name] = task
-	}
-	visitedFlag := make(map[string]bool)
-	visited := make(map[string]time.Time)
-	var getAncestry func(s string)
-	getAncestry = func(currTask string) {
-		if !visitedFlag[currTask] {
-			task := taskByName[currTask]
-			for _, depTask := range GetTaskDependencies(&task) {
-				getAncestry(depTask)
-			}
-			if currTask != taskName {
-				if _, ok := visited[currTask]; !ok {
-					visited[currTask] = getTimeFinished(ctx, currTask)
-				}
-				if currTask != taskName {
-					if _, ok := visited[currTask]; !ok {
-						visited[currTask] = getTimeFinished(ctx, currTask)
-					}
-				}
-				visitedFlag[currTask] = true
-			}
-		}
-	}
-	getAncestry(taskName)
-
-	ancestry := make([]string, len(visited))
-	for newTask, newFinishedAt := range visited {
-		insertTask(visited, ancestry, newTask, newFinishedAt)
+	if len(indicesToAppendSucceeded) == 0 {
+		return out, depends
 	}
 
-	return ancestry
+	sort.Slice(indicesToAppendSucceeded, func(i, j int) bool {
+		// Sort in descending order
+		return indicesToAppendSucceeded[i] > indicesToAppendSucceeded[j]
+	})
+	for _, index := range indicesToAppendSucceeded {
+		depends = depends[:index] + fmt.Sprintf(".%s", TaskResultSucceeded) + depends[index:]
+	}
+
+	return out, depends
 }
 
 func ValidateTaskResults(dagTask *wfv1.DAGTask) error {
@@ -130,19 +92,47 @@ func ValidateTaskResults(dagTask *wfv1.DAGTask) error {
 	return nil
 }
 
-// getTimeFinished returns the finishedAt time of the corresponding node.
-// If the finished time is not set, the started time is returned.
-// If ctx is not defined the current time is returned to ensure consistent order in the validation step.
-func getTimeFinished(ctx Context, taskName string) time.Time {
-	if ctx != nil {
-		node := ctx.GetTaskNode(taskName)
-		if !node.FinishedAt.IsZero() {
-			return node.FinishedAt.Time
-		}
-		return node.StartedAt.Time
-	} else {
-		return time.Now()
+func getTaskDependsLogic(dagTask *wfv1.DAGTask) string {
+	if dagTask.Depends != "" {
+		return dagTask.Depends
 	}
+
+	// For backwards compatibility, "dependencies: [A, B]" is equivalent to "depends: A.Successful && B.Successful"
+	var dependencies []string
+	for _, dependency := range dagTask.Dependencies {
+		dependencies = append(dependencies, fmt.Sprintf("%s.%s", dependency, TaskResultSuccessful))
+	}
+	return strings.Join(dependencies, " && ")
+}
+
+// GetTaskAncestry returns a list of taskNames which are ancestors of this task.
+// The list is ordered by the tasks finished time.
+func GetTaskAncestry(ctx DagContext, taskName string) []string {
+	visited := make(map[string]time.Time)
+
+	var getAncestry func(currTask string)
+	getAncestry = func(currTask string) {
+		if _, seen := visited[currTask]; seen {
+			return
+		}
+		for _, depTask := range ctx.GetTaskDependencies(currTask) {
+			getAncestry(depTask)
+		}
+		if currTask != taskName {
+			if _, ok := visited[currTask]; !ok {
+				visited[currTask] = ctx.GetTaskFinishedAtTime(currTask)
+			}
+		}
+	}
+
+	getAncestry(taskName)
+
+	ancestry := make([]string, len(visited))
+	for newTask, newFinishedAt := range visited {
+		insertTask(visited, ancestry, newTask, newFinishedAt)
+	}
+
+	return ancestry
 }
 
 // insertTask inserts the newTaskName at the right position ordered by time into the ancestry list.
@@ -152,7 +142,6 @@ func insertTask(visited map[string]time.Time, ancestry []string, newTaskName str
 			ancestry[i] = newTaskName
 			return
 		}
-
 		if finishedAt.Before(visited[taskName]) {
 			// insert at position i and shift others
 			copy(ancestry[i+1:], ancestry[i:])

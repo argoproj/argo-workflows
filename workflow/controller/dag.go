@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/antonmedv/expr"
 	"github.com/valyala/fasttemplate"
@@ -36,15 +37,56 @@ type dagContext struct {
 
 	// tmplCtx is the context of template search.
 	tmplCtx *templateresolution.Context
+
+	// dependencies is a list of all the tasks a specific task depends on. Because dependencies are computed using regex
+	// and regex is expensive, we cache the results so that they are only computed once per operation
+	dependencies map[string][]string
+
+	// dependsLogic is the resolved "depends" string of a particular task. A resolved "depends" simply contains
+	// task with their explicit results since we allow "Succeeded" to be omitted for convenience
+	// (i.e., "A || B.Completed" -> "A.Succeeded || B.Completed").
+	// Because this resolved "depends" is computed using regex and regex is expensive, we cache the results so that they
+	// are only computed once per operation
+	dependsLogic map[string]string
 }
 
-func (d *dagContext) getTask(taskName string) *wfv1.DAGTask {
+func (d *dagContext) GetTaskDependencies(taskName string) []string {
+	if dependencies, ok := d.dependencies[taskName]; ok {
+		return dependencies
+	}
+	d.resolveDependencies(taskName)
+	return d.dependencies[taskName]
+}
+
+func (d *dagContext) GetTaskFinishedAtTime(taskName string) time.Time {
+	node := d.getTaskNode(taskName)
+	if !node.FinishedAt.IsZero() {
+		return node.FinishedAt.Time
+	}
+	return node.StartedAt.Time
+}
+
+func (d *dagContext) GetTask(taskName string) *wfv1.DAGTask {
 	for _, task := range d.tasks {
 		if task.Name == taskName {
 			return &task
 		}
 	}
 	panic("target " + taskName + " does not exist")
+}
+
+func (d *dagContext) GetTaskDependsLogic(taskName string) string {
+	if logic, ok := d.dependsLogic[taskName]; ok {
+		return logic
+	}
+	d.resolveDependencies(taskName)
+	return d.dependsLogic[taskName]
+}
+
+func (d *dagContext) resolveDependencies(taskName string) {
+	dependencies, resolvedDependsLogic := common.GetTaskDependencies(d.GetTask(taskName))
+	d.dependencies[taskName] = dependencies
+	d.dependsLogic[taskName] = resolvedDependsLogic
 }
 
 // taskNodeName formulates the nodeName for a dag task
@@ -67,8 +109,8 @@ func (d *dagContext) taskNodeID(taskName string) string {
 	return d.wf.NodeID(nodeName)
 }
 
-// GetTaskNode returns the node status of a task.
-func (d *dagContext) GetTaskNode(taskName string) *wfv1.NodeStatus {
+// getTaskNode returns the node status of a task.
+func (d *dagContext) getTaskNode(taskName string) *wfv1.NodeStatus {
 	nodeID := d.taskNodeID(taskName)
 	node, ok := d.wf.Status.Nodes[nodeID]
 	if !ok {
@@ -84,16 +126,16 @@ func (d *dagContext) assertBranchFinished(targetTaskNames []string) bool {
 	// If successful, we should continue to run down until the leaf node
 	flag := false
 	for _, targetTaskName := range targetTaskNames {
-		taskNode := d.GetTaskNode(targetTaskName)
+		taskNode := d.getTaskNode(targetTaskName)
 		if taskNode == nil {
-			taskObject := d.getTask(targetTaskName)
+			taskObject := d.GetTask(targetTaskName)
 			if taskObject != nil {
 				// Make sure all the dependency node have one failed
 				// Recursive check until top root node
-				return d.assertBranchFinished(common.GetTaskDependencies(taskObject))
+				return d.assertBranchFinished(d.GetTaskDependencies(taskObject.Name))
 			}
 		} else if !taskNode.Successful() {
-			taskObject := d.getTask(targetTaskName)
+			taskObject := d.GetTask(targetTaskName)
 			if !taskObject.ContinuesOn(taskNode.Phase) {
 				flag = true
 			}
@@ -140,7 +182,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 			// If all the nodes have finished, we should mark the failed node to finish overall workflow
 			// So we should check all the targetTasks branch have finished
 			for _, tmpDepName := range targetTasks {
-				tmpDepNode := d.GetTaskNode(tmpDepName)
+				tmpDepNode := d.getTaskNode(tmpDepName)
 				if tmpDepNode == nil {
 					// If leaf node is nil, we should check it's parent node and recursive check
 					if !d.assertBranchFinished([]string{tmpDepName}) {
@@ -165,8 +207,8 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 	}
 	// There are no currently running tasks. Now check if our dependencies were met
 	for _, depName := range targetTasks {
-		depNode := d.GetTaskNode(depName)
-		depTask := d.getTask(depName)
+		depNode := d.getTaskNode(depName)
+		depTask := d.GetTask(depName)
 		if depNode == nil {
 			return wfv1.NodeRunning
 		}
@@ -236,13 +278,15 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 		tmpl:         tmpl,
 		wf:           woc.wf,
 		tmplCtx:      tmplCtx,
+		dependencies: make(map[string][]string),
+		dependsLogic: make(map[string]string),
 	}
 
 	// Identify our target tasks. If user did not specify any, then we choose all tasks which have
 	// no dependants.
 	var targetTasks []string
 	if tmpl.DAG.Target == "" {
-		targetTasks = findLeafTaskNames(tmpl.DAG.Tasks)
+		targetTasks = dagCtx.findLeafTaskNames(tmpl.DAG.Tasks)
 	} else {
 		targetTasks = strings.Split(tmpl.DAG.Target, " ")
 	}
@@ -269,7 +313,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 		scope: make(map[string]interface{}),
 	}
 	for _, task := range tmpl.DAG.Tasks {
-		taskNode := dagCtx.GetTaskNode(task.Name)
+		taskNode := dagCtx.getTaskNode(task.Name)
 		if taskNode == nil {
 			// Can happen when dag.target was specified
 			continue
@@ -296,7 +340,7 @@ func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(dagCtx *dagContext,
 	// set the outbound nodes from the target tasks
 	outbound := make([]string, 0)
 	for _, depName := range targetTasks {
-		depNode := dagCtx.GetTaskNode(depName)
+		depNode := dagCtx.getTaskNode(depName)
 		if depNode == nil {
 			woc.log.Println(depName)
 			continue
@@ -317,8 +361,8 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 	dagCtx.visited[taskName] = true
 
-	node := dagCtx.GetTaskNode(taskName)
-	task := dagCtx.getTask(taskName)
+	node := dagCtx.getTaskNode(taskName)
+	task := dagCtx.GetTask(taskName)
 	if node != nil && node.Completed() {
 		// Run the node's onExit node, if any.
 		hasOnExitNode, onExitNode, err := woc.runOnExitNode(task.Name, task.OnExit, dagCtx.boundaryID, dagCtx.tmplCtx)
@@ -334,8 +378,8 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 
 	// Check if our dependencies completed. If not, recurse our parents executing them if necessary
 	nodeName := dagCtx.taskNodeName(taskName)
-	depends := common.GetTaskDependsLogic(task)
-	taskDependencies := common.GetTaskDependencies(task)
+	depends := dagCtx.GetTaskDependsLogic(taskName)
+	taskDependencies := dagCtx.GetTaskDependencies(taskName)
 
 	taskGroupNode := woc.getNodeByName(nodeName)
 	if taskGroupNode != nil && taskGroupNode.Type != wfv1.NodeTypeTaskGroup {
@@ -355,7 +399,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		} else {
 			// Otherwise, add all outbound nodes of our dependencies as parents to this node
 			for _, depName := range taskDependencies {
-				depNode := dagCtx.GetTaskNode(depName)
+				depNode := dagCtx.getTaskNode(depName)
 				outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
 				for _, outNodeID := range outboundNodeIDs {
 					woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, taskNodeName)
@@ -365,7 +409,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 
 	if depends != "" {
-		execute, proceed, err := evaluateDependsLogic(depends, dagCtx)
+		execute, proceed, err := dagCtx.evaluateDependsLogic(taskName)
 		if err != nil {
 			woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
 			connectDependencies(nodeName)
@@ -415,10 +459,10 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 
 	for _, t := range expandedTasks {
-		node = dagCtx.GetTaskNode(t.Name)
+		node = dagCtx.getTaskNode(t.Name)
 		taskNodeName := dagCtx.taskNodeName(t.Name)
 		if node == nil {
-			woc.log.Infof("All of node %s dependencies %s completed", taskNodeName, common.GetTaskDependencies(task))
+			woc.log.Infof("All of node %s dependencies %s completed", taskNodeName, taskDependencies)
 			// Add the child relationship from our dependency's outbound nodes to this node.
 			connectDependencies(taskNodeName)
 
@@ -443,7 +487,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		groupPhase := wfv1.NodeSucceeded
 		for _, t := range expandedTasks {
 			// Add the child relationship from our dependency's outbound nodes to this node.
-			node := dagCtx.GetTaskNode(t.Name)
+			node := dagCtx.getTaskNode(t.Name)
 			if node == nil || !node.Completed() {
 				return
 			}
@@ -463,9 +507,9 @@ func (woc *wfOperationCtx) buildLocalScopeFromTask(dagCtx *dagContext, task *wfv
 	}
 	woc.addOutputsToLocalScope("workflow", woc.wf.Status.Outputs, &scope)
 
-	ancestors := common.GetTaskAncestry(dagCtx, task.Name, dagCtx.tasks)
+	ancestors := common.GetTaskAncestry(dagCtx, task.Name)
 	for _, ancestor := range ancestors {
-		ancestorNode := dagCtx.GetTaskNode(ancestor)
+		ancestorNode := dagCtx.getTaskNode(ancestor)
 		if ancestorNode == nil {
 			return nil, errors.InternalErrorf("Ancestor task node %s not found", ancestor)
 		}
@@ -564,13 +608,13 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 
 // findLeafTaskNames finds the names of all tasks whom no other nodes depend on.
 // This list of tasks is used as the the default list of targets when dag.targets is omitted.
-func findLeafTaskNames(tasks []wfv1.DAGTask) []string {
+func (d *dagContext) findLeafTaskNames(tasks []wfv1.DAGTask) []string {
 	taskIsLeaf := make(map[string]bool)
 	for _, task := range tasks {
 		if _, ok := taskIsLeaf[task.Name]; !ok {
 			taskIsLeaf[task.Name] = true
 		}
-		for _, dependency := range common.GetTaskDependencies(&task) {
+		for _, dependency := range d.GetTaskDependencies(task.Name) {
 			taskIsLeaf[dependency] = false
 		}
 	}
@@ -632,19 +676,18 @@ type TaskResults struct {
 
 // evaluateDependsLogic returns whether a node should execute and proceed. proceed means that all of its dependencies are
 // completed and execute means that given the results of its dependencies, this node should execute.
-func evaluateDependsLogic(logic string, dagCtx *dagContext) (bool, bool, error) {
+func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 	evalScope := make(map[string]TaskResults)
 
-	for _, taskName := range common.GetTaskDependenciesFromDepends(logic) {
+	for _, taskName := range d.GetTaskDependencies(taskName) {
 
 		// If the task is still running, we should not proceed.
-		depNode := dagCtx.GetTaskNode(taskName)
+		depNode := d.getTaskNode(taskName)
 		if depNode == nil || !depNode.Completed() {
 			return false, false, nil
 		}
 
 		evalTaskName := strings.Replace(taskName, "-", "_", -1)
-
 		if _, ok := evalScope[evalTaskName]; ok {
 			continue
 		}
@@ -655,12 +698,11 @@ func evaluateDependsLogic(logic string, dagCtx *dagContext) (bool, bool, error) 
 			Skipped:    depNode.Phase == wfv1.NodeSkipped,
 			Completed:  depNode.Phase == wfv1.NodeSucceeded || depNode.Phase == wfv1.NodeFailed,
 			Any:        depNode.Phase == wfv1.NodeSucceeded || depNode.Phase == wfv1.NodeFailed || depNode.Phase == wfv1.NodeSkipped,
-			Successful: depNode.Successful() && !dagCtx.getTask(taskName).ContinuesOn(depNode.Phase),
+			Successful: depNode.Successful() && !d.GetTask(taskName).ContinuesOn(depNode.Phase),
 		}
 	}
 
-	evalLogic := strings.Replace(logic, "-", "_", -1)
-
+	evalLogic := strings.Replace(d.GetTaskDependsLogic(taskName), "-", "_", -1)
 	result, err := expr.Eval(evalLogic, evalScope)
 	if err != nil {
 		return false, false, fmt.Errorf("unable to evaluate expression '%s': %s", evalLogic, err)
