@@ -59,8 +59,8 @@ endif
 endif
 
 # version change, so does the file location
-MANIFEST_VERSION_FILE := dist/$(MANIFEST_VERSION)
-VERSION_FILE          := dist/$(VERSION)
+MANIFESTS_VERSION_FILE := dist/$(MANIFESTS_VERSION).manifests-version
+VERSION_FILE           := dist/$(VERSION).version
 
 # perform static compilation
 STATIC_BUILD          ?= true
@@ -118,7 +118,7 @@ build: status clis executor-image controller-image manifests/install.yaml manife
 
 .PHONY: status
 status:
-	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), GIT_TREE_STATE=$(GIT_TREE_STATE), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE)
+	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), GIT_TREE_STATE=$(GIT_TREE_STATE), MANIFESTS_VERSION=$(MANIFESTS_VERSION), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE)
 
 # cli
 
@@ -263,28 +263,19 @@ codegen-core:
 	./hack/update-codegen.sh
 	$(call restore_go_mod)
 
-.PHONY: manifests
-manifests: status manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml manifests/quick-start-no-db.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml test/e2e/manifests/no-db.yaml
-
 # we use a different file to ./VERSION to force updating manifests after a `make clean`
-$(MANIFEST_VERSION_FILE):
+$(MANIFESTS_VERSION_FILE):
 	@mkdir -p dist
-	touch $(MANIFEST_VERSION_FILE)
+	touch $(MANIFESTS_VERSION_FILE)
 
-manifests/install.yaml: $(MANIFEST_VERSION_FILE) $(MANIFESTS)
-	kustomize build --load_restrictor=LoadRestrictionsNone manifests/cluster-install | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/install.yaml
-
-manifests/namespace-install.yaml: $(MANIFEST_VERSION_FILE) $(MANIFESTS)
-	kustomize build --load_restrictor=LoadRestrictionsNone manifests/namespace-install | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
-
-manifests/quick-start-no-db.yaml: $(MANIFEST_VERSION_FILE) $(MANIFESTS)
-	kustomize build --load_restrictor=LoadRestrictionsNone manifests/quick-start/no-db | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-no-db.yaml
-
-manifests/quick-start-mysql.yaml: $(MANIFEST_VERSION_FILE) $(MANIFESTS)
-	kustomize build --load_restrictor=LoadRestrictionsNone manifests/quick-start/mysql | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
-
-manifests/quick-start-postgres.yaml: $(MANIFEST_VERSION_FILE) $(MANIFESTS)
-	kustomize build --load_restrictor=LoadRestrictionsNone manifests/quick-start/postgres | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
+.PHONY: manifests
+manifests:
+	./hack/update-image-tags.sh manifests/base $(MANIFESTS_VERSION)
+	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
+	kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
+	kustomize build --load_restrictor=none manifests/quick-start/no-db | ./hack/auto-gen-msg.sh > manifests/quick-start-no-db.yaml
+	kustomize build --load_restrictor=none manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
+	kustomize build --load_restrictor=none manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
 # lint/test/etc
 
@@ -324,38 +315,15 @@ $(VERSION_FILE):
 	@mkdir -p dist
 	touch $(VERSION_FILE)
 
-test/e2e/manifests/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
-	# Create Postgres e2e manifests
-	kustomize build --load_restrictor=LoadRestrictionsNone test/e2e/manifests/postgres | ./hack/auto-gen-msg.sh > test/e2e/manifests/postgres.yaml
+dist/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
+	kustomize build --load_restrictor=none test/e2e/manifests/postgres | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/postgres.yaml
 
-dist/postgres.yaml: test/e2e/manifests/postgres.yaml $(VERSION_FILE)
-	# Create Postgres e2e manifests
-	cat test/e2e/manifests/postgres.yaml | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/postgres.yaml
+dist/no-db.yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
+	# We additionally disable ALWAYS_OFFLOAD_NODE_STATUS
+	kustomize build --load_restrictor=none test/e2e/manifests/no-db | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | sed 's/"true"/"false"/' > dist/no-db.yaml
 
-test/e2e/manifests/no-db/overlays/argo-server-deployment.yaml: test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml
-test/e2e/manifests/no-db/overlays/argo-server-deployment.yaml:
-	cat test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml | ./hack/auto-gen-msg.sh > test/e2e/manifests/no-db/overlays/argo-server-deployment.yaml
-
-test/e2e/manifests/no-db/overlays/workflow-controller-deployment.yaml: test/e2e/manifests/postgres/overlays/workflow-controller-deployment.yaml
-test/e2e/manifests/no-db/overlays/workflow-controller-deployment.yaml:
-	cat test/e2e/manifests/postgres/overlays/workflow-controller-deployment.yaml | ./hack/auto-gen-msg.sh > test/e2e/manifests/no-db/overlays/workflow-controller-deployment.yaml
-
-test/e2e/manifests/no-db.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
-	# Create no DB e2e manifests
-	kustomize build --load_restrictor=LoadRestrictionsNone test/e2e/manifests/no-db | ./hack/auto-gen-msg.sh > test/e2e/manifests/no-db.yaml
-
-dist/no-db.yaml: test/e2e/manifests/no-db.yaml $(VERSION_FILE)
-	# Create no DB e2e manifests
-	# We additionlly disable ALWAY_OFFLOAD_NODE_STATUS
-	cat test/e2e/manifests/no-db.yaml | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | sed 's/"true"/"false"/' > dist/no-db.yaml
-
-test/e2e/manifests/mysql.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
-	# Create MySQL e2e manifests
-	kustomize build --load_restrictor=LoadRestrictionsNone test/e2e/manifests/mysql | ./hack/auto-gen-msg.sh > test/e2e/manifests/mysql.yaml
-
-dist/mysql.yaml: test/e2e/manifests/mysql.yaml $(VERSION_FILE)
-	# Create MySQL e2e manifests
-	cat test/e2e/manifests/mysql.yaml | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/mysql.yaml
+dist/mysql.yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
+	kustomize build --load_restrictor=none test/e2e/manifests/mysql | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/mysql.yaml
 
 .PHONY: install
 install: dist/postgres.yaml dist/mysql.yaml dist/no-db.yaml
@@ -493,7 +461,7 @@ $(HOME)/go/bin/swagger:
 .PHONY: swagger
 swagger: api/openapi-spec/swagger.json
 
-api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) $(MANIFEST_VERSION_FILE) hack/swaggify.sh
+api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
 	swagger mixin -c 611 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
 
 .PHONY: docs
