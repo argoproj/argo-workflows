@@ -407,7 +407,7 @@ func (s *CLISuite) TestWorkflowDelete() {
 			Workflow("@smoke/basic.yaml").
 			When().
 			SubmitWorkflow().
-			WaitForWorkflow(30*time.Second).
+			WaitForWorkflow(1*time.Minute).
 			Given().
 			RunCli([]string{"delete", "--older", "1d", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
