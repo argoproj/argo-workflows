@@ -1,4 +1,3 @@
-// @ts-ignore
 import {Observable, Observer} from 'rxjs';
 import * as _superagent from 'superagent';
 import {SuperAgentRequest} from 'superagent';
