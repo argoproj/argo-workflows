@@ -57,7 +57,7 @@ spec:
         templateRef:
           name: cluster-workflow-template-nested-template 
           template: whalesay-template
-          clusterscope: true
+          clusterScope: true
         arguments:
           parameters:
           - name: message

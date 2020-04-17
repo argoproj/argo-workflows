@@ -8,8 +8,10 @@ import (
 	"golang.org/x/net/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/util/logs"
@@ -33,6 +35,21 @@ func NewWorkflowServer(instanceID string, offloadNodeStatusRepo sqldb.OffloadNod
 	}
 }
 
+func (s *workflowServer) setInstanceID(instanceID string, wf *v1alpha1.Workflow) {
+	if instanceID != "" || s.instanceID != "" {
+		labels := wf.GetLabels()
+		if labels == nil {
+			labels = make(map[string]string)
+		}
+		if instanceID != "" {
+			labels[common.LabelKeyControllerInstanceID] = instanceID
+		} else {
+			labels[common.LabelKeyControllerInstanceID] = s.instanceID
+		}
+		wf.SetLabels(labels)
+	}
+}
+
 func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.WorkflowCreateRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
@@ -44,18 +61,7 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 		req.Workflow.Namespace = req.Namespace
 	}
 
-	if len(req.InstanceID) > 0 || len(s.instanceID) > 0 {
-		labels := req.Workflow.GetLabels()
-		if labels == nil {
-			labels = make(map[string]string)
-		}
-		if len(req.InstanceID) > 0 {
-			labels[common.LabelKeyControllerInstanceID] = req.InstanceID
-		} else {
-			labels[common.LabelKeyControllerInstanceID] = s.instanceID
-		}
-		req.Workflow.SetLabels(labels)
-	}
+	s.setInstanceID(req.InstanceID, req.Workflow)
 
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
@@ -239,7 +245,7 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 		return nil, err
 	}
 
-	created, err := util.SubmitWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, req.Namespace, newWF, &util.SubmitOpts{})
+	created, err := util.SubmitWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, req.Namespace, newWF, &v1alpha1.SubmitOpts{})
 	if err != nil {
 		return nil, err
 	}
@@ -386,4 +392,48 @@ func (s *workflowServer) validateInstanceID(wf *v1alpha1.Workflow) bool {
 		}
 	}
 	return false
+}
+
+func (s *workflowServer) SubmitFrom(ctx context.Context, req *workflowpkg.WorkflowSubmitFromRequest) (*v1alpha1.Workflow, error) {
+	wfClient := auth.GetWfClient(ctx)
+	var wf *v1alpha1.Workflow
+	switch req.ResourceKind {
+	case workflow.CronWorkflowKind, workflow.CronWorkflowSingular, workflow.CronWorkflowPlural, workflow.CronWorkflowShortName:
+		cronWf, err := wfClient.ArgoprojV1alpha1().CronWorkflows(req.Namespace).Get(req.ResourceName, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+		wf = common.ConvertCronWorkflowToWorkflow(cronWf)
+	case workflow.WorkflowTemplateKind, workflow.WorkflowTemplateSingular, workflow.WorkflowTemplatePlural, workflow.WorkflowTemplateShortName:
+		wfTmpl, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Get(req.ResourceName, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+		wf = common.ConvertWorkflowTemplateToWorkflow(wfTmpl)
+	case workflow.ClusterWorkflowTemplateKind, workflow.ClusterWorkflowTemplateSingular, workflow.ClusterWorkflowTemplatePlural, workflow.ClusterWorkflowTemplateShortName:
+		wfTmpl, err := wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Get(req.ResourceName, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+		wf = common.ConvertClusterWorkflowTemplateToWorkflow(wfTmpl)
+	default:
+
+		return nil, errors.Errorf(errors.CodeBadRequest, "Resource kind '%s' is not supported for submitting", req.ResourceKind)
+
+	}
+
+	err := util.ApplySubmitOpts(wf, req.SubmitOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
+	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+
+	_, err = validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, validate.ValidateOpts{})
+	if err != nil {
+		return nil, err
+	}
+	return wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(wf)
+
 }
