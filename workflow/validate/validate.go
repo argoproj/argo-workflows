@@ -35,6 +35,10 @@ type ValidateOpts struct {
 	// types of executors. For example, the inability of kubelet/k8s executors to copy artifacts
 	// out of the base image layer. If unspecified, will use docker executor validation
 	ContainerRuntimeExecutor string
+
+	// IgnoreEntrypoint indicates to skip/ignore the EntryPoint validation on workflow spec.
+	// Entrypoint is optional for WorkflowTemplate and ClusterWorkflowTemplate
+	IgnoreEntrypoint bool
 }
 
 // templateValidationCtx is the context for validating a workflow spec
@@ -134,7 +138,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		ctx.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*wf.Spec.Priority))
 	}
 
-	if wf.Spec.Entrypoint == "" {
+	if !opts.IgnoreEntrypoint && wf.Spec.Entrypoint == "" {
 		return nil, errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
 	}
 
@@ -166,9 +170,11 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		}
 	}
 
-	_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.Entrypoint}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
-	if err != nil {
-		return nil, err
+	if !opts.IgnoreEntrypoint {
+		_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.Entrypoint}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
+		if err != nil {
+			return nil, err
+		}
 	}
 	if wf.Spec.OnExit != "" {
 		// now when validating onExit, {{workflow.status}} is now available as a global
@@ -198,19 +204,16 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	return wfConditions, nil
 }
 
-// ValidateWorkflow accepts a workflow template and performs validation against it.
-func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl wfv1.TemplateGetter) error {
-	ctx := newTemplateValidationCtx(nil, ValidateOpts{})
-	tmplCtx := templateresolution.NewContext(wftmplGetter, cwftmplGetter, wftmpl, nil)
+// ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
+func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate) (*wfv1.WorkflowConditions, error) {
+	wf := common.ConvertWorkflowTemplateToWorkflow(wftmpl)
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == ""})
+}
 
-	// Check if all templates can be resolved.
-	for _, template := range wftmpl.GetAllTemplates() {
-		_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
-		}
-	}
-	return nil
+// ValidateClusterWorkflowTemplate accepts a cluster workflow template and performs validation against it.
+func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate) (*wfv1.WorkflowConditions, error) {
+	wf := common.ConvertClusterWorkflowTemplateToWorkflow(cwftmpl)
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == ""})
 }
 
 // ValidateCronWorkflow validates a CronWorkflow
@@ -363,7 +366,7 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 }
 
 // validateTemplateHolder validates a template holder and returns the validated template.
-func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.TemplateHolder, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider, extraScope map[string]interface{}) (*wfv1.Template, error) {
+func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.TemplateReferenceHolder, tmplCtx *templateresolution.Context, args wfv1.ArgumentsProvider, extraScope map[string]interface{}) (*wfv1.Template, error) {
 	tmplRef := tmplHolder.GetTemplateRef()
 	tmplName := tmplHolder.GetTemplateName()
 	if tmplRef != nil {
@@ -396,7 +399,7 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 		}
 	}
 
-	tmplCtx, resolvedTmpl, err := tmplCtx.ResolveTemplate(tmplHolder)
+	tmplCtx, resolvedTmpl, _, err := tmplCtx.ResolveTemplate(tmplHolder)
 	if err != nil {
 		if argoerr, ok := err.(errors.ArgoError); ok && argoerr.Code() == errors.CodeNotFound {
 			if tmplRef != nil {
@@ -687,14 +690,6 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
-			stepBytes, err := json.Marshal(stepGroup)
-			if err != nil {
-				return errors.InternalWrapError(err)
-			}
-			err = resolveAllVariables(scope, string(stepBytes))
-			if err != nil {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
-			}
 			err = validateArguments(fmt.Sprintf("templates.%s.steps[%d].%s.arguments.", tmpl.Name, i, step.Name), step.Arguments)
 			if err != nil {
 				return err
@@ -704,6 +699,15 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
 			resolvedTemplates[step.Name] = resolvedTmpl
+		}
+
+		stepBytes, err := json.Marshal(stepGroup)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+		err = resolveAllVariables(scope, string(stepBytes))
+		if err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps %s", tmpl.Name, err.Error())
 		}
 
 		for _, step := range stepGroup.Steps {
@@ -767,8 +771,9 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 	if tmpl.Daemon != nil && *tmpl.Daemon {
 		scope[fmt.Sprintf("%s.ip", prefix)] = true
 	}
-	if tmpl.Script != nil {
+	if tmpl.Script != nil || tmpl.Container != nil {
 		scope[fmt.Sprintf("%s.outputs.result", prefix)] = true
+		scope[fmt.Sprintf("%s.exitCode", prefix)] = true
 	}
 	for _, param := range tmpl.Outputs.Parameters {
 		scope[fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)] = true
@@ -798,8 +803,11 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 	}
 	if aggregate {
 		switch tmpl.GetType() {
+		// Not that we don't also include TemplateTypeContainer here, even though it uses `outputs.result` it uses
+		// `outputs.parameters` as its aggregator.
 		case wfv1.TemplateTypeScript:
 			scope[fmt.Sprintf("%s.outputs.result", prefix)] = true
+			scope[fmt.Sprintf("%s.exitCode", prefix)] = true
 		default:
 			scope[fmt.Sprintf("%s.outputs.parameters", prefix)] = true
 		}

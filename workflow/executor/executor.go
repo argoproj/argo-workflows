@@ -76,6 +76,10 @@ type ContainerRuntimeExecutor interface {
 	// Used to capture script results as an output parameter, and to archive container logs
 	GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error)
 
+	// GetExitCode returns the exit code of the container
+	// Used to capture script exit code as an output parameter
+	GetExitCode(containerID string) (string, error)
+
 	// WaitInit is called before Wait() to signal the executor about an impending Wait call.
 	// For most executors this is a noop, and is only used by the the PNS executor
 	WaitInit() error
@@ -129,7 +133,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 				log.Warnf("Ignoring optional artifact '%s' which was not supplied", art.Name)
 				continue
 			} else {
-				return errors.New("required artifact %s not supplied", art.Name)
+				return errors.Errorf("", "required artifact %s not supplied", art.Name)
 			}
 		}
 		artDriver, err := we.InitDriver(&art)
@@ -699,7 +703,8 @@ func (we *WorkflowExecutor) CaptureScriptResult() error {
 		log.Infof("No Script output reference in workflow. Capturing script output ignored")
 		return nil
 	}
-	if we.Template.Script == nil {
+	if we.Template.Script == nil && we.Template.Container == nil {
+		log.Infof("Template type is neither of Script or Container. Capturing script output ignored")
 		return nil
 	}
 	log.Infof("Capturing script output")
@@ -722,7 +727,37 @@ func (we *WorkflowExecutor) CaptureScriptResult() error {
 	if outputLen > 0 && out[outputLen-1] == '\n' {
 		out = out[0 : outputLen-1]
 	}
+
+	const maxAnnotationSize int = 256 * (1 << 10) // 256 kB
+	// A character in a string is a byte
+	if len(out) > maxAnnotationSize {
+		log.Warnf("Output is larger than the maximum allowed size of 256 kB, only the last 256 kB were saved")
+		out = out[len(out)-maxAnnotationSize:]
+	}
+
 	we.Template.Outputs.Result = &out
+	return nil
+}
+
+// CaptureScriptExitCode will add the exit code of a script template as output exit code
+func (we *WorkflowExecutor) CaptureScriptExitCode() error {
+	if we.Template.Script == nil && we.Template.Container == nil {
+		log.Infof("Template type is neither of Script or Container. Capturing exit code ignored")
+		return nil
+	}
+	log.Infof("Capturing script exit code")
+	mainContainerID, err := we.GetMainContainerID()
+	if err != nil {
+		return err
+	}
+	exitCode, err := we.RuntimeExecutor.GetExitCode(mainContainerID)
+	if err != nil {
+		return err
+	}
+
+	if exitCode != "" {
+		we.Template.Outputs.ExitCode = &exitCode
+	}
 	return nil
 }
 

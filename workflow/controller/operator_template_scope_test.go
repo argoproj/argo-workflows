@@ -67,7 +67,8 @@ spec:
 
 func TestTemplateScope(t *testing.T) {
 	t.SkipNow()
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("")
 
@@ -166,7 +167,8 @@ spec:
 
 func TestTemplateScopeWithParam(t *testing.T) {
 	t.SkipNow()
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("")
 
@@ -260,7 +262,8 @@ spec:
 
 func TestTemplateScopeNestedStepsWithParams(t *testing.T) {
 	t.SkipNow()
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("")
 
@@ -369,7 +372,8 @@ spec:
 
 func TestTemplateScopeDAG(t *testing.T) {
 	t.SkipNow()
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("")
 
@@ -445,7 +449,7 @@ spec:
     templateRef:
       name: test-template-scope-1
       template: steps
-      clusterscope: true
+      clusterScope: true
 `
 
 var testTemplateClusterScopeWorkflowTemplateYaml1 = `
@@ -472,8 +476,9 @@ spec:
 `
 
 func TestTemplateClusterScope(t *testing.T) {
-	//t.SkipNow()
-	controller := newController()
+	t.SkipNow()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates()
 	wftmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("default")
@@ -496,7 +501,7 @@ func TestTemplateClusterScope(t *testing.T) {
 	node := findNodeByName(wf.Status.Nodes, "test-template-scope")
 	if assert.NotNil(t, node, "Node %s not found", "test-templte-scope") {
 		assert.Equal(t, wfv1.NodeTypeSteps, node.Type)
-		assert.Equal(t, "", node.TemplateScope)
+		assert.Equal(t, "local/test-template-scope", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0]")

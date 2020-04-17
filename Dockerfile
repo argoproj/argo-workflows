@@ -108,7 +108,10 @@ COPY --from=argo-ui node_modules ui/node_modules
 RUN mkdir -p ui/dist
 COPY --from=argo-ui dist/app ui/dist/app
 # stop make from trying to re-build this without yarn installed
-RUN touch ui/dist/app
+RUN touch ui/dist/node_modules.marker
+RUN touch ui/dist/app/index.html
+# fail the build if we are "dirty"
+RUN git diff --exit-code
 RUN if [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "amd64" ]; then \
 	make dist/argo-linux-amd64 dist/workflow-controller-linux-amd64 dist/argoexec-linux-amd64; \
     elif [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "arm64" ]; then \

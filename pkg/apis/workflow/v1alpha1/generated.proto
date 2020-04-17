@@ -119,11 +119,15 @@ message ArtifactoryAuth {
   optional k8s.io.api.core.v1.SecretKeySelector passwordSecret = 2;
 }
 
+// Backoff is a backoff strategy to use within retryStrategy
 message Backoff {
+  // Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")
   optional string duration = 1;
 
+  // Factor is a factor to multiply the base duration after each failed retry
   optional int32 factor = 2;
 
+  // MaxDuration is the maximum amount of time allowed for the backoff strategy
   optional string maxDuration = 3;
 }
 
@@ -182,6 +186,7 @@ message CronWorkflowList {
   repeated CronWorkflow items = 2;
 }
 
+// CronWorkflowSpec is the specification of a CronWorkflow
 message CronWorkflowSpec {
   // WorkflowSpec is the spec of the workflow to be run
   optional WorkflowSpec workflowSpec = 1;
@@ -212,6 +217,7 @@ message CronWorkflowSpec {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 9;
 }
 
+// CronWorkflowStatus is the status of a CronWorkflow
 message CronWorkflowStatus {
   // Active is a list of active workflows stemming from this CronWorkflow
   repeated k8s.io.api.core.v1.ObjectReference active = 1;
@@ -614,6 +620,9 @@ message Outputs {
 
   // Result holds the result (stdout) of a script template
   optional string result = 3;
+
+  // ExitCode holds the exit code of a script template
+  optional string exitCode = 4;
 }
 
 message ParallelSteps {
@@ -643,6 +652,7 @@ message Parameter {
 
 // PodGC describes how to delete completed pods as they complete
 message PodGC {
+  // Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
   optional string strategy = 1;
 }
 
@@ -699,6 +709,13 @@ message ResourceTemplate {
   // FailureCondition is a label selector expression which describes the conditions
   // of the k8s resource in which the step was considered failed
   optional string failureCondition = 6;
+
+  // Flags is a set of additional options passed to kubectl before submitting a resource
+  // I.e. to disable resource validation:
+  // flags: [
+  // 	"--validate=false"  # disable resource validation
+  // ]
+  repeated string flags = 7;
 }
 
 // RetryStrategy provides controls on how to retry a workflow step
@@ -771,18 +788,59 @@ message Sequence {
   optional string format = 4;
 }
 
+// SubmitOpts are workflow submission options
+message SubmitOpts {
+  // Name overrides metadata.name in workflow.
+  optional string name = 1;
+
+  // GenerateName overrides metadata.generateName in workflow.
+  optional string generateName = 2;
+
+  // InstanceID adds controller's instance id label in workflow.
+  optional string instanceID = 3;
+
+  // Entrypoint overrides spec.entrypoint in workflow.
+  optional string entrypoint = 4;
+
+  // Parameters passes input parameters to workflow.
+  repeated string parameters = 5;
+
+  // ParameterFile holds parameter file path.
+  // This option is not supported in API.
+  optional string parameterFile = 6;
+
+  // ServiceAccount runs all pods in the workflow using specified serviceaccount.
+  optional string serviceAccount = 7;
+
+  // DryRun validates the workflow on the client-side without creating it.
+  // This option is not supported in API.
+  optional bool dryRun = 8;
+
+  // ServerDryRun validates the workflow on the Server-side without creating it.
+  optional bool serverDryRun = 9;
+
+  // Labels adds metadata.labels in workflow.
+  optional string labels = 10;
+
+  // OwnerReference creates the metadata.ownerReference in workflow.
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference ownerReference = 11;
+}
+
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
 message SuspendTemplate {
   // Duration is the seconds to wait before automatically resuming a template
   optional string duration = 1;
 }
 
-// TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed
+// TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed
 message TTLStrategy {
+  // SecondsAfterCompletion is the number of seconds to live after completion
   optional int32 secondsAfterCompletion = 1;
 
+  // SecondsAfterSuccess is the number of seconds to live after success
   optional int32 secondsAfterSuccess = 2;
 
+  // SecondsAfterFailure is the number of seconds to live after failure
   optional int32 secondsAfterFailure = 3;
 }
 
@@ -944,7 +1002,7 @@ message TemplateRef {
   optional bool runtimeResolution = 3;
 
   // ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
-  optional bool clusterscope = 4;
+  optional bool clusterScope = 4;
 }
 
 // UserContainer is a container specified by a user.
@@ -990,10 +1048,13 @@ message Workflow {
 }
 
 message WorkflowCondition {
+  // Type is the type of condition
   optional string type = 1;
 
+  // Status is the status of the condition
   optional string status = 2;
 
+  // Message is the condition message
   optional string message = 3;
 }
 

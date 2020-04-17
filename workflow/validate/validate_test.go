@@ -39,7 +39,8 @@ func validate(yamlStr string) (*wfv1.WorkflowConditions, error) {
 // its validation result.
 func validateWorkflowTemplate(yamlStr string) error {
 	wftmpl := unmarshalWftmpl(yamlStr)
-	return ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, wftmpl)
+	_, err := ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, wftmpl)
+	return err
 }
 
 func unmarshalWf(yamlStr string) *wfv1.Workflow {
@@ -2203,5 +2204,53 @@ func TestRuntimeResolutionOfVariableNames(t *testing.T) {
 	wf := unmarshalWf(runtimeResolutionOfVariableNames)
 	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 
+	assert.NoError(t, err)
+}
+
+var stepWithItemParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: loops-maps-
+spec:
+  entrypoint: loop-map-example
+  templates:
+    - name: loop-map-example
+      steps:
+        - - name: hello-world
+            template: whalesay
+          - name: test-linux
+            template: cat-os-release
+            arguments:
+              parameters:
+                - name: image
+                  value: "{{item.image}}"
+                - name: tag
+                  value: "{{item.tag}}"
+            withItems:
+              - { image: "debian", tag: "9.1" }
+              - { image: "debian", tag: "8.9" }
+              - { image: "alpine", tag: "3.6" }
+              - { image: "ubuntu", tag: "17.10" }
+
+    - name: cat-os-release
+      inputs:
+        parameters:
+          - name: image
+          - name: tag
+      container:
+        image: "{{inputs.parameters.image}}:{{inputs.parameters.tag}}"
+        command: [cat]
+        args: [/etc/os-release]
+
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["hello world"]
+`
+
+func TestStepWithItemParam(t *testing.T) {
+	_, err := validate(stepWithItemParam)
 	assert.NoError(t, err)
 }

@@ -78,6 +78,80 @@ spec:
 		})
 }
 
+func (s *FunctionalSuite) TestContinueOnFailDag() {
+	// https://github.com/argoproj/argo/issues/2624
+	s.T().SkipNow()
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: continue-on-failed-dag
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: workflow-ignore
+  parallelism: 2
+  templates:
+    - name: workflow-ignore
+      dag:
+        failFast: false
+        tasks:
+          - name: A
+            template: whalesay
+          - name: B
+            template: boom
+            continueOn:
+              failed: true
+            dependencies:
+              - A
+          - name: C
+            template: whalesay
+            dependencies:
+              - A
+          - name: D
+            template: whalesay
+            dependencies:
+              - B
+              - C
+
+    - name: boom
+      dag:
+        tasks:
+          - name: B-1
+            template: whalesplosion
+
+    - name: whalesay
+      container:
+        imagePullPolicy: IfNotPresent
+        image: cowsay:v1
+
+    - name: whalesplosion
+      container:
+        imagePullPolicy: IfNotPresent
+        image: cowsay:v1
+        command: ["sh", "-c", "sleep 10; exit 1"]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Len(t, status.Nodes, 6)
+
+			bStatus := status.Nodes.FindByDisplayName("B")
+			if assert.NotNil(t, bStatus) {
+				assert.Equal(t, wfv1.NodeFailed, bStatus.Phase)
+			}
+
+			dStatus := status.Nodes.FindByDisplayName("D")
+			if assert.NotNil(t, dStatus) {
+				assert.Equal(t, wfv1.NodeSucceeded, dStatus.Phase)
+			}
+		})
+}
+
 func (s *FunctionalSuite) TestFastFailOnPodTermination() {
 	// TODO: Test fails due to using a service account with insufficient permissions, skipping for now
 	// pods is forbidden: User "system:serviceaccount:argo:default" cannot list resource "pods" in API group "" in the namespace "argo"
@@ -113,7 +187,9 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 		ExpectAuditEvent(func(e corev1.Event) bool {
 			return e.InvolvedObject.Kind == workflow.WorkflowKind &&
 				e.Reason == argo.EventReasonWorkflowNodeFailed &&
-				strings.HasPrefix(e.Message, "Failed node failed-step-event-")
+				strings.HasPrefix(e.Message, "Failed node failed-step-event-") &&
+				e.Annotations["workflows.argoproj.io/node-type"] == "Pod" &&
+				strings.Contains(e.Annotations["workflows.argoproj.io/node-name"], "failed-step-event-")
 		})
 }
 
@@ -133,7 +209,9 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		ExpectAuditEvent(func(e corev1.Event) bool {
 			return e.InvolvedObject.Kind == workflow.WorkflowKind &&
 				e.Reason == argo.EventReasonWorkflowNodeSucceeded &&
-				strings.HasPrefix(e.Message, "Succeeded node success-event-")
+				strings.HasPrefix(e.Message, "Succeeded node success-event-") &&
+				e.Annotations["workflows.argoproj.io/node-type"] == "Pod" &&
+				strings.Contains(e.Annotations["workflows.argoproj.io/node-name"], "success-event-")
 		})
 }
 
@@ -209,13 +287,13 @@ spec:
 				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(a.Message) &&
 				wfv1.NodePending == b.Phase &&
 				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(b.Message)
-		}, "pods pending", 20*time.Second).
+		}, "pods pending", 30*time.Second).
 		DeleteQuota().
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			a := wf.Status.Nodes.FindByDisplayName("a")
 			b := wf.Status.Nodes.FindByDisplayName("b")
 			return wfv1.NodeSucceeded == a.Phase && wfv1.NodeSucceeded == b.Phase
-		}, "pods succeeded", 20*time.Second)
+		}, "pods succeeded", 30*time.Second)
 }
 
 // 128M is for argo executor
@@ -261,13 +339,13 @@ spec:
 				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(a.Message) &&
 				wfv1.NodePending == b.Phase &&
 				regexp.MustCompile(`^Pending \d+\.\d+s$`).MatchString(b.Message)
-		}, "pods pending", 20*time.Second).
+		}, "pods pending", 30*time.Second).
 		DeleteQuota().
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			a := wf.Status.Nodes.FindByDisplayName("a(0)")
 			b := wf.Status.Nodes.FindByDisplayName("b(0)")
 			return wfv1.NodeSucceeded == a.Phase && wfv1.NodeSucceeded == b.Phase
-		}, "pods succeeded", 20*time.Second)
+		}, "pods succeeded", 30*time.Second)
 }
 
 func (s *FunctionalSuite) TestParameterAggregation() {
@@ -360,7 +438,7 @@ spec:
 
   - name: generate
     container:
-      image: docker/whalesay:latest
+      image: cowsay:v1
       command: [sh, -c]
       args: ["
         echo 'my-output-parameter' > /tmp/my-output-parameter.txt

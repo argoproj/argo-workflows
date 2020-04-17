@@ -13,8 +13,9 @@ The following variables are made available to reference various metadata of a wo
 | Variable | Description|
 |----------|------------|
 | `steps.<STEPNAME>.ip` | IP address of a previous daemon container step |
-| `steps.<STEPNAME>.status` | Phase status of any previous script step |
-| `steps.<STEPNAME>.outputs.result` | Output result of any previous script step |
+| `steps.<STEPNAME>.status` | Phase status of any previous step |
+| `steps.<STEPNAME>.outputs.result` | Output result of any previous container or script step |
+| `steps.<STEPNAME>.outputs.exitCode` | Exit code of any previous script step |
 | `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step |
 | `steps.<STEPNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous step |
 
@@ -22,8 +23,9 @@ The following variables are made available to reference various metadata of a wo
 | Variable | Description|
 |----------|------------|
 | `tasks.<TASKNAME>.ip` | IP address of a previous daemon container task |
-| `tasks.<TASKNAME>.status` | Phase status of any previous task step |
-| `tasks.<TASKNAME>.outputs.result` | Output result of any previous script task |
+| `tasks.<TASKNAME>.status` | Phase status of any previous task |
+| `tasks.<TASKNAME>.outputs.result` | Output result of any previous container or script task |
+| `tasks.<TASKNAME>.outputs.exitCode` | Exit code of any previous script task |
 | `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task |
 | `tasks.<TASKNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous task |
 
@@ -49,8 +51,9 @@ step.
 |----------|------------|
 | `status` | Phase status of the metric-emitting template |
 | `duration` | Duration of the metric-emitting template in seconds (only applicable in `Template`-level metrics, for `Workflow`-level use `workflow.duration`) |
-| `outputs.result` | Output result of the metric-emitting template |
+| `inputs.parameters.<NAME>` | Input parameter of the metric-emitting template |
 | `outputs.parameters.<NAME>` | Output parameter of the metric-emitting template |
+| `outputs.result` | Output result of the metric-emitting template |
 
 ### Realtime Metrics
 
