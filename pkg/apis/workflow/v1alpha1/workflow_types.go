@@ -1119,8 +1119,8 @@ type NodeStatus struct {
 	// a template, will be a superset of the outbound nodes of its last children.
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
 
-	// NodeName is the name of the host on which the workflow is running
-	NodeName string `json:"nodeName,omitempty" protobuf:"bytes,22,rep,name=nodeName"`
+	// HostNodeName is the name of the host on which the workflow is running
+	HostNodeName string `json:"hostNodeName,omitempty" protobuf:"bytes,22,rep,name=hostNodeName"`
 }
 
 func (n Nodes) GetResourcesDuration() ResourcesDuration {

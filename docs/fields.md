@@ -1491,11 +1491,11 @@ NodeStatus contains status information about an individual node in the workflow
 |`daemoned`|`boolean`|Daemoned tracks whether or not this node was daemoned and need to be terminated|
 |`displayName`|`string`|DisplayName is a human readable representation of the node. Unique within a template boundary|
 |`finishedAt`|[`Time`](#time)|Time at which this node completed|
+|`hostNodeName`|`string`|HostNodeName is the name of the host on which the workflow is running|
 |`id`|`string`|ID is a unique identifier of a node within the worklowIt is implemented as a hash of the node name, which makes the ID deterministic|
 |`inputs`|[`Inputs`](#inputs)|Inputs captures input parameter values and artifact locations supplied to this template invocation|
 |`message`|`string`|A human readable message indicating details about why the node is in this condition.|
 |`name`|`string`|Name is unique name in the node tree used to generate the node ID|
-|`nodeName`|`string`|NodeName is the name of the host on which the workflow is running|
 |`outboundNodes`|`Array< string >`|OutboundNodes tracks the node IDs which are considered "outbound" nodes to a template invocation.For every invocation of a template, there are nodes which we considered as "outbound". Essentially,these are last nodes in the execution sequence to run, before the template is considered completed.These nodes are then connected as parents to a following step.In the case of single pod steps (i.e. container, script, resource templates), this list will be nilsince the pod itself is already considered the "outbound" node.In the case of DAGs, outbound nodes are the "target" tasks (tasks with no children).In the case of steps, outbound nodes are all the containers involved in the last step group.NOTE: since templates are composable, the list of outbound nodes are carried upwards whena DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes ofa template, will be a superset of the outbound nodes of its last children.|
 |`outputs`|[`Outputs`](#outputs)|Outputs captures output parameter values and artifact locations produced by this template invocation|
 |`phase`|`string`|Phase a simple, high-level summary of where the node is in its lifecycle.Can be used as a state machine.|

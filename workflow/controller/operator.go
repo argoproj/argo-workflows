@@ -814,7 +814,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		if err != nil {
 			woc.log.Warnf("Failed to retrieve k8s-node information for pod %s", nodeID)
 		} else {
-			node.NodeName = pod.Spec.NodeName
+			node.HostNodeName = pod.Spec.NodeName
 			woc.wf.Status.Nodes[nodeID] = node
 		}
 	}
@@ -1654,7 +1654,6 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		BoundaryID:    boundaryID,
 		Phase:         phase,
 		StartedAt:     metav1.Time{Time: time.Now().UTC()},
-		NodeName:      "",
 	}
 
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {

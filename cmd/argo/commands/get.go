@@ -447,7 +447,7 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, get
 	var args []interface{}
 	duration := humanize.RelativeDurationShort(node.StartedAt.Time, node.FinishedAt.Time)
 	if node.Type == wfv1.NodeTypePod {
-		args = []interface{}{nodePrefix, nodeName, templateName, node.ID, node.NodeName, duration, node.Message}
+		args = []interface{}{nodePrefix, nodeName, templateName, node.ID, node.HostNodeName, duration, node.Message}
 	} else {
 		args = []interface{}{nodePrefix, nodeName, templateName, "", "", "", node.Message}
 	}

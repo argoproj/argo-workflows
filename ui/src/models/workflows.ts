@@ -724,7 +724,7 @@ export interface NodeStatus {
     /**
      * Name of the machine (node in Kubernetes parlance) on which the workflow-node is running.
      */
-    nodeName: string;
+    hostNodeName: string;
 }
 
 export interface TemplateRef {

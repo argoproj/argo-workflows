@@ -25,7 +25,7 @@ func testPrintNodeImpl(t *testing.T, expected string, node wfv1.NodeStatus, node
 // TestPrintNode
 func TestPrintNode(t *testing.T) {
 	nodeName := "testNode"
-	knodeName := "testKnodeName"
+	kubernetesNodeName := "testKnodeName"
 	nodePrefix := ""
 	nodeTemplateName := "testTemplate"
 	nodeTemplateRefName := "testTemplateRef"
@@ -48,11 +48,11 @@ func TestPrintNode(t *testing.T) {
 		FinishedAt:  timestamp,
 		Message:     nodeMessage,
 	}
-	node.NodeName = knodeName
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, "", nodeID, knodeName, "0s", nodeMessage), node, nodePrefix, getArgs)
+	node.HostNodeName = kubernetesNodeName
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, "", nodeID, kubernetesNodeName, "0s", nodeMessage), node, nodePrefix, getArgs)
 
 	node.TemplateName = nodeTemplateName
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, nodeID, knodeName, "0s", nodeMessage), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, nodeID, kubernetesNodeName, "0s", nodeMessage), node, nodePrefix, getArgs)
 
 	node.Type = wfv1.NodeTypeSuspend
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", nodeTypeIconMap[wfv1.NodeTypeSuspend], nodeName, nodeTemplateName, "", "", "", nodeMessage), node, nodePrefix, getArgs)

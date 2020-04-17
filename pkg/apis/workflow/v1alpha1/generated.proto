@@ -576,8 +576,8 @@ message NodeStatus {
   // a template, will be a superset of the outbound nodes of its last children.
   repeated string outboundNodes = 17;
 
-  // NodeName is the name of the host on which the workflow is running
-  optional string nodeName = 22;
+  // HostNodeName is the name of the host on which the workflow is running
+  optional string hostNodeName = 22;
 }
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
