@@ -1,6 +1,6 @@
-import { Info, Version } from "../../../models";
+import {Info, Version} from '../../../models';
 
-import requests from "./requests";
+import requests from './requests';
 
 export class InfoService {
     public getInfo() {

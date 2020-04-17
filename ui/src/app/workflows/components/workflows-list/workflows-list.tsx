@@ -1,26 +1,26 @@
-import * as React from "react";
-import { Link, RouteComponentProps } from "react-router-dom";
-import { Subscription } from "rxjs";
+import * as React from 'react';
+import {Link, RouteComponentProps} from 'react-router-dom';
+import {Subscription} from 'rxjs';
 
-import { Autocomplete, Page, SlidingPanel } from "argo-ui";
-import * as models from "../../../../models";
-import { compareWorkflows, Workflow } from "../../../../models";
-import { uiUrl } from "../../../shared/base";
-import { Consumer } from "../../../shared/context";
-import { services } from "../../../shared/services";
+import {Autocomplete, Page, SlidingPanel} from 'argo-ui';
+import * as models from '../../../../models';
+import {compareWorkflows, Workflow} from '../../../../models';
+import {uiUrl} from '../../../shared/base';
+import {Consumer} from '../../../shared/context';
+import {services} from '../../../shared/services';
 
-import { WorkflowListItem } from "..";
-import { BasePage } from "../../../shared/components/base-page";
-import { Loading } from "../../../shared/components/loading";
-import { Query } from "../../../shared/components/query";
-import { ResourceSubmit } from "../../../shared/components/resource-submit";
-import { ZeroState } from "../../../shared/components/zero-state";
-import { exampleWorkflow } from "../../../shared/examples";
-import { Utils } from "../../../shared/utils";
+import {WorkflowListItem} from '..';
+import {BasePage} from '../../../shared/components/base-page';
+import {Loading} from '../../../shared/components/loading';
+import {Query} from '../../../shared/components/query';
+import {ResourceSubmit} from '../../../shared/components/resource-submit';
+import {ZeroState} from '../../../shared/components/zero-state';
+import {exampleWorkflow} from '../../../shared/examples';
+import {Utils} from '../../../shared/utils';
 
-import { WorkflowFilters } from "../workflow-filters/workflow-filters";
+import {WorkflowFilters} from '../workflow-filters/workflow-filters';
 
-require("./workflows-list.scss");
+require('./workflows-list.scss');
 
 interface State {
     loading: boolean;
@@ -91,12 +91,12 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 <div>{this.renderQuery(ctx)}</div>
                                 <div>
                                     <WorkflowFilters
-                                      workflows={this.state.workflows}
-                                      namespace={this.state.namespace}
-                                      phaseItems={Object.values(models.NODE_PHASE)}
-                                      selectedPhases={this.state.selectedPhases}
-                                      selectedLabels={this.state.selectedLabels}
-                                      onChange={(namespace, selectedPhases, selectedLabels) => this.changeFilters(namespace, selectedPhases, selectedLabels)}
+                                        workflows={this.state.workflows}
+                                        namespace={this.state.namespace}
+                                        phaseItems={Object.values(models.NODE_PHASE)}
+                                        selectedPhases={this.state.selectedPhases}
+                                        selectedLabels={this.state.selectedLabels}
+                                        onChange={(namespace, selectedPhases, selectedLabels) => this.changeFilters(namespace, selectedPhases, selectedLabels)}
                                     />
                                 </div>
                             </div>
@@ -139,7 +139,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                 if (info.managedNamespace) {
                     newNamespace = info.managedNamespace;
                 }
-                this.setState({ initialized: true, managedNamespace: !!info.managedNamespace });
+                this.setState({initialized: true, managedNamespace: !!info.managedNamespace});
                 return services.workflows.list(newNamespace, selectedPhases, selectedLabels);
             });
         } else {
@@ -209,14 +209,14 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
     private renderWorkflows() {
         if (!this.state.workflows) {
-            return <Loading/>;
+            return <Loading />;
         }
 
         if (this.state.workflows.length === 0) {
             return (
-              <ZeroState title='No workflows'>
-                  <p>To create a new workflow, use the button above.</p>
-              </ZeroState>
+                <ZeroState title='No workflows'>
+                    <p>To create a new workflow, use the button above.</p>
+                </ZeroState>
             );
         }
         this.state.workflows.sort(compareWorkflows);

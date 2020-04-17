@@ -1,7 +1,7 @@
-import * as React from "react";
-import { services } from "../services";
-import { ErrorPanel } from "./error-panel";
-import { InputFilter } from "./input-filter";
+import * as React from 'react';
+import {services} from '../services';
+import {ErrorPanel} from './error-panel';
+import {InputFilter} from './input-filter';
 
 interface Props {
     value: string;
@@ -25,7 +25,7 @@ export class NamespaceFilter extends React.Component<Props, State> {
 
     public componentDidMount(): void {
         services.info
-          .getInfo()
+            .getInfo()
             .then(info => {
                 if (info.managedNamespace) {
                     const namespaceChanged = info.managedNamespace !== this.state.namespace;

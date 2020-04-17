@@ -1,13 +1,13 @@
-import { NotificationType, Page, SlidingPanel } from "argo-ui";
-import * as classNames from "classnames";
-import * as React from "react";
-import { RouteComponentProps } from "react-router";
-import { Link, Workflow } from "../../../../models";
-import { uiUrl } from "../../../shared/base";
-import { BasePage } from "../../../shared/components/base-page";
-import { Loading } from "../../../shared/components/loading";
-import { YamlEditor } from "../../../shared/components/yaml/yaml-editor";
-import { services } from "../../../shared/services";
+import {NotificationType, Page, SlidingPanel} from 'argo-ui';
+import * as classNames from 'classnames';
+import * as React from 'react';
+import {RouteComponentProps} from 'react-router';
+import {Link, Workflow} from '../../../../models';
+import {uiUrl} from '../../../shared/base';
+import {BasePage} from '../../../shared/components/base-page';
+import {Loading} from '../../../shared/components/loading';
+import {YamlEditor} from '../../../shared/components/yaml/yaml-editor';
+import {services} from '../../../shared/services';
 import {
     defaultWorkflowDagRenderOptions,
     WorkflowArtifacts,
@@ -19,11 +19,11 @@ import {
     WorkflowSummaryPanel,
     WorkflowTimeline,
     WorkflowYamlViewer
-} from "../../../workflows/components";
-import { WorkflowDagRenderOptionsPanel } from "../../../workflows/components/workflow-dag/workflow-dag-render-options-panel";
-import { WorkflowYamlPanel } from "../../../workflows/components/workflow-details/workflow-yaml-panel";
+} from '../../../workflows/components';
+import {WorkflowDagRenderOptionsPanel} from '../../../workflows/components/workflow-dag/workflow-dag-render-options-panel';
+import {WorkflowYamlPanel} from '../../../workflows/components/workflow-details/workflow-yaml-panel';
 
-require("../../../workflows/components/workflow-details/workflow-details.scss");
+require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 interface State {
     workflowDagRenderOptions: WorkflowDagRenderOptions;
@@ -72,10 +72,10 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
 
     public componentDidMount(): void {
         services.archivedWorkflows
-          .get(this.uid)
-          .then(workflow => this.setState({ workflow }))
-          .catch(error => this.setState({ error }));
-        services.info.getInfo().then(info => this.setState({ links: info.links }));
+            .get(this.uid)
+            .then(workflow => this.setState({workflow}))
+            .catch(error => this.setState({error}));
+        services.info.getInfo().then(info => this.setState({links: info.links}));
     }
 
     public render() {

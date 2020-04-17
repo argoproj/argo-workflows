@@ -1022,7 +1022,7 @@ message Version {
 message Workflow {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
-  optional WorkflowSpec spec = 2;
+  optional WorkflowSpec spec  = 2;
 
   optional WorkflowStatus status = 3;
 }
