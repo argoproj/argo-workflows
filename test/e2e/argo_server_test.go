@@ -1106,6 +1106,124 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 	})
 }
 
+func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
+
+	s.Run("CreateWFT", func() {
+		s.e(s.T()).POST("/api/v1/workflow-templates/argo").
+			WithBytes([]byte(`{
+  "template": {
+    "metadata": {
+      "name": "test",
+      "labels": {
+         "argo-e2e": "subject"
+      }
+    },
+    "spec": {
+      "templates": [
+        {
+          "name": "run-workflow",
+          "container": {
+            "name": "",
+            "image": "cowsay:v1",
+            "imagePullPolicy": "IfNotPresent"
+          }
+        }
+      ],
+      "entrypoint": "run-workflow"
+    }
+  }
+}`)).Expect().Status(200)
+	})
+
+	s.Run("SubmitWFT", func() {
+		s.e(s.T()).POST("/api/v1/workflows/argo/submit-from").
+			WithBytes([]byte(`{
+			  "resourceKind": "WorkflowTemplate",
+			  "resourceName": "test"
+			}`)).
+			Expect().
+			Status(200)
+	})
+
+	s.Run("CreateCronWF", func() {
+		s.e(s.T()).POST("/api/v1/cron-workflows/argo").
+			WithBytes([]byte(`{
+  "cronWorkflow": {
+    "metadata": {
+      "name": "test",
+      "labels": {
+        "argo-e2e": "subject"
+      }
+    },
+    "spec": {
+      "schedule": "* * * * *",
+      "workflowSpec": {
+        "entrypoint": "whalesay",
+        "templates": [
+          {
+            "name": "whalesay",
+            "container": {
+              "image": "cowsay:v1",
+              "imagePullPolicy": "IfNotPresent"
+            }
+          }
+        ]
+      }
+    }
+  }
+}`)).
+			Expect().
+			Status(200)
+	})
+	s.Run("SubmitWFT", func() {
+		s.e(s.T()).POST("/api/v1/workflows/argo/submit-from").
+			WithBytes([]byte(`{
+			  "resourceKind": "cronworkflow",
+			  "resourceName": "test"
+			}`)).
+			Expect().
+			Status(200)
+	})
+
+	s.Run("CreateCWFT", func() {
+		s.e(s.T()).POST("/api/v1/cluster-workflow-templates").
+			WithBytes([]byte(`{
+  "template": {
+    "metadata": {
+      "name": "test",
+      "labels": {
+         "argo-e2e": "subject"
+      }
+    },
+    "spec": {
+      "templates": [
+        {
+          "name": "run-workflow",
+          "container": {
+            "name": "",
+            "image": "cowsay:v1",
+            "imagePullPolicy": "IfNotPresent"
+          }
+        }
+      ],
+      "entrypoint": "run-workflow"
+    }
+  }
+}`)).Expect().Status(200)
+	})
+
+	s.Run("SubmitCWFT", func() {
+		s.e(s.T()).POST("/api/v1/workflows/argo/submit-from").
+			WithBytes([]byte(`{
+			  "resourceKind": "ClusterWorkflowTemplate",
+			  "resourceName": "test"
+			}`)).
+			Expect().
+			Status(200)
+	})
+
+}
+
 func TestArgoServerSuite(t *testing.T) {
 	suite.Run(t, new(ArgoServerSuite))
 }
