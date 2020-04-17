@@ -595,7 +595,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 		newWF.Status.StoredTemplates[id] = tmpl
 	}
 
-	newWF.Status.Conditions.UpsertCondition(wfv1.WorkflowCondition{Status: metav1.ConditionFalse, Type: wfv1.WorkflowConditionCompleted})
+	newWF.Status.Conditions = wfv1.WorkflowConditions{{Status: metav1.ConditionFalse, Type: wfv1.WorkflowConditionCompleted}}
 	newWF.Status.Phase = wfv1.NodePending
 
 	return &newWF, nil
