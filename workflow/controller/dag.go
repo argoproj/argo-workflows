@@ -35,6 +35,10 @@ type dagContext struct {
 
 	// tmplCtx is the context of template search.
 	tmplCtx *templateresolution.Context
+
+	// onExitTemplate is a flag denoting this template as part of an onExit handler. This is necessary to ensure that
+	// further nodes stemming from this template are allowed to run when using "ShutdownStrategy: Stop"
+	onExitTemplate bool
 }
 
 func (d *dagContext) getTask(taskName string) *wfv1.DAGTask {
@@ -235,13 +239,14 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	}()
 
 	dagCtx := &dagContext{
-		boundaryName: nodeName,
-		boundaryID:   node.ID,
-		tasks:        tmpl.DAG.Tasks,
-		visited:      make(map[string]bool),
-		tmpl:         tmpl,
-		wf:           woc.wf,
-		tmplCtx:      tmplCtx,
+		boundaryName:   nodeName,
+		boundaryID:     node.ID,
+		tasks:          tmpl.DAG.Tasks,
+		visited:        make(map[string]bool),
+		tmpl:           tmpl,
+		wf:             woc.wf,
+		tmplCtx:        tmplCtx,
+		onExitTemplate: opts.onExitTemplate,
 	}
 
 	// Identify our target tasks. If user did not specify any, then we choose all tasks which have
@@ -455,7 +460,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		}
 
 		// Finally execute the template
-		_, _ = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID})
+		_, _ = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
 	}
 
 	if taskGroupNode != nil {
