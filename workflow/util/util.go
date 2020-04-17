@@ -150,23 +150,8 @@ func IsWorkflowCompleted(wf *wfv1.Workflow) bool {
 	return false
 }
 
-// SubmitOpts are workflow submission options
-type SubmitOpts struct {
-	Name           string                 // --name
-	GenerateName   string                 // --generate-name
-	InstanceID     string                 // --instanceid
-	Entrypoint     string                 // --entrypoint
-	Parameters     []string               // --parameter
-	ParameterFile  string                 // --parameter-file
-	ServiceAccount string                 // --serviceaccount
-	DryRun         bool                   // --dry-run
-	ServerDryRun   bool                   // --server-dry-run
-	Labels         string                 // --labels
-	OwnerReference *metav1.OwnerReference // useful if your custom controller creates argo workflow resources
-}
-
 // SubmitWorkflow validates and submit a single workflow and override some of the fields of the workflow
-func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts *SubmitOpts) (*wfv1.Workflow, error) {
+func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts *wfv1.SubmitOpts) (*wfv1.Workflow, error) {
 
 	err := ApplySubmitOpts(wf, opts)
 	if err != nil {
@@ -209,9 +194,9 @@ func CreateServerDryRun(wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*
 }
 
 // Apply the Submit options into workflow object
-func ApplySubmitOpts(wf *wfv1.Workflow, opts *SubmitOpts) error {
+func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	if opts == nil {
-		opts = &SubmitOpts{}
+		opts = &wfv1.SubmitOpts{}
 	}
 	if opts.Entrypoint != "" {
 		wf.Spec.Entrypoint = opts.Entrypoint
@@ -603,7 +588,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 		newWF.Status.StoredTemplates[id] = tmpl
 	}
 
-	newWF.Status.Conditions.UpsertCondition(wfv1.WorkflowCondition{Status: metav1.ConditionFalse, Type: wfv1.WorkflowConditionCompleted})
+	newWF.Status.Conditions = wfv1.WorkflowConditions{{Status: metav1.ConditionFalse, Type: wfv1.WorkflowConditionCompleted}}
 	newWF.Status.Phase = wfv1.NodePending
 
 	return &newWF, nil
