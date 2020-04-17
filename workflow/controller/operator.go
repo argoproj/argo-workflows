@@ -814,7 +814,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 					return err
 				}
 
-				if tmpl.ResubmitPendingPods != nil && *tmpl.ResubmitPendingPods {
+				if isResubmitAllowed(tmpl) {
 					// We want to resubmit. Continue and do not mark as error.
 					continue
 				}
