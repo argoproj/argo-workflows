@@ -19,7 +19,7 @@ spec:
         templateRef:
           name: cluster-workflow-template-whalesay-template
           template: whalesay-template
-          clusterscope: true
+          clusterScope: true
         arguments:
           parameters:
           - name: message
@@ -29,7 +29,7 @@ spec:
         templateRef:
           name: cluster-workflow-template-whalesay-template
           template: whalesay-template
-          clusterscope: true
+          clusterScope: true
         arguments:
           parameters:
           - name: message
@@ -39,7 +39,7 @@ spec:
         templateRef:
           name: cluster-workflow-template-inner-dag
           template: inner-diamond
-          clusterscope: true
+          clusterScope: true
         arguments:
           parameters:
           - name: message
@@ -49,7 +49,7 @@ spec:
         templateRef:
           name: cluster-workflow-template-whalesay-template
           template: whalesay-template
-          clusterscope: true
+          clusterScope: true
         arguments:
           parameters:
           - name: message
