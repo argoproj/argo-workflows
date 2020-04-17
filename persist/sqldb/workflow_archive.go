@@ -227,6 +227,6 @@ func (r *workflowArchive) DeleteWorkflows(ttl time.Duration) error {
 	if err != nil {
 		return err
 	}
-	log.WithFields(log.Fields{"rowsAffected": rowsAffected}).Debug("Deleted archived workflows")
+	log.WithFields(log.Fields{"rowsAffected": rowsAffected}).Info("Deleted archived workflows")
 	return nil
 }

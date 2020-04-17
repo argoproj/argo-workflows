@@ -185,7 +185,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.podLabeler(ctx.Done())
 	go wfc.podGarbageCollector(ctx.Done())
 	go wfc.periodicWorkflowGarbageCollector(ctx.Done())
-	go wfc.periodicArchivedWorkflowGarbageCollector(ctx.Done())
+	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	for _, informer := range []cache.SharedIndexInformer{wfc.incompleteWfInformer, wfc.wftmplInformer.Informer(), wfc.cwftmplInformer.Informer(), wfc.podInformer} {
@@ -326,7 +326,7 @@ func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan st
 	}
 }
 
-func (wfc *WorkflowController) periodicArchivedWorkflowGarbageCollector(stopCh <-chan struct{}) {
+func (wfc *WorkflowController) archivedWorkflowGarbageCollector(stopCh <-chan struct{}) {
 	value, ok := os.LookupEnv("ARCHIVED_WORKFLOW_GC_PERIOD")
 	periodicity := 24 * time.Hour
 	if ok {
@@ -346,18 +346,18 @@ func (wfc *WorkflowController) periodicArchivedWorkflowGarbageCollector(stopCh <
 		}
 	}
 	if ttl == 0*time.Second {
-		log.Info("Periodic GC archive workflows disabled")
+		log.Info("Archived workflows GC disabled")
 		return
 	}
-	log.Infof("Performing periodic GC archive workflows every %v", periodicity)
+	log.Infof("Performing archive workflows GC every %v", periodicity)
 	ticker := time.NewTicker(periodicity)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-stopCh:
-			ticker.Stop()
 			return
 		case <-ticker.C:
-			log.Info("Performing periodic archived workflow GC")
+			log.Info("Performing archived workflow GC")
 			err := wfc.wfArchive.DeleteWorkflows(ttl)
 			if err != nil {
 				log.WithField("err", err).Error("Failed to delete archived workflows")
