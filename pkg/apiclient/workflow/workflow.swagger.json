@@ -249,6 +249,38 @@
         ]
       }
     },
+    "/api/v1/workflows/{namespace}/submit-from": {
+      "post": {
+        "operationId": "SubmitFrom",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workflow.WorkflowSubmitFromRequest"
+            }
+          }
+        ],
+        "tags": [
+          "WorkflowService"
+        ]
+      }
+    },
     "/api/v1/workflows/{namespace}/{name}": {
       "get": {
         "operationId": "GetWorkflow",
@@ -1712,6 +1744,61 @@
         }
       },
       "title": "Sequence expands a workflow step into numeric range"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SubmitOpts": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name overrides metadata.name in workflow."
+        },
+        "generateName": {
+          "type": "string",
+          "description": "GenerateName overrides metadata.generateName in workflow."
+        },
+        "instanceID": {
+          "type": "string",
+          "description": "InstanceID adds controller's instance id label in workflow."
+        },
+        "entrypoint": {
+          "type": "string",
+          "description": "Entrypoint overrides spec.entrypoint in workflow."
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Parameters passes input parameters to workflow."
+        },
+        "parameterFile": {
+          "type": "string",
+          "description": "ParameterFile holds parameter file path.\nThis option is not supported in API."
+        },
+        "serviceAccount": {
+          "type": "string",
+          "description": "ServiceAccount runs all pods in the workflow using specified serviceaccount."
+        },
+        "dryRun": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "DryRun validates the workflow on the client-side without creating it.\nThis option is not supported in API."
+        },
+        "serverDryRun": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "ServerDryRun validates the workflow on the Server-side without creating it."
+        },
+        "labels": {
+          "type": "string",
+          "description": "Labels adds metadata.labels in workflow."
+        },
+        "ownerReference": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference",
+          "description": "OwnerReference creates the metadata.ownerReference in workflow."
+        }
+      },
+      "title": "SubmitOpts are workflow submission options"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SuspendTemplate": {
       "type": "object",
@@ -4982,6 +5069,26 @@
         },
         "message": {
           "type": "string"
+        }
+      }
+    },
+    "workflow.WorkflowSubmitFromRequest": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "resourceKind": {
+          "type": "string"
+        },
+        "resourceName": {
+          "type": "string"
+        },
+        "submitOptions": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SubmitOpts"
+        },
+        "createOptions": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions"
         }
       }
     },

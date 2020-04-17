@@ -791,6 +791,44 @@ message Sequence {
   optional string format = 4;
 }
 
+// SubmitOpts are workflow submission options
+message SubmitOpts {
+  // Name overrides metadata.name in workflow.
+  optional string name = 1;
+
+  // GenerateName overrides metadata.generateName in workflow.
+  optional string generateName = 2;
+
+  // InstanceID adds controller's instance id label in workflow.
+  optional string instanceID = 3;
+
+  // Entrypoint overrides spec.entrypoint in workflow.
+  optional string entrypoint = 4;
+
+  // Parameters passes input parameters to workflow.
+  repeated string parameters = 5;
+
+  // ParameterFile holds parameter file path.
+  // This option is not supported in API.
+  optional string parameterFile = 6;
+
+  // ServiceAccount runs all pods in the workflow using specified serviceaccount.
+  optional string serviceAccount = 7;
+
+  // DryRun validates the workflow on the client-side without creating it.
+  // This option is not supported in API.
+  optional bool dryRun = 8;
+
+  // ServerDryRun validates the workflow on the Server-side without creating it.
+  optional bool serverDryRun = 9;
+
+  // Labels adds metadata.labels in workflow.
+  optional string labels = 10;
+
+  // OwnerReference creates the metadata.ownerReference in workflow.
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference ownerReference = 11;
+}
+
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
 message SuspendTemplate {
   // Duration is the seconds to wait before automatically resuming a template
