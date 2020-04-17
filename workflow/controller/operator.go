@@ -223,7 +223,6 @@ func (woc *wfOperationCtx) operate() {
 		if err != nil {
 			woc.log.Errorf("%s error: %+v", woc.wf.ObjectMeta.Name, err)
 			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowTimedOut}, "Workflow timed out")
-
 			// TODO: we need to re-add to the workqueue, but should happen in caller
 			return
 		}
