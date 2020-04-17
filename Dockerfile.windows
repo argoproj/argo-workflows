@@ -33,14 +33,7 @@ ARG IMAGE_ARCH=amd64
 WORKDIR C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo
 COPY . .
 # check we can use Git
-<<<<<<< HEAD
-RUN git rev-parse HEAD 
-# fail the build if we are "dirty"
-RUN git diff --exit-code
-=======
 RUN git rev-parse HEAD # TODO
-#RUN git --version
 # fail the build if we are "dirty"
 RUN git diff --exit-code # TODO
->>>>>>> 966889faaa978d0e1711e69eaeadc7798e0ba8ca
 RUN make dist/argoexec-windows-amd64
