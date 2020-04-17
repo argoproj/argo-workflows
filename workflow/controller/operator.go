@@ -732,7 +732,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	if err != nil {
 		return err
 	}
-	seenPods := make(map[string]bool)
+	seenPods := make(map[string]*apiv1.Pod)
 	seenPodLock := &sync.Mutex{}
 	wfNodesLock := &sync.RWMutex{}
 
@@ -743,7 +743,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
 		nodeID := woc.wf.NodeID(nodeNameForPod)
 		seenPodLock.Lock()
-		seenPods[nodeID] = true
+		seenPods[nodeID] = pod
 		seenPodLock.Unlock()
 
 		wfNodesLock.Lock()
@@ -807,14 +807,10 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			woc.wf.Status.Nodes[nodeID] = node
 			woc.log.Warnf("pod %s deleted", nodeID)
 			woc.updated = true
-		}
-		// At this point we are certain that the pod associated with our node is running or has been run;
-		// it is safe to extract the k8s-node information given this knowledge.
-		pod, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(nodeID, metav1.GetOptions{})
-		if err != nil {
-			woc.log.Warnf("Failed to retrieve k8s-node information for pod %s", nodeID)
 		} else {
-			node.HostNodeName = pod.Spec.NodeName
+			// At this point we are certain that the pod associated with our node is running or has been run;
+			// it is safe to extract the k8s-node information given this knowledge.
+			node.HostNodeName = seenPods[nodeID].Spec.NodeName
 			woc.wf.Status.Nodes[nodeID] = node
 		}
 	}
