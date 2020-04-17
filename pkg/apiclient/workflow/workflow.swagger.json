@@ -251,7 +251,7 @@
     },
     "/api/v1/workflows/{namespace}/submit-from": {
       "post": {
-        "operationId": "SubmitFromResource",
+        "operationId": "SubmitFrom",
         "responses": {
           "200": {
             "description": "A successful response.",

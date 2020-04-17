@@ -1177,7 +1177,7 @@
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "SubmitFromResource",
+        "operationId": "SubmitFrom",
         "parameters": [
           {
             "type": "string",

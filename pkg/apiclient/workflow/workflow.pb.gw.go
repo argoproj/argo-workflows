@@ -1088,7 +1088,7 @@ func request_WorkflowService_PodLogs_0(ctx context.Context, marshaler runtime.Ma
 
 }
 
-func request_WorkflowService_SubmitFromResource_0(ctx context.Context, marshaler runtime.Marshaler, client WorkflowServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_WorkflowService_SubmitFrom_0(ctx context.Context, marshaler runtime.Marshaler, client WorkflowServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq WorkflowSubmitFromRequest
 	var metadata runtime.ServerMetadata
 
@@ -1118,12 +1118,12 @@ func request_WorkflowService_SubmitFromResource_0(ctx context.Context, marshaler
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
 	}
 
-	msg, err := client.SubmitFromResource(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.SubmitFrom(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_WorkflowService_SubmitFromResource_0(ctx context.Context, marshaler runtime.Marshaler, server WorkflowServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_WorkflowService_SubmitFrom_0(ctx context.Context, marshaler runtime.Marshaler, server WorkflowServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq WorkflowSubmitFromRequest
 	var metadata runtime.ServerMetadata
 
@@ -1153,7 +1153,7 @@ func local_request_WorkflowService_SubmitFromResource_0(ctx context.Context, mar
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
 	}
 
-	msg, err := server.SubmitFromResource(ctx, &protoReq)
+	msg, err := server.SubmitFrom(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -1397,7 +1397,7 @@ func RegisterWorkflowServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 		return
 	})
 
-	mux.Handle("POST", pattern_WorkflowService_SubmitFromResource_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_WorkflowService_SubmitFrom_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -1406,14 +1406,14 @@ func RegisterWorkflowServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_WorkflowService_SubmitFromResource_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_WorkflowService_SubmitFrom_0(rctx, inboundMarshaler, server, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_WorkflowService_SubmitFromResource_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_WorkflowService_SubmitFrom_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1718,7 +1718,7 @@ func RegisterWorkflowServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 
 	})
 
-	mux.Handle("POST", pattern_WorkflowService_SubmitFromResource_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_WorkflowService_SubmitFrom_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -1727,14 +1727,14 @@ func RegisterWorkflowServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_WorkflowService_SubmitFromResource_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_WorkflowService_SubmitFrom_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_WorkflowService_SubmitFromResource_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_WorkflowService_SubmitFrom_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -1768,7 +1768,7 @@ var (
 
 	pattern_WorkflowService_PodLogs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5, 2, 6}, []string{"api", "v1", "workflows", "namespace", "name", "podName", "log"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_WorkflowService_SubmitFromResource_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "workflows", "namespace", "submit-from"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_WorkflowService_SubmitFrom_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "workflows", "namespace", "submit-from"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (
@@ -1798,5 +1798,5 @@ var (
 
 	forward_WorkflowService_PodLogs_0 = runtime.ForwardResponseStream
 
-	forward_WorkflowService_SubmitFromResource_0 = runtime.ForwardResponseMessage
+	forward_WorkflowService_SubmitFrom_0 = runtime.ForwardResponseMessage
 )
