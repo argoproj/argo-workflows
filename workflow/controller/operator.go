@@ -808,6 +808,15 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			woc.log.Warnf("pod %s deleted", nodeID)
 			woc.updated = true
 		}
+		// At this point we are certain that the pod associated with our node is running or has been run;
+		// it is safe to extract the k8s-node information given this knowledge.
+		pod, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(nodeID, metav1.GetOptions{})
+		if err != nil {
+			woc.log.Warnf("Failed to retrieve k8s-node information for pod %s", nodeID)
+		} else {
+			node.NodeName = pod.Spec.NodeName
+			woc.wf.Status.Nodes[nodeID] = node
+		}
 	}
 	return nil
 }
@@ -1645,7 +1654,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		BoundaryID:    boundaryID,
 		Phase:         phase,
 		StartedAt:     metav1.Time{Time: time.Now().UTC()},
-		NodeName:      "TODO",
+		NodeName:      "",
 	}
 
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
@@ -1792,6 +1801,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope strin
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
 	})
+	woc.log.Warnf("ASTEIN DEBUG - %v\n", woc.wf.Status.Nodes)
 
 	if apierr.IsForbidden(err) && isResubmitAllowed(tmpl) {
 		// Our error was most likely caused by a lack of resources. If pod resubmission is allowed, keep the node pending

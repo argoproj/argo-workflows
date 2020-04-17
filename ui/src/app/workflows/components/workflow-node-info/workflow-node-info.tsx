@@ -68,11 +68,10 @@ export const WorkflowNodeSummary = (props: Props) => {
                     {now => <Duration durationMs={nodeDuration(props.node, now)} />}
                 </Ticker>
             )
-        },
-        {title: 'NODE', value: props.node.nodeName}
+        }
     ];
     if (props.node.type === 'Pod') {
-        attributes.splice(2, 0, {title: 'POD NAME', value: props.node.id});
+        attributes.splice(2, 0, {title: 'POD NAME', value: props.node.id}, {title: 'NODE NAME', value: props.node.nodeName});
     }
     if (props.node.resourcesDuration) {
         attributes.push({
