@@ -378,7 +378,6 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 
 	// Check if our dependencies completed. If not, recurse our parents executing them if necessary
 	nodeName := dagCtx.taskNodeName(taskName)
-	depends := dagCtx.GetTaskDependsLogic(taskName)
 	taskDependencies := dagCtx.GetTaskDependencies(taskName)
 
 	taskGroupNode := woc.getNodeByName(nodeName)
@@ -408,7 +407,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		}
 	}
 
-	if depends != "" {
+	if dagCtx.GetTaskDependsLogic(taskName) != "" {
 		execute, proceed, err := dagCtx.evaluateDependsLogic(taskName)
 		if err != nil {
 			woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())

@@ -1,9 +1,14 @@
 package controller
 
 import (
+	"context"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
@@ -41,80 +46,84 @@ func TestDagDisableFailFast(t *testing.T) {
 	assert.Equal(t, string(wfv1.NodeFailed), string(woc.wf.Status.Phase))
 }
 
-// TODO: Fix this
-//var dynamicSingleDag = `
-//apiVersion: argoproj.io/v1alpha1
-//kind: Workflow
-//metadata:
-//  generateName: dag-diamond-
-//spec:
-//  entrypoint: diamond
-//  templates:
-//  - name: diamond
-//    dag:
-//      tasks:
-//      - name: A
-//        template: %s
-//        %s
-//      - name: TestSingle
-//        template: Succeeded
-//        depends: A.%s
-//
-//  - name: Succeeded
-//    container:
-//      image: alpine:3.7
-//      command: [sh, -c, "exit 0"]
-//
-//  - name: Failed
-//    container:
-//      image: alpine:3.7
-//      command: [sh, -c, "exit 1"]
-//
-//  - name: Skipped
-//    when: "False"
-//    container:
-//      image: alpine:3.7
-//      command: [sh, -c, "echo Hello"]
-//`
-//
-//func TestSingleDependency(t *testing.T) {
-//	statusMap := map[string]v1.PodPhase{"Succeeded": v1.PodSucceeded, "Failed": v1.PodFailed}
-//	for _, status := range []string{"Succeeded", "Failed", "Skipped"} {
-//		fmt.Printf("\n\n\nCurrent status %s\n\n\n", status)
-//		controller := newController()
-//		wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-//
-//		// If the status is "skipped" skip the root node.
-//		var wfString string
-//		if status == "Skipped" {
-//			wfString = fmt.Sprintf(dynamicSingleDag, status, `when: "False == True"`, status)
-//		} else {
-//			wfString = fmt.Sprintf(dynamicSingleDag, status, "", status)
-//		}
-//		wf := unmarshalWF(wfString)
-//		wf, err := wfcset.Create(wf)
-//		assert.Nil(t, err)
-//		wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
-//		assert.Nil(t, err)
-//		woc := newWorkflowOperationCtx(wf, controller)
-//
-//		woc.operate()
-//		// Mark the status of the pod according to the test
-//		if _, ok := statusMap[status]; ok {
-//			makePodsPhase(t, statusMap[status], controller.kubeclientset, wf.ObjectMeta.Namespace)
-//		}
-//
-//		woc.operate()
-//		found := false
-//		for _, node := range woc.wf.Status.Nodes {
-//			if strings.Contains(node.Name, "TestSingle") {
-//				found = true
-//				assert.Equal(t, wfv1.NodePending, node.Phase)
-//			}
-//		}
-//		assert.True(t, found)
-//	}
-//}
+var dynamicSingleDag = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+ generateName: dag-diamond-
+spec:
+ entrypoint: diamond
+ templates:
+ - name: diamond
+   dag:
+     tasks:
+     - name: A
+       template: %s
+       %s
+     - name: TestSingle
+       template: Succeeded
+       depends: A.%s
+
+ - name: Succeeded
+   container:
+     image: alpine:3.7
+     command: [sh, -c, "exit 0"]
+
+ - name: Failed
+   container:
+     image: alpine:3.7
+     command: [sh, -c, "exit 1"]
+
+ - name: Skipped
+   when: "False"
+   container:
+     image: alpine:3.7
+     command: [sh, -c, "echo Hello"]
+`
+
+func TestSingleDependency(t *testing.T) {
+	statusMap := map[string]v1.PodPhase{"Succeeded": v1.PodSucceeded, "Failed": v1.PodFailed}
+	var closer context.CancelFunc
+	var controller *WorkflowController
+	for _, status := range []string{"Succeeded", "Failed", "Skipped"} {
+		fmt.Printf("\n\n\nCurrent status %s\n\n\n", status)
+		closer, controller = newController()
+		wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+		// If the status is "skipped" skip the root node.
+		var wfString string
+		if status == "Skipped" {
+			wfString = fmt.Sprintf(dynamicSingleDag, status, `when: "False == True"`, status)
+		} else {
+			wfString = fmt.Sprintf(dynamicSingleDag, status, "", status)
+		}
+		wf := unmarshalWF(wfString)
+		wf, err := wfcset.Create(wf)
+		assert.Nil(t, err)
+		wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+		assert.Nil(t, err)
+		woc := newWorkflowOperationCtx(wf, controller)
+
+		woc.operate()
+		// Mark the status of the pod according to the test
+		if _, ok := statusMap[status]; ok {
+			makePodsPhase(t, statusMap[status], controller.kubeclientset, wf.ObjectMeta.Namespace)
+		}
+
+		woc.operate()
+		found := false
+		for _, node := range woc.wf.Status.Nodes {
+			if strings.Contains(node.Name, "TestSingle") {
+				found = true
+				assert.Equal(t, wfv1.NodePending, node.Phase)
+			}
+		}
+		assert.True(t, found)
+	}
+	if closer != nil {
+		closer()
+	}
+}
 
 func TestGetDagTaskFromNode(t *testing.T) {
 	task := wfv1.DAGTask{Name: "test-task"}
