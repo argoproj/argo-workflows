@@ -48,6 +48,50 @@ func (s *CLISuite) TestAuthToken() {
 	})
 }
 
+func (s *CLIWithServerSuite) TestVersion() {
+	s.Run("Default", func() {
+		s.Given().
+			RunCli([]string{"version"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					lines := strings.Split(output, "\n")
+					if assert.Len(t, lines, 17) {
+						assert.Contains(t, lines[0], "argo:")
+						assert.Contains(t, lines[1], "BuildDate:")
+						assert.Contains(t, lines[2], "GitCommit:")
+						assert.Contains(t, lines[3], "GitTreeState:")
+						assert.Contains(t, lines[4], "GitTag:")
+						assert.Contains(t, lines[5], "GoVersion:")
+						assert.Contains(t, lines[6], "Compiler:")
+						assert.Contains(t, lines[7], "Platform:")
+						assert.Contains(t, lines[8], "argo-server:")
+						assert.Contains(t, lines[9], "BuildDate:")
+						assert.Contains(t, lines[10], "GitCommit:")
+						assert.Contains(t, lines[11], "GitTreeState:")
+						assert.Contains(t, lines[12], "GitTag:")
+						assert.Contains(t, lines[13], "GoVersion:")
+						assert.Contains(t, lines[14], "Compiler:")
+						assert.Contains(t, lines[15], "Platform:")
+					}
+					// these are the defaults - we should never see these
+					assert.NotContains(t, output, "argo: v0.0.0+unknown")
+					assert.NotContains(t, output, "  BuildDate: 1970-01-01T00:00:00Z")
+				}
+			})
+	})
+	s.Run("Short", func() {
+		s.Given().
+			RunCli([]string{"version", "--short"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					lines := strings.Split(output, "\n")
+					if assert.Len(t, lines, 3) {
+						assert.Contains(t, lines[0], "argo:")
+						assert.Contains(t, lines[1], "argo-server:")
+					}
+				}
+			})
+	})
+}
+
 func (s *CLIWithServerSuite) TestArchive() {
 	if !s.Persistence.IsEnabled() {
 		s.T().SkipNow()

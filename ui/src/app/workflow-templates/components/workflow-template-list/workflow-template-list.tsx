@@ -1,20 +1,20 @@
-import {Page, SlidingPanel} from 'argo-ui';
-import * as React from 'react';
-import {Link, RouteComponentProps} from 'react-router-dom';
-import * as models from '../../../../models';
-import {uiUrl} from '../../../shared/base';
-import {BasePage} from '../../../shared/components/base-page';
-import {Loading} from '../../../shared/components/loading';
-import {NamespaceFilter} from '../../../shared/components/namespace-filter';
-import {ResourceSubmit} from '../../../shared/components/resource-submit';
-import {Timestamp} from '../../../shared/components/timestamp';
-import {ZeroState} from '../../../shared/components/zero-state';
-import {Consumer} from '../../../shared/context';
-import {exampleWorkflowTemplate} from '../../../shared/examples';
-import {services} from '../../../shared/services';
-import {Utils} from '../../../shared/utils';
+import { Page, SlidingPanel } from "argo-ui";
+import * as React from "react";
+import { Link, RouteComponentProps } from "react-router-dom";
+import * as models from "../../../../models";
+import { uiUrl } from "../../../shared/base";
+import { BasePage } from "../../../shared/components/base-page";
+import { Loading } from "../../../shared/components/loading";
+import { NamespaceFilter } from "../../../shared/components/namespace-filter";
+import { ResourceSubmit } from "../../../shared/components/resource-submit";
+import { Timestamp } from "../../../shared/components/timestamp";
+import { ZeroState } from "../../../shared/components/zero-state";
+import { Consumer } from "../../../shared/context";
+import { exampleWorkflowTemplate } from "../../../shared/examples";
+import { services } from "../../../shared/services";
+import { Utils } from "../../../shared/utils";
 
-require('./workflow-template-list.scss');
+require("./workflow-template-list.scss");
 
 interface State {
     loading: boolean;
@@ -106,7 +106,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
 
     private fetchWorkflowTemplates(): void {
         services.info
-            .get()
+          .getInfo()
             .then(info => {
                 if (info.managedNamespace && info.managedNamespace !== this.namespace) {
                     this.namespace = info.managedNamespace;

@@ -1,19 +1,19 @@
-import {Page, SlidingPanel} from 'argo-ui';
-import * as React from 'react';
-import {Link, RouteComponentProps} from 'react-router-dom';
-import * as models from '../../../../models';
-import {uiUrl} from '../../../shared/base';
-import {BasePage} from '../../../shared/components/base-page';
-import {Loading} from '../../../shared/components/loading';
-import {ResourceSubmit} from '../../../shared/components/resource-submit';
-import {Timestamp} from '../../../shared/components/timestamp';
-import {ZeroState} from '../../../shared/components/zero-state';
-import {Consumer} from '../../../shared/context';
-import {exampleClusterWorkflowTemplate} from '../../../shared/examples';
-import {services} from '../../../shared/services';
-import {Utils} from '../../../shared/utils';
+import { Page, SlidingPanel } from "argo-ui";
+import * as React from "react";
+import { Link, RouteComponentProps } from "react-router-dom";
+import * as models from "../../../../models";
+import { uiUrl } from "../../../shared/base";
+import { BasePage } from "../../../shared/components/base-page";
+import { Loading } from "../../../shared/components/loading";
+import { ResourceSubmit } from "../../../shared/components/resource-submit";
+import { Timestamp } from "../../../shared/components/timestamp";
+import { ZeroState } from "../../../shared/components/zero-state";
+import { Consumer } from "../../../shared/context";
+import { exampleClusterWorkflowTemplate } from "../../../shared/examples";
+import { services } from "../../../shared/services";
+import { Utils } from "../../../shared/utils";
 
-require('./cluster-workflow-template-list.scss');
+require("./cluster-workflow-template-list.scss");
 
 interface State {
     loading: boolean;
@@ -91,10 +91,10 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
 
     private fetchClusterWorkflowTemplates(): void {
         services.info
-            .get()
-            .then(info => {
-                return services.clusterWorkflowTemplate.list();
-            })
+          .getInfo()
+          .then(() => {
+              return services.clusterWorkflowTemplate.list();
+          })
             .then(templates => this.setState({templates, loading: false}))
             .catch(error => this.setState({error, loading: false}));
     }

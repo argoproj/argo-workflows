@@ -1,22 +1,22 @@
-import {Page, SlidingPanel} from 'argo-ui';
+import { Page, SlidingPanel } from "argo-ui";
 
-import * as classNames from 'classnames';
-import {isNaN} from 'formik';
-import * as React from 'react';
-import {Link, RouteComponentProps} from 'react-router-dom';
-import * as models from '../../../../models';
-import {Workflow} from '../../../../models';
-import {uiUrl} from '../../../shared/base';
-import {BasePage} from '../../../shared/components/base-page';
-import {Loading} from '../../../shared/components/loading';
-import {ResourceSubmit} from '../../../shared/components/resource-submit';
-import {Timestamp} from '../../../shared/components/timestamp';
-import {ZeroState} from '../../../shared/components/zero-state';
-import {Consumer} from '../../../shared/context';
-import {exampleWorkflow} from '../../../shared/examples';
-import {services} from '../../../shared/services';
-import {Utils} from '../../../shared/utils';
-import {ArchivedWorkflowFilters} from '../archived-workflow-filters/archived-workflow-filters';
+import * as classNames from "classnames";
+import { isNaN } from "formik";
+import * as React from "react";
+import { Link, RouteComponentProps } from "react-router-dom";
+import * as models from "../../../../models";
+import { Workflow } from "../../../../models";
+import { uiUrl } from "../../../shared/base";
+import { BasePage } from "../../../shared/components/base-page";
+import { Loading } from "../../../shared/components/loading";
+import { ResourceSubmit } from "../../../shared/components/resource-submit";
+import { Timestamp } from "../../../shared/components/timestamp";
+import { ZeroState } from "../../../shared/components/zero-state";
+import { Consumer } from "../../../shared/context";
+import { exampleWorkflow } from "../../../shared/examples";
+import { services } from "../../../shared/services";
+import { Utils } from "../../../shared/utils";
+import { ArchivedWorkflowFilters } from "../archived-workflow-filters/archived-workflow-filters";
 
 interface State {
     offset: number;
@@ -176,11 +176,11 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         let archivedWorkflowList;
         let newNamespace = namespace;
         if (!this.state.initialized) {
-            archivedWorkflowList = services.info.get().then(info => {
+            archivedWorkflowList = services.info.getInfo().then(info => {
                 if (info.managedNamespace) {
                     newNamespace = info.managedNamespace;
                 }
-                this.setState({initialized: true, managedNamespace: info.managedNamespace ? true : false});
+                this.setState({ initialized: true, managedNamespace: !!info.managedNamespace });
                 return services.archivedWorkflows.list(newNamespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, offset);
             });
         } else {

@@ -1,28 +1,37 @@
-import {AppContext, NotificationType, Page, SlidingPanel, TopBarFilter} from 'argo-ui';
-import * as classNames from 'classnames';
-import * as PropTypes from 'prop-types';
-import * as React from 'react';
-import {RouteComponentProps} from 'react-router';
-import {Subscription} from 'rxjs';
+import { AppContext, NotificationType, Page, SlidingPanel, TopBarFilter } from "argo-ui";
+import * as classNames from "classnames";
+import * as PropTypes from "prop-types";
+import * as React from "react";
+import { RouteComponentProps } from "react-router";
+import { Subscription } from "rxjs";
 
-import {Link, NodePhase, Workflow} from '../../../../models';
-import {uiUrl} from '../../../shared/base';
-import {services} from '../../../shared/services';
+import { Link, NodePhase, Workflow } from "../../../../models";
+import { uiUrl } from "../../../shared/base";
+import { services } from "../../../shared/services";
 
-import {WorkflowArtifacts, WorkflowDag, WorkflowDagRenderOptions, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowSummaryPanel, WorkflowTimeline, WorkflowYamlViewer} from '..';
-import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
-import {Consumer, ContextApis} from '../../../shared/context';
-import {Utils} from '../../../shared/utils';
-import {WorkflowDagRenderOptionsPanel} from '../workflow-dag/workflow-dag-render-options-panel';
-import {WorkflowParametersPanel} from '../workflow-parameters-panel';
-import {WorkflowYamlPanel} from './workflow-yaml-panel';
+import {
+    WorkflowArtifacts,
+    WorkflowDag,
+    WorkflowDagRenderOptions,
+    WorkflowLogsViewer,
+    WorkflowNodeInfo,
+    WorkflowSummaryPanel,
+    WorkflowTimeline,
+    WorkflowYamlViewer
+} from "..";
+import { hasWarningConditionBadge } from "../../../shared/conditions-panel";
+import { Consumer, ContextApis } from "../../../shared/context";
+import { Utils } from "../../../shared/utils";
+import { WorkflowDagRenderOptionsPanel } from "../workflow-dag/workflow-dag-render-options-panel";
+import { WorkflowParametersPanel } from "../workflow-parameters-panel";
+import { WorkflowYamlPanel } from "./workflow-yaml-panel";
 
-require('./workflow-details.scss');
+require("./workflow-details.scss");
 
 function parseSidePanelParam(param: string) {
-    const [type, nodeId, container] = (param || '').split(':');
-    if (type === 'logs' || type === 'yaml') {
-        return {type, nodeId, container: container || 'main'};
+    const [type, nodeId, container] = (param || "").split(":");
+    if (type === "logs" || type === "yaml") {
+        return { type, nodeId, container: container || "main" };
     }
     return null;
 }
@@ -80,7 +89,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
 
     public componentDidMount() {
         this.loadWorkflow(this.props.match.params.namespace, this.props.match.params.name);
-        services.info.get().then(info => this.setState({links: info.links}));
+        services.info.getInfo().then(info => this.setState({ links: info.links }));
     }
 
     public componentWillReceiveProps(nextProps: RouteComponentProps<any>) {
