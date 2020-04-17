@@ -178,7 +178,8 @@ spec:
 
 // Tests ability to reference workflow parameters from within top level spec fields (e.g. spec.volumes)
 func TestArtifactResolutionWhenSkippedDAG(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	wf := unmarshalWF(artifactResolutionWhenSkippedDAG)

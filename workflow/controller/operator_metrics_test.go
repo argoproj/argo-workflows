@@ -43,7 +43,8 @@ spec:
 `
 
 func TestBasicMetric(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(basicMetric)
 	_, err := wfcset.Create(wf)
@@ -98,7 +99,8 @@ spec:
 `
 
 func TestCounterMetric(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(counterMetric)
 	_, err := wfcset.Create(wf)

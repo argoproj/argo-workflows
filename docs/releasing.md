@@ -14,9 +14,9 @@ To generate new manifests and perform basic checks:
 
     make prepare-release VERSION=v2.7.2
 
-Publish the images and local Git changes:
+Publish the images and local Git changes (disabling K3D as this is faster and more reliable for releases):
 
-    make publish-release
+    make publish-release K3D=false
 
 Create [the release](https://github.com/argoproj/argo/releases) in Github. You can get some text for this using [Github Toolkit](https://github.com/alexec/github-toolkit):
 
