@@ -1801,7 +1801,6 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, templateScope strin
 		includeScriptOutput: includeScriptOutput,
 		onExitPod:           opts.onExitTemplate,
 	})
-	woc.log.Warnf("ASTEIN DEBUG - %v\n", woc.wf.Status.Nodes)
 
 	if apierr.IsForbidden(err) && isResubmitAllowed(tmpl) {
 		// Our error was most likely caused by a lack of resources. If pod resubmission is allowed, keep the node pending
