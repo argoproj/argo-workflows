@@ -8,3 +8,4 @@ sdks
 vendor
 ui/dist
 ui/node_modules
+Dockerfile.windows

@@ -116,8 +116,6 @@ RUN if [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "amd64" ]; then \
 	make dist/argo-linux-amd64 dist/workflow-controller-linux-amd64 dist/argoexec-linux-amd64; \
     elif [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "arm64" ]; then \
 	make dist/argo-linux-arm64 dist/workflow-controller-linux-arm64 dist/argoexec-linux-arm64; \
-	elif [ "${IMAGE_OS}" = "windows" -a "${IMAGE_ARCH}" = "amd64" ]; then \
-    make dist/argoexec-windows-amd64; \
     fi 
 
 ####################################################################################################
