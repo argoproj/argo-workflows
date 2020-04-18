@@ -25,3 +25,5 @@ spec:
               path: /
             initialDelaySeconds: 10
             periodSeconds: 20
+      nodeSelector:
+        kubernetes.io/os: linux
