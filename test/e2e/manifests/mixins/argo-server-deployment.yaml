@@ -20,3 +20,5 @@ spec:
               value: password
             - name: UPPERIO_DB_DEBUG
               value: "1"
+      nodeSelector:
+        kubernetes.io/os: linux

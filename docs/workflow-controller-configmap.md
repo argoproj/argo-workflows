@@ -37,6 +37,8 @@ spec:
         image: argoproj/workflow-controller:latest
         name: workflow-controller
       serviceAccountName: argo
+      nodeSelector:
+              kubernetes.io/os: linux
 ```
 
 ## Alternate Structure
