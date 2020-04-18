@@ -447,22 +447,21 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, get
 	var args []interface{}
 	duration := humanize.RelativeDurationShort(node.StartedAt.Time, node.FinishedAt.Time)
 	if node.Type == wfv1.NodeTypePod {
-		args = []interface{}{nodePrefix, nodeName, templateName, node.ID, duration, node.Message}
+		args = []interface{}{nodePrefix, nodeName, templateName, node.ID, duration, node.Message, ""}
 	} else {
-		args = []interface{}{nodePrefix, nodeName, templateName, "", "", node.Message}
+		args = []interface{}{nodePrefix, nodeName, templateName, "", "", node.Message, ""}
 	}
 	if getArgs.output == "wide" {
-		msg := args[len(args)-1]
-		args[len(args)-1] = getArtifactsString(node)
-		args = append(args, msg, node.ResourcesDuration)
+		msg := args[len(args)-2]
+		args[len(args)-2] = getArtifactsString(node)
+		args[len(args)-1] = msg
+		args = append(args, node.ResourcesDuration, "")
 		if node.Type == wfv1.NodeTypePod {
-			args = append(args, node.HostNodeName)
-			_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", args...)
-		} else {
-			_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\t%s\n", args...)
+			args[len(args)-1] = node.HostNodeName
 		}
+		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", args...)
 	} else {
-		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\n", args...)
+		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\n", args...)
 	}
 }
 

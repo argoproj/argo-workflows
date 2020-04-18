@@ -824,13 +824,13 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			node.Phase = wfv1.NodeError
 			woc.wf.Status.Nodes[nodeID] = node
 			woc.log.Warnf("pod %s deleted", nodeID)
-			woc.updated = true
 		} else {
 			// At this point we are certain that the pod associated with our node is running or has been run;
 			// it is safe to extract the k8s-node information given this knowledge.
 			node.HostNodeName = seenPods[nodeID].Spec.NodeName
 			woc.wf.Status.Nodes[nodeID] = node
 		}
+		woc.updated = true
 	}
 	return nil
 }
