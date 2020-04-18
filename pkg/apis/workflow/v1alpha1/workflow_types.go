@@ -806,7 +806,7 @@ type TemplateRef struct {
 	// By enabling this option, you can create the referred workflow template before the actual runtime.
 	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
 	// ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
-	ClusterScope bool `json:"clusterscope,omitempty" protobuf:"varint,4,opt,name=clusterscope"`
+	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
 }
 
 type ArgumentsProvider interface {
@@ -1490,6 +1490,13 @@ type ResourceTemplate struct {
 	// FailureCondition is a label selector expression which describes the conditions
 	// of the k8s resource in which the step was considered failed
 	FailureCondition string `json:"failureCondition,omitempty" protobuf:"bytes,6,opt,name=failureCondition"`
+
+	// Flags is a set of additional options passed to kubectl before submitting a resource
+	// I.e. to disable resource validation:
+	// flags: [
+	// 	"--validate=false"  # disable resource validation
+	// ]
+	Flags []string `json:"flags,omitempty" protobuf:"varint,7,opt,name=flags"`
 }
 
 // GetType returns the type of this template
@@ -1699,11 +1706,6 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 // GetResourceScope returns the template scope of workflow.
 func (wf *Workflow) GetResourceScope() ResourceScope {
 	return ResourceScopeLocal
-}
-
-// GetTemplates returns the list of templates of workflow.
-func (wf *Workflow) GetTemplates() []Template {
-	return wf.Spec.Templates
 }
 
 // NodeID creates a deterministic node ID based on a node name

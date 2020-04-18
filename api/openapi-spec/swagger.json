@@ -1172,6 +1172,38 @@
         }
       }
     },
+    "/api/v1/workflows/{namespace}/submit-from": {
+      "post": {
+        "tags": [
+          "WorkflowService"
+        ],
+        "operationId": "SubmitFrom",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSubmitFromRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/workflows/{namespace}/{name}": {
       "get": {
         "tags": [
@@ -2697,6 +2729,13 @@
           "type": "string",
           "title": "FailureCondition is a label selector expression which describes the conditions\nof the k8s resource in which the step was considered failed"
         },
+        "flags": {
+          "type": "array",
+          "title": "Flags is a set of additional options passed to kubectl before submitting a resource\nI.e. to disable resource validation:\nflags: [\n\t\"--validate=false\"  # disable resource validation\n]",
+          "items": {
+            "type": "string"
+          }
+        },
         "manifest": {
           "type": "string",
           "title": "Manifest contains the kubernetes manifest"
@@ -2820,6 +2859,61 @@
         "start": {
           "type": "string",
           "title": "Number at which to start the sequence (default: 0)"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.SubmitOpts": {
+      "type": "object",
+      "title": "SubmitOpts are workflow submission options",
+      "properties": {
+        "dryRun": {
+          "description": "DryRun validates the workflow on the client-side without creating it.\nThis option is not supported in API.",
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "entrypoint": {
+          "description": "Entrypoint overrides spec.entrypoint in io.argoproj.workflow.v1alpha1.",
+          "type": "string"
+        },
+        "generateName": {
+          "description": "GenerateName overrides metadata.generateName in io.argoproj.workflow.v1alpha1.",
+          "type": "string"
+        },
+        "instanceID": {
+          "description": "InstanceID adds controller's instance id label in io.argoproj.workflow.v1alpha1.",
+          "type": "string"
+        },
+        "labels": {
+          "description": "Labels adds metadata.labels in io.argoproj.workflow.v1alpha1.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name overrides metadata.name in io.argoproj.workflow.v1alpha1.",
+          "type": "string"
+        },
+        "ownerReference": {
+          "description": "OwnerReference creates the metadata.ownerReference in io.argoproj.workflow.v1alpha1.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.OwnerReference"
+        },
+        "parameterFile": {
+          "description": "ParameterFile holds parameter file path.\nThis option is not supported in API.",
+          "type": "string"
+        },
+        "parameters": {
+          "description": "Parameters passes input parameters to io.argoproj.workflow.v1alpha1.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "serverDryRun": {
+          "description": "ServerDryRun validates the workflow on the Server-side without creating it.",
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "serviceAccount": {
+          "description": "ServiceAccount runs all pods in the workflow using specified serviceaccount.",
+          "type": "string"
         }
       }
     },
@@ -3042,7 +3136,7 @@
       "description": "TemplateRef is a reference of template resource.",
       "type": "object",
       "properties": {
-        "clusterscope": {
+        "clusterScope": {
           "description": "ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).",
           "type": "boolean",
           "format": "boolean"
@@ -6179,6 +6273,26 @@
         },
         "nodeFieldSelector": {
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowSubmitFromRequest": {
+      "type": "object",
+      "properties": {
+        "createOptions": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.CreateOptions"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "resourceKind": {
+          "type": "string"
+        },
+        "resourceName": {
+          "type": "string"
+        },
+        "submitOptions": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SubmitOpts"
         }
       }
     },

@@ -12,6 +12,9 @@ GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo
 
 export DOCKER_BUILDKIT = 1
 
+# To allow you to build with cache for debugging purposes.
+DOCKER_BUILDS_OPTS     := --no-cache
+
 # docker image publishing options
 IMAGE_NAMESPACE       ?= argoproj
 
@@ -56,8 +59,8 @@ endif
 endif
 
 # version change, so does the file location
-MANIFEST_VERSION_FILE := dist/$(MANIFEST_VERSION)
-VERSION_FILE          := dist/$(VERSION)
+MANIFESTS_VERSION_FILE := dist/$(MANIFESTS_VERSION).manifests-version
+VERSION_FILE           := dist/$(VERSION).version
 
 # perform static compilation
 STATIC_BUILD          ?= true
@@ -65,6 +68,12 @@ CI                    ?= false
 DB                    ?= postgres
 K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 ARGO_TOKEN            = $(shell kubectl -n argo get secret -o name | grep argo-server | xargs kubectl -n argo get -o jsonpath='{.data.token}' | base64 --decode)
+
+ifeq ($(CI),true)
+TEST_OPTS := -coverprofile=coverage.out
+else
+TEST_OPTS :=
+endif
 
 override LDFLAGS += \
   -X github.com/argoproj/argo.version=$(VERSION) \
@@ -88,7 +97,8 @@ E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
 # The sort puts _.primary first in the list. 'env LC_COLLATE=C' makes sure underscore comes first in both Mac and Linux.
 SWAGGER_FILES    := $(shell find pkg/apiclient -name '*.swagger.json' | env LC_COLLATE=C sort)
-MOCK_FILES       := $(shell find . -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
+MOCK_FILES       := $(shell find persist workflow -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
+UI_FILES         := $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 
 define backup_go_mod
 	# Back-up go.*, but only if we have not already done this (because that would suggest we failed mid-codegen and the currenty go.* files are borked).
@@ -108,37 +118,36 @@ build: status clis executor-image controller-image manifests/install.yaml manife
 
 .PHONY: status
 status:
-	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), GIT_TREE_STATE=$(GIT_TREE_STATE), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE)
+	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), GIT_TREE_STATE=$(GIT_TREE_STATE), MANIFESTS_VERSION=$(MANIFESTS_VERSION), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE)
 
 # cli
 
 .PHONY: cli
 cli: dist/argo
 
-ui/node_modules: ui/package.json ui/yarn.lock
+ui/dist/node_modules.marker: ui/package.json ui/yarn.lock
 	# Get UI dependencies
+	@mkdir -p ui/node_modules
 ifeq ($(CI),false)
 	yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
-else
-	mkdir -p ui/node_modules
 endif
-	touch ui/node_modules
+	@mkdir -p ui/dist
+	touch ui/dist/node_modules.marker
 
-ui/dist/app: ui/node_modules ui/src
+ui/dist/app/index.html: ui/dist/node_modules.marker ui/src
 	# Build UI
+	@mkdir -p ui/dist/app
 ifeq ($(CI),false)
 	yarn --cwd ui build
 else
-	mkdir -p ui/dist/app
 	echo "Built without static files" > ui/dist/app/index.html
 endif
-	touch ui/dist/app
 
 $(HOME)/go/bin/staticfiles:
 	# Install the "staticfiles" tool
 	go get bou.ke/staticfiles
 
-server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/app
+server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
 	staticfiles -o server/static/files.go ui/dist/app
 
@@ -165,7 +174,7 @@ ifeq ($(DEV_IMAGE),true)
 	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli -f Dockerfile.dev --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	rm -f argo
 else
-	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
+	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 endif
 ifeq ($(K3D),true)
 	k3d import-images $(IMAGE_NAMESPACE)/argocli:$(VERSION)
@@ -193,7 +202,7 @@ ifeq ($(DEV_IMAGE),true)
 	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller -f Dockerfile.dev --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	rm -f workflow-controller
 else
-	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
+	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 endif
 ifeq ($(K3D),true)
 	k3d import-images $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
@@ -218,7 +227,7 @@ ifeq ($(DEV_IMAGE),true)
 	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec -f Dockerfile.dev --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	rm -f argoexec
 else
-	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
+	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 endif
 ifeq ($(K3D),true)
 	k3d import-images $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
@@ -254,28 +263,19 @@ codegen-core:
 	./hack/update-codegen.sh
 	$(call restore_go_mod)
 
-.PHONY: manifests
-manifests: status manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-mysql.yaml manifests/quick-start-postgres.yaml manifests/quick-start-no-db.yaml test/e2e/manifests/postgres.yaml test/e2e/manifests/mysql.yaml test/e2e/manifests/no-db.yaml
-
 # we use a different file to ./VERSION to force updating manifests after a `make clean`
-$(MANIFEST_VERSION_FILE):
+$(MANIFESTS_VERSION_FILE):
 	@mkdir -p dist
-	touch $(MANIFEST_VERSION_FILE)
+	touch $(MANIFESTS_VERSION_FILE)
 
-manifests/install.yaml: $(MANIFEST_VERSION_FILE) $(MANIFESTS)
-	kustomize build --load_restrictor=none manifests/cluster-install | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/install.yaml
-
-manifests/namespace-install.yaml: $(MANIFEST_VERSION_FILE) $(MANIFESTS)
-	kustomize build --load_restrictor=none manifests/namespace-install | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
-
-manifests/quick-start-no-db.yaml: $(MANIFEST_VERSION_FILE) $(MANIFESTS)
-	kustomize build --load_restrictor=none manifests/quick-start/no-db | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-no-db.yaml
-
-manifests/quick-start-mysql.yaml: $(MANIFEST_VERSION_FILE) $(MANIFESTS)
-	kustomize build --load_restrictor=none manifests/quick-start/mysql | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
-
-manifests/quick-start-postgres.yaml: $(MANIFEST_VERSION_FILE) $(MANIFESTS)
-	kustomize build --load_restrictor=none manifests/quick-start/postgres | sed "s/:latest/:$(MANIFESTS_VERSION)/" | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
+.PHONY: manifests
+manifests:
+	./hack/update-image-tags.sh manifests/base $(MANIFESTS_VERSION)
+	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
+	kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
+	kustomize build --load_restrictor=none manifests/quick-start/no-db | ./hack/auto-gen-msg.sh > manifests/quick-start-no-db.yaml
+	kustomize build --load_restrictor=none manifests/quick-start/mysql | ./hack/auto-gen-msg.sh > manifests/quick-start-mysql.yaml
+	kustomize build --load_restrictor=none manifests/quick-start/postgres | ./hack/auto-gen-msg.sh > manifests/quick-start-postgres.yaml
 
 # lint/test/etc
 
@@ -297,7 +297,7 @@ endif
 .PHONY: test
 test: server/static/files.go
 	@mkdir -p test-results
-	go test -v -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'` 2>&1 | tee test-results/test.out
+	go test -v $(TEST_OPTS) `go list ./... | grep -v 'test/e2e'` 2>&1 | tee test-results/test.out
 
 test-results/test-report.json: test-results/test.out
 	cat test-results/test.out | go tool test2json > test-results/test-report.json
@@ -315,41 +315,21 @@ $(VERSION_FILE):
 	@mkdir -p dist
 	touch $(VERSION_FILE)
 
-test/e2e/manifests/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
-	# Create Postgres e2e manifests
-	kustomize build --load_restrictor=LoadRestrictionsNone test/e2e/manifests/postgres | ./hack/auto-gen-msg.sh > test/e2e/manifests/postgres.yaml
+dist/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
+	kustomize build --load_restrictor=none test/e2e/manifests/postgres | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/postgres.yaml
 
-dist/postgres.yaml: test/e2e/manifests/postgres.yaml $(VERSION_FILE)
-	# Create Postgres e2e manifests
-	cat test/e2e/manifests/postgres.yaml | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/postgres.yaml
+dist/no-db.yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
+	# We additionally disable ALWAYS_OFFLOAD_NODE_STATUS
+	kustomize build --load_restrictor=none test/e2e/manifests/no-db | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | sed 's/"true"/"false"/' > dist/no-db.yaml
 
-test/e2e/manifests/no-db/overlays/argo-server-deployment.yaml: test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml
-test/e2e/manifests/no-db/overlays/argo-server-deployment.yaml:
-	cat test/e2e/manifests/postgres/overlays/argo-server-deployment.yaml | ./hack/auto-gen-msg.sh > test/e2e/manifests/no-db/overlays/argo-server-deployment.yaml
-
-test/e2e/manifests/no-db/overlays/workflow-controller-deployment.yaml: test/e2e/manifests/postgres/overlays/workflow-controller-deployment.yaml
-test/e2e/manifests/no-db/overlays/workflow-controller-deployment.yaml:
-	cat test/e2e/manifests/postgres/overlays/workflow-controller-deployment.yaml | ./hack/auto-gen-msg.sh > test/e2e/manifests/no-db/overlays/workflow-controller-deployment.yaml
-
-test/e2e/manifests/no-db.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
-	# Create no DB e2e manifests
-	kustomize build --load_restrictor=LoadRestrictionsNone test/e2e/manifests/no-db | ./hack/auto-gen-msg.sh > test/e2e/manifests/no-db.yaml
-
-dist/no-db.yaml: test/e2e/manifests/no-db.yaml $(VERSION_FILE)
-	# Create no DB e2e manifests
-	# We additionlly disable ALWAY_OFFLOAD_NODE_STATUS
-	cat test/e2e/manifests/no-db.yaml | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | sed 's/"true"/"false"/' > dist/no-db.yaml
-
-test/e2e/manifests/mysql.yaml: $(MANIFESTS) $(E2E_MANIFESTS)
-	# Create MySQL e2e manifests
-	kustomize build --load_restrictor=LoadRestrictionsNone test/e2e/manifests/mysql | ./hack/auto-gen-msg.sh > test/e2e/manifests/mysql.yaml
-
-dist/mysql.yaml: test/e2e/manifests/mysql.yaml $(VERSION_FILE)
-	# Create MySQL e2e manifests
-	cat test/e2e/manifests/mysql.yaml | sed 's/:latest/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/mysql.yaml
+dist/mysql.yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
+	kustomize build --load_restrictor=none test/e2e/manifests/mysql | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/mysql.yaml
 
 .PHONY: install
 install: dist/postgres.yaml dist/mysql.yaml dist/no-db.yaml
+ifeq ($(K3D),true)
+	k3d start
+endif
 	# Install quick-start
 	kubectl apply -f test/e2e/manifests/argo-ns.yaml
 ifeq ($(DB),postgres)
@@ -380,6 +360,9 @@ dist/python-alpine3.6:
 start: status install down controller-image cli-image executor-image wait-down up cli test-images wait-up env
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
+
+.PHONY: run
+run: start pf
 
 .PHONY: down
 down:
@@ -472,13 +455,13 @@ clean:
 
 $(HOME)/go/bin/swagger:
 	$(call backup_go_mod)
-	go get github.com/go-swagger/go-swagger/cmd/swagger
+	go get github.com/go-swagger/go-swagger/cmd/swagger@v0.23.0
 	$(call restore_go_mod)
 
 .PHONY: swagger
 swagger: api/openapi-spec/swagger.json
 
-api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) $(MANIFEST_VERSION_FILE) hack/swaggify.sh
+api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
 	swagger mixin -c 611 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
 
 .PHONY: docs
