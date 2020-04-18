@@ -61,6 +61,9 @@ endif
 # version change, so does the file location
 MANIFESTS_VERSION_FILE := dist/$(MANIFESTS_VERSION).manifests-version
 VERSION_FILE           := dist/$(VERSION).version
+CLI_IMAGE_FILE         := dist/cli-image-$(VERSION)
+EXECUTOR_IMAGE_FILE    := dist/executor-image-$(VERSION)
+CONTROLLER_IMAGE_FILE  := dist/controller-image-$(VERSION)
 
 # perform static compilation
 STATIC_BUILD          ?= true
@@ -165,9 +168,9 @@ dist/argo-%: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 
 .PHONY: cli-image
-cli-image: dist/cli-image
+cli-image: $(CLI_IMAGE_FILE)
 
-dist/cli-image: dist/argo-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
+$(CLI_IMAGE_FILE): dist/argo-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
 	# Create CLI image
 ifeq ($(DEV_IMAGE),true)
 	cp dist/argo-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) argo
@@ -179,7 +182,7 @@ endif
 ifeq ($(K3D),true)
 	k3d import-images $(IMAGE_NAMESPACE)/argocli:$(VERSION)
 endif
-	touch dist/cli-image
+	touch $(CLI_IMAGE_FILE)
 
 .PHONY: clis
 clis: dist/argo-linux-amd64 dist/argo-linux-arm64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/argo-darwin-amd64 dist/argo-windows-amd64 cli-image
@@ -193,9 +196,9 @@ dist/workflow-controller-%: $(CONTROLLER_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
 
 .PHONY: controller-image
-controller-image: dist/controller-image
+controller-image: $(CONTROLLER_IMAGE_FILE)
 
-dist/controller-image: dist/workflow-controller-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
+$(CONTROLLER_IMAGE_FILE): dist/workflow-controller-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
 	# Create controller image
 ifeq ($(DEV_IMAGE),true)
 	cp dist/workflow-controller-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) workflow-controller
@@ -207,7 +210,7 @@ endif
 ifeq ($(K3D),true)
 	k3d import-images $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
 endif
-	touch dist/controller-image
+	touch $(CONTROLLER_IMAGE_FILE)
 
 # argoexec
 
@@ -218,9 +221,9 @@ dist/argoexec-%: $(ARGOEXEC_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argoexec
 
 .PHONY: executor-image
-executor-image: dist/executor-image
+executor-image: $(EXECUTOR_IMAGE_FILE)
 
-dist/executor-image: dist/argoexec-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
+$(EXECUTOR_IMAGE_FILE): dist/argoexec-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
 	# Create executor image
 ifeq ($(DEV_IMAGE),true)
 	cp dist/argoexec-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) argoexec
@@ -232,7 +235,7 @@ endif
 ifeq ($(K3D),true)
 	k3d import-images $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
 endif
-	touch dist/executor-image
+	touch $(EXECUTOR_IMAGE_FILE)
 
 # generation
 

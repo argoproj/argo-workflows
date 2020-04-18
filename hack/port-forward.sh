@@ -10,6 +10,9 @@ info() {
 info "MinIO on http://localhost:9000"
 kubectl -n argo port-forward pod/minio 9000:9000 &
 
+info "DEX on http://localhost:5556"
+kubectl -n argo port-forward svc/dex 5556:5556 &
+
 info "Metrics server on http://localhost:9090"
 kubectl -n argo port-forward deploy/workflow-controller 9090:9090 &
 

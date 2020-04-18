@@ -13,6 +13,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/server/auth/oauth2"
 	"github.com/argoproj/argo/util/kubeconfig"
 )
 
@@ -23,22 +24,17 @@ const (
 	KubeKey ContextKey = "kubernetes.Interface"
 )
 
-const (
-	Client = "client"
-	Server = "server"
-	Hybrid = "hybrid"
-)
-
 type Gatekeeper struct {
-	authType string
+	AuthMode Mode
 	// global clients, not to be used if there are better ones
-	wfClient   versioned.Interface
-	kubeClient kubernetes.Interface
-	restConfig *rest.Config
+	wfClient      versioned.Interface
+	kubeClient    kubernetes.Interface
+	restConfig    *rest.Config
+	oauth2Service *oauth2.Service
 }
 
-func NewGatekeeper(authType string, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config) Gatekeeper {
-	return Gatekeeper{authType, wfClient, kubeClient, restConfig}
+func NewGatekeeper(authMode Mode, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, oauth2Service *oauth2.Service) *Gatekeeper {
+	return &Gatekeeper{authMode, wfClient, kubeClient, restConfig, oauth2Service}
 }
 
 func (s *Gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
@@ -78,22 +74,6 @@ func GetWfClient(ctx context.Context) versioned.Interface {
 func GetKubeClient(ctx context.Context) kubernetes.Interface {
 	return ctx.Value(KubeKey).(kubernetes.Interface)
 }
-func (s Gatekeeper) useServerAuth() bool {
-	return s.authType == Server
-}
-func (s Gatekeeper) useHybridAuth() bool {
-	return s.authType == Hybrid
-}
-
-func (s Gatekeeper) useClientAuth(token string) bool {
-	if s.authType == Client {
-		return true
-	}
-	if s.useHybridAuth() && token != "" {
-		return true
-	}
-	return false
-}
 
 func getAuthHeader(md metadata.MD) string {
 	// looks for the HTTP header `Authorization: Bearer ...`
@@ -114,30 +94,34 @@ func getAuthHeader(md metadata.MD) string {
 }
 
 func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, error) {
-
-	if s.useServerAuth() {
+	// server and hybrid (without token)
+	if s.AuthMode == Server {
 		return s.wfClient, s.kubeClient, nil
 	}
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		if s.useHybridAuth() {
+		if s.AuthMode == Hybrid {
 			return s.wfClient, s.kubeClient, nil
 		}
 		return nil, nil, status.Error(codes.Unauthenticated, "unable to get metadata from incoming context")
 	}
-
-	authString := getAuthHeader(md)
-
-	if !s.useClientAuth(authString) {
+	authorization := getAuthHeader(md)
+	// SSO mode
+	if s.AuthMode == SSO {
+		_, err := s.oauth2Service.Authorize(ctx, authorization)
+		if err != nil {
+			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
+		}
 		return s.wfClient, s.kubeClient, nil
 	}
-
-	restConfig, err := kubeconfig.GetRestConfig(authString)
-
+	// client mode and hybrid (with token)
+	if !(s.AuthMode == Client || s.AuthMode == Hybrid && authorization != "") {
+		return s.wfClient, s.kubeClient, nil
+	}
+	restConfig, err := kubeconfig.GetRestConfig(authorization)
 	if err != nil {
 		return nil, nil, status.Errorf(codes.Unauthenticated, "failed to create REST config: %v", err)
 	}
-
 	wfClient, err := versioned.NewForConfig(restConfig)
 	if err != nil {
 		return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create wfClientset with ClientConfig: %v", err)

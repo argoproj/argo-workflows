@@ -22,13 +22,13 @@ import (
 )
 
 type ArtifactServer struct {
-	authN                 auth.Gatekeeper
+	gatekeeper            *auth.Gatekeeper
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wfArchive             sqldb.WorkflowArchive
 }
 
-func NewArtifactServer(authN auth.Gatekeeper, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *ArtifactServer {
-	return &ArtifactServer{authN, offloadNodeStatusRepo, wfArchive}
+func NewArtifactServer(gatekeeper *auth.Gatekeeper, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *ArtifactServer {
+	return &ArtifactServer{gatekeeper, offloadNodeStatusRepo, wfArchive}
 }
 
 func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
@@ -105,7 +105,7 @@ func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
 		}
 	}
 	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"authorization": []string{token}})
-	return a.authN.Context(ctx)
+	return a.gatekeeper.Context(ctx)
 }
 
 func (a *ArtifactServer) ok(w http.ResponseWriter, data []byte) {

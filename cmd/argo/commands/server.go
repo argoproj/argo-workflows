@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
@@ -16,6 +17,7 @@ import (
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/apiserver"
+	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/util/help"
 )
 
@@ -35,14 +37,12 @@ func NewServerCommand() *cobra.Command {
 		Short: "Start the Argo Server",
 		Example: fmt.Sprintf(`
 See %s`, help.ArgoSever),
-		RunE: func(c *cobra.Command, args []string) error {
+		Run: func(c *cobra.Command, args []string) {
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
 
 			config, err := client.GetConfig().ClientConfig()
-			if err != nil {
-				return err
-			}
+			errors.CheckError(err)
 			config.Burst = 30
 			config.QPS = 20.0
 
@@ -69,6 +69,10 @@ See %s`, help.ArgoSever),
 				"baseHRef":         baseHRef}).
 				Info()
 
+			authMode := auth.Mode(authMode)
+			if err := authMode.IsValid(); err != nil {
+				log.Fatal(err)
+			}
 			opts := apiserver.ArgoServerOpts{
 				BaseHRef:         baseHRef,
 				Namespace:        namespace,
@@ -78,10 +82,6 @@ See %s`, help.ArgoSever),
 				AuthMode:         authMode,
 				ManagedNamespace: managedNamespace,
 				ConfigName:       configMap,
-			}
-			err = opts.ValidateOpts()
-			if err != nil {
-				return err
 			}
 			browserOpenFunc := func(url string) {}
 			if enableOpenBrowser {
@@ -93,8 +93,9 @@ See %s`, help.ArgoSever),
 					}
 				}
 			}
-			apiserver.NewArgoServer(opts).Run(ctx, port, browserOpenFunc)
-			return nil
+			server, err := apiserver.NewArgoServer(opts)
+			errors.CheckError(err)
+			server.Run(ctx, port, browserOpenFunc)
 		},
 	}
 

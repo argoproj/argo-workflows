@@ -19,7 +19,6 @@ import (
 
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/config"
-	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
 	clusterwftemplatepkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
@@ -31,6 +30,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/artifacts"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/server/auth/oauth2"
 	"github.com/argoproj/argo/server/clusterworkflowtemplate"
 	"github.com/argoproj/argo/server/cronworkflow"
 	"github.com/argoproj/argo/server/info"
@@ -52,7 +52,8 @@ type argoServer struct {
 	namespace        string
 	managedNamespace string
 	kubeClientset    *kubernetes.Clientset
-	authenticator    auth.Gatekeeper
+	authenticator    *auth.Gatekeeper
+	oAuth2Service    *oauth2.Service
 	configController config.Controller
 	stopCh           chan struct{}
 }
@@ -63,22 +64,27 @@ type ArgoServerOpts struct {
 	KubeClientset *kubernetes.Clientset
 	WfClientSet   *versioned.Clientset
 	RestConfig    *rest.Config
-	AuthMode      string
+	AuthMode      auth.Mode
 	// config map name
 	ConfigName       string
 	ManagedNamespace string
 }
 
-func NewArgoServer(opts ArgoServerOpts) *argoServer {
+func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
+	service, err := oauth2.NewService(opts.BaseHRef)
+	if err != nil {
+		return nil, err
+	}
 	return &argoServer{
 		baseHRef:         opts.BaseHRef,
 		namespace:        opts.Namespace,
 		managedNamespace: opts.ManagedNamespace,
 		kubeClientset:    opts.KubeClientset,
-		authenticator:    auth.NewGatekeeper(opts.AuthMode, opts.WfClientSet, opts.KubeClientset, opts.RestConfig),
+		authenticator:    auth.NewGatekeeper(opts.AuthMode, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, service),
+		oAuth2Service:    service,
 		configController: config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset),
 		stopCh:           make(chan struct{}),
-	}
+	}, nil
 }
 
 var backoff = wait.Backoff{
@@ -86,24 +92,6 @@ var backoff = wait.Backoff{
 	Duration: 500 * time.Millisecond,
 	Factor:   1.0,
 	Jitter:   0.1,
-}
-
-func (ao ArgoServerOpts) ValidateOpts() error {
-	validate := false
-	for _, item := range []string{
-		auth.Server,
-		auth.Hybrid,
-		auth.Client,
-	} {
-		if ao.AuthMode == item {
-			validate = true
-			break
-		}
-	}
-	if !validate {
-		return errors.Errorf("", "Invalid Authentication Mode. %s", ao.AuthMode)
-	}
-	return nil
 }
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
@@ -216,7 +204,6 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	}
 	var dialOpts []grpc.DialOption
 	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxGRPCMessageSize)))
-	//dialOpts = append(dialOpts, grpc.WithUserAgent(fmt.Sprintf("%s/%s", common.ArgoCDUserAgentName, argocd.GetVersion().Version)))
 
 	dialOpts = append(dialOpts, grpc.WithInsecure())
 
@@ -238,6 +225,8 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.Handle("/api/", gwmux)
 	mux.HandleFunc("/artifacts/", artifactServer.GetArtifact)
 	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetArtifactByUID)
+	mux.HandleFunc("/oauth2/redirect", as.oAuth2Service.HandleRedirect)
+	mux.HandleFunc("/oauth2/callback", as.oAuth2Service.HandleCallback)
 	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef).ServerFiles)
 	return &httpServer
 }

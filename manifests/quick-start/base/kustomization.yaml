@@ -4,6 +4,7 @@ kind: Kustomization
 bases:
   - ../../namespace-install
   - minio
+  - dex
 
 resources:
   - workflow-role.yaml
