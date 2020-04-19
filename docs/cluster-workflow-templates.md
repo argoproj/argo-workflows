@@ -47,7 +47,7 @@ spec:
     steps:                              # You should only reference external "templates" in a "steps" or "dag" "template".
       - - name: call-whalesay-template
           templateRef:                  # You can reference a "template" from another "WorkflowTemplate or ClusterWorkflowTemplate" using this field
-            name: cluster-workflow-template-whalesay-template   # This is the name of the "WorkflowTemplate or ClusterWorkflowTempalte" CRD that contains the "template" you want
+            name: cluster-workflow-template-whalesay-template   # This is the name of the "WorkflowTemplate or ClusterWorkflowTemplate" CRD that contains the "template" you want
             template: whalesay-template # This is the name of the "template" you want to reference
             clusterScope: true          # This field indicates this templateRef is pointing ClusterWorkflowTemplate
           arguments:                    # You can pass in arguments as normal
