@@ -28,6 +28,8 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"upper.io/db.v3/lib/sqlbuilder"
 
+	"github.com/argoproj/pkg/errors"
+
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/persist/sqldb"
@@ -204,14 +206,16 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	<-ctx.Done()
 }
 
+// Check if the controller has RBAC access to ClusterWorkflowTemplates
 func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
-	// Check if the controller has RBAC access to ClusterWorkflowTemplates
-	cwftAllowed, err := authutil.CanI(wfc.kubeclientset, "get, list, watch", "ClusterWorkflowTemplate", wfc.namespace, "")
-	if err != nil {
-		log.Fatal(err)
-	}
+	cwftGetAllowed, err := authutil.CanI(wfc.kubeclientset, "get", "clusterworkflowtemplates", wfc.namespace, "")
+	errors.CheckError(err)
+	cwftListAllowed, err := authutil.CanI(wfc.kubeclientset, "list", "clusterworkflowtemplates", wfc.namespace, "")
+	errors.CheckError(err)
+	cwftWatchAllowed, err := authutil.CanI(wfc.kubeclientset, "watch", "clusterworkflowtemplates", wfc.namespace, "")
+	errors.CheckError(err)
 
-	if cwftAllowed {
+	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
 		wfc.cwftmplInformer = wfc.newClusterWorkflowTemplateInformer()
 		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 		if !cache.WaitForCacheSync(ctx.Done(), wfc.cwftmplInformer.Informer().HasSynced) {

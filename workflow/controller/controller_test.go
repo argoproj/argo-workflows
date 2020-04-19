@@ -297,7 +297,7 @@ func TestNamespacedController(t *testing.T) {
 		}, nil
 	})
 
-	controller := newController()
+	_, controller := newController()
 	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
@@ -313,7 +313,7 @@ func TestClusterController(t *testing.T) {
 		}, nil
 	})
 
-	controller := newController()
+	_, controller := newController()
 	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
