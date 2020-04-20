@@ -104,38 +104,35 @@ func getAuthHeader(md metadata.MD) string {
 }
 
 func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, wfv1.User, error) {
-	// server and hybrid (without token)
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		if s.Modes[Server] {
-			return s.wfClient, s.kubeClient, wfv1.NullUser, nil
-		}
-		return nil, nil, wfv1.NullUser, status.Error(codes.Unauthenticated, "unable to get metadata from incoming context")
-	}
+	md, _ := metadata.FromIncomingContext(ctx)
 	authorization := getAuthHeader(md)
-	// SSO mode
-	if s.Modes[SSO] {
+	if s.Modes[SSO] && s.oauth2Service.IsSSO(authorization) {
 		user, err := s.oauth2Service.Authorize(ctx, authorization)
 		if err != nil {
 			return nil, nil, wfv1.NullUser, status.Error(codes.Unauthenticated, err.Error())
 		}
 		return s.wfClient, s.kubeClient, *user, nil
+	} else if s.Modes[Client] && authorization != "" {
+		restConfig, err := kubeconfig.GetRestConfig(authorization)
+		if err != nil {
+			return nil, nil, wfv1.NullUser, status.Errorf(codes.Unauthenticated, "failed to create REST config: %v", err)
+		}
+		wfClient, err := versioned.NewForConfig(restConfig)
+		if err != nil {
+			return nil, nil, wfv1.NullUser, status.Errorf(codes.Unauthenticated, "failure to create wfClientset with ClientConfig: %v", err)
+		}
+		kubeClient, err := kubernetes.NewForConfig(restConfig)
+		if err != nil {
+			return nil, nil, wfv1.NullUser, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig: %v", err)
+		}
+		user := wfv1.NullUser
+		if restConfig.Username != "" {
+			user = wfv1.User{Name: restConfig.Username}
+		}
+		return wfClient, kubeClient, user, nil
+	} else if s.Modes[Server] {
+		return s.wfClient, s.kubeClient, wfv1.NullUser, nil
+	} else {
+		return nil, nil, wfv1.NullUser, status.Error(codes.Unauthenticated, "no valid authentication methods found")
 	}
-	restConfig, err := kubeconfig.GetRestConfig(authorization)
-	if err != nil {
-		return nil, nil, wfv1.NullUser, status.Errorf(codes.Unauthenticated, "failed to create REST config: %v", err)
-	}
-	wfClient, err := versioned.NewForConfig(restConfig)
-	if err != nil {
-		return nil, nil, wfv1.NullUser, status.Errorf(codes.Unauthenticated, "failure to create wfClientset with ClientConfig: %v", err)
-	}
-	kubeClient, err := kubernetes.NewForConfig(restConfig)
-	if err != nil {
-		return nil, nil, wfv1.NullUser, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig: %v", err)
-	}
-	user := wfv1.NullUser
-	if restConfig.Username != "" {
-		user = wfv1.User{Name: restConfig.Username}
-	}
-	return wfClient, kubeClient, user, nil
 }

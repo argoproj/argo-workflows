@@ -51,7 +51,7 @@ export const Login = () => (
                         Otherwise, get your token using <code>argo auth token</code> and paste in this box:
                     </p>
                     <div>
-                        <textarea id='token' cols={16} rows={8} />
+                        <textarea id='token' cols={32} rows={8} />
                     </div>
                     <div>
                         <button className='argo-button argo-button--base-o' onClick={() => login((document.getElementById('token') as HTMLInputElement).value)}>

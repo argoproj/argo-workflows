@@ -108,3 +108,7 @@ func (s *Service) Authorize(ctx context.Context, authorisation string) (*v1alpha
 	}
 	return &v1alpha1.User{Name: idToken.Subject, Groups: c.Groups}, nil
 }
+
+func (s *Service) IsSSO(authorization string) bool {
+	return strings.HasSuffix(authorization, prefix)
+}
