@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
+	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
 	"github.com/argoproj/argo/util/argo"
@@ -28,7 +29,8 @@ func TestOperateWorkflowPanicRecover(t *testing.T) {
 			t.Fail()
 		}
 	}()
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	// intentionally set clientset to nil to induce panic
 	controller.kubeclientset = nil
 	wf := unmarshalWF(helloWorldWf)
@@ -79,7 +81,8 @@ spec:
 
 // TestSidecarWithVolume verifies ia sidecar can have a volumeMount reference to both existing or volumeClaimTemplate volumes
 func TestSidecarWithVolume(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(sidecarWithVol)
 	wf, err := wfcset.Create(wf)
@@ -114,7 +117,8 @@ func TestSidecarWithVolume(t *testing.T) {
 
 // TestProcessNodesWithRetries tests the processNodesWithRetries() method.
 func TestProcessNodesWithRetries(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	assert.NotNil(t, controller)
 	wf := unmarshalWF(helloWorldWf)
 	assert.NotNil(t, wf)
@@ -185,7 +189,8 @@ func TestProcessNodesWithRetries(t *testing.T) {
 
 // TestProcessNodesWithRetries tests retrying when RetryOn.Error is enabled
 func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	assert.NotNil(t, controller)
 	wf := unmarshalWF(helloWorldWf)
 	assert.NotNil(t, wf)
@@ -256,7 +261,9 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 }
 
 func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
+
 	assert.NotNil(t, controller)
 	wf := unmarshalWF(helloWorldWf)
 	assert.NotNil(t, wf)
@@ -312,7 +319,8 @@ func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
 
 // TestProcessNodesWithRetries tests retrying when RetryOn.Error is disabled
 func TestProcessNodesNoRetryWithError(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	assert.NotNil(t, controller)
 	wf := unmarshalWF(helloWorldWf)
 	assert.NotNil(t, wf)
@@ -454,11 +462,13 @@ func TestAssessNodeStatus(t *testing.T) {
 	}}
 
 	wf := unmarshalWF(helloWorldWf)
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			woc := newWorkflowOperationCtx(wf, newController())
-			got := woc.assessNodeStatus(test.pod, test.node)
-			assert.Equal(t, test.want, got.Phase)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cancel, controller := newController()
+			defer cancel()
+			woc := newWorkflowOperationCtx(wf, controller)
+			got := woc.assessNodeStatus(tt.pod, tt.node)
+			assert.Equal(t, tt.want, got.Phase)
 		})
 	}
 }
@@ -500,7 +510,8 @@ spec:
 
 // TestWorkflowParallelismLimit verifies parallelism at a workflow level is honored.
 func TestWorkflowStepRetry(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(workflowStepRetry)
 	wf, err := wfcset.Create(wf)
@@ -570,7 +581,8 @@ spec:
 
 // TestWorkflowParallelismLimit verifies parallelism at a workflow level is honored.
 func TestWorkflowParallelismLimit(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(workflowParallelismLimit)
 	wf, err := wfcset.Create(wf)
@@ -628,7 +640,8 @@ spec:
 
 // TestStepsTemplateParallelismLimit verifies parallelism at a steps level is honored.
 func TestStepsTemplateParallelismLimit(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(stepsTemplateParallelismLimit)
 	wf, err := wfcset.Create(wf)
@@ -684,7 +697,8 @@ spec:
 
 // TestDAGTemplateParallelismLimit verifies parallelism at a dag level is honored.
 func TestDAGTemplateParallelismLimit(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(dagTemplateParallelismLimit)
 	wf, err := wfcset.Create(wf)
@@ -777,7 +791,8 @@ spec:
 `
 
 func TestNestedTemplateParallelismLimit(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(nestedParallelism)
 	wf, err := wfcset.Create(wf)
@@ -793,7 +808,8 @@ func TestNestedTemplateParallelismLimit(t *testing.T) {
 
 // TestSidecarResourceLimits verifies resource limits on the sidecar can be set in the controller config
 func TestSidecarResourceLimits(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	controller.Config.Executor = &apiv1.Container{
 		Resources: apiv1.ResourceRequirements{
 			Limits: apiv1.ResourceList{
@@ -820,14 +836,16 @@ func TestSidecarResourceLimits(t *testing.T) {
 			break
 		}
 	}
-	assert.NotNil(t, waitCtr)
-	assert.Equal(t, 2, len(waitCtr.Resources.Limits))
-	assert.Equal(t, 2, len(waitCtr.Resources.Requests))
+	if assert.NotNil(t, waitCtr) && assert.NotNil(t, waitCtr.Resources) {
+		assert.Len(t, waitCtr.Resources.Limits, 2)
+		assert.Len(t, waitCtr.Resources.Requests, 2)
+	}
 }
 
 // TestSuspendResume tests the suspend and resume feature
 func TestSuspendResume(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(stepsTemplateParallelismLimit)
 	wf, err := wfcset.Create(wf)
@@ -848,7 +866,7 @@ func TestSuspendResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow and operate again. two pods should be able to be scheduled
-	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, "")
+	err = util.ResumeWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "")
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -874,7 +892,8 @@ spec:
 `
 
 func TestSuspendWithDeadline(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
@@ -935,7 +954,8 @@ spec:
 `
 
 func TestSequence(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	wf := unmarshalWF(sequence)
@@ -996,7 +1016,8 @@ spec:
 `
 
 func TestInputParametersAsJson(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	wf := unmarshalWF(inputParametersAsJson)
@@ -1051,7 +1072,8 @@ spec:
 `
 
 func TestExpandWithItems(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// Test list expansion
@@ -1100,7 +1122,8 @@ spec:
 `
 
 func TestExpandWithItemsMap(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	wf := unmarshalWF(expandWithItemsMap)
@@ -1146,7 +1169,8 @@ spec:
 `
 
 func TestSuspendTemplate(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
@@ -1167,7 +1191,7 @@ func TestSuspendTemplate(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
-	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, "")
+	err = util.ResumeWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "")
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -1182,7 +1206,8 @@ func TestSuspendTemplate(t *testing.T) {
 }
 
 func TestSuspendTemplateWithFailedResume(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
@@ -1219,7 +1244,8 @@ func TestSuspendTemplateWithFailedResume(t *testing.T) {
 }
 
 func TestSuspendTemplateWithFilteredResume(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
@@ -1240,7 +1266,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow, but with non-matching selector
-	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, "inputs.paramaters.param1.value=value2")
+	err = util.ResumeWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "inputs.paramaters.param1.value=value2")
 	assert.Error(t, err)
 
 	// operate the workflow. nothing should have happened
@@ -1252,7 +1278,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.True(t, util.IsWorkflowSuspended(wf))
 
 	// resume the workflow, but with matching selector
-	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1")
+	err = util.ResumeWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1")
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -1293,7 +1319,8 @@ spec:
 `
 
 func TestSuspendResumeAfterTemplate(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
@@ -1325,7 +1352,8 @@ func TestSuspendResumeAfterTemplate(t *testing.T) {
 }
 
 func TestSuspendResumeAfterTemplateNoWait(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
@@ -1390,7 +1418,8 @@ spec:
 
 // Tests ability to reference workflow parameters from within top level spec fields (e.g. spec.volumes)
 func TestWorkflowSpecParam(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	wf := unmarshalWF(volumeWithParam)
@@ -1614,7 +1643,8 @@ spec:
 `
 
 func TestMetadataPassing(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(metadataTemplate)
 	wf, err := wfcset.Create(wf)
@@ -1820,7 +1850,8 @@ spec:
 
 func TestResolveStatuses(t *testing.T) {
 
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should create a pod.
@@ -1853,7 +1884,8 @@ spec:
 `
 
 func TestResourceTemplate(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should create a pod.
@@ -1942,7 +1974,8 @@ spec:
 `
 
 func TestResourceWithOwnerReferenceTemplate(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should create a pod.
@@ -2120,7 +2153,8 @@ spec:
 
 func TestStepWFGetNodeName(t *testing.T) {
 
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should create a pod.
@@ -2144,7 +2178,8 @@ func TestStepWFGetNodeName(t *testing.T) {
 
 func TestDAGWFGetNodeName(t *testing.T) {
 
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should create a pod.
@@ -2199,7 +2234,8 @@ spec:
 `
 
 func TestWithParamAsJsonList(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// Test list expansion
@@ -2244,7 +2280,8 @@ spec:
 `
 
 func TestStepsOnExit(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// Test list expansion
@@ -2290,7 +2327,8 @@ spec:
 `
 
 func TestStepsOnExitFailures(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// Test list expansion
@@ -2326,7 +2364,8 @@ spec:
 `
 
 func TestStepsOnExitTimeout(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// Test list expansion
@@ -2361,7 +2400,8 @@ spec:
 
 func TestEventInvalidSpec(t *testing.T) {
 	// Test whether a WorkflowFailed event is emitted in case of invalid spec
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(invalidSpec)
 	wf, err := wfcset.Create(wf)
@@ -2372,9 +2412,9 @@ func TestEventInvalidSpec(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(events.Items))
 	runningEvent := events.Items[0]
-	assert.Equal(t, "WorkflowRunning", runningEvent.Reason)
+	assert.Equal(t, argo.EventReasonWorkflowRunning, runningEvent.Reason)
 	invalidSpecEvent := events.Items[1]
-	assert.Equal(t, "WorkflowFailed", invalidSpecEvent.Reason)
+	assert.Equal(t, argo.EventReasonWorkflowFailed, invalidSpecEvent.Reason)
 	assert.Equal(t, "invalid spec: template name '123' undefined", invalidSpecEvent.Message)
 }
 
@@ -2395,7 +2435,8 @@ spec:
 
 func TestEventTimeout(t *testing.T) {
 	// Test whether a WorkflowTimedOut event is emitted in case of timeout
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(timeout)
 	wf, err := wfcset.Create(wf)
@@ -2412,10 +2453,9 @@ func TestEventTimeout(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(events.Items))
 	runningEvent := events.Items[0]
-	assert.Equal(t, "WorkflowRunning", runningEvent.Reason)
+	assert.Equal(t, argo.EventReasonWorkflowRunning, runningEvent.Reason)
 	timeoutEvent := events.Items[1]
-	assert.Equal(t, "WorkflowTimedOut", timeoutEvent.Reason)
-	assert.True(t, strings.HasPrefix(timeoutEvent.Message, "timeout-template error in entry template execution: Deadline exceeded"))
+	assert.Equal(t, argo.EventReasonWorkflowFailed, timeoutEvent.Reason)
 }
 
 var failLoadArtifactRepoCm = `
@@ -2442,7 +2482,8 @@ spec:
 
 func TestEventFailArtifactRepoCm(t *testing.T) {
 	// Test whether a WorkflowFailed event is emitted in case of failure in loading artifact repository config map
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(failLoadArtifactRepoCm)
 	wf, err := wfcset.Create(wf)
@@ -2453,9 +2494,9 @@ func TestEventFailArtifactRepoCm(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(events.Items))
 	runningEvent := events.Items[0]
-	assert.Equal(t, "WorkflowRunning", runningEvent.Reason)
+	assert.Equal(t, argo.EventReasonWorkflowRunning, runningEvent.Reason)
 	failEvent := events.Items[1]
-	assert.Equal(t, "WorkflowFailed", failEvent.Reason)
+	assert.Equal(t, argo.EventReasonWorkflowFailed, failEvent.Reason)
 	assert.Equal(t, "Failed to load artifact repository configMap: configmaps \"artifact-repository\" not found", failEvent.Message)
 }
 
@@ -2477,7 +2518,8 @@ spec:
 `
 
 func TestPDBCreation(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(pdbwf)
 	wf, err := wfcset.Create(wf)
@@ -2494,7 +2536,8 @@ func TestPDBCreation(t *testing.T) {
 }
 
 func TestStatusConditions(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(pdbwf)
 	wf, err := wfcset.Create(wf)
@@ -2549,7 +2592,8 @@ spec:
 `
 
 func TestNestedOptionalOutputArtifacts(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// Test list expansion
@@ -2564,20 +2608,10 @@ func TestNestedOptionalOutputArtifacts(t *testing.T) {
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
 
-func Test_nodePhaseReason(t *testing.T) {
-	assert.Equal(t, argo.EventReasonWorkflowNodeError, nodePhaseReason(wfv1.NodeError))
-	assert.Equal(t, argo.EventReasonWorkflowNodeFailed, nodePhaseReason(wfv1.NodeFailed))
-	assert.Equal(t, argo.EventReasonWorkflowNodeSucceeded, nodePhaseReason(wfv1.NodeSucceeded))
-}
-
-func Test_nodeMessage(t *testing.T) {
-	assert.Equal(t, "Succeeded node my-node", nodeMessage(&wfv1.NodeStatus{Phase: wfv1.NodeSucceeded, Name: "my-node"}))
-	assert.Equal(t, "Succeeded node my-node: my-message", nodeMessage(&wfv1.NodeStatus{Phase: wfv1.NodeSucceeded, Name: "my-node", Message: "my-message"}))
-}
-
 //  TestPodSpecLogForFailedPods tests PodSpec logging configuration
 func TestPodSpecLogForFailedPods(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	assert.NotNil(t, controller)
 	controller.Config.PodSpecLogStrategy.FailedPod = true
 	wf := unmarshalWF(helloWorldWf)
@@ -2596,7 +2630,8 @@ func TestPodSpecLogForFailedPods(t *testing.T) {
 
 //  TestPodSpecLogForAllPods tests  PodSpec logging configuration
 func TestPodSpecLogForAllPods(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	assert.NotNil(t, controller)
 	controller.Config.PodSpecLogStrategy.AllPods = true
 	wf := unmarshalWF(nestedOptionalOutputArtifacts)
@@ -2708,7 +2743,8 @@ status:
 
 // This tests to see if the outputs of the last child node of a retry node are added correctly to the scope
 func TestRetryNodeOutputs(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(retryNodeOutputs)
 	wf, err := wfcset.Create(wf)
@@ -2757,8 +2793,8 @@ spec:
 `
 
 func TestContainerOutputsResult(t *testing.T) {
-
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should create a pod.

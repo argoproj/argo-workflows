@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
@@ -149,23 +150,8 @@ func IsWorkflowCompleted(wf *wfv1.Workflow) bool {
 	return false
 }
 
-// SubmitOpts are workflow submission options
-type SubmitOpts struct {
-	Name           string                 // --name
-	GenerateName   string                 // --generate-name
-	InstanceID     string                 // --instanceid
-	Entrypoint     string                 // --entrypoint
-	Parameters     []string               // --parameter
-	ParameterFile  string                 // --parameter-file
-	ServiceAccount string                 // --serviceaccount
-	DryRun         bool                   // --dry-run
-	ServerDryRun   bool                   // --server-dry-run
-	Labels         string                 // --labels
-	OwnerReference *metav1.OwnerReference // useful if your custom controller creates argo workflow resources
-}
-
 // SubmitWorkflow validates and submit a single workflow and override some of the fields of the workflow
-func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts *SubmitOpts) (*wfv1.Workflow, error) {
+func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts *wfv1.SubmitOpts) (*wfv1.Workflow, error) {
 
 	err := ApplySubmitOpts(wf, opts)
 	if err != nil {
@@ -208,9 +194,9 @@ func CreateServerDryRun(wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*
 }
 
 // Apply the Submit options into workflow object
-func ApplySubmitOpts(wf *wfv1.Workflow, opts *SubmitOpts) error {
+func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	if opts == nil {
-		opts = &SubmitOpts{}
+		opts = &wfv1.SubmitOpts{}
 	}
 	if opts.Entrypoint != "" {
 		wf.Spec.Entrypoint = opts.Entrypoint
@@ -341,7 +327,7 @@ func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error
 
 // ResumeWorkflow resumes a workflow by setting spec.suspend to nil and any suspended nodes to Successful.
 // Retries conflict errors
-func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string, nodeFieldSelector string) error {
+func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, repo sqldb.OffloadNodeStatusRepo, workflowName string, nodeFieldSelector string) error {
 	if len(nodeFieldSelector) > 0 {
 		return updateWorkflowNodeByKey(wfIf, workflowName, nodeFieldSelector, wfv1.NodeSucceeded, "")
 	} else {
@@ -353,7 +339,7 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string, nodeFi
 
 			err = packer.DecompressWorkflow(wf)
 			if err != nil {
-				log.Fatal(err)
+				return false, fmt.Errorf("unable to decompress workflow: %s", err)
 			}
 
 			workflowUpdated := false
@@ -362,17 +348,50 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string, nodeFi
 				workflowUpdated = true
 			}
 
+			nodes := wf.Status.Nodes
+			if wf.Status.IsOffloadNodeStatus() {
+				if !repo.IsEnabled() {
+					return false, fmt.Errorf(sqldb.OffloadNodeStatusDisabled)
+				}
+				var err error
+				nodes, err = repo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+				if err != nil {
+					return false, fmt.Errorf("unable to retrieve offloaded nodes: %s", err)
+				}
+			}
+			newNodes := nodes.DeepCopy()
+
 			// To resume a workflow with a suspended node we simply mark the node as Successful
-			for nodeID, node := range wf.Status.Nodes {
+			for nodeID, node := range nodes {
 				if node.IsActiveSuspendNode() {
 					node.Phase = wfv1.NodeSucceeded
 					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-					wf.Status.Nodes[nodeID] = node
+					newNodes[nodeID] = node
 					workflowUpdated = true
 				}
 			}
 
 			if workflowUpdated {
+				if wf.Status.IsOffloadNodeStatus() {
+					if !repo.IsEnabled() {
+						return false, fmt.Errorf(sqldb.OffloadNodeStatusDisabled)
+					}
+					offloadVersion, err := repo.Save(string(wf.UID), wf.Namespace, newNodes)
+					if err != nil {
+						return false, fmt.Errorf("unable to save offloaded nodes: %s", err)
+					}
+					wf.Status.OffloadNodeStatusVersion = offloadVersion
+					wf.Status.CompressedNodes = ""
+					wf.Status.Nodes = nil
+				} else {
+					wf.Status.Nodes = newNodes
+				}
+
+				err = packer.CompressWorkflowIfNeeded(wf)
+				if err != nil {
+					return false, fmt.Errorf("unable to compress workflow: %s", err)
+				}
+
 				_, err = wfIf.Update(wf)
 				if err != nil {
 					if apierr.IsConflict(err) {
@@ -385,6 +404,25 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string, nodeFi
 		})
 		return err
 	}
+}
+
+func selectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
+	nodeFields := fields.Set{
+		"displayName":  node.DisplayName,
+		"templateName": node.TemplateName,
+		"phase":        string(node.Phase),
+	}
+	if node.TemplateRef != nil {
+		nodeFields["templateRef.name"] = node.TemplateRef.Name
+		nodeFields["templateRef.template"] = node.TemplateRef.Template
+	}
+	if node.Inputs != nil {
+		for _, inParam := range node.Inputs.Parameters {
+			nodeFields[fmt.Sprintf("inputs.parameters.%s.value", inParam.Name)] = *inParam.Value
+		}
+	}
+
+	return selector.Matches(nodeFields)
 }
 
 func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, workflowName string, nodeFieldSelector string, phase wfv1.NodePhase, message string) error {
@@ -407,16 +445,7 @@ func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, workflowName strin
 		nodeUpdated := false
 		for nodeID, node := range wf.Status.Nodes {
 			if node.IsActiveSuspendNode() {
-				nodeFields := fields.Set{
-					"displayName": node.DisplayName,
-				}
-				if node.Inputs != nil {
-					for _, inParam := range node.Inputs.Parameters {
-						nodeFields[fmt.Sprintf("inputs.parameters.%s.value", inParam.Name)] = *inParam.Value
-					}
-				}
-
-				if selector.Matches(nodeFields) {
+				if selectorMatchesNode(selector, node) {
 					node.Phase = phase
 					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 					if len(message) > 0 {
@@ -564,7 +593,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 		newWF.Status.StoredTemplates[id] = tmpl
 	}
 
-	newWF.Status.Conditions.UpsertCondition(wfv1.WorkflowCondition{Status: metav1.ConditionFalse, Type: wfv1.WorkflowConditionCompleted})
+	newWF.Status.Conditions = wfv1.WorkflowConditions{{Status: metav1.ConditionFalse, Type: wfv1.WorkflowConditionCompleted}}
 	newWF.Status.Phase = wfv1.NodePending
 
 	return &newWF, nil
@@ -578,12 +607,18 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 }
 
 // RetryWorkflow updates a workflow, deleting all failed steps as well as the onExit node (and children)
-func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow) (*wfv1.Workflow, error) {
+func RetryWorkflow(kubeClient kubernetes.Interface, repo sqldb.OffloadNodeStatusRepo, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow, restartSuccessful bool, nodeFieldSelector string) (*wfv1.Workflow, error) {
 	switch wf.Status.Phase {
 	case wfv1.NodeFailed, wfv1.NodeError:
 	default:
 		return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
 	}
+
+	err := packer.DecompressWorkflow(wf)
+	if err != nil {
+		return nil, fmt.Errorf("unable to decompress workflow: %s", err)
+	}
+
 	newWF := wf.DeepCopy()
 	podIf := kubeClient.CoreV1().Pods(wf.ObjectMeta.Namespace)
 
@@ -594,28 +629,52 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 	newWF.Status.Phase = wfv1.NodeRunning
 	newWF.Status.Message = ""
 	newWF.Status.FinishedAt = metav1.Time{}
+	newWF.Spec.Shutdown = ""
 	if newWF.Spec.ActiveDeadlineSeconds != nil && *newWF.Spec.ActiveDeadlineSeconds == 0 {
 		// if it was terminated, unset the deadline
 		newWF.Spec.ActiveDeadlineSeconds = nil
 	}
 
-	// Iterate the previous nodes. If it was successful Pod carry it forward
-	newWF.Status.Nodes = make(map[string]wfv1.NodeStatus)
+	newNodes := make(map[string]wfv1.NodeStatus)
 	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
-	for _, node := range wf.Status.Nodes {
+	nodes := wf.Status.Nodes
+	if wf.Status.IsOffloadNodeStatus() {
+		if !repo.IsEnabled() {
+			return nil, fmt.Errorf(sqldb.OffloadNodeStatusDisabled)
+		}
+		var err error
+		nodes, err = repo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+		if err != nil {
+			return nil, fmt.Errorf("unable to retrieve offloaded nodes: %s", err)
+		}
+	}
+
+	// Get all children of nodes that match filter
+	nodeIDsToReset, err := getNodeIDsToReset(restartSuccessful, nodeFieldSelector, nodes)
+	if err != nil {
+		return nil, err
+	}
+
+	// Iterate the previous nodes. If it was successful Pod carry it forward
+	for _, node := range nodes {
+		doForceResetNode := false
+		if _, present := nodeIDsToReset[node.ID]; present {
+			// if we are resetting this node then don't carry it across regardless of its phase
+			doForceResetNode = true
+		}
 		switch node.Phase {
 		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
-			if !strings.HasPrefix(node.Name, onExitNodeName) {
-				newWF.Status.Nodes[node.ID] = node
+			if !strings.HasPrefix(node.Name, onExitNodeName) && !doForceResetNode {
+				newNodes[node.ID] = node
 				continue
 			}
 		case wfv1.NodeError, wfv1.NodeFailed:
-			if !strings.HasPrefix(node.Name, onExitNodeName) && node.Type == wfv1.NodeTypeDAG {
+			if !strings.HasPrefix(node.Name, onExitNodeName) && (node.Type == wfv1.NodeTypeDAG || node.Type == wfv1.NodeTypeStepGroup) {
 				newNode := node.DeepCopy()
 				newNode.Phase = wfv1.NodeRunning
 				newNode.Message = ""
 				newNode.FinishedAt = metav1.Time{}
-				newWF.Status.Nodes[newNode.ID] = *newNode
+				newNodes[newNode.ID] = *newNode
 				continue
 			}
 			// do not add this status to the node. pretend as if this node never existed.
@@ -634,9 +693,24 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 			newNode.Phase = wfv1.NodeRunning
 			newNode.Message = ""
 			newNode.FinishedAt = metav1.Time{}
-			newWF.Status.Nodes[newNode.ID] = *newNode
+			newNodes[newNode.ID] = *newNode
 			continue
 		}
+	}
+
+	if wf.Status.IsOffloadNodeStatus() {
+		if !repo.IsEnabled() {
+			return nil, fmt.Errorf(sqldb.OffloadNodeStatusDisabled)
+		}
+		offloadVersion, err := repo.Save(string(newWF.UID), newWF.Namespace, newNodes)
+		if err != nil {
+			return nil, fmt.Errorf("unable to save offloaded nodes: %s", err)
+		}
+		newWF.Status.OffloadNodeStatusVersion = offloadVersion
+		newWF.Status.CompressedNodes = ""
+		newWF.Status.Nodes = nil
+	} else {
+		newWF.Status.Nodes = newNodes
 	}
 
 	newWF.Status.StoredTemplates = make(map[string]wfv1.Template)
@@ -644,7 +718,43 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 		newWF.Status.StoredTemplates[id] = tmpl
 	}
 
+	err = packer.CompressWorkflowIfNeeded(newWF)
+	if err != nil {
+		return nil, fmt.Errorf("unable to compress workflow: %s", err)
+	}
+
 	return wfClient.Update(newWF)
+}
+
+func getNodeIDsToReset(restartSuccessful bool, nodeFieldSelector string, nodes wfv1.Nodes) (map[string]bool, error) {
+	nodeIDsToReset := make(map[string]bool)
+	if !restartSuccessful || len(nodeFieldSelector) == 0 {
+		return nodeIDsToReset, nil
+	}
+
+	selector, err := fields.ParseSelector(nodeFieldSelector)
+	if err != nil {
+		return nil, err
+	} else {
+		for _, node := range nodes {
+			if selectorMatchesNode(selector, node) {
+				//traverse all children of the node
+				var queue []string
+				queue = append(queue, node.ID)
+
+				for len(queue) > 0 {
+					childNode := queue[0]
+					//if the child isn't already in nodeIDsToReset then we add it and traverse its children
+					if _, present := nodeIDsToReset[childNode]; !present {
+						nodeIDsToReset[childNode] = true
+						queue = append(queue, nodes[childNode].Children...)
+					}
+					queue = queue[1:]
+				}
+			}
+		}
+	}
+	return nodeIDsToReset, nil
 }
 
 var errSuspendedCompletedWorkflow = errors.Errorf(errors.CodeBadRequest, "cannot suspend completed workflows")

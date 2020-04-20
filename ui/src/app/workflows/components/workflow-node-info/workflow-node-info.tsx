@@ -7,6 +7,7 @@ import * as models from '../../../../models';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
+import {getResolvedTemplates} from '../../../shared/template-resolution';
 import {Usage} from '../../../shared/usage';
 import {Utils} from '../../../shared/utils';
 
@@ -191,7 +192,7 @@ export class WorkflowNodeContainers extends React.Component<Props, {selectedSide
     }
 
     public render() {
-        const template = Utils.getResolvedTemplates(this.props.workflow, this.props.node);
+        const template = getResolvedTemplates(this.props.workflow, this.props.node);
         if (!template || (!template.container && !template.script)) {
             return (
                 <div className='white-box'>

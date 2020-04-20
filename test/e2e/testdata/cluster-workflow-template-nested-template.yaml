@@ -8,8 +8,9 @@ spec:
   templates:
     - name: whalesay-inner-template
       templateRef:
-        name: workflow-template-whalesay-template
+        name: cluster-workflow-template-whalesay-template
         template: whalesay-template
+        clusterScope: true
       inputs:
         parameters:
           - name: message

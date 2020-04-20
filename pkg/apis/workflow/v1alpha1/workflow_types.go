@@ -705,6 +705,9 @@ type Outputs struct {
 
 	// Result holds the result (stdout) of a script template
 	Result *string `json:"result,omitempty" protobuf:"bytes,3,opt,name=result"`
+
+	// ExitCode holds the exit code of a script template
+	ExitCode *string `json:"exitCode,omitempty" protobuf:"bytes,4,opt,name=exitCode"`
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step
@@ -804,7 +807,7 @@ type TemplateRef struct {
 	// By enabling this option, you can create the referred workflow template before the actual runtime.
 	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
 	// ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
-	ClusterScope bool `json:"clusterscope,omitempty" protobuf:"varint,4,opt,name=clusterscope"`
+	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
 }
 
 type ArgumentsProvider interface {
@@ -1038,6 +1041,8 @@ const (
 	WorkflowConditionCompleted WorkflowConditionType = "Completed"
 	// WorkflowConditionSpecWarning is a warning on the current application spec
 	WorkflowConditionSpecWarning WorkflowConditionType = "SpecWarning"
+	// WorkflowConditionMetricsError is an error during metric emission
+	WorkflowConditionMetricsError WorkflowConditionType = "MetricsError"
 )
 
 type WorkflowCondition struct {
@@ -1514,6 +1519,13 @@ type ResourceTemplate struct {
 	// FailureCondition is a label selector expression which describes the conditions
 	// of the k8s resource in which the step was considered failed
 	FailureCondition string `json:"failureCondition,omitempty" protobuf:"bytes,6,opt,name=failureCondition"`
+
+	// Flags is a set of additional options passed to kubectl before submitting a resource
+	// I.e. to disable resource validation:
+	// flags: [
+	// 	"--validate=false"  # disable resource validation
+	// ]
+	Flags []string `json:"flags,omitempty" protobuf:"varint,7,opt,name=flags"`
 }
 
 // GetType returns the type of this template
@@ -1667,6 +1679,9 @@ func (out *Outputs) HasOutputs() bool {
 	if out.Result != nil {
 		return true
 	}
+	if out.ExitCode != nil {
+		return true
+	}
 	if len(out.Artifacts) > 0 {
 		return true
 	}
@@ -1720,11 +1735,6 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 // GetResourceScope returns the template scope of workflow.
 func (wf *Workflow) GetResourceScope() ResourceScope {
 	return ResourceScopeLocal
-}
-
-// GetTemplates returns the list of templates of workflow.
-func (wf *Workflow) GetTemplates() []Template {
-	return wf.Spec.Templates
 }
 
 // NodeID creates a deterministic node ID based on a node name

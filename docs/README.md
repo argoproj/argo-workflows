@@ -36,3 +36,4 @@ Some use-case specific documentation is available:
 * [Workflow Templates](workflow-templates.md)
 * [Resources Duration](resource-duration.md)
 * [Usage Capture](usage.md)
+* [Workflow Notifications](workflow-notifications.md)

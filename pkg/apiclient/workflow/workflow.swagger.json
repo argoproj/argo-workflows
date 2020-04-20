@@ -249,6 +249,38 @@
         ]
       }
     },
+    "/api/v1/workflows/{namespace}/submit-from": {
+      "post": {
+        "operationId": "SubmitFrom",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workflow.WorkflowSubmitFromRequest"
+            }
+          }
+        ],
+        "tags": [
+          "WorkflowService"
+        ]
+      }
+    },
     "/api/v1/workflows/{namespace}/{name}": {
       "get": {
         "operationId": "GetWorkflow",
@@ -1470,6 +1502,10 @@
         "result": {
           "type": "string",
           "title": "Result holds the result (stdout) of a script template"
+        },
+        "exitCode": {
+          "type": "string",
+          "title": "ExitCode holds the exit code of a script template"
         }
       },
       "title": "Outputs hold parameters, artifacts, and results from a step"
@@ -1595,6 +1631,13 @@
         "failureCondition": {
           "type": "string",
           "title": "FailureCondition is a label selector expression which describes the conditions\nof the k8s resource in which the step was considered failed"
+        },
+        "flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Flags is a set of additional options passed to kubectl before submitting a resource\nI.e. to disable resource validation:\nflags: [\n\t\"--validate=false\"  # disable resource validation\n]"
         }
       },
       "title": "ResourceTemplate is a template subtype to manipulate kubernetes resources"
@@ -1705,6 +1748,61 @@
         }
       },
       "title": "Sequence expands a workflow step into numeric range"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SubmitOpts": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Name overrides metadata.name"
+        },
+        "generateName": {
+          "type": "string",
+          "title": "GenerateName overrides metadata.generateName"
+        },
+        "instanceID": {
+          "type": "string",
+          "title": "InstanceID binds the Resource to the specified instance ID"
+        },
+        "entrypoint": {
+          "type": "string",
+          "title": "Entrypoint overrides spec.entrypoint"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Parameters passes input parameters to workflow"
+        },
+        "parameterFile": {
+          "type": "string",
+          "title": "ParameterFile holds a reference to a parameter file. This option is not supported in API"
+        },
+        "serviceAccount": {
+          "type": "string",
+          "description": "ServiceAccount runs all pods in the workflow using specified ServiceAccount."
+        },
+        "dryRun": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "DryRun validates the workflow on the client-side without creating it. This option is not supported in API"
+        },
+        "serverDryRun": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "ServerDryRun validates the workflow on the server-side without creating it"
+        },
+        "labels": {
+          "type": "string",
+          "title": "Labels adds to metadata.labels"
+        },
+        "ownerReference": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference",
+          "title": "OwnerReference creates a metadata.ownerReference"
+        }
+      },
+      "title": "SubmitOpts are workflow submission options"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SuspendTemplate": {
       "type": "object",
@@ -1937,7 +2035,7 @@
           "format": "boolean",
           "description": "RuntimeResolution skips validation at creation time.\nBy enabling this option, you can create the referred workflow template before the actual runtime."
         },
-        "clusterscope": {
+        "clusterScope": {
           "type": "boolean",
           "format": "boolean",
           "description": "ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate)."
@@ -4959,6 +5057,13 @@
         },
         "namespace": {
           "type": "string"
+        },
+        "restartSuccesful": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "nodeFieldSelector": {
+          "type": "string"
         }
       }
     },
@@ -4976,6 +5081,26 @@
         },
         "message": {
           "type": "string"
+        }
+      }
+    },
+    "workflow.WorkflowSubmitFromRequest": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "resourceKind": {
+          "type": "string"
+        },
+        "resourceName": {
+          "type": "string"
+        },
+        "submitOptions": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SubmitOpts"
+        },
+        "createOptions": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions"
         }
       }
     },

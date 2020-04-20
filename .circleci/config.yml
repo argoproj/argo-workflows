@@ -1,10 +1,12 @@
 version: 2.1
+orbs:
+  sonarcloud: sonarsource/sonarcloud@1.0.1
 commands:
   maybe_skip_job:
     steps:
-    - run:
-        name: Maybe skip job if not relevant
-        command: ./hack/maybe-skip-job.sh $CIRCLE_JOB
+      - run:
+          name: Maybe skip job if not relevant
+          command: ./hack/maybe-skip-job.sh $CIRCLE_JOB
   install_kustomize:
     steps:
       - run:
@@ -60,7 +62,6 @@ commands:
           background: true
       - restore_go_cache
       - install_golang
-      - go_junit_report
       - restore_go_mod
       - run:
           name: Create KUBECONFIG
@@ -86,14 +87,10 @@ commands:
           command: make logs
           background: true
       - run:
-          name: Run smoke tests
-          command: make smoke
-      - run:
           name: Run tests
           command: |
-            mkdir -p test-results
-            trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
-            make test-e2e 2>&1 | tee test-results/test.out
+            trap 'make test-results/junit.xml' EXIT
+            make smoke test-e2e
       - store_test_results:
           path: test-results
           when: always
@@ -109,11 +106,6 @@ commands:
           when: always
       - save_go_mod
       - save_go_cache
-  go_junit_report:
-    steps:
-      - run:
-          name: Install Go test report to Junit test report
-          command: go get github.com/jstemmer/go-junit-report
 jobs:
   codegen:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
@@ -153,17 +145,20 @@ jobs:
       - install_kustomize
       - restore_go_cache
       - install_golang
-      - go_junit_report
       - restore_go_mod
       - run:
           name: Run tests
           command: |
-            mkdir -p test-results
-            trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
-            make test 2>&1 | tee test-results/test.out
-      - run:
-          name: Uploading code coverage
-          command: bash <(curl -s https://codecov.io/bash) -f coverage.out
+            trap 'make test-results/junit.xml' EXIT
+            make test
+      - run: |
+          cp sonar-project.properties dist/
+          if [ $CIRCLE_BRANCH != master ]; then
+            echo "sonar.pullrequest.branch=$CIRCLE_BRANCH" >> sonar-project.properties
+            echo "sonar.pullrequest.key=$CIRCLE_PR_NUMBER" >> sonar-project.properties
+          fi
+      - sonarcloud/scan
+      - run: cp dist/sonar-project.properties .
       - store_test_results:
           path: test-results
           when: always
@@ -221,7 +216,6 @@ jobs:
           name: Download dependencies
           command: yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
       # - run: yarn test
-      # - run: ./node_modules/.bin/codecov -p ..
       - run: yarn --cwd ui build
       - run: yarn --cwd ui lint
       - run: git diff --exit-code
@@ -234,7 +228,8 @@ workflows:
   version: 2
   argo-workflow:
     jobs:
-      - test
+      - test:
+          context: SonarCloud
       - ui
       - codegen
       - e2e-no-db

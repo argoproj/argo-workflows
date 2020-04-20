@@ -2,7 +2,9 @@
 
 ![alpha](assets/alpha.svg)
 
-Argo Workflows provides an indication of how much resource your workflow has requested and saves this 
+> v2.7 and after
+
+Argo Workflows provides an indication of how much resource your workflow has used and saves this 
 information. This is intended to be an **indicative but not accurate** value.
 
 See also [usage capture](usage.md)
