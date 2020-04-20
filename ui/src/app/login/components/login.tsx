@@ -19,15 +19,15 @@ const logout = () => {
     document.location.reload(true);
 };
 const login = (token: string) => {
-    document.cookie = 'authorization=' + token + ';SameSite=Strict' ;
+    document.cookie = 'authorization=' + token + ';SameSite=Strict';
     document.location.href = uiUrl('');
 };
 export const Login = () => (
     <Page title='Login' toolbar={{breadcrumbs: [{title: 'Login'}]}}>
         <div className='argo-container'>
             <p>
-                <i className='fa fa-info-circle' /> You appear to be <b>logged {maybeLoggedIn() ? 'in' : 'out'}</b>. It may not be necessary to login to use Argo, it depends on how it is
-                configured.
+                <i className='fa fa-info-circle' /> You appear to be <b>logged {maybeLoggedIn() ? 'in' : 'out'}</b>. It may not be necessary to login to use Argo, it depends on how
+                it is configured.
             </p>
             <p>
                 Get your token using <code>argo auth token</code> and paste in this box.
