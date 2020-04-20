@@ -508,6 +508,10 @@ spec:
       - args:
         - server
         - --namespaced
+        - --auth-mode
+        - server
+        - --auth-mode
+        - sso
         image: argoproj/argocli:latest
         name: argo-server
         ports:
