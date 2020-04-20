@@ -1,6 +1,7 @@
 package apiserver
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"github.com/soheilhy/cmux"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -49,6 +51,7 @@ const (
 
 type argoServer struct {
 	baseHRef         string
+	tlsConfig        *tls.Config
 	namespace        string
 	managedNamespace string
 	kubeClientset    *kubernetes.Clientset
@@ -59,6 +62,7 @@ type argoServer struct {
 
 type ArgoServerOpts struct {
 	BaseHRef      string
+	TLSConfig     *tls.Config
 	Namespace     string
 	KubeClientset *kubernetes.Clientset
 	WfClientSet   *versioned.Clientset
@@ -72,6 +76,7 @@ type ArgoServerOpts struct {
 func NewArgoServer(opts ArgoServerOpts) *argoServer {
 	return &argoServer{
 		baseHRef:         opts.BaseHRef,
+		tlsConfig:        opts.TLSConfig,
 		namespace:        opts.Namespace,
 		managedNamespace: opts.ManagedNamespace,
 		kubeClientset:    opts.KubeClientset,
@@ -152,6 +157,10 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		return
 	}
 
+	if as.tls() {
+		conn = tls.NewListener(conn, as.tlsConfig)
+	}
+
 	// Cmux is used to support servicing gRPC and HTTP1.1+JSON on the same port
 	tcpm := cmux.New(conn)
 	httpL := tcpm.Match(cmux.HTTP1Fast())
@@ -192,6 +201,10 @@ func (as *argoServer) newGRPCServer(instanceID string, offloadNodeStatusRepo sql
 		)),
 	}
 
+	if as.tls() {
+		sOpts = append(sOpts, grpc.Creds(credentials.NewTLS(as.tlsConfig)))
+	}
+
 	grpcServer := grpc.NewServer(sOpts...)
 
 	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace, links))
@@ -211,14 +224,18 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 
 	mux := http.NewServeMux()
 	httpServer := http.Server{
-		Addr:    endpoint,
-		Handler: mux,
+		Addr:      endpoint,
+		Handler:   mux,
+		TLSConfig: as.tlsConfig,
 	}
-	var dialOpts []grpc.DialOption
-	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxGRPCMessageSize)))
-	//dialOpts = append(dialOpts, grpc.WithUserAgent(fmt.Sprintf("%s/%s", common.ArgoCDUserAgentName, argocd.GetVersion().Version)))
-
-	dialOpts = append(dialOpts, grpc.WithInsecure())
+	dialOpts := []grpc.DialOption{
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxGRPCMessageSize)),
+	}
+	if as.tls() {
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(as.tlsConfig)))
+	} else {
+		dialOpts = append(dialOpts, grpc.WithInsecure())
+	}
 
 	// HTTP 1.1+JSON Server
 	// grpc-ecosystem/grpc-gateway is used to proxy HTTP requests to the corresponding gRPC call
@@ -274,4 +291,8 @@ func (as *argoServer) checkServeErr(name string, err error) {
 	} else {
 		log.Infof("graceful shutdown %s", name)
 	}
+}
+
+func (as *argoServer) tls() bool {
+	return as.tlsConfig != nil
 }

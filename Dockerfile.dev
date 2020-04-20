@@ -104,5 +104,7 @@ ENTRYPOINT [ "workflow-controller" ]
 FROM scratch as argocli
 COPY --from=argoexec-base /etc/ssh/ssh_known_hosts /etc/ssh/ssh_known_hosts
 COPY --from=argoexec-base /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY argo-server.crt argo-server.crt
+COPY argo-server.key argo-server.key
 COPY argo /bin/
 ENTRYPOINT [ "argo" ]

@@ -167,7 +167,12 @@ dist/argo-%: server/static/files.go $(CLI_PKGS)
 .PHONY: cli-image
 cli-image: dist/cli-image
 
-dist/cli-image: dist/argo-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
+argo-server.crt: argo-server.key
+
+argo-server.key:
+	openssl req -x509 -newkey rsa:4096 -keyout argo-server.key -out argo-server.crt -days 365 -nodes -subj /CN=localhost/O=ArgoProj
+
+dist/cli-image: dist/argo-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) argo-server.crt argo-server.key
 	# Create CLI image
 ifeq ($(DEV_IMAGE),true)
 	cp dist/argo-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) argo
