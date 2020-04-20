@@ -736,6 +736,10 @@ export interface TemplateRef {
      * By enabling this option, you can create the referred workflow template before the actual runtime.
      */
     runtimeResolution?: boolean;
+    /**
+     * ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+     */
+    clusterScope?: boolean;
 }
 
 export interface WorkflowStatus {
@@ -921,6 +925,10 @@ export interface WorkflowStep {
      * WithParam expands a step into from the value in the parameter
      */
     withParam?: string;
+    /**
+     * TemplateRef is the reference to the template resource which is used as the base of this template.
+     */
+    templateRef?: TemplateRef;
 }
 
 export type NodePhase = 'Pending' | 'Running' | 'Succeeded' | 'Skipped' | 'Failed' | 'Error';
@@ -933,3 +941,5 @@ export const NODE_PHASE = {
     FAILED: 'Failed',
     ERROR: 'Error'
 };
+
+export type ResourceScope = 'local' | 'namespaced' | 'cluster';
