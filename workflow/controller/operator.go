@@ -792,11 +792,11 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
 			// again instead of marking it as an error. Check if that's the case.
 			if node.Pending() {
-				tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
+				tmplCtx, err := woc.createTemplateContext(node.TemplateScope)
 				if err != nil {
 					return err
 				}
-				_, tmpl, _, err := tmplCtx.ResolveTemplate(&node)
+				_, tmpl, err := tmplCtx.ResolveTemplate(&node)
 				if err != nil {
 					return err
 				}

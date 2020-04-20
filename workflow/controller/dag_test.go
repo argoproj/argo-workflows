@@ -372,8 +372,7 @@ status:
 
 // Tests whether assessPhase marks a DAG as successful when it contains failed tasks with continueOn failed
 func TestDagAssessPhaseContinueOnExpandedTaskVariables(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
+	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	wf := unmarshalWF(dagAssessPhaseContinueOnExpandedTaskVariables)
@@ -593,8 +592,7 @@ status:
 
 // Tests whether assessPhase marks a DAG as successful when it contains failed tasks with continueOn failed
 func TestDagAssessPhaseContinueOnExpandedTask(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
+	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	wf := unmarshalWF(dagAssessPhaseContinueOnExpandedTask)
