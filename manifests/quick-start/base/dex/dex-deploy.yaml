@@ -21,7 +21,8 @@ spec:
             - serve
             - /data/config.yaml
           ports:
-            - containerPort: 5556
+            - name: http
+              containerPort: 5556
           volumeMounts:
             - mountPath: /data
               name: config
