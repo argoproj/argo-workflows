@@ -23,7 +23,7 @@ type argoServerClient struct {
 }
 
 func newArgoServerClient(argoServer, auth string) (context.Context, Client, error) {
-	conn, err := NewClientConn(argoServer)
+	conn, err := newClientConn(argoServer)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -50,7 +50,7 @@ func (a *argoServerClient) NewClusterWorkflowTemplateServiceClient() clusterwork
 	return clusterworkflowtmplpkg.NewClusterWorkflowTemplateServiceClient(a.ClientConn)
 }
 
-func NewClientConn(argoServer string) (*grpc.ClientConn, error) {
+func newClientConn(argoServer string) (*grpc.ClientConn, error) {
 	conn, err := grpc.Dial(argoServer, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxClientGRPCMessageSize)), grpc.WithInsecure())
 	if err != nil {
 		return nil, err

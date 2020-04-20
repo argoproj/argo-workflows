@@ -21,3 +21,6 @@ spec:
               value: password
             - name: UPPERIO_DB_DEBUG
               value: "1"
+          readinessProbe:
+            httpGet:
+              scheme: HTTPS
