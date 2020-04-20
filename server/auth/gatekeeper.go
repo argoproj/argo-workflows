@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -25,7 +26,7 @@ const (
 )
 
 type Gatekeeper struct {
-	AuthMode Mode
+	Modes Modes
 	// global clients, not to be used if there are better ones
 	wfClient      versioned.Interface
 	kubeClient    kubernetes.Interface
@@ -33,8 +34,11 @@ type Gatekeeper struct {
 	oauth2Service *oauth2.Service
 }
 
-func NewGatekeeper(authMode Mode, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, oauth2Service *oauth2.Service) *Gatekeeper {
-	return &Gatekeeper{authMode, wfClient, kubeClient, restConfig, oauth2Service}
+func NewGatekeeper(modes Modes, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, oauth2Service *oauth2.Service) (*Gatekeeper, error) {
+	if len(modes) == 0 {
+		return nil, fmt.Errorf("must specify at least one auth mode")
+	}
+	return &Gatekeeper{modes, wfClient, kubeClient, restConfig, oauth2Service}, nil
 }
 
 func (s *Gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
@@ -95,27 +99,20 @@ func getAuthHeader(md metadata.MD) string {
 
 func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, error) {
 	// server and hybrid (without token)
-	if s.AuthMode == Server {
-		return s.wfClient, s.kubeClient, nil
-	}
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		if s.AuthMode == Hybrid {
+		if s.Modes[Server] {
 			return s.wfClient, s.kubeClient, nil
 		}
 		return nil, nil, status.Error(codes.Unauthenticated, "unable to get metadata from incoming context")
 	}
 	authorization := getAuthHeader(md)
 	// SSO mode
-	if s.AuthMode == SSO {
+	if s.Modes[SSO] {
 		_, err := s.oauth2Service.Authorize(ctx, authorization)
 		if err != nil {
 			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
-		return s.wfClient, s.kubeClient, nil
-	}
-	// client mode and hybrid (with token)
-	if !(s.AuthMode == Client || s.AuthMode == Hybrid && authorization != "") {
 		return s.wfClient, s.kubeClient, nil
 	}
 	restConfig, err := kubeconfig.GetRestConfig(authorization)

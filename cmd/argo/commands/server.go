@@ -23,7 +23,7 @@ import (
 
 func NewServerCommand() *cobra.Command {
 	var (
-		authMode          string
+		authModes          []string
 		configMap         string
 		port              int
 		baseHRef          string
@@ -63,23 +63,27 @@ See %s`, help.ArgoSever),
 			}
 
 			log.WithFields(log.Fields{
-				"authMode":         authMode,
+				"authModes":         authModes,
 				"namespace":        namespace,
 				"managedNamespace": managedNamespace,
 				"baseHRef":         baseHRef}).
 				Info()
 
-			authMode := auth.Mode(authMode)
-			if err := authMode.IsValid(); err != nil {
-				log.Fatal(err)
+			modes:= auth.Modes{}
+			for _, mode := range authModes {
+				err := modes.Add(auth.Mode(mode))
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
+
 			opts := apiserver.ArgoServerOpts{
 				BaseHRef:         baseHRef,
 				Namespace:        namespace,
 				WfClientSet:      wflientset,
 				KubeClientset:    kubeConfig,
 				RestConfig:       config,
-				AuthMode:         authMode,
+				AuthModes:        modes,
 				ManagedNamespace: managedNamespace,
 				ConfigName:       configMap,
 			}
@@ -105,7 +109,7 @@ See %s`, help.ArgoSever),
 		defaultBaseHRef = "/"
 	}
 	command.Flags().StringVar(&baseHRef, "basehref", defaultBaseHRef, "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
-	command.Flags().StringVar(&authMode, "auth-mode", "server", "API server authentication mode. One of: client|server|hybrid")
+	command.Flags().StringArrayVar(&authModes, "auth-mode", []string{"server"}, "API server authentication mode. One of: client|server|hybrid")
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that watches, default to the installation namespace")

@@ -64,7 +64,7 @@ type ArgoServerOpts struct {
 	KubeClientset *kubernetes.Clientset
 	WfClientSet   *versioned.Clientset
 	RestConfig    *rest.Config
-	AuthMode      auth.Mode
+	AuthModes     auth.Modes
 	// config map name
 	ConfigName       string
 	ManagedNamespace string
@@ -75,12 +75,16 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 	if err != nil {
 		return nil, err
 	}
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, service)
+	if err != nil {
+		return nil, err
+	}
 	return &argoServer{
 		baseHRef:         opts.BaseHRef,
 		namespace:        opts.Namespace,
 		managedNamespace: opts.ManagedNamespace,
 		kubeClientset:    opts.KubeClientset,
-		authenticator:    auth.NewGatekeeper(opts.AuthMode, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, service),
+		authenticator:    gatekeeper,
 		oAuth2Service:    service,
 		configController: config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset),
 		stopCh:           make(chan struct{}),

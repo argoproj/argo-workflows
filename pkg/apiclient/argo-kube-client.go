@@ -40,7 +40,10 @@ func newArgoKubeClient(clientConfig clientcmd.ClientConfig) (context.Context, Cl
 	if err != nil {
 		return nil, nil, err
 	}
-	gatekeeper := auth.NewGatekeeper(auth.Server, wfClient, kubeClient, restConfig, nil)
+	gatekeeper, err := auth.NewGatekeeper(auth.Modes{auth.Server: true}, wfClient, kubeClient, restConfig, nil)
+	if err != nil {
+		return nil, nil, err
+	}
 	ctx, err := gatekeeper.Context(context.Background())
 	if err != nil {
 		return nil, nil, err
