@@ -80,7 +80,7 @@ See %s`, help.ArgoSever),
 				tlsConfig = &tls.Config{
 					Certificates:       []tls.Certificate{cer},
 					// TODO - should not be the default :(
-,					InsecureSkipVerify: true,
+					InsecureSkipVerify: true,
 				}
 			}
 
