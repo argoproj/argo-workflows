@@ -40,13 +40,21 @@ var imageTag string
 var k3d bool
 
 func init() {
-	output, err := runCli("git", "rev-parse", "--abbrev-ref=loose", "HEAD")
+	gitBranch, err := runCli("git", "rev-parse", "--abbrev-ref=loose", "HEAD")
 	if err != nil {
 		panic(err)
 	}
-	imageTag = strings.TrimSpace(output)
+	imageTag = strings.TrimSpace(gitBranch)
 	if imageTag == "master" {
 		imageTag = "latest"
+	}
+	if strings.HasPrefix(gitBranch, "release-2") {
+		tags, err := runCli("git", "tag", "--merged")
+		if err != nil {
+			panic(err)
+		}
+		parts := strings.Split(tags, "\n")
+		imageTag = parts[len(parts)-2]
 	}
 	context, err := runCli("kubectl", "config", "current-context")
 	if err != nil {
