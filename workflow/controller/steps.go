@@ -349,7 +349,12 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			return nil, errors.InternalWrapError(err)
 		}
 		fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
-		newStepStr, err := common.Replace(fstTmpl, scope.replaceMap(), true)
+
+		replaceMap := scope.replaceMap()
+		for k, v := range woc.globalParams {
+			replaceMap[k] = v
+		}
+		newStepStr, err := common.Replace(fstTmpl, replaceMap, true)
 		if err != nil {
 			return nil, err
 		}
