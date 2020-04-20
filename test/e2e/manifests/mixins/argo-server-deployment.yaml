@@ -11,6 +11,8 @@ spec:
             - server
             - --namespaced
             - --auth-mode
+            - server
+            - --auth-mode
             - sso
             - --loglevel
             - debug

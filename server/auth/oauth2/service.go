@@ -89,8 +89,9 @@ func (s *Service) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	value := prefix + rawIDToken
 	log.Debugf("handing oauth2 callback %v", value)
-	// TODO - "samesite", "httpsonly" etc
-	http.SetCookie(w, &http.Cookie{Name: "authorization", Value: value, Path: s.baseHRef})
+	// TODO "httpsonly" etc
+	// TODO we must compress this because we know id_token can be large if you have many groups
+	http.SetCookie(w, &http.Cookie{Name: "authorization", Value: value, Path: s.baseHRef, SameSite: http.SameSiteStrictMode})
 	http.Redirect(w, r, s.baseHRef, 302)
 }
 

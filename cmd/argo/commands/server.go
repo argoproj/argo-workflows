@@ -23,7 +23,7 @@ import (
 
 func NewServerCommand() *cobra.Command {
 	var (
-		authModes          []string
+		authModes         []string
 		configMap         string
 		port              int
 		baseHRef          string
@@ -63,13 +63,13 @@ See %s`, help.ArgoSever),
 			}
 
 			log.WithFields(log.Fields{
-				"authModes":         authModes,
+				"authModes":        authModes,
 				"namespace":        namespace,
 				"managedNamespace": managedNamespace,
 				"baseHRef":         baseHRef}).
 				Info()
 
-			modes:= auth.Modes{}
+			modes := auth.Modes{}
 			for _, mode := range authModes {
 				err := modes.Add(auth.Mode(mode))
 				if err != nil {

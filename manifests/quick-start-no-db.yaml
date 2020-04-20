@@ -544,6 +544,7 @@ spec:
         name: dex
         ports:
         - containerPort: 5556
+          name: http
         volumeMounts:
         - mountPath: /data
           name: config

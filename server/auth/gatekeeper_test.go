@@ -15,7 +15,7 @@ func TestServer_GetWFClient(t *testing.T) {
 	kubeClient := &fake.Clientset{}
 
 	t.Run("NoAuth", func(t *testing.T) {
-		_, err := NewGatekeeper(Modes{Server: true}, wfClient, kubeClient, nil, nil)
+		_, err := NewGatekeeper(Modes{}, wfClient, kubeClient, nil, nil)
 		assert.Error(t, err)
 	})
 	t.Run("ServerAuth", func(t *testing.T) {
