@@ -9,6 +9,54 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
+func TestGetTaskDependenciesFromDepends(t *testing.T) {
+	task := &wfv1.DAGTask{Depends: "(task-1 || task-2.Succeeded) && !task-3"}
+	deps, logic := GetTaskDependencies(task)
+	assert.Len(t, deps, 3)
+	for _, dep := range []string{"task-1", "task-2", "task-3"} {
+		assert.Contains(t, deps, dep)
+	}
+	assert.Equal(t, "(task-1.Succeeded || task-2.Succeeded) && !task-3.Succeeded", logic)
+
+	task = &wfv1.DAGTask{Depends: "(task-1 || task-1.Succeeded) && !task-1.Failed"}
+	deps, logic = GetTaskDependencies(task)
+	assert.Equal(t, []string{"task-1"}, deps)
+	assert.Equal(t, "(task-1.Succeeded || task-1.Succeeded) && !task-1.Failed", logic)
+
+	task = &wfv1.DAGTask{Depends: "(task-1||task-2.Completed)&&!task-3.Failed"}
+	deps, logic = GetTaskDependencies(task)
+	assert.Len(t, deps, 3)
+	for _, dep := range []string{"task-1", "task-2", "task-3"} {
+		assert.Contains(t, deps, dep)
+	}
+	assert.Equal(t, "(task-1.Succeeded||task-2.Completed)&&!task-3.Failed", logic)
+}
+
+func TestValidateTaskResults(t *testing.T) {
+	task := &wfv1.DAGTask{Depends: "(task-1 || task-2.Succeeded) && !task-3"}
+	err := ValidateTaskResults(task)
+	assert.NoError(t, err)
+
+	task = &wfv1.DAGTask{Depends: "(task-1.Completed || task-2.Succeeded) && !task-3.Skipped && task-2.Failed || task-6.Any"}
+	err = ValidateTaskResults(task)
+	assert.NoError(t, err)
+
+	task = &wfv1.DAGTask{Depends: "(task-1.DoeNotExist || task-2.Succeeded)"}
+	err = ValidateTaskResults(task)
+	assert.Error(t, err, "task result 'DoeNotExist' for task 'task-1' is invalid")
+}
+
+
+func TestGetTaskDependsLogic(t *testing.T) {
+	task := &wfv1.DAGTask{Depends: "(task-1 || task-2.Succeeded) && !task-3"}
+	depends := getTaskDependsLogic(task)
+	assert.Equal(t, "(task-1 || task-2.Succeeded) && !task-3", depends)
+
+	task = &wfv1.DAGTask{Dependencies: []string{"task-1", "task-2", "task-3"}}
+	depends = getTaskDependsLogic(task)
+	assert.Equal(t, "task-1.Successful && task-2.Successful && task-3.Successful", depends)
+}
+
 type testContext struct {
 	status    map[string]time.Time
 	testTasks []*wfv1.DAGTask
@@ -152,19 +200,4 @@ func TestGetTaskAncestryForGlobalArtifacts(t *testing.T) {
 		res := GetTaskAncestry(tt.args.ctx, tt.args.taskName)
 		assert.Equal(t, tt.want, res)
 	}
-}
-
-func TestGetTaskDependenciesFromDepends(t *testing.T) {
-	task := &wfv1.DAGTask{Depends: "(task-1 || task-2.Succeeded) && !task-3"}
-	deps, logic := GetTaskDependencies(task)
-	assert.Len(t, deps, 3)
-	for _, dep := range []string{"task-1", "task-2", "task-3"} {
-		assert.Contains(t, deps, dep)
-	}
-	assert.Equal(t, "(task-1.Succeeded || task-2.Succeeded) && !task-3.Succeeded", logic)
-
-	task = &wfv1.DAGTask{Depends: "(task-1 || task-1.Succeeded) && !task-1.Failed"}
-	deps, logic = GetTaskDependencies(task)
-	assert.Equal(t, []string{"task-1"}, deps)
-	assert.Equal(t, "(task-1.Succeeded || task-1.Succeeded) && !task-1.Failed", logic)
 }
