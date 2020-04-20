@@ -49,12 +49,12 @@ func NewSubmitCommand() *cobra.Command {
 			if cmd.Flag("priority").Changed {
 				cliSubmitOpts.priority = &priority
 			}
-
 			if from != "" {
 				if len(args) != 0 {
 					cmd.HelpFunc()(cmd, args)
 					os.Exit(1)
 				}
+
 				submitWorkflowFromResource(from, &submitOpts, &cliSubmitOpts)
 			} else {
 				submitWorkflowsFromFile(args, &submitOpts, &cliSubmitOpts)
@@ -147,14 +147,13 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *wfv1.Subm
 	}
 	kind := parts[0]
 	name := parts[1]
-
-	ctx, apiClient := client.NewAPIClient()
+	
 	namespace := client.Namespace()
 	tempwf := wfv1.Workflow{}
 
 	validateOptions([]wfv1.Workflow{tempwf}, submitOpts, cliOpts)
 
-	created, err := apiClient.NewWorkflowServiceClient().SubmitFrom(ctx, &workflowpkg.WorkflowSubmitFromRequest{
+	created, err := CLIOpt.client.NewWorkflowServiceClient().SubmitFrom(CLIOpt.ctx, &workflowpkg.WorkflowSubmitFromRequest{
 		Namespace:     namespace,
 		ResourceKind:  kind,
 		ResourceName:  name,
@@ -170,8 +169,8 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *wfv1.Subm
 
 func submitWorkflows(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
 
-	ctx, apiClient := client.NewAPIClient()
-	serviceClient := apiClient.NewWorkflowServiceClient()
+	//ctx, apiClient := client.NewAPIClient()
+	serviceClient := CLIOpt.client.NewWorkflowServiceClient()
 	namespace := client.Namespace()
 
 	validateOptions(workflows, submitOpts, cliOpts)
@@ -195,7 +194,7 @@ func submitWorkflows(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cli
 		if submitOpts.DryRun {
 			options.DryRun = []string{"All"}
 		}
-		created, err := serviceClient.CreateWorkflow(ctx, &workflowpkg.WorkflowCreateRequest{
+		created, err := serviceClient.CreateWorkflow(CLIOpt.ctx, &workflowpkg.WorkflowCreateRequest{
 			Namespace:     wf.Namespace,
 			Workflow:      &wf,
 			InstanceID:    submitOpts.InstanceID,
