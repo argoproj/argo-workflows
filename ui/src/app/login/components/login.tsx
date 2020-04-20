@@ -15,11 +15,11 @@ const getToken = () => {
 
 const maybeLoggedIn = () => !!getToken();
 const logout = () => {
-    document.cookie = 'authorization=;';
+    document.cookie = 'authorization=;Max-Age=0';
     document.location.reload(true);
 };
 const login = (token: string) => {
-    document.cookie = 'authorization=' + token + ';';
+    document.cookie = 'authorization=' + token + ';SameSite=Strict';
     document.location.href = uiUrl('');
 };
 export const Login = () => (
@@ -51,7 +51,7 @@ export const Login = () => (
                         Otherwise, get your token using <code>argo auth token</code> and paste in this box:
                     </p>
                     <div>
-                        <textarea id='token' cols={16} rows={8} defaultValue={getToken()} />
+                        <textarea id='token' cols={16} rows={8} />
                     </div>
                     <div>
                         <button className='argo-button argo-button--base-o' onClick={() => login((document.getElementById('token') as HTMLInputElement).value)}>

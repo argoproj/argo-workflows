@@ -1746,52 +1746,52 @@
       "properties": {
         "name": {
           "type": "string",
-          "description": "Name overrides metadata.name in workflow."
+          "title": "Name overrides metadata.name"
         },
         "generateName": {
           "type": "string",
-          "description": "GenerateName overrides metadata.generateName in workflow."
+          "title": "GenerateName overrides metadata.generateName"
         },
         "instanceID": {
           "type": "string",
-          "description": "InstanceID adds controller's instance id label in workflow."
+          "title": "InstanceID binds the Resource to the specified instance ID"
         },
         "entrypoint": {
           "type": "string",
-          "description": "Entrypoint overrides spec.entrypoint in workflow."
+          "title": "Entrypoint overrides spec.entrypoint"
         },
         "parameters": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "description": "Parameters passes input parameters to workflow."
+          "title": "Parameters passes input parameters to workflow"
         },
         "parameterFile": {
           "type": "string",
-          "description": "ParameterFile holds parameter file path.\nThis option is not supported in API."
+          "title": "ParameterFile holds a reference to a parameter file. This option is not supported in API"
         },
         "serviceAccount": {
           "type": "string",
-          "description": "ServiceAccount runs all pods in the workflow using specified serviceaccount."
+          "description": "ServiceAccount runs all pods in the workflow using specified ServiceAccount."
         },
         "dryRun": {
           "type": "boolean",
           "format": "boolean",
-          "description": "DryRun validates the workflow on the client-side without creating it.\nThis option is not supported in API."
+          "title": "DryRun validates the workflow on the client-side without creating it. This option is not supported in API"
         },
         "serverDryRun": {
           "type": "boolean",
           "format": "boolean",
-          "description": "ServerDryRun validates the workflow on the Server-side without creating it."
+          "title": "ServerDryRun validates the workflow on the server-side without creating it"
         },
         "labels": {
           "type": "string",
-          "description": "Labels adds metadata.labels in workflow."
+          "title": "Labels adds to metadata.labels"
         },
         "ownerReference": {
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference",
-          "description": "OwnerReference creates the metadata.ownerReference in workflow."
+          "title": "OwnerReference creates a metadata.ownerReference"
         }
       },
       "title": "SubmitOpts are workflow submission options"
