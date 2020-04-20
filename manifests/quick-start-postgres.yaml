@@ -526,7 +526,8 @@ metadata:
   name: workflow-controller-metrics
 spec:
   ports:
-  - port: 9090
+  - name: metrics
+    port: 9090
     protocol: TCP
     targetPort: 9090
   selector:
