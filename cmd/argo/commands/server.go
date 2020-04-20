@@ -78,7 +78,7 @@ See %s`, help.ArgoSever),
 				cer, err := tls.LoadX509KeyPair("argo-server.crt", "argo-server.key")
 				errors.CheckError(err)
 				tlsConfig = &tls.Config{
-					Certificates:       []tls.Certificate{cer},
+					Certificates: []tls.Certificate{cer},
 					// TODO - should not be the default :(
 					InsecureSkipVerify: true,
 				}
