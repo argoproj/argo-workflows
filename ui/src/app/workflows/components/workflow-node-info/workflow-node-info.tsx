@@ -72,7 +72,7 @@ export const WorkflowNodeSummary = (props: Props) => {
         }
     ];
     if (props.node.type === 'Pod') {
-        attributes.splice(2, 0, {title: 'POD NAME', value: props.node.id}, {title: 'NODE NAME', value: props.node.hostNodeName});
+        attributes.splice(2, 0, {title: 'POD NAME', value: props.node.id}, {title: 'HOST NODE NAME', value: props.node.hostNodeName});
     }
     if (props.node.resourcesDuration) {
         attributes.push({

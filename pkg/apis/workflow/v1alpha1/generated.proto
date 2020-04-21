@@ -576,7 +576,7 @@ message NodeStatus {
   // a template, will be a superset of the outbound nodes of its last children.
   repeated string outboundNodes = 17;
 
-  // HostNodeName is the name of the host on which the workflow is running
+  // HostNodeName name of the Kubernetes node on which the Pod is running, if applicable
   optional string hostNodeName = 22;
 }
 

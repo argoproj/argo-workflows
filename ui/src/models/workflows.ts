@@ -722,7 +722,7 @@ export interface NodeStatus {
     templateScope?: string;
 
     /**
-     * Name of the machine (node in Kubernetes parlance) on which the workflow-node is running.
+     * HostNodeName name of the Kubernetes node on which the Pod is running, if applicable.
      */
     hostNodeName: string;
 }

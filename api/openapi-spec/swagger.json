@@ -2486,7 +2486,7 @@
         },
         "hostNodeName": {
           "type": "string",
-          "title": "HostNodeName is the name of the host on which the workflow is running"
+          "title": "HostNodeName name of the Kubernetes node on which the Pod is running, if applicable"
         },
         "id": {
           "type": "string",
