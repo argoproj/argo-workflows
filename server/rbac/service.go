@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"strings"
 
 	"github.com/casbin/casbin"
 	log "github.com/sirupsen/logrus"
@@ -13,7 +12,6 @@ import (
 	"github.com/argoproj/argo/server/auth"
 )
 
-// https://casbin.org/editor/
 type Service interface {
 	UnaryServerInterceptor() grpc.UnaryServerInterceptor
 	StreamServerInterceptor() grpc.StreamServerInterceptor
@@ -55,60 +53,24 @@ m = g(r.sub, p.sub) && keyMatch(r.obj, p.obj) && keyMatch(r.act, p.act)
 	return &service{enforcer: enforcer}, nil
 }
 
-func (s *service) isAllowed(sub, obj, act string) (bool, string) {
-	allowed := s.enforcer.Enforce(sub, obj, act)
-	if allowed {
-		return true, fmt.Sprintf("%s is allowed to %s %s", sub, act, obj)
-	} else {
-		return false, fmt.Sprintf("%s not allowed to %s %s", sub, act, obj)
-	}
-}
-
-func partFullMethod(fullMethod string) string {
-	parts := strings.SplitN(fullMethod, "/", 3)
-	// TODO can panic
-	return parts[2]
-}
-
-func ParseActObj(actObj string) (string, string) {
-	for act := range map[string]bool{
-		"Create":  true,
-		"Delete":  true,
-		"Get":     true,
-		"List":    true,
-		"Lint":    true,
-		"PodLogs": true,
-		"Suspend": true,
-		"Retry":   true,
-		"Resume":  true,
-		"Update":  true,
-		"Watch":   true,
-	} {
-		if strings.HasPrefix(actObj, act) {
-			return strings.ToLower(act), strings.ToLower(strings.TrimPrefix(actObj, act))
-		}
-	}
-	panic("cannot parse " + actObj)
-}
-
-func (s *service) Enforce(ctx context.Context, actObj string) error {
+func (s *service) Enforce(ctx context.Context, op op) error {
 	user := auth.GetUser(ctx)
 	sub := user.Name
 	for _, group := range user.Groups {
 		_ = s.enforcer.AddRoleForUser(sub, group)
 	}
-	act, obj := ParseActObj(actObj)
-	allowed, msg := s.isAllowed(sub, obj, act)
-	log.Debug(msg)
-	if !allowed {
-		return fmt.Errorf(msg)
+	act, obj := parseActObj(op)
+	allowed := s.enforcer.Enforce(sub, obj, act)
+	if allowed {
+		log.Debug(fmt.Sprintf("%s is allowed to %s %s", sub, act, obj))
+		return nil
 	}
-	return nil
+	return fmt.Errorf("%s not allowed to %s %s", sub, act, obj)
 }
 
 func (s *service) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		err := s.Enforce(ctx, partFullMethod(info.FullMethod))
+		err := s.Enforce(ctx, parseOp(info.FullMethod))
 		if err != nil {
 			return nil, err
 		}
@@ -118,7 +80,7 @@ func (s *service) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 
 func (s *service) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		err := s.Enforce(ss.Context(), partFullMethod(info.FullMethod))
+		err := s.Enforce(ss.Context(), parseOp(info.FullMethod))
 		if err != nil {
 			return err
 		}
