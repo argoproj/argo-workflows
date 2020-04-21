@@ -53,7 +53,7 @@ func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 				httpexpect.NewDebugPrinter(&httpLogger{}, true),
 			},
 			Client: &http.Client{
-				Transport:     &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
+				Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 			},
 		}).
 		Builder(func(req *httpexpect.Request) {
