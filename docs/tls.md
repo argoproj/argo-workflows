@@ -10,7 +10,7 @@ If you're running Argo Server you have three options with increasing transport s
 
 *Recommended for: dev* 
 
-This is the default setting. Everything is sent in plain text. 
+This is the default setting: everything is sent in plain text. 
 
 To secure the UI you may front it with a HTTPS proxy.
 
@@ -26,7 +26,7 @@ Start Argo Server with the `--secure` flag, e.g.:
 argo server --secure
 ```
 
-It will be started with self-signed certificates that expire after 365 days.
+It will start with a self-signed certificate that expires after 365 days.
 
 Run the CLI with `--secure` (or `ARGO_SECURE=true`) and `--insecure-skip-verify` (or `ARGO_INSECURE_SKIP_VERIFY=true`).
 
@@ -40,11 +40,13 @@ export ARGO_INSECURE_SKIP_VERIFY=true
 argo --secure --insecure-skip-verify list
 ```
 
+Tip: Don't forget to update your readiness probe to use HTTPS, [example](../test/e2e/manifests/mixins/argo-server-deployment.yaml).
+
 ### Encrypted and Verified
 
 *Recommended for: production environments*
 
-Run a HTTPS proxy in front of the Argo Server
+Run your HTTPS proxy in front of the Argo Server. You'll need to set-up your certificates and this out of scope of this documentation.
 
 Start Argo Server with the `--secure` flag, e.g.:
 
@@ -52,7 +54,7 @@ Start Argo Server with the `--secure` flag, e.g.:
 argo server --secure
 ```
 
-It will be started with self-signed certificates that expire after 365 days.
+As before, it will start with a self-signed certificate that expires after 365 days.
 
 Run the CLI with `--secure` (or `ARGO_SECURE=true`) only.
 
