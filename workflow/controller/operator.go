@@ -343,18 +343,6 @@ func (woc *wfOperationCtx) operate() {
 		}
 	}
 
-	err = woc.deletePVCs()
-	if err != nil {
-		msg := fmt.Sprintf("%s error: %+v", woc.wf.ObjectMeta.Name, err)
-		woc.log.Errorf(msg)
-		// Mark the workflow with an error message and return, but intentionally do not
-		// markCompletion so that we can retry PVC deletion (TODO: use workqueue.ReAdd())
-		// This error phase may be cleared if a subsequent delete attempt is successful.
-		woc.markWorkflowError(err, false)
-		woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg)
-		return
-	}
-
 	var workflowMessage string
 	if !node.Successful() && woc.wf.Spec.Shutdown != "" {
 		workflowMessage = fmt.Sprintf("Stopped with strategy '%s'", woc.wf.Spec.Shutdown)
@@ -1271,43 +1259,6 @@ func (woc *wfOperationCtx) createPVCs() error {
 		woc.updated = true
 	}
 	return nil
-}
-
-func (woc *wfOperationCtx) deletePVCs() error {
-	if woc.wf.Status.Phase == wfv1.NodeError || woc.wf.Status.Phase == wfv1.NodeFailed {
-		// Skip deleting PVCs to reuse them for retried failed/error workflows.
-		// PVCs are automatically deleted when corresponded owner workflows get deleted.
-		return nil
-	}
-	totalPVCs := len(woc.wf.Status.PersistentVolumeClaims)
-	if totalPVCs == 0 {
-		// PVC list already empty. nothing to do
-		return nil
-	}
-	pvcClient := woc.controller.kubeclientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
-	newPVClist := make([]apiv1.Volume, 0)
-	// Attempt to delete all PVCs. Record first error encountered
-	var firstErr error
-	for _, pvc := range woc.wf.Status.PersistentVolumeClaims {
-		woc.log.Infof("Deleting PVC %s", pvc.PersistentVolumeClaim.ClaimName)
-		err := pvcClient.Delete(pvc.PersistentVolumeClaim.ClaimName, nil)
-		if err != nil {
-			if !apierr.IsNotFound(err) {
-				woc.log.Errorf("Failed to delete pvc %s: %v", pvc.PersistentVolumeClaim.ClaimName, err)
-				newPVClist = append(newPVClist, pvc)
-				if firstErr == nil {
-					firstErr = err
-				}
-			}
-		}
-	}
-	if len(newPVClist) != totalPVCs {
-		// we were successful in deleting one ore more PVCs
-		woc.log.Infof("Deleted %d/%d PVCs", totalPVCs-len(newPVClist), totalPVCs)
-		woc.wf.Status.PersistentVolumeClaims = newPVClist
-		woc.updated = true
-	}
-	return firstErr
 }
 
 func (woc *wfOperationCtx) getLastChildNode(node *wfv1.NodeStatus) (*wfv1.NodeStatus, error) {
