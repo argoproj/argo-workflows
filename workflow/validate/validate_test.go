@@ -39,7 +39,8 @@ func validate(yamlStr string) (*wfv1.WorkflowConditions, error) {
 // its validation result.
 func validateWorkflowTemplate(yamlStr string) error {
 	wftmpl := unmarshalWftmpl(yamlStr)
-	return ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, wftmpl)
+	_, err := ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, wftmpl)
+	return err
 }
 
 func unmarshalWf(yamlStr string) *wfv1.Workflow {
