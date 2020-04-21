@@ -13,7 +13,7 @@ GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo
 export DOCKER_BUILDKIT = 1
 
 # To allow you to build with cache for debugging purposes.
-DOCKER_BUILDS_OPTS     := --no-cache
+DOCKER_BUILD_OPTS     := --no-cache
 
 # docker image publishing options
 IMAGE_NAMESPACE       ?= argoproj
