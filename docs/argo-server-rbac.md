@@ -31,7 +31,7 @@ p, read-only, *, get
 p, read-only, *, list
 p, read-only, *, watch
 
-# allow historians to only get/list archivedworkflows
-p, historian, archivedworkflows, get
-p, historian, archivedworkflows, list
+# allow historians to only get/list workflows
+p, historian, workflows, get
+p, historian, workflows, list
 ```
