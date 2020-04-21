@@ -1624,7 +1624,7 @@
           "title": "Shutdown will shutdown the workflow according to its ShutdownStrategy"
         },
         "workflowTemplateRef": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TemplateRef",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateRef",
           "title": "workflowTemplateRef holds WorkflowTemplate reference -TODO-Bala update comments"
         }
       },
@@ -1748,6 +1748,21 @@
         }
       },
       "title": "WorkflowStep is a reference to a template to execute in a series of step"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateRef": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name is the resource name of the workflow template."
+        },
+        "clusterscope": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate)."
+        }
+      },
+      "description": "WorkflowTemplateRef is a reference of workflow template resource on Top level workflow."
     },
     "k8s.io.api.core.v1.AWSElasticBlockStoreVolumeSource": {
       "type": "object",

@@ -59,6 +59,7 @@ func (wftmpl *WorkflowTemplate) GetTemplateByName(name string) *Template {
 func (wftmpl *WorkflowTemplate) GetResourceScope() ResourceScope {
 	return ResourceScopeNamespaced
 }
+
 // GetArguments returns the Arguments.
 func (wf *WorkflowTemplate) GetArguments() Arguments {
 	return wf.Spec.Arguments

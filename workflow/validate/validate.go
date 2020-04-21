@@ -3,6 +3,7 @@ package validate
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj/argo/util"
 	"io"
 	"reflect"
 	"regexp"
@@ -99,25 +100,52 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	wfConditions := &wfv1.WorkflowConditions{}
 	ctx := newTemplateValidationCtx(wf, opts)
 	tmplCtx := templateresolution.NewContext(wftmplGetter, cwftmplGetter, wf, wf)
+	var wftmpl wfv1.TemplateHolder
+	var entrypoint = wf.Spec.Entrypoint
+	var topLevelTmplRef *wfv1.TemplateRef
+	var err error
+	isWorkflowTemplateRef := wf.Spec.WorkflowTemplateRef != nil
+	if isWorkflowTemplateRef {
+		if wf.Spec.WorkflowTemplateRef.ClusterScope{
+			wftmpl, err = cwftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
+			if err != nil{
+				return nil, err
+			}
 
-	err := validateWorkflowFieldNames(wf.Spec.Templates)
+		}else{
+			wftmpl, err = wftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
+			if err != nil{
+				return nil, err
+			}
+		}
+
+		if entrypoint == "" {
+			entrypoint = wftmpl.GetEntrypoint()
+		}
+	}
+
+
+	err = validateWorkflowFieldNames(wf.Spec.Templates)
+	var wfArgs wfv1.Arguments
+	wfArgs.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, wftmpl.GetArguments().Parameters)
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
 	}
 	if ctx.Lint {
 		// if we are just linting we don't care if spec.arguments.parameters.XXX doesn't have an
 		// explicit value. workflows without a default value is a desired use case
-		err = validateArgumentsFieldNames("spec.arguments.", wf.Spec.Arguments)
+		err = validateArgumentsFieldNames("spec.arguments.", wfArgs)
 	} else {
-		err = validateArguments("spec.arguments.", wf.Spec.Arguments)
+		err = validateArguments("spec.arguments.", wfArgs)
 	}
 	if err != nil {
 		return nil, err
 	}
-	if len(wf.Spec.Arguments.Parameters) > 0 {
+	if len(wfArgs.Parameters) > 0 {
 		ctx.globalParams[common.GlobalVarWorkflowParameters] = placeholderGenerator.NextPlaceholder()
 	}
-	for _, param := range wf.Spec.Arguments.Parameters {
+
+	for _, param := range wfArgs.Parameters {
 		if param.Name != "" {
 			if param.Value != nil {
 				ctx.globalParams["workflow.parameters."+param.Name] = *param.Value
@@ -137,27 +165,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	if wf.Spec.Priority != nil {
 		ctx.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*wf.Spec.Priority))
 	}
-	var entrypoint = wf.Spec.Entrypoint
-	var topLevelTmplRef = wf.Spec.WorkflowTemplateRef
-	if entrypoint == "" && wf.Spec.WorkflowTemplateRef != nil{
-		entrypoint = wf.Spec.WorkflowTemplateRef.Template
-		if entrypoint == "" {
-			if wf.Spec.WorkflowTemplateRef.ClusterScope{
-				tmpl, err := cwftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
-				if err != nil{
-					return nil, err
-				}
-				entrypoint = tmpl.GetEntrypoint()
-			}else{
-				tmpl, err := wftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
-				if err != nil{
-					return nil, err
-				}
-				entrypoint = tmpl.GetEntrypoint()
-			}
-			topLevelTmplRef.Template = entrypoint
-		}
-	}
+
 	if !opts.IgnoreEntrypoint && entrypoint == "" {
 		return nil, errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
 	}
@@ -191,8 +199,12 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	}
 
 	if !opts.IgnoreEntrypoint {
-		if topLevelTmplRef != nil
-		_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: entrypoint}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
+		if topLevelTmplRef != nil{
+			_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{TemplateRef:topLevelTmplRef}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
+
+		}else {
+			_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: entrypoint}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
+		}
 		if err != nil {
 			return nil, err
 		}

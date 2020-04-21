@@ -270,7 +270,7 @@ type WorkflowSpec struct {
 	Shutdown ShutdownStrategy `json:"shutdown,omitempty" protobuf:"bytes,33,opt,name=shutdown,casttype=ShutdownStrategy"`
 
 	// workflowTemplateRef holds WorkflowTemplate reference -TODO-Bala update comments
-	WorkflowTemplateRef *TemplateRef `json:"workflowTemplateRef,omitempty" protobuf:"bytes,34,opt,name=workflowTemplateRef,casttype=TemplateRef"`
+	WorkflowTemplateRef *WorkflowTemplateRef `json:"workflowTemplateRef,omitempty" protobuf:"bytes,34,opt,name=workflowTemplateRef,casttype=WorkflowTemplateRef"`
 }
 
 type ShutdownStrategy string
@@ -810,6 +810,21 @@ type TemplateRef struct {
 	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
 	// ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
 	ClusterScope bool `json:"clusterscope,omitempty" protobuf:"varint,4,opt,name=clusterscope"`
+}
+
+// WorkflowTemplateRef is a reference of workflow template resource on Top level workflow.
+type WorkflowTemplateRef struct {
+	// Name is the resource name of the workflow template.
+	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+	// ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+	ClusterScope bool `json:"clusterscope,omitempty" protobuf:"varint,4,opt,name=clusterscope"`
+}
+
+func (wftRef *WorkflowTemplateRef) GetTemplateRef() *TemplateRef {
+	return &TemplateRef{
+		Name:         wftRef.Name,
+		ClusterScope: wftRef.ClusterScope,
+	}
 }
 
 type ArgumentsProvider interface {
@@ -1701,7 +1716,6 @@ func (wf *Workflow) GetResourceScope() ResourceScope {
 	return ResourceScopeLocal
 }
 
-
 // GetArguments returns the Arguments.
 func (wf *Workflow) GetArguments() Arguments {
 	return wf.Spec.Arguments
@@ -1711,7 +1725,6 @@ func (wf *Workflow) GetArguments() Arguments {
 func (wf *Workflow) GetEntrypoint() string {
 	return wf.Spec.Entrypoint
 }
-
 
 // NodeID creates a deterministic node ID based on a node name
 func (wf *Workflow) NodeID(name string) string {

@@ -1172,7 +1172,7 @@ message WorkflowSpec {
   optional string shutdown = 33;
 
   // workflowTemplateRef holds WorkflowTemplate reference -TODO-Bala update comments
-  optional TemplateRef workflowTemplateRef = 34;
+  optional WorkflowTemplateRef workflowTemplateRef = 34;
 }
 
 // WorkflowStatus contains overall status information about a workflow
@@ -1269,6 +1269,15 @@ message WorkflowTemplateList {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   repeated WorkflowTemplate items = 2;
+}
+
+// WorkflowTemplateRef is a reference of workflow template resource on Top level workflow.
+message WorkflowTemplateRef {
+  // Name is the resource name of the workflow template.
+  optional string name = 1;
+
+  // ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+  optional bool clusterscope = 4;
 }
 
 // WorkflowTemplateSpec is a spec of WorkflowTemplate.

@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj/argo/util"
 	"math"
 	"os"
 	"reflect"
@@ -283,23 +284,26 @@ func (woc *wfOperationCtx) operate() {
 	var node *wfv1.NodeStatus
 
 	if woc.wf.Spec.WorkflowTemplateRef != nil {
-		topLevelTmplRef := woc.wf.Spec.WorkflowTemplateRef
-		tmpl, err := tmplCtx.GetTemplateGetterFromRef(woc.wf.Spec.WorkflowTemplateRef)
+		var topLevelTmplRef *wfv1.TemplateRef
+
+		wftmpl, err := tmplCtx.GetTemplateGetterFromRef( &wfv1.TemplateRef{Name:woc.wf.Spec.WorkflowTemplateRef.Name})
 		if err != nil {
-
+			msg := fmt.Sprintf("Failed to get a WorkflowTemplate: %+v", err)
+			woc.log.Errorf(msg)
+			woc.markWorkflowError(err, true)
+			return
 		}
-		args := tmpl.GetArguments()
-
-		if topLevelTmplRef.Template == "" {
-			topLevelTmplRef.Template = tmpl.GetEntrypoint()
-		}
+		topLevelTmplRef.Name = woc.wf.Spec.WorkflowTemplateRef.Name
+		topLevelTmplRef.ClusterScope = woc.wf.Spec.WorkflowTemplateRef.ClusterScope
+		var args wfv1.Arguments
+		args.Parameters = util.MergeParameters( woc.wf.Spec.Arguments.Parameters, wftmpl.GetArguments().Parameters)
 
 		if woc.wf.Spec.Entrypoint != "" {
 			topLevelTmplRef.Template = woc.wf.Spec.Entrypoint
+		}else {
+			topLevelTmplRef.Template = wftmpl.GetEntrypoint()
 		}
-
 		node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{TemplateRef: topLevelTmplRef}, tmplCtx, args, &executeTemplateOpts{})
-
 	}else {
 		node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{Template: woc.wf.Spec.Entrypoint}, tmplCtx, woc.wf.Spec.Arguments, &executeTemplateOpts{})
 	}
@@ -451,7 +455,7 @@ func (woc *wfOperationCtx) setGlobalParameters(ctx *templateresolution.Context) 
 		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
 	}
 	if woc.wf.Spec.WorkflowTemplateRef != nil {
-		tmpl, err := ctx.GetTemplateGetterFromRef(woc.wf.Spec.WorkflowTemplateRef)
+		tmpl, err := ctx.GetTemplateGetterFromRef(woc.wf.Spec.WorkflowTemplateRef.GetTemplateRef())
 		if err != nil {
 
 		}

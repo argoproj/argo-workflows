@@ -1,9 +1,9 @@
 package util
 
 import (
-	"io/ioutil"
-
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -60,12 +60,17 @@ func WriteTeriminateMessage(message string) {
 
 
 // overwriting duplicate keys, you should handle that if there is a need
-func MergeMaps(maps ...map[string]interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
-	for _, mapItem := range maps {
-		for key, val := range mapItem {
-			result[key] = val
+func MergeParameters(params ...[]wfv1.Parameter) []wfv1.Parameter {
+	resultParams := make([]wfv1.Parameter, 0)
+	passedParams := make(map[string]bool)
+	for _, param := range params {
+		for _, item := range param {
+			if _, ok := passedParams[item.Name]; ok {
+				continue
+			}
+			resultParams = append(resultParams, item)
+			passedParams[item.Name] = true
 		}
 	}
-	return result
+	return resultParams
 }
