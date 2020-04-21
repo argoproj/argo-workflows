@@ -50,7 +50,8 @@ const (
 )
 
 type argoServer struct {
-	baseHRef         string
+	baseHRef string
+	// https://itnext.io/practical-guide-to-securing-grpc-connections-with-go-and-tls-part-1-f63058e9d6d1
 	tlsConfig        *tls.Config
 	namespace        string
 	managedNamespace string
@@ -157,7 +158,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		return
 	}
 
-	if as.tls() {
+	if as.tlsConfig != nil {
 		conn = tls.NewListener(conn, as.tlsConfig)
 	}
 
@@ -201,10 +202,6 @@ func (as *argoServer) newGRPCServer(instanceID string, offloadNodeStatusRepo sql
 		)),
 	}
 
-	if as.tls() {
-		sOpts = append(sOpts, grpc.Creds(credentials.NewTLS(as.tlsConfig)))
-	}
-
 	grpcServer := grpc.NewServer(sOpts...)
 
 	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace, links))
@@ -231,7 +228,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	dialOpts := []grpc.DialOption{
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxGRPCMessageSize)),
 	}
-	if as.tls() {
+	if as.tlsConfig != nil {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(as.tlsConfig)))
 	} else {
 		dialOpts = append(dialOpts, grpc.WithInsecure())
@@ -291,8 +288,4 @@ func (as *argoServer) checkServeErr(name string, err error) {
 	} else {
 		log.Infof("graceful shutdown %s", name)
 	}
-}
-
-func (as *argoServer) tls() bool {
-	return as.tlsConfig != nil
 }

@@ -20,9 +20,9 @@ type Client interface {
 	NewClusterWorkflowTemplateServiceClient() clusterworkflowtmplpkg.ClusterWorkflowTemplateServiceClient
 }
 
-func NewClient(argoServer string, authSupplier func() string, clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
+func NewClient(argoServer string, authSupplier func() string, secure, insecureSkipVerify bool, clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
 	if argoServer != "" {
-		return newArgoServerClient(argoServer, authSupplier())
+		return newArgoServerClient(argoServer, authSupplier(), secure, insecureSkipVerify)
 	} else {
 		return newArgoKubeClient(clientConfig)
 	}

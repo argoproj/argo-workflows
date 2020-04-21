@@ -13,6 +13,8 @@ import (
 )
 
 var argoServer string
+var secure bool
+var insecureSkipVerify bool
 
 var overrides = clientcmd.ConfigOverrides{}
 
@@ -33,12 +35,14 @@ func GetConfig() clientcmd.ClientConfig {
 
 func AddArgoServerFlagsToCmd(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVar(&argoServer, "argo-server", os.Getenv("ARGO_SERVER"), "API server `host:port`. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.")
+	cmd.PersistentFlags().BoolVar(&secure, "secure", os.Getenv("ARGO_SECURE") == "true", "Whether or not the server is using TLS. Defaults to the ARGO_SECURE environment variable.")
+	cmd.PersistentFlags().BoolVar(&insecureSkipVerify, "insecure-skip-verify", os.Getenv("ARGO_INSECURE_SKIP_VERIFY") == "true", "Whether or not to verify the TLS connection, e.g. you're using a self-signed certificate. Defaults to the ARGO_SECURE environment variable.")
 }
 
 func NewAPIClient() (context.Context, apiclient.Client) {
 	ctx, client, err := apiclient.NewClient(argoServer, func() string {
 		return GetAuthString()
-	}, GetConfig())
+	}, secure, insecureSkipVerify, GetConfig())
 	if err != nil {
 		log.Fatal(err)
 	}

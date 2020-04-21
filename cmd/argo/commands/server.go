@@ -77,11 +77,9 @@ See %s`, help.ArgoSever),
 			if secure {
 				cer, err := tls.LoadX509KeyPair("argo-server.crt", "argo-server.key")
 				errors.CheckError(err)
-				tlsConfig = &tls.Config{
-					Certificates: []tls.Certificate{cer},
-					// TODO - should not be the default :(
-					InsecureSkipVerify: true,
-				}
+				tlsConfig = &tls.Config{Certificates: []tls.Certificate{cer}, InsecureSkipVerify: true}
+			} else {
+				log.Warn("You are running in insecure mode. How enable transport security: https://github.com/argoproj/argo/blob/master/docs/tls.md")
 			}
 
 			opts := apiserver.ArgoServerOpts{
