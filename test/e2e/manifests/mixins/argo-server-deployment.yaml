@@ -14,6 +14,7 @@ spec:
             - client
             - --auth-mode
             - sso
+            - --rbac
             - --loglevel
             - debug
           imagePullPolicy:  Never

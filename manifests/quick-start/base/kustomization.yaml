@@ -7,11 +7,12 @@ bases:
   - dex
 
 resources:
-  - argo-oauth2-secret.yaml
+  - argo-server-oauth2-secret.yaml
   - workflow-role.yaml
   - workflow-default-rolebinding.yaml
   - cluster-workflow-template-rbac.yaml
 
 patchesStrategicMerge:
+  - overlays/argo-server-config-volume-configmap.yaml
   - overlays/workflow-controller-configmap.yaml
   - overlays/argo-server-deployment.yaml

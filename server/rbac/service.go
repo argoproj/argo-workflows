@@ -3,7 +3,6 @@ package rbac
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 
 	"github.com/casbin/casbin"
 	log "github.com/sirupsen/logrus"
@@ -22,35 +21,8 @@ type service struct {
 	enforcer *casbin.Enforcer
 }
 
-func NewService(policyCsv string) (Service, error) {
-	if policyCsv == "" {
-		return nil, fmt.Errorf("policyCsv empty")
-	}
-	err := ioutil.WriteFile("model.conf", []byte(`[request_definition]
-r = sub, obj, act
-
-[policy_definition]
-p = sub, obj, act
-
-[role_definition]
-g = _, _
-
-[policy_effect]
-e = some(where (p.eft == allow))
-
-[matchers]
-m = g(r.sub, p.sub) && keyMatch(r.obj, p.obj) && keyMatch(r.act, p.act)
-`), 0666)
-	if err != nil {
-		return nil, err
-	}
-	err = ioutil.WriteFile("policy.csv", []byte(policyCsv), 0666)
-	if err != nil {
-		return nil, err
-	}
-	enforcer := casbin.NewEnforcer("model.conf", "policy.csv")
-	log.WithField("policyCsv", policyCsv).Debug()
-	return &service{enforcer: enforcer}, nil
+func NewService() Service {
+	return &service{enforcer: casbin.NewEnforcer("config/model.conf", "config/policy.csv")}
 }
 
 func (s *service) Enforce(ctx context.Context, op op) error {

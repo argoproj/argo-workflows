@@ -25,3 +25,10 @@ spec:
               path: /
             initialDelaySeconds: 10
             periodSeconds: 20
+          volumeMounts:
+            - mountPath: /config
+              name: config
+      volumes:
+        - name: config
+          configMap:
+            name: argo-server-config-volume

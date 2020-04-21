@@ -68,20 +68,21 @@ type ArgoServerOpts struct {
 	WfClientSet   *versioned.Clientset
 	RestConfig    *rest.Config
 	AuthModes     auth.Modes
+	RBAC          bool
 	// config map name
 	ConfigName       string
 	ManagedNamespace string
 }
 
 func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
-	service := oauth2.NullService
+	oauth2Service := oauth2.NullService
 	if opts.AuthModes[auth.SSO] {
-		secrets, err := opts.KubeClientset.CoreV1().Secrets(opts.Namespace).Get("argo-oauth2", metav1.GetOptions{})
+		secrets, err := opts.KubeClientset.CoreV1().Secrets(opts.Namespace).Get("argo-server-oauth2", metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
 		d := secrets.Data
-		service, err = oauth2.NewService(string(d["issuer"]), string(d["clientId"]), string(d["clientSecret"]), string(d["redirectUrl"]), opts.BaseHRef)
+		oauth2Service, err = oauth2.NewService(string(d["issuer"]), string(d["clientId"]), string(d["clientSecret"]), string(d["redirectUrl"]), opts.BaseHRef)
 		if err != nil {
 			return nil, err
 		}
@@ -89,21 +90,13 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 	} else {
 		log.Info("SSO disabled")
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, service)
-	if err != nil {
-		return nil, err
-	}
-	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset)
-	c, err := configController.Get()
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, oauth2Service)
 	if err != nil {
 		return nil, err
 	}
 	rbacService := rbac.NullService
-	if c.RBAC.Enabled {
-		rbacService, err = rbac.NewService(c.RBAC.PolicyCSV)
-		if err != nil {
-			return nil, err
-		}
+	if opts.RBAC {
+		rbacService = rbac.NewService()
 		log.Info("RBAC enabled")
 	} else {
 		log.Info("RBAC disabled")
@@ -114,9 +107,9 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 		managedNamespace: opts.ManagedNamespace,
 		kubeClientset:    opts.KubeClientset,
 		authenticator:    gatekeeper,
-		oAuth2Service:    service,
+		oAuth2Service:    oauth2Service,
 		rbacService:      rbacService,
-		configController: configController,
+		configController: config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset),
 		stopCh:           make(chan struct{}),
 	}, nil
 }

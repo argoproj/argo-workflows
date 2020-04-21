@@ -24,6 +24,7 @@ import (
 func NewServerCommand() *cobra.Command {
 	var (
 		authModes         []string
+		rbac              bool
 		configMap         string
 		port              int
 		baseHRef          string
@@ -64,6 +65,7 @@ See %s`, help.ArgoSever),
 
 			log.WithFields(log.Fields{
 				"authModes":        authModes,
+				"rbac":             rbac,
 				"namespace":        namespace,
 				"managedNamespace": managedNamespace,
 				"baseHRef":         baseHRef}).
@@ -84,6 +86,7 @@ See %s`, help.ArgoSever),
 				KubeClientset:    kubeConfig,
 				RestConfig:       config,
 				AuthModes:        modes,
+				RBAC:             rbac,
 				ManagedNamespace: managedNamespace,
 				ConfigName:       configMap,
 			}
@@ -109,7 +112,8 @@ See %s`, help.ArgoSever),
 		defaultBaseHRef = "/"
 	}
 	command.Flags().StringVar(&baseHRef, "basehref", defaultBaseHRef, "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
-	command.Flags().StringArrayVar(&authModes, "auth-mode", []string{"server"}, "API server authentication mode. One of: client|server|hybrid")
+	command.Flags().StringArrayVar(&authModes, "auth-mode", []string{"server"}, "API server authentication mode. One of: client|server|hybrid|sso")
+	command.Flags().BoolVar(&rbac, "rbac", false, "Enable RBAC")
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that watches, default to the installation namespace")
