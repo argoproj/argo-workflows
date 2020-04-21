@@ -444,6 +444,11 @@ data:
       passwordSecret:
         name: argo-mysql-config
         key: password
+  rbac: |
+    enabled: true
+    policyCsv: |
+      p, admin, *, *
+      p, authors, *, *
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
@@ -458,6 +463,16 @@ stringData:
   password: password
   username: mysql
 type: Opaque
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: argo-oauth2
+stringData:
+  clientId: argo-server
+  clientSecret: ZXhhbXBsZS1hcHAtc2VjcmV0
+  issuer: http://dex:5556/dex
+  redirectUrl: http://localhost:2746/oauth2/callback
 ---
 apiVersion: v1
 kind: Secret
