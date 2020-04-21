@@ -12,9 +12,7 @@ import (
 	"github.com/argoproj/argo/util/kubeconfig"
 )
 
-var argoServer string
-var secure bool
-var insecureSkipVerify bool
+var apiClientOpts = apiclient.ArgoServerOpts{}
 
 var overrides = clientcmd.ConfigOverrides{}
 
@@ -34,15 +32,16 @@ func GetConfig() clientcmd.ClientConfig {
 }
 
 func AddArgoServerFlagsToCmd(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringVar(&argoServer, "argo-server", os.Getenv("ARGO_SERVER"), "API server `host:port`. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.")
-	cmd.PersistentFlags().BoolVar(&secure, "secure", os.Getenv("ARGO_SECURE") == "true", "Whether or not the server is using TLS. Defaults to the ARGO_SECURE environment variable.")
-	cmd.PersistentFlags().BoolVar(&insecureSkipVerify, "insecure-skip-verify", os.Getenv("ARGO_INSECURE_SKIP_VERIFY") == "true", "Whether or not to verify the TLS connection, e.g. you're using a self-signed certificate. Defaults to the ARGO_SECURE environment variable.")
+	// "-s" like kubectl
+	cmd.PersistentFlags().StringVarP(&apiClientOpts.URL, "argo-server", "s", os.Getenv("ARGO_SERVER"), "API server `host:port`. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.")
+	// "-e" for encrypted - like zip
+	cmd.PersistentFlags().BoolVarP(&apiClientOpts.Secure, "secure", "e", os.Getenv("ARGO_SECURE") == "true", "Whether or not the server is using TLS with the Argo Server. Defaults to the ARGO_SECURE environment variable.")
+	// "-k" like curl
+	cmd.PersistentFlags().BoolVarP(&apiClientOpts.InsecureSkipVerify, "insecure-skip-verify", "k", os.Getenv("ARGO_INSECURE_SKIP_VERIFY") == "true", "If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_SECURE environment variable.")
 }
 
 func NewAPIClient() (context.Context, apiclient.Client) {
-	ctx, client, err := apiclient.NewClient(argoServer, func() string {
-		return GetAuthString()
-	}, secure, insecureSkipVerify, GetConfig())
+	ctx, client, err := apiclient.NewClientFromOpts(apiClientOpts, func() string { return GetAuthString() }, GetConfig())
 	if err != nil {
 		log.Fatal(err)
 	}

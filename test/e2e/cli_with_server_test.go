@@ -23,12 +23,16 @@ func (s *CLIWithServerSuite) BeforeTest(suiteName, testName string) {
 	token, err := s.GetServiceAccountToken()
 	s.CheckError(err)
 	_ = os.Setenv("ARGO_SERVER", "localhost:2746")
+	_ = os.Setenv("ARGO_SECURE", "true")
+	_ = os.Setenv("ARGO_INSECURE_SKIP_VERIFY", "true")
 	_ = os.Setenv("ARGO_TOKEN", token)
 }
 
 func (s *CLIWithServerSuite) AfterTest(suiteName, testName string) {
 	s.CLISuite.AfterTest(suiteName, testName)
 	_ = os.Unsetenv("ARGO_SERVER")
+	_ = os.Unsetenv("ARGO_SECURE")
+	_ = os.Unsetenv("ARGO_INSECURE_SKIP_VERIFY")
 	_ = os.Unsetenv("ARGO_TOKEN")
 }
 

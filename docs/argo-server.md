@@ -56,6 +56,6 @@ If the server is running behind reverse proxy with a subpath different from `/` 
 `/argo`), you can set an alternative subpath with the `--base-href` flag or the `BASE_HREF` 
 environment variable.
 
-### TLS
+### Transport Layer Security
 
 See [TLS](tls.md).

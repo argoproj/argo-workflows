@@ -2,15 +2,16 @@ package e2e
 
 import (
 	"bufio"
+	"crypto/tls"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/gavv/httpexpect/v2"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gopkg.in/gavv/httpexpect.v2"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,7 +21,7 @@ import (
 	"github.com/argoproj/argo/test/e2e/fixtures"
 )
 
-const baseUrl = "http://localhost:2746"
+const baseUrl = "https://localhost:2746"
 
 // ensure basic HTTP functionality works,
 // testing behaviour really is a non-goal
@@ -50,6 +51,9 @@ func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 			Reporter: httpexpect.NewRequireReporter(t),
 			Printers: []httpexpect.Printer{
 				httpexpect.NewDebugPrinter(&httpLogger{}, true),
+			},
+			Client: &http.Client{
+				Transport:     &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 			},
 		}).
 		Builder(func(req *httpexpect.Request) {

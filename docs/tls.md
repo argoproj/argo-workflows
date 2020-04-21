@@ -1,6 +1,10 @@
-# TLS
+# Transport Layer Security
 
-If you're running Argo Server you have three options with increasing transport security:
+![alpha](assets/alpha.svg)
+
+> v2.8 and after
+
+If you're running Argo Server you have three options with increasing transport security (note - you should also be running [authentication](argo-server.md#auth-mode)):
 
 ## Plain Text
 
@@ -10,7 +14,7 @@ This is the default setting. Everything is sent in plain text.
 
 To secure the UI you may front it with a HTTPS proxy.
 
-## TLS Encrypted 
+## Encrypted 
 
 *Recommended for: development and test environments*
 
@@ -36,7 +40,7 @@ export ARGO_INSECURE_SKIP_VERIFY=true
 argo --secure --insecure-skip-verify list
 ```
 
-### TLS Encrypted and Verified
+### Encrypted and Verified
 
 *Recommended for: production environments*
 

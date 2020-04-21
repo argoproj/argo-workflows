@@ -24,8 +24,8 @@ type argoServerClient struct {
 	*grpc.ClientConn
 }
 
-func newArgoServerClient(argoServer, auth string, secure, insecureSkipVerify bool) (context.Context, Client, error) {
-	conn, err := newClientConn(argoServer, secure, insecureSkipVerify)
+func newArgoServerClient(opts ArgoServerOpts, auth string) (context.Context, Client, error) {
+	conn, err := newClientConn(opts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -52,15 +52,12 @@ func (a *argoServerClient) NewClusterWorkflowTemplateServiceClient() clusterwork
 	return clusterworkflowtmplpkg.NewClusterWorkflowTemplateServiceClient(a.ClientConn)
 }
 
-func newClientConn(argoServer string, secure, insecureSkipVerify bool) (*grpc.ClientConn, error) {
+func newClientConn(opts ArgoServerOpts) (*grpc.ClientConn, error) {
 	creds := grpc.WithInsecure()
-	if secure {
-		creds = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: insecureSkipVerify}))
+	if opts.Secure {
+		creds = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: opts.InsecureSkipVerify}))
 	}
-	conn, err := grpc.Dial(argoServer,
-		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxClientGRPCMessageSize)),
-		creds,
-	)
+	conn, err := grpc.Dial(opts.URL, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxClientGRPCMessageSize)), creds)
 	if err != nil {
 		return nil, err
 	}

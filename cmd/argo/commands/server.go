@@ -118,7 +118,8 @@ See %s`, help.ArgoSever),
 		defaultBaseHRef = "/"
 	}
 	command.Flags().StringVar(&baseHRef, "basehref", defaultBaseHRef, "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
-	command.Flags().BoolVar(&secure, "secure", false, "Whether or not we should listen on TLS")
+	// "-e" for encrypt, like zip
+	command.Flags().BoolVarP(&secure, "secure", "e", false, "Whether or not we should listen on TLS.")
 	command.Flags().StringVar(&authMode, "auth-mode", "server", "API server authentication mode. One of: client|server|hybrid")
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
