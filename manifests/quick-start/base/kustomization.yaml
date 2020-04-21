@@ -7,6 +7,7 @@ bases:
   - dex
 
 resources:
+  - argo-oauth2-secret.yaml
   - workflow-role.yaml
   - workflow-default-rolebinding.yaml
   - cluster-workflow-template-rbac.yaml

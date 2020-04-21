@@ -16,3 +16,5 @@ debug.test
 /workflow-controller
 /.scannerwork/
 /test-results/
+/model.conf
+/policy.csv

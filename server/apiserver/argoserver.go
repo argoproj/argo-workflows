@@ -13,6 +13,7 @@ import (
 	"github.com/soheilhy/cmux"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -34,6 +35,7 @@ import (
 	"github.com/argoproj/argo/server/clusterworkflowtemplate"
 	"github.com/argoproj/argo/server/cronworkflow"
 	"github.com/argoproj/argo/server/info"
+	"github.com/argoproj/argo/server/rbac"
 	"github.com/argoproj/argo/server/static"
 	"github.com/argoproj/argo/server/workflow"
 	"github.com/argoproj/argo/server/workflowarchive"
@@ -53,7 +55,8 @@ type argoServer struct {
 	managedNamespace string
 	kubeClientset    *kubernetes.Clientset
 	authenticator    *auth.Gatekeeper
-	oAuth2Service    *oauth2.Service
+	oAuth2Service    oauth2.Service
+	rbacService      rbac.Service
 	configController config.Controller
 	stopCh           chan struct{}
 }
@@ -71,13 +74,39 @@ type ArgoServerOpts struct {
 }
 
 func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
-	service, err := oauth2.NewService(opts.BaseHRef)
-	if err != nil {
-		return nil, err
+	service := oauth2.NullService
+	if opts.AuthModes[auth.SSO] {
+		secrets, err := opts.KubeClientset.CoreV1().Secrets(opts.Namespace).Get("argo-oauth2", metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+		d := secrets.Data
+		service, err = oauth2.NewService(string(d["issuer"]), string(d["clientId"]), string(d["clientSecret"]), string(d["redirectUrl"]), opts.BaseHRef)
+		if err != nil {
+			return nil, err
+		}
+		log.Info("SSO enabled")
+	} else {
+		log.Info("SSO disabled")
 	}
 	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, service)
 	if err != nil {
 		return nil, err
+	}
+	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset)
+	c, err := configController.Get()
+	if err != nil {
+		return nil, err
+	}
+	rbacService := rbac.NullService
+	if c.RBAC.Enabled {
+		rbacService, err = rbac.NewService(c.RBAC.PolicyCSV)
+		if err != nil {
+			return nil, err
+		}
+		log.Info("RBAC enabled")
+	} else {
+		log.Info("RBAC disabled")
 	}
 	return &argoServer{
 		baseHRef:         opts.BaseHRef,
@@ -86,7 +115,8 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 		kubeClientset:    opts.KubeClientset,
 		authenticator:    gatekeeper,
 		oAuth2Service:    service,
-		configController: config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset),
+		rbacService:      rbacService,
+		configController: configController,
 		stopCh:           make(chan struct{}),
 	}, nil
 }
@@ -123,7 +153,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		// disable the archiving - and still read old records
 		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), configMap.InstanceID)
 	}
-	artifactServer := artifacts.NewArtifactServer(as.authenticator, offloadRepo, wfArchive)
+	artifactServer := artifacts.NewArtifactServer(as.authenticator, offloadRepo, wfArchive, as.rbacService)
 	grpcServer := as.newGRPCServer(configMap.InstanceID, offloadRepo, wfArchive, configMap.Links)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
@@ -175,12 +205,14 @@ func (as *argoServer) newGRPCServer(instanceID string, offloadNodeStatusRepo sql
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationUnaryServerInterceptor,
 			as.authenticator.UnaryServerInterceptor(),
+			as.rbacService.UnaryServerInterceptor(),
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_logrus.StreamServerInterceptor(serverLog),
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationStreamServerInterceptor,
 			as.authenticator.StreamServerInterceptor(),
+			as.rbacService.StreamServerInterceptor(),
 		)),
 	}
 

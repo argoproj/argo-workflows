@@ -79,6 +79,14 @@ type Config struct {
 
 	// PodSpecLogStrategy enable the logging of podspec on controller log.
 	PodSpecLogStrategy PodSpecLogStrategy `json:"podSpecLogStrategy,omitempty"`
+
+	// RBAC
+	RBAC RBAC `json:"rbac,omitempty"`
+}
+
+type RBAC struct {
+	Enabled   bool   `json:"enabled,omitempty"`
+	PolicyCSV string `json:"policyCsv,omitempty"`
 }
 
 // PodSpecLogStrategy contains the configuration for logging the pod spec in controller log for debugging purpose

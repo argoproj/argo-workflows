@@ -33,10 +33,10 @@ type Gatekeeper struct {
 	wfClient      versioned.Interface
 	kubeClient    kubernetes.Interface
 	restConfig    *rest.Config
-	oauth2Service *oauth2.Service
+	oauth2Service oauth2.Service
 }
 
-func NewGatekeeper(modes Modes, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, oauth2Service *oauth2.Service) (*Gatekeeper, error) {
+func NewGatekeeper(modes Modes, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, oauth2Service oauth2.Service) (*Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
@@ -111,7 +111,7 @@ func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		if err != nil {
 			return nil, nil, wfv1.NullUser, status.Error(codes.Unauthenticated, err.Error())
 		}
-		return s.wfClient, s.kubeClient, *user, nil
+		return s.wfClient, s.kubeClient, user, nil
 	} else if s.Modes[Client] && authorization != "" {
 		restConfig, err := kubeconfig.GetRestConfig(authorization)
 		if err != nil {
