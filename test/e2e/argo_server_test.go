@@ -813,7 +813,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 		req.Header.Set("Accept", "text/event-stream")
 		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
 		req.Close = true
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := httpClient.Do(req)
 		if assert.NoError(s.T(), err) {
 			defer func() { _ = resp.Body.Close() }()
 			if assert.Equal(s.T(), 200, resp.StatusCode) {
