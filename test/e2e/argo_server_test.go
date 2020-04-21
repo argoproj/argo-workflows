@@ -23,6 +23,10 @@ import (
 
 const baseUrl = "https://localhost:2746"
 
+var httpClient = &http.Client{
+	Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
+}
+
 // ensure basic HTTP functionality works,
 // testing behaviour really is a non-goal
 type ArgoServerSuite struct {
@@ -52,9 +56,7 @@ func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 			Printers: []httpexpect.Printer{
 				httpexpect.NewDebugPrinter(&httpLogger{}, true),
 			},
-			Client: &http.Client{
-				Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
-			},
+			Client: httpClient,
 		}).
 		Builder(func(req *httpexpect.Request) {
 			if s.bearerToken != "" {
@@ -774,7 +776,7 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 		req.Header.Set("Accept", "text/event-stream")
 		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
 		req.Close = true
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := httpClient.Do(req)
 		assert.NoError(s.T(), err)
 		assert.NotNil(s.T(), resp)
 		defer func() {
