@@ -27,6 +27,7 @@ export const WorkflowListItem = (props: WorkflowListItemProps) => (
             <div className='workflow-list-item__status'>
                 <div className='workflow-list-item__status-icon'>
                     <i className={classNames('fa', Utils.statusIconClasses(props.workflow.status.phase))} aria-hidden='true' />
+                    {props.workflow.status.emoticon}
                 </div>
                 <div className='workflow-list-item__status-message'>
                     <Timestamp date={props.workflow.metadata.creationTimestamp} />
