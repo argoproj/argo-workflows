@@ -35,7 +35,6 @@ import (
 	"github.com/argoproj/argo/server/clusterworkflowtemplate"
 	"github.com/argoproj/argo/server/cronworkflow"
 	"github.com/argoproj/argo/server/info"
-	"github.com/argoproj/argo/server/rbac"
 	"github.com/argoproj/argo/server/static"
 	"github.com/argoproj/argo/server/workflow"
 	"github.com/argoproj/argo/server/workflowarchive"
@@ -56,7 +55,6 @@ type argoServer struct {
 	kubeClientset    *kubernetes.Clientset
 	authenticator    *auth.Gatekeeper
 	oAuth2Service    oauth2.Service
-	rbacService      rbac.Service
 	configController config.Controller
 	stopCh           chan struct{}
 }
@@ -68,7 +66,6 @@ type ArgoServerOpts struct {
 	WfClientSet   *versioned.Clientset
 	RestConfig    *rest.Config
 	AuthModes     auth.Modes
-	RBAC          bool
 	// config map name
 	ConfigName       string
 	ManagedNamespace string
@@ -94,13 +91,6 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 	if err != nil {
 		return nil, err
 	}
-	rbacService := rbac.NullService
-	if opts.RBAC {
-		rbacService = rbac.NewService()
-		log.Info("RBAC enabled")
-	} else {
-		log.Info("RBAC disabled")
-	}
 	return &argoServer{
 		baseHRef:         opts.BaseHRef,
 		namespace:        opts.Namespace,
@@ -108,7 +98,6 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 		kubeClientset:    opts.KubeClientset,
 		authenticator:    gatekeeper,
 		oAuth2Service:    oauth2Service,
-		rbacService:      rbacService,
 		configController: config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset),
 		stopCh:           make(chan struct{}),
 	}, nil
@@ -146,7 +135,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		// disable the archiving - and still read old records
 		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), configMap.InstanceID)
 	}
-	artifactServer := artifacts.NewArtifactServer(as.authenticator, offloadRepo, wfArchive, as.rbacService)
+	artifactServer := artifacts.NewArtifactServer(as.authenticator, offloadRepo, wfArchive)
 	grpcServer := as.newGRPCServer(configMap.InstanceID, offloadRepo, wfArchive, configMap.Links)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
@@ -198,14 +187,12 @@ func (as *argoServer) newGRPCServer(instanceID string, offloadNodeStatusRepo sql
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationUnaryServerInterceptor,
 			as.authenticator.UnaryServerInterceptor(),
-			as.rbacService.UnaryServerInterceptor(),
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_logrus.StreamServerInterceptor(serverLog),
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationStreamServerInterceptor,
 			as.authenticator.StreamServerInterceptor(),
-			as.rbacService.StreamServerInterceptor(),
 		)),
 	}
 

@@ -17,7 +17,6 @@ import (
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/server/rbac"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/packer"
 )
@@ -26,11 +25,10 @@ type ArtifactServer struct {
 	gatekeeper            *auth.Gatekeeper
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wfArchive             sqldb.WorkflowArchive
-	rbacService           rbac.Service
 }
 
-func NewArtifactServer(gatekeeper *auth.Gatekeeper, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, rbacService rbac.Service) *ArtifactServer {
-	return &ArtifactServer{gatekeeper, offloadNodeStatusRepo, wfArchive, rbacService}
+func NewArtifactServer(gatekeeper *auth.Gatekeeper, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *ArtifactServer {
+	return &ArtifactServer{gatekeeper, offloadNodeStatusRepo, wfArchive}
 }
 
 func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
@@ -50,10 +48,6 @@ func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
 
 	log.WithFields(log.Fields{"namespace": namespace, "workflowName": workflowName, "nodeId": nodeId, "artifactName": artifactName}).Info("Download artifact")
 
-	err = a.rbacService.Enforce(ctx, "GetWorkflow")
-	if err != nil {
-		a.forbiddenError(err, w)
-	}
 	wf, err := a.getWorkflow(ctx, namespace, workflowName)
 	if err != nil {
 		a.serverInternalError(err, w)
@@ -85,10 +79,6 @@ func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request
 
 	log.WithFields(log.Fields{"uid": uid, "nodeId": nodeId, "artifactName": artifactName}).Info("Download artifact")
 
-	err = a.rbacService.Enforce(ctx, "GetWorkflow")
-	if err != nil {
-		a.forbiddenError(err, w)
-	}
 	wf, err := a.getWorkflowByUID(ctx, uid)
 	if err != nil {
 		a.serverInternalError(err, w)
@@ -127,17 +117,9 @@ func (a *ArtifactServer) ok(w http.ResponseWriter, data []byte) {
 	}
 }
 
-func (a *ArtifactServer) error(statusCode int, err error, w http.ResponseWriter) {
-	w.WriteHeader(statusCode)
-	_, _ = w.Write([]byte(err.Error()))
-}
-
-func (a *ArtifactServer) forbiddenError(err error, w http.ResponseWriter) {
-	a.error(403, err, w)
-}
-
 func (a *ArtifactServer) serverInternalError(err error, w http.ResponseWriter) {
-	a.error(500, err, w)
+	w.WriteHeader(500)
+	_, _ = w.Write([]byte(err.Error()))
 }
 
 func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nodeId, artifactName string) ([]byte, error) {
@@ -200,10 +182,6 @@ func (a *ArtifactServer) getWorkflow(ctx context.Context, namespace string, work
 }
 
 func (a *ArtifactServer) getWorkflowByUID(ctx context.Context, uid string) (*wfv1.Workflow, error) {
-	err := a.rbacService.Enforce(ctx, "GetWorkflow")
-	if err != nil {
-		return nil, err
-	}
 	wf, err := a.wfArchive.GetWorkflow(uid)
 	if err != nil {
 		return nil, err

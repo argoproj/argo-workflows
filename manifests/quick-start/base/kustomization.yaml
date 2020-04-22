@@ -13,6 +13,5 @@ resources:
   - cluster-workflow-template-rbac.yaml
 
 patchesStrategicMerge:
-  - overlays/argo-server-config-volume-configmap.yaml
   - overlays/workflow-controller-configmap.yaml
   - overlays/argo-server-deployment.yaml
