@@ -26,4 +26,4 @@ Changes without either unit or e2e tests are unlikely to be accepted. See [the p
 
 ### Contributor Workshop
 
-We have a [90m video on You Tube](https://youtu.be/zZv0lNCDG9w) show you have to get hands-on contributing.
+We have a [90m video on YouTube](https://youtu.be/zZv0lNCDG9w) show you have to get hands-on contributing.
