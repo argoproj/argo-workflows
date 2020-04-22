@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/argoproj/pkg/rand"
 	"github.com/coreos/go-oidc"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
@@ -63,14 +65,33 @@ func NewService(issuer, clientID, clientSecret, redirectURL, baseHRef string) (S
 	return &service{config, idTokenVerifier, baseHRef}, nil
 }
 
+const stateCookieName = "oauthState"
+
 func (s *service) HandleRedirect(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, s.config.AuthCodeURL("TODO"), http.StatusFound)
+	state := rand.RandString(10)
+	// TODO - no path?
+	http.SetCookie(w, &http.Cookie{
+		Name:     stateCookieName,
+		Value:    state,
+		Expires:  time.Now().Add(1 * time.Hour),
+		HttpOnly: true,
+		// TODO - lax? not strict?
+		SameSite: http.SameSiteLaxMode,
+	})
+	http.Redirect(w, r, s.config.AuthCodeURL(state), http.StatusFound)
 }
 
 func (s *service) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	state := r.URL.Query().Get("state")
-	if state != "TODO" {
+	cookie, err := r.Cookie(stateCookieName)
+	http.SetCookie(w, &http.Cookie{Name: stateCookieName, MaxAge: 0})
+	if err != nil {
+		w.WriteHeader(400)
+		_, _ = w.Write([]byte(fmt.Sprintf("invalid state: %v", err)))
+		return
+	}
+	if state != cookie.Value {
 		w.WriteHeader(401)
 		_, _ = w.Write([]byte(fmt.Sprintf("invalid state: %s", state)))
 		return
@@ -101,7 +122,7 @@ func (s *service) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	value := prefix + rawIDToken
 	log.Debugf("handing oauth2 callback %v", value)
-	// TODO "httpsonly" etc
+	// TODO MaxAge? Expires? HttpOnly?
 	// TODO we must compress this because we know id_token can be large if you have many groups
 	http.SetCookie(w, &http.Cookie{Name: "authorization", Value: value, Path: s.baseHRef, SameSite: http.SameSiteStrictMode})
 	http.Redirect(w, r, s.baseHRef, 302)
