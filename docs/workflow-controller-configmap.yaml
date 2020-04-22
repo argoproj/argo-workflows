@@ -171,11 +171,6 @@ data:
       #     name: argo-mysql-config
       #     key: password
 
-    rbac:
-      enabled: true
-      policyCsv: |
-        p, admin, *, *
-
     # Default values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
     # See more: docs/default-workflow-specs.yaml
     workflowDefaults:
