@@ -350,11 +350,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 		}
 		fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
 
-		replaceMap := scope.replaceMap()
-		for k, v := range woc.globalParams {
-			replaceMap[k] = v
-		}
-		newStepStr, err := common.Replace(fstTmpl, replaceMap, true)
+		newStepStr, err := common.Replace(fstTmpl, woc.globalParams.Merge(scope.replaceMap()), true)
 		if err != nil {
 			return nil, err
 		}
@@ -470,10 +466,7 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 
 func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string]string, map[string]func() float64) {
 	realTimeScope := make(map[string]func() float64)
-	localScope := make(map[string]string)
-	for key, val := range woc.globalParams {
-		localScope[key] = val
-	}
+	localScope := woc.globalParams.Clone()
 
 	if node.Completed() {
 		localScope["duration"] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())

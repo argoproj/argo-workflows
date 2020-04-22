@@ -544,11 +544,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 	}
 	fstTmpl := fasttemplate.New(string(taskBytes), "{{", "}}")
 
-	replaceMap := scope.replaceMap()
-	for k, v := range woc.globalParams {
-		replaceMap[k] = v
-	}
-	newTaskStr, err := common.Replace(fstTmpl, replaceMap, true)
+	newTaskStr, err := common.Replace(fstTmpl, woc.globalParams.Merge(scope.replaceMap()), true)
 	if err != nil {
 		return nil, err
 	}

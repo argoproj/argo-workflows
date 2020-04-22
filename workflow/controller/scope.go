@@ -5,6 +5,7 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/params"
 )
 
 // wfScope contains the current scope of variables available when executing a template
@@ -14,7 +15,7 @@ type wfScope struct {
 }
 
 // replaceMap returns a replacement map of strings intended to be used simple string substitution
-func (s *wfScope) replaceMap() map[string]string {
+func (s *wfScope) replaceMap() params.Params {
 	replaceMap := make(map[string]string)
 	for key, val := range s.scope {
 		valStr, ok := val.(string)

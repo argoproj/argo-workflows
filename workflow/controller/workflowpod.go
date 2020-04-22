@@ -20,6 +20,7 @@ import (
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/params"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -314,11 +315,8 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 }
 
 // substitutePodParams returns a pod spec with parameter references substituted as well as pod.name
-func substitutePodParams(pod *apiv1.Pod, globalParams map[string]string, tmpl *wfv1.Template) (*apiv1.Pod, error) {
-	podParams := make(map[string]string)
-	for k, v := range globalParams {
-		podParams[k] = v
-	}
+func substitutePodParams(pod *apiv1.Pod, globalParams params.Params, tmpl *wfv1.Template) (*apiv1.Pod, error) {
+	podParams := globalParams.Merge()
 	for _, inParam := range tmpl.Inputs.Parameters {
 		podParams["inputs.parameters."+inParam.Name] = *inParam.Value
 	}
