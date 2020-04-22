@@ -34,8 +34,6 @@ type SubmitOpts struct {
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 	// GenerateName overrides metadata.generateName
 	GenerateName string `json:"generateName,omitempty" protobuf:"bytes,2,opt,name=generateName"`
-	// InstanceID binds the Resource to the specified instance ID
-	InstanceID string `json:"instanceID,omitempty" protobuf:"bytes,3,opt,name=instanceID"`
 	// Entrypoint overrides spec.entrypoint
 	Entrypoint string `json:"entryPoint,omitempty" protobuf:"bytes,4,opt,name=entrypoint"`
 	// Parameters passes input parameters to workflow

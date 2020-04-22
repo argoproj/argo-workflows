@@ -217,9 +217,6 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 			labels[k] = v
 		}
 	}
-	if opts.InstanceID != "" {
-		labels[common.LabelKeyControllerInstanceID] = opts.InstanceID
-	}
 	wf.SetLabels(labels)
 	if len(opts.Parameters) > 0 || opts.ParameterFile != "" {
 		newParams := make([]wfv1.Parameter, 0)

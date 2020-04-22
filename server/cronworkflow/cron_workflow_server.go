@@ -9,6 +9,7 @@ import (
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/util/labels"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/validate"
@@ -57,14 +58,7 @@ func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req 
 		return nil, err
 	}
 
-	if len(c.instanceID) > 0 {
-		labels := req.CronWorkflow.GetLabels()
-		if labels == nil {
-			labels = make(map[string]string)
-		}
-		labels[common.LabelKeyControllerInstanceID] = c.instanceID
-		req.CronWorkflow.SetLabels(labels)
-	}
+	labels.SetInstanceID(req.CronWorkflow, c.instanceID)
 
 	return wfClient.ArgoprojV1alpha1().CronWorkflows(req.Namespace).Create(req.CronWorkflow)
 }

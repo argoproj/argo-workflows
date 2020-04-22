@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"context"
+	"fmt"
 
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -20,10 +21,29 @@ type Client interface {
 	NewClusterWorkflowTemplateServiceClient() clusterworkflowtmplpkg.ClusterWorkflowTemplateServiceClient
 }
 
+type Opts struct {
+	ArgoServer   string
+	InstanceID   string
+	AuthSupplier func() string
+	ClientConfig clientcmd.ClientConfig
+}
+
+// DEPRECATED: use NewClientFromOpts
 func NewClient(argoServer string, authSupplier func() string, clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
-	if argoServer != "" {
-		return newArgoServerClient(argoServer, authSupplier())
+	return NewClientFromOpts(Opts{
+		ArgoServer:   argoServer,
+		AuthSupplier: authSupplier,
+		ClientConfig: clientConfig,
+	})
+}
+
+func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
+	if opts.ArgoServer != "" && opts.InstanceID != "" {
+		return nil, nil, fmt.Errorf("cannot use instance ID with Argo Server")
+	}
+	if opts.ArgoServer != "" {
+		return newArgoServerClient(opts.ArgoServer, opts.AuthSupplier())
 	} else {
-		return newArgoKubeClient(clientConfig)
+		return newArgoKubeClient(opts.ClientConfig, opts.InstanceID)
 	}
 }

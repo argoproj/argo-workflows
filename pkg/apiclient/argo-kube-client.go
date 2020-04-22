@@ -25,9 +25,10 @@ import (
 var argoKubeOffloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 
 type argoKubeClient struct {
+	instanceID string
 }
 
-func newArgoKubeClient(clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
+func newArgoKubeClient(clientConfig clientcmd.ClientConfig, instanceID string) (context.Context, Client, error) {
 	restConfig, err := clientConfig.ClientConfig()
 	if err != nil {
 		return nil, nil, err
@@ -45,18 +46,19 @@ func newArgoKubeClient(clientConfig clientcmd.ClientConfig) (context.Context, Cl
 	if err != nil {
 		return nil, nil, err
 	}
-	return ctx, &argoKubeClient{}, nil
+	return ctx, &argoKubeClient{instanceID}, nil
 }
 
 func (a *argoKubeClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
-	return &argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer("", argoKubeOffloadNodeStatusRepo)}
+	return &argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer(a.instanceID, argoKubeOffloadNodeStatusRepo)}
 }
 
 func (a *argoKubeClient) NewCronWorkflowServiceClient() cronworkflow.CronWorkflowServiceClient {
-	return &argoKubeCronWorkflowServiceClient{cronworkflowserver.NewCronWorkflowServer("")}
+	return &argoKubeCronWorkflowServiceClient{cronworkflowserver.NewCronWorkflowServer(a.instanceID)}
 }
+
 func (a *argoKubeClient) NewWorkflowTemplateServiceClient() workflowtemplate.WorkflowTemplateServiceClient {
-	return &argoKubeWorkflowTemplateServiceClient{workflowtemplateserver.NewWorkflowTemplateServer()}
+	return &argoKubeWorkflowTemplateServiceClient{workflowtemplateserver.NewWorkflowTemplateServer(a.instanceID)}
 }
 
 func (a *argoKubeClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {
@@ -64,5 +66,5 @@ func (a *argoKubeClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.
 }
 
 func (a *argoKubeClient) NewClusterWorkflowTemplateServiceClient() clusterworkflowtemplate.ClusterWorkflowTemplateServiceClient {
-	return &argoKubeWorkflowClusterTemplateServiceClient{clusterworkflowtmplserver.NewClusterWorkflowTemplateServer()}
+	return &argoKubeWorkflowClusterTemplateServiceClient{clusterworkflowtmplserver.NewClusterWorkflowTemplateServer(a.instanceID)}
 }

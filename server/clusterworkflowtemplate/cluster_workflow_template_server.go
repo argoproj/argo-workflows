@@ -10,15 +10,17 @@ import (
 	clusterwftmplpkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/util/labels"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/validate"
 )
 
 type ClusterWorkflowTemplateServer struct {
+	instanceID string
 }
 
-func NewClusterWorkflowTemplateServer() clusterwftmplpkg.ClusterWorkflowTemplateServiceServer {
-	return &ClusterWorkflowTemplateServer{}
+func NewClusterWorkflowTemplateServer(instanceID string) clusterwftmplpkg.ClusterWorkflowTemplateServiceServer {
+	return &ClusterWorkflowTemplateServer{instanceID}
 }
 
 func (cwts *ClusterWorkflowTemplateServer) CreateClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateCreateRequest) (*v1alpha1.ClusterWorkflowTemplate, error) {
@@ -26,6 +28,8 @@ func (cwts *ClusterWorkflowTemplateServer) CreateClusterWorkflowTemplate(ctx con
 	if req.Template == nil {
 		return nil, fmt.Errorf("cluster workflow template was not found in the request body")
 	}
+
+	labels.SetInstanceID(req.Template, cwts.instanceID)
 
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 

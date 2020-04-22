@@ -2875,10 +2875,6 @@
           "type": "string",
           "title": "GenerateName overrides metadata.generateName"
         },
-        "instanceID": {
-          "type": "string",
-          "title": "InstanceID binds the Resource to the specified instance ID"
-        },
         "labels": {
           "type": "string",
           "title": "Labels adds to metadata.labels"
@@ -6180,6 +6176,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.CreateOptions"
         },
         "instanceID": {
+          "description": "This field is no longer used.",
           "type": "string"
         },
         "namespace": {

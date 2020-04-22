@@ -148,7 +148,7 @@ func getClusterWorkflowTemplateServer() (clusterwftmplpkg.ClusterWorkflowTemplat
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := wftFake.NewSimpleClientset(&cwftObj1, &cwftObj2)
 	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet)
-	return NewClusterWorkflowTemplateServer(), ctx
+	return NewClusterWorkflowTemplateServer(""), ctx
 }
 
 func TestWorkflowTemplateServer_CreateClusterWorkflowTemplate(t *testing.T) {

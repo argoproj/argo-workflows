@@ -14,6 +14,7 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/util/labels"
 	"github.com/argoproj/argo/util/logs"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/packer"
@@ -35,21 +36,6 @@ func NewWorkflowServer(instanceID string, offloadNodeStatusRepo sqldb.OffloadNod
 	}
 }
 
-func (s *workflowServer) setInstanceID(instanceID string, wf *v1alpha1.Workflow) {
-	if instanceID != "" || s.instanceID != "" {
-		labels := wf.GetLabels()
-		if labels == nil {
-			labels = make(map[string]string)
-		}
-		if instanceID != "" {
-			labels[common.LabelKeyControllerInstanceID] = instanceID
-		} else {
-			labels[common.LabelKeyControllerInstanceID] = s.instanceID
-		}
-		wf.SetLabels(labels)
-	}
-}
-
 func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.WorkflowCreateRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
@@ -61,7 +47,7 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 		req.Workflow.Namespace = req.Namespace
 	}
 
-	s.setInstanceID(req.InstanceID, req.Workflow)
+	labels.SetInstanceID(req.Workflow, s.instanceID)
 
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())

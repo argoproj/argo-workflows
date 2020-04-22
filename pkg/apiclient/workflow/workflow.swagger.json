@@ -1752,10 +1752,6 @@
           "type": "string",
           "title": "GenerateName overrides metadata.generateName"
         },
-        "instanceID": {
-          "type": "string",
-          "title": "InstanceID binds the Resource to the specified instance ID"
-        },
         "entrypoint": {
           "type": "string",
           "title": "Entrypoint overrides spec.entrypoint"
@@ -4979,7 +4975,8 @@
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
         },
         "instanceID": {
-          "type": "string"
+          "type": "string",
+          "description": "This field is no longer used."
         },
         "serverDryRun": {
           "type": "boolean",

@@ -13,6 +13,7 @@ import (
 )
 
 var argoServer string
+var instanceId string
 
 var overrides = clientcmd.ConfigOverrides{}
 
@@ -31,14 +32,21 @@ func GetConfig() clientcmd.ClientConfig {
 	return clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
 }
 
-func AddArgoServerFlagsToCmd(cmd *cobra.Command) {
+func AddAPIClientFlagsToCmd(cmd *cobra.Command) {
+	cmd.PersistentFlags().StringVar(&instanceId, "instanceid", "", "submit with a specific controller's instance id label")
 	cmd.PersistentFlags().StringVar(&argoServer, "argo-server", os.Getenv("ARGO_SERVER"), "API server `host:port`. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.")
 }
 
 func NewAPIClient() (context.Context, apiclient.Client) {
-	ctx, client, err := apiclient.NewClient(argoServer, func() string {
-		return GetAuthString()
-	}, GetConfig())
+	ctx, client, err := apiclient.NewClientFromOpts(
+		apiclient.Opts{
+			ArgoServer: argoServer,
+			InstanceID: instanceId,
+			AuthSupplier: func() string {
+				return GetAuthString()
+			},
+			ClientConfig: GetConfig(),
+		})
 	if err != nil {
 		log.Fatal(err)
 	}
