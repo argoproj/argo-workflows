@@ -1244,6 +1244,7 @@ func TestSuspendTemplateWithFailedResume(t *testing.T) {
 }
 
 func TestEmoticon(t *testing.T) {
+	t.SkipNow()
 	cancel, controller := newController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
