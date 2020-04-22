@@ -364,6 +364,10 @@ func (wfc *WorkflowController) archivedWorkflowGarbageCollector(stopCh <-chan st
 		log.Info("Persistence disabled - so archived workflow GC disabled - you must restart the controller if you enable this")
 		return
 	}
+	if !wfc.Config.Persistence.Archive {
+		log.Info("Archive disabled - so archived workflow GC disabled - you must restart the controller if you enable this")
+		return
+	}
 	ttl := wfc.Config.Persistence.ArchiveTTL
 	if ttl == config.TTL(0) {
 		log.Info("Archived workflows TTL zero - so archived workflow GC disabled - you must restart the controller if you enable this")

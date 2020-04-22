@@ -74,6 +74,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 		_, err := sess.
 			DeleteFrom(archiveTableName).
 			Where(db.Cond{"clustername": r.clusterName}).
+			And(db.Cond{"instanceid": r.instanceID}).
 			And(db.Cond{"uid": wf.UID}).
 			Exec()
 		if err != nil {
@@ -218,6 +219,7 @@ func (r *workflowArchive) DeleteWorkflows(ttl time.Duration) error {
 	rs, err := r.session.
 		DeleteFrom(archiveTableName).
 		Where(db.Cond{"clustername": r.clusterName}).
+		And(db.Cond{"instanceid": r.instanceID}).
 		And(fmt.Sprintf("finishedat < current_timestamp - interval '%d' second", int(ttl.Seconds()))).
 		Exec()
 	if err != nil {
