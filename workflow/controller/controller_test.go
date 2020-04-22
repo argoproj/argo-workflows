@@ -98,8 +98,8 @@ spec:
       args: ["hello world"]
 `
 
-func newController() (context.CancelFunc, *WorkflowController) {
-	wfclientset := fakewfclientset.NewSimpleClientset()
+func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowController) {
+	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
 	wftmplInformer := informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 	cwftmplInformer := informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()

@@ -86,6 +86,6 @@ func (c argoKubeWorkflowServiceClient) PodLogs(ctx context.Context, req *workflo
 	return intermediary, nil
 }
 
-func (c argoKubeWorkflowServiceClient) SubmitFrom(ctx context.Context, req *workflowpkg.WorkflowSubmitFromRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
-	return c.delegate.SubmitFrom(ctx, req)
+func (c argoKubeWorkflowServiceClient) SubmitWorkflow(ctx context.Context, req *workflowpkg.WorkflowSubmitRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+	return c.delegate.SubmitWorkflow(ctx, req)
 }
