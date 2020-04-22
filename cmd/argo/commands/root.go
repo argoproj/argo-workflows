@@ -15,7 +15,6 @@ import (
 	"github.com/argoproj/argo/cmd/argo/commands/archive"
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/cmd/argo/commands/template"
-	"github.com/argoproj/argo/util/cmd"
 )
 
 const (
@@ -53,7 +52,7 @@ If you're using the Argo Server (e.g. because you need large workflow support or
 	command.AddCommand(NewStopCommand())
 	command.AddCommand(NewTerminateCommand())
 	command.AddCommand(archive.NewArchiveCommand())
-	command.AddCommand(cmd.NewVersionCmd(CLIName))
+	command.AddCommand(NewVersionCommand())
 	command.AddCommand(template.NewTemplateCommand())
 	command.AddCommand(cron.NewCronWorkflowCommand())
 	command.AddCommand(clustertemplate.NewClusterTemplateCommand())

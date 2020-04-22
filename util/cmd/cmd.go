@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"os/user"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 // NewVersionCmd returns a new `version` command to be used as a sub-command to root
@@ -22,23 +22,27 @@ func NewVersionCmd(cliName string) *cobra.Command {
 		Short: fmt.Sprintf("Print version information"),
 		Run: func(cmd *cobra.Command, args []string) {
 			version := argo.GetVersion()
-			fmt.Printf("%s: %s\n", cliName, version)
-			if short {
-				return
-			}
-			fmt.Printf("  BuildDate: %s\n", version.BuildDate)
-			fmt.Printf("  GitCommit: %s\n", version.GitCommit)
-			fmt.Printf("  GitTreeState: %s\n", version.GitTreeState)
-			if version.GitTag != "" {
-				fmt.Printf("  GitTag: %s\n", version.GitTag)
-			}
-			fmt.Printf("  GoVersion: %s\n", version.GoVersion)
-			fmt.Printf("  Compiler: %s\n", version.Compiler)
-			fmt.Printf("  Platform: %s\n", version.Platform)
+			PrintVersion(cliName, version, short)
 		},
 	}
 	versionCmd.Flags().BoolVar(&short, "short", false, "print just the version number")
 	return &versionCmd
+}
+
+func PrintVersion(cliName string, version wfv1.Version, short bool) {
+	fmt.Printf("%s: %s\n", cliName, version.Version)
+	if short {
+		return
+	}
+	fmt.Printf("  BuildDate: %s\n", version.BuildDate)
+	fmt.Printf("  GitCommit: %s\n", version.GitCommit)
+	fmt.Printf("  GitTreeState: %s\n", version.GitTreeState)
+	if version.GitTag != "" {
+		fmt.Printf("  GitTag: %s\n", version.GitTag)
+	}
+	fmt.Printf("  GoVersion: %s\n", version.GoVersion)
+	fmt.Printf("  Compiler: %s\n", version.Compiler)
+	fmt.Printf("  Platform: %s\n", version.Platform)
 }
 
 // MustIsDir returns whether or not the given filePath is a directory. Exits if path does not exist
@@ -48,15 +52,6 @@ func MustIsDir(filePath string) bool {
 		log.Fatal(err)
 	}
 	return fileInfo.IsDir()
-}
-
-// MustHomeDir returns the home directory of the user
-func MustHomeDir() string {
-	usr, err := user.Current()
-	if err != nil {
-		log.Fatal(err)
-	}
-	return usr.HomeDir
 }
 
 // IsURL returns whether or not a string is a URL

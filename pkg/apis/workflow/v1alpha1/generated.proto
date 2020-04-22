@@ -575,6 +575,9 @@ message NodeStatus {
   // a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
   // a template, will be a superset of the outbound nodes of its last children.
   repeated string outboundNodes = 17;
+
+  // HostNodeName name of the Kubernetes node on which the Pod is running, if applicable
+  optional string hostNodeName = 22;
 }
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
@@ -1028,6 +1031,24 @@ message ValueFrom {
 
   // Default specifies a value to be used if retrieving the value from the specified source fails
   optional string default = 5;
+}
+
+message Version {
+  optional string version = 1;
+
+  optional string buildDate = 2;
+
+  optional string gitCommit = 3;
+
+  optional string gitTag = 4;
+
+  optional string gitTreeState = 5;
+
+  optional string goVersion = 6;
+
+  optional string compiler = 7;
+
+  optional string platform = 8;
 }
 
 // Workflow is the definition of a workflow resource

@@ -4,8 +4,7 @@ import {Subscription} from 'rxjs';
 
 import {Autocomplete, Page, SlidingPanel} from 'argo-ui';
 import * as models from '../../../../models';
-import {Workflow} from '../../../../models';
-import {compareWorkflows} from '../../../../models';
+import {compareWorkflows, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
@@ -101,7 +100,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     />
                                 </div>
                             </div>
-                            <div className='columns small-12 xlarge-10'>{this.renderWorkflows(ctx)}</div>
+                            <div className='columns small-12 xlarge-10'>{this.renderWorkflows()}</div>
                         </div>
                         <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
                             <ResourceSubmit<models.Workflow>
@@ -136,11 +135,11 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         let workflowList;
         let newNamespace = namespace;
         if (!this.state.initialized) {
-            workflowList = services.info.get().then(info => {
+            workflowList = services.info.getInfo().then(info => {
                 if (info.managedNamespace) {
                     newNamespace = info.managedNamespace;
                 }
-                this.setState({initialized: true, managedNamespace: info.managedNamespace ? true : false});
+                this.setState({initialized: true, managedNamespace: !!info.managedNamespace});
                 return services.workflows.list(newNamespace, selectedPhases, selectedLabels);
             });
         } else {
@@ -208,7 +207,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.fetchWorkflows(namespace, selectedPhases, selectedLabels);
     }
 
-    private renderWorkflows(ctx: any) {
+    private renderWorkflows() {
         if (!this.state.workflows) {
             return <Loading />;
         }
