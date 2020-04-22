@@ -14,7 +14,7 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/util/labels"
+	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/util/logs"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/packer"
@@ -47,7 +47,7 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 		req.Workflow.Namespace = req.Namespace
 	}
 
-	labels.SetInstanceID(req.Workflow, s.instanceID)
+	instanceid.Label(req.Workflow, s.instanceID)
 
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
@@ -81,7 +81,7 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	if req.GetOptions != nil {
 		wfGetOption = *req.GetOptions
 	}
-	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, wfGetOption)
+	wf, err := s.getWorkflowAndValidate(ctx, req.Namespace, req.Name, wfGetOption)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		listOption = *req.ListOptions
 	}
 
-	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).List(s.withInstanceID(listOption))
+	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).List(instanceid.With(listOption, s.instanceID))
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 	if req.ListOptions != nil {
 		opts = *req.ListOptions
 	}
-	watch, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Watch(s.withInstanceID(opts))
+	watch, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Watch(instanceid.With(opts, s.instanceID))
 	if err != nil {
 		return err
 	}
@@ -191,11 +191,10 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 }
 
 func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *workflowpkg.WorkflowDeleteRequest) (*workflowpkg.WorkflowDeleteResponse, error) {
-	_, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	_, err := s.getWorkflowAndValidate(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-
 	err = auth.GetWfClient(ctx).ArgoprojV1alpha1().Workflows(req.Namespace).Delete(req.Name, &metav1.DeleteOptions{})
 	if err != nil {
 		return nil, err
@@ -207,7 +206,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 	wfClient := auth.GetWfClient(ctx)
 	kubeClient := auth.GetKubeClient(ctx)
 
-	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflowAndValidate(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +220,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 
 func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.WorkflowResubmitRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflowAndValidate(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -240,8 +239,7 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 
 func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.WorkflowResumeRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-
-	_, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	_, err := s.getWorkflowAndValidate(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +261,7 @@ func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.Wo
 func (s *workflowServer) SuspendWorkflow(ctx context.Context, req *workflowpkg.WorkflowSuspendRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	_, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	_, err := s.getWorkflowAndValidate(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +282,7 @@ func (s *workflowServer) SuspendWorkflow(ctx context.Context, req *workflowpkg.W
 func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *workflowpkg.WorkflowTerminateRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	_, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	_, err := s.getWorkflowAndValidate(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -303,7 +301,11 @@ func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *workflowpkg
 
 func (s *workflowServer) StopWorkflow(ctx context.Context, req *workflowpkg.WorkflowStopRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	err := util.StopWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), req.Name, req.NodeFieldSelector, req.Message)
+	_, err := s.getWorkflowAndValidate(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	err = util.StopWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), req.Name, req.NodeFieldSelector, req.Message)
 	if err != nil {
 		return nil, err
 	}
@@ -317,9 +319,9 @@ func (s *workflowServer) StopWorkflow(ctx context.Context, req *workflowpkg.Work
 
 func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.WorkflowLintRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+	instanceid.Label(req.Workflow, s.instanceID)
 
 	_, err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, req.Workflow, validate.ValidateOpts{Lint: true})
 
@@ -334,50 +336,24 @@ func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflo
 	ctx := ws.Context()
 	wfClient := auth.GetWfClient(ctx)
 	kubeClient := auth.GetKubeClient(ctx)
+	_, err := s.getWorkflowAndValidate(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
 	return logs.WorkflowLogs(ctx, wfClient, kubeClient, req, ws)
 }
 
-func (s *workflowServer) withInstanceID(opt metav1.ListOptions) metav1.ListOptions {
-	if len(opt.LabelSelector) > 0 {
-		opt.LabelSelector += ","
-	}
-	if len(s.instanceID) == 0 {
-		opt.LabelSelector += fmt.Sprintf("!%s", common.LabelKeyControllerInstanceID)
-		return opt
-	}
-	opt.LabelSelector += fmt.Sprintf("%s=%s", common.LabelKeyControllerInstanceID, s.instanceID)
-	return opt
-}
-
-func (s *workflowServer) getWorkflow(ctx context.Context, namespace string, name string, options metav1.GetOptions) (*v1alpha1.Workflow, error) {
+func (s *workflowServer) getWorkflowAndValidate(ctx context.Context, namespace string, name string, options metav1.GetOptions) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(name, options)
 	if err != nil {
 		return nil, err
 	}
-	ok := s.validateInstanceID(wf)
-	if !ok {
-		return nil, fmt.Errorf("Workflow '%s' is not managed by the current Argo server", wf.Name)
+	err = instanceid.Validate(wf, s.instanceID)
+	if err != nil {
+		return nil, err
 	}
 	return wf, nil
-}
-
-func (s *workflowServer) validateInstanceID(wf *v1alpha1.Workflow) bool {
-	if len(s.instanceID) == 0 {
-		if len(wf.Labels) == 0 {
-			return true
-		}
-		if _, ok := wf.Labels[common.LabelKeyControllerInstanceID]; !ok {
-			return true
-		}
-	} else if len(wf.Labels) > 0 {
-		if val, ok := wf.Labels[common.LabelKeyControllerInstanceID]; ok {
-			if val == s.instanceID {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.WorkflowSubmitRequest) (*v1alpha1.Workflow, error) {
@@ -408,6 +384,7 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 
 	}
 
+	instanceid.Label(wf, s.instanceID)
 	err := util.ApplySubmitOpts(wf, req.SubmitOptions)
 	if err != nil {
 		return nil, err

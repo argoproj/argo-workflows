@@ -17,6 +17,7 @@ import (
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/util/instanceid"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/packer"
 )
@@ -25,10 +26,11 @@ type ArtifactServer struct {
 	authN                 auth.Gatekeeper
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wfArchive             sqldb.WorkflowArchive
+	instanceID            string
 }
 
-func NewArtifactServer(authN auth.Gatekeeper, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *ArtifactServer {
-	return &ArtifactServer{authN, offloadNodeStatusRepo, wfArchive}
+func NewArtifactServer(authN auth.Gatekeeper, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, instanceID string) *ArtifactServer {
+	return &ArtifactServer{authN, offloadNodeStatusRepo, wfArchive, instanceID}
 }
 
 func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
@@ -48,7 +50,7 @@ func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
 
 	log.WithFields(log.Fields{"namespace": namespace, "workflowName": workflowName, "nodeId": nodeId, "artifactName": artifactName}).Info("Download artifact")
 
-	wf, err := a.getWorkflow(ctx, namespace, workflowName)
+	wf, err := a.getWorkflowAndValidate(ctx, namespace, workflowName)
 	if err != nil {
 		a.serverInternalError(err, w)
 		return
@@ -158,9 +160,13 @@ func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nod
 	return file, nil
 }
 
-func (a *ArtifactServer) getWorkflow(ctx context.Context, namespace string, workflowName string) (*wfv1.Workflow, error) {
+func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace string, workflowName string) (*wfv1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(workflowName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	err = instanceid.Validate(wf, a.instanceID)
 	if err != nil {
 		return nil, err
 	}

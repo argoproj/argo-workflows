@@ -9,8 +9,7 @@ import (
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/util/labels"
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/validate"
 )
@@ -28,6 +27,7 @@ func (c *cronWorkflowServiceServer) LintCronWorkflow(ctx context.Context, req *c
 	wfClient := auth.GetWfClient(ctx)
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+	instanceid.Label(req.CronWorkflow, c.instanceID)
 	err := validate.ValidateCronWorkflow(wftmplGetter, cwftmplGetter, req.CronWorkflow)
 	if err != nil {
 		return nil, err
@@ -40,8 +40,7 @@ func (c *cronWorkflowServiceServer) ListCronWorkflows(ctx context.Context, req *
 	if req.ListOptions != nil {
 		options = *req.ListOptions
 	}
-	optsWithInstanceId := c.withInstanceID(options)
-	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).List(optsWithInstanceId)
+	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).List(instanceid.With(options, c.instanceID))
 }
 
 func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req *cronworkflowpkg.CreateCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
@@ -49,6 +48,7 @@ func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req 
 	if req.CronWorkflow == nil {
 		return nil, fmt.Errorf("cron workflow was not found in the request body")
 	}
+	instanceid.Label(req.CronWorkflow, c.instanceID)
 
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
@@ -58,8 +58,6 @@ func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req 
 		return nil, err
 	}
 
-	labels.SetInstanceID(req.CronWorkflow, c.instanceID)
-
 	return wfClient.ArgoprojV1alpha1().CronWorkflows(req.Namespace).Create(req.CronWorkflow)
 }
 
@@ -68,11 +66,11 @@ func (c *cronWorkflowServiceServer) GetCronWorkflow(ctx context.Context, req *cr
 	if req.GetOptions != nil {
 		options = *req.GetOptions
 	}
-	return c.getCronWorkflow(ctx, req.Namespace, req.Name, options)
+	return c.getCronWorkflowAndValidate(ctx, req.Namespace, req.Name, options)
 }
 
 func (c *cronWorkflowServiceServer) UpdateCronWorkflow(ctx context.Context, req *cronworkflowpkg.UpdateCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
-	_, err := c.getCronWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	_, err := c.getCronWorkflowAndValidate(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +78,7 @@ func (c *cronWorkflowServiceServer) UpdateCronWorkflow(ctx context.Context, req 
 }
 
 func (c *cronWorkflowServiceServer) DeleteCronWorkflow(ctx context.Context, req *cronworkflowpkg.DeleteCronWorkflowRequest) (*cronworkflowpkg.CronWorkflowDeletedResponse, error) {
-	_, err := c.getCronWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	_, err := c.getCronWorkflowAndValidate(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -91,45 +89,15 @@ func (c *cronWorkflowServiceServer) DeleteCronWorkflow(ctx context.Context, req 
 	return &cronworkflowpkg.CronWorkflowDeletedResponse{}, nil
 }
 
-func (c *cronWorkflowServiceServer) withInstanceID(opt metav1.ListOptions) metav1.ListOptions {
-	if len(opt.LabelSelector) > 0 {
-		opt.LabelSelector += ","
-	}
-	if len(c.instanceID) == 0 {
-		opt.LabelSelector += fmt.Sprintf("!%s", common.LabelKeyControllerInstanceID)
-		return opt
-	}
-	opt.LabelSelector += fmt.Sprintf("%s=%s", common.LabelKeyControllerInstanceID, c.instanceID)
-	return opt
-}
-
-func (c *cronWorkflowServiceServer) getCronWorkflow(ctx context.Context, namespace string, name string, options metav1.GetOptions) (*v1alpha1.CronWorkflow, error) {
+func (c *cronWorkflowServiceServer) getCronWorkflowAndValidate(ctx context.Context, namespace string, name string, options metav1.GetOptions) (*v1alpha1.CronWorkflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	cronWf, err := wfClient.ArgoprojV1alpha1().CronWorkflows(namespace).Get(name, options)
 	if err != nil {
 		return nil, err
 	}
-	ok := c.validateInstanceID(cronWf)
-	if !ok {
-		return nil, fmt.Errorf("CronWorkflow '%s' is not managed by the current Argo server", cronWf.Name)
+	err = instanceid.Validate(cronWf, c.instanceID)
+	if err != nil {
+		return nil, err
 	}
 	return cronWf, nil
-}
-
-func (c *cronWorkflowServiceServer) validateInstanceID(cronWf *v1alpha1.CronWorkflow) bool {
-	if len(c.instanceID) == 0 {
-		if len(cronWf.Labels) == 0 {
-			return true
-		}
-		if _, ok := cronWf.Labels[common.LabelKeyControllerInstanceID]; !ok {
-			return true
-		}
-	} else if len(cronWf.Labels) > 0 {
-		if val, ok := cronWf.Labels[common.LabelKeyControllerInstanceID]; ok {
-			if val == c.instanceID {
-				return true
-			}
-		}
-	}
-	return false
 }
