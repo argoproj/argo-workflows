@@ -575,6 +575,9 @@ message NodeStatus {
   // a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
   // a template, will be a superset of the outbound nodes of its last children.
   repeated string outboundNodes = 17;
+
+  // HostNodeName name of the Kubernetes node on which the Pod is running, if applicable
+  optional string hostNodeName = 22;
 }
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
