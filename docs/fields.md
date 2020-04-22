@@ -131,6 +131,8 @@ Workflow is the definition of a workflow resource
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
 
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
+
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](../examples/output-parameter.yaml)
@@ -395,6 +397,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
+
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
 
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 
@@ -680,6 +684,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
 
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
+
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](../examples/output-parameter.yaml)
@@ -929,6 +935,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
+
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
 
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 
@@ -1340,6 +1348,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
 
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
+
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](../examples/output-parameter.yaml)
@@ -1566,6 +1576,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
+
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](../examples/output-parameter.yaml)
@@ -1628,6 +1640,8 @@ Artifact indicates an artifact to place at a specified path
 - [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
 
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
+
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
 
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 </details>
@@ -2136,6 +2150,8 @@ Pod metdata
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
 
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
+
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](../examples/output-parameter.yaml)
@@ -2545,6 +2561,8 @@ ArchiveStrategy describes how to archive files/directory when saving artifacts
 <br>
 
 - [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
+
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
 
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 </details>
@@ -3005,6 +3023,8 @@ NoneStrategy indicates to skip tar process and upload the files or directory tre
 
 - [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
 
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
+
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 </details>
 
@@ -3245,6 +3265,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
+
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
 
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 
@@ -3664,6 +3686,8 @@ A single application container that you want to run within a pod.
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
 
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
+
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](../examples/output-parameter.yaml)
@@ -4070,6 +4094,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devicesand 
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
+
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
 
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 
