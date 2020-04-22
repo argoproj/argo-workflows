@@ -720,6 +720,11 @@ export interface NodeStatus {
      * TemplateScope is the template scope in which the template of this node was retrieved.
      */
     templateScope?: string;
+
+    /**
+     * HostNodeName name of the Kubernetes node on which the Pod is running, if applicable.
+     */
+    hostNodeName: string;
 }
 
 export interface TemplateRef {
