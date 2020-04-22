@@ -249,9 +249,9 @@
         ]
       }
     },
-    "/api/v1/workflows/{namespace}/submit-from": {
+    "/api/v1/workflows/{namespace}/submit": {
       "post": {
-        "operationId": "SubmitFrom",
+        "operationId": "SubmitWorkflow",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -272,7 +272,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/workflow.WorkflowSubmitFromRequest"
+              "$ref": "#/definitions/workflow.WorkflowSubmitRequest"
             }
           }
         ],
@@ -5068,7 +5068,7 @@
         }
       }
     },
-    "workflow.WorkflowSubmitFromRequest": {
+    "workflow.WorkflowSubmitRequest": {
       "type": "object",
       "properties": {
         "namespace": {
