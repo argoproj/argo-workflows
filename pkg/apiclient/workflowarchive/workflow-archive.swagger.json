@@ -1699,6 +1699,10 @@
             "format": "int64"
           },
           "title": "ResourcesDuration is the total for the workflow"
+        },
+        "emoticon": {
+          "type": "string",
+          "description": "Emoticon whether or not this is what you want."
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"

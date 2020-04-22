@@ -1243,6 +1243,21 @@ func TestSuspendTemplateWithFailedResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 }
 
+func TestEmoticon(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := unmarshalWF(helloWorldWf)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	woc.operate()
+
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+}
+
 func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()

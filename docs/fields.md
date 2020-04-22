@@ -537,6 +537,7 @@ WorkflowStatus contains overall status information about a workflow
 |:----------:|:----------:|---------------|
 |`compressedNodes`|`string`|Compressed and base64 decoded Nodes map|
 |`conditions`|`Array<`[`WorkflowCondition`](#workflowcondition)`>`|Conditions is a list of conditions the Workflow may have|
+|`emoticon`|`string`|Emoticon whether or not this is what you want.|
 |`finishedAt`|[`Time`](#time)|Time at which this workflow completed|
 |`message`|`string`|A human readable message indicating details about why the workflow is in this condition.|
 |`nodes`|[`NodeStatus`](#nodestatus)|Nodes is a mapping between a node ID and the node's status.|

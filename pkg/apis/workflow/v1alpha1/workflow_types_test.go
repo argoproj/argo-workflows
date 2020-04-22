@@ -63,3 +63,12 @@ func TestWorkflowConditions_UpsertConditionMessage(t *testing.T) {
 	wfCond.UpsertConditionMessage(WorkflowCondition{Type: WorkflowConditionCompleted, Message: "world!"})
 	assert.Equal(t, "Hello, world!", wfCond[0].Message)
 }
+
+func TestEmoticon(t *testing.T) {
+	assert.Equal(t, EmoticonHappy, NewEmoticon(&Workflow{
+		ObjectMeta: v1.ObjectMeta{Name: "argo"},
+	}))
+	assert.Equal(t, EmoticonSad, NewEmoticon(&Workflow{
+		ObjectMeta: v1.ObjectMeta{Name: "other"},
+	}))
+}

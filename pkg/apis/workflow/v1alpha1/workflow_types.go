@@ -40,6 +40,20 @@ const (
 	NodeError     NodePhase = "Error"
 )
 
+type Emoticon string
+
+const (
+	EmoticonHappy Emoticon = "😀"
+	EmoticonSad   Emoticon = "☹️"
+)
+
+func NewEmoticon(wf *Workflow) Emoticon {
+	if strings.Contains(wf.Name, "argo") {
+		return EmoticonHappy
+	}
+	return EmoticonSad
+}
+
 // NodeType is the type of a node
 type NodeType string
 
@@ -903,6 +917,9 @@ type WorkflowStatus struct {
 
 	// ResourcesDuration is the total for the workflow
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
+
+	// Emoticon whether or not this is what you want.
+	Emoticon Emoticon `json:"emoticon,omitempty" protobuf:"bytes,14,opt,name=emoticon,casttype=Emoticon"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
