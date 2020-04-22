@@ -2484,6 +2484,10 @@
           "title": "Time at which this node completed",
           "$ref": "#/definitions/io.k8s.api.core.v1.Time"
         },
+        "hostNodeName": {
+          "type": "string",
+          "title": "HostNodeName name of the Kubernetes node on which the Pod is running, if applicable"
+        },
         "id": {
           "type": "string",
           "title": "ID is a unique identifier of a node within the worklow\nIt is implemented as a hash of the node name, which makes the ID deterministic"
