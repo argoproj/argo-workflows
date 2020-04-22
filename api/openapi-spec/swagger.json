@@ -1172,12 +1172,12 @@
         }
       }
     },
-    "/api/v1/workflows/{namespace}/submit-from": {
+    "/api/v1/workflows/{namespace}/submit": {
       "post": {
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "SubmitFrom",
+        "operationId": "SubmitWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1190,7 +1190,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSubmitFromRequest"
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSubmitRequest"
             }
           }
         ],
@@ -6272,7 +6272,7 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.WorkflowSubmitFromRequest": {
+    "io.argoproj.workflow.v1alpha1.WorkflowSubmitRequest": {
       "type": "object",
       "properties": {
         "createOptions": {
