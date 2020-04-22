@@ -75,7 +75,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
             .get(this.uid)
             .then(workflow => this.setState({workflow}))
             .catch(error => this.setState({error}));
-        services.info.get().then(info => this.setState({links: info.links}));
+        services.info.getInfo().then(info => this.setState({links: info.links}));
     }
 
     public render() {
