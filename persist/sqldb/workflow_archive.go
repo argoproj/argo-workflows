@@ -52,15 +52,16 @@ type WorkflowArchive interface {
 }
 
 type workflowArchive struct {
-	session     sqlbuilder.Database
-	clusterName string
-	instanceID  string
-	dbType      dbType
+	session          sqlbuilder.Database
+	clusterName      string
+	managedNamespace string
+	instanceID       string
+	dbType           dbType
 }
 
 // NewWorkflowArchive returns a new workflowArchive
-func NewWorkflowArchive(session sqlbuilder.Database, clusterName string, instanceID string) WorkflowArchive {
-	return &workflowArchive{session: session, clusterName: clusterName, instanceID: instanceID, dbType: dbTypeFor(session)}
+func NewWorkflowArchive(session sqlbuilder.Database, clusterName, managedNamespace, instanceID string) WorkflowArchive {
+	return &workflowArchive{session: session, clusterName: clusterName, managedNamespace: managedNamespace, instanceID: instanceID, dbType: dbTypeFor(session)}
 }
 
 func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
@@ -73,8 +74,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 	return r.session.Tx(context.Background(), func(sess sqlbuilder.Tx) error {
 		_, err := sess.
 			DeleteFrom(archiveTableName).
-			Where(db.Cond{"clustername": r.clusterName}).
-			And(db.Cond{"instanceid": r.instanceID}).
+			Where(r.clusterManagedNamespaceAndInstanceID()).
 			And(db.Cond{"uid": wf.UID}).
 			Exec()
 		if err != nil {
@@ -124,8 +124,7 @@ func (r *workflowArchive) ListWorkflows(namespace string, minStartedAt, maxStart
 	err = r.session.
 		Select("name", "namespace", "uid", "phase", "startedat", "finishedat").
 		From(archiveTableName).
-		Where(db.Cond{"clustername": r.clusterName}).
-		And(db.Cond{"instanceid": r.instanceID}).
+		Where(r.clusterManagedNamespaceAndInstanceID()).
 		And(namespaceEqual(namespace)).
 		And(startedAtClause(minStartedAt, maxStartedAt)).
 		And(clause).
@@ -155,6 +154,14 @@ func (r *workflowArchive) ListWorkflows(namespace string, minStartedAt, maxStart
 	return wfs, nil
 }
 
+func (r *workflowArchive) clusterManagedNamespaceAndInstanceID() db.Compound {
+	return db.And(
+		db.Cond{"clustername": r.clusterName},
+		namespaceEqual(r.managedNamespace),
+		db.Cond{"instanceid": r.instanceID},
+	)
+}
+
 func startedAtClause(from, to time.Time) db.Compound {
 	var conds []db.Compound
 	if !from.IsZero() {
@@ -179,8 +186,7 @@ func (r *workflowArchive) GetWorkflow(uid string) (*wfv1.Workflow, error) {
 	err := r.session.
 		Select("workflow").
 		From(archiveTableName).
-		Where(db.Cond{"clustername": r.clusterName}).
-		And(db.Cond{"instanceid": r.instanceID}).
+		Where(r.clusterManagedNamespaceAndInstanceID()).
 		And(db.Cond{"uid": uid}).
 		One(archivedWf)
 	if err != nil {
@@ -200,8 +206,7 @@ func (r *workflowArchive) GetWorkflow(uid string) (*wfv1.Workflow, error) {
 func (r *workflowArchive) DeleteWorkflow(uid string) error {
 	rs, err := r.session.
 		DeleteFrom(archiveTableName).
-		Where(db.Cond{"clustername": r.clusterName}).
-		And(db.Cond{"instanceid": r.instanceID}).
+		Where(r.clusterManagedNamespaceAndInstanceID()).
 		And(db.Cond{"uid": uid}).
 		Exec()
 	if err != nil {
@@ -218,8 +223,7 @@ func (r *workflowArchive) DeleteWorkflow(uid string) error {
 func (r *workflowArchive) DeleteWorkflows(ttl time.Duration) error {
 	rs, err := r.session.
 		DeleteFrom(archiveTableName).
-		Where(db.Cond{"clustername": r.clusterName}).
-		And(db.Cond{"instanceid": r.instanceID}).
+		Where(r.clusterManagedNamespaceAndInstanceID()).
 		And(fmt.Sprintf("finishedat < current_timestamp - interval '%d' second", int(ttl.Seconds()))).
 		Exec()
 	if err != nil {
