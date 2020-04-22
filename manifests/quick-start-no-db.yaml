@@ -427,11 +427,6 @@ data:
     enabled: true
     path: /metrics
     port: 9090
-  rbac: |
-    enabled: true
-    policyCsv: |
-      p, admin, *, *
-      p, authors, *, *
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
@@ -439,7 +434,7 @@ metadata:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: argo-oauth2
+  name: argo-server-oauth2
 stringData:
   clientId: argo-server
   clientSecret: ZXhhbXBsZS1hcHAtc2VjcmV0
