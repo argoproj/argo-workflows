@@ -27,6 +27,7 @@ func (s *SmokeSuite) TestBasicWorkflow() {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 			assert.NotEmpty(t, status.Nodes)
 			assert.NotEmpty(t, status.ResourcesDuration)
+			assert.NotEqual(t, wfv1.EmoticonHappy, status.Emoticon)
 		})
 }
 
