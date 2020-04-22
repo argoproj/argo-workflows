@@ -1188,12 +1188,12 @@
         }
       }
     },
-    "/api/v1/workflows/{namespace}/submit-from": {
+    "/api/v1/workflows/{namespace}/submit": {
       "post": {
         "tags": [
           "WorkflowService"
         ],
-        "operationId": "SubmitFrom",
+        "operationId": "SubmitWorkflow",
         "parameters": [
           {
             "type": "string",
@@ -1206,7 +1206,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSubmitFromRequest"
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSubmitRequest"
             }
           }
         ],
@@ -2499,6 +2499,10 @@
         "finishedAt": {
           "title": "Time at which this node completed",
           "$ref": "#/definitions/io.k8s.api.core.v1.Time"
+        },
+        "hostNodeName": {
+          "type": "string",
+          "title": "HostNodeName name of the Kubernetes node on which the Pod is running, if applicable"
         },
         "id": {
           "type": "string",
@@ -6317,7 +6321,7 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.WorkflowSubmitFromRequest": {
+    "io.argoproj.workflow.v1alpha1.WorkflowSubmitRequest": {
       "type": "object",
       "properties": {
         "createOptions": {
