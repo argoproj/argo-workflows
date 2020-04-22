@@ -108,7 +108,7 @@ message WorkflowLintRequest {
 }
 
 
-message WorkflowSubmitFromRequest{
+message WorkflowSubmitRequest{
     string namespace = 1;
     string resourceKind = 2;
     string resourceName = 3;
@@ -194,9 +194,9 @@ service WorkflowService {
         option (google.api.http).get = "/api/v1/workflows/{namespace}/{name}/{podName}/log";
     }
 
-    rpc SubmitFrom (WorkflowSubmitFromRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+    rpc SubmitWorkflow (WorkflowSubmitRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
-			post: "/api/v1/workflows/{namespace}/submit-from"
+			post: "/api/v1/workflows/{namespace}/submit"
 			body: "*"
 		};
     }
