@@ -1513,6 +1513,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`daemoned`|`boolean`|Daemoned tracks whether or not this node was daemoned and need to be terminated|
 |`displayName`|`string`|DisplayName is a human readable representation of the node. Unique within a template boundary|
 |`finishedAt`|[`Time`](#time)|Time at which this node completed|
+|`hostNodeName`|`string`|HostNodeName name of the Kubernetes node on which the Pod is running, if applicable|
 |`id`|`string`|ID is a unique identifier of a node within the worklowIt is implemented as a hash of the node name, which makes the ID deterministic|
 |`inputs`|[`Inputs`](#inputs)|Inputs captures input parameter values and artifact locations supplied to this template invocation|
 |`message`|`string`|A human readable message indicating details about why the node is in this condition.|
