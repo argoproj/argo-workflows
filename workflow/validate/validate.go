@@ -118,16 +118,19 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 				return nil, err
 			}
 		}
-
 		if entrypoint == "" {
 			entrypoint = wftmpl.GetEntrypoint()
 		}
+		topLevelTmplRef = wf.Spec.WorkflowTemplateRef.GetTemplateRef()
+		topLevelTmplRef.Template = entrypoint
 	}
 
 
 	err = validateWorkflowFieldNames(wf.Spec.Templates)
 	var wfArgs wfv1.Arguments
-	wfArgs.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, wftmpl.GetArguments().Parameters)
+	if wf.Spec.Arguments.Parameters != nil {
+		wfArgs.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, wftmpl.GetArguments().Parameters)
+	}
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
 	}
@@ -199,7 +202,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	}
 
 	if !opts.IgnoreEntrypoint {
-		if topLevelTmplRef != nil{
+		if isWorkflowTemplateRef{
 			_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{TemplateRef:topLevelTmplRef}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
 
 		}else {
