@@ -696,7 +696,7 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 
 	server, ctx := getWorkflowServer()
 	t.Run("SubmitFromWorkflowTemplate", func(t *testing.T) {
-		wf, err := server.SubmitFrom(ctx, &workflowpkg.WorkflowSubmitFromRequest{
+		wf, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
 			Namespace:    "workflows",
 			ResourceKind: "workflowtemplate",
 			ResourceName: "workflow-template-whalesay-template",
@@ -706,7 +706,7 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 		}
 	})
 	t.Run("SubmitFromCronWorkflow", func(t *testing.T) {
-		wf, err := server.SubmitFrom(ctx, &workflowpkg.WorkflowSubmitFromRequest{
+		wf, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
 			Namespace:    "workflows",
 			ResourceKind: "cronworkflow",
 			ResourceName: "hello-world",
@@ -716,7 +716,7 @@ func TestSubmitWorkflowFromResource(t *testing.T) {
 		}
 	})
 	t.Run("SubmitFromClusterWorkflowTemplate", func(t *testing.T) {
-		wf, err := server.SubmitFrom(ctx, &workflowpkg.WorkflowSubmitFromRequest{
+		wf, err := server.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
 			Namespace:    "workflows",
 			ResourceKind: "ClusterWorkflowTemplate",
 			ResourceName: "cluster-workflow-template-whalesay-template",
