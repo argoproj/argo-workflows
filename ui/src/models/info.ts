@@ -8,3 +8,7 @@ export interface Info {
     managedNamespace?: string;
     links?: Link[];
 }
+
+export interface Version {
+    version: string;
+}
