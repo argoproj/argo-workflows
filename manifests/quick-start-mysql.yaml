@@ -290,6 +290,9 @@ rules:
   - clusterworkflowtemplates
   - clusterworkflowtemplates/finalizers
   verbs:
+  - create
+  - delete
+  - watch
   - get
   - list
   - watch
