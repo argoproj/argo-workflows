@@ -1036,6 +1036,24 @@ message ValueFrom {
   optional string default = 5;
 }
 
+message Version {
+  optional string version = 1;
+
+  optional string buildDate = 2;
+
+  optional string gitCommit = 3;
+
+  optional string gitTag = 4;
+
+  optional string gitTreeState = 5;
+
+  optional string goVersion = 6;
+
+  optional string compiler = 7;
+
+  optional string platform = 8;
+}
+
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus

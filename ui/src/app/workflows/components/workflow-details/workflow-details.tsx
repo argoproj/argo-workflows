@@ -80,7 +80,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
 
     public componentDidMount() {
         this.loadWorkflow(this.props.match.params.namespace, this.props.match.params.name);
-        services.info.get().then(info => this.setState({links: info.links}));
+        services.info.getInfo().then(info => this.setState({links: info.links}));
     }
 
     public componentWillReceiveProps(nextProps: RouteComponentProps<any>) {

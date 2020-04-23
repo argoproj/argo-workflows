@@ -85,6 +85,16 @@ func (s *ArgoServerSuite) TestInfo() {
 			Equal("http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}")
 	})
 }
+func (s *ArgoServerSuite) TestVersion() {
+	s.Run("Version", func() {
+		s.e(s.T()).GET("/api/v1/version").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.version").
+			NotNull()
+	})
+}
 
 func (s *ArgoServerSuite) TestUnauthorized() {
 	token := s.bearerToken

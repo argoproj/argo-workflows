@@ -10,6 +10,7 @@ import (
 
 	clusterworkflowtmplpkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
+	infopkg "github.com/argoproj/argo/pkg/apiclient/info"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
@@ -52,7 +53,12 @@ func (a *argoServerClient) NewClusterWorkflowTemplateServiceClient() clusterwork
 	return clusterworkflowtmplpkg.NewClusterWorkflowTemplateServiceClient(a.ClientConn)
 }
 
+func (a *argoServerClient) NewInfoServiceClient() (infopkg.InfoServiceClient, error) {
+	return infopkg.NewInfoServiceClient(a.ClientConn), nil
+}
+
 func newClientConn(opts ArgoServerOpts) (*grpc.ClientConn, error) {
+	conn, err := grpc.Dial(argoServer, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxClientGRPCMessageSize)), grpc.WithInsecure())
 	creds := grpc.WithInsecure()
 	if opts.Secure {
 		creds = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: opts.InsecureSkipVerify}))
