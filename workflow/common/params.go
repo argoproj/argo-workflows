@@ -1,4 +1,4 @@
-package params
+package common
 
 // Parameters extends string map with useful methods.
 type Parameters map[string]string
