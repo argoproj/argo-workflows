@@ -2562,8 +2562,6 @@ ArchiveStrategy describes how to archive files/directory when saving artifacts
 
 - [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
 
-- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
-
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 </details>
 
@@ -2714,6 +2712,8 @@ GCSArtifact is the location of a GCS artifact
 <br>
 
 - [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
+
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
 </details>
 
 ### Fields
@@ -3022,8 +3022,6 @@ NoneStrategy indicates to skip tar process and upload the files or directory tre
 <br>
 
 - [`artifact-disable-archive.yaml`](../examples/artifact-disable-archive.yaml)
-
-- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
 
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 </details>
