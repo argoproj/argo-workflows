@@ -185,7 +185,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.podInformer.Run(ctx.Done())
 	go wfc.podLabeler(ctx.Done())
 	go wfc.podGarbageCollector(ctx.Done())
-	go wfc.periodicWorkflowGarbageCollector(ctx.Done())
+	go wfc.workflowGarbageCollector(ctx.Done())
+	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
 
 	wfc.createClusterWorkflowTemplateInformer(ctx)
 
@@ -288,7 +289,7 @@ func (wfc *WorkflowController) podGarbageCollector(stopCh <-chan struct{}) {
 	}
 }
 
-func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan struct{}) {
+func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) {
 	value, ok := os.LookupEnv("WORKFLOW_GC_PERIOD")
 	periodicity := 5 * time.Minute
 	if ok {
@@ -344,6 +345,46 @@ func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan st
 						}
 					}
 				}
+			}
+		}
+	}
+}
+
+func (wfc *WorkflowController) archivedWorkflowGarbageCollector(stopCh <-chan struct{}) {
+	value, ok := os.LookupEnv("ARCHIVED_WORKFLOW_GC_PERIOD")
+	periodicity := 24 * time.Hour
+	if ok {
+		var err error
+		periodicity, err = time.ParseDuration(value)
+		if err != nil {
+			log.WithFields(log.Fields{"err": err, "value": value}).Fatal("Failed to parse ARCHIVED_WORKFLOW_GC_PERIOD")
+		}
+	}
+	if wfc.Config.Persistence == nil {
+		log.Info("Persistence disabled - so archived workflow GC disabled - you must restart the controller if you enable this")
+		return
+	}
+	if !wfc.Config.Persistence.Archive {
+		log.Info("Archive disabled - so archived workflow GC disabled - you must restart the controller if you enable this")
+		return
+	}
+	ttl := wfc.Config.Persistence.ArchiveTTL
+	if ttl == config.TTL(0) {
+		log.Info("Archived workflows TTL zero - so archived workflow GC disabled - you must restart the controller if you enable this")
+		return
+	}
+	log.WithFields(log.Fields{"ttl": ttl, "periodicity": periodicity}).Info("Performing archived workflow GC")
+	ticker := time.NewTicker(periodicity)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-stopCh:
+			return
+		case <-ticker.C:
+			log.Info("Performing archived workflow GC")
+			err := wfc.wfArchive.DeleteWorkflows(time.Duration(ttl))
+			if err != nil {
+				log.WithField("err", err).Error("Failed to delete archived workflows")
 			}
 		}
 	}
