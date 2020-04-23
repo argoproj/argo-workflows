@@ -2,8 +2,10 @@ package apiclient
 
 import (
 	"context"
+	"crypto/tls"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 
 	clusterworkflowtmplpkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
@@ -23,8 +25,8 @@ type argoServerClient struct {
 	*grpc.ClientConn
 }
 
-func newArgoServerClient(argoServer, auth string) (context.Context, Client, error) {
-	conn, err := NewClientConn(argoServer)
+func newArgoServerClient(opts ArgoServerOpts, auth string) (context.Context, Client, error) {
+	conn, err := newClientConn(opts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -55,8 +57,12 @@ func (a *argoServerClient) NewInfoServiceClient() (infopkg.InfoServiceClient, er
 	return infopkg.NewInfoServiceClient(a.ClientConn), nil
 }
 
-func NewClientConn(argoServer string) (*grpc.ClientConn, error) {
-	conn, err := grpc.Dial(argoServer, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxClientGRPCMessageSize)), grpc.WithInsecure())
+func newClientConn(opts ArgoServerOpts) (*grpc.ClientConn, error) {
+	creds := grpc.WithInsecure()
+	if opts.Secure {
+		creds = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: opts.InsecureSkipVerify}))
+	}
+	conn, err := grpc.Dial(opts.URL, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxClientGRPCMessageSize)), creds)
 	if err != nil {
 		return nil, err
 	}
