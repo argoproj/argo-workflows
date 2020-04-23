@@ -55,3 +55,7 @@ See [managed namespace](managed-namespace.md).
 If the server is running behind reverse proxy with a subpath different from `/` (for example, 
 `/argo`), you can set an alternative subpath with the `--base-href` flag or the `BASE_HREF` 
 environment variable.
+
+### Transport Layer Security
+
+See [TLS](tls.md).
