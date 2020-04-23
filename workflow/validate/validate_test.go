@@ -39,7 +39,8 @@ func validate(yamlStr string) (*wfv1.WorkflowConditions, error) {
 // its validation result.
 func validateWorkflowTemplate(yamlStr string) error {
 	wftmpl := unmarshalWftmpl(yamlStr)
-	return ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, wftmpl)
+	_, err := ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, wftmpl)
+	return err
 }
 
 func unmarshalWf(yamlStr string) *wfv1.Workflow {
@@ -1495,6 +1496,41 @@ spec:
         path: /mnt
 `
 
+var nonPathOutputParameter = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: non-path-out-param-
+spec:
+  entrypoint: non-path-out-param
+  templates:
+  - name: non-path-out-param
+    steps:
+    - - name: non-path-resource-out-param
+        template: non-path-resource-out-param
+    outputs:
+      parameters:
+      - name: param
+        valueFrom:
+          parameter: "{{steps.non-path-resource-out-param.outputs.parameters.json}}"
+  - name: non-path-resource-out-param
+    resource:
+      action: create
+      manifest: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: whalesay-cm
+    outputs:
+      parameters:
+      - name: json
+        valueFrom:
+          jsonPath: '{.metadata.name}'
+      - name: jqfliter
+        valueFrom:
+          jqFilter: .
+`
+
 // TestBaseImageOutputVerify verifies we error when we detect the condition when the container
 // runtime executor doesn't support output artifacts from a base image layer, and fails validation
 func TestBaseImageOutputVerify(t *testing.T) {
@@ -1502,6 +1538,7 @@ func TestBaseImageOutputVerify(t *testing.T) {
 	wfBaseOutParam := unmarshalWf(baseImageOutputParameter)
 	wfEmptyDirOutArt := unmarshalWf(volumeMountOutputArtifact)
 	wfBaseWithEmptyDirOutArt := unmarshalWf(baseImageDirWithEmptyDirOutputArtifact)
+	wfNonPathOutputParam := unmarshalWf(nonPathOutputParameter)
 	var err error
 
 	for _, executor := range []string{common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorPNS, common.ContainerRuntimeExecutorDocker, ""} {
@@ -1513,6 +1550,8 @@ func TestBaseImageOutputVerify(t *testing.T) {
 			assert.Error(t, err)
 			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.Error(t, err)
+			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfNonPathOutputParam, ValidateOpts{ContainerRuntimeExecutor: executor})
+			assert.NoError(t, err)
 		case common.ContainerRuntimeExecutorPNS:
 			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
@@ -2203,5 +2242,53 @@ func TestRuntimeResolutionOfVariableNames(t *testing.T) {
 	wf := unmarshalWf(runtimeResolutionOfVariableNames)
 	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 
+	assert.NoError(t, err)
+}
+
+var stepWithItemParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: loops-maps-
+spec:
+  entrypoint: loop-map-example
+  templates:
+    - name: loop-map-example
+      steps:
+        - - name: hello-world
+            template: whalesay
+          - name: test-linux
+            template: cat-os-release
+            arguments:
+              parameters:
+                - name: image
+                  value: "{{item.image}}"
+                - name: tag
+                  value: "{{item.tag}}"
+            withItems:
+              - { image: "debian", tag: "9.1" }
+              - { image: "debian", tag: "8.9" }
+              - { image: "alpine", tag: "3.6" }
+              - { image: "ubuntu", tag: "17.10" }
+
+    - name: cat-os-release
+      inputs:
+        parameters:
+          - name: image
+          - name: tag
+      container:
+        image: "{{inputs.parameters.image}}:{{inputs.parameters.tag}}"
+        command: [cat]
+        args: [/etc/os-release]
+
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["hello world"]
+`
+
+func TestStepWithItemParam(t *testing.T) {
+	_, err := validate(stepWithItemParam)
 	assert.NoError(t, err)
 }

@@ -119,11 +119,15 @@ message ArtifactoryAuth {
   optional k8s.io.api.core.v1.SecretKeySelector passwordSecret = 2;
 }
 
+// Backoff is a backoff strategy to use within retryStrategy
 message Backoff {
+  // Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")
   optional string duration = 1;
 
+  // Factor is a factor to multiply the base duration after each failed retry
   optional int32 factor = 2;
 
+  // MaxDuration is the maximum amount of time allowed for the backoff strategy
   optional string maxDuration = 3;
 }
 
@@ -182,6 +186,7 @@ message CronWorkflowList {
   repeated CronWorkflow items = 2;
 }
 
+// CronWorkflowSpec is the specification of a CronWorkflow
 message CronWorkflowSpec {
   // WorkflowSpec is the spec of the workflow to be run
   optional WorkflowSpec workflowSpec = 1;
@@ -212,6 +217,7 @@ message CronWorkflowSpec {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta workflowMeta = 9;
 }
 
+// CronWorkflowStatus is the status of a CronWorkflow
 message CronWorkflowStatus {
   // Active is a list of active workflows stemming from this CronWorkflow
   repeated k8s.io.api.core.v1.ObjectReference active = 1;
@@ -569,6 +575,9 @@ message NodeStatus {
   // a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
   // a template, will be a superset of the outbound nodes of its last children.
   repeated string outboundNodes = 17;
+
+  // HostNodeName name of the Kubernetes node on which the Pod is running, if applicable
+  optional string hostNodeName = 22;
 }
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
@@ -614,6 +623,9 @@ message Outputs {
 
   // Result holds the result (stdout) of a script template
   optional string result = 3;
+
+  // ExitCode holds the exit code of a script template
+  optional string exitCode = 4;
 }
 
 message ParallelSteps {
@@ -643,6 +655,7 @@ message Parameter {
 
 // PodGC describes how to delete completed pods as they complete
 message PodGC {
+  // Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"
   optional string strategy = 1;
 }
 
@@ -699,6 +712,13 @@ message ResourceTemplate {
   // FailureCondition is a label selector expression which describes the conditions
   // of the k8s resource in which the step was considered failed
   optional string failureCondition = 6;
+
+  // Flags is a set of additional options passed to kubectl before submitting a resource
+  // I.e. to disable resource validation:
+  // flags: [
+  // 	"--validate=false"  # disable resource validation
+  // ]
+  repeated string flags = 7;
 }
 
 // RetryStrategy provides controls on how to retry a workflow step
@@ -771,23 +791,65 @@ message Sequence {
   optional string format = 4;
 }
 
+// SubmitOpts are workflow submission options
+message SubmitOpts {
+  // Name overrides metadata.name
+  optional string name = 1;
+
+  // GenerateName overrides metadata.generateName
+  optional string generateName = 2;
+
+  // InstanceID binds the Resource to the specified instance ID
+  optional string instanceID = 3;
+
+  // Entrypoint overrides spec.entrypoint
+  optional string entrypoint = 4;
+
+  // Parameters passes input parameters to workflow
+  repeated string parameters = 5;
+
+  // ParameterFile holds a reference to a parameter file. This option is not supported in API
+  optional string parameterFile = 6;
+
+  // ServiceAccount runs all pods in the workflow using specified ServiceAccount.
+  optional string serviceAccount = 7;
+
+  // DryRun validates the workflow on the client-side without creating it. This option is not supported in API
+  optional bool dryRun = 8;
+
+  // ServerDryRun validates the workflow on the server-side without creating it
+  optional bool serverDryRun = 9;
+
+  // Labels adds to metadata.labels
+  optional string labels = 10;
+
+  // OwnerReference creates a metadata.ownerReference
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference ownerReference = 11;
+}
+
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
 message SuspendTemplate {
   // Duration is the seconds to wait before automatically resuming a template
   optional string duration = 1;
 }
 
-// TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed
+// TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed
 message TTLStrategy {
+  // SecondsAfterCompletion is the number of seconds to live after completion
   optional int32 secondsAfterCompletion = 1;
 
+  // SecondsAfterSuccess is the number of seconds to live after success
   optional int32 secondsAfterSuccess = 2;
 
+  // SecondsAfterFailure is the number of seconds to live after failure
   optional int32 secondsAfterFailure = 3;
 }
 
 // TarStrategy will tar and gzip the file or directory when saving
 message TarStrategy {
+  // CompressionLevel specifies the gzip compression level to use for the artifact.
+  // Defaults to gzip.DefaultCompression.
+  optional int32 compressionLevel = 1;
 }
 
 // Template is a reusable and composable unit of execution in a workflow
@@ -941,7 +1003,7 @@ message TemplateRef {
   optional bool runtimeResolution = 3;
 
   // ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
-  optional bool clusterscope = 4;
+  optional bool clusterScope = 4;
 }
 
 // UserContainer is a container specified by a user.
@@ -974,6 +1036,24 @@ message ValueFrom {
   optional string default = 5;
 }
 
+message Version {
+  optional string version = 1;
+
+  optional string buildDate = 2;
+
+  optional string gitCommit = 3;
+
+  optional string gitTag = 4;
+
+  optional string gitTreeState = 5;
+
+  optional string goVersion = 6;
+
+  optional string compiler = 7;
+
+  optional string platform = 8;
+}
+
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
@@ -987,10 +1067,13 @@ message Workflow {
 }
 
 message WorkflowCondition {
+  // Type is the type of condition
   optional string type = 1;
 
+  // Status is the status of the condition
   optional string status = 2;
 
+  // Message is the condition message
   optional string message = 3;
 }
 

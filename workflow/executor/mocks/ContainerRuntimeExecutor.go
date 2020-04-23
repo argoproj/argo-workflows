@@ -13,18 +13,39 @@ type ContainerRuntimeExecutor struct {
 	mock.Mock
 }
 
-// CopyFile provides a mock function with given fields: containerID, sourcePath, destPath
-func (_m *ContainerRuntimeExecutor) CopyFile(containerID string, sourcePath string, destPath string) error {
-	ret := _m.Called(containerID, sourcePath, destPath)
+// CopyFile provides a mock function with given fields: containerID, sourcePath, destPath, compressionLevel
+func (_m *ContainerRuntimeExecutor) CopyFile(containerID string, sourcePath string, destPath string, compressionLevel int) error {
+	ret := _m.Called(containerID, sourcePath, destPath, compressionLevel)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string, string) error); ok {
-		r0 = rf(containerID, sourcePath, destPath)
+	if rf, ok := ret.Get(0).(func(string, string, string, int) error); ok {
+		r0 = rf(containerID, sourcePath, destPath, compressionLevel)
 	} else {
 		r0 = ret.Error(0)
 	}
 
 	return r0
+}
+
+// GetExitCode provides a mock function with given fields: containerID
+func (_m *ContainerRuntimeExecutor) GetExitCode(containerID string) (string, error) {
+	ret := _m.Called(containerID)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(string) string); ok {
+		r0 = rf(containerID)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(containerID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // GetFileContents provides a mock function with given fields: containerID, sourcePath

@@ -21,9 +21,7 @@ type CLIWithServerSuite struct {
 func (s *CLIWithServerSuite) BeforeTest(suiteName, testName string) {
 	s.CLISuite.BeforeTest(suiteName, testName)
 	token, err := s.GetServiceAccountToken()
-	if err != nil {
-		panic(err)
-	}
+	s.CheckError(err)
 	_ = os.Setenv("ARGO_SERVER", "localhost:2746")
 	_ = os.Setenv("ARGO_TOKEN", token)
 }
@@ -47,6 +45,50 @@ func (s *CLISuite) TestAuthToken() {
 			authString = "Basic " + token
 		}
 		assert.Equal(t, authString, strings.TrimSpace(output))
+	})
+}
+
+func (s *CLIWithServerSuite) TestVersion() {
+	s.Run("Default", func() {
+		s.Given().
+			RunCli([]string{"version"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					lines := strings.Split(output, "\n")
+					if assert.Len(t, lines, 17) {
+						assert.Contains(t, lines[0], "argo:")
+						assert.Contains(t, lines[1], "BuildDate:")
+						assert.Contains(t, lines[2], "GitCommit:")
+						assert.Contains(t, lines[3], "GitTreeState:")
+						assert.Contains(t, lines[4], "GitTag:")
+						assert.Contains(t, lines[5], "GoVersion:")
+						assert.Contains(t, lines[6], "Compiler:")
+						assert.Contains(t, lines[7], "Platform:")
+						assert.Contains(t, lines[8], "argo-server:")
+						assert.Contains(t, lines[9], "BuildDate:")
+						assert.Contains(t, lines[10], "GitCommit:")
+						assert.Contains(t, lines[11], "GitTreeState:")
+						assert.Contains(t, lines[12], "GitTag:")
+						assert.Contains(t, lines[13], "GoVersion:")
+						assert.Contains(t, lines[14], "Compiler:")
+						assert.Contains(t, lines[15], "Platform:")
+					}
+					// these are the defaults - we should never see these
+					assert.NotContains(t, output, "argo: v0.0.0+unknown")
+					assert.NotContains(t, output, "  BuildDate: 1970-01-01T00:00:00Z")
+				}
+			})
+	})
+	s.Run("Short", func() {
+		s.Given().
+			RunCli([]string{"version", "--short"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					lines := strings.Split(output, "\n")
+					if assert.Len(t, lines, 3) {
+						assert.Contains(t, lines[0], "argo:")
+						assert.Contains(t, lines[1], "argo-server:")
+					}
+				}
+			})
 	})
 }
 
@@ -97,6 +139,26 @@ func (s *CLIWithServerSuite) TestArchive() {
 				}
 			})
 	})
+}
+
+func (s *CLIWithServerSuite) TestWorkflowRetryPersistence() {
+	if !s.Persistence.IsEnabled() {
+		// Persistence is disabled for this test, but it is enabled for the Argo Server in this test suite.
+		// When this is the case, this behavior is tested in cli_test.go
+		s.T().SkipNow()
+	}
+	s.Given().
+		Workflow("@testdata/exit-1.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(20*time.Second).
+		Given().
+		RunCli([]string{"retry", "exit-1"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+			}
+		})
 }
 
 func TestCLIWithServerSuite(t *testing.T) {

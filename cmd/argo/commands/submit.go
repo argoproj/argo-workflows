@@ -5,17 +5,14 @@ import (
 	"os"
 	"strings"
 
-	"github.com/argoproj/pkg/errors"
-	argoJson "github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/argoproj/pkg/errors"
+	argoJson "github.com/argoproj/pkg/json"
+
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	clusterworkflowtmplpkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
-	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
-	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
@@ -32,7 +29,7 @@ type cliSubmitOpts struct {
 
 func NewSubmitCommand() *cobra.Command {
 	var (
-		submitOpts    util.SubmitOpts
+		submitOpts    wfv1.SubmitOpts
 		cliSubmitOpts cliSubmitOpts
 		priority      int32
 		from          string
@@ -88,7 +85,7 @@ func NewSubmitCommand() *cobra.Command {
 	return command
 }
 
-func submitWorkflowsFromFile(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
+func submitWorkflowsFromFile(filePaths []string, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
 	fileContents, err := util.ReadManifest(filePaths...)
 	errors.CheckError(err)
 
@@ -101,62 +98,7 @@ func submitWorkflowsFromFile(filePaths []string, submitOpts *util.SubmitOpts, cl
 	submitWorkflows(workflows, submitOpts, cliOpts)
 }
 
-func submitWorkflowFromResource(resourceIdentifier string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
-
-	parts := strings.SplitN(resourceIdentifier, "/", 2)
-	if len(parts) != 2 {
-		log.Fatalf("resource identifier '%s' is malformed. Should be `kind/name`, e.g. cronwf/hello-world-cwf", resourceIdentifier)
-	}
-	kind := parts[0]
-	name := parts[1]
-
-	ctx, apiClient := client.NewAPIClient()
-	namespace := client.Namespace()
-
-	var workflowToSubmit *wfv1.Workflow
-	switch kind {
-	case workflow.CronWorkflowKind, workflow.CronWorkflowSingular, workflow.CronWorkflowPlural, workflow.CronWorkflowShortName:
-		serviceClient := apiClient.NewCronWorkflowServiceClient()
-		cronWf, err := serviceClient.GetCronWorkflow(ctx, &cronworkflowpkg.GetCronWorkflowRequest{
-			Name:      name,
-			Namespace: namespace,
-		})
-		if err != nil {
-			log.Fatalf("Unable to get cron workflow '%s': %s", name, err)
-		}
-		workflowToSubmit = common.ConvertCronWorkflowToWorkflow(cronWf)
-	case workflow.WorkflowTemplateKind, workflow.WorkflowTemplateSingular, workflow.WorkflowTemplatePlural, workflow.WorkflowTemplateShortName:
-		serviceClient := apiClient.NewWorkflowTemplateServiceClient()
-		template, err := serviceClient.GetWorkflowTemplate(ctx, &workflowtemplatepkg.WorkflowTemplateGetRequest{
-			Name:      name,
-			Namespace: namespace,
-		})
-		if err != nil {
-			log.Fatalf("Unable to get workflow template '%s': %s", name, err)
-		}
-		workflowToSubmit = common.ConvertWorkflowTemplateToWorkflow(template)
-	case workflow.ClusterWorkflowTemplateKind, workflow.ClusterWorkflowTemplateSingular, workflow.ClusterWorkflowTemplatePlural, workflow.ClusterWorkflowTemplateShortName:
-		serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
-		template, err := serviceClient.GetClusterWorkflowTemplate(ctx, &clusterworkflowtmplpkg.ClusterWorkflowTemplateGetRequest{
-			Name: name,
-		})
-		if err != nil {
-			log.Fatalf("Unable to get cluster workflow template '%s': %s", name, err)
-		}
-		workflowToSubmit = common.ConvertClusterWorkflowTemplateToWorkflow(template)
-	default:
-		log.Fatalf("Resource kind '%s' is not supported with --from", kind)
-	}
-
-	submitWorkflows([]wfv1.Workflow{*workflowToSubmit}, submitOpts, cliOpts)
-}
-
-func submitWorkflows(workflows []wfv1.Workflow, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
-
-	ctx, apiClient := client.NewAPIClient()
-	serviceClient := apiClient.NewWorkflowServiceClient()
-	namespace := client.Namespace()
-
+func validateOptions(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
 	if cliOpts.watch {
 		if len(workflows) > 1 {
 			log.Fatalf("Cannot watch more than one workflow")
@@ -195,6 +137,44 @@ func submitWorkflows(workflows []wfv1.Workflow, submitOpts *util.SubmitOpts, cli
 			log.Fatalf("--server-dry-run should have an output option")
 		}
 	}
+}
+
+func submitWorkflowFromResource(resourceIdentifier string, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
+
+	parts := strings.SplitN(resourceIdentifier, "/", 2)
+	if len(parts) != 2 {
+		log.Fatalf("resource identifier '%s' is malformed. Should be `kind/name`, e.g. cronwf/hello-world-cwf", resourceIdentifier)
+	}
+	kind := parts[0]
+	name := parts[1]
+
+	ctx, apiClient := client.NewAPIClient()
+	namespace := client.Namespace()
+	tempwf := wfv1.Workflow{}
+
+	validateOptions([]wfv1.Workflow{tempwf}, submitOpts, cliOpts)
+
+	created, err := apiClient.NewWorkflowServiceClient().SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
+		Namespace:     namespace,
+		ResourceKind:  kind,
+		ResourceName:  name,
+		SubmitOptions: submitOpts,
+	})
+	if err != nil {
+		log.Fatalf("Failed to submit workflow: %v", err)
+	}
+	printWorkflow(created, cliOpts.output, DefaultStatus)
+
+	waitOrWatch([]string{created.Name}, *cliOpts)
+}
+
+func submitWorkflows(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
+
+	ctx, apiClient := client.NewAPIClient()
+	serviceClient := apiClient.NewWorkflowServiceClient()
+	namespace := client.Namespace()
+
+	validateOptions(workflows, submitOpts, cliOpts)
 
 	if len(workflows) == 0 {
 		log.Println("No Workflow found in given files")

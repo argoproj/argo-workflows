@@ -3,6 +3,7 @@ package executor
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -69,11 +70,15 @@ type ContainerRuntimeExecutor interface {
 	GetFileContents(containerID string, sourcePath string) (string, error)
 
 	// CopyFile copies a source file in a container to a local path
-	CopyFile(containerID string, sourcePath string, destPath string) error
+	CopyFile(containerID string, sourcePath string, destPath string, compressionLevel int) error
 
 	// GetOutputStream returns the entirety of the container output as a io.Reader
 	// Used to capture script results as an output parameter, and to archive container logs
 	GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error)
+
+	// GetExitCode returns the exit code of the container
+	// Used to capture script exit code as an output parameter
+	GetExitCode(containerID string) (string, error)
 
 	// WaitInit is called before Wait() to signal the executor about an impending Wait call.
 	// For most executors this is a noop, and is only used by the the PNS executor
@@ -128,7 +133,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 				log.Warnf("Ignoring optional artifact '%s' which was not supplied", art.Name)
 				continue
 			} else {
-				return errors.New("required artifact %s not supplied", art.Name)
+				return errors.Errorf("", "required artifact %s not supplied", art.Name)
 			}
 		}
 		artDriver, err := we.InitDriver(&art)
@@ -313,6 +318,14 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 			Tar: &wfv1.TarStrategy{},
 		}
 	}
+	compressionLevel := gzip.NoCompression
+	if strategy.Tar != nil {
+		if l := strategy.Tar.CompressionLevel; l != nil {
+			compressionLevel = int(*l)
+		} else {
+			compressionLevel = gzip.DefaultCompression
+		}
+	}
 
 	if !we.isBaseImagePath(art.Path) {
 		// If we get here, we are uploading an artifact from a mirrored volume mount which the wait
@@ -332,7 +345,7 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 			return "", "", errors.InternalWrapError(err)
 		}
 		w := bufio.NewWriter(f)
-		err = archive.TarGzToWriter(mountedArtPath, w)
+		err = archive.TarGzToWriter(mountedArtPath, compressionLevel, w)
 		if err != nil {
 			return "", "", err
 		}
@@ -344,7 +357,7 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 	localArtPath := filepath.Join(tempOutArtDir, fileName)
 	log.Infof("Copying %s from container base image layer to %s", art.Path, localArtPath)
 
-	err := we.RuntimeExecutor.CopyFile(mainCtrID, art.Path, localArtPath)
+	err := we.RuntimeExecutor.CopyFile(mainCtrID, art.Path, localArtPath, compressionLevel)
 	if err != nil {
 		return "", "", err
 	}
@@ -690,7 +703,8 @@ func (we *WorkflowExecutor) CaptureScriptResult() error {
 		log.Infof("No Script output reference in workflow. Capturing script output ignored")
 		return nil
 	}
-	if we.Template.Script == nil {
+	if we.Template.Script == nil && we.Template.Container == nil {
+		log.Infof("Template type is neither of Script or Container. Capturing script output ignored")
 		return nil
 	}
 	log.Infof("Capturing script output")
@@ -713,7 +727,37 @@ func (we *WorkflowExecutor) CaptureScriptResult() error {
 	if outputLen > 0 && out[outputLen-1] == '\n' {
 		out = out[0 : outputLen-1]
 	}
+
+	const maxAnnotationSize int = 256 * (1 << 10) // 256 kB
+	// A character in a string is a byte
+	if len(out) > maxAnnotationSize {
+		log.Warnf("Output is larger than the maximum allowed size of 256 kB, only the last 256 kB were saved")
+		out = out[len(out)-maxAnnotationSize:]
+	}
+
 	we.Template.Outputs.Result = &out
+	return nil
+}
+
+// CaptureScriptExitCode will add the exit code of a script template as output exit code
+func (we *WorkflowExecutor) CaptureScriptExitCode() error {
+	if we.Template.Script == nil && we.Template.Container == nil {
+		log.Infof("Template type is neither of Script or Container. Capturing exit code ignored")
+		return nil
+	}
+	log.Infof("Capturing script exit code")
+	mainContainerID, err := we.GetMainContainerID()
+	if err != nil {
+		return err
+	}
+	exitCode, err := we.RuntimeExecutor.GetExitCode(mainContainerID)
+	if err != nil {
+		return err
+	}
+
+	if exitCode != "" {
+		we.Template.Outputs.ExitCode = &exitCode
+	}
 	return nil
 }
 

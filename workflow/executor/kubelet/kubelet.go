@@ -1,6 +1,7 @@
 package kubelet
 
 import (
+	"fmt"
 	"io"
 
 	log "github.com/sirupsen/logrus"
@@ -27,7 +28,7 @@ func (k *KubeletExecutor) GetFileContents(containerID string, sourcePath string)
 	return "", errors.Errorf(errors.CodeNotImplemented, "GetFileContents() is not implemented in the kubelet executor.")
 }
 
-func (k *KubeletExecutor) CopyFile(containerID string, sourcePath string, destPath string) error {
+func (k *KubeletExecutor) CopyFile(containerID string, sourcePath string, destPath string, compressionLevel int) error {
 	return errors.Errorf(errors.CodeNotImplemented, "CopyFile() is not implemented in the kubelet executor.")
 }
 
@@ -36,6 +37,18 @@ func (k *KubeletExecutor) GetOutputStream(containerID string, combinedOutput boo
 		log.Warn("non combined output unsupported")
 	}
 	return k.cli.GetLogStream(containerID)
+}
+
+func (k *KubeletExecutor) GetExitCode(containerID string) (string, error) {
+	log.Infof("Getting exit code of %s", containerID)
+	_, status, err := k.cli.GetContainerStatus(containerID)
+	if err != nil {
+		return "", errors.InternalWrapError(err, "Could not get container status")
+	}
+	if status != nil && status.State.Terminated != nil {
+		return fmt.Sprint(status.State.Terminated.ExitCode), nil
+	}
+	return "", nil
 }
 
 func (k *KubeletExecutor) WaitInit() error {

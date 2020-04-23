@@ -178,11 +178,11 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         let archivedWorkflowList;
         let newNamespace = namespace;
         if (!this.state.initialized) {
-            archivedWorkflowList = services.info.get().then(info => {
+            archivedWorkflowList = services.info.getInfo().then(info => {
                 if (info.managedNamespace) {
                     newNamespace = info.managedNamespace;
                 }
-                this.setState({initialized: true, managedNamespace: info.managedNamespace ? true : false});
+                this.setState({initialized: true, managedNamespace: !!info.managedNamespace});
                 return services.archivedWorkflows.list(newNamespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, offset);
             });
         } else {

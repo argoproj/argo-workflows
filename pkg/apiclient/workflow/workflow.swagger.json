@@ -249,6 +249,38 @@
         ]
       }
     },
+    "/api/v1/workflows/{namespace}/submit": {
+      "post": {
+        "operationId": "SubmitWorkflow",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workflow.WorkflowSubmitRequest"
+            }
+          }
+        ],
+        "tags": [
+          "WorkflowService"
+        ]
+      }
+    },
     "/api/v1/workflows/{namespace}/{name}": {
       "get": {
         "operationId": "GetWorkflow",
@@ -863,16 +895,20 @@
       "type": "object",
       "properties": {
         "duration": {
-          "type": "string"
+          "type": "string",
+          "title": "Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. \"2m\", \"1h\")"
         },
         "factor": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "title": "Factor is a factor to multiply the base duration after each failed retry"
         },
         "maxDuration": {
-          "type": "string"
+          "type": "string",
+          "title": "MaxDuration is the maximum amount of time allowed for the backoff strategy"
         }
-      }
+      },
+      "title": "Backoff is a backoff strategy to use within retryStrategy"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ContinueOn": {
       "type": "object",
@@ -1395,6 +1431,10 @@
             "type": "string"
           },
           "description": "OutboundNodes tracks the node IDs which are considered \"outbound\" nodes to a template invocation.\nFor every invocation of a template, there are nodes which we considered as \"outbound\". Essentially,\nthese are last nodes in the execution sequence to run, before the template is considered completed.\nThese nodes are then connected as parents to a following step.\n\nIn the case of single pod steps (i.e. container, script, resource templates), this list will be nil\nsince the pod itself is already considered the \"outbound\" node.\nIn the case of DAGs, outbound nodes are the \"target\" tasks (tasks with no children).\nIn the case of steps, outbound nodes are all the containers involved in the last step group.\nNOTE: since templates are composable, the list of outbound nodes are carried upwards when\na DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of\na template, will be a superset of the outbound nodes of its last children."
+        },
+        "hostNodeName": {
+          "type": "string",
+          "title": "HostNodeName name of the Kubernetes node on which the Pod is running, if applicable"
         }
       },
       "title": "NodeStatus contains status information about an individual node in the workflow"
@@ -1458,6 +1498,10 @@
         "result": {
           "type": "string",
           "title": "Result holds the result (stdout) of a script template"
+        },
+        "exitCode": {
+          "type": "string",
+          "title": "ExitCode holds the exit code of a script template"
         }
       },
       "title": "Outputs hold parameters, artifacts, and results from a step"
@@ -1503,7 +1547,8 @@
       "type": "object",
       "properties": {
         "strategy": {
-          "type": "string"
+          "type": "string",
+          "title": "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\""
         }
       },
       "title": "PodGC describes how to delete completed pods as they complete"
@@ -1582,6 +1627,13 @@
         "failureCondition": {
           "type": "string",
           "title": "FailureCondition is a label selector expression which describes the conditions\nof the k8s resource in which the step was considered failed"
+        },
+        "flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Flags is a set of additional options passed to kubectl before submitting a resource\nI.e. to disable resource validation:\nflags: [\n\t\"--validate=false\"  # disable resource validation\n]"
         }
       },
       "title": "ResourceTemplate is a template subtype to manipulate kubernetes resources"
@@ -1693,6 +1745,61 @@
       },
       "title": "Sequence expands a workflow step into numeric range"
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SubmitOpts": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Name overrides metadata.name"
+        },
+        "generateName": {
+          "type": "string",
+          "title": "GenerateName overrides metadata.generateName"
+        },
+        "instanceID": {
+          "type": "string",
+          "title": "InstanceID binds the Resource to the specified instance ID"
+        },
+        "entrypoint": {
+          "type": "string",
+          "title": "Entrypoint overrides spec.entrypoint"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Parameters passes input parameters to workflow"
+        },
+        "parameterFile": {
+          "type": "string",
+          "title": "ParameterFile holds a reference to a parameter file. This option is not supported in API"
+        },
+        "serviceAccount": {
+          "type": "string",
+          "description": "ServiceAccount runs all pods in the workflow using specified ServiceAccount."
+        },
+        "dryRun": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "DryRun validates the workflow on the client-side without creating it. This option is not supported in API"
+        },
+        "serverDryRun": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "ServerDryRun validates the workflow on the server-side without creating it"
+        },
+        "labels": {
+          "type": "string",
+          "title": "Labels adds to metadata.labels"
+        },
+        "ownerReference": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference",
+          "title": "OwnerReference creates a metadata.ownerReference"
+        }
+      },
+      "title": "SubmitOpts are workflow submission options"
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SuspendTemplate": {
       "type": "object",
       "properties": {
@@ -1708,21 +1815,31 @@
       "properties": {
         "secondsAfterCompletion": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "title": "SecondsAfterCompletion is the number of seconds to live after completion"
         },
         "secondsAfterSuccess": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "title": "SecondsAfterSuccess is the number of seconds to live after success"
         },
         "secondsAfterFailure": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "title": "SecondsAfterFailure is the number of seconds to live after failure"
         }
       },
-      "title": "TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed"
+      "title": "TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.TarStrategy": {
       "type": "object",
+      "properties": {
+        "compressionLevel": {
+          "type": "integer",
+          "format": "int32",
+          "description": "CompressionLevel specifies the gzip compression level to use for the artifact.\nDefaults to gzip.DefaultCompression."
+        }
+      },
       "title": "TarStrategy will tar and gzip the file or directory when saving"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Template": {
@@ -1914,7 +2031,7 @@
           "format": "boolean",
           "description": "RuntimeResolution skips validation at creation time.\nBy enabling this option, you can create the referred workflow template before the actual runtime."
         },
-        "clusterscope": {
+        "clusterScope": {
           "type": "boolean",
           "format": "boolean",
           "description": "ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate)."
@@ -1981,13 +2098,16 @@
       "type": "object",
       "properties": {
         "type": {
-          "type": "string"
+          "type": "string",
+          "title": "Type is the type of condition"
         },
         "status": {
-          "type": "string"
+          "type": "string",
+          "title": "Status is the status of the condition"
         },
         "message": {
-          "type": "string"
+          "type": "string",
+          "title": "Message is the condition message"
         }
       }
     },
@@ -4925,6 +5045,13 @@
         },
         "namespace": {
           "type": "string"
+        },
+        "restartSuccesful": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "nodeFieldSelector": {
+          "type": "string"
         }
       }
     },
@@ -4942,6 +5069,26 @@
         },
         "message": {
           "type": "string"
+        }
+      }
+    },
+    "workflow.WorkflowSubmitRequest": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "resourceKind": {
+          "type": "string"
+        },
+        "resourceName": {
+          "type": "string"
+        },
+        "submitOptions": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SubmitOpts"
+        },
+        "createOptions": {
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions"
         }
       }
     },

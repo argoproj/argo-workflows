@@ -28,6 +28,8 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"upper.io/db.v3/lib/sqlbuilder"
 
+	"github.com/argoproj/pkg/errors"
+
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/persist/sqldb"
@@ -35,6 +37,7 @@ import (
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
 	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
+	authutil "github.com/argoproj/argo/util/auth"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/cron"
 	"github.com/argoproj/argo/workflow/metrics"
@@ -171,7 +174,6 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	wfc.incompleteWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.incompleteWorkflowTweakListOptions)
 	wfc.completedWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.completedWorkflowTweakListOptions)
 	wfc.wftmplInformer = wfc.newWorkflowTemplateInformer()
-	wfc.cwftmplInformer = wfc.newClusterWorkflowTemplateInformer()
 
 	wfc.addWorkflowInformerHandler()
 	wfc.podInformer = wfc.newPodInformer()
@@ -180,14 +182,16 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.incompleteWfInformer.Run(ctx.Done())
 	go wfc.completedWfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
-	go wfc.cwftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
 	go wfc.podLabeler(ctx.Done())
 	go wfc.podGarbageCollector(ctx.Done())
-	go wfc.periodicWorkflowGarbageCollector(ctx.Done())
+	go wfc.workflowGarbageCollector(ctx.Done())
+	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
+
+	wfc.createClusterWorkflowTemplateInformer(ctx)
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
-	for _, informer := range []cache.SharedIndexInformer{wfc.incompleteWfInformer, wfc.wftmplInformer.Informer(), wfc.cwftmplInformer.Informer(), wfc.podInformer} {
+	for _, informer := range []cache.SharedIndexInformer{wfc.incompleteWfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
 		if !cache.WaitForCacheSync(ctx.Done(), informer.HasSynced) {
 			log.Error("Timed out waiting for caches to sync")
 			return
@@ -201,6 +205,27 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
 	}
 	<-ctx.Done()
+}
+
+// Check if the controller has RBAC access to ClusterWorkflowTemplates
+func (wfc *WorkflowController) createClusterWorkflowTemplateInformer(ctx context.Context) {
+	cwftGetAllowed, err := authutil.CanI(wfc.kubeclientset, "get", "clusterworkflowtemplates", wfc.namespace, "")
+	errors.CheckError(err)
+	cwftListAllowed, err := authutil.CanI(wfc.kubeclientset, "list", "clusterworkflowtemplates", wfc.namespace, "")
+	errors.CheckError(err)
+	cwftWatchAllowed, err := authutil.CanI(wfc.kubeclientset, "watch", "clusterworkflowtemplates", wfc.namespace, "")
+	errors.CheckError(err)
+
+	if cwftGetAllowed && cwftListAllowed && cwftWatchAllowed {
+		wfc.cwftmplInformer = wfc.newClusterWorkflowTemplateInformer()
+		go wfc.cwftmplInformer.Informer().Run(ctx.Done())
+		if !cache.WaitForCacheSync(ctx.Done(), wfc.cwftmplInformer.Informer().HasSynced) {
+			log.Error("Timed out waiting for caches to sync")
+			return
+		}
+	} else {
+		log.Warnf("Controller doesn't have RBAC access for ClusterWorkflowTemplates")
+	}
 }
 
 func (wfc *WorkflowController) UpdateConfig() {
@@ -264,7 +289,7 @@ func (wfc *WorkflowController) podGarbageCollector(stopCh <-chan struct{}) {
 	}
 }
 
-func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan struct{}) {
+func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) {
 	value, ok := os.LookupEnv("WORKFLOW_GC_PERIOD")
 	periodicity := 5 * time.Minute
 	if ok {
@@ -320,6 +345,46 @@ func (wfc *WorkflowController) periodicWorkflowGarbageCollector(stopCh <-chan st
 						}
 					}
 				}
+			}
+		}
+	}
+}
+
+func (wfc *WorkflowController) archivedWorkflowGarbageCollector(stopCh <-chan struct{}) {
+	value, ok := os.LookupEnv("ARCHIVED_WORKFLOW_GC_PERIOD")
+	periodicity := 24 * time.Hour
+	if ok {
+		var err error
+		periodicity, err = time.ParseDuration(value)
+		if err != nil {
+			log.WithFields(log.Fields{"err": err, "value": value}).Fatal("Failed to parse ARCHIVED_WORKFLOW_GC_PERIOD")
+		}
+	}
+	if wfc.Config.Persistence == nil {
+		log.Info("Persistence disabled - so archived workflow GC disabled - you must restart the controller if you enable this")
+		return
+	}
+	if !wfc.Config.Persistence.Archive {
+		log.Info("Archive disabled - so archived workflow GC disabled - you must restart the controller if you enable this")
+		return
+	}
+	ttl := wfc.Config.Persistence.ArchiveTTL
+	if ttl == config.TTL(0) {
+		log.Info("Archived workflows TTL zero - so archived workflow GC disabled - you must restart the controller if you enable this")
+		return
+	}
+	log.WithFields(log.Fields{"ttl": ttl, "periodicity": periodicity}).Info("Performing archived workflow GC")
+	ticker := time.NewTicker(periodicity)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-stopCh:
+			return
+		case <-ticker.C:
+			log.Info("Performing archived workflow GC")
+			err := wfc.wfArchive.DeleteWorkflows(time.Duration(ttl))
+			if err != nil {
+				log.WithField("err", err).Error("Failed to delete archived workflows")
 			}
 		}
 	}

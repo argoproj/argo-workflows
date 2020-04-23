@@ -67,6 +67,12 @@ func waitContainer() error {
 		wfExecutor.AddError(err)
 		return err
 	}
+	// Capture output script exit code
+	err = wfExecutor.CaptureScriptExitCode()
+	if err != nil {
+		wfExecutor.AddError(err)
+		return err
+	}
 	err = wfExecutor.AnnotateOutputs(logArt)
 	if err != nil {
 		wfExecutor.AddError(err)

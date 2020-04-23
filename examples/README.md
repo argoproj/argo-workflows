@@ -372,6 +372,36 @@ spec:
 The `whalesay` template uses the `cowsay` command to generate a file named `/tmp/hello-world.txt`. It then `outputs` this file as an artifact named `hello-art`. In general, the artifact's `path` may be a directory rather than just a file. The `print-message` template takes an input artifact named `message`, unpacks it at the `path` named `/tmp/message` and then prints the contents of `/tmp/message` using the `cat` command.
 The `artifact-example` template passes the `hello-art` artifact generated as an output of the `generate-artifact` step as the `message` input artifact to the `print-message` step. DAG templates use the tasks prefix to refer to another task, for example `{{tasks.generate-artifact.outputs.artifacts.hello-art}}`.
 
+Artifacts are packaged as Tarballs and gzipped by default. You may customize this behavior by specifying an archive strategy, using the `archive` field. For example:
+
+```yaml
+<... snipped ...>
+    outputs:
+      artifacts:
+        # default behavior - tar+gzip default compression.
+      - name: hello-art-1
+        path: /tmp/hello_world.txt
+
+        # disable archiving entirely - upload the file / directory as is.
+        # this is useful when the container layout matches the desired target repository layout.   
+      - name: hello-art-2
+        path: /tmp/hello_world.txt
+        archive:
+          none: {}
+
+        # customize the compression behavior (disabling it here).
+        # this is useful for files with varying compression benefits, 
+        # e.g. disabling compression for a cached build workspace and large binaries, 
+        # or increasing compression for "perfect" textual data - like a json/xml export of a large database.
+      - name: hello-art-3
+        path: /tmp/hello_world.txt
+        archive:
+          tar:
+            # no compression (also accepts the standard gzip 1 to 9 values)
+            compressionLevel: 0
+<... snipped ...>
+``` 
+
 ## The Structure of Workflow Specs
 
 We now know enough about the basic components of a workflow spec to review its basic structure:
@@ -767,7 +797,7 @@ spec:
   - name: retry-backoff
     retryStrategy:
       limit: 10
-      retryOn: "Always"
+      retryPolicy: "Always"
       backoff:
         duration: "1"      # Must be a string. Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
         factor: 2
@@ -780,7 +810,7 @@ spec:
 ```
 
 * `limit` is the maximum number of times the container will be retried.
-* `retryOn` specifies if a container will be retried on failure, error, or both. "Always" retries on both errors and failures. Also available: "OnFailure" (default), "OnError"
+* `retryPolicy` specifies if a container will be retried on failure, error, or both. "Always" retries on both errors and failures. Also available: "OnFailure" (default), "OnError"
 * `backoff` is an exponential backoff
 
 Providing an empty `retryStrategy` (i.e. `retryStrategy: {}`) will cause a container to retry until completion.

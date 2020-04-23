@@ -116,7 +116,7 @@ artifacts:
         key: serviceAccountKey
 ```
 
-If it's a GEK cluster, and Workload Identity is configured, there's no need to
+If it's a GKE cluster, and Workload Identity is configured, there's no need to
 create the Service Account key and store it as a K8s secret,
 `serviceAccountKeySecret` is also not needed in this case. Please follow the
 link to configure Workload Identity
@@ -200,7 +200,7 @@ $ kubectl edit configmap workflow-controller-configmap -n argo		# assumes argo w
 ...
 data:
   config: |
-    artifactRepository: |
+    artifactRepository:
       s3:
         bucket: my-bucket
         keyPrefix: prefix/in/bucket     #optional
@@ -208,10 +208,10 @@ data:
         insecure: true                  #omit for S3/GCS. Needed when minio runs without TLS
         accessKeySecret:                #omit if accessing via AWS IAM
           name: my-minio-cred
-          key: accesskey
+          key: accessKey
         secretKeySecret:                #omit if accessing via AWS IAM
           name: my-minio-cred
-          key: secretkey
+          key: secretKey
         useSDKCreds: true               #tells argo to use AWS SDK's default provider chain, enable for things like IRSA support
 ```
 
@@ -284,6 +284,7 @@ configuring the default artifact repository described previously.
           secretKeySecret:
             name: my-gcs-s3-credentials
             key: secretKey
+          region: my-GCS-storage-bucket-region
     container:
       image: debian:latest
       command: [sh, -c]

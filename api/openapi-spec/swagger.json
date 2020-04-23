@@ -672,6 +672,22 @@
         }
       }
     },
+    "/api/v1/version": {
+      "get": {
+        "tags": [
+          "InfoService"
+        ],
+        "operationId": "GetVersion",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Version"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/workflow-events/{namespace}": {
       "get": {
         "tags": [
@@ -1159,6 +1175,38 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowLintRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workflows/{namespace}/submit": {
+      "post": {
+        "tags": [
+          "WorkflowService"
+        ],
+        "operationId": "SubmitWorkflow",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSubmitRequest"
             }
           }
         ],
@@ -1845,16 +1893,20 @@
     },
     "io.argoproj.workflow.v1alpha1.Backoff": {
       "type": "object",
+      "title": "Backoff is a backoff strategy to use within retryStrategy",
       "properties": {
         "duration": {
-          "type": "string"
+          "type": "string",
+          "title": "Duration is the amount to back off. Default unit is seconds, but could also be a duration (e.g. \"2m\", \"1h\")"
         },
         "factor": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "title": "Factor is a factor to multiply the base duration after each failed retry"
         },
         "maxDuration": {
-          "type": "string"
+          "type": "string",
+          "title": "MaxDuration is the maximum amount of time allowed for the backoff strategy"
         }
       }
     },
@@ -1943,6 +1995,7 @@
     },
     "io.argoproj.workflow.v1alpha1.CronWorkflowSpec": {
       "type": "object",
+      "title": "CronWorkflowSpec is the specification of a CronWorkflow",
       "properties": {
         "concurrencyPolicy": {
           "type": "string",
@@ -1988,6 +2041,7 @@
     },
     "io.argoproj.workflow.v1alpha1.CronWorkflowStatus": {
       "type": "object",
+      "title": "CronWorkflowStatus is the status of a CronWorkflow",
       "properties": {
         "active": {
           "type": "array",
@@ -2446,6 +2500,10 @@
           "title": "Time at which this node completed",
           "$ref": "#/definitions/io.k8s.api.core.v1.Time"
         },
+        "hostNodeName": {
+          "type": "string",
+          "title": "HostNodeName name of the Kubernetes node on which the Pod is running, if applicable"
+        },
         "id": {
           "type": "string",
           "title": "ID is a unique identifier of a node within the worklow\nIt is implemented as a hash of the node name, which makes the ID deterministic"
@@ -2569,6 +2627,10 @@
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Artifact"
           }
         },
+        "exitCode": {
+          "type": "string",
+          "title": "ExitCode holds the exit code of a script template"
+        },
         "parameters": {
           "type": "array",
           "title": "Parameters holds the list of output parameters produced by a step\n+patchStrategy=merge\n+patchMergeKey=name",
@@ -2619,7 +2681,8 @@
       "title": "PodGC describes how to delete completed pods as they complete",
       "properties": {
         "strategy": {
-          "type": "string"
+          "type": "string",
+          "title": "Strategy is the strategy to use. One of \"OnPodCompletion\", \"OnPodSuccess\", \"OnWorkflowCompletion\", \"OnWorkflowSuccess\""
         }
       }
     },
@@ -2681,6 +2744,13 @@
         "failureCondition": {
           "type": "string",
           "title": "FailureCondition is a label selector expression which describes the conditions\nof the k8s resource in which the step was considered failed"
+        },
+        "flags": {
+          "type": "array",
+          "title": "Flags is a set of additional options passed to kubectl before submitting a resource\nI.e. to disable resource validation:\nflags: [\n\t\"--validate=false\"  # disable resource validation\n]",
+          "items": {
+            "type": "string"
+          }
         },
         "manifest": {
           "type": "string",
@@ -2808,6 +2878,61 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.SubmitOpts": {
+      "type": "object",
+      "title": "SubmitOpts are workflow submission options",
+      "properties": {
+        "dryRun": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "DryRun validates the workflow on the client-side without creating it. This option is not supported in API"
+        },
+        "entrypoint": {
+          "type": "string",
+          "title": "Entrypoint overrides spec.entrypoint"
+        },
+        "generateName": {
+          "type": "string",
+          "title": "GenerateName overrides metadata.generateName"
+        },
+        "instanceID": {
+          "type": "string",
+          "title": "InstanceID binds the Resource to the specified instance ID"
+        },
+        "labels": {
+          "type": "string",
+          "title": "Labels adds to metadata.labels"
+        },
+        "name": {
+          "type": "string",
+          "title": "Name overrides metadata.name"
+        },
+        "ownerReference": {
+          "title": "OwnerReference creates a metadata.ownerReference",
+          "$ref": "#/definitions/io.k8s.api.core.v1.OwnerReference"
+        },
+        "parameterFile": {
+          "type": "string",
+          "title": "ParameterFile holds a reference to a parameter file. This option is not supported in API"
+        },
+        "parameters": {
+          "type": "array",
+          "title": "Parameters passes input parameters to workflow",
+          "items": {
+            "type": "string"
+          }
+        },
+        "serverDryRun": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "ServerDryRun validates the workflow on the server-side without creating it"
+        },
+        "serviceAccount": {
+          "description": "ServiceAccount runs all pods in the workflow using specified ServiceAccount.",
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.SuspendTemplate": {
       "type": "object",
       "title": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time",
@@ -2820,25 +2945,35 @@
     },
     "io.argoproj.workflow.v1alpha1.TTLStrategy": {
       "type": "object",
-      "title": "TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed",
+      "title": "TTLStrategy is the strategy for the time to live depending on if the workflow succeeded or failed",
       "properties": {
         "secondsAfterCompletion": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "title": "SecondsAfterCompletion is the number of seconds to live after completion"
         },
         "secondsAfterFailure": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "title": "SecondsAfterFailure is the number of seconds to live after failure"
         },
         "secondsAfterSuccess": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "title": "SecondsAfterSuccess is the number of seconds to live after success"
         }
       }
     },
     "io.argoproj.workflow.v1alpha1.TarStrategy": {
       "type": "object",
-      "title": "TarStrategy will tar and gzip the file or directory when saving"
+      "title": "TarStrategy will tar and gzip the file or directory when saving",
+      "properties": {
+        "compressionLevel": {
+          "description": "CompressionLevel specifies the gzip compression level to use for the artifact.\nDefaults to gzip.DefaultCompression.",
+          "type": "integer",
+          "format": "int32"
+        }
+      }
     },
     "io.argoproj.workflow.v1alpha1.Template": {
       "type": "object",
@@ -3017,7 +3152,7 @@
       "description": "TemplateRef is a reference of template resource.",
       "type": "object",
       "properties": {
-        "clusterscope": {
+        "clusterScope": {
           "description": "ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).",
           "type": "boolean",
           "format": "boolean"
@@ -3077,6 +3212,35 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Version": {
+      "type": "object",
+      "properties": {
+        "buildDate": {
+          "type": "string"
+        },
+        "compiler": {
+          "type": "string"
+        },
+        "gitCommit": {
+          "type": "string"
+        },
+        "gitTag": {
+          "type": "string"
+        },
+        "gitTreeState": {
+          "type": "string"
+        },
+        "goVersion": {
+          "type": "string"
+        },
+        "platform": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Workflow": {
       "type": "object",
       "title": "Workflow is the definition of a workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
@@ -3096,13 +3260,16 @@
       "type": "object",
       "properties": {
         "message": {
-          "type": "string"
+          "type": "string",
+          "title": "Message is the condition message"
         },
         "status": {
-          "type": "string"
+          "type": "string",
+          "title": "Status is the status of the condition"
         },
         "type": {
-          "type": "string"
+          "type": "string",
+          "title": "Type is the type of condition"
         }
       }
     },
@@ -6127,6 +6294,13 @@
         },
         "namespace": {
           "type": "string"
+        },
+        "nodeFieldSelector": {
+          "type": "string"
+        },
+        "restartSuccesful": {
+          "type": "boolean",
+          "format": "boolean"
         }
       }
     },
@@ -6144,6 +6318,26 @@
         },
         "nodeFieldSelector": {
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowSubmitRequest": {
+      "type": "object",
+      "properties": {
+        "createOptions": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.CreateOptions"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "resourceKind": {
+          "type": "string"
+        },
+        "resourceName": {
+          "type": "string"
+        },
+        "submitOptions": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SubmitOpts"
         }
       }
     },
@@ -6241,6 +6435,32 @@
     "HTTPBasic": {
       "description": "HTTP Basic authentication",
       "type": "basic"
+    }
+  },
+  "x-stream-definitions": {
+    "io.argoproj.workflow.v1alpha1.LogEntry": {
+      "properties": {
+        "error": {
+          "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+        },
+        "result": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.LogEntry"
+        }
+      },
+      "title": "Stream result of io.argoproj.workflow.v1alpha1.LogEntry",
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowWatchEvent": {
+      "properties": {
+        "error": {
+          "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+        },
+        "result": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowWatchEvent"
+        }
+      },
+      "title": "Stream result of io.argoproj.workflow.v1alpha1.WorkflowWatchEvent",
+      "type": "object"
     }
   }
 }

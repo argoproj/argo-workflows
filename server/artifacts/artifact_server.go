@@ -389,7 +389,7 @@ func (a *ArtifactServer) getWorkflow(ctx context.Context, namespace string, work
 			}
 			wf.Status.Nodes = offloadedNodes
 		} else {
-			log.WithFields(log.Fields{"namespace": namespace, "name": workflowName}).Warn(sqldb.OffloadNodeStatusDisabledWarning)
+			log.WithFields(log.Fields{"namespace": namespace, "name": workflowName}).Warn(sqldb.OffloadNodeStatusDisabled)
 		}
 	}
 	return wf, nil

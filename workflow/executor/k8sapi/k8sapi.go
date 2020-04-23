@@ -1,6 +1,7 @@
 package k8sapi
 
 import (
+	"fmt"
 	"io"
 
 	log "github.com/sirupsen/logrus"
@@ -29,7 +30,7 @@ func (k *K8sAPIExecutor) GetFileContents(containerID string, sourcePath string) 
 	return "", errors.Errorf(errors.CodeNotImplemented, "GetFileContents() is not implemented in the k8sapi executor.")
 }
 
-func (k *K8sAPIExecutor) CopyFile(containerID string, sourcePath string, destPath string) error {
+func (k *K8sAPIExecutor) CopyFile(containerID string, sourcePath string, destPath string, compressionLevel int) error {
 	return errors.Errorf(errors.CodeNotImplemented, "CopyFile() is not implemented in the k8sapi executor.")
 }
 
@@ -39,6 +40,18 @@ func (k *K8sAPIExecutor) GetOutputStream(containerID string, combinedOutput bool
 		log.Warn("non combined output unsupported")
 	}
 	return k.client.getLogsAsStream(containerID)
+}
+
+func (k *K8sAPIExecutor) GetExitCode(containerID string) (string, error) {
+	log.Infof("Getting exit code of %s", containerID)
+	_, status, err := k.client.GetContainerStatus(containerID)
+	if err != nil {
+		return "", errors.InternalWrapError(err, "Could not get container status")
+	}
+	if status != nil && status.State.Terminated != nil {
+		return fmt.Sprint(status.State.Terminated.ExitCode), nil
+	}
+	return "", nil
 }
 
 func (k *K8sAPIExecutor) WaitInit() error {

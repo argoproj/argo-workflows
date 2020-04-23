@@ -102,11 +102,11 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 
 	var activeDeadlineSeconds *int64
 	wfDeadline := woc.getWorkflowDeadline()
-	if wfDeadline == nil {
+	if wfDeadline == nil || opts.onExitPod { //ignore the workflow deadline for exit handler so they still run if the deadline has passed
 		activeDeadlineSeconds = tmpl.ActiveDeadlineSeconds
 	} else {
 		wfActiveDeadlineSeconds := int64((*wfDeadline).Sub(time.Now().UTC()).Seconds())
-		if wfActiveDeadlineSeconds < 0 {
+		if wfActiveDeadlineSeconds <= 0 {
 			return nil, nil
 		} else if tmpl.ActiveDeadlineSeconds == nil || wfActiveDeadlineSeconds < *tmpl.ActiveDeadlineSeconds {
 			activeDeadlineSeconds = &wfActiveDeadlineSeconds
@@ -545,8 +545,8 @@ func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, incl
 
 	if woc.workflowDeadline != nil {
 		execCtl.Deadline = woc.workflowDeadline
-
 	}
+
 	if woc.workflowDeadline != nil || includeScriptOutput {
 		execCtlBytes, err := json.Marshal(execCtl)
 		if err != nil {

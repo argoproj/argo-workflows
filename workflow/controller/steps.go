@@ -25,9 +25,13 @@ type stepsContext struct {
 
 	// tmplCtx is the context of template search.
 	tmplCtx *templateresolution.Context
+
+	// onExitTemplate is a flag denoting this template as part of an onExit handler. This is necessary to ensure that
+	// further nodes stemming from this template are allowed to run when using "ShutdownStrategy: Stop"
+	onExitTemplate bool
 }
 
-func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSteps, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
@@ -40,7 +44,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 	}()
 
 	// The template scope of this step.
-	stepTemplateScope := tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+	stepTemplateScope := tmplCtx.GetTemplateScope()
 
 	stepsCtx := stepsContext{
 		boundaryID: node.ID,
@@ -48,7 +52,8 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 			tmpl:  tmpl,
 			scope: make(map[string]interface{}),
 		},
-		tmplCtx: tmplCtx,
+		tmplCtx:        tmplCtx,
+		onExitTemplate: opts.onExitTemplate,
 	}
 	woc.addOutputsToLocalScope("workflow", woc.wf.Status.Outputs, stepsCtx.scope)
 
@@ -114,10 +119,15 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 				}
 				if len(childNodes) > 0 {
 					// Expanded child nodes should be created from the same template.
-					_, tmpl, err := stepsCtx.tmplCtx.ResolveTemplate(&childNodes[0])
+					_, tmpl, templateStored, err := stepsCtx.tmplCtx.ResolveTemplate(&childNodes[0])
 					if err != nil {
 						return node, err
 					}
+					// A new template was stored during resolution, persist it
+					if templateStored {
+						woc.updated = true
+					}
+
 					err = woc.processAggregateNodeOutputs(tmpl, stepsCtx.scope, prefix, childNodes)
 					if err != nil {
 						return node, err
@@ -196,7 +206,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	nodeSteps := make(map[string]wfv1.WorkflowStep)
 
 	// The template scope of this step group.
-	stepTemplateScope := stepsCtx.tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+	stepTemplateScope := stepsCtx.tmplCtx.GetTemplateScope()
 
 	// Kick off all parallel steps in the group
 	for _, step := range stepGroup {
@@ -220,7 +230,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			continue
 		}
 
-		childNode, err := woc.executeTemplate(childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, &executeTemplateOpts{boundaryID: stepsCtx.boundaryID})
+		childNode, err := woc.executeTemplate(childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, &executeTemplateOpts{boundaryID: stepsCtx.boundaryID, onExitTemplate: stepsCtx.onExitTemplate})
 		if err != nil {
 			switch err {
 			case ErrDeadlineExceeded:
@@ -319,8 +329,9 @@ func shouldExecute(when string) (bool, error) {
 // are concerned with:
 // 1) dereferencing output.parameters from previous steps
 // 2) dereferencing output.result from previous steps
-// 2) dereferencing artifacts from previous steps
-// 3) dereferencing artifacts from inputs
+// 3) dereferencing output.exitCode from previous steps
+// 4) dereferencing artifacts from previous steps
+// 5) dereferencing artifacts from inputs
 func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scope *wfScope) ([]wfv1.WorkflowStep, error) {
 	newStepGroup := make([]wfv1.WorkflowStep, len(stepGroup))
 
@@ -348,6 +359,25 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			return nil, errors.InternalWrapError(err)
 		}
 
+		// If we are not executing, don't attempt to resolve any artifact references. We only check if we are executing after
+		// the initial parameter resolution, since it's likely that the "when" clause will contain parameter references.
+		proceed, err := shouldExecute(newStep.When)
+		if err != nil {
+			// If we got an error, it might be because our "when" clause contains a task-expansion parameter (e.g. {{item}}).
+			// Since we don't perform task-expansion until later and task-expansion parameters won't get resolved here,
+			// we continue execution as normal
+			if newStep.ShouldExpand() {
+				proceed = true
+			} else {
+				return nil, err
+			}
+		}
+		if !proceed {
+			// We can simply return this WorkflowStep; the fact that it won't execute will be reconciled later on in execution
+			newStepGroup[i] = newStep
+			continue
+		}
+
 		// Step 2: replace all artifact references
 		for j, art := range newStep.Arguments.Artifacts {
 			if art.From == "" {
@@ -355,7 +385,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			}
 			resolvedArt, err := scope.resolveArtifact(art.From)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("unable to resolve references: %s", err)
 			}
 			resolvedArt.Name = art.Name
 			newStep.Arguments.Artifacts[j] = *resolvedArt
@@ -370,7 +400,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.WorkflowStep, stepsCtx *stepsContext) ([]wfv1.WorkflowStep, error) {
 	newStepGroup := make([]wfv1.WorkflowStep, 0)
 	for _, step := range stepGroup {
-		if len(step.WithItems) == 0 && step.WithParam == "" && step.WithSequence == nil {
+		if !step.ShouldExpand() {
 			newStepGroup = append(newStepGroup, step)
 			continue
 		}
@@ -382,7 +412,7 @@ func (woc *wfOperationCtx) expandStepGroup(sgNodeName string, stepGroup []wfv1.W
 			// Empty list
 			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
 			if woc.getNodeByName(childNodeName) == nil {
-				stepTemplateScope := stepsCtx.tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+				stepTemplateScope := stepsCtx.tmplCtx.GetTemplateScope()
 				skipReason := fmt.Sprint("Skipped, empty params")
 				woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
 				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepTemplateScope, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
@@ -454,6 +484,13 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 
 	if node.Phase != "" {
 		localScope["status"] = string(node.Phase)
+	}
+
+	if node.Inputs != nil {
+		for _, param := range node.Inputs.Parameters {
+			key := fmt.Sprintf("inputs.parameters.%s", param.Name)
+			localScope[key] = *param.Value
+		}
 	}
 
 	if node.Outputs != nil {

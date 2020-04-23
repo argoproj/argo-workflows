@@ -1,4 +1,4 @@
-import {CronWorkflow, Workflow, WorkflowTemplate} from '../../models';
+import {ClusterWorkflowTemplate, CronWorkflow, Workflow, WorkflowTemplate} from '../../models';
 
 const randomSillyName = () => {
     const adjectives = ['wonderful', 'fantastic', 'awesome', 'delightful', 'lovely'];
@@ -16,6 +16,24 @@ export const exampleWorkflow = (namespace: string): Workflow => ({
     },
     spec: {
         entrypoint: 'whalesay',
+        templates: [
+            {
+                name: 'whalesay',
+                container: {
+                    name: 'main',
+                    image: 'docker/whalesay:latest',
+                    command: ['cowsay'],
+                    args: ['hello world']
+                }
+            }
+        ]
+    }
+});
+export const exampleClusterWorkflowTemplate = (): ClusterWorkflowTemplate => ({
+    metadata: {
+        name: randomSillyName()
+    },
+    spec: {
         templates: [
             {
                 name: 'whalesay',
@@ -49,6 +67,7 @@ export const exampleWorkflowTemplate = (namespace: string): WorkflowTemplate => 
         ]
     }
 });
+
 export const exampleCronWorkflow = (namespace: string): CronWorkflow => ({
     metadata: {
         name: randomSillyName(),

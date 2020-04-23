@@ -3,9 +3,8 @@ kind: Kustomization
 
 bases:
   - ../../../../manifests/quick-start/mysql
-resources:
-  - ../mixins/cluster-rbac.yaml
 patchesStrategicMerge:
   - ../mixins/argo-server-deployment.yaml
   - ../mixins/workflow-controller-configmap.yaml
   - ../mixins/workflow-controller-deployment.yaml
+  - ../mixins/cluster-workflow-template-rbac.yaml

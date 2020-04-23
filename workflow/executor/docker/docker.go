@@ -5,8 +5,11 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -45,9 +48,21 @@ func (d *DockerExecutor) GetFileContents(containerID string, sourcePath string) 
 	return string(out), nil
 }
 
-func (d *DockerExecutor) CopyFile(containerID string, sourcePath string, destPath string) error {
+func (d *DockerExecutor) CopyFile(containerID string, sourcePath string, destPath string, compressionLevel int) error {
 	log.Infof("Archiving %s:%s to %s", containerID, sourcePath, destPath)
-	dockerCpCmd := fmt.Sprintf("docker cp -a %s:%s - | gzip > %s", containerID, sourcePath, destPath)
+	var levelFlag string
+	switch compressionLevel {
+	case gzip.NoCompression:
+		// best we can do - if we skip gzip it's a different file
+		levelFlag = "-1"
+	case gzip.DefaultCompression:
+		// use cmd default
+		levelFlag = ""
+	default:
+		// -1 through -9 (or error)
+		levelFlag = "-" + strconv.Itoa(compressionLevel)
+	}
+	dockerCpCmd := fmt.Sprintf("docker cp -a %s:%s - | gzip %s > %s", containerID, sourcePath, levelFlag, destPath)
 	err := common.RunCommand("sh", "-c", dockerCpCmd)
 	if err != nil {
 		return err
@@ -128,6 +143,38 @@ func (d *DockerExecutor) GetOutputStream(containerID string, combinedOutput bool
 	}()
 
 	return &cmdCloser{Reader: reader, cmd: cmd}, nil
+}
+
+func (d *DockerExecutor) GetExitCode(containerID string) (string, error) {
+	cmd := exec.Command("docker", "inspect", containerID, "--format='{{.State.ExitCode}}'")
+	log.Info(cmd.Args)
+	reader, err := cmd.StdoutPipe()
+	if err != nil {
+		return "", errors.InternalWrapError(err, "Could not pipe STDOUT")
+	}
+	err = cmd.Start()
+	if err != nil {
+		return "", errors.InternalWrapError(err, "Could not start command")
+	}
+	defer func() { _ = reader.Close() }()
+	bytes, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return "", errors.InternalWrapError(err, "Could not read from STDOUT")
+	}
+	out := string(bytes)
+
+	// Trims off a single newline for user convenience
+	outputLen := len(out)
+	if outputLen > 0 && out[outputLen-1] == '\n' {
+		out = out[:outputLen-1]
+	}
+	exitCode := strings.Trim(out, `'`)
+	// Ensure exit code is an int
+	_, err = strconv.Atoi(exitCode)
+	if err != nil {
+		return "", errors.InternalWrapError(err, "Could not parse exit code")
+	}
+	return exitCode, nil
 }
 
 func (d *DockerExecutor) WaitInit() error {
