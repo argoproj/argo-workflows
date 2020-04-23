@@ -319,3 +319,10 @@ func TestClusterController(t *testing.T) {
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.NotNil(t, controller.cwftmplInformer)
 }
+
+func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+
+	controller.archivedWorkflowGarbageCollector(make(chan struct{}))
+}
