@@ -88,7 +88,7 @@ func (d *dagContext) GetTaskDependsLogic(taskName string) string {
 }
 
 func (d *dagContext) resolveDependencies(taskName string) {
-	dependencies, resolvedDependsLogic := common.GetTaskDependencies(d.GetTask(taskName))
+	dependencies, resolvedDependsLogic := common.GetTaskDependencies(d.GetTask(taskName), d)
 	d.dependencies[taskName] = dependencies
 	d.dependsLogic[taskName] = resolvedDependsLogic
 }
@@ -282,16 +282,16 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	}()
 
 	dagCtx := &dagContext{
-		boundaryName: nodeName,
-		boundaryID:   node.ID,
-		tasks:        tmpl.DAG.Tasks,
-		visited:      make(map[string]bool),
-		tmpl:         tmpl,
-		wf:           woc.wf,
-		tmplCtx:      tmplCtx,
+		boundaryName:   nodeName,
+		boundaryID:     node.ID,
+		tasks:          tmpl.DAG.Tasks,
+		visited:        make(map[string]bool),
+		tmpl:           tmpl,
+		wf:             woc.wf,
+		tmplCtx:        tmplCtx,
 		onExitTemplate: opts.onExitTemplate,
-		dependencies: make(map[string][]string),
-		dependsLogic: make(map[string]string),
+		dependencies:   make(map[string][]string),
+		dependsLogic:   make(map[string]string),
 	}
 
 	// Identify our target tasks. If user did not specify any, then we choose all tasks which have
@@ -470,7 +470,6 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 
 	for _, t := range expandedTasks {
-		node = dagCtx.getTaskNode(t.Name)
 		taskNodeName := dagCtx.taskNodeName(t.Name)
 		// Ensure that the generated taskNodeName can be reversed into the original (not expanded) task name
 		if dagCtx.taskNameFromNodeName(taskNodeName) != task.Name {
@@ -684,12 +683,13 @@ func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 }
 
 type TaskResults struct {
-	Succeeded  bool `json:"Succeeded"`
-	Failed     bool `json:"Failed"`
-	Skipped    bool `json:"Skipped"`
-	Completed  bool `json:"Completed"`
-	Any        bool `json:"Any"`
-	Successful bool `json:"Successful"`
+	Succeeded bool `json:"Succeeded"`
+	Failed    bool `json:"Failed"`
+	Errored   bool `json:"Errored"`
+	Skipped   bool `json:"Skipped"`
+	Completed bool `json:"Completed"`
+	Any       bool `json:"Any"`
+	Daemoned  bool `json:"Daemoned"`
 }
 
 // evaluateDependsLogic returns whether a node should execute and proceed. proceed means that all of its dependencies are
@@ -711,12 +711,13 @@ func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 		}
 
 		evalScope[evalTaskName] = TaskResults{
-			Succeeded:  depNode.Phase == wfv1.NodeSucceeded,
-			Failed:     depNode.Phase == wfv1.NodeFailed,
-			Skipped:    depNode.Phase == wfv1.NodeSkipped,
-			Completed:  depNode.Phase == wfv1.NodeSucceeded || depNode.Phase == wfv1.NodeFailed,
-			Any:        depNode.Phase == wfv1.NodeSucceeded || depNode.Phase == wfv1.NodeFailed || depNode.Phase == wfv1.NodeSkipped,
-			Successful: depNode.Successful() && !d.GetTask(taskName).ContinuesOn(depNode.Phase),
+			Succeeded: depNode.Phase == wfv1.NodeSucceeded,
+			Failed:    depNode.Phase == wfv1.NodeFailed,
+			Errored:   depNode.Phase == wfv1.NodeError,
+			Skipped:   depNode.Phase == wfv1.NodeSkipped,
+			Completed: depNode.Phase == wfv1.NodeSucceeded || depNode.Phase == wfv1.NodeFailed,
+			Any:       depNode.Phase == wfv1.NodeSucceeded || depNode.Phase == wfv1.NodeFailed || depNode.Phase == wfv1.NodeSkipped,
+			Daemoned:  depNode.IsDaemoned() && depNode.Phase != wfv1.NodePending,
 		}
 	}
 

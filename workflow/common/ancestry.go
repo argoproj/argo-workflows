@@ -19,12 +19,13 @@ type DagContext interface {
 type TaskResult string
 
 const (
-	TaskResultSucceeded  TaskResult = "Succeeded"
-	TaskResultFailed     TaskResult = "Failed"
-	TaskResultSkipped    TaskResult = "Skipped"
-	TaskResultCompleted  TaskResult = "Completed"
-	TaskResultAny        TaskResult = "Any"
-	TaskResultSuccessful TaskResult = "Successful"
+	TaskResultSucceeded TaskResult = "Succeeded"
+	TaskResultFailed    TaskResult = "Failed"
+	TaskResultErrored   TaskResult = "Errored"
+	TaskResultSkipped   TaskResult = "Skipped"
+	TaskResultCompleted TaskResult = "Completed"
+	TaskResultAny       TaskResult = "Any"
+	TaskResultDaemoned  TaskResult = "Daemoned"
 )
 
 var (
@@ -33,10 +34,16 @@ var (
 	taskResultRegex = regexp.MustCompile(`([a-zA-Z0-9][-a-zA-Z0-9]*?\.[A-Z][a-z]+)`)
 )
 
-func GetTaskDependencies(task *wfv1.DAGTask) ([]string, string) {
-	depends := getTaskDependsLogic(task)
+type expansionMatch struct {
+	taskName string
+	start    int
+	end      int
+}
+
+func GetTaskDependencies(task *wfv1.DAGTask, ctx DagContext) ([]string, string) {
+	depends := getTaskDependsLogic(task, ctx)
 	matches := taskNameRegex.FindAllStringSubmatchIndex(depends, -1)
-	var indicesToAppendSucceeded []int
+	var expansionMatches []expansionMatch
 	dependencies := make(map[string]bool)
 	for _, matchGroup := range matches {
 		// We have matched a taskName.TaskResult
@@ -47,7 +54,7 @@ func GetTaskDependencies(task *wfv1.DAGTask) ([]string, string) {
 		} else if matchGroup[4] != -1 {
 			match := depends[matchGroup[4]:matchGroup[5]]
 			dependencies[match] = true
-			indicesToAppendSucceeded = append(indicesToAppendSucceeded, matchGroup[5])
+			expansionMatches = append(expansionMatches, expansionMatch{taskName: match, start: matchGroup[4], end: matchGroup[5]})
 		}
 	}
 
@@ -56,16 +63,17 @@ func GetTaskDependencies(task *wfv1.DAGTask) ([]string, string) {
 		out = append(out, dependency)
 	}
 
-	if len(indicesToAppendSucceeded) == 0 {
+	if len(expansionMatches) == 0 {
 		return out, depends
 	}
 
-	sort.Slice(indicesToAppendSucceeded, func(i, j int) bool {
+	sort.Slice(expansionMatches, func(i, j int) bool {
 		// Sort in descending order
-		return indicesToAppendSucceeded[i] > indicesToAppendSucceeded[j]
+		return expansionMatches[i].start > expansionMatches[j].start
 	})
-	for _, index := range indicesToAppendSucceeded {
-		depends = depends[:index] + fmt.Sprintf(".%s", TaskResultSucceeded) + depends[index:]
+	for _, match := range expansionMatches {
+		matchTask := ctx.GetTask(match.taskName)
+		depends = depends[:match.start] + expandDependency(match.taskName, matchTask) + depends[match.end:]
 	}
 
 	return out, depends
@@ -83,7 +91,7 @@ func ValidateTaskResults(dagTask *wfv1.DAGTask) error {
 		taskName, taskResult := split[0], TaskResult(split[1])
 		switch taskResult {
 		case TaskResultSucceeded, TaskResultFailed, TaskResultSkipped, TaskResultCompleted, TaskResultAny,
-			TaskResultSuccessful:
+			TaskResultErrored, TaskResultDaemoned:
 			// Do nothing
 		default:
 			return fmt.Errorf("task result '%s' for task '%s' is invalid", taskResult, taskName)
@@ -92,17 +100,33 @@ func ValidateTaskResults(dagTask *wfv1.DAGTask) error {
 	return nil
 }
 
-func getTaskDependsLogic(dagTask *wfv1.DAGTask) string {
+func getTaskDependsLogic(dagTask *wfv1.DAGTask, ctx DagContext) string {
 	if dagTask.Depends != "" {
 		return dagTask.Depends
 	}
 
-	// For backwards compatibility, "dependencies: [A, B]" is equivalent to "depends: A.Successful && B.Successful"
+	// For backwards compatibility, "dependencies: [A, B]" is equivalent to "depends: (A.Successful || A.Skipped) && B.Successful"
 	var dependencies []string
 	for _, dependency := range dagTask.Dependencies {
-		dependencies = append(dependencies, fmt.Sprintf("%s.%s", dependency, TaskResultSuccessful))
+		depTask := ctx.GetTask(dependency)
+		dependencies = append(dependencies, expandDependency(dependency, depTask))
 	}
 	return strings.Join(dependencies, " && ")
+}
+
+func expandDependency(depName string, depTask *wfv1.DAGTask) string {
+	resultForTask := func(result TaskResult) string { return fmt.Sprintf("%s.%s", depName, result) }
+
+	taskDepends := []string{resultForTask(TaskResultSucceeded), resultForTask(TaskResultSkipped), resultForTask(TaskResultDaemoned)}
+	if depTask.ContinueOn != nil {
+		if depTask.ContinueOn.Error {
+			taskDepends = append(taskDepends, resultForTask(TaskResultErrored))
+		}
+		if depTask.ContinueOn.Failed {
+			taskDepends = append(taskDepends, resultForTask(TaskResultFailed))
+		}
+	}
+	return "(" + strings.Join(taskDepends, " || ") + ")"
 }
 
 // GetTaskAncestry returns a list of taskNames which are ancestors of this task.

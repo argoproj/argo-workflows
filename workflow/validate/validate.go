@@ -1032,7 +1032,7 @@ func (d *dagValidationContext) GetTaskDependencies(taskName string) []string {
 		return dependencies
 	}
 	task := d.GetTask(taskName)
-	dependencies, _ := common.GetTaskDependencies(task)
+	dependencies, _ := common.GetTaskDependencies(task, d)
 	d.dependencies[taskName] = dependencies
 	return d.dependencies[taskName]
 }
@@ -1046,12 +1046,19 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 	if err != nil {
 		return err
 	}
+	if len(tmpl.DAG.Tasks) == 0 {
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s must have at least one task", tmpl.Name)
+	}
 	err = validateWorkflowFieldNames(tmpl.DAG.Tasks)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks%s", tmpl.Name, err.Error())
 	}
+	usingDepends := false
 	nameToTask := make(map[string]wfv1.DAGTask)
 	for _, task := range tmpl.DAG.Tasks {
+		if task.Depends != "" {
+			usingDepends = true
+		}
 		nameToTask[task.Name] = task
 	}
 
@@ -1064,6 +1071,14 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 
 	// Verify dependencies for all tasks can be resolved as well as template names
 	for _, task := range tmpl.DAG.Tasks {
+
+		if usingDepends && len(task.Dependencies) > 0 {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s cannot use both 'depends' and 'dependencies' in the same DAG template", tmpl.Name)
+		}
+
+		if usingDepends && task.ContinueOn != nil {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s cannot use 'continueOn' when using 'depends'. Instead use 'dep-task.Failed'/'dep-task.Errored'", tmpl.Name)
+		}
 
 		resolvedTmpl, err := ctx.validateTemplateHolder(&task, tmplCtx, &FakeArguments{}, map[string]interface{}{})
 		if err != nil {
