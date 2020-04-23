@@ -98,8 +98,8 @@ spec:
       args: ["hello world"]
 `
 
-func newController() (context.CancelFunc, *WorkflowController) {
-	wfclientset := fakewfclientset.NewSimpleClientset()
+func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowController) {
+	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
 	wftmplInformer := informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 	cwftmplInformer := informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
@@ -318,4 +318,11 @@ func TestClusterController(t *testing.T) {
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
 	assert.NotNil(t, controller.cwftmplInformer)
+}
+
+func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+
+	controller.archivedWorkflowGarbageCollector(make(chan struct{}))
 }

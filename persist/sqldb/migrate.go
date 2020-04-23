@@ -69,8 +69,8 @@ func (m migrate) Exec(ctx context.Context) error {
     phase varchar(25),
     namespace varchar(256),
     workflow text,
-    startedat timestamp,
-    finishedat timestamp,
+    startedat timestamp default CURRENT_TIMESTAMP,
+    finishedat timestamp default CURRENT_TIMESTAMP,
     primary key (id, namespace)
 )`),
 		ansiSQLChange(`create unique index idx_name on ` + m.tableName + ` (name)`),
@@ -80,8 +80,8 @@ func (m migrate) Exec(ctx context.Context) error {
     phase varchar(25),
     namespace varchar(256),
     workflow text,
-    startedat timestamp,
-    finishedat timestamp,
+    startedat timestamp default CURRENT_TIMESTAMP,
+    finishedat timestamp default CURRENT_TIMESTAMP,
     primary key (id, namespace)
 )`),
 		ansiSQLChange(`alter table argo_workflow_history rename to argo_archived_workflows`),
@@ -247,6 +247,8 @@ func (m migrate) Exec(ctx context.Context) error {
 		),
 		// add m.tableName index
 		ansiSQLChange(`create index ` + m.tableName + `_i1 on ` + m.tableName + ` (clustername,namespace,updatedat)`),
+		// index to find records that need deleting, this omits namespaces as this might be null
+		ansiSQLChange(`create index argo_archived_workflows_i2 on argo_archived_workflows (clustername,instanceid,finishedat)`),
 	} {
 		err := m.applyChange(ctx, changeSchemaVersion, change)
 		if err != nil {

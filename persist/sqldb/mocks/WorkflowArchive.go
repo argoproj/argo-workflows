@@ -44,6 +44,20 @@ func (_m *WorkflowArchive) DeleteWorkflow(uid string) error {
 	return r0
 }
 
+// DeleteWorkflows provides a mock function with given fields: ttl
+func (_m *WorkflowArchive) DeleteWorkflows(ttl time.Duration) error {
+	ret := _m.Called(ttl)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(time.Duration) error); ok {
+		r0 = rf(ttl)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // GetWorkflow provides a mock function with given fields: uid
 func (_m *WorkflowArchive) GetWorkflow(uid string) (*v1alpha1.Workflow, error) {
 	ret := _m.Called(uid)

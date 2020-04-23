@@ -17,7 +17,8 @@ spec:
           image: argoproj/argocli:v2.8.0-rc1
           args: [server]
           ports:
-            - containerPort: 2746
+            - name: web
+              containerPort: 2746
           readinessProbe:
             httpGet:
               port: 2746
