@@ -15,7 +15,7 @@ type wfScope struct {
 }
 
 // replaceMap returns a replacement map of strings intended to be used simple string substitution
-func (s *wfScope) replaceMap() params.Params {
+func (s *wfScope) replaceMap() params.Parameters {
 	replaceMap := make(map[string]string)
 	for key, val := range s.scope {
 		valStr, ok := val.(string)

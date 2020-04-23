@@ -6,17 +6,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestParamsMerge ensures Merge of Params works correctly.
+// TestParamsMerge ensures Merge of Parameters works correctly.
 func TestParamsMerge(t *testing.T) {
-	params := Params{"foo": "1"}
-	newParams := params.Merge(Params{"foo": "2", "bar": "1"}, Params{"wow": "1"})
-	assert.Equal(t, Params{"foo": "2", "bar": "1", "wow": "1"}, newParams)
+	params := Parameters{"foo": "1"}
+	newParams := params.Merge(Parameters{"foo": "2", "bar": "1"}, Parameters{"wow": "1"})
+	assert.Equal(t, Parameters{"foo": "2", "bar": "1", "wow": "1"}, newParams)
 	assert.NotSame(t, &params, &newParams)
 }
 
-// TestParamsClone ensures Clone of Params works correctly.
+// TestParamsClone ensures Clone of Parameters works correctly.
 func TestParamsClone(t *testing.T) {
-	params := Params{"foo": "1"}
+	params := Parameters{"foo": "1"}
 	newParams := params.DeepCopy()
 	assert.Equal(t, params, newParams)
 	assert.NotSame(t, &params, &newParams)

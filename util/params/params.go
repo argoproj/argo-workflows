@@ -1,10 +1,10 @@
 package params
 
-// Params extends string map with useful methods.
-type Params map[string]string
+// Parameters extends string map with useful methods.
+type Parameters map[string]string
 
 // Merge merges given parameteres.
-func (ps Params) Merge(args ...Params) Params {
+func (ps Parameters) Merge(args ...Parameters) Parameters {
 	newParams := ps.DeepCopy()
 	for _, params := range args {
 		for k, v := range params {
@@ -15,8 +15,8 @@ func (ps Params) Merge(args ...Params) Params {
 }
 
 // DeepCopy returns a new instance which has the same parameters as the receiver.
-func (ps Params) DeepCopy() Params {
-	newParams := make(Params)
+func (ps Parameters) DeepCopy() Parameters {
+	newParams := make(Parameters)
 	for k, v := range ps {
 		newParams[k] = v
 	}
