@@ -153,7 +153,7 @@ jobs:
             make test
       - run: |
           cp sonar-project.properties dist/
-          if [ $CIRCLE_BRANCH != master ]; then
+          if [ "$(echo "$CIRCLE_BRANCH" | grep 'master\|release-')" = '' ]; then
             echo "sonar.pullrequest.branch=$CIRCLE_BRANCH" >> sonar-project.properties
             echo "sonar.pullrequest.key=$CIRCLE_PR_NUMBER" >> sonar-project.properties
           fi
