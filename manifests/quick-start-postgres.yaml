@@ -369,6 +369,7 @@ data:
       maxOpenConns: 0
     nodeStatusOffLoad: true
     archive: true
+    archiveTTL: 7d
     postgresql:
       host: postgres
       port: 5432
