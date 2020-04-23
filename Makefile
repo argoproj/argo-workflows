@@ -61,9 +61,9 @@ endif
 # version change, so does the file location
 MANIFESTS_VERSION_FILE := dist/$(MANIFESTS_VERSION).manifests-version
 VERSION_FILE           := dist/$(VERSION).version
-CLI_IMAGE_FILE         := dist/cli-image-$(VERSION)
-EXECUTOR_IMAGE_FILE    := dist/executor-image-$(VERSION)
-CONTROLLER_IMAGE_FILE  := dist/controller-image-$(VERSION)
+CLI_IMAGE_FILE         := dist/cli-image.$(VERSION)
+EXECUTOR_IMAGE_FILE    := dist/executor-image.$(VERSION)
+CONTROLLER_IMAGE_FILE  := dist/controller-image.$(VERSION)
 
 # perform static compilation
 STATIC_BUILD          ?= true
@@ -167,10 +167,16 @@ dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 dist/argo-%: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
 
+
+argo-server.crt: argo-server.key
+
+argo-server.key:
+	openssl req -x509 -newkey rsa:4096 -keyout argo-server.key -out argo-server.crt -days 365 -nodes -subj /CN=localhost/O=ArgoProj
+
 .PHONY: cli-image
 cli-image: $(CLI_IMAGE_FILE)
 
-$(CLI_IMAGE_FILE): dist/argo-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
+$(CLI_IMAGE_FILE): dist/argo-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) argo-server.crt argo-server.key
 	# Create CLI image
 ifeq ($(DEV_IMAGE),true)
 	cp dist/argo-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) argo

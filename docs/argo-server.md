@@ -50,6 +50,10 @@ If the server is running behind reverse proxy with a subpath different from `/` 
 `/argo`), you can set an alternative subpath with the `--base-href` flag or the `BASE_HREF` 
 environment variable.
 
-### SSO & RBAC
+### Transport Layer Security
 
-See [SSO](argo-server-sso.md) and [RBAC](argo-server-rbac.md).
+See [TLS](tls.md).
+
+### SSO 
+
+See [SSO](argo-server-sso.md).

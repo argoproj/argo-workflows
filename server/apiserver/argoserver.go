@@ -1,6 +1,7 @@
 package apiserver
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"github.com/soheilhy/cmux"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -49,7 +51,9 @@ const (
 )
 
 type argoServer struct {
-	baseHRef         string
+	baseHRef string
+	// https://itnext.io/practical-guide-to-securing-grpc-connections-with-go-and-tls-part-1-f63058e9d6d1
+	tlsConfig        *tls.Config
 	namespace        string
 	managedNamespace string
 	kubeClientset    *kubernetes.Clientset
@@ -61,6 +65,7 @@ type argoServer struct {
 
 type ArgoServerOpts struct {
 	BaseHRef      string
+	TLSConfig     *tls.Config
 	Namespace     string
 	KubeClientset *kubernetes.Clientset
 	WfClientSet   *versioned.Clientset
@@ -93,6 +98,7 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 	}
 	return &argoServer{
 		baseHRef:         opts.BaseHRef,
+		tlsConfig:        opts.TLSConfig,
 		namespace:        opts.Namespace,
 		managedNamespace: opts.ManagedNamespace,
 		kubeClientset:    opts.KubeClientset,
@@ -111,7 +117,7 @@ var backoff = wait.Backoff{
 }
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
-	log.WithField("version", argo.GetVersion()).Info("Starting Argo Server")
+	log.WithField("version", argo.GetVersion().Version).Info("Starting Argo Server")
 
 	configMap, err := as.configController.Get()
 	if err != nil {
@@ -154,6 +160,10 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.Error(err)
 		return
+	}
+
+	if as.tlsConfig != nil {
+		conn = tls.NewListener(conn, as.tlsConfig)
 	}
 
 	// Cmux is used to support servicing gRPC and HTTP1.1+JSON on the same port
@@ -215,13 +225,18 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 
 	mux := http.NewServeMux()
 	httpServer := http.Server{
-		Addr:    endpoint,
-		Handler: mux,
+		Addr:      endpoint,
+		Handler:   mux,
+		TLSConfig: as.tlsConfig,
 	}
-	var dialOpts []grpc.DialOption
-	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxGRPCMessageSize)))
-
-	dialOpts = append(dialOpts, grpc.WithInsecure())
+	dialOpts := []grpc.DialOption{
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxGRPCMessageSize)),
+	}
+	if as.tlsConfig != nil {
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(as.tlsConfig)))
+	} else {
+		dialOpts = append(dialOpts, grpc.WithInsecure())
+	}
 
 	// HTTP 1.1+JSON Server
 	// grpc-ecosystem/grpc-gateway is used to proxy HTTP requests to the corresponding gRPC call

@@ -61,7 +61,7 @@ type wfOperationCtx struct {
 	controller *WorkflowController
 	// globalParams holds any parameters that are available to be referenced
 	// in the global scope (e.g. workflow.parameters.XXX).
-	globalParams map[string]string
+	globalParams common.Parameters
 	// volumes holds a DeepCopy of wf.Spec.Volumes to perform substitutions.
 	// It is then used in addVolumeReferences() when creating a pod.
 	volumes []apiv1.Volume
@@ -1871,8 +1871,8 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 			val, err := scope.resolveParameter(param.ValueFrom.Parameter)
 			if err != nil {
 				// We have a default value to use instead of returning an error
-				if param.ValueFrom.Default != "" {
-					val = param.ValueFrom.Default
+				if param.ValueFrom.Default != nil {
+					val = *param.ValueFrom.Default
 				} else {
 					return nil, err
 				}
