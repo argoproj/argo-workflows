@@ -1,10 +1,12 @@
 package commands
 
 import (
+	"crypto/tls"
 	"fmt"
 	"os"
 	"time"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
@@ -25,6 +27,7 @@ func NewServerCommand() *cobra.Command {
 		configMap         string
 		port              int
 		baseHRef          string
+		secure            bool
 		namespaced        bool   // --namespaced
 		managedNamespace  string // --managed-namespace
 		enableOpenBrowser bool
@@ -66,11 +69,23 @@ See %s`, help.ArgoSever),
 				"authMode":         authMode,
 				"namespace":        namespace,
 				"managedNamespace": managedNamespace,
-				"baseHRef":         baseHRef}).
-				Info()
+				"baseHRef":         baseHRef,
+				"secure":           secure,
+			}).Info()
+
+			var tlsConfig *tls.Config
+			if secure {
+				cer, err := tls.LoadX509KeyPair("argo-server.crt", "argo-server.key")
+				errors.CheckError(err)
+				// InsecureSkipVerify will not impact the TLS listener. It is needed for the server to speak to itself for GRPC.
+				tlsConfig = &tls.Config{Certificates: []tls.Certificate{cer}, InsecureSkipVerify: true}
+			} else {
+				log.Warn("You are running in insecure mode. How enable transport security: https://github.com/argoproj/argo/blob/master/docs/tls.md")
+			}
 
 			opts := apiserver.ArgoServerOpts{
 				BaseHRef:         baseHRef,
+				TLSConfig:        tlsConfig,
 				Namespace:        namespace,
 				WfClientSet:      wflientset,
 				KubeClientset:    kubeConfig,
@@ -104,6 +119,8 @@ See %s`, help.ArgoSever),
 		defaultBaseHRef = "/"
 	}
 	command.Flags().StringVar(&baseHRef, "basehref", defaultBaseHRef, "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
+	// "-e" for encrypt, like zip
+	command.Flags().BoolVarP(&secure, "secure", "e", false, "Whether or not we should listen on TLS.")
 	command.Flags().StringVar(&authMode, "auth-mode", "server", "API server authentication mode. One of: client|server|hybrid")
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
