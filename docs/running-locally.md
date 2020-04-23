@@ -1,9 +1,8 @@
 # How to setup your dev environment
 ## Pre-requisites:
 
-* Dep. `brew install dep`
 * Golang
-* Yarn. `brew install yarn`
+* Yarn. `brew install yarn` 
 * Docker
 * [Kustomize](https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md)
 * [protoc](http://google.github.io/proto-lens/installing-protoc.html) `brew install protobuf`

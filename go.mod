@@ -63,7 +63,7 @@ require (
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/soheilhy/cmux v0.1.4
 	github.com/spf13/cobra v0.0.4-0.20181021141114-fe5e611709b0
-	github.com/stretchr/testify v1.4.0
+	github.com/stretchr/testify v1.5.1
 	github.com/tidwall/gjson v1.3.5
 	github.com/valyala/fasttemplate v1.1.0
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect

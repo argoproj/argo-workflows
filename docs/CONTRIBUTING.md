@@ -24,3 +24,6 @@ To run Argo Workflows locally for development: [running locally](running-locally
 
 Changes without either unit or e2e tests are unlikely to be accepted. See [the pull request template](../.github/pull_request_template.md).
 
+### Contributor Workshop
+
+We have a [90m video on YouTube](https://youtu.be/zZv0lNCDG9w) show you have to get hands-on contributing.

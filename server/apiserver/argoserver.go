@@ -113,7 +113,7 @@ func (ao ArgoServerOpts) ValidateOpts() error {
 }
 
 func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(string)) {
-	log.WithField("version", argo.GetVersion()).Info("Starting Argo Server")
+	log.WithField("version", argo.GetVersion().Version).Info("Starting Argo Server")
 
 	configMap, err := as.configController.Get()
 	if err != nil {
