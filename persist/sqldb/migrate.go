@@ -247,6 +247,8 @@ func (m migrate) Exec(ctx context.Context) error {
 		),
 		// add m.tableName index
 		ansiSQLChange(`create index ` + m.tableName + `_i1 on ` + m.tableName + ` (clustername,namespace,updatedat)`),
+		// index to find records that need deleting, this omits namespaces as this might be null
+		ansiSQLChange(`create index argo_archived_workflows_i2 on argo_archived_workflows (clustername,instanceid,finishedat)`),
 	} {
 		err := m.applyChange(ctx, changeSchemaVersion, change)
 		if err != nil {

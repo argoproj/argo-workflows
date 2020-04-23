@@ -84,6 +84,16 @@ func (s *ArgoServerSuite) TestInfo() {
 			Equal("http://logging-facility?namespace=${metadata.namespace}&workflowName=${metadata.name}")
 	})
 }
+func (s *ArgoServerSuite) TestVersion() {
+	s.Run("Version", func() {
+		s.e(s.T()).GET("/api/v1/version").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.version").
+			NotNull()
+	})
+}
 
 // we can only really tests these endpoint respond, not worthwhile checking more
 func (s *ArgoServerSuite) TestOauth() {
