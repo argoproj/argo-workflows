@@ -19,3 +19,11 @@ func Label(obj metav1.Object, name string, values ...string) {
 		return
 	}
 }
+
+func UnLabel(obj metav1.Object, name string) {
+	labels := obj.GetLabels()
+	if labels == nil {
+		return
+	}
+	delete(labels, name)
+}

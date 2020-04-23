@@ -16,11 +16,16 @@ func TestLabel(t *testing.T) {
 		Label(obj, "")
 		assert.Empty(t, obj.GetLabels())
 	})
-	t.Run("One", func(t *testing.T) {
+	t.Run("Add", func(t *testing.T) {
 		obj := &wfv1.Workflow{}
 		Label(obj, "foo")
 		assert.Len(t, obj.GetLabels(), 1)
 		assert.Equal(t, "foo", obj.GetLabels()[common.LabelKeyControllerInstanceID])
+	})
+	t.Run("Remove", func(t *testing.T) {
+		obj := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{common.LabelKeyControllerInstanceID: "bar"}}}
+		Label(obj, "")
+		assert.Empty(t, obj.GetLabels())
 	})
 }
 

@@ -10,7 +10,11 @@ import (
 )
 
 func Label(obj metav1.Object, instanceID string) {
-	labels.Label(obj, common.LabelKeyControllerInstanceID, instanceID)
+	if instanceID != "" {
+		labels.Label(obj, common.LabelKeyControllerInstanceID, instanceID)
+	} else {
+		labels.UnLabel(obj, common.LabelKeyControllerInstanceID)
+	}
 }
 
 func With(opts metav1.ListOptions, instanceID string) metav1.ListOptions {
