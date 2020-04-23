@@ -17,7 +17,7 @@ func TestParamsMerge(t *testing.T) {
 // TestParamsClone ensures Clone of Params works correctly.
 func TestParamsClone(t *testing.T) {
 	params := Params{"foo": "1"}
-	newParams := params.Clone()
+	newParams := params.DeepCopy()
 	assert.Equal(t, params, newParams)
 	assert.NotSame(t, &params, &newParams)
 }

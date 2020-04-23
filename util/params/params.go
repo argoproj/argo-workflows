@@ -3,7 +3,7 @@ package params
 type Params map[string]string
 
 func (ps Params) Merge(args ...Params) Params {
-	newParams := ps.Clone()
+	newParams := ps.DeepCopy()
 	for _, params := range args {
 		for k, v := range params {
 			newParams[k] = v
@@ -12,7 +12,7 @@ func (ps Params) Merge(args ...Params) Params {
 	return newParams
 }
 
-func (ps Params) Clone() Params {
+func (ps Params) DeepCopy() Params {
 	newParams := make(Params)
 	for k, v := range ps {
 		newParams[k] = v
