@@ -62,10 +62,15 @@ If you're using the Argo Server (e.g. because you need large workflow support or
 
 	// global log level
 	var logLevel string
+	var verbose bool
 	command.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		if verbose {
+			logLevel = "debug"
+		}
 		cli.SetLogLevel(logLevel)
 	}
 	command.PersistentFlags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
+	command.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enabled verbose logging, i.e. --loglevel debug")
 
 	return command
 }
