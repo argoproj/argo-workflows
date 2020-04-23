@@ -7,10 +7,13 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
+	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/yaml"
@@ -95,8 +98,8 @@ spec:
       args: ["hello world"]
 `
 
-func newController() (context.CancelFunc, *WorkflowController) {
-	wfclientset := fakewfclientset.NewSimpleClientset()
+func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowController) {
+	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
 	wftmplInformer := informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 	cwftmplInformer := informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
@@ -120,6 +123,7 @@ func newController() (context.CancelFunc, *WorkflowController) {
 		wftmplInformer:  wftmplInformer,
 		cwftmplInformer: cwftmplInformer,
 		wfQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		podQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		wfArchive:       sqldb.NullWorkflowArchive,
 		Metrics:         make(map[string]prometheus.Metric),
 	}
@@ -282,4 +286,43 @@ func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
 	assert.NotContains(t, workflow.Labels, "foo")
 	assert.Contains(t, workflow.Labels, "label")
 	assert.Contains(t, workflow.Annotations, "annotation")
+}
+
+func TestNamespacedController(t *testing.T) {
+	kubeClient := fake.Clientset{}
+	allowed := false
+	kubeClient.AddReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, &authorizationv1.SelfSubjectAccessReview{
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: allowed},
+		}, nil
+	})
+
+	_, controller := newController()
+	controller.kubeclientset = kubernetes.Interface(&kubeClient)
+	controller.cwftmplInformer = nil
+	controller.createClusterWorkflowTemplateInformer(context.TODO())
+	assert.Nil(t, controller.cwftmplInformer)
+}
+
+func TestClusterController(t *testing.T) {
+	kubeClient := fake.Clientset{}
+	allowed := true
+	kubeClient.AddReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, &authorizationv1.SelfSubjectAccessReview{
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: allowed},
+		}, nil
+	})
+
+	_, controller := newController()
+	controller.kubeclientset = kubernetes.Interface(&kubeClient)
+	controller.cwftmplInformer = nil
+	controller.createClusterWorkflowTemplateInformer(context.TODO())
+	assert.NotNil(t, controller.cwftmplInformer)
+}
+
+func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+
+	controller.archivedWorkflowGarbageCollector(make(chan struct{}))
 }

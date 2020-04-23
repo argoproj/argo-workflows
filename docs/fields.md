@@ -131,6 +131,8 @@ Workflow is the definition of a workflow resource
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
 
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
+
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](../examples/output-parameter.yaml)
@@ -162,6 +164,8 @@ Workflow is the definition of a workflow resource
 - [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
@@ -396,6 +400,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
 
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
+
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](../examples/output-parameter.yaml)
@@ -427,6 +433,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
@@ -680,6 +688,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
 
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
+
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](../examples/output-parameter.yaml)
@@ -711,6 +721,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
@@ -930,6 +942,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
 
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
+
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](../examples/output-parameter.yaml)
@@ -961,6 +975,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
@@ -1131,6 +1147,8 @@ Arguments to a template
 - [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
@@ -1340,6 +1358,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
 
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
+
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](../examples/output-parameter.yaml)
@@ -1371,6 +1391,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
@@ -1513,6 +1535,7 @@ NodeStatus contains status information about an individual node in the workflow
 |`daemoned`|`boolean`|Daemoned tracks whether or not this node was daemoned and need to be terminated|
 |`displayName`|`string`|DisplayName is a human readable representation of the node. Unique within a template boundary|
 |`finishedAt`|[`Time`](#time)|Time at which this node completed|
+|`hostNodeName`|`string`|HostNodeName name of the Kubernetes node on which the Pod is running, if applicable|
 |`id`|`string`|ID is a unique identifier of a node within the worklowIt is implemented as a hash of the node name, which makes the ID deterministic|
 |`inputs`|[`Inputs`](#inputs)|Inputs captures input parameter values and artifact locations supplied to this template invocation|
 |`message`|`string`|A human readable message indicating details about why the node is in this condition.|
@@ -1565,6 +1588,8 @@ Outputs hold parameters, artifacts, and results from a step
 - [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
 
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
+
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
 
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 
@@ -1628,6 +1653,8 @@ Artifact indicates an artifact to place at a specified path
 - [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
 
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
+
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
 
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 </details>
@@ -1739,6 +1766,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
@@ -1985,6 +2014,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
 
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
+
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
 - [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
@@ -2136,6 +2167,8 @@ Pod metdata
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
 
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
+
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](../examples/output-parameter.yaml)
@@ -2167,6 +2200,8 @@ Pod metdata
 - [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
@@ -2331,6 +2366,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
 
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
+
 - [`retry-script.yaml`](../examples/retry-script.yaml)
 
 - [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
@@ -2433,6 +2470,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
 
 - [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
+
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
@@ -2696,6 +2735,8 @@ GCSArtifact is the location of a GCS artifact
 <br>
 
 - [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
+
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
 </details>
 
 ### Fields
@@ -3247,6 +3288,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
 
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
+
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](../examples/output-parameter.yaml)
@@ -3278,6 +3321,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
@@ -3664,6 +3709,8 @@ A single application container that you want to run within a pod.
 - [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
+
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
 
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 
@@ -4072,6 +4119,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devicesand 
 
 - [`node-selector.yaml`](../examples/node-selector.yaml)
 
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
+
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
 
 - [`output-parameter.yaml`](../examples/output-parameter.yaml)
@@ -4103,6 +4152,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devicesand 
 - [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 

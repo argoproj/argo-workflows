@@ -924,8 +924,13 @@ func (ctx *templateValidationCtx) validateBaseImageOutputs(tmpl *wfv1.Template) 
 			}
 		}
 		for _, out := range tmpl.Outputs.Parameters {
-			if out.ValueFrom != nil && common.FindOverlappingVolume(tmpl, out.ValueFrom.Path) == nil {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.parameters.%s: %s", tmpl.Name, out.Name, errMsg)
+			if out.ValueFrom == nil {
+				continue
+			}
+			if out.ValueFrom.Path != "" {
+				if common.FindOverlappingVolume(tmpl, out.ValueFrom.Path) == nil {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.parameters.%s: %s", tmpl.Name, out.Name, errMsg)
+				}
 			}
 		}
 	}

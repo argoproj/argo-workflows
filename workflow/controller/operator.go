@@ -61,7 +61,7 @@ type wfOperationCtx struct {
 	controller *WorkflowController
 	// globalParams holds any parameters that are available to be referenced
 	// in the global scope (e.g. workflow.parameters.XXX).
-	globalParams map[string]string
+	globalParams common.Parameters
 	// volumes holds a DeepCopy of wf.Spec.Volumes to perform substitutions.
 	// It is then used in addVolumeReferences() when creating a pod.
 	volumes []apiv1.Volume
@@ -223,7 +223,6 @@ func (woc *wfOperationCtx) operate() {
 		if err != nil {
 			woc.log.Errorf("%s error: %+v", woc.wf.ObjectMeta.Name, err)
 			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowTimedOut}, "Workflow timed out")
-
 			// TODO: we need to re-add to the workqueue, but should happen in caller
 			return
 		}
@@ -732,7 +731,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	if err != nil {
 		return err
 	}
-	seenPods := make(map[string]bool)
+	seenPods := make(map[string]*apiv1.Pod)
 	seenPodLock := &sync.Mutex{}
 	wfNodesLock := &sync.RWMutex{}
 
@@ -743,7 +742,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
 		nodeID := woc.wf.NodeID(nodeNameForPod)
 		seenPodLock.Lock()
-		seenPods[nodeID] = true
+		seenPods[nodeID] = pod
 		seenPodLock.Unlock()
 
 		wfNodesLock.Lock()
@@ -797,17 +796,41 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	// It is now impossible to infer pod status. The only thing we can do at this point is to mark
 	// the node with Error.
 	for nodeID, node := range woc.wf.Status.Nodes {
-		if node.Type != wfv1.NodeTypePod || node.Completed() || node.StartedAt.IsZero() || node.Pending() {
+		if node.Type != wfv1.NodeTypePod || node.Completed() || node.StartedAt.IsZero() {
 			// node is not a pod, it is already complete, or it can be re-run.
 			continue
 		}
 		if _, ok := seenPods[nodeID]; !ok {
+
+			// If the node is pending and the pod does not exist, it could be the case that we want to try to submit it
+			// again instead of marking it as an error. Check if that's the case.
+			if node.Pending() {
+				tmplCtx, err := woc.createTemplateContext(node.GetTemplateScope())
+				if err != nil {
+					return err
+				}
+				_, tmpl, _, err := tmplCtx.ResolveTemplate(&node)
+				if err != nil {
+					return err
+				}
+
+				if isResubmitAllowed(tmpl) {
+					// We want to resubmit. Continue and do not mark as error.
+					continue
+				}
+			}
+
 			node.Message = "pod deleted"
 			node.Phase = wfv1.NodeError
 			woc.wf.Status.Nodes[nodeID] = node
 			woc.log.Warnf("pod %s deleted", nodeID)
-			woc.updated = true
+		} else {
+			// At this point we are certain that the pod associated with our node is running or has been run;
+			// it is safe to extract the k8s-node information given this knowledge.
+			node.HostNodeName = seenPods[nodeID].Spec.NodeName
+			woc.wf.Status.Nodes[nodeID] = node
 		}
+		woc.updated = true
 	}
 	return nil
 }
@@ -2372,7 +2395,13 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 
 // createTemplateContext creates a new template context.
 func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resourceName string) (*templateresolution.Context, error) {
-	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), woc.controller.cwftmplInformer.Lister(), woc.wf, woc.wf)
+	var clusterWorkflowTemplateGetter templateresolution.ClusterWorkflowTemplateGetter
+	if woc.controller.cwftmplInformer != nil {
+		clusterWorkflowTemplateGetter = woc.controller.cwftmplInformer.Lister()
+	} else {
+		clusterWorkflowTemplateGetter = &templateresolution.NullClusterWorkflowTemplateGetter{}
+	}
+	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), clusterWorkflowTemplateGetter, woc.wf, woc.wf)
 
 	switch scope {
 	case wfv1.ResourceScopeNamespaced:

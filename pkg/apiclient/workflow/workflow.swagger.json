@@ -249,9 +249,9 @@
         ]
       }
     },
-    "/api/v1/workflows/{namespace}/submit-from": {
+    "/api/v1/workflows/{namespace}/submit": {
       "post": {
-        "operationId": "SubmitFrom",
+        "operationId": "SubmitWorkflow",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -272,7 +272,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/workflow.WorkflowSubmitFromRequest"
+              "$ref": "#/definitions/workflow.WorkflowSubmitRequest"
             }
           }
         ],
@@ -1435,6 +1435,10 @@
             "type": "string"
           },
           "description": "OutboundNodes tracks the node IDs which are considered \"outbound\" nodes to a template invocation.\nFor every invocation of a template, there are nodes which we considered as \"outbound\". Essentially,\nthese are last nodes in the execution sequence to run, before the template is considered completed.\nThese nodes are then connected as parents to a following step.\n\nIn the case of single pod steps (i.e. container, script, resource templates), this list will be nil\nsince the pod itself is already considered the \"outbound\" node.\nIn the case of DAGs, outbound nodes are the \"target\" tasks (tasks with no children).\nIn the case of steps, outbound nodes are all the containers involved in the last step group.\nNOTE: since templates are composable, the list of outbound nodes are carried upwards when\na DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of\na template, will be a superset of the outbound nodes of its last children."
+        },
+        "hostNodeName": {
+          "type": "string",
+          "title": "HostNodeName name of the Kubernetes node on which the Pod is running, if applicable"
         }
       },
       "title": "NodeStatus contains status information about an individual node in the workflow"
@@ -1750,52 +1754,52 @@
       "properties": {
         "name": {
           "type": "string",
-          "description": "Name overrides metadata.name in workflow."
+          "title": "Name overrides metadata.name"
         },
         "generateName": {
           "type": "string",
-          "description": "GenerateName overrides metadata.generateName in workflow."
+          "title": "GenerateName overrides metadata.generateName"
         },
         "instanceID": {
           "type": "string",
-          "description": "InstanceID adds controller's instance id label in workflow."
+          "title": "InstanceID binds the Resource to the specified instance ID"
         },
         "entrypoint": {
           "type": "string",
-          "description": "Entrypoint overrides spec.entrypoint in workflow."
+          "title": "Entrypoint overrides spec.entrypoint"
         },
         "parameters": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "description": "Parameters passes input parameters to workflow."
+          "title": "Parameters passes input parameters to workflow"
         },
         "parameterFile": {
           "type": "string",
-          "description": "ParameterFile holds parameter file path.\nThis option is not supported in API."
+          "title": "ParameterFile holds a reference to a parameter file. This option is not supported in API"
         },
         "serviceAccount": {
           "type": "string",
-          "description": "ServiceAccount runs all pods in the workflow using specified serviceaccount."
+          "description": "ServiceAccount runs all pods in the workflow using specified ServiceAccount."
         },
         "dryRun": {
           "type": "boolean",
           "format": "boolean",
-          "description": "DryRun validates the workflow on the client-side without creating it.\nThis option is not supported in API."
+          "title": "DryRun validates the workflow on the client-side without creating it. This option is not supported in API"
         },
         "serverDryRun": {
           "type": "boolean",
           "format": "boolean",
-          "description": "ServerDryRun validates the workflow on the Server-side without creating it."
+          "title": "ServerDryRun validates the workflow on the server-side without creating it"
         },
         "labels": {
           "type": "string",
-          "description": "Labels adds metadata.labels in workflow."
+          "title": "Labels adds to metadata.labels"
         },
         "ownerReference": {
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference",
-          "description": "OwnerReference creates the metadata.ownerReference in workflow."
+          "title": "OwnerReference creates a metadata.ownerReference"
         }
       },
       "title": "SubmitOpts are workflow submission options"
@@ -5072,7 +5076,7 @@
         }
       }
     },
-    "workflow.WorkflowSubmitFromRequest": {
+    "workflow.WorkflowSubmitRequest": {
       "type": "object",
       "properties": {
         "namespace": {

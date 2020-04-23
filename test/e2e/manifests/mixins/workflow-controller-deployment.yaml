@@ -10,7 +10,7 @@ spec:
           imagePullPolicy: Never
           args:
             - --executor-image
-            - argoproj/argoexec:latest
+            - argoproj/argoexec:E2E_TAG
             - --namespaced
             - --loglevel
             - debug
@@ -24,3 +24,5 @@ spec:
               value: 30s
             - name: UPPERIO_DB_DEBUG
               value: "1"
+            - name: ARCHIVED_WORKFLOW_GC_PERIOD
+              value: 30s
