@@ -58,7 +58,6 @@ func (a *argoServerClient) NewInfoServiceClient() (infopkg.InfoServiceClient, er
 }
 
 func newClientConn(opts ArgoServerOpts) (*grpc.ClientConn, error) {
-	conn, err := grpc.Dial(argoServer, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(MaxClientGRPCMessageSize)), grpc.WithInsecure())
 	creds := grpc.WithInsecure()
 	if opts.Secure {
 		creds = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: opts.InsecureSkipVerify}))
