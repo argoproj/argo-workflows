@@ -66,7 +66,7 @@ func TestArtifactServer_GetArtifact(t *testing.T) {
 	w := &testhttp.TestResponseWriter{}
 	s.GetArtifact(w, r)
 	assert.Equal(t, 200, w.StatusCode)
-	assert.Equal(t, "filename=\"my-artifact.tgz", w.Header().Get("Content-Disposition"))
+	assert.Equal(t, "filename=\"my-artifact.tgz\"", w.Header().Get("Content-Disposition"))
 	assert.Equal(t, "my-data", w.Output)
 }
 

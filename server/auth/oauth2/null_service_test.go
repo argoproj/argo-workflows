@@ -13,7 +13,7 @@ import (
 
 func Test_nullService_Authorize(t *testing.T) {
 	user, err := NullService.Authorize(context.Background(), "")
-	if assert.NoError(t, err) {
+	if assert.Error(t, err) {
 		assert.Equal(t, wfv1.NullUser, user)
 	}
 }
