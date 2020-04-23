@@ -163,6 +163,8 @@ Workflow is the definition of a workflow resource
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
 
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
+
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
 - [`resource-flags.yaml`](../examples/resource-flags.yaml)
@@ -427,6 +429,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
@@ -712,6 +716,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
 
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
+
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
 - [`resource-flags.yaml`](../examples/resource-flags.yaml)
@@ -962,6 +968,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
 
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
+
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
 - [`resource-flags.yaml`](../examples/resource-flags.yaml)
@@ -1131,6 +1139,8 @@ Arguments to a template
 - [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
@@ -1371,6 +1381,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
@@ -1741,6 +1753,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
 
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
+
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
 - [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
@@ -1986,6 +2000,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
 
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
+
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
 - [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
@@ -2169,6 +2185,8 @@ Pod metdata
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
 
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
+
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
 - [`resource-flags.yaml`](../examples/resource-flags.yaml)
@@ -2332,6 +2350,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
 
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
+
 - [`retry-script.yaml`](../examples/retry-script.yaml)
 
 - [`scripts-bash.yaml`](../examples/scripts-bash.yaml)
@@ -2434,6 +2454,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`pod-gc-strategy.yaml`](../examples/pod-gc-strategy.yaml)
 
 - [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
+
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
@@ -3279,6 +3301,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
 
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
+
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
 - [`resource-flags.yaml`](../examples/resource-flags.yaml)
@@ -4103,6 +4127,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devicesand 
 - [`pod-spec-patch.yaml`](../examples/pod-spec-patch.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`recursive-for-loop.yaml`](../examples/recursive-for-loop.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
 
