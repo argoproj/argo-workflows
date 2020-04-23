@@ -61,6 +61,7 @@ commands:
           # Copy kubeconfig file, and add a fake user for "argo --token xxx" testing
           command: |
             mkdir -p ~/.kube
+            until stat /etc/rancher/k3s/k3s.yaml ; do sleep 10s ; done
             cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
             echo "- name: fake_token_user" >> ~/.kube/config
             echo "  user:" >> ~/.kube/config

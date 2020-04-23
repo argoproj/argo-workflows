@@ -163,7 +163,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	defer wfc.wfQueue.ShutDown()
 	defer wfc.podQueue.ShutDown()
 
-	log.WithField("version", argo.GetVersion()).Info("Starting Workflow Controller")
+	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Controller")
 	log.Infof("Workers: workflow: %d, pod: %d", wfWorkers, podWorkers)
 
 	wfc.incompleteWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.incompleteWorkflowTweakListOptions)
