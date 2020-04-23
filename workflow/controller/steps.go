@@ -336,7 +336,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 	newStepGroup := make([]wfv1.WorkflowStep, len(stepGroup))
 
 	// Step 0: replace all parameter scope references for volumes
-	err := woc.substituteParamsInVolumes(scope.replaceMap())
+	err := woc.substituteParamsInVolumes(scope.getParameters())
 	if err != nil {
 		return nil, err
 	}
@@ -350,7 +350,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 		}
 		fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
 
-		newStepStr, err := common.Replace(fstTmpl, woc.globalParams.Merge(scope.replaceMap()), true)
+		newStepStr, err := common.Replace(fstTmpl, woc.globalParams.Merge(scope.getParameters()), true)
 		if err != nil {
 			return nil, err
 		}

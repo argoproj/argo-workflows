@@ -14,16 +14,16 @@ type wfScope struct {
 	scope map[string]interface{}
 }
 
-// replaceMap returns a replacement map of strings intended to be used simple string substitution
-func (s *wfScope) replaceMap() common.Parameters {
-	replaceMap := make(common.Parameters)
+// getParameters returns a map of strings intended to be used simple string substitution
+func (s *wfScope) getParameters() common.Parameters {
+	params := make(common.Parameters)
 	for key, val := range s.scope {
 		valStr, ok := val.(string)
 		if ok {
-			replaceMap[key] = valStr
+			params[key] = valStr
 		}
 	}
-	return replaceMap
+	return params
 }
 
 func (s *wfScope) addParamToScope(key, val string) {

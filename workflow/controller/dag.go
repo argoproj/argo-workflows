@@ -532,7 +532,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 
 	// Perform replacement
 	// Replace woc.volumes
-	err = woc.substituteParamsInVolumes(scope.replaceMap())
+	err = woc.substituteParamsInVolumes(scope.getParameters())
 	if err != nil {
 		return nil, err
 	}
@@ -544,7 +544,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 	}
 	fstTmpl := fasttemplate.New(string(taskBytes), "{{", "}}")
 
-	newTaskStr, err := common.Replace(fstTmpl, woc.globalParams.Merge(scope.replaceMap()), true)
+	newTaskStr, err := common.Replace(fstTmpl, woc.globalParams.Merge(scope.getParameters()), true)
 	if err != nil {
 		return nil, err
 	}
