@@ -53,7 +53,7 @@ type argoServer struct {
 	namespace        string
 	managedNamespace string
 	kubeClientset    *kubernetes.Clientset
-	authenticator    *auth.Gatekeeper
+	authenticator    auth.Gatekeeper
 	oAuth2Service    oauth2.Service
 	configController config.Controller
 	stopCh           chan struct{}

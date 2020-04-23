@@ -27,7 +27,13 @@ const (
 	UserKey ContextKey = "v1alpha1.User"
 )
 
-type Gatekeeper struct {
+type Gatekeeper interface {
+	Context(ctx context.Context) (context.Context, error)
+	UnaryServerInterceptor() grpc.UnaryServerInterceptor
+	StreamServerInterceptor() grpc.StreamServerInterceptor
+}
+
+type gatekeeper struct {
 	Modes Modes
 	// global clients, not to be used if there are better ones
 	wfClient      versioned.Interface
@@ -36,14 +42,14 @@ type Gatekeeper struct {
 	oauth2Service oauth2.Service
 }
 
-func NewGatekeeper(modes Modes, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, oauth2Service oauth2.Service) (*Gatekeeper, error) {
+func NewGatekeeper(modes Modes, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, oauth2Service oauth2.Service) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
-	return &Gatekeeper{modes, wfClient, kubeClient, restConfig, oauth2Service}, nil
+	return &gatekeeper{modes, wfClient, kubeClient, restConfig, oauth2Service}, nil
 }
 
-func (s *Gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
+func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		ctx, err = s.Context(ctx)
 		if err != nil {
@@ -53,7 +59,7 @@ func (s *Gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	}
 }
 
-func (s *Gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
+func (s *gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		ctx, err := s.Context(ss.Context())
 		if err != nil {
@@ -65,7 +71,7 @@ func (s *Gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	}
 }
 
-func (s *Gatekeeper) Context(ctx context.Context) (context.Context, error) {
+func (s *gatekeeper) Context(ctx context.Context) (context.Context, error) {
 	wfClient, kubeClient, user, err := s.getClients(ctx)
 	if err != nil {
 		return nil, err
@@ -103,7 +109,7 @@ func getAuthHeader(md metadata.MD) string {
 	return ""
 }
 
-func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, wfv1.User, error) {
+func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, wfv1.User, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorization := getAuthHeader(md)
 	if s.Modes[SSO] && s.oauth2Service.IsSSO(authorization) {

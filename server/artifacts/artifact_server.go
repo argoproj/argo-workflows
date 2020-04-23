@@ -22,12 +22,12 @@ import (
 )
 
 type ArtifactServer struct {
-	gatekeeper            *auth.Gatekeeper
+	gatekeeper            auth.Gatekeeper
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wfArchive             sqldb.WorkflowArchive
 }
 
-func NewArtifactServer(gatekeeper *auth.Gatekeeper, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *ArtifactServer {
+func NewArtifactServer(gatekeeper auth.Gatekeeper, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *ArtifactServer {
 	return &ArtifactServer{gatekeeper, offloadNodeStatusRepo, wfArchive}
 }
 
@@ -93,6 +93,7 @@ func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
 	a.ok(w, data)
 }
+
 func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
 	token := r.Header.Get("Authorization")
 	if token == "" {

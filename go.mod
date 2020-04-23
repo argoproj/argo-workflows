@@ -29,7 +29,7 @@ require (
 	github.com/go-openapi/swag v0.19.8 // indirect
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/gogo/protobuf v1.3.1
-	github.com/golang/protobuf v1.3.5
+	github.com/golang/protobuf v1.4.0
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/googleapis/gnostic v0.3.1 // indirect
 	github.com/gophercloud/gophercloud v0.7.0 // indirect
@@ -79,11 +79,12 @@ require (
 	github.com/yudai/gojsondiff v0.0.0-20170107030110-7b1b7adf999d // indirect
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
-	golang.org/x/crypto v0.0.0-20200311171314-f7b00557c8c4
-	golang.org/x/net v0.0.0-20200301022130-244492dfa37a
+	golang.org/x/crypto v0.0.0-20200422194213-44a606286825
+	golang.org/x/net v0.0.0-20200421231249-e086a090c8fd
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/tools v0.0.0-20200414205525-6a72e3782ce5 // indirect
 	google.golang.org/api v0.20.0
+	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/genproto v0.0.0-20200317114155-1f3552e48f24
 	google.golang.org/grpc v1.28.0
 	gopkg.in/gavv/httpexpect.v2 v2.0.0
