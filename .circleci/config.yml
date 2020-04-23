@@ -173,7 +173,7 @@ jobs:
       - run: docker build .
   ui:
     docker:
-      - image: node:11.15.0
+      - image: node:14.0.0
     working_directory: ~/argo/ui
     steps:
       - checkout:
