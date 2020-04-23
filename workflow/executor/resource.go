@@ -310,8 +310,8 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 		out, err := cmd.Output()
 		if err != nil {
 			// We have a default value to use instead of returning an error
-			if param.ValueFrom.Default != "" {
-				out = []byte(param.ValueFrom.Default)
+			if param.ValueFrom.Default != nil {
+				out = []byte(*param.ValueFrom.Default)
 			} else {
 				if exErr, ok := err.(*exec.ExitError); ok {
 					log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
