@@ -604,3 +604,49 @@ func TestDagAssessPhaseContinueOnExpandedTask(t *testing.T) {
 	woc.operate()
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
+
+var dagWithParamAndGlobalParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-with-param-and-global-param-
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: workspace
+      value: /argo_workspace/{{workflow.uid}}
+  templates:
+  - name: main
+    dag:
+      tasks:
+      - name: use-with-param
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "hello {{workflow.parameters.workspace}} {{item}}"
+        withParam: "[0, 1, 2]"
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+`
+
+func TestDAGWithParamAndGlobalParam(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := unmarshalWF(dagWithParamAndGlobalParam)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+}
