@@ -175,9 +175,12 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
 	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
 	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
-	log.Infof("Argo Server started successfully on address %s", address)
-
-	browserOpenFunc("http://localhost" + address)
+	url := "http://localhost" + address
+	if as.tlsConfig != nil {
+		url = "https://localhost" + address
+	}
+	log.Infof("Argo Server started successfully on address %s", url)
+	browserOpenFunc(url)
 
 	<-as.stopCh
 }
