@@ -463,12 +463,30 @@ func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, repo sqldb.Offload
 					if len(message) > 0 {
 						node.Message = message
 					}
-					wf.Status.Nodes[nodeID] = node
+					nodes[nodeID] = node
 					nodeUpdated = true
 				}
 			}
 		}
 		if nodeUpdated {
+			if wf.Status.IsOffloadNodeStatus() {
+				if !repo.IsEnabled() {
+					return false, fmt.Errorf(sqldb.OffloadNodeStatusDisabled)
+				}
+				offloadVersion, err := repo.Save(string(wf.UID), wf.Namespace, nodes)
+				if err != nil {
+					return false, fmt.Errorf("unable to save offloaded nodes: %s", err)
+				}
+				wf.Status.OffloadNodeStatusVersion = offloadVersion
+				wf.Status.CompressedNodes = ""
+				wf.Status.Nodes = nil
+			}
+
+			err = packer.CompressWorkflowIfNeeded(wf)
+			if err != nil {
+				return true, fmt.Errorf("unable to compress workflow: %s", err)
+			}
+
 			_, err = wfIf.Update(wf)
 			if err != nil {
 				if apierr.IsConflict(err) {
