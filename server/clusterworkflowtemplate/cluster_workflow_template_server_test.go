@@ -7,6 +7,7 @@ import (
 
 	clusterwftmplpkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/util/instanceid"
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes/fake"
@@ -60,7 +61,10 @@ const cwftStr2 = `{
   "apiVersion": "argoproj.io/v1alpha1",
   "kind": "ClusterWorkflowTemplate",
   "metadata": {
-    "name": "cluster-workflow-template-whalesay-template2"
+    "name": "cluster-workflow-template-whalesay-template2",
+    "labels": {
+		"workflows.argoproj.io/controller-instanceid": "my-instanceid"
+	}
   },
   "spec": {
 	"arguments": {
@@ -100,7 +104,10 @@ const cwftStr3 = `{
   "apiVersion": "argoproj.io/v1alpha1",
   "kind": "ClusterWorkflowTemplate",
   "metadata": {
-    "name": "cluster-workflow-template-whalesay-template3"
+    "name": "cluster-workflow-template-whalesay-template3",
+      "labels": {
+		"workflows.argoproj.io/controller-instanceid": "my-instanceid"
+	  }
   },
   "spec": {
 	"arguments": {
@@ -148,7 +155,7 @@ func getClusterWorkflowTemplateServer() (clusterwftmplpkg.ClusterWorkflowTemplat
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := wftFake.NewSimpleClientset(&cwftObj1, &cwftObj2)
 	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet)
-	return NewClusterWorkflowTemplateServer(""), ctx
+	return NewClusterWorkflowTemplateServer(instanceid.NewService("my-instanceid")), ctx
 }
 
 func TestWorkflowTemplateServer_CreateClusterWorkflowTemplate(t *testing.T) {

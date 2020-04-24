@@ -24,16 +24,13 @@ import (
 )
 
 type workflowServer struct {
-	instanceID            string
+	instanceIDService     instanceid.Service
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 }
 
 // NewWorkflowServer returns a new workflowServer
-func NewWorkflowServer(instanceID string, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) workflowpkg.WorkflowServiceServer {
-	return &workflowServer{
-		instanceID:            instanceID,
-		offloadNodeStatusRepo: offloadNodeStatusRepo,
-	}
+func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) workflowpkg.WorkflowServiceServer {
+	return &workflowServer{instanceIDService, offloadNodeStatusRepo}
 }
 
 func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.WorkflowCreateRequest) (*v1alpha1.Workflow, error) {
@@ -47,7 +44,7 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 		req.Workflow.Namespace = req.Namespace
 	}
 
-	instanceid.Label(req.Workflow, s.instanceID)
+	s.instanceIDService.Label(req.Workflow)
 
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
@@ -107,12 +104,12 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*v1alpha1.WorkflowList, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	var listOption = metav1.ListOptions{}
+	var listOption = &metav1.ListOptions{}
 	if req.ListOptions != nil {
-		listOption = *req.ListOptions
+		listOption = req.ListOptions
 	}
-
-	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).List(instanceid.With(listOption, s.instanceID))
+	s.instanceIDService.With(listOption)
+	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).List(*listOption)
 	if err != nil {
 		return nil, err
 	}
@@ -137,11 +134,12 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 
 func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, ws workflowpkg.WorkflowService_WatchWorkflowsServer) error {
 	wfClient := auth.GetWfClient(ws.Context())
-	opts := metav1.ListOptions{}
+	opts := &metav1.ListOptions{}
 	if req.ListOptions != nil {
-		opts = *req.ListOptions
+		opts = req.ListOptions
 	}
-	watch, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Watch(instanceid.With(opts, s.instanceID))
+	s.instanceIDService.With(opts)
+	watch, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Watch(*opts)
 	if err != nil {
 		return err
 	}
@@ -321,7 +319,7 @@ func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.Work
 	wfClient := auth.GetWfClient(ctx)
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
-	instanceid.Label(req.Workflow, s.instanceID)
+	s.instanceIDService.Label(req.Workflow)
 
 	_, err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, req.Workflow, validate.ValidateOpts{Lint: true})
 
@@ -349,7 +347,7 @@ func (s *workflowServer) getWorkflowAndValidate(ctx context.Context, namespace s
 	if err != nil {
 		return nil, err
 	}
-	err = instanceid.Validate(wf, s.instanceID)
+	err = s.instanceIDService.Validate(wf)
 	if err != nil {
 		return nil, err
 	}
@@ -384,7 +382,7 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 
 	}
 
-	instanceid.Label(wf, s.instanceID)
+	s.instanceIDService.Label(wf)
 	err := util.ApplySubmitOpts(wf, req.SubmitOptions)
 	if err != nil {
 		return nil, err

@@ -11,6 +11,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wftFake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/util/instanceid"
 )
 
 func Test_cronWorkflowServiceServer(t *testing.T) {
@@ -43,7 +44,7 @@ spec:
 		panic(err)
 	}
 	wfClientset := wftFake.NewSimpleClientset()
-	server := NewCronWorkflowServer("testinstanceid001")
+	server := NewCronWorkflowServer(instanceid.NewService("my-instanceid"))
 	ctx := context.WithValue(context.TODO(), auth.WfKey, wfClientset)
 
 	t.Run("CreateCronWorkflow", func(t *testing.T) {

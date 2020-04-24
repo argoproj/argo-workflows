@@ -15,19 +15,19 @@ import (
 )
 
 type cronWorkflowServiceServer struct {
-	instanceID string
+	instanceIDService instanceid.Service
 }
 
 // NewCronWorkflowServer returns a new cronWorkflowServiceServer
-func NewCronWorkflowServer(instanceID string) cronworkflowpkg.CronWorkflowServiceServer {
-	return &cronWorkflowServiceServer{instanceID: instanceID}
+func NewCronWorkflowServer(instanceIDService instanceid.Service) cronworkflowpkg.CronWorkflowServiceServer {
+	return &cronWorkflowServiceServer{instanceIDService}
 }
 
 func (c *cronWorkflowServiceServer) LintCronWorkflow(ctx context.Context, req *cronworkflowpkg.LintCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
-	instanceid.Label(req.CronWorkflow, c.instanceID)
+	c.instanceIDService.Label(req.CronWorkflow)
 	err := validate.ValidateCronWorkflow(wftmplGetter, cwftmplGetter, req.CronWorkflow)
 	if err != nil {
 		return nil, err
@@ -36,11 +36,12 @@ func (c *cronWorkflowServiceServer) LintCronWorkflow(ctx context.Context, req *c
 }
 
 func (c *cronWorkflowServiceServer) ListCronWorkflows(ctx context.Context, req *cronworkflowpkg.ListCronWorkflowsRequest) (*v1alpha1.CronWorkflowList, error) {
-	options := metav1.ListOptions{}
+	options := &metav1.ListOptions{}
 	if req.ListOptions != nil {
-		options = *req.ListOptions
+		options = req.ListOptions
 	}
-	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).List(instanceid.With(options, c.instanceID))
+	c.instanceIDService.With(options)
+	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).List(*options)
 }
 
 func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req *cronworkflowpkg.CreateCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
@@ -48,7 +49,7 @@ func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req 
 	if req.CronWorkflow == nil {
 		return nil, fmt.Errorf("cron workflow was not found in the request body")
 	}
-	instanceid.Label(req.CronWorkflow, c.instanceID)
+	c.instanceIDService.Label(req.CronWorkflow)
 
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
@@ -95,7 +96,7 @@ func (c *cronWorkflowServiceServer) getCronWorkflowAndValidate(ctx context.Conte
 	if err != nil {
 		return nil, err
 	}
-	err = instanceid.Validate(cronWf, c.instanceID)
+	err = c.instanceIDService.Validate(cronWf)
 	if err != nil {
 		return nil, err
 	}

@@ -26,11 +26,11 @@ type ArtifactServer struct {
 	authN                 auth.Gatekeeper
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wfArchive             sqldb.WorkflowArchive
-	instanceID            string
+	instanceIDService     instanceid.Service
 }
 
-func NewArtifactServer(authN auth.Gatekeeper, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, instanceID string) *ArtifactServer {
-	return &ArtifactServer{authN, offloadNodeStatusRepo, wfArchive, instanceID}
+func NewArtifactServer(authN auth.Gatekeeper, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service) *ArtifactServer {
+	return &ArtifactServer{authN, offloadNodeStatusRepo, wfArchive, instanceIDService}
 }
 
 func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
@@ -166,7 +166,7 @@ func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace s
 	if err != nil {
 		return nil, err
 	}
-	err = instanceid.Validate(wf, a.instanceID)
+	err = a.instanceIDService.Validate(wf)
 	if err != nil {
 		return nil, err
 	}

@@ -7,6 +7,7 @@ import (
 
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/util/instanceid"
 
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes/fake"
@@ -21,7 +22,10 @@ const wftStr1 = `{
     "apiVersion": "argoproj.io/v1alpha1",
     "kind": "WorkflowTemplate",
     "metadata": {
-      "name": "workflow-template-whalesay-template"
+      "name": "workflow-template-whalesay-template",
+      "labels": {
+		"workflows.argoproj.io/controller-instanceid": "my-instanceid"
+	  }
     },
     "spec": {
       "arguments": {
@@ -62,7 +66,10 @@ const wftStr2 = `{
   "kind": "WorkflowTemplate",
   "metadata": {
     "name": "workflow-template-whalesay-template2",
-    "namespace": "default"
+    "namespace": "default",
+	"labels": {
+		"workflows.argoproj.io/controller-instanceid": "my-instanceid"
+  	}
   },
   "spec": {
 	"arguments": {
@@ -103,7 +110,10 @@ const wftStr3 = `{
   "kind": "WorkflowTemplate",
   "metadata": {
     "name": "workflow-template-whalesay-template3",
-	"namespace": "default"
+	"namespace": "default",
+	"labels": {
+		"workflows.argoproj.io/controller-instanceid": "my-instanceid"
+  	}
   },
   "spec": {
 	"arguments": {
@@ -151,7 +161,7 @@ func getWorkflowTemplateServer() (workflowtemplatepkg.WorkflowTemplateServiceSer
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := wftFake.NewSimpleClientset(&wftObj1, &wftObj2)
 	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet)
-	return NewWorkflowTemplateServer(""), ctx
+	return NewWorkflowTemplateServer(instanceid.NewService("my-instanceid")), ctx
 }
 
 func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {

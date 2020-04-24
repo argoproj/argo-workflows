@@ -12,6 +12,7 @@ import (
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo/util/instanceid"
 )
 
 type Client interface {
@@ -46,6 +47,6 @@ func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 	if opts.ArgoServerOpts.URL != "" {
 		return newArgoServerClient(opts.ArgoServerOpts, opts.AuthSupplier())
 	} else {
-		return newArgoKubeClient(opts.ClientConfig, opts.InstanceID)
+		return newArgoKubeClient(opts.ClientConfig, instanceid.NewService(opts.InstanceID))
 	}
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	v1alpha "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/util/instanceid"
 )
 
 const wf1 = `
@@ -30,7 +31,7 @@ const wf1 = `
         "generateName": "hello-world-",
         "generation": 5,
         "labels": {
-            "workflows.argoproj.io/controller-instanceid": "testinstanceid001",
+            "workflows.argoproj.io/controller-instanceid": "my-instanceid",
             "workflows.argoproj.io/completed": "true",
             "workflows.argoproj.io/phase": "Succeeded"
         },
@@ -92,7 +93,7 @@ const wf2 = `
         "generateName": "hello-world-",
         "generation": 5,
         "labels": {
-            "workflows.argoproj.io/controller-instanceid": "testinstanceid001",
+            "workflows.argoproj.io/controller-instanceid": "my-instanceid",
             "workflows.argoproj.io/completed": "true",
             "workflows.argoproj.io/phase": "Succeeded"
         },
@@ -154,7 +155,7 @@ const wf3 = `
         "generateName": "hello-world-",
         "generation": 5,
         "labels": {
-            "workflows.argoproj.io/controller-instanceid": "testinstanceid001",
+            "workflows.argoproj.io/controller-instanceid": "my-instanceid",
             "workflows.argoproj.io/completed": "true",
             "workflows.argoproj.io/phase": "Succeeded"
         },
@@ -216,7 +217,7 @@ const wf4 = `
         "generateName": "hello-world-",
         "generation": 5,
         "labels": {
-            "workflows.argoproj.io/controller-instanceid": "testinstanceid001",
+            "workflows.argoproj.io/controller-instanceid": "my-instanceid",
             "workflows.argoproj.io/completed": "true",
             "workflows.argoproj.io/phase": "Succeeded"
         },
@@ -278,7 +279,7 @@ const wf5 = `
         "generateName": "hello-world-",
         "generation": 5,
         "labels": {
-            "workflows.argoproj.io/controller-instanceid": "testinstanceid001",
+            "workflows.argoproj.io/controller-instanceid": "my-instanceid",
             "workflows.argoproj.io/completed": "false",
             "workflows.argoproj.io/phase": "Running"
         },
@@ -340,7 +341,7 @@ const workflow1 = `
     "metadata": {
 	  "generateName": "hello-world-",
 	  "labels": {
-        "workflows.argoproj.io/controller-instanceid": "testinstanceid001"
+        "workflows.argoproj.io/controller-instanceid": "my-instanceid"
 	  }
     },
     "spec": {
@@ -485,8 +486,6 @@ const clusterworkflowtmpl = `
 }
 `
 
-const testInstanceID = "testinstanceid001"
-
 func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 
 	var wfObj1, wfObj2, wfObj3, wfObj4, wfObj5 v1alpha1.Workflow
@@ -506,7 +505,7 @@ func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
 	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
 	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.UUIDVersion]v1alpha1.Nodes{}, nil)
-	server := NewWorkflowServer(testInstanceID, offloadNodeStatusRepo)
+	server := NewWorkflowServer(instanceid.NewService("my-instanceid"), offloadNodeStatusRepo)
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := v1alpha.NewSimpleClientset(&wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &wftmpl, &cronwfObj, &cwfTmpl)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
