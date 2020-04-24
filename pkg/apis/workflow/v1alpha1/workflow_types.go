@@ -1656,6 +1656,9 @@ func (out *Outputs) HasOutputs() bool {
 }
 
 func (out *Outputs) GetArtifactByName(name string) *Artifact {
+	if out == nil {
+		return nil
+	}
 	return out.Artifacts.GetArtifactByName(name)
 }
 
