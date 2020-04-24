@@ -773,8 +773,8 @@ func TestPodLogs(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 	go func() {
 		err := server.PodLogs(&workflowpkg.WorkflowLogRequest{
-			Name:      "hello-world-9tql2",
-			Namespace: "workflows",
+			Name:       "hello-world-9tql2",
+			Namespace:  "workflows",
 			LogOptions: &corev1.PodLogOptions{},
 		}, &testPodLogsServer{testServerStream{ctx}})
 		assert.NoError(t, err)

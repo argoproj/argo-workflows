@@ -781,36 +781,37 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 
 	// use the watch to make sure that the workflow has succeeded
 	s.Run("Watch", func() {
+		t := s.T()
 		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflow-events/argo?listOptions.fieldSelector=metadata.name=basic", nil)
-		assert.NoError(s.T(), err)
+		assert.NoError(t, err)
 		req.Header.Set("Accept", "text/event-stream")
 		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
 		req.Close = true
 		resp, err := httpClient.Do(req)
-		assert.NoError(s.T(), err)
-		assert.NotNil(s.T(), resp)
 		defer func() {
-			if resp != nil {
+			if resp != nil && resp.Body != nil {
 				_ = resp.Body.Close()
 			}
 		}()
-		if assert.Equal(s.T(), 200, resp.StatusCode) {
-			assert.Equal(s.T(), resp.Header.Get("Content-Type"), "text/event-stream")
-			scanner := bufio.NewScanner(resp.Body)
-			for scanner.Scan() {
-				line := scanner.Text()
-				log.WithField("line", line).Debug()
-				// make sure we have this enabled
-				if line == "" {
-					continue
-				}
-				if strings.Contains(line, `status:`) {
-					assert.Contains(s.T(), line, `"offloadNodeStatus":true`)
-					// so that we get this
-					assert.Contains(s.T(), line, `"nodes":`)
-				}
-				if strings.Contains(line, "Succeeded") {
-					break
+		if assert.NoError(t, err) && assert.NotNil(t, resp) {
+			if assert.Equal(t, 200, resp.StatusCode) {
+				assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
+				scanner := bufio.NewScanner(resp.Body)
+				for scanner.Scan() {
+					line := scanner.Text()
+					log.WithField("line", line).Debug()
+					// make sure we have this enabled
+					if line == "" {
+						continue
+					}
+					if strings.Contains(line, `status:`) {
+						assert.Contains(t, line, `"offloadNodeStatus":true`)
+						// so that we get this
+						assert.Contains(t, line, `"nodes":`)
+					}
+					if strings.Contains(line, "Succeeded") {
+						break
+					}
 				}
 			}
 		}
@@ -818,16 +819,21 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 
 	// then,  lets check the logs
 	s.Run("PodLogs", func() {
+		t := s.T()
 		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflows/argo/basic/basic/log?logOptions.container=main&logOptions.tailLines=3", nil)
-		assert.NoError(s.T(), err)
+		assert.NoError(t, err)
 		req.Header.Set("Accept", "text/event-stream")
 		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
 		req.Close = true
 		resp, err := httpClient.Do(req)
-		if assert.NoError(s.T(), err) {
-			defer func() { _ = resp.Body.Close() }()
-			if assert.Equal(s.T(), 200, resp.StatusCode) {
-				assert.Equal(s.T(), resp.Header.Get("Content-Type"), "text/event-stream")
+		defer func() {
+			if resp != nil && resp.Body != nil {
+				_ = resp.Body.Close()
+			}
+		}()
+		if assert.NoError(t, err) && assert.NotNil(t, resp) {
+			if assert.Equal(t, 200, resp.StatusCode) {
+				assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
 				s := bufio.NewScanner(resp.Body)
 				for s.Scan() {
 					line := s.Text()
