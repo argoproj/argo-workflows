@@ -36,6 +36,7 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Gladly](https://gladly.com/)
 1. [Google](https://www.google.com/intl/en/about/our-company/)
 1. [Greenhouse](https://greenhouse.io)
+1. [Habx](https://www.habx.com/)
 1. [HOVER](https://hover.to)
 1. [IBM](https://ibm.com)
 1. [InsideBoard](https://www.insideboard.com)
@@ -65,4 +66,3 @@ Currently, the following organizations are **officially** using Argo Workflows:
 1. [Threekit](https://www.threekit.com/)
 1. [Tiger Analytics](https://www.tigeranalytics.com/)
 1. [Wavefront](https://www.wavefront.com/)
-1. [Habx](https://www.habx.com/)
