@@ -28,8 +28,23 @@ func (l *TTL) UnmarshalJSON(b []byte) error {
 			return nil
 		}
 		if strings.HasSuffix(value, "d") {
-			hours, err := strconv.Atoi(strings.TrimSuffix(value, "d"))
-			*l = TTL(time.Duration(hours) * 24 * time.Hour)
+			days, err := strconv.Atoi(strings.TrimSuffix(value, "d"))
+			*l = TTL(time.Duration(days) * 24 * time.Hour)
+			return err
+		}
+		if strings.HasSuffix(value, "h") {
+			hours, err := strconv.Atoi(strings.TrimSuffix(value, "h"))
+			*l = TTL(time.Duration(hours) * time.Hour)
+			return err
+		}
+		if strings.HasSuffix(value, "m") {
+			minutes, err := strconv.Atoi(strings.TrimSuffix(value, "m"))
+			*l = TTL(time.Duration(minutes) * time.Minute)
+			return err
+		}
+		if strings.HasSuffix(value, "s") {
+			seconds, err := strconv.Atoi(strings.TrimSuffix(value, "s"))
+			*l = TTL(time.Duration(seconds) * time.Second)
 			return err
 		}
 		d, err := time.ParseDuration(value)

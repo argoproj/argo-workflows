@@ -45,7 +45,7 @@ func (_m *WorkflowArchive) DeleteWorkflow(uid string) error {
 }
 
 // DeleteWorkflows provides a mock function with given fields: ttl
-func (_m *WorkflowArchive) DeleteWorkflows(ttl time.Duration) error {
+func (_m *WorkflowArchive) DeleteExpiredWorkflows(ttl time.Duration) error {
 	ret := _m.Called(ttl)
 
 	var r0 error

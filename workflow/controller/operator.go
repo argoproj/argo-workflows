@@ -2493,7 +2493,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 				continue
 			}
 			updatedMetric := metrics.ConstructRealTimeGaugeMetric(metricTmpl, valueFunc)
-			woc.controller.Metrics[metricTmpl.GetDesc()] = updatedMetric
+			woc.controller.Metrics[metricTmpl.GetDesc()] = common.Metric{Metric: updatedMetric, LastUpdated: time.Now()}
 			continue
 		} else {
 			metricSpec := metricTmpl.DeepCopy()
@@ -2507,14 +2507,14 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			}
 			metricSpec.SetValueString(replacedValue)
 
-			metric := woc.controller.Metrics[metricSpec.GetDesc()]
+			metric := woc.controller.Metrics[metricSpec.GetDesc()].Metric
 			// It is valid to pass a nil metric to ConstructOrUpdateMetric, in that case the metric will be created for us
 			updatedMetric, err := metrics.ConstructOrUpdateMetric(metric, metricSpec)
 			if err != nil {
 				woc.reportMetricEmissionError(fmt.Sprintf("could not compute metric '%s': %s", metricSpec.Name, err))
 				continue
 			}
-			woc.controller.Metrics[metricSpec.GetDesc()] = updatedMetric
+			woc.controller.Metrics[metricSpec.GetDesc()] = common.Metric{Metric: updatedMetric, LastUpdated: time.Now()}
 			continue
 		}
 	}

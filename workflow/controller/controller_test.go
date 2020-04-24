@@ -5,7 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/argoproj/argo/workflow/common"
+
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -125,7 +126,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		wfQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		wfArchive:       sqldb.NullWorkflowArchive,
-		Metrics:         make(map[string]prometheus.Metric),
+		Metrics:         make(map[string]common.Metric),
 	}
 	return cancel, controller
 }
