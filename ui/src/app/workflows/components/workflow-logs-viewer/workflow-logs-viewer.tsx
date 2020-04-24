@@ -16,7 +16,6 @@ interface WorkflowLogsViewerProps {
 interface WorkflowLogsViewerState {
     error?: Error;
     lines: string[];
-    height?: number;
 }
 
 export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps, WorkflowLogsViewerState> {
@@ -44,7 +43,6 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
     }
 
     public render() {
-        const {height} = this.state;
         return (
             <div className='workflow-logs-viewer'>
                 <h3>Logs</h3>
