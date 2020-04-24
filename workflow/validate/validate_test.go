@@ -2292,3 +2292,49 @@ func TestStepWithItemParam(t *testing.T) {
 	_, err := validate(stepWithItemParam)
 	assert.NoError(t, err)
 }
+
+var globalVariables = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: global-variables-
+spec:
+  priority: 100
+  entrypoint: test-workflow
+
+  templates:
+  - name: test-workflow
+    steps:
+    - - name: step1
+        template: whalesay
+        arguments:
+          parameters:
+          - name: name
+            value: "{{workflow.name}}"
+          - name: namespace
+            value: "{{workflow.namespace}}"
+          - name: serviceAccountName
+            value: "{{workflow.serviceAccountName}}"
+          - name: uid
+            value: "{{workflow.uid}}"
+          - name: priority
+            value: "{{workflow.priority}}"    
+
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: name
+      - name: namespace
+      - name: serviceAccountName
+      - name: uid
+      - name: priority
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["name: {{inputs.parameters.name}} namespace: {{inputs.parameters.namespace}} serviceAccountName: {{inputs.parameters.serviceAccountName}} uid: {{inputs.parameters.uid}} priority: {{inputs.parameters.priority}}"]
+`
+
+func TestWorfklowGlobalVariables(t *testing.T) {
+	_, err := validate(globalVariables)
+	assert.NoError(t, err)
+}
