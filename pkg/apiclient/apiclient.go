@@ -24,7 +24,7 @@ type Client interface {
 }
 
 type Opts struct {
-	ArgoServer   string
+	ArgoServerOpts ArgoServerOpts
 	InstanceID   string
 	AuthSupplier func() string
 	ClientConfig clientcmd.ClientConfig
@@ -33,9 +33,9 @@ type Opts struct {
 // DEPRECATED: use NewClientFromOpts
 func NewClient(argoServer string, authSupplier func() string, clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
 	return NewClientFromOpts(Opts{
-		ArgoServer:   argoServer,
-		AuthSupplier: authSupplier,
-		ClientConfig: clientConfig,
+		ArgoServerOpts: ArgoServerOpts{URL: argoServer},
+		AuthSupplier:   authSupplier,
+		ClientConfig:   clientConfig,
 	})
 }
 
@@ -43,8 +43,8 @@ func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 	if opts.ArgoServer != "" && opts.InstanceID != "" {
 		return nil, nil, fmt.Errorf("cannot use instance ID with Argo Server")
 	}
-	if opts.ArgoServer != "" {
-		return newArgoServerClient(opts.ArgoServer, opts.AuthSupplier())
+	if opts.ArgoServerOpts.URL != "" {
+		return newArgoServerClient(opts.ArgoServerOpts, opts.AuthSupplier())
 	} else {
 		return newArgoKubeClient(opts.ClientConfig, opts.InstanceID)
 	}
