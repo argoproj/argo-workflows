@@ -365,6 +365,7 @@ func (s *FunctionalSuite) TestParameterAggregation() {
 }
 
 func (s *FunctionalSuite) TestStopBehavior() {
+	s.T().SkipNow()
 	s.Given().
 		Workflow("@functional/stop-terminate.yaml").
 		When().
