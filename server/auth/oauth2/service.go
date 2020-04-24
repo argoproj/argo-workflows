@@ -18,7 +18,7 @@ import (
 
 // https://github.com/dexidp/dex/blob/master/Documentation/using-dex.md
 
-const Prefix = "id_token "
+const Prefix = "Bearer id_token:"
 
 type claims struct {
 	Groups []string `json:"groups"`

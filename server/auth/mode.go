@@ -36,6 +36,9 @@ func GetMode(authorisation string) (Mode, error) {
 	if authorisation == "" {
 		return Server, nil
 	}
+	if strings.HasPrefix(authorisation, oauth2.Prefix) {
+		return SSO, nil
+	}
 	if strings.HasPrefix(authorisation, "Bearer ") || strings.HasPrefix(authorisation, "Basic ") {
 		return Client, nil
 	}
