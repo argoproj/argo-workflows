@@ -112,13 +112,15 @@ func getAuthHeader(md metadata.MD) string {
 func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, wfv1.User, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorization := getAuthHeader(md)
-	if s.Modes[SSO] && s.oauth2Service.IsSSO(authorization) {
-		user, err := s.oauth2Service.Authorize(ctx, authorization)
-		if err != nil {
-			return nil, nil, wfv1.NullUser, status.Error(codes.Unauthenticated, err.Error())
-		}
-		return s.wfClient, s.kubeClient, user, nil
-	} else if s.Modes[Client] && authorization != "" {
+	mode, err := GetMode(authorization)
+	if err != nil {
+		return nil, nil, wfv1.NullUser, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if !s.Modes[mode] {
+		return nil, nil, wfv1.NullUser, status.Errorf(codes.Unauthenticated, "no valid authentication methods found for mode %v", mode)
+	}
+	switch mode {
+	case Client:
 		restConfig, err := kubeconfig.GetRestConfig(authorization)
 		if err != nil {
 			return nil, nil, wfv1.NullUser, status.Errorf(codes.Unauthenticated, "failed to create REST config: %v", err)
@@ -136,9 +138,15 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 			user = wfv1.User{Name: restConfig.Username}
 		}
 		return wfClient, kubeClient, user, nil
-	} else if s.Modes[Server] {
+	case Server:
 		return s.wfClient, s.kubeClient, wfv1.NullUser, nil
-	} else {
-		return nil, nil, wfv1.NullUser, status.Error(codes.Unauthenticated, "no valid authentication methods found")
+	case SSO:
+		user, err := s.oauth2Service.Authorize(ctx, authorization)
+		if err != nil {
+			return nil, nil, wfv1.NullUser, status.Error(codes.Unauthenticated, err.Error())
+		}
+		return s.wfClient, s.kubeClient, user, nil
+	default:
+		panic("this should never happen")
 	}
 }

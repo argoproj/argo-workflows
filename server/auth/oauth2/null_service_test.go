@@ -29,7 +29,3 @@ func Test_nullService_HandleRedirect(t *testing.T) {
 	NullService.HandleRedirect(w, &http.Request{})
 	assert.Equal(t, http.StatusNotImplemented, w.StatusCode)
 }
-
-func Test_nullService_IsSSO(t *testing.T) {
-	assert.False(t, NullService.IsSSO(""))
-}

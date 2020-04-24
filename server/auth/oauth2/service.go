@@ -18,14 +18,13 @@ import (
 
 // https://github.com/dexidp/dex/blob/master/Documentation/using-dex.md
 
-const prefix = "id_token "
+const Prefix = "id_token "
 
 type claims struct {
 	Groups []string `json:"groups"`
 }
 
 type Service interface {
-	IsSSO(authorization string) bool
 	Authorize(ctx context.Context, authorization string) (wfv1.User, error)
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
@@ -127,7 +126,7 @@ func (s *service) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to get compress token: %v", err)))
 		return
 	}
-	value := prefix + token
+	value := Prefix + token
 	log.Debugf("handing oauth2 callback %v", value)
 	// TODO MaxAge? Expires? HttpOnly?
 	// TODO we must compress this because we know id_token can be large if you have many groups
@@ -137,7 +136,7 @@ func (s *service) HandleCallback(w http.ResponseWriter, r *http.Request) {
 
 // authorize verifies a bearer token and pulls user information form the claims.
 func (s *service) Authorize(ctx context.Context, authorisation string) (wfv1.User, error) {
-	rawIDToken, err := zjwt.JWT(strings.TrimPrefix(authorisation, prefix))
+	rawIDToken, err := zjwt.JWT(strings.TrimPrefix(authorisation, Prefix))
 	if err != nil {
 		return wfv1.NullUser, fmt.Errorf("failed to decompress token %v", err)
 	}
@@ -150,8 +149,4 @@ func (s *service) Authorize(ctx context.Context, authorisation string) (wfv1.Use
 		return wfv1.NullUser, fmt.Errorf("failed to parse claims: %v", err)
 	}
 	return wfv1.User{Name: idToken.Subject, Groups: c.Groups}, nil
-}
-
-func (s *service) IsSSO(authorization string) bool {
-	return strings.HasPrefix(authorization, prefix)
 }

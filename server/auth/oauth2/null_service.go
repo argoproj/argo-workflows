@@ -13,10 +13,6 @@ var NullService Service = nullService{}
 type nullService struct {
 }
 
-func (n nullService) IsSSO(string) bool {
-	return false
-}
-
 func (n nullService) Authorize(context.Context, string) (wfv1.User, error) {
 	return wfv1.NullUser, fmt.Errorf("not implemented")
 }
