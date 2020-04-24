@@ -9,8 +9,8 @@ import (
 
 // legacyWorkflowCollector collects metrics about all workflows in the cluster
 type controllerCollector struct {
-	store util.WorkflowLister
-	gauges []prometheus.Metric
+	store                   util.WorkflowLister
+	gauges                  []prometheus.Metric
 	lastSyncResourceVersion string
 }
 
