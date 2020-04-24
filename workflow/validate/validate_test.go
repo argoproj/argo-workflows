@@ -2181,3 +2181,50 @@ func TestRuntimeResolutionOfVariableNames(t *testing.T) {
 	_, err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
 	assert.NoError(t, err)
 }
+
+var invalidMetricName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    metrics:
+      prometheus:
+        - name: invalid.metric.name
+          help: "invalid"
+          gauge:
+            value: 1
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestInvalidMetricName(t *testing.T) {
+	_, err := validate(invalidMetricName)
+	assert.EqualError(t, err, "templates.whalesay metric name 'invalid.metric.name' is invalid. Metric names must contain alphanumeric characters, '_', or ':'")
+}
+
+var invalidMetricHelp = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    metrics:
+      prometheus:
+        - name: metric_name
+          gauge:
+            value: 1
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestInvalidMetricHelp(t *testing.T) {
+	_, err := validate(invalidMetricHelp)
+	assert.EqualError(t, err, "templates.whalesay metric 'metric_name' must contain a help string under 'help: ' field")
+}

@@ -2391,6 +2391,15 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			continue
 		}
 
+		if !validate.MetricNameRegex.MatchString(metricTmpl.Name) {
+			woc.reportMetricEmissionError(fmt.Sprintf("metric name '%s' is invalid. Metric names must contain alphanumeric characters, '_', or ':'", metricTmpl.Name))
+			continue
+		}
+		if metricTmpl.Help == "" {
+			woc.reportMetricEmissionError(fmt.Sprintf("metric '%s' must contain a help string under 'help: ' field", metricTmpl.Name))
+			continue
+		}
+
 		// Substitute parameters in non-value fields of the template to support variables in places such as labels,
 		// name, and help. We do not substitute value fields here (i.e. gauge, histogram, counter) here because they
 		// might be realtime ({{workflow.duration}} will not be substituted the same way if it's realtime or if it isn't).
