@@ -37,7 +37,7 @@ func AddArgoServerFlagsToCmd(cmd *cobra.Command) {
 	// "-e" for encrypted - like zip
 	cmd.PersistentFlags().BoolVarP(&argoServerOpts.Secure, "secure", "e", os.Getenv("ARGO_SECURE") == "true", "Whether or not the server is using TLS with the Argo Server. Defaults to the ARGO_SECURE environment variable.")
 	// "-k" like curl
-	cmd.PersistentFlags().BoolVarP(&argoServerOpts.InsecureSkipVerify, "insecure-skip-verify", "k", os.Getenv("ARGO_INSECURE_SKIP_VERIFY") == "true", "If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_SECURE environment variable.")
+	cmd.PersistentFlags().BoolVarP(&argoServerOpts.InsecureSkipVerify, "insecure-skip-verify", "k", os.Getenv("ARGO_INSECURE_SKIP_VERIFY") == "true", "If true, the Argo Server's certificate will not be checked for validity. This will make your HTTPS connections insecure. Defaults to the ARGO_INSECURE_SKIP_VERIFY environment variable.")
 }
 
 func NewAPIClient() (context.Context, apiclient.Client) {
