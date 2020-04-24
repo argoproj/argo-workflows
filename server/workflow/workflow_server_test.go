@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes/fake"
@@ -332,6 +334,34 @@ const wf5 = `
     }
 }
 `
+
+const failedWf = `
+{
+    "apiVersion": "argoproj.io/v1alpha1",
+    "kind": "Workflow",
+    "metadata": {
+        "name": "failed",
+        "namespace": "workflows",
+        "labels": {
+            "workflows.argoproj.io/controller-instanceid": "my-instanceid"
+        }
+    },
+    "spec": {
+        "entrypoint": "whalesay",
+        "templates": [
+            {
+                "container": {
+                    "image": "docker/whalesay:latest"
+                },
+                "name": "whalesay"
+            }
+        ]
+    },
+    "status": {
+        "phase": "Failed"
+    }
+}
+`
 const workflow1 = `
 {
   "namespace": "default",
@@ -488,26 +518,27 @@ const clusterworkflowtmpl = `
 
 func getWorkflowServer() (workflowpkg.WorkflowServiceServer, context.Context) {
 
-	var wfObj1, wfObj2, wfObj3, wfObj4, wfObj5 v1alpha1.Workflow
+	var wfObj1, wfObj2, wfObj3, wfObj4, wfObj5, failedWfObj v1alpha1.Workflow
 	var wftmpl v1alpha1.WorkflowTemplate
 	var cwfTmpl v1alpha1.ClusterWorkflowTemplate
 	var cronwfObj v1alpha1.CronWorkflow
 
-	_ = json.Unmarshal([]byte(wf1), &wfObj1)
-	_ = json.Unmarshal([]byte(wf2), &wfObj2)
-	_ = json.Unmarshal([]byte(wf3), &wfObj3)
-	_ = json.Unmarshal([]byte(wf4), &wfObj4)
-	_ = json.Unmarshal([]byte(wf5), &wfObj5)
-	_ = json.Unmarshal([]byte(workflowtmpl), &wftmpl)
-	_ = json.Unmarshal([]byte(cronwf), &cronwfObj)
-	_ = json.Unmarshal([]byte(clusterworkflowtmpl), &cwfTmpl)
+	errors.CheckError(json.Unmarshal([]byte(wf1), &wfObj1))
+	errors.CheckError(json.Unmarshal([]byte(wf2), &wfObj2))
+	errors.CheckError(json.Unmarshal([]byte(wf3), &wfObj3))
+	errors.CheckError(json.Unmarshal([]byte(wf4), &wfObj4))
+	errors.CheckError(json.Unmarshal([]byte(wf5), &wfObj5))
+	errors.CheckError(json.Unmarshal([]byte(failedWf), &failedWfObj))
+	errors.CheckError(json.Unmarshal([]byte(workflowtmpl), &wftmpl))
+	errors.CheckError(json.Unmarshal([]byte(cronwf), &cronwfObj))
+	errors.CheckError(json.Unmarshal([]byte(clusterworkflowtmpl), &cwfTmpl))
 
 	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
 	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
 	offloadNodeStatusRepo.On("List", mock.Anything).Return(map[sqldb.UUIDVersion]v1alpha1.Nodes{}, nil)
 	server := NewWorkflowServer(instanceid.NewService("my-instanceid"), offloadNodeStatusRepo)
 	kubeClientSet := fake.NewSimpleClientset()
-	wfClientset := v1alpha.NewSimpleClientset(&wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &wftmpl, &cronwfObj, &cwfTmpl)
+	wfClientset := v1alpha.NewSimpleClientset(&wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5, &failedWfObj, &wftmpl, &cronwfObj, &cwfTmpl)
 	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
 	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet)
 	return server, ctx
@@ -551,17 +582,24 @@ func TestCreateWorkflow(t *testing.T) {
 
 }
 
-func TestGetWorkflowWithFound(t *testing.T) {
+type testWatchWorkflowServer struct {
+	testServerStream
+}
 
+func (t testWatchWorkflowServer) Send(*workflowpkg.WorkflowWatchEvent) error {
+	panic("implement me")
+}
+
+func TestWatchWorkflows(t *testing.T) {
 	server, ctx := getWorkflowServer()
-
-	wf, err := getWorkflow(ctx, server, "workflows", "hello-world-b6h5m")
-	assert.NotNil(t, wf)
-	assert.Nil(t, err)
-
-	wf, err = getWorkflow(ctx, server, "test", "hello-world-b6h5m-test")
-	assert.NotNil(t, wf)
-	assert.Nil(t, err)
+	wf := &v1alpha1.Workflow{}
+	assert.NoError(t, json.Unmarshal([]byte(wf1), &wf))
+	ctx, cancel := context.WithCancel(ctx)
+	go func() {
+		err := server.WatchWorkflows(&workflowpkg.WatchWorkflowsRequest{}, &testWatchWorkflowServer{testServerStream{ctx}})
+		assert.NoError(t, err)
+	}()
+	cancel()
 }
 
 func TestGetWorkflowWithNotFound(t *testing.T) {
@@ -580,7 +618,7 @@ func TestListWorkflow(t *testing.T) {
 
 	wfl, err := getWorkflowList(ctx, server, "workflows")
 	assert.NotNil(t, wfl)
-	assert.Equal(t, 3, len(wfl.Items))
+	assert.Equal(t, 4, len(wfl.Items))
 	assert.Nil(t, err)
 
 	wfl, err = getWorkflowList(ctx, server, "test")
@@ -607,7 +645,16 @@ func TestDeleteWorkflow(t *testing.T) {
 
 	wfl, err := getWorkflowList(ctx, server, "workflows")
 	if assert.NoError(t, err) {
-		assert.Len(t, wfl.Items, 2)
+		assert.Len(t, wfl.Items, 3)
+	}
+}
+
+func TestRetryWorkflow(t *testing.T) {
+	server, ctx := getWorkflowServer()
+	req := workflowpkg.WorkflowRetryRequest{Name: "failed", Namespace: "workflows"}
+	retried, err := server.RetryWorkflow(ctx, &req)
+	if assert.NoError(t, err) {
+		assert.NotNil(t, retried)
 	}
 }
 
@@ -677,6 +724,18 @@ func TestTerminateWorkflow(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+func TestStopWorkflow(t *testing.T) {
+	server, ctx := getWorkflowServer()
+	wf, err := getWorkflow(ctx, server, "workflows", "hello-world-9tql2-run")
+	assert.NoError(t, err)
+	rsmWfReq := workflowpkg.WorkflowStopRequest{Name: wf.Name, Namespace: wf.Namespace}
+	wf, err = server.StopWorkflow(ctx, &rsmWfReq)
+	if assert.NoError(t, err) {
+		assert.NotNil(t, wf)
+		assert.Equal(t, v1alpha1.NodeRunning, wf.Status.Phase)
+	}
+}
+
 func TestResubmitWorkflow(t *testing.T) {
 
 	server, ctx := getWorkflowServer()
@@ -689,6 +748,38 @@ func TestResubmitWorkflow(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.NotNil(t, wf)
 	}
+}
+
+func TestLintWorkflow(t *testing.T) {
+	server, ctx := getWorkflowServer()
+	wf := &v1alpha1.Workflow{}
+	assert.NoError(t, json.Unmarshal([]byte(wf1), &wf))
+	linted, err := server.LintWorkflow(ctx, &workflowpkg.WorkflowLintRequest{Workflow: wf})
+	if assert.NoError(t, err) {
+		assert.NotNil(t, linted)
+	}
+}
+
+type testPodLogsServer struct {
+	testServerStream
+}
+
+func (t testPodLogsServer) Send(entry *workflowpkg.LogEntry) error {
+	panic("implement me")
+}
+
+func TestPodLogs(t *testing.T) {
+	server, ctx := getWorkflowServer()
+	ctx, cancel := context.WithCancel(ctx)
+	go func() {
+		err := server.PodLogs(&workflowpkg.WorkflowLogRequest{
+			Name:      "hello-world-9tql2",
+			Namespace: "workflows",
+			LogOptions: &corev1.PodLogOptions{},
+		}, &testPodLogsServer{testServerStream{ctx}})
+		assert.NoError(t, err)
+	}()
+	cancel()
 }
 
 func TestSubmitWorkflowFromResource(t *testing.T) {
