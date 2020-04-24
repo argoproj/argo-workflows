@@ -825,6 +825,9 @@ message SubmitOpts {
 
   // OwnerReference creates a metadata.ownerReference
   optional k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference ownerReference = 11;
+
+  // Parallelism overrides spec.parallelism
+  optional int64 parallelism = 12;
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time

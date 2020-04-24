@@ -1796,6 +1796,11 @@
         "ownerReference": {
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference",
           "title": "OwnerReference creates a metadata.ownerReference"
+        },
+        "parallelism": {
+          "type": "string",
+          "format": "int64",
+          "title": "Parallelism overrides spec.parallelism"
         }
       },
       "title": "SubmitOpts are workflow submission options"
