@@ -2715,3 +2715,209 @@ func TestRetryNodeOutputs(t *testing.T) {
 	woc.buildLocalScope(scope, "steps.influx", retryNode)
 	assert.Contains(t, scope.scope, "steps.influx.ip")
 }
+
+var containerOutputsResult = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-
+spec:
+  entrypoint: hello-hello-hello
+  templates:
+  - name: hello-hello-hello
+    steps:
+    - - name: hello1
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "hello1"}]
+    - - name: hello2
+        template: whalesay
+        arguments:
+          parameters: [{name: message, value: "{{steps.hello1.outputs.result}}"}]
+
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:latest
+      command: [echo]
+      args: ["{{pod.name}}: {{inputs.parameters.message}}"]
+`
+
+func TestContainerOutputsResult(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// operate the workflow. it should create a pod.
+	wf := unmarshalWF(containerOutputsResult)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+
+	assert.True(t, hasOutputResultRef("hello1", &wf.Spec.Templates[0]))
+	assert.False(t, hasOutputResultRef("hello2", &wf.Spec.Templates[0]))
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+
+	for _, node := range wf.Status.Nodes {
+		if strings.Contains(node.Name, "hello1") {
+			assert.True(t, getStepOrDAGTaskName(node.Name) == "hello1")
+		} else if strings.Contains(node.Name, "hello2") {
+			assert.True(t, getStepOrDAGTaskName(node.Name) == "hello2")
+		}
+	}
+}
+
+var nestedStepGroupGlobalParams = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: global-outputs-bg7gl
+spec:
+  arguments: {}
+  entrypoint: generate-globals
+  templates:
+  - arguments: {}
+    inputs: {}
+    metadata: {}
+    name: generate-globals
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: generate
+        template: nested-global-output-generation
+  - arguments: {}
+    container:
+      args:
+      - sleep 1; echo -n hello world > /tmp/hello_world.txt
+      command:
+      - sh
+      - -c
+      image: alpine:3.7
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: output-generation
+    outputs:
+      parameters:
+      - name: hello-param
+        valueFrom:
+          path: /tmp/hello_world.txt
+  - arguments: {}
+    inputs: {}
+    metadata: {}
+    name: nested-global-output-generation
+    outputs:
+      parameters:
+      - globalName: global-param
+        name: hello-param
+        valueFrom:
+          parameter: '{{steps.generate-output.outputs.parameters.hello-param}}'
+    steps:
+    - - arguments: {}
+        name: generate-output
+        template: output-generation
+status:
+  conditions:
+  - status: "True"
+    type: Completed
+  finishedAt: "2020-04-24T15:55:18Z"
+  nodes:
+    global-outputs-bg7gl:
+      children:
+      - global-outputs-bg7gl-1831647575
+      displayName: global-outputs-bg7gl
+      id: global-outputs-bg7gl
+      name: global-outputs-bg7gl
+      outboundNodes:
+      - global-outputs-bg7gl-1290716463
+      phase: Running
+      startedAt: "2020-04-24T15:55:11Z"
+      templateName: generate-globals
+      templateScope: local/global-outputs-bg7gl
+      type: Steps
+    global-outputs-bg7gl-1290716463:
+      boundaryID: global-outputs-bg7gl-2228002836
+      displayName: generate-output
+      finishedAt: "2020-04-24T15:55:16Z"
+      hostNodeName: minikube
+      id: global-outputs-bg7gl-1290716463
+      name: global-outputs-bg7gl[0].generate[0].generate-output
+      outputs:
+        parameters:
+        - name: hello-param
+          value: hello world
+          valueFrom:
+            path: /tmp/hello_world.txt
+      phase: Succeeded
+      startedAt: "2020-04-24T15:55:11Z"
+      templateName: output-generation
+      templateScope: local/global-outputs-bg7gl
+      type: Pod
+    global-outputs-bg7gl-1831647575:
+      boundaryID: global-outputs-bg7gl
+      children:
+      - global-outputs-bg7gl-2228002836
+      displayName: '[0]'
+      finishedAt: "2020-04-24T15:55:18Z"
+      id: global-outputs-bg7gl-1831647575
+      name: global-outputs-bg7gl[0]
+      phase: Succeeded
+      startedAt: "2020-04-24T15:55:11Z"
+      templateName: generate-globals
+      templateScope: local/global-outputs-bg7gl
+      type: StepGroup
+    global-outputs-bg7gl-2228002836:
+      boundaryID: global-outputs-bg7gl
+      children:
+      - global-outputs-bg7gl-3089902334
+      displayName: generate
+      id: global-outputs-bg7gl-2228002836
+      name: global-outputs-bg7gl[0].generate
+      phase: Running
+      outboundNodes:
+      - global-outputs-bg7gl-1290716463
+      startedAt: "2020-04-24T15:55:11Z"
+      templateName: nested-global-output-generation
+      templateScope: local/global-outputs-bg7gl
+      type: Steps
+    global-outputs-bg7gl-3089902334:
+      boundaryID: global-outputs-bg7gl-2228002836
+      children:
+      - global-outputs-bg7gl-1290716463
+      displayName: '[0]'
+      finishedAt: "2020-04-24T15:55:18Z"
+      id: global-outputs-bg7gl-3089902334
+      name: global-outputs-bg7gl[0].generate[0]
+      phase: Succeeded
+      startedAt: "2020-04-24T15:55:11Z"
+      templateName: nested-global-output-generation
+      templateScope: local/global-outputs-bg7gl
+      type: StepGroup
+  startedAt: "2020-04-24T15:55:11Z"
+`
+
+func TestNestedStepGroupGlobalParams(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// operate the workflow. it should create a pod.
+	wf := unmarshalWF(nestedStepGroupGlobalParams)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+
+	node := woc.wf.Status.Nodes.FindByDisplayName("generate")
+	if assert.NotNil(t, node) {
+		assert.Equal(t, "hello-param", node.Outputs.Parameters[0].Name)
+		assert.Equal(t, "global-param", node.Outputs.Parameters[0].GlobalName)
+		assert.Equal(t, "hello world", *node.Outputs.Parameters[0].Value)
+	}
+
+	assert.Equal(t, "hello world", *woc.wf.Status.Outputs.Parameters[0].Value)
+	assert.Equal(t, "global-param", woc.wf.Status.Outputs.Parameters[0].Name)
+}
