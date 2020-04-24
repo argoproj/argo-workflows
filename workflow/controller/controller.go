@@ -408,6 +408,7 @@ func (wfc *WorkflowController) metricsGarbageCollector(stopCh <-chan struct{}) {
 	for {
 		select {
 		case <-stopCh:
+			log.Info("Stopping metrics GC")
 			return
 		case <-ticker.C:
 			log.Info("Performing metrics GC")

@@ -327,3 +327,21 @@ func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
 
 	controller.archivedWorkflowGarbageCollector(make(chan struct{}))
 }
+
+func TestWorkflowControllerMetricsGarbageCollector(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+
+	controller.Metrics["metric-1"] = common.Metric{Metric: nil, LastUpdated: time.Now().Add(-1 * time.Minute)}
+	controller.Metrics["metric-2"] = common.Metric{Metric: nil, LastUpdated: time.Now().Add(3 * time.Second)}
+
+	controller.Config.MetricsConfig.Enabled = true
+	controller.Config.MetricsConfig.MetricsTTL = config.TTL(1 * time.Second)
+
+	stop := make(chan struct{})
+	go func() { time.Sleep(2 * time.Second); stop <- struct{}{} }()
+	controller.metricsGarbageCollector(stop)
+
+	assert.Contains(t, controller.Metrics, "metric-2")
+	assert.NotContains(t, controller.Metrics, "metric-1")
+}
