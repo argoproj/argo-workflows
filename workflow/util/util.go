@@ -95,6 +95,7 @@ func InstanceIDRequirement(instanceID string) labels.Requirement {
 // an Unstructured informer and converting objects to workflows. Ignores objects that failed to convert.
 type WorkflowLister interface {
 	List() ([]*wfv1.Workflow, error)
+	LastSyncResourceVersion() string
 }
 
 type workflowLister struct {
@@ -112,6 +113,10 @@ func (l *workflowLister) List() ([]*wfv1.Workflow, error) {
 		workflows = append(workflows, wf)
 	}
 	return workflows, nil
+}
+
+func (l *workflowLister) LastSyncResourceVersion() string {
+	return l.informer.LastSyncResourceVersion()
 }
 
 // NewWorkflowLister returns a new workflow lister

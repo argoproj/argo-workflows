@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -10,35 +11,37 @@ import (
 )
 
 var (
+	metricDeprecatedNotice = "THIS METRIC IS DEPRECATED AND MAY CAUSE PERFORMANCE ISSUES. Turn off by setting `disableLegacy: true` under `metricsConfig` in the controller ConfigMap"
+
 	descWorkflowDefaultLabels = []string{"namespace", "name", "entrypoint"}
 
 	descWorkflowInfo = prometheus.NewDesc(
 		"argo_workflow_info",
-		"Information about workflow. This metric is deprecated: turn off by setting `disableLegacy: true` under `metricsConfig`",
+		fmt.Sprintf("Information about workflow. %s", metricDeprecatedNotice),
 		append(descWorkflowDefaultLabels, "service_account_name", "templates"),
 		nil,
 	)
 	descWorkflowStartedAt = prometheus.NewDesc(
 		"argo_workflow_start_time",
-		"Start time in unix timestamp for a workflow. This metric is deprecated: turn off by setting `disableLegacy: true` under `metricsConfig`",
+		fmt.Sprintf("Start time in unix timestamp for a workflow. %s", metricDeprecatedNotice),
 		descWorkflowDefaultLabels,
 		nil,
 	)
 	descWorkflowFinishedAt = prometheus.NewDesc(
 		"argo_workflow_completion_time",
-		"Completion time in unix timestamp for a workflow. This metric is deprecated: turn off by setting `disableLegacy: true` under `metricsConfig`",
+		fmt.Sprintf("Completion time in unix timestamp for a workflow. %s", metricDeprecatedNotice),
 		descWorkflowDefaultLabels,
 		nil,
 	)
 	descWorkflowCreated = prometheus.NewDesc(
 		"argo_workflow_created_time",
-		"Creation time in unix timestamp for a workflow. This metric is deprecated: turn off by setting `disableLegacy: true` under `metricsConfig`",
+		fmt.Sprintf("Creation time in unix timestamp for a workflow. %s", metricDeprecatedNotice),
 		descWorkflowDefaultLabels,
 		nil,
 	)
 	descWorkflowStatusPhase = prometheus.NewDesc(
 		"argo_workflow_status_phase",
-		"The workflow current phase. This metric is deprecated: turn off by setting `disableLegacy: true` under `metricsConfig`",
+		fmt.Sprintf("The workflow current phase. %s", metricDeprecatedNotice),
 		append(descWorkflowDefaultLabels, "phase"),
 		nil,
 	)

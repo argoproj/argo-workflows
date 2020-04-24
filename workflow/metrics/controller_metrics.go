@@ -10,33 +10,43 @@ import (
 // legacyWorkflowCollector collects metrics about all workflows in the cluster
 type controllerCollector struct {
 	store util.WorkflowLister
+	gauges []prometheus.Metric
+	lastSyncResourceVersion string
 }
 
 // Describe implements the prometheus.Collector interface
 func (wc *controllerCollector) Describe(ch chan<- *prometheus.Desc) {
-	workflows, err := wc.store.List()
-	if err != nil {
-		return
+	if wc.lastSyncResourceVersion != wc.store.LastSyncResourceVersion() {
+		workflows, err := wc.store.List()
+		if err != nil {
+			return
+		}
+		wc.loadWorkflowStatuses(workflows)
+		wc.lastSyncResourceVersion = wc.store.LastSyncResourceVersion()
 	}
-	for _, metric := range wc.collectWorkflowStatuses(workflows) {
+	for _, metric := range wc.gauges {
 		ch <- metric.Desc()
 	}
 }
 
 // Collect implements the prometheus.Collector interface
 func (wc *controllerCollector) Collect(ch chan<- prometheus.Metric) {
-	workflows, err := wc.store.List()
-	if err != nil {
-		return
+	if wc.lastSyncResourceVersion != wc.store.LastSyncResourceVersion() {
+		workflows, err := wc.store.List()
+		if err != nil {
+			return
+		}
+		wc.loadWorkflowStatuses(workflows)
+		wc.lastSyncResourceVersion = wc.store.LastSyncResourceVersion()
 	}
-	for _, metric := range wc.collectWorkflowStatuses(workflows) {
+	for _, metric := range wc.gauges {
 		ch <- metric
 	}
 }
 
-func (wc *controllerCollector) collectWorkflowStatuses(wfs []*wfv1.Workflow) []prometheus.Metric {
+func (wc *controllerCollector) loadWorkflowStatuses(wfs []*wfv1.Workflow) {
 	if len(wfs) == 0 {
-		return nil
+		return
 	}
 
 	getOptsByPahse := func(phase wfv1.NodePhase) prometheus.GaugeOpts {
@@ -67,5 +77,5 @@ func (wc *controllerCollector) collectWorkflowStatuses(wfs []*wfv1.Workflow) []p
 	for _, gauge := range gauges {
 		out = append(out, gauge)
 	}
-	return out
+	wc.gauges = out
 }
