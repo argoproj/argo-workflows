@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/argoproj/pkg/jwt/zjwt"
 	"github.com/argoproj/pkg/rand"
 	"github.com/coreos/go-oidc"
 	log "github.com/sirupsen/logrus"
@@ -120,7 +121,13 @@ func (s *service) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to get claims: %v", err)))
 		return
 	}
-	value := prefix + rawIDToken
+	token, err := zjwt.ZJWT(rawIDToken)
+	if err != nil {
+		w.WriteHeader(500)
+		_, _ = w.Write([]byte(fmt.Sprintf("failed to get compress token: %v", err)))
+		return
+	}
+	value := prefix + token
 	log.Debugf("handing oauth2 callback %v", value)
 	// TODO MaxAge? Expires? HttpOnly?
 	// TODO we must compress this because we know id_token can be large if you have many groups
@@ -130,7 +137,10 @@ func (s *service) HandleCallback(w http.ResponseWriter, r *http.Request) {
 
 // authorize verifies a bearer token and pulls user information form the claims.
 func (s *service) Authorize(ctx context.Context, authorisation string) (wfv1.User, error) {
-	rawIDToken := strings.TrimPrefix(authorisation, prefix)
+	rawIDToken, err := zjwt.JWT(strings.TrimPrefix(authorisation, prefix))
+	if err != nil {
+		return wfv1.NullUser, fmt.Errorf("failed to decompress token %v", err)
+	}
 	idToken, err := s.idTokenVerifier.Verify(ctx, rawIDToken)
 	if err != nil {
 		return wfv1.NullUser, fmt.Errorf("failed to verify id_token %v", err)
