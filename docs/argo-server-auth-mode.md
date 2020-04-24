@@ -1,4 +1,4 @@
-# Auth
+# Argo Server Auth Mode
 
 You can choose which kube config the Argo Server uses:
 

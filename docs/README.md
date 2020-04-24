@@ -17,6 +17,8 @@ Some use-case specific documentation is available:
 
 * [Contributing](CONTRIBUTING.md)
 * [Argo Workflow Architecture](architecture.md)
+* [Argo Server Auth Mode](argo-server-auth-mode.md)
+* [Argo Server SSO](argo-server-sso.md)
 * [Argo Server](argo-server.md)
 * [CLI](cli.md)
 * [Cluster Workflow Templates](cluster-workflow-templates.md)
