@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"strings"
 
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -64,4 +65,9 @@ func (cwftmpl *ClusterWorkflowTemplate) GetArguments() Arguments {
 // GetEntrypoint returns the Entrypoint.
 func (cwftmpl *ClusterWorkflowTemplate) GetEntrypoint() string {
 	return cwftmpl.Spec.Entrypoint
+}
+
+// GetVolumes returns the Volumes
+func (cwftmpl *ClusterWorkflowTemplate) GetVolumes() []apiv1.Volume {
+	return cwftmpl.Spec.Volumes
 }

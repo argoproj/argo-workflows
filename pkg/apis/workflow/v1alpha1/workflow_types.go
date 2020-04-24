@@ -1726,6 +1726,10 @@ func (wf *Workflow) GetEntrypoint() string {
 	return wf.Spec.Entrypoint
 }
 
+func (wf *Workflow) GetVolumes() []apiv1.Volume {
+	return wf.Spec.Volumes
+}
+
 // NodeID creates a deterministic node ID based on a node name
 func (wf *Workflow) NodeID(name string) string {
 	if name == wf.ObjectMeta.Name {

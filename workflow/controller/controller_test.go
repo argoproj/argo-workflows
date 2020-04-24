@@ -308,3 +308,56 @@ func TestAddingWorkflowDefaultComplexTwo(t *testing.T) {
 	assert.Contains(t, workflow.Labels, "label")
 	assert.Contains(t, workflow.Annotations, "annotation")
 }
+
+const wfWithTmplRef =`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-hello-world-
+  namespace: default
+spec:
+  entrypoint: whalesay-template
+  arguments:
+    parameters:
+    - name: message
+      value: "test"
+  workflowTemplateRef:
+    name: workflow-template-whalesay-template
+`
+const wfTmpl =`
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-whalesay-template
+spec:
+  templates:
+  - name: whalesay-template
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+`
+func TestCheckAndInitWorkflowTmplRef(t *testing.T){
+	 controller := newController()
+	 wf := unmarshalWF(wfWithTmplRef)
+	 wftmpl := unmarshalWFTmpl(wfTmpl)
+	 _, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("default").Create(wftmpl)
+	 assert.NoError(t, err)
+	 woc := wfOperationCtx{controller:controller,
+	 	wf:wf}
+	 t.Run("WithWorkflowTmplRef", func(t *testing.T) {
+		 woc.checkAndInitWorkflowTmplRef()
+		 assert.True(t, woc.hasTopLevelWFTmplRef)
+		 assert.Equal(t,wftmpl.Name, woc.topLevelWFTmplRef.GetName())
+	 })
+
+	t.Run("WithoutWorkflowTmplRef", func(t *testing.T) {
+		woc.wf.Spec.WorkflowTemplateRef = nil
+		woc.checkAndInitWorkflowTmplRef()
+		assert.False(t, woc.hasTopLevelWFTmplRef)
+		assert.Nil(t,woc.topLevelWFTmplRef)
+	})
+}

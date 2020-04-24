@@ -412,6 +412,9 @@ func (wfc *WorkflowController) processNextItem() bool {
 		wfc.throttler.Remove(key)
 		return true
 	}
+
+	woc.checkAndInitWorkflowTmplRef()
+
 	woc.operate()
 	if woc.wf.Status.Completed() {
 		wfc.throttler.Remove(key)

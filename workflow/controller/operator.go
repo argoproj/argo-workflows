@@ -3,7 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo/util"
 	"math"
 	"os"
 	"reflect"
@@ -14,6 +13,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/argoproj/argo/util"
 
 	"github.com/argoproj/pkg/humanize"
 	"github.com/argoproj/pkg/strftime"
@@ -88,6 +89,10 @@ type wfOperationCtx struct {
 	// preExecutionNodePhases contains the phases of all the nodes before the current operation. Necessary to infer
 	// changes in phase for metric emission
 	preExecutionNodePhases map[string]wfv1.NodePhase
+	// hasTopLevelWFTmplRef flag indicate Workflow has Top level workflow template reference
+	hasTopLevelWFTmplRef bool
+	// topLevelWFTmplRef contains the top level workflow template reference
+	topLevelWFTmplRef wfv1.TemplateHolder
 }
 
 var (
@@ -99,7 +104,7 @@ var (
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
 // for before requeuing the workflow onto the workqueue.
-const maxOperationTime = 10 * time.Second
+const maxOperationTime = 600 * time.Second
 
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
 type failedNodeStatus struct {
@@ -247,7 +252,7 @@ func (woc *wfOperationCtx) operate() {
 		return
 	}
 
-	woc.setGlobalParameters(tmplCtx)
+	woc.setGlobalParameters()
 
 	if woc.wf.Spec.ArtifactRepositoryRef != nil {
 		repoReference := woc.wf.Spec.ArtifactRepositoryRef
@@ -280,31 +285,13 @@ func (woc *wfOperationCtx) operate() {
 		return
 	}
 
-
 	var node *wfv1.NodeStatus
 
-	if woc.wf.Spec.WorkflowTemplateRef != nil {
-		var topLevelTmplRef *wfv1.TemplateRef
-
-		wftmpl, err := tmplCtx.GetTemplateGetterFromRef( &wfv1.TemplateRef{Name:woc.wf.Spec.WorkflowTemplateRef.Name})
-		if err != nil {
-			msg := fmt.Sprintf("Failed to get a WorkflowTemplate: %+v", err)
-			woc.log.Errorf(msg)
-			woc.markWorkflowError(err, true)
-			return
-		}
-		topLevelTmplRef.Name = woc.wf.Spec.WorkflowTemplateRef.Name
-		topLevelTmplRef.ClusterScope = woc.wf.Spec.WorkflowTemplateRef.ClusterScope
+	if woc.hasTopLevelWFTmplRef {
 		var args wfv1.Arguments
-		args.Parameters = util.MergeParameters( woc.wf.Spec.Arguments.Parameters, wftmpl.GetArguments().Parameters)
-
-		if woc.wf.Spec.Entrypoint != "" {
-			topLevelTmplRef.Template = woc.wf.Spec.Entrypoint
-		}else {
-			topLevelTmplRef.Template = wftmpl.GetEntrypoint()
-		}
-		node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{TemplateRef: topLevelTmplRef}, tmplCtx, args, &executeTemplateOpts{})
-	}else {
+		args.Parameters = util.MergeParameters(woc.wf.Spec.Arguments.Parameters, woc.topLevelWFTmplRef.GetArguments().Parameters)
+		node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{TemplateRef: woc.getTemplateRef()}, tmplCtx, args, &executeTemplateOpts{})
+	} else {
 		node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{Template: woc.wf.Spec.Entrypoint}, tmplCtx, woc.wf.Spec.Arguments, &executeTemplateOpts{})
 	}
 	if err != nil {
@@ -438,7 +425,7 @@ func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
 }
 
 // setGlobalParameters sets the globalParam map with global parameters
-func (woc *wfOperationCtx) setGlobalParameters(ctx *templateresolution.Context) {
+func (woc *wfOperationCtx) setGlobalParameters() {
 	woc.globalParams[common.GlobalVarWorkflowName] = woc.wf.ObjectMeta.Name
 	woc.globalParams[common.GlobalVarWorkflowNamespace] = woc.wf.ObjectMeta.Namespace
 	woc.globalParams[common.GlobalVarWorkflowUID] = string(woc.wf.ObjectMeta.UID)
@@ -454,12 +441,9 @@ func (woc *wfOperationCtx) setGlobalParameters(ctx *templateresolution.Context) 
 	if workflowParameters, err := json.Marshal(woc.wf.Spec.Arguments.Parameters); err == nil {
 		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
 	}
-	if woc.wf.Spec.WorkflowTemplateRef != nil {
-		tmpl, err := ctx.GetTemplateGetterFromRef(woc.wf.Spec.WorkflowTemplateRef.GetTemplateRef())
-		if err != nil {
 
-		}
-		for _, param := range tmpl.GetArguments().Parameters {
+	if woc.hasTopLevelWFTmplRef {
+		for _, param := range woc.topLevelWFTmplRef.GetArguments().Parameters {
 			woc.globalParams["workflow.parameters."+param.Name] = *param.Value
 		}
 	}
@@ -1227,6 +1211,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 		// (e.g. passed validation, or didn't already complete)
 		return nil
 	}
+
 	if len(woc.wf.Spec.VolumeClaimTemplates) == len(woc.wf.Status.PersistentVolumeClaims) {
 		// If we have already created the PVCs, then there is nothing to do.
 		// This will also handle the case where workflow has no volumeClaimTemplates.
@@ -2615,4 +2600,48 @@ func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (boo
 		return hasOutputResultRef(name, parentTemplate), nil
 	}
 	return false, nil
+}
+
+func (woc *wfOperationCtx) checkAndInitWorkflowTmplRef() {
+	var wftmpl wfv1.TemplateHolder
+	var err error
+	woc.hasTopLevelWFTmplRef = woc.wf.Spec.WorkflowTemplateRef != nil
+
+	if !woc.hasTopLevelWFTmplRef {
+		return
+	}
+
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
+	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
+
+	// Logic for Top level Workflow template reference
+	if woc.hasTopLevelWFTmplRef {
+		if woc.wf.Spec.WorkflowTemplateRef.ClusterScope {
+			wftmpl, err = cwftmplGetter.Get(woc.wf.Spec.WorkflowTemplateRef.Name)
+		} else {
+			wftmpl, err = wftmplGetter.Get(woc.wf.Spec.WorkflowTemplateRef.Name)
+		}
+		if err != nil {
+			msg := fmt.Sprintf("Unable to get Workflow Template Reference for workflow, %s error: %s", woc.wf.Name, err)
+			woc.markWorkflowFailed(msg)
+			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg)
+			return
+		}
+		woc.topLevelWFTmplRef = wftmpl
+	}
+	woc.volumes = util.MergeVolume(woc.volumes, wftmpl.GetVolumes())
+}
+
+func (woc *wfOperationCtx) getTemplateRef() *wfv1.TemplateRef {
+	tmplRef := &wfv1.TemplateRef{}
+	tmplRef.Name = woc.wf.Spec.WorkflowTemplateRef.Name
+	tmplRef.ClusterScope = woc.wf.Spec.WorkflowTemplateRef.ClusterScope
+	entrypoint := woc.wf.Spec.Entrypoint
+	if entrypoint == "" {
+		if woc.hasTopLevelWFTmplRef {
+			entrypoint = woc.topLevelWFTmplRef.GetEntrypoint()
+		}
+	}
+	tmplRef.Template = entrypoint
+	return tmplRef
 }

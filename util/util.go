@@ -1,15 +1,16 @@
 package util
 
 import (
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
+
+	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo/errors"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/retry"
 )
 
@@ -58,8 +59,8 @@ func WriteTeriminateMessage(message string) {
 	}
 }
 
-
-// overwriting duplicate keys, you should handle that if there is a need
+// Merge the two parameters Slice and overwriting duplicate keys,
+// TODO Try to generalize the below two merge functions - Bala
 func MergeParameters(params ...[]wfv1.Parameter) []wfv1.Parameter {
 	resultParams := make([]wfv1.Parameter, 0)
 	passedParams := make(map[string]bool)
@@ -74,3 +75,20 @@ func MergeParameters(params ...[]wfv1.Parameter) []wfv1.Parameter {
 	}
 	return resultParams
 }
+
+// Merge the two Volumes Slice and overwriting duplicate keys,
+func MergeVolume(params ...[]apiv1.Volume) []apiv1.Volume {
+	resultParams := make([]apiv1.Volume, 0)
+	passedParams := make(map[string]bool)
+	for _, param := range params {
+		for _, item := range param {
+			if _, ok := passedParams[item.Name]; ok {
+				continue
+			}
+			resultParams = append(resultParams, item)
+			passedParams[item.Name] = true
+		}
+	}
+	return resultParams
+}
+

@@ -3,7 +3,6 @@ package validate
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo/util"
 	"io"
 	"reflect"
 	"regexp"
@@ -20,6 +19,7 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/help"
 	"github.com/argoproj/argo/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo/workflow/common"
@@ -106,15 +106,15 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	var err error
 	isWorkflowTemplateRef := wf.Spec.WorkflowTemplateRef != nil
 	if isWorkflowTemplateRef {
-		if wf.Spec.WorkflowTemplateRef.ClusterScope{
+		if wf.Spec.WorkflowTemplateRef.ClusterScope {
 			wftmpl, err = cwftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
-			if err != nil{
+			if err != nil {
 				return nil, err
 			}
 
-		}else{
+		} else {
 			wftmpl, err = wftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
-			if err != nil{
+			if err != nil {
 				return nil, err
 			}
 		}
@@ -125,11 +125,13 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		topLevelTmplRef.Template = entrypoint
 	}
 
-
 	err = validateWorkflowFieldNames(wf.Spec.Templates)
 	var wfArgs wfv1.Arguments
 	if wf.Spec.Arguments.Parameters != nil {
-		wfArgs.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, wftmpl.GetArguments().Parameters)
+		wfArgs.Parameters = wf.Spec.Arguments.Parameters
+	}
+	if wf.Spec.WorkflowTemplateRef != nil {
+		wfArgs.Parameters = util.MergeParameters(wftmpl.GetArguments().Parameters, wfArgs.Parameters)
 	}
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
@@ -202,10 +204,10 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	}
 
 	if !opts.IgnoreEntrypoint {
-		if isWorkflowTemplateRef{
-			_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{TemplateRef:topLevelTmplRef}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
+		if isWorkflowTemplateRef {
+			_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{TemplateRef: topLevelTmplRef}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
 
-		}else {
+		} else {
 			_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: entrypoint}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
 		}
 		if err != nil {

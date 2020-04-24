@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -21,6 +22,7 @@ type TemplateHolder interface {
 	GetResourceScope() ResourceScope
 	GetArguments() Arguments
 	GetEntrypoint() string
+	GetVolumes() []v1.Volume
 }
 
 // TemplateReferenceHolder is an object that holds a reference to other templates; e.g. WorkflowStep, DAGTask, and NodeStatus
