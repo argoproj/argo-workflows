@@ -307,11 +307,15 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 		})
 }
 
-func (s *CLISuite) TestNodeSuspendResume() {
+func (s *CLISuite) TestNodeSuspendResumeNoPersistence() {
 	if s.Persistence.IsEnabled() {
 		// Persistence is enabled for this test, but it is not enabled for the Argo Server in this test suite.
 		s.T().SkipNow()
 	}
+	NodeSuspendResumeCommon(s.E2ESuite)
+}
+
+func NodeSuspendResumeCommon(s fixtures.E2ESuite) {
 	s.Given().
 		Workflow("@testdata/node-suspend.yaml").
 		When().
