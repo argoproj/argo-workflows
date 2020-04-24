@@ -28,7 +28,7 @@ func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, r
 	if req.Template == nil {
 		return nil, fmt.Errorf("workflow template was not found in the request body")
 	}
-	wts.instanceIDService.Label(req.Template)
+	wts.instanceIDService.Label(ctx, req.Template)
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
@@ -52,7 +52,7 @@ func (wts *WorkflowTemplateServer) getTemplateAndValidate(ctx context.Context, n
 	if err != nil {
 		return nil, err
 	}
-	err = wts.instanceIDService.Validate(wfTmpl)
+	err = wts.instanceIDService.Validate(ctx, wfTmpl)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, re
 	if req.ListOptions != nil {
 		options = req.ListOptions
 	}
-	wts.instanceIDService.With(options)
+	wts.instanceIDService.With(ctx, options)
 	wfList, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).List(*options)
 	if err != nil {
 		return nil, err
@@ -92,7 +92,7 @@ func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, r
 
 func (wts *WorkflowTemplateServer) LintWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateLintRequest) (*v1alpha1.WorkflowTemplate, error) {
 	wfClient := auth.GetWfClient(ctx)
-	wts.instanceIDService.Label(req.Template)
+	wts.instanceIDService.Label(ctx, req.Template)
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
@@ -109,7 +109,7 @@ func (wts *WorkflowTemplateServer) UpdateWorkflowTemplate(ctx context.Context, r
 	if req.Template == nil {
 		return nil, fmt.Errorf("WorkflowTemplate is not found in Request body")
 	}
-	err := wts.instanceIDService.Validate(req.Template)
+	err := wts.instanceIDService.Validate(ctx, req.Template)
 	if err != nil {
 		return nil, err
 	}

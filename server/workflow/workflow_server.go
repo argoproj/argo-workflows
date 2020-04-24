@@ -44,7 +44,7 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 		req.Workflow.Namespace = req.Namespace
 	}
 
-	s.instanceIDService.Label(req.Workflow)
+	s.instanceIDService.Label(ctx, req.Workflow)
 
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
@@ -108,7 +108,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 	if req.ListOptions != nil {
 		listOption = req.ListOptions
 	}
-	s.instanceIDService.With(listOption)
+	s.instanceIDService.With(ctx, listOption)
 	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).List(*listOption)
 	if err != nil {
 		return nil, err
@@ -133,18 +133,18 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 }
 
 func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, ws workflowpkg.WorkflowService_WatchWorkflowsServer) error {
-	wfClient := auth.GetWfClient(ws.Context())
+	ctx := ws.Context()
+	wfClient := auth.GetWfClient(ctx)
 	opts := &metav1.ListOptions{}
 	if req.ListOptions != nil {
 		opts = req.ListOptions
 	}
-	s.instanceIDService.With(opts)
+	s.instanceIDService.With(ctx, opts)
 	watch, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Watch(*opts)
 	if err != nil {
 		return err
 	}
 	defer watch.Stop()
-	ctx := ws.Context()
 
 	log.Debug("Piping events to channel")
 
@@ -319,7 +319,7 @@ func (s *workflowServer) LintWorkflow(ctx context.Context, req *workflowpkg.Work
 	wfClient := auth.GetWfClient(ctx)
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
-	s.instanceIDService.Label(req.Workflow)
+	s.instanceIDService.Label(ctx, req.Workflow)
 
 	_, err := validate.ValidateWorkflow(wftmplGetter, cwftmplGetter, req.Workflow, validate.ValidateOpts{Lint: true})
 
@@ -347,7 +347,7 @@ func (s *workflowServer) getWorkflowAndValidate(ctx context.Context, namespace s
 	if err != nil {
 		return nil, err
 	}
-	err = s.instanceIDService.Validate(wf)
+	err = s.instanceIDService.Validate(ctx, wf)
 	if err != nil {
 		return nil, err
 	}
@@ -382,7 +382,7 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 
 	}
 
-	s.instanceIDService.Label(wf)
+	s.instanceIDService.Label(ctx, wf)
 	err := util.ApplySubmitOpts(wf, req.SubmitOptions)
 	if err != nil {
 		return nil, err

@@ -166,7 +166,7 @@ func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace s
 	if err != nil {
 		return nil, err
 	}
-	err = a.instanceIDService.Validate(wf)
+	err = a.instanceIDService.Validate(ctx, wf)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +189,7 @@ func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace s
 }
 
 func (a *ArtifactServer) getWorkflowByUID(ctx context.Context, uid string) (*wfv1.Workflow, error) {
-	wf, err := a.wfArchive.GetWorkflow(uid)
+	wf, err := a.wfArchive.GetWorkflow(ctx, uid)
 	if err != nil {
 		return nil, err
 	}

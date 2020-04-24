@@ -2,6 +2,7 @@ package fixtures
 
 import (
 	"bufio"
+	"context"
 	"encoding/base64"
 	"os"
 	"strings"
@@ -191,10 +192,10 @@ func (s *E2ESuite) DeleteResources(label string) {
 			archive := s.Persistence.workflowArchive
 			parse, err := labels.ParseToRequirements(Label)
 			s.CheckError(err)
-			workflows, err := archive.ListWorkflows(Namespace, time.Time{}, time.Time{}, parse, 0, 0)
+			workflows, err := archive.ListWorkflows(context.Background(), Namespace, time.Time{}, time.Time{}, parse, 0, 0)
 			s.CheckError(err)
 			for _, workflow := range workflows {
-				err := archive.DeleteWorkflow(string(workflow.UID))
+				err := archive.DeleteWorkflow(context.Background(), string(workflow.UID))
 				s.CheckError(err)
 			}
 		}
