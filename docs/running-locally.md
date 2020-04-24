@@ -1,4 +1,4 @@
-# How to setup your dev environment
+# Running Locally
 ## Pre-requisites:
 
 * Golang
