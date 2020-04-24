@@ -2,7 +2,7 @@
 
 ![alpha](assets/alpha.svg)
 
-> v2.9 and after
+> v2.8 and after
 
 If you're running Argo Server you have three options with increasing transport security (note - you should also be running [authentication](argo-server.md#auth-mode)):
 
@@ -64,5 +64,5 @@ argo --secure list
 
 ```
 export ARGO_SECURE=true
-argo --secure --insecure-skip-verify list
+argo list
 ```
