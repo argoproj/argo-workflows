@@ -443,8 +443,8 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			output, err = we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
 			if err != nil {
 				// We have a default value to use instead of returning an error
-				if param.ValueFrom.Default != "" {
-					output = param.ValueFrom.Default
+				if param.ValueFrom.Default != nil {
+					output = *param.ValueFrom.Default
 				} else {
 					return err
 				}
@@ -455,8 +455,8 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			out, err := ioutil.ReadFile(mountedPath)
 			if err != nil {
 				// We have a default value to use instead of returning an error
-				if param.ValueFrom.Default != "" {
-					output = param.ValueFrom.Default
+				if param.ValueFrom.Default != nil {
+					output = *param.ValueFrom.Default
 				} else {
 					return err
 				}

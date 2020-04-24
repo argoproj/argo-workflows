@@ -106,7 +106,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
 
     private fetchWorkflowTemplates(): void {
         services.info
-            .get()
+            .getInfo()
             .then(info => {
                 if (info.managedNamespace && info.managedNamespace !== this.namespace) {
                     this.namespace = info.managedNamespace;
