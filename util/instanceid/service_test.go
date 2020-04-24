@@ -36,10 +36,15 @@ func TestWith(t *testing.T) {
 		NewService("").With(context.Background(), opts)
 		assert.Equal(t, "!workflows.argoproj.io/controller-instanceid", opts.LabelSelector)
 	})
-	t.Run("ExistingSelector", func(t *testing.T) {
+	t.Run("EmptyExistingSelector", func(t *testing.T) {
 		opts := &metav1.ListOptions{LabelSelector: "foo"}
 		NewService("").With(context.Background(), opts)
 		assert.Equal(t, "foo,!workflows.argoproj.io/controller-instanceid", opts.LabelSelector)
+	})
+	t.Run("ExistingSelector", func(t *testing.T) {
+		opts := &metav1.ListOptions{LabelSelector: "foo"}
+		NewService("foo").With(context.Background(), opts)
+		assert.Equal(t, "foo,workflows.argoproj.io/controller-instanceid=foo", opts.LabelSelector)
 	})
 }
 
@@ -55,4 +60,8 @@ func TestValidate(t *testing.T) {
 		assert.Error(t, s.Validate(context.Background(), &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{common.LabelKeyControllerInstanceID: "bar"}}}))
 		assert.NoError(t, s.Validate(context.Background(), &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{common.LabelKeyControllerInstanceID: "foo"}}}))
 	})
+}
+
+func Test_service_InstanceID(t *testing.T) {
+	assert.Equal(t, "foo", NewService("foo").InstanceID(context.Background()))
 }

@@ -41,6 +41,9 @@ func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
+	_, ctx, marker := a.instanceIDService.ContextWithMarker(ctx)
+	defer a.instanceIDService.Check("", marker)
+
 	path := strings.SplitN(r.URL.Path, "/", 6)
 
 	namespace := path[2]
@@ -72,6 +75,9 @@ func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request
 		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
+	_, ctx, marker := a.instanceIDService.ContextWithMarker(ctx)
+	defer a.instanceIDService.Check("", marker)
+
 	path := strings.SplitN(r.URL.Path, "/", 6)
 
 	uid := path[2]

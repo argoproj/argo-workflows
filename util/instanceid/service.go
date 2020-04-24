@@ -12,6 +12,10 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 )
 
+/*
+It might seem that a whole service for instance ID is overkill, but by extending `marker.Service` we
+can check at runtime that we actually used instance ID during a request.
+*/
 type Service interface {
 	marker.Service
 	Label(ctx context.Context, obj metav1.Object)

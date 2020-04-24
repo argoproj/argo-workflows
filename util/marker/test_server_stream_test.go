@@ -10,6 +10,7 @@ import (
 type testServerStream struct {
 }
 
+// the only purpose of this line is to make sure testServerStream implements ServerStream
 var _ grpc.ServerStream = &testServerStream{}
 
 func (t testServerStream) SetHeader(md metadata.MD) error {

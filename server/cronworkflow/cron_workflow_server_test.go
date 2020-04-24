@@ -56,6 +56,15 @@ spec:
 			assert.NotNil(t, created)
 		}
 	})
+	t.Run("LintWorkflow", func(t *testing.T) {
+		wf, err := server.LintCronWorkflow(ctx, &cronworkflowpkg.LintCronWorkflowRequest{
+			Namespace:    "my-ns",
+			CronWorkflow: &cronWf,
+		})
+		if assert.NoError(t, err) {
+			assert.NotNil(t, wf)
+		}
+	})
 	t.Run("ListCronWorkflows", func(t *testing.T) {
 		cronWfs, err := server.ListCronWorkflows(ctx, &cronworkflowpkg.ListCronWorkflowsRequest{Namespace: "my-ns"})
 		if assert.NoError(t, err) {

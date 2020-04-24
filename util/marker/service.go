@@ -12,14 +12,14 @@ import (
 /*
 	A marker service is an abstract service.
 
-	At the start of the request, we create a random marker and put it into the context.
-
-	Any sub-types should invoke the `Mark` method to indicate the expected this happened.
-
-	At the end of the request, we check the marker and panic if it was not ticked off.
+	1. At the start of the request, `ContextWithMarker` creates a random marker and puts it into the context.
+	2. Any sub-types then invokes `Mark`  to indicate the expected this happened.
+	3. At the end of the request `Check` checks the marker and panics if it was not marked.
 */
 type Service interface {
+	ContextWithMarker(ctx context.Context) (func(), context.Context, int)
 	Mark(ctx context.Context)
+	Check(fullMethod string, marker int)
 	UnaryServerInterceptor() grpc.UnaryServerInterceptor
 	StreamServerInterceptor() grpc.StreamServerInterceptor
 }
@@ -31,10 +31,10 @@ func NewService(ignore func(fullMethod string) bool) Service {
 type service struct {
 	markerKey struct{}
 	markers   map[int]bool
-	ignore    func(fullMethod string) bool
+	ignore    func(operation string) bool
 }
 
-func (s *service) context(ctx context.Context) (func(), context.Context, int) {
+func (s *service) ContextWithMarker(ctx context.Context) (func(), context.Context, int) {
 	marker := rand.Int()
 	return func() { delete(s.markers, marker) }, context.WithValue(ctx, s.markerKey, marker), marker
 }
@@ -46,34 +46,33 @@ func (s *service) Mark(ctx context.Context) {
 	}
 }
 
-func (s *service) check(fullMethod string, marker int) {
-	if s.ignore(fullMethod) {
+func (s *service) Check(operation string, marker int) {
+	if s.ignore(operation) {
 		return
 	}
 	_, ok := s.markers[marker]
-	logCtx := log.WithField("fullMethod", fullMethod)
 	if !ok {
-		logCtx.Fatal("marker not found - this should never happen")
+		log.WithField("operation", operation).Fatal("marker not found - this should never happen")
 	}
 }
 
 func (s *service) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		closer, ctx, marker := s.context(ss.Context())
+		closer, ctx, marker := s.ContextWithMarker(ss.Context())
 		defer closer()
 		wrapped := grpc_middleware.WrapServerStream(ss)
 		wrapped.WrappedContext = ctx
 		err := handler(srv, wrapped)
-		s.check(info.FullMethod, marker)
+		s.Check(info.FullMethod, marker)
 		return err
 	}
 }
 func (s *service) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-		closer, ctx, marker := s.context(ctx)
+		closer, ctx, marker := s.ContextWithMarker(ctx)
 		defer closer()
 		i, err := handler(ctx, req)
-		s.check(info.FullMethod, marker)
+		s.Check(info.FullMethod, marker)
 		return i, err
 	}
 }
