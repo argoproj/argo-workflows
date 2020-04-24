@@ -201,6 +201,9 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 	if opts.Entrypoint != "" {
 		wf.Spec.Entrypoint = opts.Entrypoint
 	}
+	if opts.Parallelism != 0 {
+		wf.Spec.Parallelism = &opts.Parallelism
+	}
 	if opts.ServiceAccount != "" {
 		wf.Spec.ServiceAccountName = opts.ServiceAccount
 	}

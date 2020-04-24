@@ -3,6 +3,7 @@ module github.com/argoproj/argo
 go 1.13
 
 require (
+	bou.ke/staticfiles v0.0.0-20190225145250-827d7f6389cd // indirect
 	cloud.google.com/go v0.55.0 // indirect
 	cloud.google.com/go/storage v1.6.0
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible

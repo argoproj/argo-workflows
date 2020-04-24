@@ -52,4 +52,6 @@ type SubmitOpts struct {
 	Labels string `json:"labels,omitempty" protobuf:"bytes,10,opt,name=labels"`
 	// OwnerReference creates a metadata.ownerReference
 	OwnerReference *metav1.OwnerReference `json:"ownerReference,omitempty" protobuf:"bytes,11,opt,name=ownerReference"`
+	// Parallelism overrides spec.parallelism
+	Parallelism int64 `json:"parallelism,omitempty" protobuf:"varint,12,opt,name=parallelism"`
 }
