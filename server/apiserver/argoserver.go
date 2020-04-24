@@ -179,7 +179,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if as.tlsConfig != nil {
 		url = "https://localhost" + address
 	}
-	log.Infof("Argo Server started successfully on address %s", url)
+	log.Infof("Argo Server started successfully on %s", url)
 	browserOpenFunc(url)
 
 	<-as.stopCh

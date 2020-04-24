@@ -471,6 +471,7 @@ api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) $(MANIFES
 .PHONY: docs
 docs: swagger
 	go run ./hack docgen
+	go run ./hack readmegen
 
 # pre-push
 
