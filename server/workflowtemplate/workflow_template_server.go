@@ -43,15 +43,20 @@ func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, r
 }
 
 func (wts *WorkflowTemplateServer) GetWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateGetRequest) (*v1alpha1.WorkflowTemplate, error) {
+	return wts.getTemplateAndValidate(ctx, req.Namespace, req.Name)
+}
+
+func (wts *WorkflowTemplateServer) getTemplateAndValidate(ctx context.Context, namespace string, name string) (*v1alpha1.WorkflowTemplate, error) {
 	wfClient := auth.GetWfClient(ctx)
-
-	wfTmpl, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Get(req.Name, v1.GetOptions{})
-
+	wfTmpl, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(namespace).Get(name, v1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-
-	return wfTmpl, err
+	err = instanceid.Validate(wfTmpl, wts.instanceID)
+	if err != nil {
+		return nil, err
+	}
+	return wfTmpl, nil
 }
 
 func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateListRequest) (*v1alpha1.WorkflowTemplateList, error) {
@@ -60,6 +65,7 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, re
 	if req.ListOptions != nil {
 		options = *req.ListOptions
 	}
+	instanceid.With(options, wts.instanceID)
 	wfList, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).List(options)
 	if err != nil {
 		return nil, err
@@ -72,8 +78,11 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, re
 
 func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateDeleteRequest) (*workflowtemplatepkg.WorkflowTemplateDeleteResponse, error) {
 	wfClient := auth.GetWfClient(ctx)
-
-	err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Delete(req.Name, &v1.DeleteOptions{})
+	_, err := wts.getTemplateAndValidate(ctx, req.Namespace, req.Name)
+	if err != nil {
+		return nil, err
+	}
+	err = wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Delete(req.Name, &v1.DeleteOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +92,7 @@ func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, r
 
 func (wts *WorkflowTemplateServer) LintWorkflowTemplate(ctx context.Context, req *workflowtemplatepkg.WorkflowTemplateLintRequest) (*v1alpha1.WorkflowTemplate, error) {
 	wfClient := auth.GetWfClient(ctx)
-
+	instanceid.Label(req.Template, wts.instanceID)
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
@@ -100,12 +109,16 @@ func (wts *WorkflowTemplateServer) UpdateWorkflowTemplate(ctx context.Context, r
 	if req.Template == nil {
 		return nil, fmt.Errorf("WorkflowTemplate is not found in Request body")
 	}
+	err := instanceid.Validate(req.Template, wts.instanceID)
+	if err != nil {
+		return nil, err
+	}
 	wfClient := auth.GetWfClient(ctx)
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 
-	_, err := validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template)
+	_, err = validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template)
 	if err != nil {
 		return nil, err
 	}

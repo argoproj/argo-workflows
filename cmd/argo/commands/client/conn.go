@@ -46,7 +46,7 @@ func NewAPIClient() (context.Context, apiclient.Client) {
 	ctx, client, err := apiclient.NewClientFromOpts(
 		apiclient.Opts{
 			ArgoServerOpts: argoServerOpts,
-			InstanceID: instanceId,
+			InstanceID:     instanceId,
 			AuthSupplier: func() string {
 				return GetAuthString()
 			},

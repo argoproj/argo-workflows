@@ -25,9 +25,9 @@ type Client interface {
 
 type Opts struct {
 	ArgoServerOpts ArgoServerOpts
-	InstanceID   string
-	AuthSupplier func() string
-	ClientConfig clientcmd.ClientConfig
+	InstanceID     string
+	AuthSupplier   func() string
+	ClientConfig   clientcmd.ClientConfig
 }
 
 // DEPRECATED: use NewClientFromOpts
@@ -40,7 +40,7 @@ func NewClient(argoServer string, authSupplier func() string, clientConfig clien
 }
 
 func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
-	if opts.ArgoServer != "" && opts.InstanceID != "" {
+	if opts.ArgoServerOpts.URL != "" && opts.InstanceID != "" {
 		return nil, nil, fmt.Errorf("cannot use instance ID with Argo Server")
 	}
 	if opts.ArgoServerOpts.URL != "" {
