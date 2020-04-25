@@ -79,10 +79,10 @@ commands:
             mkdir dist
             KUBECONFIG=~/.kube/config make start DB=$DB E2E_EXECUTOR=docker DEV_IMAGE=true
             # CircleCI will kill spawned processes, so lets wait for them
-            wait
+            cat
           background: true
       - run:
-          name: Sleep for short while
+          name: Wait for Argo Server to be ready
           command: until curl -sk https://localhost:2746 -o /dev/null ; do sleep 10s ; done
       - run:
           name: Run tests
