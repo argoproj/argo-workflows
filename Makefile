@@ -353,10 +353,17 @@ start: status stop install controller cli executor-image
 	kubectl config set-context --current --namespace=argo
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
 	./hack/pf.sh &
+	kubectl logs -l app -f &
 	ALWAYS_OFFLOAD_NODE_STATUS=true OFFLOAD_NODE_STATUS_TTL=30s WORKFLOW_GC_PERIOD=30s UPPERIO_DB_DEBUG=1 ARCHIVED_WORKFLOW_GC_PERIOD=30s ./dist/workflow-controller --executor-image argoproj/argoexec:$(VERSION) --namespaced --loglevel debug &
 	UPPERIO_DB_DEBUG=1 ./dist/argo server --namespaced --auth-mode client --loglevel debug --secure &
-	kubectl logs -l app -f &
 	$(call print_env)
+
+.PHONY: wait
+wait:
+	# Wait for workflow controller
+	until lsof -i :9090 > /dev/null ; do sleep 10s ; done
+	# Wait for Argo Server
+	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
 
 define print_env
 	export ARGO_SERVER=localhost:2746

@@ -83,7 +83,7 @@ commands:
           background: true
       - run:
           name: Wait for Argo Server to be ready
-          command: until curl -sk https://localhost:2746 -o /dev/null ; do sleep 10s ; done
+          command: make wait
       - run:
           name: Run tests
           command: |
