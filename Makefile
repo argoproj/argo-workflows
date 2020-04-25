@@ -125,7 +125,7 @@ status:
 # cli
 
 .PHONY: cli
-cli: dist/argo
+cli: dist/argo argo-server.crt argo-server.key
 
 ui/dist/node_modules.marker: ui/package.json ui/yarn.lock
 	# Get UI dependencies
@@ -348,15 +348,17 @@ dist/python-alpine3.6:
 stop:
 	killall argo workflow-controller pf.sh kubectl || true
 
-.PHONY: start
-start: status stop install controller cli executor-image
+.PHONY: start-aux
+start-aux:
 	kubectl config set-context --current --namespace=argo
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
 	./hack/pf.sh &
 	kubectl logs -l app -f &
 	ALWAYS_OFFLOAD_NODE_STATUS=true OFFLOAD_NODE_STATUS_TTL=30s WORKFLOW_GC_PERIOD=30s UPPERIO_DB_DEBUG=1 ARCHIVED_WORKFLOW_GC_PERIOD=30s ./dist/workflow-controller --executor-image argoproj/argoexec:$(VERSION) --namespaced --loglevel debug &
 	UPPERIO_DB_DEBUG=1 ./dist/argo server --namespaced --auth-mode client --loglevel debug --secure &
-	$(call print_env)
+
+.PHONY: start
+start: status stop install controller cli executor-image start-aux wait env
 
 .PHONY: wait
 wait:
