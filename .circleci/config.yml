@@ -78,8 +78,8 @@ commands:
           command: |
             mkdir dist
             KUBECONFIG=~/.kube/config make start DB=$DB E2E_EXECUTOR=docker DEV_IMAGE=true
-            # CircleCI will kill spawned processes, so lets block forever
-            cat
+            # CircleCI will kill spawned processes, so lets block for 20m
+            sleep 20m
           background: true
       - run:
           name: Wait for Argo Server to be ready
