@@ -355,6 +355,10 @@ start-aux:
 	kubectl config set-context --current --namespace=argo
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
 	./hack/port-forward.sh
+	# Check minio, postgres and mysql are in hosts file
+	grep '127.0.0.1 *minio' /etc/hosts
+	grep '127.0.0.1 *postgres' /etc/hosts
+	grep '127.0.0.1 *mysql' /etc/hosts
 ifneq ($(findstring controller,$(COMPONENTS)),)
 	ALWAYS_OFFLOAD_NODE_STATUS=true OFFLOAD_NODE_STATUS_TTL=30s WORKFLOW_GC_PERIOD=30s UPPERIO_DB_DEBUG=1 ARCHIVED_WORKFLOW_GC_PERIOD=30s ./dist/workflow-controller --executor-image argoproj/argoexec:$(VERSION) --namespaced --loglevel debug &
 endif
