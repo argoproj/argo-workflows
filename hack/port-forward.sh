@@ -31,5 +31,3 @@ mysql=$(kubectl -n argo get pod -l app=mysql -o name)
 if [[ "$mysql" != "" ]]; then
   pf MySQL "$mysql" 3306
 fi
-
-wait

@@ -70,6 +70,8 @@ STATIC_BUILD          ?= true
 CI                    ?= false
 DB                    ?= postgres
 K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
+# which components to start, useful if you want to disable them to debug
+COMPONENTS            := controller,argo-server
 
 ifeq ($(CI),true)
 TEST_OPTS := -coverprofile=coverage.out
@@ -352,20 +354,28 @@ stop:
 start-aux:
 	kubectl config set-context --current --namespace=argo
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
-	./hack/pf.sh &
+	./hack/port-forward.sh
 	kubectl logs -l app -f &
+ifneq ($(findstring controller,$(COMPONENTS)),)
 	ALWAYS_OFFLOAD_NODE_STATUS=true OFFLOAD_NODE_STATUS_TTL=30s WORKFLOW_GC_PERIOD=30s UPPERIO_DB_DEBUG=1 ARCHIVED_WORKFLOW_GC_PERIOD=30s ./dist/workflow-controller --executor-image argoproj/argoexec:$(VERSION) --namespaced --loglevel debug &
+endif
+ifneq ($(findstring argo-server,$(COMPONENTS)),)
 	UPPERIO_DB_DEBUG=1 ./dist/argo server --namespaced --auth-mode client --loglevel debug --secure &
+endif
 
 .PHONY: start
 start: status stop install controller cli executor-image start-aux wait env
 
 .PHONY: wait
 wait:
+ifneq ($(findstring controller,$(COMPONENTS)),)
 	# Wait for workflow controller
 	until lsof -i :9090 > /dev/null ; do sleep 10s ; done
+endif
+ifneq ($(findstring argo-server,$(COMPONENTS)),)
 	# Wait for Argo Server
 	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
+endif
 
 define print_env
 	export ARGO_SERVER=localhost:2746

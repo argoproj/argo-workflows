@@ -12,7 +12,6 @@
 Useful:
 
 * For a PS1 prompt showing your current kube context: kube-ps1 to help.  `brew install kube-ps1`
-* For tailing logs: Stern. `brew install stern`
 
 K3D tip: You can set-up K3D to be part of your default kube config as follows
 
@@ -27,13 +26,9 @@ If you prefer MySQL:
 
 	make start DB=mysql
 
-To expose the services port forwards:
-
-	make pf
-
 You’ll now have
 
-* Argo on http://localhost:2746 (see below)
+* Argo on https://localhost:2746
 * MinIO  http://localhost:9000 (use admin/password)
 
 Either:
@@ -49,6 +44,8 @@ You need the token to access the CLI or UI:
 
 At this point you’ll have everything you need to use the CLI and UI.
 
+## User Interface
+
 Tip: If you want to make UI changes without a time-consuming build:
 
     cd ui
@@ -57,25 +54,29 @@ Tip: If you want to make UI changes without a time-consuming build:
 
 The UI will start up on http://localhost:8080.
 
+## Debugging
+
 If you want to run controller or argo-server in your IDE (e.g. so you can debug it):
 
 Add to /etc/hosts:
 
+    127.0.0.1 minio
     127.0.0.1 postgres
     127.0.0.1 mysql
 
-Scale down the services you want to debug:
+Start with only components you don't want to debug;
 
-    kubectl -n argo scale deploy/workflow-controller --replicas 0
-    kubectl -n argo scale deploy/argo-server --replicas 0
+    make start COMPONENTS=controller
+    
+Or
 
-Restart the port forwarding:
-
-    make pf
-
-To find the command arguments you need to use, you’ll have to look at dist/postgres.yaml (or dist/mysql.yaml for MySQL aficionados).
+    make start COMPONENTS=argo-server
+    
+To find the command arguments you need to use, you’ll have to look at the `start` target in the `Makefile`.`
 
 ### Running Sonar Locally
+
+This can only be done if you have already created a pull request.
 
 Install the scanner:
 
@@ -101,5 +102,6 @@ SONAR_TOKEN=... sonar-scanner -Dsonar.pullrequest.key=... -Dsonar.pullrequest.br
 
 To clean-up everything:
 
-    kubectl delete ns argo
     make clean
+    kubectl delete ns argo
+    docker system prune -af
