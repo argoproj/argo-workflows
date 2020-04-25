@@ -78,7 +78,7 @@ commands:
           command: |
             mkdir dist
             KUBECONFIG=~/.kube/config make start DB=$DB E2E_EXECUTOR=docker DEV_IMAGE=true
-            # CircleCI will kill spawned processes, so lets wait for them
+            # CircleCI will kill spawned processes, so lets block forever
             cat
           background: true
       - run:
