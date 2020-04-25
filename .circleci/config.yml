@@ -76,9 +76,9 @@ commands:
       - run:
           name: Start Argo
           command: |
-            sudo echo '127.0.0.1 minio' >> /etc/hosts
-            sudo echo '127.0.0.1 postgres' >> /etc/hosts
-            sudo echo '127.0.0.1 mysql' >> /etc/hosts
+            echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
+            echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
+            echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
             mkdir dist
             KUBECONFIG=~/.kube/config make start DB=$DB E2E_EXECUTOR=docker DEV_IMAGE=true
             # CircleCI will kill spawned processes, so lets block for 20m
