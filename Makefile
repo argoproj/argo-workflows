@@ -234,7 +234,7 @@ $(HOME)/go/bin/mockery:
 	$(call restore_go_mod)
 
 .PHONY: mocks
-mocks:
+mocks: $(HOME)/go/bin/mockery
 	./hack/update-mocks.sh $(MOCK_FILES)
 
 .PHONY: codegen
@@ -357,7 +357,6 @@ start: status stop install controller cli executor-image
 	UPPERIO_DB_DEBUG=1 ./dist/argo server --namespaced --auth-mode client --loglevel debug --secure &
 	kubectl logs -l app -f &
 	$(call print_env)
-
 
 define print_env
 	export ARGO_SERVER=localhost:2746
