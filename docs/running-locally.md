@@ -18,6 +18,12 @@ K3D tip: You can set-up K3D to be part of your default kube config as follows
     cp ~/.kube/config ~/.kube/config.bak
     cat $(k3d get-kubeconfig --name='k3s-default') >> ~/.kube/config
 
+Add to /etc/hosts:
+
+    127.0.0.1 minio
+    127.0.0.1 postgres
+    127.0.0.1 mysql
+
 To install into the “argo” namespace of your cluster: Argo, MinIO (for saving artifacts and logs) and Postgres (for offloading or archiving):
 
     make start 
@@ -58,11 +64,6 @@ The UI will start up on http://localhost:8080.
 
 If you want to run controller or argo-server in your IDE (e.g. so you can debug it):
 
-Add to /etc/hosts:
-
-    127.0.0.1 minio
-    127.0.0.1 postgres
-    127.0.0.1 mysql
 
 Start with only components you don't want to debug;
 
