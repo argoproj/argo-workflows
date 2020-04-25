@@ -17,6 +17,7 @@ import ErrorBoundary from './shared/components/error-boundary';
 import {services} from './shared/services';
 import workflowTemplates from './workflow-templates';
 import workflows from './workflows';
+import artifacts from './artifacts';
 
 const workflowsUrl = uiUrl('workflows');
 const workflowTemplatesUrl = uiUrl('workflow-templates');
@@ -24,6 +25,7 @@ const clusterWorkflowTemplatesUrl = uiUrl('cluster-workflow-templates');
 
 const cronWorkflowUrl = uiUrl('cron-workflows');
 const archivedWorkflowUrl = uiUrl('archived-workflows');
+const artifactsUrl = uiUrl('artifacts');
 const helpUrl = uiUrl('help');
 const loginUrl = uiUrl('login');
 const timelineUrl = uiUrl('timeline');
@@ -35,6 +37,7 @@ const routes: {
     [clusterWorkflowTemplatesUrl]: {component: clusterWorkflowTemplates.component},
     [cronWorkflowUrl]: {component: cronWorkflows.component},
     [archivedWorkflowUrl]: {component: archivedWorkflows.component},
+    [artifactsUrl]: {component: artifacts.component},
     [helpUrl]: {component: help.component},
     [loginUrl]: {component: login.component}
 };
@@ -66,6 +69,11 @@ const navItems = [
         title: 'Archived Workflows',
         path: archivedWorkflowUrl,
         iconClassName: 'fa fa-archive'
+    },
+    {
+        title: 'Artifacts',
+        path: artifactsUrl,
+        iconClassName: 'fa fa-artifact'
     },
     {
         title: 'Login',

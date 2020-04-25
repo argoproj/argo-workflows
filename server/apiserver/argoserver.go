@@ -21,6 +21,7 @@ import (
 	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
+	artifactpkg "github.com/argoproj/argo/pkg/apiclient/artifact"
 	clusterwftemplatepkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
 	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
 	infopkg "github.com/argoproj/argo/pkg/apiclient/info"
@@ -29,7 +30,7 @@ import (
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/server/artifacts"
+	"github.com/argoproj/argo/server/artifact"
 	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/server/clusterworkflowtemplate"
 	"github.com/argoproj/argo/server/cronworkflow"
@@ -131,9 +132,8 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		// disable the archiving - and still read old records
 		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, configMap.InstanceID)
 	}
-	artifactServer := artifacts.NewArtifactServer(as.authenticator, offloadRepo, wfArchive)
 	grpcServer := as.newGRPCServer(configMap.InstanceID, offloadRepo, wfArchive, configMap.Links)
-	httpServer := as.newHTTPServer(ctx, port, artifactServer)
+	httpServer := as.newHTTPServer(ctx, port)
 
 	// Start listener
 	var conn net.Listener
@@ -200,12 +200,13 @@ func (as *argoServer) newGRPCServer(instanceID string, offloadNodeStatusRepo sql
 	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer(instanceID))
 	workflowarchivepkg.RegisterArchivedWorkflowServiceServer(grpcServer, workflowarchive.NewWorkflowArchiveServer(wfArchive))
 	clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceServer(grpcServer, clusterworkflowtemplate.NewClusterWorkflowTemplateServer())
+	artifactpkg.RegisterArtifactServiceServer(grpcServer, artifact.NewArtifactServer(offloadNodeStatusRepo))
 	return grpcServer
 }
 
 // newHTTPServer returns the HTTP server to serve HTTP/HTTPS requests. This is implemented
 // using grpc-gateway as a proxy to the gRPC server.
-func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServer *artifacts.ArtifactServer) *http.Server {
+func (as *argoServer) newHTTPServer(ctx context.Context, port int) *http.Server {
 
 	endpoint := fmt.Sprintf("localhost:%d", port)
 
@@ -234,11 +235,9 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mustRegisterGWHandler(cronworkflowpkg.RegisterCronWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowarchivepkg.RegisterArchivedWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(artifactpkg.RegisterArtifactServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 
 	mux.Handle("/api/", gwmux)
-	mux.HandleFunc("/artifacts/", artifactServer.GetArtifact)
-	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetArtifactByUID)
-	mux.HandleFunc("/logs/", artifactServer.GetLogs)
 	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef).ServerFiles)
 	return &httpServer
 }

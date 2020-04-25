@@ -1,11 +1,13 @@
-package artifacts
+package artifact
 
 import (
 	"archive/tar"
 	"compress/gzip"
 	"context"
-	"encoding/json"
 	"fmt"
+	artifactpkg "github.com/argoproj/argo/pkg/apiclient/artifact"
+	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
+	"github.com/argoproj/argo/server/workflow"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -14,9 +16,6 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/persist/sqldb"
@@ -27,46 +26,83 @@ import (
 )
 
 type ArtifactServer struct {
-	authN                 auth.Gatekeeper
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
-	wfArchive             sqldb.WorkflowArchive
 }
 
-func NewArtifactServer(authN auth.Gatekeeper, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *ArtifactServer {
-	return &ArtifactServer{authN, offloadNodeStatusRepo, wfArchive}
+func NewArtifactServer(offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) *ArtifactServer {
+	return &ArtifactServer{offloadNodeStatusRepo}
 }
 
-func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
-
-	ctx, err := a.gateKeeping(r)
-	if err != nil {
-		w.WriteHeader(401)
-		_, _ = w.Write([]byte(err.Error()))
-		return
-	}
-	path := strings.SplitN(r.URL.Path, "/", 6)
-
-	namespace := path[2]
-	workflowName := path[3]
-	nodeId := path[4]
-	artifactName := path[5]
-
-	log.WithFields(log.Fields{"namespace": namespace, "workflowName": workflowName, "nodeId": nodeId, "artifactName": artifactName}).Info("Download artifact")
-
-	wf, err := a.getWorkflow(ctx, namespace, workflowName)
-	if err != nil {
-		a.serverInternalError(err, w)
-		return
+func (a *ArtifactServer) ListArtifacts(ctx context.Context, req *artifactpkg.ArtifactListRequest) (*wfv1.ArtifactStuff, error) {
+	wfListRequest := workflowpkg.WorkflowListRequest{
+		Namespace:            req.Namespace,
+		ListOptions:          req.ListOptions,
+		Fields:               req.Fields,
+		XXX_NoUnkeyedLiteral: req.XXX_NoUnkeyedLiteral,
+		XXX_unrecognized:     req.XXX_unrecognized,
+		XXX_sizecache:        0,
 	}
 
-	data, err := a.getArtifact(ctx, wf, nodeId, artifactName)
+	workflows, err := workflow.ListWorkflows(ctx, &wfListRequest, a.offloadNodeStatusRepo)
 	if err != nil {
-		a.serverInternalError(err, w)
-		return
+		return nil, err
 	}
-	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
-	a.ok(w, data)
+
+	artifactInfo := map[string]map[string][]string{}
+	for _, w := range workflows.Items {
+		nodeInfo := map[string][]string{}
+
+		for nodeId, node := range w.Status.Nodes {
+			var uuids []string
+
+			for _, a := range node.Outputs.Artifacts {
+				uuids = append(uuids, a.GlobalName)
+			}
+
+			nodeInfo[nodeId] = uuids
+		}
+
+		artifactInfo[string(w.UID)] = nodeInfo
+	}
+
+	artifactStuff := wfv1.ArtifactStuff{
+		Artifacts: artifactInfo,
+	}
+
+	return &artifactStuff, nil
 }
+
+//func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
+//
+//	ctx, err := a.gateKeeping(r)
+//	if err != nil {
+//		w.WriteHeader(401)
+//		_, _ = w.Write([]byte(err.Error()))
+//		return
+//	}
+//	path := strings.SplitN(r.URL.Path, "/", 6)
+//
+//	namespace := path[2]
+//	workflowName := path[3]
+//	nodeId := path[4]
+//	artifactName := path[5]
+//
+//	log.WithFields(log.Fields{"namespace": namespace, "workflowName": workflowName, "nodeId": nodeId, "artifactName": artifactName}).Info("Download artifact")
+//
+//	wf, err := a.getWorkflow(ctx, namespace, workflowName)
+//	if err != nil {
+//		a.serverInternalError(err, w)
+//		return
+//	}
+//
+//	data, err := a.getArtifact(ctx, wf, nodeId, artifactName)
+//	if err != nil {
+//		a.serverInternalError(err, w)
+//		return
+//	}
+//	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
+//	a.ok(w, data)
+//}
 
 // Information to enable downloading logs for a given workflow.
 type LogDownloadInfo struct {
@@ -74,57 +110,57 @@ type LogDownloadInfo struct {
 	WorkflowNamespace string `json:"namespace"`
 }
 
-func (a *ArtifactServer) GetLogs(w http.ResponseWriter, r *http.Request) {
-	ctx, err := a.gateKeeping(r)
-	if err != nil {
-		w.WriteHeader(401)
-		_, _ = w.Write([]byte(err.Error()))
-		return
-	}
-
-	tmpDir, err := ioutil.TempDir(".", "main-logs")
-	if err != nil {
-		a.serverInternalError(err, w)
-		return
-	}
-
-	var workflowNames []LogDownloadInfo
-	err = json.Unmarshal([]byte(r.PostFormValue("workflows")), &workflowNames)
-	if err != nil {
-		w.WriteHeader(401)
-		_, _ = w.Write([]byte(err.Error()))
-		return
-	}
-
-	for _, workflowInfo := range workflowNames {
-		wf, err := a.getWorkflow(ctx, workflowInfo.WorkflowNamespace, workflowInfo.WorkflowName)
-		if err != nil {
-			a.serverInternalError(err, w)
-			return
-		}
-
-		err = os.Mkdir(filepath.Join(tmpDir, workflowInfo.WorkflowName), 0744)
-		if err != nil {
-			a.serverInternalError(err, w)
-			return
-		}
-
-		err = a.getLogArtifacts(ctx, wf, filepath.Join(tmpDir, workflowInfo.WorkflowName))
-		if err != nil {
-			a.serverInternalError(err, w)
-			return
-		}
-	}
-
-	data, err := dirToTarGz(tmpDir, "")
-	if err != nil {
-		a.serverInternalError(err, w)
-		return
-	}
-
-	w.Header().Add("Content-Disposition", `filename="workflow-main-logs.tgz"`)
-	a.ok(w, data)
-}
+//func (a *ArtifactServer) GetLogs(w http.ResponseWriter, r *http.Request) {
+//	ctx, err := a.gateKeeping(r)
+//	if err != nil {
+//		w.WriteHeader(401)
+//		_, _ = w.Write([]byte(err.Error()))
+//		return
+//	}
+//
+//	tmpDir, err := ioutil.TempDir(".", "main-logs")
+//	if err != nil {
+//		a.serverInternalError(err, w)
+//		return
+//	}
+//
+//	var workflowNames []LogDownloadInfo
+//	err = json.Unmarshal([]byte(r.PostFormValue("workflows")), &workflowNames)
+//	if err != nil {
+//		w.WriteHeader(401)
+//		_, _ = w.Write([]byte(err.Error()))
+//		return
+//	}
+//
+//	for _, workflowInfo := range workflowNames {
+//		wf, err := a.getWorkflow(ctx, workflowInfo.WorkflowNamespace, workflowInfo.WorkflowName)
+//		if err != nil {
+//			a.serverInternalError(err, w)
+//			return
+//		}
+//
+//		err = os.Mkdir(filepath.Join(tmpDir, workflowInfo.WorkflowName), 0744)
+//		if err != nil {
+//			a.serverInternalError(err, w)
+//			return
+//		}
+//
+//		err = a.getLogArtifacts(ctx, wf, filepath.Join(tmpDir, workflowInfo.WorkflowName))
+//		if err != nil {
+//			a.serverInternalError(err, w)
+//			return
+//		}
+//	}
+//
+//	data, err := dirToTarGz(tmpDir, "")
+//	if err != nil {
+//		a.serverInternalError(err, w)
+//		return
+//	}
+//
+//	w.Header().Add("Content-Disposition", `filename="workflow-main-logs.tgz"`)
+//	a.ok(w, data)
+//}
 
 // Get node IDs for nodes with main-logs artifacts.
 func GetLogNodeIds(w *wfv1.Workflow) []string {
@@ -166,51 +202,51 @@ func GetLogNodeIds(w *wfv1.Workflow) []string {
 	return nodes
 }
 
-func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request) {
-	ctx, err := a.gateKeeping(r)
-	if err != nil {
-		w.WriteHeader(401)
-		_, _ = w.Write([]byte(err.Error()))
-		return
-	}
-	path := strings.SplitN(r.URL.Path, "/", 6)
+//func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request) {
+//	ctx, err := a.gateKeeping(r)
+//	if err != nil {
+//		w.WriteHeader(401)
+//		_, _ = w.Write([]byte(err.Error()))
+//		return
+//	}
+//	path := strings.SplitN(r.URL.Path, "/", 6)
+//
+//	uid := path[2]
+//	nodeId := path[3]
+//	artifactName := path[4]
+//
+//	log.WithFields(log.Fields{"uid": uid, "nodeId": nodeId, "artifactName": artifactName}).Info("Download artifact")
+//
+//	wf, err := a.getWorkflowByUID(ctx, uid)
+//	if err != nil {
+//		a.serverInternalError(err, w)
+//		return
+//	}
+//
+//	data, err := a.getArtifact(ctx, wf, nodeId, artifactName)
+//	if err != nil {
+//		a.serverInternalError(err, w)
+//		return
+//	}
+//	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
+//	a.ok(w, data)
+//}
 
-	uid := path[2]
-	nodeId := path[3]
-	artifactName := path[4]
-
-	log.WithFields(log.Fields{"uid": uid, "nodeId": nodeId, "artifactName": artifactName}).Info("Download artifact")
-
-	wf, err := a.getWorkflowByUID(ctx, uid)
-	if err != nil {
-		a.serverInternalError(err, w)
-		return
-	}
-
-	data, err := a.getArtifact(ctx, wf, nodeId, artifactName)
-	if err != nil {
-		a.serverInternalError(err, w)
-		return
-	}
-	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
-	a.ok(w, data)
-}
-
-func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
-	token := r.Header.Get("Authorization")
-	if token == "" {
-		cookie, err := r.Cookie("authorization")
-		if err != nil {
-			if err != http.ErrNoCookie {
-				return nil, err
-			}
-		} else {
-			token = cookie.Value
-		}
-	}
-	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"authorization": []string{token}})
-	return a.authN.Context(ctx)
-}
+//func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
+//	token := r.Header.Get("Authorization")
+//	if token == "" {
+//		cookie, err := r.Cookie("authorization")
+//		if err != nil {
+//			if err != http.ErrNoCookie {
+//				return nil, err
+//			}
+//		} else {
+//			token = cookie.Value
+//		}
+//	}
+//	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"authorization": []string{token}})
+//	return a.authN.Context(ctx)
+//}
 
 func (a *ArtifactServer) ok(w http.ResponseWriter, data []byte) {
 	w.WriteHeader(200)
@@ -395,17 +431,17 @@ func (a *ArtifactServer) getWorkflow(ctx context.Context, namespace string, work
 	return wf, nil
 }
 
-func (a *ArtifactServer) getWorkflowByUID(ctx context.Context, uid string) (*wfv1.Workflow, error) {
-	wf, err := a.wfArchive.GetWorkflow(uid)
-	if err != nil {
-		return nil, err
-	}
-	allowed, err := auth.CanI(ctx, "get", "workflows", wf.Namespace, wf.Name)
-	if err != nil {
-		return nil, err
-	}
-	if !allowed {
-		return nil, status.Error(codes.PermissionDenied, "permission denied")
-	}
-	return wf, nil
-}
+//func (a *ArtifactServer) getWorkflowByUID(ctx context.Context, uid string) (*wfv1.Workflow, error) {
+//	wf, err := a.wfArchive.GetWorkflow(uid)
+//	if err != nil {
+//		return nil, err
+//	}
+//	allowed, err := auth.CanI(ctx, "get", "workflows", wf.Namespace, wf.Name)
+//	if err != nil {
+//		return nil, err
+//	}
+//	if !allowed {
+//		return nil, status.Error(codes.PermissionDenied, "permission denied")
+//	}
+//	return wf, nil
+//}

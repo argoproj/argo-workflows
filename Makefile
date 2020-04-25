@@ -255,7 +255,7 @@ codegen: status codegen-core swagger mocks docs
 .PHONY: codegen-core
 codegen-core:
 	$(call backup_go_mod)
-	# We need the folder for compatibility
+	# We need the folder for compatibility... with what???
 	go mod vendor
 	# Generate proto
 	./hack/generate-proto.sh

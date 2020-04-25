@@ -119,6 +119,17 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 }
 
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest) (*v1alpha1.WorkflowList, error) {
+	var listOption = metav1.ListOptions{}
+	if req.ListOptions != nil {
+		listOption = *req.ListOptions
+	}
+	newOpts := s.withInstanceID(listOption)
+	req.ListOptions = &newOpts
+
+	return ListWorkflows(ctx, req, s.offloadNodeStatusRepo)
+}
+
+func ListWorkflows(ctx context.Context, req *workflowpkg.WorkflowListRequest, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) (*v1alpha1.WorkflowList, error) {
 	wfClient := auth.GetWfClient(ctx)
 
 	var listOption = metav1.ListOptions{}
@@ -126,18 +137,18 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		listOption = *req.ListOptions
 	}
 
-	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).List(s.withInstanceID(listOption))
+	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).List(listOption)
 	if err != nil {
 		return nil, err
 	}
-	if s.offloadNodeStatusRepo.IsEnabled() {
-		offloadedNodes, err := s.offloadNodeStatusRepo.List(req.Namespace)
+	if offloadNodeStatusRepo.IsEnabled() {
+		offloadedNodes, err := offloadNodeStatusRepo.List(req.Namespace)
 		if err != nil {
 			return nil, err
 		}
 		for i, wf := range wfList.Items {
 			if wf.Status.IsOffloadNodeStatus() {
-				if s.offloadNodeStatusRepo.IsEnabled() {
+				if offloadNodeStatusRepo.IsEnabled() {
 					wfList.Items[i].Status.Nodes = offloadedNodes[sqldb.UUIDVersion{UID: string(wf.UID), Version: wf.GetOffloadNodeStatusVersion()}]
 				} else {
 					log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn(sqldb.OffloadNodeStatusDisabled)
