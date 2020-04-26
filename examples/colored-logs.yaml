@@ -1,3 +1,4 @@
+# This example demonstrates colored logs of the logs viewer on Argo UI.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
