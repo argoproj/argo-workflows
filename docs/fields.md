@@ -210,8 +210,6 @@ Workflow is the definition of a workflow resource
 
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
 
-- [`unresolved-params.yaml`](../examples/unresolved-params.yaml)
-
 - [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
@@ -484,8 +482,6 @@ WorkflowSpec is the specification of a Workflow.
 - [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
 
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
-
-- [`unresolved-params.yaml`](../examples/unresolved-params.yaml)
 
 - [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
 
@@ -777,8 +773,6 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
 
-- [`unresolved-params.yaml`](../examples/unresolved-params.yaml)
-
 - [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
@@ -1034,8 +1028,6 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
 
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
-
-- [`unresolved-params.yaml`](../examples/unresolved-params.yaml)
 
 - [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
 
@@ -1452,8 +1444,6 @@ Template is a reusable and composable unit of execution in a workflow
 - [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
 
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
-
-- [`unresolved-params.yaml`](../examples/unresolved-params.yaml)
 
 - [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
 
@@ -2267,8 +2257,6 @@ Pod metdata
 - [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
 
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
-
-- [`unresolved-params.yaml`](../examples/unresolved-params.yaml)
 
 - [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
 
@@ -3394,8 +3382,6 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
 
-- [`unresolved-params.yaml`](../examples/unresolved-params.yaml)
-
 - [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
@@ -3803,8 +3789,6 @@ A single application container that you want to run within a pod.
 - [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
 
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
-
-- [`unresolved-params.yaml`](../examples/unresolved-params.yaml)
 
 - [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
 
@@ -4230,8 +4214,6 @@ PersistentVolumeClaimSpec describes the common attributes of storage devicesand 
 - [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
 
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
-
-- [`unresolved-params.yaml`](../examples/unresolved-params.yaml)
 
 - [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
 
