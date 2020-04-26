@@ -34,7 +34,7 @@ func GetConfig() clientcmd.ClientConfig {
 
 func AddArgoServerFlagsToCmd(cmd *cobra.Command) {
 	// "-o" like Maven
-	cmd.PersistentFlags().BoolVarP(&offline, "offline", "o", os.Getenv("ARGO_OFFLINE") == "true", "Work offline. Defaults to ARGO_OFFLINE")
+	cmd.PersistentFlags().BoolVar(&offline, "offline", os.Getenv("ARGO_OFFLINE") == "true", "Work offline. Defaults to ARGO_OFFLINE")
 	// "-s" like kubectl
 	cmd.PersistentFlags().StringVarP(&argoServerOpts.URL, "argo-server", "s", os.Getenv("ARGO_SERVER"), "API server `host:port`. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.")
 	// "-e" for encrypted - like zip

@@ -418,6 +418,13 @@ func (s *CLISuite) TestWorkflowLint() {
 			}
 		})
 	})
+	s.Run("LintFileOffline", func() {
+		s.Given().RunCli([]string{"--offline", "lint", "smoke/basic.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "smoke/basic.yaml is valid")
+			}
+		})
+	})
 	s.Run("LintFileEmptyParamDAG", func() {
 		s.Given().RunCli([]string{"lint", "expectedfailures/empty-parameter-dag.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.EqualError(t, err, "exit status 1") {
