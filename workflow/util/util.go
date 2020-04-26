@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -640,6 +641,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, repo sqldb.OffloadNodeStatus
 	nodes := wf.Status.Nodes
 	if wf.Status.IsOffloadNodeStatus() {
 		if !repo.IsEnabled() {
+			debug.PrintStack()
 			return nil, fmt.Errorf(sqldb.OffloadNodeStatusDisabled)
 		}
 		var err error
