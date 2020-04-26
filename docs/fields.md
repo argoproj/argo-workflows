@@ -37,6 +37,8 @@ Workflow is the definition of a workflow resource
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
 
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
+
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
@@ -211,6 +213,8 @@ Workflow is the definition of a workflow resource
 
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
 
+- [`unresolved-params.yaml`](../examples/unresolved-params.yaml)
+
 - [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
@@ -303,6 +307,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
+
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
@@ -481,6 +487,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
 
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
+
+- [`unresolved-params.yaml`](../examples/unresolved-params.yaml)
 
 - [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
 
@@ -592,6 +600,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
 
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
+
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
@@ -769,6 +779,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
 
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
+
+- [`unresolved-params.yaml`](../examples/unresolved-params.yaml)
 
 - [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
 
@@ -846,6 +858,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
 
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
+
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
@@ -1023,6 +1037,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
 
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
+
+- [`unresolved-params.yaml`](../examples/unresolved-params.yaml)
 
 - [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
 
@@ -1262,6 +1278,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
 
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
+
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
@@ -1437,6 +1455,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
 
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
+
+- [`unresolved-params.yaml`](../examples/unresolved-params.yaml)
 
 - [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
 
@@ -2071,6 +2091,8 @@ Pod metdata
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
 
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
+
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
@@ -2249,6 +2271,8 @@ Pod metdata
 
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
 
+- [`unresolved-params.yaml`](../examples/unresolved-params.yaml)
+
 - [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
@@ -2351,6 +2375,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`coinflip-recursive.yaml`](../examples/coinflip-recursive.yaml)
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
+
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
 
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
@@ -3191,6 +3217,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
 
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
+
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
@@ -3368,6 +3396,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`timeouts-step.yaml`](../examples/timeouts-step.yaml)
 
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
+
+- [`unresolved-params.yaml`](../examples/unresolved-params.yaml)
 
 - [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
 
@@ -3777,6 +3807,8 @@ A single application container that you want to run within a pod.
 
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
 
+- [`unresolved-params.yaml`](../examples/unresolved-params.yaml)
+
 - [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
@@ -4022,6 +4054,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devicesand 
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
 
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
+
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
@@ -4200,6 +4234,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devicesand 
 
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
 
+- [`unresolved-params.yaml`](../examples/unresolved-params.yaml)
+
 - [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
 
 - [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
@@ -4283,6 +4319,8 @@ EnvVar represents an environment variable present in a Container.
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
+
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
