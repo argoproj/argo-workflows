@@ -50,15 +50,15 @@ func newArgoKubeClient(clientConfig clientcmd.ClientConfig) (context.Context, Cl
 	return ctx, &argoKubeClient{}, nil
 }
 
-func (a *argoKubeClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
-	return &argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer("", argoKubeOffloadNodeStatusRepo)}
+func (a *argoKubeClient) NewWorkflowServiceClient() (workflowpkg.WorkflowServiceClient, error) {
+	return &argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer("", argoKubeOffloadNodeStatusRepo)}, nil
 }
 
-func (a *argoKubeClient) NewCronWorkflowServiceClient() cronworkflow.CronWorkflowServiceClient {
-	return &argoKubeCronWorkflowServiceClient{cronworkflowserver.NewCronWorkflowServer("")}
+func (a *argoKubeClient) NewCronWorkflowServiceClient() (cronworkflow.CronWorkflowServiceClient, error) {
+	return &argoKubeCronWorkflowServiceClient{cronworkflowserver.NewCronWorkflowServer("")}, nil
 }
-func (a *argoKubeClient) NewWorkflowTemplateServiceClient() workflowtemplate.WorkflowTemplateServiceClient {
-	return &argoKubeWorkflowTemplateServiceClient{workflowtemplateserver.NewWorkflowTemplateServer()}
+func (a *argoKubeClient) NewWorkflowTemplateServiceClient() (workflowtemplate.WorkflowTemplateServiceClient, error) {
+	return &argoKubeWorkflowTemplateServiceClient{workflowtemplateserver.NewWorkflowTemplateServer()}, nil
 }
 
 func (a *argoKubeClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {
@@ -69,6 +69,6 @@ func (a *argoKubeClient) NewInfoServiceClient() (infopkg.InfoServiceClient, erro
 	return nil, NoArgoServerErr
 }
 
-func (a *argoKubeClient) NewClusterWorkflowTemplateServiceClient() clusterworkflowtemplate.ClusterWorkflowTemplateServiceClient {
-	return &argoKubeWorkflowClusterTemplateServiceClient{clusterworkflowtmplserver.NewClusterWorkflowTemplateServer()}
+func (a *argoKubeClient) NewClusterWorkflowTemplateServiceClient() (clusterworkflowtemplate.ClusterWorkflowTemplateServiceClient, error) {
+	return &argoKubeWorkflowClusterTemplateServiceClient{clusterworkflowtmplserver.NewClusterWorkflowTemplateServer()}, nil
 }

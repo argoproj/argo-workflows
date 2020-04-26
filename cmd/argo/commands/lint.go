@@ -24,7 +24,8 @@ func NewLintCommand() *cobra.Command {
 		Short: "validate files or directories of workflow manifests",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewWorkflowServiceClient()
+			serviceClient, err := apiClient.NewWorkflowServiceClient()
+			errors.CheckError(err)
 			namespace := client.Namespace()
 
 			lint := func(file string) error {

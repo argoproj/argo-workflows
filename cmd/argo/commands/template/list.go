@@ -6,6 +6,7 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	apiv1 "k8s.io/api/core/v1"
 
@@ -28,7 +29,8 @@ func NewListCommand() *cobra.Command {
 		Short: "list workflow templates",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewWorkflowTemplateServiceClient()
+			serviceClient, err := apiClient.NewWorkflowTemplateServiceClient()
+			errors.CheckError(err)
 			namespace := client.Namespace()
 			if listArgs.allNamespaces {
 				namespace = apiv1.NamespaceAll

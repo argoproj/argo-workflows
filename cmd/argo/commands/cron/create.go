@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
 
@@ -50,7 +51,8 @@ func NewCreateCommand() *cobra.Command {
 func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts, submitOpts *cronWorkflowSubmitOpts) {
 
 	ctx, apiClient := client.NewAPIClient()
-	serviceClient := apiClient.NewCronWorkflowServiceClient()
+	serviceClient, err := apiClient.NewCronWorkflowServiceClient()
+	errors.CheckError(err)
 	namespace := client.Namespace()
 
 	fileContents, err := util.ReadManifest(filePaths...)

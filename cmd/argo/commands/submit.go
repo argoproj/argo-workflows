@@ -5,11 +5,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/argoproj/pkg/errors"
 	argoJson "github.com/argoproj/pkg/json"
+	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
@@ -153,8 +152,9 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *wfv1.Subm
 	tempwf := wfv1.Workflow{}
 
 	validateOptions([]wfv1.Workflow{tempwf}, submitOpts, cliOpts)
-
-	created, err := apiClient.NewWorkflowServiceClient().SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
+	serviceClient, err := apiClient.NewWorkflowServiceClient()
+	errors.CheckError(err)
+	created, err := serviceClient.SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
 		Namespace:     namespace,
 		ResourceKind:  kind,
 		ResourceName:  name,
@@ -171,7 +171,8 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *wfv1.Subm
 func submitWorkflows(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cliOpts *cliSubmitOpts) {
 
 	ctx, apiClient := client.NewAPIClient()
-	serviceClient := apiClient.NewWorkflowServiceClient()
+	serviceClient, err := apiClient.NewWorkflowServiceClient()
+	errors.CheckError(err)
 	namespace := client.Namespace()
 
 	validateOptions(workflows, submitOpts, cliOpts)

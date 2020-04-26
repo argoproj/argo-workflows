@@ -6,6 +6,7 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
@@ -26,8 +27,8 @@ func NewListCommand() *cobra.Command {
 		Short: "list cluster workflow templates",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
-
+			serviceClient, err := apiClient.NewClusterWorkflowTemplateServiceClient()
+			errors.CheckError(err)
 			cwftmplList, err := serviceClient.ListClusterWorkflowTemplates(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateListRequest{})
 			if err != nil {
 				log.Fatal(err)

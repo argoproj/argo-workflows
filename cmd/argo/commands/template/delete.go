@@ -33,7 +33,8 @@ func NewDeleteCommand() *cobra.Command {
 
 func apiServerDeleteWorkflowTemplates(allWFs bool, wfTmplNames []string) {
 	ctx, apiClient := client.NewAPIClient()
-	serviceClient := apiClient.NewWorkflowTemplateServiceClient()
+	serviceClient, err := apiClient.NewWorkflowTemplateServiceClient()
+	errors.CheckError(err)
 	namespace := client.Namespace()
 	var delWFTmplNames []string
 	if allWFs {

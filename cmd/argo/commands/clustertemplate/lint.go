@@ -23,8 +23,8 @@ func NewLintCommand() *cobra.Command {
 		Short: "validate files or directories of cluster workflow template manifests",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
-
+			serviceClient, err := apiClient.NewClusterWorkflowTemplateServiceClient()
+			errors.CheckError(err)
 			lint := func(file string) error {
 				cwfTmpls, err := validate.ParseCWfTmplFromFile(file, strict)
 				if err != nil {

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -39,7 +40,8 @@ func ServerSideLint(args []string, strict bool) error {
 	validateDir := cmdutil.MustIsDir(args[0])
 
 	ctx, apiClient := client.NewAPIClient()
-	serviceClient := apiClient.NewWorkflowTemplateServiceClient()
+	serviceClient, err := apiClient.NewWorkflowTemplateServiceClient()
+	errors.CheckError(err)
 	namespace := client.Namespace()
 
 	if validateDir {

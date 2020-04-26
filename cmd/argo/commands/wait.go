@@ -39,7 +39,8 @@ func WaitWorkflows(workflowNames []string, ignoreNotFound, quiet bool) {
 	wfSuccessStatus := true
 
 	ctx, apiClient := client.NewAPIClient()
-	serviceClient := apiClient.NewWorkflowServiceClient()
+	serviceClient, err := apiClient.NewWorkflowServiceClient()
+	errors.CheckError(err)
 	namespace := client.Namespace()
 
 	for _, name := range workflowNames {

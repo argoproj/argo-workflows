@@ -40,7 +40,8 @@ func NewGetCommand() *cobra.Command {
 				os.Exit(1)
 			}
 			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewWorkflowServiceClient()
+			serviceClient, err := apiClient.NewWorkflowServiceClient()
+			errors.CheckError(err)
 			namespace := client.Namespace()
 			for _, name := range args {
 				wf, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{

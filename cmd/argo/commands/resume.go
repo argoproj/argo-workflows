@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/fields"
 
@@ -25,7 +26,8 @@ func NewResumeCommand() *cobra.Command {
 		Short: "resume zero or more workflows",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewWorkflowServiceClient()
+			serviceClient, err := apiClient.NewWorkflowServiceClient()
+			errors.CheckError(err)
 			namespace := client.Namespace()
 
 			selector, err := fields.ParseSelector(resumeArgs.nodeFieldSelector)

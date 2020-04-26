@@ -26,7 +26,8 @@ func NewRetryCommand() *cobra.Command {
 		Short: "retry zero or more workflows",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewWorkflowServiceClient()
+			serviceClient, err := apiClient.NewWorkflowServiceClient()
+			errors.CheckError(err)
 			namespace := client.Namespace()
 
 			selector, err := fields.ParseSelector(retryOps.nodeFieldSelector)

@@ -13,6 +13,7 @@ import (
 )
 
 var argoServerOpts = apiclient.ArgoServerOpts{}
+var offline bool
 
 var overrides = clientcmd.ConfigOverrides{}
 
@@ -32,6 +33,8 @@ func GetConfig() clientcmd.ClientConfig {
 }
 
 func AddArgoServerFlagsToCmd(cmd *cobra.Command) {
+	// "-o" like Maven
+	cmd.PersistentFlags().BoolVarP(&offline, "offline", "o", os.Getenv("ARGO_OFFLINE") == "true", "Work offline. Defaults to ARGO_OFFLINE")
 	// "-s" like kubectl
 	cmd.PersistentFlags().StringVarP(&argoServerOpts.URL, "argo-server", "s", os.Getenv("ARGO_SERVER"), "API server `host:port`. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.")
 	// "-e" for encrypted - like zip
@@ -41,14 +44,22 @@ func AddArgoServerFlagsToCmd(cmd *cobra.Command) {
 }
 
 func NewAPIClient() (context.Context, apiclient.Client) {
-	ctx, client, err := apiclient.NewClientFromOpts(
-		apiclient.Opts{
-			ArgoServerOpts: argoServerOpts,
-			AuthSupplier: func() string {
-				return GetAuthString()
-			},
+	opts := apiclient.Opts{
+		Offline:        offline,
+		ArgoServerOpts: argoServerOpts,
+		AuthSupplier: func() string {
+			return GetAuthString()
+		},
+		ClientConfigSupplier: func() clientcmd.ClientConfig {
+			return GetConfig()
+		},
+	}
+	if !offline {
+		opts = apiclient.Opts{
 			ClientConfig: GetConfig(),
-		})
+		}
+	}
+	ctx, client, err := apiclient.NewClientFromOpts(opts)
 	if err != nil {
 		log.Fatal(err)
 	}

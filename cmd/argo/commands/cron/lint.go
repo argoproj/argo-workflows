@@ -22,7 +22,8 @@ func NewLintCommand() *cobra.Command {
 		Short: "validate files or directories of cron workflow manifests",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewCronWorkflowServiceClient()
+			serviceClient, err := apiClient.NewCronWorkflowServiceClient()
+			errors.CheckError(err)
 			namespace := client.Namespace()
 
 			lint := func(file string) error {

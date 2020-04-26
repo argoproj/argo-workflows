@@ -37,7 +37,8 @@ func NewWatchCommand() *cobra.Command {
 func watchWorkflow(wfName string) {
 
 	ctx, apiClient := client.NewAPIClient()
-	serviceClient := apiClient.NewWorkflowServiceClient()
+	serviceClient, err := apiClient.NewWorkflowServiceClient()
+	errors.CheckError(err)
 	namespace := client.Namespace()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()

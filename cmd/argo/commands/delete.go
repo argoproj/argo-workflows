@@ -31,7 +31,8 @@ func NewDeleteCommand() *cobra.Command {
 		Use: "delete WORKFLOW...",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewWorkflowServiceClient()
+			serviceClient, err := apiClient.NewWorkflowServiceClient()
+			errors.CheckError(err)
 			namespace := client.Namespace()
 			var workflowsToDelete []metav1.ObjectMeta
 			for _, name := range args {

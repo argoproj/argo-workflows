@@ -15,32 +15,40 @@ import (
 
 type Client interface {
 	NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error)
-	NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient
-	NewCronWorkflowServiceClient() cronworkflowpkg.CronWorkflowServiceClient
-	NewWorkflowTemplateServiceClient() workflowtemplatepkg.WorkflowTemplateServiceClient
-	NewClusterWorkflowTemplateServiceClient() clusterworkflowtmplpkg.ClusterWorkflowTemplateServiceClient
+	NewWorkflowServiceClient() (workflowpkg.WorkflowServiceClient, error)
+	NewCronWorkflowServiceClient() (cronworkflowpkg.CronWorkflowServiceClient, error)
+	NewWorkflowTemplateServiceClient() (workflowtemplatepkg.WorkflowTemplateServiceClient, error)
+	NewClusterWorkflowTemplateServiceClient() (clusterworkflowtmplpkg.ClusterWorkflowTemplateServiceClient, error)
 	NewInfoServiceClient() (infopkg.InfoServiceClient, error)
 }
 
 type Opts struct {
+	Offline        bool
 	ArgoServerOpts ArgoServerOpts
 	AuthSupplier   func() string
-	ClientConfig   clientcmd.ClientConfig
+	// DEPRECATED: use ClientConfigSupplier
+	ClientConfig         clientcmd.ClientConfig
+	ClientConfigSupplier func() clientcmd.ClientConfig
 }
 
 // DEPRECATED: use NewClientFromOpts
 func NewClient(argoServer string, authSupplier func() string, clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
-	return NewClientFromOpts(Opts{
+	opts := Opts{
 		ArgoServerOpts: ArgoServerOpts{URL: argoServer},
 		AuthSupplier:   authSupplier,
-		ClientConfig:   clientConfig,
-	})
+		ClientConfigSupplier: func() clientcmd.ClientConfig {
+			return clientConfig
+		},
+	}
+	return NewClientFromOpts(opts)
 }
 
 func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
-	if opts.ArgoServerOpts.URL != "" {
+	if opts.Offline {
+		return newOfflineClient()
+	} else if opts.ArgoServerOpts.URL != "" {
 		return newArgoServerClient(opts.ArgoServerOpts, opts.AuthSupplier())
 	} else {
-		return newArgoKubeClient(opts.ClientConfig)
+		return newArgoKubeClient(opts.ClientConfigSupplier())
 	}
 }

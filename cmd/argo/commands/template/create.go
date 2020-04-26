@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
 
@@ -45,7 +46,8 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 		cliOpts = &cliCreateOpts{}
 	}
 	ctx, apiClient := client.NewAPIClient()
-	serviceClient := apiClient.NewWorkflowTemplateServiceClient()
+	serviceClient, err := apiClient.NewWorkflowTemplateServiceClient()
+	errors.CheckError(err)
 	namespace := client.Namespace()
 
 	fileContents, err := util.ReadManifest(filePaths...)

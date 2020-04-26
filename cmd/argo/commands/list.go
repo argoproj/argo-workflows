@@ -65,7 +65,8 @@ func NewListCommand() *cobra.Command {
 			listOpts.LabelSelector = labelSelector.String()
 
 			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewWorkflowServiceClient()
+			serviceClient, err := apiClient.NewWorkflowServiceClient()
+			errors.CheckError(err)
 			namespace := client.Namespace()
 			if listArgs.allNamespaces {
 				namespace = ""

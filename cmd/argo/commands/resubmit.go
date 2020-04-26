@@ -18,7 +18,8 @@ func NewResubmitCommand() *cobra.Command {
 		Short: "resubmit one or more workflows",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewWorkflowServiceClient()
+			serviceClient, err := apiClient.NewWorkflowServiceClient()
+			errors.CheckError(err)
 			namespace := client.Namespace()
 
 			for _, name := range args {
