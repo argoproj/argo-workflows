@@ -33,7 +33,6 @@ func GetConfig() clientcmd.ClientConfig {
 }
 
 func AddArgoServerFlagsToCmd(cmd *cobra.Command) {
-	// "-o" like Maven
 	cmd.PersistentFlags().BoolVar(&offline, "offline", os.Getenv("ARGO_OFFLINE") == "true", "Work offline. Defaults to ARGO_OFFLINE")
 	// "-s" like kubectl
 	cmd.PersistentFlags().StringVarP(&argoServerOpts.URL, "argo-server", "s", os.Getenv("ARGO_SERVER"), "API server `host:port`. e.g. localhost:2746. Defaults to the ARGO_SERVER environment variable.")
@@ -53,11 +52,6 @@ func NewAPIClient() (context.Context, apiclient.Client) {
 		ClientConfigSupplier: func() clientcmd.ClientConfig {
 			return GetConfig()
 		},
-	}
-	if !offline {
-		opts = apiclient.Opts{
-			ClientConfig: GetConfig(),
-		}
 	}
 	ctx, client, err := apiclient.NewClientFromOpts(opts)
 	if err != nil {

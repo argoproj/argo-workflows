@@ -23,11 +23,9 @@ type Client interface {
 }
 
 type Opts struct {
-	Offline        bool
-	ArgoServerOpts ArgoServerOpts
-	AuthSupplier   func() string
-	// DEPRECATED: use ClientConfigSupplier
-	ClientConfig         clientcmd.ClientConfig
+	Offline              bool
+	ArgoServerOpts       ArgoServerOpts
+	AuthSupplier         func() string
 	ClientConfigSupplier func() clientcmd.ClientConfig
 }
 
