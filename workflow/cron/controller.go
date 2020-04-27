@@ -2,6 +2,7 @@ package cron
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	cron "github.com/robfig/cron/v3"
@@ -38,6 +39,7 @@ type Controller struct {
 	cronWfInformer   extv1alpha1.CronWorkflowInformer
 	cronWfQueue      workqueue.RateLimitingInterface
 	restConfig       *rest.Config
+	lock             *sync.Mutex
 }
 
 const (
@@ -63,6 +65,7 @@ func NewCronController(
 		nameEntryIDMap:   make(map[string]cron.EntryID),
 		wfQueue:          workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		cronWfQueue:      workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		lock:             &sync.Mutex{},
 	}
 }
 
@@ -123,11 +126,13 @@ func (cc *Controller) processNextCronItem() bool {
 		return true
 	}
 	if !exists {
+		cc.lock.Lock()
 		if entryId, ok := cc.nameEntryIDMap[key.(string)]; ok {
 			log.Infof("Deleting '%s'", key)
 			cc.cron.Remove(entryId)
 			delete(cc.nameEntryIDMap, key.(string))
 		}
+		cc.lock.Unlock()
 		return true
 	}
 
@@ -150,10 +155,12 @@ func (cc *Controller) processNextCronItem() bool {
 	}
 
 	// The job is currently scheduled, remove it and re add it.
+	cc.lock.Lock()
 	if entryId, ok := cc.nameEntryIDMap[key.(string)]; ok {
 		cc.cron.Remove(entryId)
 		delete(cc.nameEntryIDMap, key.(string))
 	}
+	cc.lock.Unlock()
 
 	cronSchedule := cronWf.Spec.Schedule
 	if cronWf.Spec.Timezone != "" {
@@ -165,7 +172,9 @@ func (cc *Controller) processNextCronItem() bool {
 		log.Errorf("could not schedule CronWorkflow: %s", err)
 		return true
 	}
+	cc.lock.Lock()
 	cc.nameEntryIDMap[key.(string)] = entryId
+	cc.lock.Unlock()
 
 	log.Infof("CronWorkflow %s added", key.(string))
 
@@ -219,7 +228,10 @@ func (cc *Controller) processNextWorkflowItem() bool {
 	// Workflows are run in the same namespace as CronWorkflow
 	nameEntryIdMapKey := wf.Namespace + "/" + wf.OwnerReferences[0].Name
 	var woc *cronWfOperationCtx
-	if entryId, ok := cc.nameEntryIDMap[nameEntryIdMapKey]; ok {
+	cc.lock.Lock()
+	entryId, ok := cc.nameEntryIDMap[nameEntryIdMapKey]
+	cc.lock.Unlock()
+	if ok {
 		woc, ok = cc.cron.Entry(entryId).Job.(*cronWfOperationCtx)
 		if !ok {
 			log.Errorf("Parent CronWorkflow '%s' is malformed", nameEntryIdMapKey)
