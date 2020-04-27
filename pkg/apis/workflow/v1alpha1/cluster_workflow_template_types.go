@@ -71,3 +71,7 @@ func (cwftmpl *ClusterWorkflowTemplate) GetEntrypoint() string {
 func (cwftmpl *ClusterWorkflowTemplate) GetVolumes() []apiv1.Volume {
 	return cwftmpl.Spec.Volumes
 }
+
+func (cwftmpl *ClusterWorkflowTemplate) GetTemplates() []Template {
+	return cwftmpl.Spec.Templates
+}

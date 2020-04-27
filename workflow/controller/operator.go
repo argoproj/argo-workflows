@@ -290,7 +290,7 @@ func (woc *wfOperationCtx) operate() {
 	if woc.hasTopLevelWFTmplRef {
 		var args wfv1.Arguments
 		args.Parameters = util.MergeParameters(woc.wf.Spec.Arguments.Parameters, woc.topLevelWFTmplRef.GetArguments().Parameters)
-		node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{TemplateRef: woc.getTemplateRef()}, tmplCtx, args, &executeTemplateOpts{})
+		node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{TemplateRef: woc.convertWFTmplRefToTmplRef()}, tmplCtx, args, &executeTemplateOpts{})
 	} else {
 		node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{Template: woc.wf.Spec.Entrypoint}, tmplCtx, woc.wf.Spec.Arguments, &executeTemplateOpts{})
 	}
@@ -2611,15 +2611,12 @@ func (woc *wfOperationCtx) checkAndInitWorkflowTmplRef() {
 		return
 	}
 
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(woc.wf.Namespace))
-	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(woc.controller.wfclientset.ArgoprojV1alpha1().ClusterWorkflowTemplates())
-
 	// Logic for Top level Workflow template reference
 	if woc.hasTopLevelWFTmplRef {
 		if woc.wf.Spec.WorkflowTemplateRef.ClusterScope {
-			wftmpl, err = cwftmplGetter.Get(woc.wf.Spec.WorkflowTemplateRef.Name)
+			wftmpl, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name)
 		} else {
-			wftmpl, err = wftmplGetter.Get(woc.wf.Spec.WorkflowTemplateRef.Name)
+			wftmpl, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)
 		}
 		if err != nil {
 			msg := fmt.Sprintf("Unable to get Workflow Template Reference for workflow, %s error: %s", woc.wf.Name, err)
@@ -2632,7 +2629,7 @@ func (woc *wfOperationCtx) checkAndInitWorkflowTmplRef() {
 	woc.volumes = util.MergeVolume(woc.volumes, wftmpl.GetVolumes())
 }
 
-func (woc *wfOperationCtx) getTemplateRef() *wfv1.TemplateRef {
+func (woc *wfOperationCtx) convertWFTmplRefToTmplRef() *wfv1.TemplateRef {
 	tmplRef := &wfv1.TemplateRef{}
 	tmplRef.Name = woc.wf.Spec.WorkflowTemplateRef.Name
 	tmplRef.ClusterScope = woc.wf.Spec.WorkflowTemplateRef.ClusterScope
@@ -2640,8 +2637,93 @@ func (woc *wfOperationCtx) getTemplateRef() *wfv1.TemplateRef {
 	if entrypoint == "" {
 		if woc.hasTopLevelWFTmplRef {
 			entrypoint = woc.topLevelWFTmplRef.GetEntrypoint()
+			woc.wf.Spec.Entrypoint = entrypoint
 		}
 	}
 	tmplRef.Template = entrypoint
 	return tmplRef
+}
+
+func (woc *wfOperationCtx) mergeAllWFTemplateParameters()([]wfv1.Parameter, []apiv1.Volume, error){
+	var parameters []wfv1.Parameter
+	var volumes []apiv1.Volume
+
+	parameters = woc.wf.GetArguments().Parameters
+	volumes = woc.wf.GetVolumes()
+	for _, tmpl := range woc.wf.GetTemplates(){
+		if tmpl.Steps != nil {
+			for _, stepGroup :=range tmpl.Steps{
+				for _, step :=range stepGroup.Steps{
+					if step.TemplateRef != nil {
+						tmplParams, tmplVols, err := woc.getWFTTemplateParams(step.TemplateRef)
+						if err != nil {
+							return parameters, volumes, err
+						}
+						parameters = util.MergeParameters(parameters, tmplParams)
+						volumes = util.MergeVolume(volumes, tmplVols)
+					}
+				}
+			}
+		}
+		if tmpl.DAG != nil{
+			for _, task :=range tmpl.DAG.Tasks{
+				if task.TemplateRef != nil {
+					tmplParams, tmplVols, err := woc.getWFTTemplateParams(task.TemplateRef)
+					if err != nil {
+						return parameters, volumes, err
+					}
+					parameters = util.MergeParameters(parameters, tmplParams)
+					volumes = util.MergeVolume(volumes, tmplVols)
+				}
+			}
+		}
+	}
+
+	return parameters, volumes, nil
+}
+
+func (woc *wfOperationCtx) getWFTTemplateParams(tmplRef *wfv1.TemplateRef) ([]wfv1.Parameter, []apiv1.Volume, error){
+	var wftmpl wfv1.TemplateHolder
+	var err error
+	var parameters []wfv1.Parameter
+	var volumes []apiv1.Volume
+	if woc.wf.Spec.WorkflowTemplateRef.ClusterScope {
+		wftmpl, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(tmplRef.Name)
+	} else {
+		wftmpl, err = woc.controller.cwftmplInformer.Lister().Get(tmplRef.Name)
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	parameters = wftmpl.GetArguments().Parameters
+
+	for _, tmpl := range wftmpl.GetTemplates(){
+		if tmpl.Steps != nil {
+			for _, stepGroup :=range tmpl.Steps{
+				for _, step :=range stepGroup.Steps{
+					if step.TemplateRef != nil {
+						tmplParams, tmplVols, err := woc.getWFTTemplateParams(step.TemplateRef)
+						if err != nil {
+							return parameters, volumes, err
+						}
+						parameters = util.MergeParameters(parameters, tmplParams)
+						volumes = util.MergeVolume(volumes, tmplVols)
+					}
+				}
+			}
+		}
+		if tmpl.DAG != nil{
+			for _, task :=range tmpl.DAG.Tasks{
+				if task.TemplateRef != nil {
+					tmplParams, tmplVols, err := woc.getWFTTemplateParams(task.TemplateRef)
+					if err != nil {
+						return parameters, volumes, err
+					}
+					parameters = util.MergeParameters(parameters, tmplParams)
+					volumes = util.MergeVolume(volumes, tmplVols)
+				}
+			}
+		}
+	}
+	return parameters, volumes,  nil
 }

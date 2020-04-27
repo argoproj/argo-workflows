@@ -75,3 +75,7 @@ func (wftmpl *WorkflowTemplate) GetEntrypoint() string {
 func (wftmpl *WorkflowTemplate) GetVolumes() []apiv1.Volume {
 	return wftmpl.Spec.Volumes
 }
+
+func (wftmpl *WorkflowTemplate) GetTemplates() []Template {
+	return wftmpl.Spec.Templates
+}

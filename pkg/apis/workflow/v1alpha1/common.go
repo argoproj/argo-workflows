@@ -23,6 +23,7 @@ type TemplateHolder interface {
 	GetArguments() Arguments
 	GetEntrypoint() string
 	GetVolumes() []v1.Volume
+	GetTemplates() []Template
 }
 
 // TemplateReferenceHolder is an object that holds a reference to other templates; e.g. WorkflowStep, DAGTask, and NodeStatus
