@@ -9,7 +9,6 @@ import {uiUrl} from '../../../shared/base';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
 
-import {WorkflowListItem} from '..';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
 import {Query} from '../../../shared/components/query';
@@ -18,11 +17,18 @@ import {ZeroState} from '../../../shared/components/zero-state';
 import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
 
+import {Ticker} from 'argo-ui/src/index';
+import * as classNames from 'classnames';
+import * as moment from 'moment';
+import {Timestamp} from '../../../shared/components/timestamp';
+import {formatDuration} from '../../../shared/duration';
 import {WorkflowFilters} from '../workflow-filters/workflow-filters';
 
 require('./workflows-list.scss');
 
 interface State {
+    offset: string;
+    nextOffset: string;
     loading: boolean;
     initialized: boolean;
     managedNamespace: boolean;
@@ -43,6 +49,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         super(props, context);
         this.state = {
             loading: true,
+            offset: this.queryParam('continue') || '',
+            nextOffset: '',
             initialized: false,
             managedNamespace: false,
             namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || '',
@@ -52,7 +60,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     public componentDidMount(): void {
-        this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels);
+        this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, '');
     }
 
     public componentWillUnmount(): void {
@@ -96,7 +104,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                         phaseItems={Object.values(models.NODE_PHASE)}
                                         selectedPhases={this.state.selectedPhases}
                                         selectedLabels={this.state.selectedLabels}
-                                        onChange={(namespace, selectedPhases, selectedLabels) => this.changeFilters(namespace, selectedPhases, selectedLabels)}
+                                        onChange={(namespace, selectedPhases, selectedLabels) => this.changeFilters(namespace, selectedPhases, selectedLabels, this.state.offset)}
                                     />
                                 </div>
                             </div>
@@ -128,7 +136,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         );
     }
 
-    private fetchWorkflows(namespace: string, selectedPhases: string[], selectedLabels: string[]): void {
+    private fetchWorkflows(namespace: string, selectedPhases: string[], selectedLabels: string[], offset: string): void {
         if (this.subscription) {
             this.subscription.unsubscribe();
         }
@@ -140,13 +148,13 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                     newNamespace = info.managedNamespace;
                 }
                 this.setState({initialized: true, managedNamespace: !!info.managedNamespace});
-                return services.workflows.list(newNamespace, selectedPhases, selectedLabels);
+                return services.workflows.list(newNamespace, selectedPhases, selectedLabels, offset);
             });
         } else {
             if (this.state.managedNamespace) {
                 newNamespace = this.state.namespace;
             }
-            workflowList = services.workflows.list(newNamespace, selectedPhases, selectedLabels);
+            workflowList = services.workflows.list(newNamespace, selectedPhases, selectedLabels, offset);
         }
         workflowList
             .then(list => list.items)
@@ -191,7 +199,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             .catch(error => this.setState({error, loading: false}));
     }
 
-    private changeFilters(namespace: string, selectedPhases: string[], selectedLabels: string[]) {
+    private changeFilters(namespace: string, selectedPhases: string[], selectedLabels: string[], offset: string) {
         const params = new URLSearchParams();
         selectedPhases.forEach(phase => {
             params.append('phase', phase);
@@ -204,7 +212,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             url += '?' + params.toString();
         }
         history.pushState(null, '', uiUrl(url));
-        this.fetchWorkflows(namespace, selectedPhases, selectedLabels);
+        this.fetchWorkflows(namespace, selectedPhases, selectedLabels, offset || '');
     }
 
     private renderWorkflows() {
@@ -219,21 +227,58 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                 </ZeroState>
             );
         }
+        function wfDuration(workflow: models.WorkflowStatus, now: moment.Moment) {
+            const endTime = workflow.finishedAt ? moment(workflow.finishedAt) : now;
+            return endTime.diff(moment(workflow.startedAt)) / 1000;
+        }
         this.state.workflows.sort(compareWorkflows);
 
         return (
             <>
-                <div className='row'>
-                    <div className='columns small-12 xxlarge-12'>
-                        {this.state.workflows.map(workflow => (
-                            <div key={workflow.metadata.name}>
-                                <Link to={uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)}>
-                                    <WorkflowListItem workflow={workflow} archived={false} />
-                                </Link>
-                            </div>
-                        ))}
+                <div className='argo-table-list'>
+                    <div className='row argo-table-list__head'>
+                        <div className='columns small-1' />
+                        <div className='columns small-4'>NAME</div>
+                        <div className='columns small-3'>NAMESPACE</div>
+                        <div className='columns small-2'>STARTED</div>
+                        <div className='columns small-2'>DURATION</div>
                     </div>
+                    {this.state.workflows.map(w => (
+                        <Link className='row argo-table-list__row' key={`${w.metadata.uid}`} to={uiUrl(`workflows/${w.metadata.namespace}/${w.metadata.uid}`)}>
+                            <div className='columns small-1'>
+                                <i className={classNames('fa', Utils.statusIconClasses(w.status.phase))} />
+                            </div>
+                            <div className='columns small-4'>{w.metadata.name}</div>
+                            <div className='columns small-3'>{w.metadata.namespace}</div>
+                            <div className='columns small-2'>
+                                <Timestamp date={w.status.startedAt} />
+                            </div>
+                            <div className='columns small-2'>
+                                <Ticker>{now => formatDuration(wfDuration(w.status, now))}</Ticker>
+                            </div>
+                        </Link>
+                    ))}
                 </div>
+                <p>
+                    {this.state.offset !== '' && (
+                        <button
+                            className='argo-button argo-button--base-o'
+                            onClick={() => {
+                                this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, '');
+                            }}>
+                            <i className='fa fa-chevron-left' /> Start
+                        </button>
+                    )}
+                    {this.state.nextOffset !== '' && (
+                        <button
+                            className='argo-button argo-button--base-o'
+                            onClick={() => {
+                                this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.nextOffset);
+                            }}>
+                            Next: {this.state.nextOffset} <i className='fa fa-chevron-right' />
+                        </button>
+                    )}
+                </p>
             </>
         );
     }

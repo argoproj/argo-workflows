@@ -1,7 +1,9 @@
 import {Page, SlidingPanel} from 'argo-ui';
 
+import {Ticker} from 'argo-ui/src/index';
 import * as classNames from 'classnames';
 import {isNaN} from 'formik';
+import * as moment from 'moment';
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
@@ -13,6 +15,7 @@ import {ResourceSubmit} from '../../../shared/components/resource-submit';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
+import {formatDuration} from '../../../shared/duration';
 import {exampleWorkflow} from '../../../shared/examples';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
@@ -219,25 +222,33 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                 </ZeroState>
             );
         }
+        function wfDuration(workflow: models.WorkflowStatus, now: moment.Moment) {
+            const endTime = workflow.finishedAt ? moment(workflow.finishedAt) : now;
+            return endTime.diff(moment(workflow.startedAt)) / 1000;
+        }
 
         return (
             <>
                 <div className='argo-table-list'>
                     <div className='row argo-table-list__head'>
                         <div className='columns small-1' />
-                        <div className='columns small-5'>NAME</div>
+                        <div className='columns small-4'>NAME</div>
                         <div className='columns small-3'>NAMESPACE</div>
-                        <div className='columns small-3'>CREATED</div>
+                        <div className='columns small-2'>STARTED</div>
+                        <div className='columns small-2'>DURATION</div>
                     </div>
                     {this.state.workflows.map(w => (
                         <Link className='row argo-table-list__row' key={`${w.metadata.uid}`} to={uiUrl(`archived-workflows/${w.metadata.namespace}/${w.metadata.uid}`)}>
                             <div className='columns small-1'>
                                 <i className={classNames('fa', Utils.statusIconClasses(w.status.phase))} />
                             </div>
-                            <div className='columns small-5'>{w.metadata.name}</div>
+                            <div className='columns small-4'>{w.metadata.name}</div>
                             <div className='columns small-3'>{w.metadata.namespace}</div>
-                            <div className='columns small-3'>
-                                <Timestamp date={w.metadata.creationTimestamp} />
+                            <div className='columns small-2'>
+                                <Timestamp date={w.status.startedAt} />
+                            </div>
+                            <div className='columns small-2'>
+                                <Ticker>{now => formatDuration(wfDuration(w.status, now))}</Ticker>
                             </div>
                         </Link>
                     ))}
