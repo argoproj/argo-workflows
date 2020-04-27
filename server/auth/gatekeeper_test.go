@@ -26,7 +26,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		oauth2Service.On("Authorize", mock.Anything, mock.Anything).Return(wfv1.User{Name: "my-name"}, nil)
 		s, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, oauth2Service)
 		if assert.NoError(t, err) {
-			ctx, err := s.Context(metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": "id_token whatever"})))
+			ctx, err := s.Context(metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": "Bearer id_token:omwhatever"})))
 			if assert.NoError(t, err) {
 				user := GetUser(ctx)
 				assert.Equal(t, "my-name", user.Name)
