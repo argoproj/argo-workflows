@@ -30,7 +30,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 			// Only delete pods that are not part of an onExit handler if we are "Stopping" or all pods if we are "Terminating"
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 			if woc.wf.Spec.Shutdown == wfv1.ShutdownStrategyTerminate || (woc.wf.Spec.Shutdown == wfv1.ShutdownStrategyStop && !onExitPod) {
-				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.wf.Spec.Shutdown)
+				woc.log.Infof("Deleting pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.wf.Spec.Shutdown)
 				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
@@ -49,7 +49,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 			//pods that are part of an onExit handler aren't subject to the deadline
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 			if !onExitPod {
-				woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
+				woc.log.Infof("Deleting pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
 				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
 				if err == nil {
 					wfNodesLock.Lock()
