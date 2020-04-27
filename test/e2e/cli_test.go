@@ -231,7 +231,7 @@ func (s *CLISuite) TestRoot() {
 			}
 		})
 
-		s.Given().RunCli([]string{"list", "--chunk-size", "1"}, func(t *testing.T, output string, err error) {
+		s.Given().RunCli([]string{"list", "--limit", "1"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "NAME")
 				assert.Contains(t, output, "STATUS")
