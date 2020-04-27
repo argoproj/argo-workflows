@@ -20,10 +20,14 @@ type TemplateHolder interface {
 	GroupVersionKind() schema.GroupVersionKind
 	GetTemplateByName(name string) *Template
 	GetResourceScope() ResourceScope
-	GetArguments() Arguments
-	GetEntrypoint() string
 	GetVolumes() []v1.Volume
 	GetTemplates() []Template
+}
+
+type WorkflowSpecHolder interface {
+	GetSpec() *WorkflowSpec
+	GetArguments() Arguments
+	GetEntrypoint() string
 }
 
 // TemplateReferenceHolder is an object that holds a reference to other templates; e.g. WorkflowStep, DAGTask, and NodeStatus

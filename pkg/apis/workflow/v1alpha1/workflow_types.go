@@ -921,6 +921,8 @@ type WorkflowStatus struct {
 
 	// ResourcesDuration is the total for the workflow
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
+
+	StoredWorkflowTemplateSpec WorkflowSpec `json:"storedWorkflowTemplateSpec,omitempty" protobuf:"bytes,14,opt,name=storedWorkflowTemplateSpec"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -1714,6 +1716,11 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 // GetResourceScope returns the template scope of workflow.
 func (wf *Workflow) GetResourceScope() ResourceScope {
 	return ResourceScopeLocal
+}
+
+// GetArguments returns the Arguments.
+func (wf *Workflow) GetSpec() WorkflowSpec {
+	return wf.Spec
 }
 
 // GetArguments returns the Arguments.

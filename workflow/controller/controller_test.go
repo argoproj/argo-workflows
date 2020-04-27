@@ -356,7 +356,7 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	})
 
 	t.Run("WithoutWorkflowTmplRef", func(t *testing.T) {
-		woc.wf.Spec.WorkflowTemplateRef = nil
+		woc.wfSpec.WorkflowTemplateRef = nil
 		woc.checkAndInitWorkflowTmplRef()
 		assert.False(t, woc.hasTopLevelWFTmplRef)
 		assert.Nil(t, woc.topLevelWFTmplRef)

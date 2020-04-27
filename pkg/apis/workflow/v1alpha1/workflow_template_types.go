@@ -79,3 +79,7 @@ func (wftmpl *WorkflowTemplate) GetVolumes() []apiv1.Volume {
 func (wftmpl *WorkflowTemplate) GetTemplates() []Template {
 	return wftmpl.Spec.Templates
 }
+
+func (wftmpl *WorkflowTemplate) GetSpec() WorkflowSpec {
+	return wftmpl.Spec.WorkflowSpec
+}

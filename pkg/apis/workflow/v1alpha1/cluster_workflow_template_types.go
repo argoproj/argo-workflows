@@ -75,3 +75,7 @@ func (cwftmpl *ClusterWorkflowTemplate) GetVolumes() []apiv1.Volume {
 func (cwftmpl *ClusterWorkflowTemplate) GetTemplates() []Template {
 	return cwftmpl.Spec.Templates
 }
+
+func (cwftmpl *ClusterWorkflowTemplate) GetSpec() WorkflowSpec {
+	return cwftmpl.Spec.WorkflowSpec
+}
