@@ -4,8 +4,10 @@ import (
 	"fmt"
 
 	"github.com/argoproj/pkg/cli"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/cmd/argo/commands/clustertemplate"
 
 	"github.com/argoproj/argo/cmd/argo/commands/auth"
@@ -62,10 +64,16 @@ If you're using the Argo Server (e.g. because you need large workflow support or
 
 	// global log level
 	var logLevel string
+	var verbose bool
 	command.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		if verbose {
+			logLevel = "debug"
+		}
 		cli.SetLogLevel(logLevel)
+		log.WithField("version", argo.GetVersion()).Debug("CLI version")
 	}
 	command.PersistentFlags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
+	command.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enabled verbose logging, i.e. --loglevel debug")
 
 	return command
 }

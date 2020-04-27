@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd"
 
 	clusterworkflowtmplpkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
@@ -41,6 +42,7 @@ func NewClient(argoServer string, authSupplier func() string, clientConfig clien
 }
 
 func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
+	log.WithField("opts", opts).Debug("Client options")
 	if opts.ArgoServerOpts.URL != "" && opts.InstanceID != "" {
 		return nil, nil, fmt.Errorf("cannot use instance ID with Argo Server")
 	}
