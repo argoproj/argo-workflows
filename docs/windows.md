@@ -89,3 +89,15 @@ $ argo logs hello-hybrid-plqpp
 hello-hybrid-plqpp-1977432187: "Hello from Windows Container!"
 hello-hybrid-plqpp-764774907: Hello from Linux Container!
 ```
+
+## Building the workflow executor image for Windows
+
+To build the workflow executor image for Windows you need a Windows machine running Windows Server 2019 with Docker installed like described [in the docs](https://docs.docker.com/ee/docker-ee/windows/docker-ee/#install-docker-engine---enterprise).
+
+You then clone the project and run the Docker build with the Dockerfile for Windows and `argoexec` as a target:
+
+```
+git clone https://github.com/argoproj/argo.git
+cd argo
+docker build -t myargoexec -f .\Dockerfile.windows --target argoexec .
+```
