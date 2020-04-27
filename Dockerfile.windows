@@ -53,7 +53,6 @@ FROM builder as argo-build
 
 ARG IMAGE_OS=windows
 ARG IMAGE_ARCH=amd64
-ARG DEV=0
 
 # Perform the build
 WORKDIR C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo
@@ -61,7 +60,7 @@ COPY . .
 # check we can use Git
 RUN git rev-parse HEAD
 # fail the build if we are "dirty"
-RUN if ($env:DEV -eq 0) { git diff --exit-code }
+RUN git diff --exit-code
 # run in git bash for all the shell commands in Makefile to work
 RUN bash -c 'make dist/argoexec-windows-amd64'
 
