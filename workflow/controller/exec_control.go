@@ -24,7 +24,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 	case apiv1.PodSucceeded, apiv1.PodFailed:
 		// Skip any pod which are already completed
 		return nil
-	case apiv1.PodPending:
+	case apiv1.PodPending, apiv1.PodRunning:
 		// Check if we are currently shutting down
 		if woc.wf.Spec.Shutdown != "" {
 			// Only delete pods that are not part of an onExit handler if we are "Stopping" or all pods if we are "Terminating"
