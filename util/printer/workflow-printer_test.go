@@ -55,9 +55,9 @@ my-wf   Running   0s    3s         2
 		assert.Equal(t, `my-wf   Running   0s   3s   2
 `, b.String())
 	})
-	t.Run("AllNamespaces", func(t *testing.T) {
+	t.Run("Namespace", func(t *testing.T) {
 		var b bytes.Buffer
-		assert.NoError(t, PrintWorkflows(workflows, &b, PrintOpts{AllNamespaces: true}))
+		assert.NoError(t, PrintWorkflows(workflows, &b, PrintOpts{Namespace: true}))
 		assert.Equal(t, `NAMESPACE   NAME    STATUS    AGE   DURATION   PRIORITY
 my-ns       my-wf   Running   0s    3s         2
 `, b.String())

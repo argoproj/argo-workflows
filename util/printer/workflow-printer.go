@@ -42,15 +42,15 @@ func PrintWorkflows(workflows wfv1.Workflows, out io.Writer, opts PrintOpts) err
 }
 
 type PrintOpts struct {
-	NoHeaders     bool
-	AllNamespaces bool
-	Output        string
+	NoHeaders bool
+	Namespace bool
+	Output    string
 }
 
 func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
 	w := tabwriter.NewWriter(out, 0, 0, 3, ' ', 0)
 	if !opts.NoHeaders {
-		if opts.AllNamespaces {
+		if opts.Namespace {
 			_, _ = fmt.Fprint(w, "NAMESPACE\t")
 		}
 		_, _ = fmt.Fprint(w, "NAME\tSTATUS\tAGE\tDURATION\tPRIORITY")
@@ -62,7 +62,7 @@ func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
 	for _, wf := range wfList {
 		ageStr := humanize.RelativeDurationShort(wf.ObjectMeta.CreationTimestamp.Time, time.Now())
 		durationStr := humanize.RelativeDurationShort(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time)
-		if opts.AllNamespaces {
+		if opts.Namespace {
 			_, _ = fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Namespace)
 		}
 		var priority int
