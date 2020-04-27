@@ -149,6 +149,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 	if outputs != nil {
 		node := woc.getNodeByName(nodeName)
 		node.Outputs = outputs
+		woc.addOutputsToGlobalScope(node.Outputs)
 		woc.wf.Status.Nodes[node.ID] = *node
 	}
 	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded), nil

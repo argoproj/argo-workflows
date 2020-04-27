@@ -2816,3 +2816,202 @@ func TestContainerOutputsResult(t *testing.T) {
 		}
 	}
 }
+
+var nestedStepGroupGlobalParams = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: global-outputs-bg7gl
+spec:
+  arguments: {}
+  entrypoint: generate-globals
+  templates:
+  - arguments: {}
+    inputs: {}
+    metadata: {}
+    name: generate-globals
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: generate
+        template: nested-global-output-generation
+  - arguments: {}
+    container:
+      args:
+      - sleep 1; echo -n hello world > /tmp/hello_world.txt
+      command:
+      - sh
+      - -c
+      image: alpine:3.7
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: output-generation
+    outputs:
+      parameters:
+      - name: hello-param
+        valueFrom:
+          path: /tmp/hello_world.txt
+  - arguments: {}
+    inputs: {}
+    metadata: {}
+    name: nested-global-output-generation
+    outputs:
+      parameters:
+      - globalName: global-param
+        name: hello-param
+        valueFrom:
+          parameter: '{{steps.generate-output.outputs.parameters.hello-param}}'
+    steps:
+    - - arguments: {}
+        name: generate-output
+        template: output-generation
+status:
+  conditions:
+  - status: "True"
+    type: Completed
+  finishedAt: "2020-04-24T15:55:18Z"
+  nodes:
+    global-outputs-bg7gl:
+      children:
+      - global-outputs-bg7gl-1831647575
+      displayName: global-outputs-bg7gl
+      id: global-outputs-bg7gl
+      name: global-outputs-bg7gl
+      outboundNodes:
+      - global-outputs-bg7gl-1290716463
+      phase: Running
+      startedAt: "2020-04-24T15:55:11Z"
+      templateName: generate-globals
+      templateScope: local/global-outputs-bg7gl
+      type: Steps
+    global-outputs-bg7gl-1290716463:
+      boundaryID: global-outputs-bg7gl-2228002836
+      displayName: generate-output
+      finishedAt: "2020-04-24T15:55:16Z"
+      hostNodeName: minikube
+      id: global-outputs-bg7gl-1290716463
+      name: global-outputs-bg7gl[0].generate[0].generate-output
+      outputs:
+        parameters:
+        - name: hello-param
+          value: hello world
+          valueFrom:
+            path: /tmp/hello_world.txt
+      phase: Succeeded
+      startedAt: "2020-04-24T15:55:11Z"
+      templateName: output-generation
+      templateScope: local/global-outputs-bg7gl
+      type: Pod
+    global-outputs-bg7gl-1831647575:
+      boundaryID: global-outputs-bg7gl
+      children:
+      - global-outputs-bg7gl-2228002836
+      displayName: '[0]'
+      finishedAt: "2020-04-24T15:55:18Z"
+      id: global-outputs-bg7gl-1831647575
+      name: global-outputs-bg7gl[0]
+      phase: Succeeded
+      startedAt: "2020-04-24T15:55:11Z"
+      templateName: generate-globals
+      templateScope: local/global-outputs-bg7gl
+      type: StepGroup
+    global-outputs-bg7gl-2228002836:
+      boundaryID: global-outputs-bg7gl
+      children:
+      - global-outputs-bg7gl-3089902334
+      displayName: generate
+      id: global-outputs-bg7gl-2228002836
+      name: global-outputs-bg7gl[0].generate
+      phase: Running
+      outboundNodes:
+      - global-outputs-bg7gl-1290716463
+      startedAt: "2020-04-24T15:55:11Z"
+      templateName: nested-global-output-generation
+      templateScope: local/global-outputs-bg7gl
+      type: Steps
+    global-outputs-bg7gl-3089902334:
+      boundaryID: global-outputs-bg7gl-2228002836
+      children:
+      - global-outputs-bg7gl-1290716463
+      displayName: '[0]'
+      finishedAt: "2020-04-24T15:55:18Z"
+      id: global-outputs-bg7gl-3089902334
+      name: global-outputs-bg7gl[0].generate[0]
+      phase: Succeeded
+      startedAt: "2020-04-24T15:55:11Z"
+      templateName: nested-global-output-generation
+      templateScope: local/global-outputs-bg7gl
+      type: StepGroup
+  startedAt: "2020-04-24T15:55:11Z"
+`
+
+func TestNestedStepGroupGlobalParams(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// operate the workflow. it should create a pod.
+	wf := unmarshalWF(nestedStepGroupGlobalParams)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+
+	node := woc.wf.Status.Nodes.FindByDisplayName("generate")
+	if assert.NotNil(t, node) {
+		assert.Equal(t, "hello-param", node.Outputs.Parameters[0].Name)
+		assert.Equal(t, "global-param", node.Outputs.Parameters[0].GlobalName)
+		assert.Equal(t, "hello world", *node.Outputs.Parameters[0].Value)
+	}
+
+	assert.Equal(t, "hello world", *woc.wf.Status.Outputs.Parameters[0].Value)
+	assert.Equal(t, "global-param", woc.wf.Status.Outputs.Parameters[0].Name)
+}
+
+var globalVariablePlaceholders = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: output-value-global-variables-wf
+  namespace: testNamespace
+spec:
+  serviceAccountName: testServiceAccountName
+  entrypoint: tell-workflow-global-variables
+  templates:
+  - name: tell-workflow-global-variables
+    outputs:
+      parameters:
+      - name: namespace
+        value: "{{workflow.namespace}}"
+      - name: serviceAccountName
+        value: "{{workflow.serviceAccountName}}"
+    container:
+      image: busybox
+`
+
+func TestResolvePlaceholdersInGlobalVariables(t *testing.T) {
+	wf := unmarshalWF(globalVariablePlaceholders)
+	woc := newWoc(*wf)
+	woc.artifactRepository.S3 = new(config.S3ArtifactRepository)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+
+	templateString := pods.Items[0].ObjectMeta.Annotations["workflows.argoproj.io/template"]
+	var template wfv1.Template
+	err = json.Unmarshal([]byte(templateString), &template)
+	assert.NoError(t, err)
+	namespaceValue := template.Outputs.Parameters[0].Value
+	assert.NotNil(t, namespaceValue)
+	assert.NotEmpty(t, *namespaceValue)
+	assert.Equal(t, "testNamespace", *namespaceValue)
+	serviceAccountNameValue := template.Outputs.Parameters[1].Value
+	assert.NotNil(t, serviceAccountNameValue)
+	assert.NotEmpty(t, *serviceAccountNameValue)
+	assert.Equal(t, "testServiceAccountName", *serviceAccountNameValue)
+}
