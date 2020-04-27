@@ -80,7 +80,7 @@ See %s`, help.ArgoSever),
 				// InsecureSkipVerify will not impact the TLS listener. It is needed for the server to speak to itself for GRPC.
 				tlsConfig = &tls.Config{Certificates: []tls.Certificate{cer}, InsecureSkipVerify: true}
 			} else {
-				log.Warn("You are running in insecure mode. How enable transport security: https://github.com/argoproj/argo/blob/master/docs/tls.md")
+				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://github.com/argoproj/argo/blob/master/docs/tls.md")
 			}
 
 			opts := apiserver.ArgoServerOpts{

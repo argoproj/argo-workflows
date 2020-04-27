@@ -140,7 +140,7 @@ artifacts:
     s3:
       endpoint: storage.googleapis.com
       bucket: my-gcs-bucket-name
-      # NOTE that all output artifacts are automatically tarred and
+      # NOTE that, by default, all output artifacts are automatically tarred and
       # gzipped before saving. So as a best practice, .tgz or .tar.gz
       # should be incorporated into the key name so the resulting file
       # has an accurate file extension.
@@ -273,7 +273,7 @@ configuring the default artifact repository described previously.
         s3:
           endpoint: storage.googleapis.com
           bucket: my-gcs-bucket-name
-          # NOTE that all output artifacts are automatically tarred and
+          # NOTE that, by default, all output artifacts are automatically tarred and
           # gzipped before saving. So as a best practice, .tgz or .tar.gz
           # should be incorporated into the key name so the resulting file
           # has an accurate file extension.

@@ -92,6 +92,8 @@ When defining a `histogram`, `buckets` must also be provided (see below).
 
 [Argo variables](variables.md) can be included anywhere in the metric spec, such as in `labels`, `name`, `help`, `when`, etc.
 
+Metric names can only contain alphanumeric characters, `_`, and `:`.
+
 ### Metric Spec
  
  In Argo you can define a metric on the `Workflow` level or on the `Template` level. Here is an example of a `Workflow`
