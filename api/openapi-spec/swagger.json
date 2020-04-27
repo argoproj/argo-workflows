@@ -672,6 +672,22 @@
         }
       }
     },
+    "/api/v1/version": {
+      "get": {
+        "tags": [
+          "InfoService"
+        ],
+        "operationId": "GetVersion",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Version"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/workflow-events/{namespace}": {
       "get": {
         "tags": [
@@ -2484,6 +2500,10 @@
           "title": "Time at which this node completed",
           "$ref": "#/definitions/io.k8s.api.core.v1.Time"
         },
+        "hostNodeName": {
+          "type": "string",
+          "title": "HostNodeName name of the Kubernetes node on which the Pod is running, if applicable"
+        },
         "id": {
           "type": "string",
           "title": "ID is a unique identifier of a node within the worklow\nIt is implemented as a hash of the node name, which makes the ID deterministic"
@@ -3189,6 +3209,35 @@
         "path": {
           "type": "string",
           "title": "Path in the container to retrieve an output parameter value from in container templates"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Version": {
+      "type": "object",
+      "properties": {
+        "buildDate": {
+          "type": "string"
+        },
+        "compiler": {
+          "type": "string"
+        },
+        "gitCommit": {
+          "type": "string"
+        },
+        "gitTag": {
+          "type": "string"
+        },
+        "gitTreeState": {
+          "type": "string"
+        },
+        "goVersion": {
+          "type": "string"
+        },
+        "platform": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
         }
       }
     },

@@ -166,6 +166,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 							logCtx.Error(err)
 							return
 						}
+						continue
 					}
 					wf, ok := event.Object.(*wfv1.Workflow)
 					if !ok {
@@ -198,6 +199,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 							logCtx.Error(err)
 							return
 						}
+						continue
 					}
 					pod, ok := event.Object.(*corev1.Pod)
 					if !ok {
