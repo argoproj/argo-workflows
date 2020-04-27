@@ -198,14 +198,12 @@ func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloa
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationUnaryServerInterceptor,
 			as.authenticator.UnaryServerInterceptor(),
-			instanceIDService.UnaryServerInterceptor(),
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_logrus.StreamServerInterceptor(serverLog),
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
 			grpcutil.ErrorTranslationStreamServerInterceptor,
 			as.authenticator.StreamServerInterceptor(),
-			instanceIDService.StreamServerInterceptor(),
 		)),
 	}
 

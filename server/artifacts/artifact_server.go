@@ -41,9 +41,6 @@ func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
-	_, ctx, marker := a.instanceIDService.ContextWithMarker(ctx)
-	defer a.instanceIDService.Check("", marker)
-
 	path := strings.SplitN(r.URL.Path, "/", 6)
 
 	namespace := path[2]
@@ -75,8 +72,6 @@ func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request
 		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
-	_, ctx, marker := a.instanceIDService.ContextWithMarker(ctx)
-	defer a.instanceIDService.Check("", marker)
 
 	path := strings.SplitN(r.URL.Path, "/", 6)
 
@@ -172,7 +167,7 @@ func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace s
 	if err != nil {
 		return nil, err
 	}
-	err = a.instanceIDService.Validate(ctx, wf)
+	err = a.instanceIDService.Validate(wf)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +190,7 @@ func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace s
 }
 
 func (a *ArtifactServer) getWorkflowByUID(ctx context.Context, uid string) (*wfv1.Workflow, error) {
-	wf, err := a.wfArchive.GetWorkflow(ctx, uid)
+	wf, err := a.wfArchive.GetWorkflow(uid)
 	if err != nil {
 		return nil, err
 	}

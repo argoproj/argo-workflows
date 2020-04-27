@@ -45,11 +45,11 @@ type archivedWorkflowLabelRecord struct {
 }
 
 type WorkflowArchive interface {
-	ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow) error
-	ListWorkflows(ctx context.Context, namespace string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements, limit, offset int) (wfv1.Workflows, error)
-	GetWorkflow(ctx context.Context, uid string) (*wfv1.Workflow, error)
-	DeleteWorkflow(ctx context.Context, uid string) error
-	DeleteWorkflows(ctx context.Context, ttl time.Duration) error
+	ArchiveWorkflow(wf *wfv1.Workflow) error
+	ListWorkflows(namespace string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements, limit, offset int) (wfv1.Workflows, error)
+	GetWorkflow(uid string) (*wfv1.Workflow, error)
+	DeleteWorkflow(uid string) error
+	DeleteWorkflows(ttl time.Duration) error
 }
 
 type workflowArchive struct {
@@ -65,7 +65,7 @@ func NewWorkflowArchive(session sqlbuilder.Database, clusterName, managedNamespa
 	return &workflowArchive{session: session, clusterName: clusterName, managedNamespace: managedNamespace, instanceIDService: instanceIDService, dbType: dbTypeFor(session)}
 }
 
-func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow) error {
+func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 	logCtx := log.WithFields(log.Fields{"uid": wf.UID, "labels": wf.GetLabels()})
 	logCtx.Debug("Archiving workflow")
 	workflow, err := json.Marshal(wf)
@@ -75,7 +75,7 @@ func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow
 	return r.session.Tx(context.Background(), func(sess sqlbuilder.Tx) error {
 		_, err := sess.
 			DeleteFrom(archiveTableName).
-			Where(r.clusterManagedNamespaceAndInstanceID(ctx)).
+			Where(r.clusterManagedNamespaceAndInstanceID()).
 			And(db.Cond{"uid": wf.UID}).
 			Exec()
 		if err != nil {
@@ -85,7 +85,7 @@ func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow
 			Insert(&archivedWorkflowRecord{
 				archivedWorkflowMetadata: archivedWorkflowMetadata{
 					ClusterName: r.clusterName,
-					InstanceID:  r.instanceIDService.InstanceID(ctx),
+					InstanceID:  r.instanceIDService.InstanceID(),
 					UID:         string(wf.UID),
 					Name:        wf.Name,
 					Namespace:   wf.Namespace,
@@ -116,7 +116,7 @@ func (r *workflowArchive) ArchiveWorkflow(ctx context.Context, wf *wfv1.Workflow
 	})
 }
 
-func (r *workflowArchive) ListWorkflows(ctx context.Context, namespace string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements, limit int, offset int) (wfv1.Workflows, error) {
+func (r *workflowArchive) ListWorkflows(namespace string, minStartedAt, maxStartedAt time.Time, labelRequirements labels.Requirements, limit int, offset int) (wfv1.Workflows, error) {
 	var archivedWfs []archivedWorkflowMetadata
 	clause, err := labelsClause(r.dbType, labelRequirements)
 	if err != nil {
@@ -125,7 +125,7 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, namespace string, m
 	err = r.session.
 		Select("name", "namespace", "uid", "phase", "startedat", "finishedat").
 		From(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID(ctx)).
+		Where(r.clusterManagedNamespaceAndInstanceID()).
 		And(namespaceEqual(namespace)).
 		And(startedAtClause(minStartedAt, maxStartedAt)).
 		And(clause).
@@ -155,11 +155,11 @@ func (r *workflowArchive) ListWorkflows(ctx context.Context, namespace string, m
 	return wfs, nil
 }
 
-func (r *workflowArchive) clusterManagedNamespaceAndInstanceID(ctx context.Context) db.Compound {
+func (r *workflowArchive) clusterManagedNamespaceAndInstanceID() db.Compound {
 	return db.And(
 		db.Cond{"clustername": r.clusterName},
 		namespaceEqual(r.managedNamespace),
-		db.Cond{"instanceid": r.instanceIDService.InstanceID(ctx)},
+		db.Cond{"instanceid": r.instanceIDService.InstanceID()},
 	)
 }
 
@@ -182,12 +182,12 @@ func namespaceEqual(namespace string) db.Cond {
 	}
 }
 
-func (r *workflowArchive) GetWorkflow(ctx context.Context, uid string) (*wfv1.Workflow, error) {
+func (r *workflowArchive) GetWorkflow(uid string) (*wfv1.Workflow, error) {
 	archivedWf := &archivedWorkflowRecord{}
 	err := r.session.
 		Select("workflow").
 		From(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID(ctx)).
+		Where(r.clusterManagedNamespaceAndInstanceID()).
 		And(db.Cond{"uid": uid}).
 		One(archivedWf)
 	if err != nil {
@@ -204,10 +204,10 @@ func (r *workflowArchive) GetWorkflow(ctx context.Context, uid string) (*wfv1.Wo
 	return wf, nil
 }
 
-func (r *workflowArchive) DeleteWorkflow(ctx context.Context, uid string) error {
+func (r *workflowArchive) DeleteWorkflow(uid string) error {
 	rs, err := r.session.
 		DeleteFrom(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID(ctx)).
+		Where(r.clusterManagedNamespaceAndInstanceID()).
 		And(db.Cond{"uid": uid}).
 		Exec()
 	if err != nil {
@@ -221,10 +221,10 @@ func (r *workflowArchive) DeleteWorkflow(ctx context.Context, uid string) error 
 	return nil
 }
 
-func (r *workflowArchive) DeleteWorkflows(ctx context.Context, ttl time.Duration) error {
+func (r *workflowArchive) DeleteWorkflows(ttl time.Duration) error {
 	rs, err := r.session.
 		DeleteFrom(archiveTableName).
-		Where(r.clusterManagedNamespaceAndInstanceID(ctx)).
+		Where(r.clusterManagedNamespaceAndInstanceID()).
 		And(fmt.Sprintf("finishedat < current_timestamp - interval '%d' second", int(ttl.Seconds()))).
 		Exec()
 	if err != nil {

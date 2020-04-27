@@ -1,7 +1,6 @@
 package instanceid
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,18 +13,18 @@ import (
 func TestLabel(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
 		obj := &wfv1.Workflow{}
-		NewService("").Label(context.Background(), obj)
+		NewService("").Label(obj)
 		assert.Empty(t, obj.GetLabels())
 	})
 	t.Run("Add", func(t *testing.T) {
 		obj := &wfv1.Workflow{}
-		NewService("foo").Label(context.Background(), obj)
+		NewService("foo").Label(obj)
 		assert.Len(t, obj.GetLabels(), 1)
 		assert.Equal(t, "foo", obj.GetLabels()[common.LabelKeyControllerInstanceID])
 	})
 	t.Run("Remove", func(t *testing.T) {
 		obj := &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{common.LabelKeyControllerInstanceID: "bar"}}}
-		NewService("").Label(context.Background(), obj)
+		NewService("").Label(obj)
 		assert.Empty(t, obj.GetLabels())
 	})
 }
@@ -33,17 +32,17 @@ func TestLabel(t *testing.T) {
 func TestWith(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
 		opts := &metav1.ListOptions{}
-		NewService("").With(context.Background(), opts)
+		NewService("").With(opts)
 		assert.Equal(t, "!workflows.argoproj.io/controller-instanceid", opts.LabelSelector)
 	})
 	t.Run("EmptyExistingSelector", func(t *testing.T) {
 		opts := &metav1.ListOptions{LabelSelector: "foo"}
-		NewService("").With(context.Background(), opts)
+		NewService("").With(opts)
 		assert.Equal(t, "foo,!workflows.argoproj.io/controller-instanceid", opts.LabelSelector)
 	})
 	t.Run("ExistingSelector", func(t *testing.T) {
 		opts := &metav1.ListOptions{LabelSelector: "foo"}
-		NewService("foo").With(context.Background(), opts)
+		NewService("foo").With(opts)
 		assert.Equal(t, "foo,workflows.argoproj.io/controller-instanceid=foo", opts.LabelSelector)
 	})
 }
@@ -51,17 +50,17 @@ func TestWith(t *testing.T) {
 func TestValidate(t *testing.T) {
 	t.Run("NoInstanceID", func(t *testing.T) {
 		s := NewService("")
-		assert.NoError(t, s.Validate(context.Background(), &wfv1.Workflow{}))
-		assert.Error(t, s.Validate(context.Background(), &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{common.LabelKeyControllerInstanceID: "bar"}}}))
+		assert.NoError(t, s.Validate(&wfv1.Workflow{}))
+		assert.Error(t, s.Validate(&wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{common.LabelKeyControllerInstanceID: "bar"}}}))
 	})
 	t.Run("InstanceID", func(t *testing.T) {
 		s := NewService("foo")
-		assert.Error(t, s.Validate(context.Background(), &wfv1.Workflow{}))
-		assert.Error(t, s.Validate(context.Background(), &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{common.LabelKeyControllerInstanceID: "bar"}}}))
-		assert.NoError(t, s.Validate(context.Background(), &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{common.LabelKeyControllerInstanceID: "foo"}}}))
+		assert.Error(t, s.Validate(&wfv1.Workflow{}))
+		assert.Error(t, s.Validate(&wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{common.LabelKeyControllerInstanceID: "bar"}}}))
+		assert.NoError(t, s.Validate(&wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{common.LabelKeyControllerInstanceID: "foo"}}}))
 	})
 }
 
 func Test_service_InstanceID(t *testing.T) {
-	assert.Equal(t, "foo", NewService("foo").InstanceID(context.Background()))
+	assert.Equal(t, "foo", NewService("foo").InstanceID())
 }

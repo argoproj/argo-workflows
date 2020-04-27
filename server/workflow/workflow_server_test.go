@@ -592,12 +592,14 @@ func (t testWatchWorkflowServer) Send(*workflowpkg.WorkflowWatchEvent) error {
 
 func TestWatchWorkflows(t *testing.T) {
 	server, ctx := getWorkflowServer()
-	wf := &v1alpha1.Workflow{}
+	wf := &v1alpha1.Workflow{
+		Status: v1alpha1.WorkflowStatus{Phase: v1alpha1.NodeSucceeded},
+	}
 	assert.NoError(t, json.Unmarshal([]byte(wf1), &wf))
 	ctx, cancel := context.WithCancel(ctx)
 	go func() {
 		err := server.WatchWorkflows(&workflowpkg.WatchWorkflowsRequest{}, &testWatchWorkflowServer{testServerStream{ctx}})
-		assert.NoError(t, err)
+		assert.EqualError(t, err, "context canceled")
 	}()
 	cancel()
 }

@@ -1,47 +1,34 @@
 package instanceid
 
 import (
-	"context"
 	"fmt"
-	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/util/labels"
-	"github.com/argoproj/argo/util/marker"
 	"github.com/argoproj/argo/workflow/common"
 )
 
-/*
-It might seem that a whole service for instance ID is overkill, but by extending `marker.Service` we
-can check at runtime that we actually used instance ID during a request.
-*/
 type Service interface {
-	marker.Service
-	Label(ctx context.Context, obj metav1.Object)
-	With(ctx context.Context, options *metav1.ListOptions)
-	Validate(ctx context.Context, obj metav1.Object) error
-	InstanceID(ctx context.Context) string
+	Label(obj metav1.Object)
+	With(options *metav1.ListOptions)
+	Validate(obj metav1.Object) error
+	InstanceID() string
 }
 
-func NewService(instanceId string) Service {
-	return &service{marker.NewService(func(fullMethod string) bool {
-		return strings.HasPrefix(fullMethod, "/info.InfoService/")
-	}), instanceId}
+func NewService(instanceID string) Service {
+	return &service{instanceID}
 }
 
 type service struct {
-	marker.Service
 	instanceID string
 }
 
-func (s *service) InstanceID(ctx context.Context) string {
-	s.Mark(ctx)
+func (s *service) InstanceID() string {
 	return s.instanceID
 }
 
-func (s *service) Label(ctx context.Context, obj metav1.Object) {
-	s.Mark(ctx)
+func (s *service) Label(obj metav1.Object) {
 	if s.instanceID != "" {
 		labels.Label(obj, common.LabelKeyControllerInstanceID, s.instanceID)
 	} else {
@@ -49,8 +36,7 @@ func (s *service) Label(ctx context.Context, obj metav1.Object) {
 	}
 }
 
-func (s *service) With(ctx context.Context, opts *metav1.ListOptions) {
-	s.Mark(ctx)
+func (s *service) With(opts *metav1.ListOptions) {
 	if len(opts.LabelSelector) > 0 {
 		opts.LabelSelector += ","
 	}
@@ -61,8 +47,7 @@ func (s *service) With(ctx context.Context, opts *metav1.ListOptions) {
 	}
 }
 
-func (s *service) Validate(ctx context.Context, obj metav1.Object) error {
-	s.Mark(ctx)
+func (s *service) Validate(obj metav1.Object) error {
 	l := obj.GetLabels()
 	if s.instanceID == "" {
 		if _, ok := l[common.LabelKeyControllerInstanceID]; !ok {

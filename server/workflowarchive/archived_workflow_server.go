@@ -88,7 +88,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	hasMore := true
 	// keep trying until we have enough
 	for len(items) < limit {
-		moreItems, err := w.wfArchive.ListWorkflows(ctx, namespace, minStartedAt, maxStartedAt, requirements, limit+1, offset)
+		moreItems, err := w.wfArchive.ListWorkflows(namespace, minStartedAt, maxStartedAt, requirements, limit+1, offset)
 		if err != nil {
 			return nil, err
 		}
@@ -113,7 +113,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 }
 
 func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *workflowarchivepkg.GetArchivedWorkflowRequest) (*wfv1.Workflow, error) {
-	wf, err := w.wfArchive.GetWorkflow(ctx, req.Uid)
+	wf, err := w.wfArchive.GetWorkflow(req.Uid)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req
 	if !allowed {
 		return nil, status.Error(codes.PermissionDenied, "permission denied")
 	}
-	err = w.wfArchive.DeleteWorkflow(ctx, req.Uid)
+	err = w.wfArchive.DeleteWorkflow(req.Uid)
 	if err != nil {
 		return nil, err
 	}

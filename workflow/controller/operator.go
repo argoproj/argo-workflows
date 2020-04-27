@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -1589,7 +1588,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 				woc.updated = true
 				woc.wf.Status.Message = err.Error()
 			}
-			err = woc.controller.wfArchive.ArchiveWorkflow(context.Background(), woc.wf)
+			err = woc.controller.wfArchive.ArchiveWorkflow(woc.wf)
 			if err != nil {
 				woc.log.WithField("err", err).Error("Failed to archive workflow")
 			}

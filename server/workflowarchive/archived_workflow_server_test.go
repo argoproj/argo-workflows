@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -47,13 +46,13 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		}, nil
 	})
 	// two pages of results for limit 1
-	repo.On("ListWorkflows", mock.Anything, "", time.Time{}, time.Time{}, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}, {}}, nil)
-	repo.On("ListWorkflows", mock.Anything, "", time.Time{}, time.Time{}, labels.Requirements(nil), 2, 1).Return(wfv1.Workflows{{}}, nil)
+	repo.On("ListWorkflows", "", time.Time{}, time.Time{}, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}, {}}, nil)
+	repo.On("ListWorkflows", "", time.Time{}, time.Time{}, labels.Requirements(nil), 2, 1).Return(wfv1.Workflows{{}}, nil)
 	minStartAt, _ := time.Parse(time.RFC3339, "2020-01-01T00:00:00Z")
 	maxStartAt, _ := time.Parse(time.RFC3339, "2020-01-02T00:00:00Z")
-	repo.On("ListWorkflows", mock.Anything, "", minStartAt, maxStartAt, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}}, nil)
-	repo.On("GetWorkflow", mock.Anything, "").Return(nil, nil)
-	repo.On("GetWorkflow", mock.Anything, "my-uid").Return(&wfv1.Workflow{
+	repo.On("ListWorkflows", "", minStartAt, maxStartAt, labels.Requirements(nil), 2, 0).Return(wfv1.Workflows{{}}, nil)
+	repo.On("GetWorkflow", "").Return(nil, nil)
+	repo.On("GetWorkflow", "my-uid").Return(&wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-name"},
 		Spec: wfv1.WorkflowSpec{
 			Entrypoint: "my-entrypoint",
@@ -67,7 +66,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "my-name-resubmitted"},
 		}, nil
 	})
-	repo.On("DeleteWorkflow", mock.Anything, "my-uid").Return(nil)
+	repo.On("DeleteWorkflow", "my-uid").Return(nil)
 
 	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClient), auth.KubeKey, kubeClient)
 	t.Run("ListArchivedWorkflows", func(t *testing.T) {
