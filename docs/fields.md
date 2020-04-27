@@ -85,6 +85,10 @@ Workflow is the definition of a workflow resource
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
 
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
+
+- [`hello-windows.yaml`](../examples/hello-windows.yaml)
+
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 
 - [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
@@ -349,6 +353,10 @@ WorkflowSpec is the specification of a Workflow.
 - [`global-parameters.yaml`](../examples/global-parameters.yaml)
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
+
+- [`hello-windows.yaml`](../examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 
@@ -634,6 +642,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
 
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
+
+- [`hello-windows.yaml`](../examples/hello-windows.yaml)
+
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 
 - [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
@@ -883,6 +895,10 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`global-parameters.yaml`](../examples/global-parameters.yaml)
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
+
+- [`hello-windows.yaml`](../examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 
@@ -1293,6 +1309,10 @@ Template is a reusable and composable unit of execution in a workflow
 - [`global-parameters.yaml`](../examples/global-parameters.yaml)
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
+
+- [`hello-windows.yaml`](../examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 
@@ -2090,6 +2110,10 @@ Pod metdata
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
 
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
+
+- [`hello-windows.yaml`](../examples/hello-windows.yaml)
+
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 
 - [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
@@ -2397,6 +2421,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`global-outputs.yaml`](../examples/global-outputs.yaml)
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
 
 - [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
 
@@ -3200,6 +3226,10 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
 
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
+
+- [`hello-windows.yaml`](../examples/hello-windows.yaml)
+
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 
 - [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
@@ -3624,6 +3654,10 @@ A single application container that you want to run within a pod.
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
 
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
+
+- [`hello-windows.yaml`](../examples/hello-windows.yaml)
+
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 
 - [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
@@ -4024,6 +4058,10 @@ PersistentVolumeClaimSpec describes the common attributes of storage devicesand 
 - [`global-parameters.yaml`](../examples/global-parameters.yaml)
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
+
+- [`hello-windows.yaml`](../examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 

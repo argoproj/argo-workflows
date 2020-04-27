@@ -35,7 +35,7 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/executor/os-specific"
+	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
 
 const (

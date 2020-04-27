@@ -22,7 +22,7 @@ import (
 	"github.com/argoproj/argo/util/archive"
 	"github.com/argoproj/argo/workflow/common"
 	execcommon "github.com/argoproj/argo/workflow/executor/common"
-	"github.com/argoproj/argo/workflow/executor/os-specific"
+	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
 
 type PNSExecutor struct {
