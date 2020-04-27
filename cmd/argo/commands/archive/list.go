@@ -34,6 +34,7 @@ func NewListCommand() *cobra.Command {
 			workflows := resp.Items
 			err = printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{
 				Output: output,
+				AllNamespaces: true,
 			})
 			errors.CheckError(err)
 		},
