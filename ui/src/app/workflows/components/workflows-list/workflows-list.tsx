@@ -20,15 +20,16 @@ import {Utils} from '../../../shared/utils';
 import {Ticker} from 'argo-ui/src/index';
 import * as classNames from 'classnames';
 import * as moment from 'moment';
+import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {formatDuration} from '../../../shared/duration';
+import {Pagination, parseLimit} from '../../../shared/pagination';
 import {WorkflowFilters} from '../workflow-filters/workflow-filters';
 
 require('./workflows-list.scss');
 
 interface State {
-    offset: string;
-    nextOffset: string;
+    pagination: Pagination;
     loading: boolean;
     initialized: boolean;
     managedNamespace: boolean;
@@ -49,8 +50,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         super(props, context);
         this.state = {
             loading: true,
-            offset: this.queryParam('continue') || '',
-            nextOffset: '',
+            pagination: {offset: this.queryParam('continue'), limit: parseLimit(this.queryParam('limit'))},
             initialized: false,
             managedNamespace: false,
             namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || '',
@@ -60,7 +60,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     public componentDidMount(): void {
-        this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, '');
+        this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.pagination);
     }
 
     public componentWillUnmount(): void {
@@ -104,7 +104,9 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                         phaseItems={Object.values(models.NODE_PHASE)}
                                         selectedPhases={this.state.selectedPhases}
                                         selectedLabels={this.state.selectedLabels}
-                                        onChange={(namespace, selectedPhases, selectedLabels) => this.changeFilters(namespace, selectedPhases, selectedLabels, this.state.offset)}
+                                        onChange={(namespace, selectedPhases, selectedLabels) =>
+                                            this.changeFilters(namespace, selectedPhases, selectedLabels, this.state.pagination)
+                                        }
                                     />
                                 </div>
                             </div>
@@ -136,7 +138,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         );
     }
 
-    private fetchWorkflows(namespace: string, selectedPhases: string[], selectedLabels: string[], offset: string): void {
+    private fetchWorkflows(namespace: string, selectedPhases: string[], selectedLabels: string[], pagination: Pagination): void {
         if (this.subscription) {
             this.subscription.unsubscribe();
         }
@@ -148,13 +150,13 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                     newNamespace = info.managedNamespace;
                 }
                 this.setState({initialized: true, managedNamespace: !!info.managedNamespace});
-                return services.workflows.list(newNamespace, selectedPhases, selectedLabels, offset);
+                return services.workflows.list(newNamespace, selectedPhases, selectedLabels, pagination);
             });
         } else {
             if (this.state.managedNamespace) {
                 newNamespace = this.state.namespace;
             }
-            workflowList = services.workflows.list(newNamespace, selectedPhases, selectedLabels, offset);
+            workflowList = services.workflows.list(newNamespace, selectedPhases, selectedLabels, pagination);
         }
         workflowList
             .then(list => list.items)
@@ -199,7 +201,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             .catch(error => this.setState({error, loading: false}));
     }
 
-    private changeFilters(namespace: string, selectedPhases: string[], selectedLabels: string[], offset: string) {
+    private changeFilters(namespace: string, selectedPhases: string[], selectedLabels: string[], pagination: Pagination) {
         const params = new URLSearchParams();
         selectedPhases.forEach(phase => {
             params.append('phase', phase);
@@ -212,7 +214,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             url += '?' + params.toString();
         }
         history.pushState(null, '', uiUrl(url));
-        this.fetchWorkflows(namespace, selectedPhases, selectedLabels, offset || '');
+        this.fetchWorkflows(namespace, selectedPhases, selectedLabels, pagination);
     }
 
     private renderWorkflows() {
@@ -259,26 +261,13 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         </Link>
                     ))}
                 </div>
-                <p>
-                    {this.state.offset !== '' && (
-                        <button
-                            className='argo-button argo-button--base-o'
-                            onClick={() => {
-                                this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, '');
-                            }}>
-                            <i className='fa fa-chevron-left' /> Start
-                        </button>
-                    )}
-                    {this.state.nextOffset !== '' && (
-                        <button
-                            className='argo-button argo-button--base-o'
-                            onClick={() => {
-                                this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.nextOffset);
-                            }}>
-                            Next: {this.state.nextOffset} <i className='fa fa-chevron-right' />
-                        </button>
-                    )}
-                </p>
+                <PaginationPanel
+                    onChange={pagination => {
+                        this.setState({pagination});
+                        this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, pagination);
+                    }}
+                    pagination={this.state.pagination}
+                />
             </>
         );
     }

@@ -2,7 +2,6 @@ import {Page, SlidingPanel} from 'argo-ui';
 
 import {Ticker} from 'argo-ui/src/index';
 import * as classNames from 'classnames';
-import {isNaN} from 'formik';
 import * as moment from 'moment';
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
@@ -11,19 +10,20 @@ import {Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
+import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {ResourceSubmit} from '../../../shared/components/resource-submit';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {formatDuration} from '../../../shared/duration';
 import {exampleWorkflow} from '../../../shared/examples';
+import {Pagination, parseLimit} from '../../../shared/pagination';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 import {ArchivedWorkflowFilters} from '../archived-workflow-filters/archived-workflow-filters';
 
 interface State {
-    offset: number;
-    nextOffset: number;
+    pagination: Pagination;
     loading: boolean;
     initialized: boolean;
     managedNamespace: boolean;
@@ -45,8 +45,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         super(props, context);
         this.state = {
             loading: true,
-            offset: this.parseOffset(this.queryParam('continue') || ''),
-            nextOffset: 0,
+            pagination: {offset: this.queryParam('offset') || '', limit: parseLimit(this.queryParam('limit'))},
             initialized: false,
             managedNamespace: false,
             namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || '',
@@ -64,7 +63,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             this.state.selectedLabels,
             this.state.minStartedAt,
             this.state.maxStartedAt,
-            this.state.offset
+            this.state.pagination
         );
     }
 
@@ -105,7 +104,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                                         minStartedAt={this.state.minStartedAt}
                                         maxStartedAt={this.state.maxStartedAt}
                                         onChange={(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt) =>
-                                            this.changeFilters(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, 0)
+                                            this.changeFilters(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, this.state.pagination)
                                         }
                                     />
                                 </div>
@@ -149,15 +148,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         }
     }
 
-    private parseOffset(str: string) {
-        if (isNaN(str)) {
-            return 0;
-        }
-        const result = parseInt(str, 10);
-        return result >= 0 ? result : 0;
-    }
-
-    private changeFilters(namespace: string, selectedPhases: string[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, offset: number) {
+    private changeFilters(namespace: string, selectedPhases: string[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination) {
         const params = new URLSearchParams();
         selectedPhases.forEach(phase => {
             params.append('phase', phase);
@@ -167,15 +158,16 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         });
         params.append('minStartedAt', minStartedAt.toISOString());
         params.append('maxStartedAt', maxStartedAt.toISOString());
-        if (offset > 0) {
-            params.append('continue', offset.toString());
+        if (pagination.offset) {
+            params.append('offset', pagination.offset);
         }
+        params.append('limit', pagination.limit.toString());
         const url = 'archived-workflows/' + namespace + '?' + params.toString();
         history.pushState(null, '', uiUrl(url));
-        this.fetchArchivedWorkflows(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, offset && offset >= 0 ? offset : 0);
+        this.fetchArchivedWorkflows(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination);
     }
 
-    private fetchArchivedWorkflows(namespace: string, selectedPhases: string[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, offset: number): void {
+    private fetchArchivedWorkflows(namespace: string, selectedPhases: string[], selectedLabels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination): void {
         let archivedWorkflowList;
         let newNamespace = namespace;
         if (!this.state.initialized) {
@@ -184,13 +176,13 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                     newNamespace = info.managedNamespace;
                 }
                 this.setState({initialized: true, managedNamespace: !!info.managedNamespace});
-                return services.archivedWorkflows.list(newNamespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, offset);
+                return services.archivedWorkflows.list(newNamespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination);
             });
         } else {
             if (this.state.managedNamespace) {
                 newNamespace = this.state.namespace;
             }
-            archivedWorkflowList = services.archivedWorkflows.list(newNamespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, offset);
+            archivedWorkflowList = services.archivedWorkflows.list(newNamespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination);
         }
         archivedWorkflowList
             .then(list => {
@@ -201,14 +193,18 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                     selectedLabels,
                     minStartedAt,
                     maxStartedAt,
-                    offset,
-                    nextOffset: this.parseOffset(list.metadata.continue || ''),
+                    pagination: {
+                        limit: this.state.pagination.limit,
+                        offset: this.state.pagination.offset,
+                        nextOffset: list.metadata.continue
+                    },
                     loading: false
                 });
                 Utils.setCurrentNamespace(newNamespace);
             })
             .catch(error => this.setState({error, loading: false}));
     }
+
     private renderWorkflows() {
         if (!this.state.workflows) {
             return <Loading />;
@@ -222,6 +218,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                 </ZeroState>
             );
         }
+
         function wfDuration(workflow: models.WorkflowStatus, now: moment.Moment) {
             const endTime = workflow.finishedAt ? moment(workflow.finishedAt) : now;
             return endTime.diff(moment(workflow.startedAt)) / 1000;
@@ -253,33 +250,20 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                         </Link>
                     ))}
                 </div>
-                <p>
-                    {this.state.offset !== 0 && (
-                        <button
-                            className='argo-button argo-button--base-o'
-                            onClick={() => {
-                                this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.minStartedAt, this.state.maxStartedAt, 0);
-                            }}>
-                            <i className='fa fa-chevron-left' /> Start
-                        </button>
-                    )}
-                    {this.state.nextOffset !== 0 && (
-                        <button
-                            className='argo-button argo-button--base-o'
-                            onClick={() => {
-                                this.changeFilters(
-                                    this.state.namespace,
-                                    this.state.selectedPhases,
-                                    this.state.selectedLabels,
-                                    this.state.minStartedAt,
-                                    this.state.maxStartedAt,
-                                    this.state.nextOffset
-                                );
-                            }}>
-                            Next: {this.state.nextOffset} <i className='fa fa-chevron-right' />
-                        </button>
-                    )}
-                </p>
+                <PaginationPanel
+                    onChange={pagination => {
+                        this.setState({pagination});
+                        this.changeFilters(
+                            this.state.namespace,
+                            this.state.selectedPhases,
+                            this.state.selectedLabels,
+                            this.state.minStartedAt,
+                            this.state.maxStartedAt,
+                            pagination
+                        );
+                    }}
+                    pagination={this.state.pagination}
+                />
                 <p>
                     <i className='fa fa-info-circle' /> Records are created in the archive when a workflow completes. {learnMore}.
                 </p>

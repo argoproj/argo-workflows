@@ -3,6 +3,7 @@ import {Observable, Observer} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 import * as models from '../../../models';
 import {Workflow, WorkflowList} from '../../../models';
+import {Pagination} from '../pagination';
 import requests from './requests';
 import {WorkflowDeleteResponse} from './responses';
 
@@ -16,10 +17,13 @@ export class WorkflowsService {
             .then(res => res.body as Workflow);
     }
 
-    public list(namespace: string, phases: string[], labels: string[], offset: string) {
-        return requests
-            .get(`api/v1/workflows/${namespace}?${fieldsFilter}&listOptions.continue=${offset}${this.queryParams({phases, labels}).join('&')}`)
-            .then(res => res.body as WorkflowList);
+    public list(namespace: string, phases: string[], labels: string[], pagination: Pagination) {
+        const params = this.queryParams({phases, labels});
+        if (pagination.offset) {
+            params.push(`listOptions.continue=${pagination.offset}`);
+        }
+        params.push(`listOptions.limit=${pagination.limit}`);
+        return requests.get(`api/v1/workflows/${namespace}?${fieldsFilter}&${params.join('&')}`).then(res => res.body as WorkflowList);
     }
 
     public get(namespace: string, name: string) {
