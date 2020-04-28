@@ -1496,6 +1496,41 @@ spec:
         path: /mnt
 `
 
+var nonPathOutputParameter = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: non-path-out-param-
+spec:
+  entrypoint: non-path-out-param
+  templates:
+  - name: non-path-out-param
+    steps:
+    - - name: non-path-resource-out-param
+        template: non-path-resource-out-param
+    outputs:
+      parameters:
+      - name: param
+        valueFrom:
+          parameter: "{{steps.non-path-resource-out-param.outputs.parameters.json}}"
+  - name: non-path-resource-out-param
+    resource:
+      action: create
+      manifest: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: whalesay-cm
+    outputs:
+      parameters:
+      - name: json
+        valueFrom:
+          jsonPath: '{.metadata.name}'
+      - name: jqfliter
+        valueFrom:
+          jqFilter: .
+`
+
 // TestBaseImageOutputVerify verifies we error when we detect the condition when the container
 // runtime executor doesn't support output artifacts from a base image layer, and fails validation
 func TestBaseImageOutputVerify(t *testing.T) {
@@ -1503,6 +1538,7 @@ func TestBaseImageOutputVerify(t *testing.T) {
 	wfBaseOutParam := unmarshalWf(baseImageOutputParameter)
 	wfEmptyDirOutArt := unmarshalWf(volumeMountOutputArtifact)
 	wfBaseWithEmptyDirOutArt := unmarshalWf(baseImageDirWithEmptyDirOutputArtifact)
+	wfNonPathOutputParam := unmarshalWf(nonPathOutputParameter)
 	var err error
 
 	for _, executor := range []string{common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorPNS, common.ContainerRuntimeExecutorDocker, ""} {
@@ -1514,6 +1550,8 @@ func TestBaseImageOutputVerify(t *testing.T) {
 			assert.Error(t, err)
 			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.Error(t, err)
+			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfNonPathOutputParam, ValidateOpts{ContainerRuntimeExecutor: executor})
+			assert.NoError(t, err)
 		case common.ContainerRuntimeExecutorPNS:
 			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
@@ -2252,5 +2290,98 @@ spec:
 
 func TestStepWithItemParam(t *testing.T) {
 	_, err := validate(stepWithItemParam)
+	assert.NoError(t, err)
+}
+
+var invalidMetricName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    metrics:
+      prometheus:
+        - name: invalid.metric.name
+          help: "invalid"
+          gauge:
+            value: 1
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestInvalidMetricName(t *testing.T) {
+	_, err := validate(invalidMetricName)
+	assert.EqualError(t, err, "templates.whalesay metric name 'invalid.metric.name' is invalid. Metric names must contain alphanumeric characters, '_', or ':'")
+}
+
+var invalidMetricHelp = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    metrics:
+      prometheus:
+        - name: metric_name
+          gauge:
+            value: 1
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestInvalidMetricHelp(t *testing.T) {
+	_, err := validate(invalidMetricHelp)
+	assert.EqualError(t, err, "templates.whalesay metric 'metric_name' must contain a help string under 'help: ' field")
+}
+
+var globalVariables = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: global-variables-
+spec:
+  priority: 100
+  entrypoint: test-workflow
+
+  templates:
+  - name: test-workflow
+    steps:
+    - - name: step1
+        template: whalesay
+        arguments:
+          parameters:
+          - name: name
+            value: "{{workflow.name}}"
+          - name: namespace
+            value: "{{workflow.namespace}}"
+          - name: serviceAccountName
+            value: "{{workflow.serviceAccountName}}"
+          - name: uid
+            value: "{{workflow.uid}}"
+          - name: priority
+            value: "{{workflow.priority}}"    
+
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: name
+      - name: namespace
+      - name: serviceAccountName
+      - name: uid
+      - name: priority
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["name: {{inputs.parameters.name}} namespace: {{inputs.parameters.namespace}} serviceAccountName: {{inputs.parameters.serviceAccountName}} uid: {{inputs.parameters.uid}} priority: {{inputs.parameters.priority}}"]
+`
+
+func TestWorfklowGlobalVariables(t *testing.T) {
+	_, err := validate(globalVariables)
 	assert.NoError(t, err)
 }

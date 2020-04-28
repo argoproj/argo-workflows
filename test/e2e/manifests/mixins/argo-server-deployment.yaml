@@ -8,15 +8,18 @@ spec:
       containers:
         - name: argo-server
           args:
+            - -v
             - server
             - --namespaced
             - --auth-mode
             - client
-            - --loglevel
-            - debug
+            - --secure
           imagePullPolicy:  Never
           env:
             - name: ARGO_TOKEN
               value: password
             - name: UPPERIO_DB_DEBUG
               value: "1"
+          readinessProbe:
+            httpGet:
+              scheme: HTTPS

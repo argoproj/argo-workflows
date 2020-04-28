@@ -35,18 +35,11 @@ func (s *CLISuite) TestCompletion() {
 }
 
 func (s *CLISuite) TestVersion() {
-	s.Given().RunCli([]string{"version"}, func(t *testing.T, output string, err error) {
-		assert.NoError(t, err)
-		assert.Contains(t, output, "argo:")
-		assert.Contains(t, output, "BuildDate:")
-		assert.Contains(t, output, "GitCommit:")
-		assert.Contains(t, output, "GitTreeState:")
-		assert.Contains(t, output, "GoVersion:")
-		assert.Contains(t, output, "Compiler:")
-		assert.Contains(t, output, "Platform:")
-		assert.NotContains(t, output, "argo: v0.0.0+unknown")
-		assert.NotContains(t, output, "  BuildDate: 1970-01-01T00:00:00Z")
-	})
+	// check we can run this without error
+	s.Given().
+		RunCli([]string{"version"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+		})
 }
 
 func (s *CLISuite) TestSubmitDryRun() {
@@ -373,7 +366,7 @@ func (s *CLISuite) TestWorkflowDelete() {
 			Workflow("@smoke/basic.yaml").
 			When().
 			SubmitWorkflow().
-			WaitForWorkflow(30*time.Second).
+			WaitForWorkflow(1*time.Minute).
 			Given().
 			RunCli([]string{"delete", "--all", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
@@ -394,7 +387,7 @@ func (s *CLISuite) TestWorkflowDelete() {
 				}
 			}).
 			When().
-			WaitForWorkflow(30*time.Second).
+			WaitForWorkflow(1*time.Minute).
 			Given().
 			RunCli([]string{"delete", "--completed", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
@@ -407,7 +400,7 @@ func (s *CLISuite) TestWorkflowDelete() {
 			Workflow("@smoke/basic.yaml").
 			When().
 			SubmitWorkflow().
-			WaitForWorkflow(30*time.Second).
+			WaitForWorkflow(1*time.Minute).
 			Given().
 			RunCli([]string{"delete", "--older", "1d", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {

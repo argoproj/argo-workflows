@@ -575,6 +575,9 @@ message NodeStatus {
   // a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
   // a template, will be a superset of the outbound nodes of its last children.
   repeated string outboundNodes = 17;
+
+  // HostNodeName name of the Kubernetes node on which the Pod is running, if applicable
+  optional string hostNodeName = 22;
 }
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
@@ -709,6 +712,13 @@ message ResourceTemplate {
   // FailureCondition is a label selector expression which describes the conditions
   // of the k8s resource in which the step was considered failed
   optional string failureCondition = 6;
+
+  // Flags is a set of additional options passed to kubectl before submitting a resource
+  // I.e. to disable resource validation:
+  // flags: [
+  // 	"--validate=false"  # disable resource validation
+  // ]
+  repeated string flags = 7;
 }
 
 // RetryStrategy provides controls on how to retry a workflow step
@@ -779,6 +789,42 @@ message Sequence {
 
   // Format is a printf format string to format the value in the sequence
   optional string format = 4;
+}
+
+// SubmitOpts are workflow submission options
+message SubmitOpts {
+  // Name overrides metadata.name
+  optional string name = 1;
+
+  // GenerateName overrides metadata.generateName
+  optional string generateName = 2;
+
+  // InstanceID binds the Resource to the specified instance ID
+  optional string instanceID = 3;
+
+  // Entrypoint overrides spec.entrypoint
+  optional string entrypoint = 4;
+
+  // Parameters passes input parameters to workflow
+  repeated string parameters = 5;
+
+  // ParameterFile holds a reference to a parameter file. This option is not supported in API
+  optional string parameterFile = 6;
+
+  // ServiceAccount runs all pods in the workflow using specified ServiceAccount.
+  optional string serviceAccount = 7;
+
+  // DryRun validates the workflow on the client-side without creating it. This option is not supported in API
+  optional bool dryRun = 8;
+
+  // ServerDryRun validates the workflow on the server-side without creating it
+  optional bool serverDryRun = 9;
+
+  // Labels adds to metadata.labels
+  optional string labels = 10;
+
+  // OwnerReference creates a metadata.ownerReference
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference ownerReference = 11;
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
@@ -957,7 +1003,7 @@ message TemplateRef {
   optional bool runtimeResolution = 3;
 
   // ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
-  optional bool clusterscope = 4;
+  optional bool clusterScope = 4;
 }
 
 // UserContainer is a container specified by a user.
@@ -988,6 +1034,24 @@ message ValueFrom {
 
   // Default specifies a value to be used if retrieving the value from the specified source fails
   optional string default = 5;
+}
+
+message Version {
+  optional string version = 1;
+
+  optional string buildDate = 2;
+
+  optional string gitCommit = 3;
+
+  optional string gitTag = 4;
+
+  optional string gitTreeState = 5;
+
+  optional string goVersion = 6;
+
+  optional string compiler = 7;
+
+  optional string platform = 8;
 }
 
 // Workflow is the definition of a workflow resource

@@ -33,7 +33,7 @@ spec:
 
 ### `workflowSpec` and `workflowMetadata`
 
-`CronWorkflow.spec.workflowSpec` is the same type as `Workflow.spec` and servers as a template for `Workflow` objects that are created from it. Everything under this spec will be converted to a `Workflow`.
+`CronWorkflow.spec.workflowSpec` is the same type as `Workflow.spec` and serves as a template for `Workflow` objects that are created from it. Everything under this spec will be converted to a `Workflow`.
 
 The resuling `Workflow` name will be a generated name based on the `CronWorkflow` name. In this example it could be something like `test-cron-wf-tj6fe`.
 
@@ -43,7 +43,7 @@ The resuling `Workflow` name will be a generated name based on the `CronWorkflow
 
 |          Option Name         |      Default Value     | Description                                                                                                                                                                                                                            |
 |:----------------------------:|:----------------------:|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|          `schedule`          | None, must be provided | `Schedule at which the `Workflow` will be run. E.g. `5 4 * * *                                                                                                                                                                         |
+|          `schedule`          | None, must be provided | Schedule at which the `Workflow` will be run. E.g. `5 4 * * * `                                                                                                                                                                        |
 |          `timezone`          |    Machine timezone    | Timezone during which the Workflow will be run. E.g. `America/Los_Angeles`                                                                                                                                                             |
 |           `suspend`          |         `false`        | If `true` Workflow scheduling will not occur. Can be set from the CLI, GitOps, or directly                                                                                                                                             |
 |      `concurrencyPolicy`     |         `Allow`        | Policy that determines what to do if multiple `Workflows` are scheduled at the same time. Available options: `Allow`: allow all, `Replace`: remove all old before scheduling a new, `Forbid`: do not allow any new while there are old |

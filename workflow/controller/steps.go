@@ -25,6 +25,10 @@ type stepsContext struct {
 
 	// tmplCtx is the context of template search.
 	tmplCtx *templateresolution.Context
+
+	// onExitTemplate is a flag denoting this template as part of an onExit handler. This is necessary to ensure that
+	// further nodes stemming from this template are allowed to run when using "ShutdownStrategy: Stop"
+	onExitTemplate bool
 }
 
 func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
@@ -48,7 +52,8 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 			tmpl:  tmpl,
 			scope: make(map[string]interface{}),
 		},
-		tmplCtx: tmplCtx,
+		tmplCtx:        tmplCtx,
+		onExitTemplate: opts.onExitTemplate,
 	}
 	woc.addOutputsToLocalScope("workflow", woc.wf.Status.Outputs, stepsCtx.scope)
 
@@ -144,6 +149,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 	if outputs != nil {
 		node := woc.getNodeByName(nodeName)
 		node.Outputs = outputs
+		woc.addOutputsToGlobalScope(node.Outputs)
 		woc.wf.Status.Nodes[node.ID] = *node
 	}
 	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded), nil
@@ -225,7 +231,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			continue
 		}
 
-		childNode, err := woc.executeTemplate(childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, &executeTemplateOpts{boundaryID: stepsCtx.boundaryID})
+		childNode, err := woc.executeTemplate(childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, &executeTemplateOpts{boundaryID: stepsCtx.boundaryID, onExitTemplate: stepsCtx.onExitTemplate})
 		if err != nil {
 			switch err {
 			case ErrDeadlineExceeded:
@@ -331,7 +337,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 	newStepGroup := make([]wfv1.WorkflowStep, len(stepGroup))
 
 	// Step 0: replace all parameter scope references for volumes
-	err := woc.substituteParamsInVolumes(scope.replaceMap())
+	err := woc.substituteParamsInVolumes(scope.getParameters())
 	if err != nil {
 		return nil, err
 	}
@@ -344,7 +350,8 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			return nil, errors.InternalWrapError(err)
 		}
 		fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
-		newStepStr, err := common.Replace(fstTmpl, scope.replaceMap(), true)
+
+		newStepStr, err := common.Replace(fstTmpl, woc.globalParams.Merge(scope.getParameters()), true)
 		if err != nil {
 			return nil, err
 		}
@@ -460,10 +467,7 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 
 func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string]string, map[string]func() float64) {
 	realTimeScope := make(map[string]func() float64)
-	localScope := make(map[string]string)
-	for key, val := range woc.globalParams {
-		localScope[key] = val
-	}
+	localScope := woc.globalParams.DeepCopy()
 
 	if node.Completed() {
 		localScope["duration"] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())

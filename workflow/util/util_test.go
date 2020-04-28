@@ -42,7 +42,7 @@ spec:
 	wf := unmarshalWF(workflowYaml)
 	newWf := wf.DeepCopy()
 	wfClientSet := fakeClientset.NewSimpleClientset()
-	newWf, err := SubmitWorkflow(nil, wfClientSet, "test-namespace", newWf, &SubmitOpts{DryRun: true})
+	newWf, err := SubmitWorkflow(nil, wfClientSet, "test-namespace", newWf, &wfv1.SubmitOpts{DryRun: true})
 	assert.NoError(t, err)
 	assert.Equal(t, wf.Spec, newWf.Spec)
 	assert.Equal(t, wf.Status, newWf.Status)

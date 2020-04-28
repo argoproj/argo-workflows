@@ -26,6 +26,22 @@
           "InfoService"
         ]
       }
+    },
+    "/api/v1/version": {
+      "get": {
+        "operationId": "GetVersion",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Version"
+            }
+          }
+        },
+        "tags": [
+          "InfoService"
+        ]
+      }
     }
   },
   "definitions": {
@@ -46,6 +62,35 @@
         }
       },
       "title": "A link to another app.\n+patchStrategy=merge\n+patchMergeKey=name"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Version": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "buildDate": {
+          "type": "string"
+        },
+        "gitCommit": {
+          "type": "string"
+        },
+        "gitTag": {
+          "type": "string"
+        },
+        "gitTreeState": {
+          "type": "string"
+        },
+        "goVersion": {
+          "type": "string"
+        },
+        "compiler": {
+          "type": "string"
+        },
+        "platform": {
+          "type": "string"
+        }
+      }
     },
     "info.InfoResponse": {
       "type": "object",

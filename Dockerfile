@@ -70,15 +70,11 @@ RUN apt-get update && \
         /var/tmp/* \
         /usr/share/man \
         /usr/share/doc \
-        /usr/share/doc-base && \
-    if [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "amd64" ]; then \
-	curl -L -o /usr/local/bin/kubectl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl; \
-    elif [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "arm64" ]; then \
-	curl -L -o /usr/local/bin/kubectl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/arm64/kubectl; \
-    fi && \
-    chmod +x /usr/local/bin/kubectl && \
-    curl -L -o /usr/local/bin/jq -LO https://github.com/stedolan/jq/releases/download/jq-${JQ_VERSION}/jq-linux64 && \
-    chmod +x /usr/local/bin/jq
+        /usr/share/doc-base
+ADD hack/recurl.sh .
+RUN ./recurl.sh /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/${IMAGE_ARCH}/kubectl
+RUN ./recurl.sh /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-${JQ_VERSION}/jq-linux64
+RUN rm recurl.sh
 COPY hack/ssh_known_hosts /etc/ssh/ssh_known_hosts
 COPY --from=builder /usr/local/bin/docker /usr/local/bin/
 
@@ -108,7 +104,11 @@ COPY --from=argo-ui node_modules ui/node_modules
 RUN mkdir -p ui/dist
 COPY --from=argo-ui dist/app ui/dist/app
 # stop make from trying to re-build this without yarn installed
-RUN touch ui/dist/app
+RUN touch ui/dist/node_modules.marker
+RUN touch ui/dist/app/index.html
+# fail the build if we are "dirty"
+RUN git diff --exit-code
+RUN make argo-server.crt argo-server.key
 RUN if [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "amd64" ]; then \
 	make dist/argo-linux-amd64 dist/workflow-controller-linux-amd64 dist/argoexec-linux-amd64; \
     elif [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "arm64" ]; then \
@@ -137,5 +137,7 @@ ENTRYPOINT [ "workflow-controller" ]
 FROM scratch as argocli
 COPY --from=argoexec-base /etc/ssh/ssh_known_hosts /etc/ssh/ssh_known_hosts
 COPY --from=argoexec-base /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=argo-build /go/src/github.com/argoproj/argo/argo-server.crt argo-server.crt
+COPY --from=argo-build /go/src/github.com/argoproj/argo/argo-server.key argo-server.key
 COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argo-linux-* /bin/argo
 ENTRYPOINT [ "argo" ]

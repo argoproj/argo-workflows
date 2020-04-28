@@ -830,6 +830,10 @@
             "type": "string"
           },
           "description": "OutboundNodes tracks the node IDs which are considered \"outbound\" nodes to a template invocation.\nFor every invocation of a template, there are nodes which we considered as \"outbound\". Essentially,\nthese are last nodes in the execution sequence to run, before the template is considered completed.\nThese nodes are then connected as parents to a following step.\n\nIn the case of single pod steps (i.e. container, script, resource templates), this list will be nil\nsince the pod itself is already considered the \"outbound\" node.\nIn the case of DAGs, outbound nodes are the \"target\" tasks (tasks with no children).\nIn the case of steps, outbound nodes are all the containers involved in the last step group.\nNOTE: since templates are composable, the list of outbound nodes are carried upwards when\na DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of\na template, will be a superset of the outbound nodes of its last children."
+        },
+        "hostNodeName": {
+          "type": "string",
+          "title": "HostNodeName name of the Kubernetes node on which the Pod is running, if applicable"
         }
       },
       "title": "NodeStatus contains status information about an individual node in the workflow"
@@ -1022,6 +1026,13 @@
         "failureCondition": {
           "type": "string",
           "title": "FailureCondition is a label selector expression which describes the conditions\nof the k8s resource in which the step was considered failed"
+        },
+        "flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Flags is a set of additional options passed to kubectl before submitting a resource\nI.e. to disable resource validation:\nflags: [\n\t\"--validate=false\"  # disable resource validation\n]"
         }
       },
       "title": "ResourceTemplate is a template subtype to manipulate kubernetes resources"
@@ -1364,7 +1375,7 @@
           "format": "boolean",
           "description": "RuntimeResolution skips validation at creation time.\nBy enabling this option, you can create the referred workflow template before the actual runtime."
         },
-        "clusterscope": {
+        "clusterScope": {
           "type": "boolean",
           "format": "boolean",
           "description": "ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate)."

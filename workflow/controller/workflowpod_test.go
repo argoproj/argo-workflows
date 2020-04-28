@@ -35,12 +35,13 @@ func newWoc(wfs ...wfv1.Workflow) *wfOperationCtx {
 	} else {
 		wf = &wfs[0]
 	}
-	fakeController := newController()
-	_, err := fakeController.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(wf)
+	cancel, controller := newController()
+	defer cancel()
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(wf)
 	if err != nil {
 		panic(err)
 	}
-	woc := newWorkflowOperationCtx(wf, fakeController)
+	woc := newWorkflowOperationCtx(wf, controller)
 	return woc
 }
 

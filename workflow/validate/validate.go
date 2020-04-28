@@ -60,6 +60,7 @@ func newTemplateValidationCtx(wf *wfv1.Workflow, opts ValidateOpts) *templateVal
 	globalParams := make(map[string]string)
 	globalParams[common.GlobalVarWorkflowName] = placeholderGenerator.NextPlaceholder()
 	globalParams[common.GlobalVarWorkflowNamespace] = placeholderGenerator.NextPlaceholder()
+	globalParams[common.GlobalVarWorkflowServiceAccountName] = placeholderGenerator.NextPlaceholder()
 	globalParams[common.GlobalVarWorkflowUID] = placeholderGenerator.NextPlaceholder()
 	return &templateValidationCtx{
 		ValidateOpts: opts,
@@ -340,6 +341,7 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 	if err != nil {
 		return err
 	}
+
 	localParams := make(map[string]string)
 	if tmpl.IsPodType() {
 		localParams[common.LocalVarPodName] = placeholderGenerator.NextPlaceholder()
@@ -398,6 +400,16 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 		err = validateArtifactLocation(errPrefix, *newTmpl.ArchiveLocation)
 		if err != nil {
 			return err
+		}
+	}
+	if newTmpl.Metrics != nil {
+		for _, metric := range newTmpl.Metrics.Prometheus {
+			if !MetricNameRegex.MatchString(metric.Name) {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s metric name '%s' is invalid. Metric names must contain alphanumeric characters, '_', or ':'", tmpl.Name, metric.Name)
+			}
+			if metric.Help == "" {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s metric '%s' must contain a help string under 'help: ' field", tmpl.Name, metric.Name)
+			}
 		}
 	}
 	return nil
@@ -961,8 +973,13 @@ func (ctx *templateValidationCtx) validateBaseImageOutputs(tmpl *wfv1.Template) 
 			}
 		}
 		for _, out := range tmpl.Outputs.Parameters {
-			if out.ValueFrom != nil && common.FindOverlappingVolume(tmpl, out.ValueFrom.Path) == nil {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.parameters.%s: %s", tmpl.Name, out.Name, errMsg)
+			if out.ValueFrom == nil {
+				continue
+			}
+			if out.ValueFrom.Path != "" {
+				if common.FindOverlappingVolume(tmpl, out.ValueFrom.Path) == nil {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.parameters.%s: %s", tmpl.Name, out.Name, errMsg)
+				}
 			}
 		}
 	}
@@ -1200,6 +1217,8 @@ var (
 	// paramRegex matches a parameter. e.g. {{inputs.parameters.blah}}
 	paramRegex               = regexp.MustCompile(`{{[-a-zA-Z0-9]+(\.[-a-zA-Z0-9_]+)*}}`)
 	paramOrArtifactNameRegex = regexp.MustCompile(`^[-a-zA-Z0-9_]+[-a-zA-Z0-9_]*$`)
+	workflowFieldNameRegex   = regexp.MustCompile("^" + workflowFieldNameFmt + "$")
+	MetricNameRegex          = regexp.MustCompile(`^[a-zA-Z_:][a-zA-Z_:0-9]*$`)
 )
 
 func isParameter(p string) bool {
@@ -1220,15 +1239,13 @@ const (
 	workflowFieldMaxLength  int    = 128
 )
 
-var workflowFieldNameRegexp = regexp.MustCompile("^" + workflowFieldNameFmt + "$")
-
 // isValidWorkflowFieldName : workflow field name must consist of alpha-numeric characters or '-', and must start with an alpha-numeric character
 func isValidWorkflowFieldName(name string) []string {
 	var errs []string
 	if len(name) > workflowFieldMaxLength {
 		errs = append(errs, apivalidation.MaxLenError(workflowFieldMaxLength))
 	}
-	if !workflowFieldNameRegexp.MatchString(name) {
+	if !workflowFieldNameRegex.MatchString(name) {
 		msg := workflowFieldNameErrMsg + " (e.g. My-name1-2, 123-NAME)"
 		errs = append(errs, msg)
 	}

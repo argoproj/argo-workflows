@@ -102,11 +102,11 @@ helm install argo-artifacts stable/minio \
 
 Login to the Minio UI using a web browser (port 9000) after exposing obtaining the external IP using `kubectl`.
 ```sh
-kubectl -n argo get service argo-artifacts -o wide
+kubectl get service argo-artifacts -o wide
 ```
 On Minikube:
 ```sh
-minikube -n argo service --url argo-artifacts
+minikube service --url argo-artifacts
 ```
 
 NOTE: When minio is installed via Helm, it uses the following hard-wired default credentials,
@@ -128,23 +128,22 @@ kubectl edit cm -n argo workflow-controller-configmap
 Add the following:
 ```yaml
 data:
-  config: |
-    artifactRepository: |
-      s3:
-        bucket: my-bucket
-        endpoint: argo-artifacts:9000
-        insecure: true
-        # accessKeySecret and secretKeySecret are secret selectors.
-        # It references the k8s secret named 'argo-artifacts'
-        # which was created during the minio helm install. The keys,
-        # 'accesskey' and 'secretkey', inside that secret are where the
-        # actual minio credentials are stored.
-        accessKeySecret:
-          name: argo-artifacts
-          key: accesskey
-        secretKeySecret:
-          name: argo-artifacts
-          key: secretkey
+  artifactRepository:
+    s3:
+      bucket: my-bucket
+      endpoint: argo-artifacts.default:9000
+      insecure: true
+      # accessKeySecret and secretKeySecret are secret selectors.
+      # It references the k8s secret named 'argo-artifacts'
+      # which was created during the minio helm install. The keys,
+      # 'accesskey' and 'secretkey', inside that secret are where the
+      # actual minio credentials are stored.
+      accessKeySecret:
+        name: argo-artifacts
+        key: accesskey
+      secretKeySecret:
+        name: argo-artifacts
+        key: secretkey
 ```
 
 NOTE: the Minio secret is retrieved from the namespace you use to run Workflows. If Minio is

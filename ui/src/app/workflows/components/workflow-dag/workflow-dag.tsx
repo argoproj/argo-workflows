@@ -107,9 +107,9 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
                     const node = graph.node(id) as models.NodeStatus & dagre.Node;
                     const small = this.filterNode(node);
                     return (
-                        <>
+                        <div key={`node/${id}`}>
                             <div
-                                key={id}
+                                key='label'
                                 title={node.label}
                                 className={classNames(
                                     'workflow-dag__node',
@@ -135,6 +135,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
                             />
                             {!small && (
                                 <div
+                                    key='title'
                                     className='workflow-dag__node-title'
                                     style={{
                                         position: 'absolute',
@@ -148,12 +149,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
                                     {node.label}
                                 </div>
                             )}
-                        </>
+                        </div>
                     );
                 })}
                 {edges.map(edge => (
-                    <div key={`${edge.from}-${edge.to}`} className='workflow-dag__edge'>
-                        {edge.lines.map((line, i) => {
+                    <div key={`edge/${edge.from},${edge.to}`} className='workflow-dag__edge'>
+                        {edge.lines.map(line => {
                             const distance = Math.sqrt(Math.pow(line.x1 - line.x2, 2) + Math.pow(line.y1 - line.y2, 2));
                             const xMid = (line.x1 + line.x2) / 2;
                             const yMid = (line.y1 + line.y2) / 2;
@@ -161,7 +162,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
                             return (
                                 <div
                                     className={classNames('workflow-dag__line', {'workflow-dag__line--no-arrow': line.noArrow})}
-                                    key={i}
+                                    key={`line/${line.x1},line-${line.x2}->${line.y1},${line.y2}`}
                                     style={{
                                         width: distance,
                                         left: xMid - distance / 2,

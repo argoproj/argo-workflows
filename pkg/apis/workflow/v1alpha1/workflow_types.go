@@ -599,7 +599,7 @@ type ValueFrom struct {
 	Parameter string `json:"parameter,omitempty" protobuf:"bytes,4,opt,name=parameter"`
 
 	// Default specifies a value to be used if retrieving the value from the specified source fails
-	Default string `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
+	Default *string `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 }
 
 // Artifact indicates an artifact to place at a specified path
@@ -809,7 +809,7 @@ type TemplateRef struct {
 	// By enabling this option, you can create the referred workflow template before the actual runtime.
 	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
 	// ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
-	ClusterScope bool `json:"clusterscope,omitempty" protobuf:"varint,4,opt,name=clusterscope"`
+	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
 }
 
 // WorkflowTemplateRef is a reference of workflow template resource on Top level workflow.
@@ -1139,6 +1139,9 @@ type NodeStatus struct {
 	// a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
 	// a template, will be a superset of the outbound nodes of its last children.
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
+
+	// HostNodeName name of the Kubernetes node on which the Pod is running, if applicable
+	HostNodeName string `json:"hostNodeName,omitempty" protobuf:"bytes,22,rep,name=hostNodeName"`
 }
 
 func (n Nodes) GetResourcesDuration() ResourcesDuration {
@@ -1508,6 +1511,13 @@ type ResourceTemplate struct {
 	// FailureCondition is a label selector expression which describes the conditions
 	// of the k8s resource in which the step was considered failed
 	FailureCondition string `json:"failureCondition,omitempty" protobuf:"bytes,6,opt,name=failureCondition"`
+
+	// Flags is a set of additional options passed to kubectl before submitting a resource
+	// I.e. to disable resource validation:
+	// flags: [
+	// 	"--validate=false"  # disable resource validation
+	// ]
+	Flags []string `json:"flags,omitempty" protobuf:"varint,7,opt,name=flags"`
 }
 
 // GetType returns the type of this template
@@ -1674,6 +1684,9 @@ func (out *Outputs) HasOutputs() bool {
 }
 
 func (out *Outputs) GetArtifactByName(name string) *Artifact {
+	if out == nil {
+		return nil
+	}
 	return out.Artifacts.GetArtifactByName(name)
 }
 

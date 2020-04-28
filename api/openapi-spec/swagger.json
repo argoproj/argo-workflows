@@ -672,6 +672,22 @@
         }
       }
     },
+    "/api/v1/version": {
+      "get": {
+        "tags": [
+          "InfoService"
+        ],
+        "operationId": "GetVersion",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Version"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/workflow-events/{namespace}": {
       "get": {
         "tags": [
@@ -1159,6 +1175,38 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowLintRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workflows/{namespace}/submit": {
+      "post": {
+        "tags": [
+          "WorkflowService"
+        ],
+        "operationId": "SubmitWorkflow",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSubmitRequest"
             }
           }
         ],
@@ -2452,6 +2500,10 @@
           "title": "Time at which this node completed",
           "$ref": "#/definitions/io.k8s.api.core.v1.Time"
         },
+        "hostNodeName": {
+          "type": "string",
+          "title": "HostNodeName name of the Kubernetes node on which the Pod is running, if applicable"
+        },
         "id": {
           "type": "string",
           "title": "ID is a unique identifier of a node within the worklow\nIt is implemented as a hash of the node name, which makes the ID deterministic"
@@ -2693,6 +2745,13 @@
           "type": "string",
           "title": "FailureCondition is a label selector expression which describes the conditions\nof the k8s resource in which the step was considered failed"
         },
+        "flags": {
+          "type": "array",
+          "title": "Flags is a set of additional options passed to kubectl before submitting a resource\nI.e. to disable resource validation:\nflags: [\n\t\"--validate=false\"  # disable resource validation\n]",
+          "items": {
+            "type": "string"
+          }
+        },
         "manifest": {
           "type": "string",
           "title": "Manifest contains the kubernetes manifest"
@@ -2816,6 +2875,61 @@
         "start": {
           "type": "string",
           "title": "Number at which to start the sequence (default: 0)"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.SubmitOpts": {
+      "type": "object",
+      "title": "SubmitOpts are workflow submission options",
+      "properties": {
+        "dryRun": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "DryRun validates the workflow on the client-side without creating it. This option is not supported in API"
+        },
+        "entrypoint": {
+          "type": "string",
+          "title": "Entrypoint overrides spec.entrypoint"
+        },
+        "generateName": {
+          "type": "string",
+          "title": "GenerateName overrides metadata.generateName"
+        },
+        "instanceID": {
+          "type": "string",
+          "title": "InstanceID binds the Resource to the specified instance ID"
+        },
+        "labels": {
+          "type": "string",
+          "title": "Labels adds to metadata.labels"
+        },
+        "name": {
+          "type": "string",
+          "title": "Name overrides metadata.name"
+        },
+        "ownerReference": {
+          "title": "OwnerReference creates a metadata.ownerReference",
+          "$ref": "#/definitions/io.k8s.api.core.v1.OwnerReference"
+        },
+        "parameterFile": {
+          "type": "string",
+          "title": "ParameterFile holds a reference to a parameter file. This option is not supported in API"
+        },
+        "parameters": {
+          "type": "array",
+          "title": "Parameters passes input parameters to workflow",
+          "items": {
+            "type": "string"
+          }
+        },
+        "serverDryRun": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "ServerDryRun validates the workflow on the server-side without creating it"
+        },
+        "serviceAccount": {
+          "description": "ServiceAccount runs all pods in the workflow using specified ServiceAccount.",
+          "type": "string"
         }
       }
     },
@@ -3038,7 +3152,7 @@
       "description": "TemplateRef is a reference of template resource.",
       "type": "object",
       "properties": {
-        "clusterscope": {
+        "clusterScope": {
           "description": "ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).",
           "type": "boolean",
           "format": "boolean"
@@ -3095,6 +3209,35 @@
         "path": {
           "type": "string",
           "title": "Path in the container to retrieve an output parameter value from in container templates"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Version": {
+      "type": "object",
+      "properties": {
+        "buildDate": {
+          "type": "string"
+        },
+        "compiler": {
+          "type": "string"
+        },
+        "gitCommit": {
+          "type": "string"
+        },
+        "gitTag": {
+          "type": "string"
+        },
+        "gitTreeState": {
+          "type": "string"
+        },
+        "goVersion": {
+          "type": "string"
+        },
+        "platform": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
         }
       }
     },
@@ -6198,6 +6341,26 @@
         },
         "nodeFieldSelector": {
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowSubmitRequest": {
+      "type": "object",
+      "properties": {
+        "createOptions": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.CreateOptions"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "resourceKind": {
+          "type": "string"
+        },
+        "resourceName": {
+          "type": "string"
+        },
+        "submitOptions": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SubmitOpts"
         }
       }
     },

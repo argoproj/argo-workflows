@@ -20,42 +20,15 @@ import (
 )
 
 // ExecResource will run kubectl action against a manifest
-func (we *WorkflowExecutor) ExecResource(action string, manifestPath string) (string, string, error) {
-	isDelete := action == "delete"
-	args := []string{
-		action,
-	}
-	output := "json"
-	if isDelete {
-		args = append(args, "--ignore-not-found")
-		output = "name"
+func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, flags []string) (string, string, error) {
+	args, err := we.getKubectlArguments(action, manifestPath, flags)
+	if err != nil {
+		return "", "", err
 	}
 
-	if action == "patch" {
-		mergeStrategy := "strategic"
-		if we.Template.Resource.MergeStrategy != "" {
-			mergeStrategy = we.Template.Resource.MergeStrategy
-		}
-
-		args = append(args, "--type")
-		args = append(args, mergeStrategy)
-
-		args = append(args, "-p")
-		buff, err := ioutil.ReadFile(manifestPath)
-
-		if err != nil {
-			return "", "", errors.New(errors.CodeBadRequest, err.Error())
-		}
-
-		args = append(args, string(buff))
-	}
-
-	args = append(args, "-f")
-	args = append(args, manifestPath)
-	args = append(args, "-o")
-	args = append(args, output)
 	cmd := exec.Command("kubectl", args...)
 	log.Info(strings.Join(cmd.Args, " "))
+
 	out, err := cmd.Output()
 	if err != nil {
 		exErr := err.(*exec.ExitError)
@@ -73,6 +46,51 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string) (st
 	resourceName := fmt.Sprintf("%s.%s/%s", obj.GroupVersionKind().Kind, obj.GroupVersionKind().Group, obj.GetName())
 	log.Infof("%s/%s", obj.GetNamespace(), resourceName)
 	return obj.GetNamespace(), resourceName, nil
+}
+
+func (we *WorkflowExecutor) getKubectlArguments(action string, manifestPath string, flags []string) ([]string, error) {
+	args := []string{
+		action,
+	}
+	output := "json"
+
+	if action == "delete" {
+		args = append(args, "--ignore-not-found")
+		output = "name"
+	}
+
+	buff, err := ioutil.ReadFile(manifestPath)
+	if err != nil {
+		return []string{}, errors.New(errors.CodeBadRequest, err.Error())
+	}
+
+	if action == "patch" {
+		mergeStrategy := "strategic"
+		if we.Template.Resource.MergeStrategy != "" {
+			mergeStrategy = we.Template.Resource.MergeStrategy
+		}
+
+		args = append(args, "--type")
+		args = append(args, mergeStrategy)
+
+		args = append(args, "-p")
+		args = append(args, string(buff))
+	}
+
+	if len(flags) != 0 {
+		args = append(args, flags...)
+	}
+
+	if len(buff) != 0 {
+		args = append(args, "-f")
+		args = append(args, manifestPath)
+	} else if len(flags) <= 0 {
+		return []string{}, errors.New(errors.CodeBadRequest, "Must provide at least one of flags or manifest.")
+	}
+	args = append(args, "-o")
+	args = append(args, output)
+
+	return args, nil
 }
 
 // gjsonLabels is an implementation of labels.Labels interface
@@ -310,8 +328,8 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 		out, err := cmd.Output()
 		if err != nil {
 			// We have a default value to use instead of returning an error
-			if param.ValueFrom.Default != "" {
-				out = []byte(param.ValueFrom.Default)
+			if param.ValueFrom.Default != nil {
+				out = []byte(*param.ValueFrom.Default)
 			} else {
 				if exErr, ok := err.(*exec.ExitError); ok {
 					log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))

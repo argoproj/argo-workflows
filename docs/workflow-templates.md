@@ -200,7 +200,7 @@ argo template create https://raw.githubusercontent.com/argoproj/argo/master/exam
 The submit a workflow using one of those templates:
 
 ```
-argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/workflow-template/hello-world.yam
+argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/workflow-template/hello-world.yaml
 ```
 
 ### `kubectl`
