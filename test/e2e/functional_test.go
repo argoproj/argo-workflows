@@ -397,7 +397,6 @@ func (s *FunctionalSuite) TestGlobalScope() {
 }
 
 func (s *FunctionalSuite) TestStopBehavior() {
-	s.T().SkipNow()
 	s.Given().
 		Workflow("@functional/stop-terminate.yaml").
 		When().

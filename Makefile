@@ -432,7 +432,13 @@ mysql-cli:
 test-e2e: test-images cli
 	# Run E2E tests
 	@mkdir -p test-results
-	go test -timeout 15m -v -count 1 -p 1 ./test/e2e/... 2>&1 | tee test-results/test.out
+	go test -timeout 15m -v -count 1 -p 1 --short ./test/e2e/... 2>&1 | tee test-results/test.out
+
+.PHONY: test-e2e-cron
+test-e2e-cron: test-images cli
+	# Run E2E tests
+	@mkdir -p test-results
+	go test -timeout 4m -v -count 1 -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: smoke
 smoke: test-images
