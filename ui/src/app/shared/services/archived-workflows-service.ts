@@ -5,7 +5,7 @@ import requests from './requests';
 export class ArchivedWorkflowsService {
     public list(namespace: string, phases: string[], labels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination) {
         return requests
-            .get(`api/v1/archived-workflows?limit=${this.queryParams({namespace, phases, labels, minStartedAt, maxStartedAt, pagination}).join('&')}`)
+            .get(`api/v1/archived-workflows?${this.queryParams({namespace, phases, labels, minStartedAt, maxStartedAt, pagination}).join('&')}`)
             .then(res => res.body as models.WorkflowList);
     }
 

@@ -6,7 +6,9 @@ export interface Pagination {
     nextOffset?: string;
 }
 
+export const defaultPaginationLimit = 10;
+
 export function parseLimit(str: string) {
-    const v = parseInt(str);
-    return isNaN(v) ? 10 : v;
+    const v = parseInt(str, 10);
+    return isNaN(v) ? defaultPaginationLimit : v;
 }

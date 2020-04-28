@@ -7,8 +7,6 @@ import {Pagination} from '../pagination';
 import requests from './requests';
 import {WorkflowDeleteResponse} from './responses';
 
-const fieldsFilter = `fields=items.metadata.name,items.metadata.namespace,items.status.phase,items.status.finishedAt,items.status.startedAt`;
-
 export class WorkflowsService {
     public create(workflow: Workflow, namespace: string) {
         return requests
@@ -23,7 +21,8 @@ export class WorkflowsService {
             params.push(`listOptions.continue=${pagination.offset}`);
         }
         params.push(`listOptions.limit=${pagination.limit}`);
-        return requests.get(`api/v1/workflows/${namespace}?${fieldsFilter}&${params.join('&')}`).then(res => res.body as WorkflowList);
+        params.push(`fields=metadata,items.metadata.name,items.metadata.namespace,items.status.phase,items.status.finishedAt,items.status.startedAt`);
+        return requests.get(`api/v1/workflows/${namespace}?${params.join('&')}`).then(res => res.body as WorkflowList);
     }
 
     public get(namespace: string, name: string) {
@@ -31,7 +30,7 @@ export class WorkflowsService {
     }
 
     public watch(filter: {namespace?: string; name?: string; phases?: Array<string>; labels?: Array<string>}): Observable<models.kubernetes.WatchEvent<Workflow>> {
-        const url = `api/v1/workflow-events/${filter.namespace || ''}?${fieldsFilter}&${this.queryParams(filter).join('&')}`;
+        const url = `api/v1/workflow-events/${filter.namespace || ''}?${this.queryParams(filter).join('&')}`;
 
         return requests.loadEventSource(url, true).map(data => JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>);
     }

@@ -4,7 +4,7 @@ import {Subscription} from 'rxjs';
 
 import {Autocomplete, Page, SlidingPanel} from 'argo-ui';
 import * as models from '../../../../models';
-import {compareWorkflows, Workflow} from '../../../../models';
+import {Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
@@ -19,11 +19,10 @@ import {Utils} from '../../../shared/utils';
 
 import {Ticker} from 'argo-ui/src/index';
 import * as classNames from 'classnames';
-import * as moment from 'moment';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {Timestamp} from '../../../shared/components/timestamp';
-import {formatDuration} from '../../../shared/duration';
-import {Pagination, parseLimit} from '../../../shared/pagination';
+import {formatDuration, wfDuration} from '../../../shared/duration';
+import {defaultPaginationLimit, Pagination, parseLimit} from '../../../shared/pagination';
 import {WorkflowFilters} from '../workflow-filters/workflow-filters';
 
 require('./workflows-list.scss');
@@ -44,13 +43,14 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     private get wfInput() {
         return Utils.tryJsonParse(this.queryParam('new'));
     }
+
     private subscription: Subscription;
 
     constructor(props: RouteComponentProps<State>, context: any) {
         super(props, context);
         this.state = {
             loading: true,
-            pagination: {offset: this.queryParam('continue'), limit: parseLimit(this.queryParam('limit'))},
+            pagination: {offset: this.queryParam('offset'), limit: parseLimit(this.queryParam('limit'))},
             initialized: false,
             managedNamespace: false,
             namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || '',
@@ -159,10 +159,14 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             workflowList = services.workflows.list(newNamespace, selectedPhases, selectedLabels, pagination);
         }
         workflowList
-            .then(list => list.items)
-            .then(list => list || [])
-            .then(workflows => {
-                this.setState({workflows, namespace: newNamespace, selectedPhases, selectedLabels});
+            .then(wfList => {
+                this.setState({
+                    workflows: wfList.items || [],
+                    pagination: {offset: pagination.offset, limit: pagination.limit, nextOffset: wfList.metadata.continue},
+                    namespace: newNamespace,
+                    selectedPhases,
+                    selectedLabels
+                });
                 Utils.setCurrentNamespace(newNamespace);
             })
             .then(() => {
@@ -184,8 +188,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         } else {
                             if (index > -1) {
                                 workflows[index] = workflowChange.object;
-                            } else {
-                                workflows.unshift(workflowChange.object);
                             }
                         }
                         return {workflows, updated: true};
@@ -209,10 +211,13 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         selectedLabels.forEach(label => {
             params.append('label', label);
         });
-        let url = 'workflows/' + namespace;
-        if (selectedPhases.length > 0 || selectedLabels.length > 0) {
-            url += '?' + params.toString();
+        if (pagination.offset) {
+            params.append('offset', pagination.offset);
         }
+        if (pagination.limit !== defaultPaginationLimit) {
+            params.append('limit', pagination.limit.toString());
+        }
+        const url = 'workflows/' + namespace + '?' + params.toString();
         history.pushState(null, '', uiUrl(url));
         this.fetchWorkflows(namespace, selectedPhases, selectedLabels, pagination);
     }
@@ -229,11 +234,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                 </ZeroState>
             );
         }
-        function wfDuration(workflow: models.WorkflowStatus, now: moment.Moment) {
-            const endTime = workflow.finishedAt ? moment(workflow.finishedAt) : now;
-            return endTime.diff(moment(workflow.startedAt)) / 1000;
-        }
-        this.state.workflows.sort(compareWorkflows);
 
         return (
             <>
@@ -246,7 +246,10 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         <div className='columns small-2'>DURATION</div>
                     </div>
                     {this.state.workflows.map(w => (
-                        <Link className='row argo-table-list__row' key={`${w.metadata.uid}`} to={uiUrl(`workflows/${w.metadata.namespace}/${w.metadata.uid}`)}>
+                        <Link
+                            className='row argo-table-list__row'
+                            key={`${w.metadata.namespace}-${w.metadata.name}`}
+                            to={uiUrl(`workflows/${w.metadata.namespace}/${w.metadata.name}`)}>
                             <div className='columns small-1'>
                                 <i className={classNames('fa', Utils.statusIconClasses(w.status.phase))} />
                             </div>
@@ -256,16 +259,13 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 <Timestamp date={w.status.startedAt} />
                             </div>
                             <div className='columns small-2'>
-                                <Ticker>{now => formatDuration(wfDuration(w.status, now))}</Ticker>
+                                <Ticker>{() => formatDuration(wfDuration(w.status))}</Ticker>
                             </div>
                         </Link>
                     ))}
                 </div>
                 <PaginationPanel
-                    onChange={pagination => {
-                        this.setState({pagination});
-                        this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, pagination);
-                    }}
+                    onChange={pagination => this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, pagination)}
                     pagination={this.state.pagination}
                 />
             </>

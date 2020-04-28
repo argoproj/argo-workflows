@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {Pagination} from '../pagination';
+import {Pagination, parseLimit} from '../pagination';
 
 export class PaginationPanel extends React.Component<{pagination: Pagination; onChange: (pagination: Pagination) => void}> {
     public render() {
@@ -28,7 +28,7 @@ export class PaginationPanel extends React.Component<{pagination: Pagination; on
                         onChange={e =>
                             this.props.onChange({
                                 offset: this.props.pagination.offset,
-                                limit: parseInt(e.target.value)
+                                limit: parseLimit(e.target.value)
                             })
                         }
                         value={this.props.pagination.limit}>

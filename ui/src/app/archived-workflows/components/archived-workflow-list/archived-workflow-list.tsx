@@ -1,8 +1,6 @@
 import {Page, SlidingPanel} from 'argo-ui';
 
-import {Ticker} from 'argo-ui/src/index';
 import * as classNames from 'classnames';
-import * as moment from 'moment';
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
@@ -15,9 +13,9 @@ import {ResourceSubmit} from '../../../shared/components/resource-submit';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
-import {formatDuration} from '../../../shared/duration';
+import {formatDuration, wfDuration} from '../../../shared/duration';
 import {exampleWorkflow} from '../../../shared/examples';
-import {Pagination, parseLimit} from '../../../shared/pagination';
+import {defaultPaginationLimit, Pagination, parseLimit} from '../../../shared/pagination';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 import {ArchivedWorkflowFilters} from '../archived-workflow-filters/archived-workflow-filters';
@@ -45,7 +43,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         super(props, context);
         this.state = {
             loading: true,
-            pagination: {offset: this.queryParam('offset') || '', limit: parseLimit(this.queryParam('limit'))},
+            pagination: {offset: this.queryParam('offset'), limit: parseLimit(this.queryParam('limit'))},
             initialized: false,
             managedNamespace: false,
             namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || '',
@@ -161,7 +159,9 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         if (pagination.offset) {
             params.append('offset', pagination.offset);
         }
-        params.append('limit', pagination.limit.toString());
+        if (pagination.limit !== defaultPaginationLimit) {
+            params.append('limit', pagination.limit.toString());
+        }
         const url = 'archived-workflows/' + namespace + '?' + params.toString();
         history.pushState(null, '', uiUrl(url));
         this.fetchArchivedWorkflows(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, pagination);
@@ -194,8 +194,8 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                     minStartedAt,
                     maxStartedAt,
                     pagination: {
-                        limit: this.state.pagination.limit,
-                        offset: this.state.pagination.offset,
+                        limit: pagination.limit,
+                        offset: pagination.offset,
                         nextOffset: list.metadata.continue
                     },
                     loading: false
@@ -219,11 +219,6 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             );
         }
 
-        function wfDuration(workflow: models.WorkflowStatus, now: moment.Moment) {
-            const endTime = workflow.finishedAt ? moment(workflow.finishedAt) : now;
-            return endTime.diff(moment(workflow.startedAt)) / 1000;
-        }
-
         return (
             <>
                 <div className='argo-table-list'>
@@ -243,25 +238,16 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                             <div className='columns small-3'>{w.metadata.namespace}</div>
                             <div className='columns small-2'>
                                 <Timestamp date={w.status.startedAt} />
+                                <Timestamp date={w.status.finishedAt} />
                             </div>
-                            <div className='columns small-2'>
-                                <Ticker>{now => formatDuration(wfDuration(w.status, now))}</Ticker>
-                            </div>
+                            <div className='columns small-2'>{formatDuration(wfDuration(w.status))}</div>
                         </Link>
                     ))}
                 </div>
                 <PaginationPanel
-                    onChange={pagination => {
-                        this.setState({pagination});
-                        this.changeFilters(
-                            this.state.namespace,
-                            this.state.selectedPhases,
-                            this.state.selectedLabels,
-                            this.state.minStartedAt,
-                            this.state.maxStartedAt,
-                            pagination
-                        );
-                    }}
+                    onChange={pagination =>
+                        this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.minStartedAt, this.state.maxStartedAt, pagination)
+                    }
                     pagination={this.state.pagination}
                 />
                 <p>
