@@ -2403,3 +2403,35 @@ func TestWorkflowWithWFTRef(t *testing.T){
 	_, err = validate(wfWithWFTRef)
 	assert.NoError(t, err)
 }
+
+var wfWithWFTRefNoEntrypoint=`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  workflowTemplateRef:
+    name: template-ref-target
+`
+
+var templateWithEntrypoint = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-target
+spec:
+  entrypoint: A
+  templates:
+  - name: A
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+`
+
+
+func TestWorkflowWithWFTRefWithEntrypoint(t *testing.T){
+	err := createWorkflowTemplate(templateWithEntrypoint)
+	assert.NoError(t, err)
+	_, err = validate(wfWithWFTRefNoEntrypoint)
+	assert.NoError(t, err)
+}
