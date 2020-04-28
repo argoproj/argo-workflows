@@ -503,6 +503,8 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			Expect().
 			Status(200).
 			JSON()
+		j.Path("$.metadata").
+			NotNull()
 		j.
 			Path("$.items").
 			Array().
