@@ -1535,7 +1535,7 @@ func TestBaseImageOutputVerify(t *testing.T) {
 			assert.Error(t, err)
 			_, err = ValidateWorkflow(wftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.Error(t, err)
-			_, err = ValidateWorkflow(wftmplGetter, cwftmplGetter, wfNonPathOutputParam, ValidateOpts{ContainerRuntimeExecutor: executor})
+			_, err = ValidateWorkflow(wftmplGetter, wfNonPathOutputParam, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
 		case common.ContainerRuntimeExecutorPNS:
 			_, err = ValidateWorkflow(wftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})

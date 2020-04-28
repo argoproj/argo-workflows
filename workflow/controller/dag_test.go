@@ -638,8 +638,7 @@ spec:
 `
 
 func TestDAGWithParamAndGlobalParam(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
+	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	wf := unmarshalWF(dagWithParamAndGlobalParam)
