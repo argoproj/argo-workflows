@@ -61,7 +61,7 @@ export const Login = () => (
                 </div>
                 <div className='columns small-4'>
                     <div>
-                        <p>Something broken?</p>
+                        <p>Something wrong? Try logging out and logging back in:</p>
                         <button className='argo-button argo-button--base-o' onClick={() => logout()}>
                             <i className='fa fa-sign-out-alt' /> Logout
                         </button>

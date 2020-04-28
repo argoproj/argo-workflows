@@ -34,9 +34,10 @@ type service struct {
 	config          *oauth2.Config
 	idTokenVerifier *oidc.IDTokenVerifier
 	baseHRef        string
+	secure          bool
 }
 
-func NewService(issuer, clientID, clientSecret, redirectURL, baseHRef string) (Service, error) {
+func NewService(issuer, clientID, clientSecret, redirectURL, baseHRef string, secure bool) (Service, error) {
 	if issuer == "" {
 		return nil, fmt.Errorf("issuer empty")
 	}
@@ -62,21 +63,23 @@ func NewService(issuer, clientID, clientSecret, redirectURL, baseHRef string) (S
 	}
 	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: clientID})
 	log.WithFields(log.Fields{"redirectURL": config.RedirectURL, "issuer": issuer, "clientId": clientID}).Info("SSO configuration")
-	return &service{config, idTokenVerifier, baseHRef}, nil
+	return &service{config, idTokenVerifier, baseHRef, secure}, nil
 }
 
 const stateCookieName = "oauthState"
 
 func (s *service) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	state := rand.RandString(10)
-	// TODO - no path?
 	http.SetCookie(w, &http.Cookie{
 		Name:     stateCookieName,
 		Value:    state,
 		Expires:  time.Now().Add(1 * time.Hour),
 		HttpOnly: true,
+		// TODO - no path?
+		// TODO - secure
 		// TODO - lax? not strict?
 		SameSite: http.SameSiteLaxMode,
+		Secure:   s.secure,
 	})
 	http.Redirect(w, r, s.config.AuthCodeURL(state), http.StatusFound)
 }
@@ -128,9 +131,14 @@ func (s *service) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	value := Prefix + token
 	log.Debugf("handing oauth2 callback %v", value)
-	// TODO MaxAge? Expires? HttpOnly?
-	// TODO we must compress this because we know id_token can be large if you have many groups
-	http.SetCookie(w, &http.Cookie{Name: "authorization", Value: value, Path: s.baseHRef, SameSite: http.SameSiteStrictMode})
+	http.SetCookie(w, &http.Cookie{
+		Value:    value,
+		Name:     "authorization",
+		Path:     s.baseHRef,
+		Expires:  time.Now().Add(10 * time.Hour),
+		SameSite: http.SameSiteStrictMode,
+		Secure:   s.secure,
+	})
 	http.Redirect(w, r, s.baseHRef, 302)
 }
 

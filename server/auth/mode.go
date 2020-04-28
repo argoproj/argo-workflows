@@ -13,17 +13,15 @@ type Mode string
 
 const (
 	Client Mode = "client"
-	// DEPRECATED - use both Client + Server
-	Hybrid Mode = "hybrid"
 	Server Mode = "server"
 	SSO    Mode = "sso"
 )
 
-func (m Modes) Add(value Mode) error {
+func (m Modes) Add(value string) error {
 	switch value {
-	case Client, Server, SSO:
-		m[value] = true
-	case Hybrid:
+	case "client", "server", "sso":
+		m[Mode(value)] = true
+	case "hybrid":
 		m[Client] = true
 		m[Server] = true
 	default:

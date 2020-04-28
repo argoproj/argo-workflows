@@ -84,7 +84,7 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 			return nil, err
 		}
 		d := secrets.Data
-		oauth2Service, err = oauth2.NewService(string(d["issuer"]), string(d["clientId"]), string(d["clientSecret"]), string(d["redirectUrl"]), opts.BaseHRef)
+		oauth2Service, err = oauth2.NewService(string(d["issuer"]), string(d["clientId"]), string(d["clientSecret"]), string(d["redirectUrl"]), opts.BaseHRef, opts.TLSConfig != nil)
 		if err != nil {
 			return nil, err
 		}

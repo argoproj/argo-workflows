@@ -21,19 +21,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		_, err := NewGatekeeper(Modes{}, wfClient, kubeClient, nil, nil)
 		assert.Error(t, err)
 	})
-	t.Run("Client", func(t *testing.T) {
-		s, err := NewGatekeeper(Modes{Client: true}, wfClient, kubeClient, nil, nil)
-		if assert.NoError(t, err) {
-			// my-name:my-password
-			ctx, err := s.Context(metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": "Basic bXktbmFtZTpteS1wYXNzd29yZA=="})))
-			if assert.NoError(t, err) {
-				user := GetUser(ctx)
-				assert.Equal(t, "my-name", user.Name)
-				assert.NotEqual(t, wfClient, GetWfClient(ctx))
-				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
-			}
-		}
-	})
+	// not possible to unit test client auth today
 	t.Run("Server", func(t *testing.T) {
 		s, err := NewGatekeeper(Modes{Server: true}, wfClient, kubeClient, nil, nil)
 		assert.NoError(t, err)

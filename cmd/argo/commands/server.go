@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"os"
+	"reflect"
 	"time"
 
 	"github.com/argoproj/pkg/errors"
@@ -84,10 +85,11 @@ See %s`, help.ArgoSever),
 
 			modes := auth.Modes{}
 			for _, mode := range authModes {
-				err := modes.Add(auth.Mode(mode))
-				if err != nil {
-					log.Fatal(err)
-				}
+				err := modes.Add(mode)
+				errors.CheckError(err)
+			}
+			if reflect.DeepEqual(modes, auth.Modes{auth.Server: true}) {
+				log.Warn("You are running in without client authentication. Learn how to enable client authentication: https://github.com/argoproj/argo/blob/master/docs/argo-server-auth-mode.md")
 			}
 
 			opts := apiserver.ArgoServerOpts{
@@ -125,7 +127,7 @@ See %s`, help.ArgoSever),
 	command.Flags().StringVar(&baseHRef, "basehref", defaultBaseHRef, "Value for base href in index.html. Used if the server is running behind reverse proxy under subpath different from /. Defaults to the environment variable BASE_HREF.")
 	// "-e" for encrypt, like zip
 	command.Flags().BoolVarP(&secure, "secure", "e", false, "Whether or not we should listen on TLS.")
-	command.Flags().StringArrayVar(&authModes, "auth-mode", []string{"server"}, "API server authentication mode. One of: client|server|hybrid|sso")
+	command.Flags().StringArrayVar(&authModes, "auth-mode", []string{"server"}, "API server authentication mode. One of: client|server|sso")
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that watches, default to the installation namespace")
