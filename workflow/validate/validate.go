@@ -101,29 +101,27 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	wfConditions := &wfv1.WorkflowConditions{}
 	ctx := newTemplateValidationCtx(wf, opts)
 	tmplCtx := templateresolution.NewContext(wftmplGetter, cwftmplGetter, wf, wf)
+
 	var wftmpl wfv1.WorkflowSpecHolder
 	var entrypoint = wf.Spec.Entrypoint
 	var topLevelTmplRef *wfv1.TemplateRef
 	var err error
-	isWorkflowTemplateRef := wf.Spec.WorkflowTemplateRef != nil
-	if isWorkflowTemplateRef {
+
+	hasWorkflowTemplateRef := wf.Spec.WorkflowTemplateRef != nil
+
+	if hasWorkflowTemplateRef {
 		if wf.Spec.WorkflowTemplateRef.ClusterScope {
 			wftmpl, err = cwftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
-			if err != nil {
-				return nil, err
-			}
-
 		} else {
 			wftmpl, err = wftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
-			if err != nil {
-				return nil, err
-			}
+		}
+		if err != nil {
+			return nil, err
 		}
 		if entrypoint == "" {
 			entrypoint = wftmpl.GetEntrypoint()
 		}
-		topLevelTmplRef = wf.Spec.WorkflowTemplateRef.GetTemplateRef()
-		topLevelTmplRef.Template = entrypoint
+		topLevelTmplRef = wf.Spec.WorkflowTemplateRef.ConvertTemplateRef(entrypoint)
 	}
 
 	err = validateWorkflowFieldNames(wf.Spec.Templates)
@@ -205,7 +203,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	}
 
 	if !opts.IgnoreEntrypoint {
-		if isWorkflowTemplateRef {
+		if hasWorkflowTemplateRef {
 			_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{TemplateRef: topLevelTmplRef}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
 
 		} else {

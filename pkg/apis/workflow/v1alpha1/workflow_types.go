@@ -820,10 +820,11 @@ type WorkflowTemplateRef struct {
 	ClusterScope bool `json:"clusterscope,omitempty" protobuf:"varint,4,opt,name=clusterscope"`
 }
 
-func (wftRef *WorkflowTemplateRef) GetTemplateRef() *TemplateRef {
+func (wftRef *WorkflowTemplateRef) ConvertTemplateRef(entrypoint string) *TemplateRef {
 	return &TemplateRef{
 		Name:         wftRef.Name,
 		ClusterScope: wftRef.ClusterScope,
+		Template: 	  entrypoint,
 	}
 }
 
@@ -922,7 +923,7 @@ type WorkflowStatus struct {
 	// ResourcesDuration is the total for the workflow
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
 
-	//StoredWorkflowTemplateSpec stores the top level workflowtemplate spec
+	//StoredWorkflowTemplateSpec stores the top level WorkflowTemplate spec
 	StoredWorkflowTemplateSpec *WorkflowSpec `json:"storedWorkflowTemplateSpec,omitempty" protobuf:"bytes,14,opt,name=storedWorkflowTemplateSpec"`
 }
 

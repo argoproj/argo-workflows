@@ -2385,3 +2385,21 @@ func TestWorfklowGlobalVariables(t *testing.T) {
 	_, err := validate(globalVariables)
 	assert.NoError(t, err)
 }
+
+const wfWithWFTRef=`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: A
+  workflowTemplateRef:
+    name: template-ref-target
+`
+
+func TestWorkflowWithWFTRef(t *testing.T){
+	err := createWorkflowTemplate(templateRefTarget)
+	assert.NoError(t, err)
+	_, err = validate(wfWithWFTRef)
+	assert.NoError(t, err)
+}
