@@ -75,7 +75,7 @@ else
 TEST_OPTS :=
 endif
 
-# the -s -w flags strip debugging information from the binaries reducing each binaries size by 20%
+# the -s -w flags strip debugging information from the binaries reducing each binary's size by 20%
 override LDFLAGS += \
   -s \
   -w \
