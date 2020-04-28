@@ -28,18 +28,13 @@ func (cwts *ClusterWorkflowTemplateServer) CreateClusterWorkflowTemplate(ctx con
 	if req.Template == nil {
 		return nil, fmt.Errorf("cluster workflow template was not found in the request body")
 	}
-
 	cwts.instanceIDService.Label(req.Template)
-
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
-
 	_, err := validate.ValidateClusterWorkflowTemplate(nil, cwftmplGetter, req.Template)
 	if err != nil {
 		return nil, err
 	}
-
 	return wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates().Create(req.Template)
-
 }
 
 func (cwts *ClusterWorkflowTemplateServer) GetClusterWorkflowTemplate(ctx context.Context, req *clusterwftmplpkg.ClusterWorkflowTemplateGetRequest) (*v1alpha1.ClusterWorkflowTemplate, error) {
