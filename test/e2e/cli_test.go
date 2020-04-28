@@ -280,24 +280,21 @@ func (s *CLISuite) TestRoot() {
 }
 
 func (s *CLISuite) TestWorkflowSuspendResume() {
-	// https://github.com/argoproj/argo/issues/2620
-	s.T().SkipNow()
+	if s.Persistence.IsEnabled() {
+		// Persistence is enabled for this test, but it is not enabled for the Argo Server in this test suite.
+		// When this is the case, this behavior is tested in cli_with_server_test.go
+		s.T().SkipNow()
+	}
 	s.Given().
 		Workflow("@testdata/sleep-3s.yaml").
 		When().
 		SubmitWorkflow().
+		WaitForWorkflowToStart(10*time.Second).
 		RunCli([]string{"suspend", "sleep-3s"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "workflow sleep-3s suspended")
 			}
 		}).
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			if assert.Equal(t, wfv1.NodeRunning, status.Phase) {
-				assert.True(t, status.AnyActiveSuspendNode())
-			}
-		}).
-		When().
 		RunCli([]string{"resume", "sleep-3s"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "workflow sleep-3s resumed")
