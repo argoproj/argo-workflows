@@ -75,9 +75,6 @@ func (s *service) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 		Value:    state,
 		Expires:  time.Now().Add(1 * time.Hour),
 		HttpOnly: true,
-		// TODO - no path?
-		// TODO - secure
-		// TODO - lax? not strict?
 		SameSite: http.SameSiteLaxMode,
 		Secure:   s.secure,
 	})
