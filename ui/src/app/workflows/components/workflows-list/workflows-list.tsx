@@ -105,7 +105,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                         selectedPhases={this.state.selectedPhases}
                                         selectedLabels={this.state.selectedLabels}
                                         onChange={(namespace, selectedPhases, selectedLabels) =>
-                                            this.changeFilters(namespace, selectedPhases, selectedLabels, this.state.pagination)
+                                            this.changeFilters(namespace, selectedPhases, selectedLabels, {limit: this.state.pagination.limit})
                                         }
                                     />
                                 </div>

@@ -102,7 +102,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                                         minStartedAt={this.state.minStartedAt}
                                         maxStartedAt={this.state.maxStartedAt}
                                         onChange={(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt) =>
-                                            this.changeFilters(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, this.state.pagination)
+                                            this.changeFilters(namespace, selectedPhases, selectedLabels, minStartedAt, maxStartedAt, {limit: this.state.pagination.limit})
                                         }
                                     />
                                 </div>
