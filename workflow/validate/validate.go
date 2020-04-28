@@ -40,7 +40,7 @@ type ValidateOpts struct {
 	// Entrypoint is optional for WorkflowTemplate and ClusterWorkflowTemplate
 	IgnoreEntrypoint bool
 
-	// WorkflowTemplateValidation indicates validation call for WFT/CWFT.
+	// WorkflowTemplateValidation indicates that the current context is validating a WorkflowTemplate or ClusterWorkflowTemplate
 	WorkflowTemplateValidation bool
 }
 
