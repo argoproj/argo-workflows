@@ -76,6 +76,6 @@ func (cwftmpl *ClusterWorkflowTemplate) GetTemplates() []Template {
 	return cwftmpl.Spec.Templates
 }
 
-func (cwftmpl *ClusterWorkflowTemplate) GetSpec() WorkflowSpec {
-	return cwftmpl.Spec.WorkflowSpec
+func (cwftmpl *ClusterWorkflowTemplate) GetSpec() *WorkflowSpec {
+	return &cwftmpl.Spec.WorkflowSpec
 }

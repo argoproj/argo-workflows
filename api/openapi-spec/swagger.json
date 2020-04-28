@@ -3383,6 +3383,10 @@
           "additionalProperties": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
           }
+        },
+        "storedWorkflowTemplateSpec": {
+          "title": "StoredWorkflowTemplateSpec stores the top level workflowtemplate spec",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"
         }
       }
     },

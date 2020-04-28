@@ -1696,6 +1696,10 @@
             "format": "int64"
           },
           "title": "ResourcesDuration is the total for the workflow"
+        },
+        "storedWorkflowTemplateSpec": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowSpec",
+          "title": "StoredWorkflowTemplateSpec stores the top level workflowtemplate spec"
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"

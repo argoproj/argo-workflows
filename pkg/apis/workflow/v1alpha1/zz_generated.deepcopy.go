@@ -1958,6 +1958,11 @@ func (in *WorkflowStatus) DeepCopyInto(out *WorkflowStatus) {
 			(*out)[key] = val
 		}
 	}
+	if in.StoredWorkflowTemplateSpec != nil {
+		in, out := &in.StoredWorkflowTemplateSpec, &out.StoredWorkflowTemplateSpec
+		*out = new(WorkflowSpec)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 

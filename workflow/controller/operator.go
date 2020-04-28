@@ -89,12 +89,12 @@ type wfOperationCtx struct {
 	// preExecutionNodePhases contains the phases of all the nodes before the current operation. Necessary to infer
 	// changes in phase for metric emission
 	preExecutionNodePhases map[string]wfv1.NodePhase
-	// hasTopLevelWFTmplRef flag indicate Workflow has Top level workflow template reference
-	hasTopLevelWFTmplRef bool
-
-	wfSpec *wfv1.WorkflowSpec
-
-	entrypoint string
+	// wfSpec holds the WorkflowSpec for execution
+	wfSpec               *wfv1.WorkflowSpec
+	// entrypoint is the starting point for workflow execution
+	entrypoint           string
+	// arguments holds all global argument for workflow.
+	arguments            wfv1.Arguments
 }
 
 var (
@@ -140,9 +140,8 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		deadline:               time.Now().UTC().Add(maxOperationTime),
 		auditLogger:            argo.NewAuditLogger(wf.ObjectMeta.Namespace, wfc.kubeclientset, wf.ObjectMeta.Name),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
+		arguments:              wf.Spec.DeepCopy().Arguments,
 	}
-
-
 
 	if woc.wf.Status.Nodes == nil {
 		woc.wf.Status.Nodes = make(map[string]wfv1.NodeStatus)
@@ -291,12 +290,10 @@ func (woc *wfOperationCtx) operate() {
 
 	var node *wfv1.NodeStatus
 
-	if woc.hasTopLevelWFTmplRef {
-		var args wfv1.Arguments
-		args.Parameters = util.MergeParameters(woc.wfSpec.Arguments.Parameters, woc.topLevelWFTmplRef.GetArguments().Parameters)
-		node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{TemplateRef: woc.convertWFTmplRefToTmplRef()}, tmplCtx, args, &executeTemplateOpts{})
+	if woc.wf.Spec.WorkflowTemplateRef != nil {
+		node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{TemplateRef: woc.convertWFTmplRefToTmplRef()}, tmplCtx, woc.arguments, &executeTemplateOpts{})
 	} else {
-		node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{Template: woc.wfSpec.Entrypoint}, tmplCtx, woc.wfSpec.Arguments, &executeTemplateOpts{})
+		node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{Template: woc.wfSpec.Entrypoint}, tmplCtx, woc.arguments, &executeTemplateOpts{})
 	}
 	if err != nil {
 		msg := fmt.Sprintf("%s error in entry template execution: %+v", woc.wf.Name, err)
@@ -308,7 +305,6 @@ func (woc *wfOperationCtx) operate() {
 		default:
 			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg)
 		}
-
 		return
 	}
 
@@ -446,14 +442,8 @@ func (woc *wfOperationCtx) setGlobalParameters() {
 		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
 	}
 
-	for _, param := range woc.wfSpec.Arguments.Parameters {
+	for _, param := range woc.arguments.Parameters {
 		woc.globalParams["workflow.parameters."+param.Name] = *param.Value
-	}
-
-	if woc.hasTopLevelWFTmplRef {
-		for _, param := range woc.wf.Spec.Arguments.Parameters {
-			woc.globalParams["workflow.parameters."+param.Name] = *param.Value
-		}
 	}
 
 	for k, v := range woc.wf.ObjectMeta.Annotations {
@@ -2561,7 +2551,7 @@ func (woc *wfOperationCtx) createPDBResource() error {
 }
 
 func (woc *wfOperationCtx) deletePDBResource() error {
-	if woc.wfSpec.PodDisruptionBudget == nil {
+	if woc.wf.Spec.PodDisruptionBudget == nil {
 		return nil
 	}
 	var err error
@@ -2610,13 +2600,12 @@ func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (boo
 func (woc *wfOperationCtx) initWorkflowTmplRef() *wfv1.WorkflowSpec {
 	var wftmpl wfv1.WorkflowSpecHolder
 	var err error
-	woc.hasTopLevelWFTmplRef = woc.wfSpec.WorkflowTemplateRef != nil
 	// Logic for Top level Workflow template reference
-	if woc.hasTopLevelWFTmplRef {
-		if woc.wfSpec.WorkflowTemplateRef.ClusterScope {
-			wftmpl, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wfSpec.WorkflowTemplateRef.Name)
+	if woc.wf.Spec.WorkflowTemplateRef != nil {
+		if woc.wf.Spec.WorkflowTemplateRef.ClusterScope {
+			wftmpl, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)
 		} else {
-			wftmpl, err = woc.controller.cwftmplInformer.Lister().Get(woc.wfSpec.WorkflowTemplateRef.Name)
+			wftmpl, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name)
 		}
 		if err != nil {
 			msg := fmt.Sprintf("Unable to get Workflow Template Reference for workflow, %s error: %s", woc.wf.Name, err)
@@ -2630,25 +2619,34 @@ func (woc *wfOperationCtx) initWorkflowTmplRef() *wfv1.WorkflowSpec {
 
 func (woc *wfOperationCtx) convertWFTmplRefToTmplRef() *wfv1.TemplateRef {
 	tmplRef := &wfv1.TemplateRef{}
-	tmplRef.Name = woc.wfSpec.WorkflowTemplateRef.Name
-	tmplRef.ClusterScope = woc.wfSpec.WorkflowTemplateRef.ClusterScope
+	tmplRef.Name = woc.wf.Spec.WorkflowTemplateRef.Name
+	tmplRef.ClusterScope = woc.wf.Spec.WorkflowTemplateRef.ClusterScope
 
 	entrypoint := woc.wf.Spec.Entrypoint
 
 	if entrypoint == "" {
-		if woc.hasTopLevelWFTmplRef {
-			entrypoint = woc.wfSpec.Entrypoint
-		}
+		entrypoint = woc.wfSpec.Entrypoint
 	}
-
 	tmplRef.Template = entrypoint
 	return tmplRef
 }
 
-func (woc *wfOperationCtx)setWorkflowSpec(){
-	if woc.wfSpec.WorkflowTemplateRef == nil {
+func (woc *wfOperationCtx) setWorkflowSpec() {
+	if woc.wf.Spec.WorkflowTemplateRef == nil {
 		woc.wfSpec = woc.wfSpec.DeepCopy()
+		return
 	}
-	woc.wfSpec = woc.initWorkflowTmplRef().DeepCopy()
-	woc.entrypoint = woc.wfSpec.Entrypoint
+
+	if woc.wf.Status.StoredWorkflowTemplateSpec != nil {
+		woc.wfSpec = woc.wf.Status.StoredWorkflowTemplateSpec.DeepCopy()
+	} else {
+		woc.wfSpec = woc.initWorkflowTmplRef().DeepCopy()
+	}
+
+	woc.entrypoint = woc.wf.Spec.Entrypoint
+	if woc.entrypoint == "" {
+		woc.entrypoint = woc.wfSpec.Entrypoint
+	}
+	woc.arguments.Parameters = util.MergeParameters(woc.wf.Spec.Arguments.Parameters, woc.wfSpec.Arguments.Parameters)
+	woc.wf.Status.StoredWorkflowTemplateSpec = woc.wfSpec
 }

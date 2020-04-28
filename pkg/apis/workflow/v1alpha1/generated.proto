@@ -1214,6 +1214,9 @@ message WorkflowStatus {
 
   // ResourcesDuration is the total for the workflow
   map<string, int64> resourcesDuration = 12;
+
+  // StoredWorkflowTemplateSpec stores the top level workflowtemplate spec
+  optional WorkflowSpec storedWorkflowTemplateSpec = 14;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

@@ -100,7 +100,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	wfConditions := &wfv1.WorkflowConditions{}
 	ctx := newTemplateValidationCtx(wf, opts)
 	tmplCtx := templateresolution.NewContext(wftmplGetter, cwftmplGetter, wf, wf)
-	var wftmpl wfv1.TemplateHolder
+	var wftmpl wfv1.WorkflowSpecHolder
 	var entrypoint = wf.Spec.Entrypoint
 	var topLevelTmplRef *wfv1.TemplateRef
 	var err error

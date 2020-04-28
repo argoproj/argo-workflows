@@ -270,7 +270,7 @@ type WorkflowSpec struct {
 	Shutdown ShutdownStrategy `json:"shutdown,omitempty" protobuf:"bytes,33,opt,name=shutdown,casttype=ShutdownStrategy"`
 
 	// workflowTemplateRef holds WorkflowTemplate reference -TODO-Bala update comments
-	WorkflowTemplateRef *WorkflowTemplateRef `json:"workflowTemplateRef,omitempty" protobuf:"bytes,34,opt,name=workflowTemplateRef,casttype=WorkflowTemplateRef"`
+	WorkflowTemplateRef *WorkflowTemplateRef `json:"workflowTemplateRef,omitempty" protobuf:"bytes,34,opt,name=workflowTemplateRef"`
 }
 
 type ShutdownStrategy string
@@ -922,7 +922,8 @@ type WorkflowStatus struct {
 	// ResourcesDuration is the total for the workflow
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
 
-	StoredWorkflowTemplateSpec WorkflowSpec `json:"storedWorkflowTemplateSpec,omitempty" protobuf:"bytes,14,opt,name=storedWorkflowTemplateSpec"`
+	//StoredWorkflowTemplateSpec stores the top level workflowtemplate spec
+	StoredWorkflowTemplateSpec *WorkflowSpec `json:"storedWorkflowTemplateSpec,omitempty" protobuf:"bytes,14,opt,name=storedWorkflowTemplateSpec"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
