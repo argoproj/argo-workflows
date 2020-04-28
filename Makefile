@@ -363,7 +363,7 @@ ifneq ($(findstring controller,$(COMPONENTS)),)
 	ALWAYS_OFFLOAD_NODE_STATUS=true OFFLOAD_NODE_STATUS_TTL=30s WORKFLOW_GC_PERIOD=30s UPPERIO_DB_DEBUG=1 ARCHIVED_WORKFLOW_GC_PERIOD=30s ./dist/workflow-controller --executor-image argoproj/argoexec:$(VERSION) --namespaced --loglevel debug &
 endif
 ifneq ($(findstring argo-server,$(COMPONENTS)),)
-	UPPERIO_DB_DEBUG=1 ./dist/argo server --namespaced --auth-mode client --loglevel debug --secure &
+	UPPERIO_DB_DEBUG=1 ./dist/argo -v server --namespaced --auth-mode client --secure &
 endif
 
 .PHONY: start
@@ -447,8 +447,21 @@ $(HOME)/go/bin/swagger:
 .PHONY: swagger
 swagger: api/openapi-spec/swagger.json
 
-api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
-	swagger mixin -c 611 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
+pkg/apis/workflow/v1alpha1/openapi_generated.go:
+	$(call backup_go_mod)
+	go install k8s.io/kube-openapi/cmd/openapi-gen
+	openapi-gen \
+	  --go-header-file ./hack/custom-boilerplate.go.txt \
+	  --input-dirs github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
+	  --output-package github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
+	  --report-filename pkg/apis/api-rules/violation_exceptions.list
+	$(call restore_go_mod)
+
+pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go
+	go run ./hack secondaryswaggergen
+
+api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger pkg/apiclient/_.secondary.swagger.json $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
+	swagger mixin -c 680 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
 
 .PHONY: docs
 docs: swagger

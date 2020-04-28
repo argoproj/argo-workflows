@@ -83,7 +83,7 @@ type WorkflowController struct {
 	session               sqlbuilder.Database
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wfArchive             sqldb.WorkflowArchive
-	Metrics               map[string]prometheus.Metric
+	Metrics               map[string]common.Metric
 }
 
 const (
@@ -120,7 +120,7 @@ func NewWorkflowController(
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
-		Metrics:                    make(map[string]prometheus.Metric),
+		Metrics:                    make(map[string]common.Metric),
 	}
 	wfc.throttler = NewThrottler(0, wfc.wfQueue)
 	return &wfc
@@ -187,6 +187,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.podGarbageCollector(ctx.Done())
 	go wfc.workflowGarbageCollector(ctx.Done())
 	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
+	go wfc.metricsGarbageCollector(ctx.Done())
 
 	wfc.createClusterWorkflowTemplateInformer(ctx)
 
@@ -382,10 +383,36 @@ func (wfc *WorkflowController) archivedWorkflowGarbageCollector(stopCh <-chan st
 			return
 		case <-ticker.C:
 			log.Info("Performing archived workflow GC")
-			err := wfc.wfArchive.DeleteWorkflows(time.Duration(ttl))
+			err := wfc.wfArchive.DeleteExpiredWorkflows(time.Duration(ttl))
 			if err != nil {
 				log.WithField("err", err).Error("Failed to delete archived workflows")
 			}
+		}
+	}
+}
+
+func (wfc *WorkflowController) metricsGarbageCollector(stopCh <-chan struct{}) {
+	if !wfc.Config.MetricsConfig.Enabled {
+		log.Info("Cannot start metrics GC: metrics are disabled")
+		return
+	}
+	ttl := wfc.Config.MetricsConfig.MetricsTTL
+	if ttl == config.TTL(0) {
+		log.Info("Metrics TTL is zero, metrics GC is disabled")
+		return
+	}
+	duration := time.Duration(ttl)
+	log.WithFields(log.Fields{"ttl": ttl}).Info("Performing metrics GC")
+	ticker := time.NewTicker(duration)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-stopCh:
+			log.Info("Stopping metrics GC")
+			return
+		case <-ticker.C:
+			log.Info("Performing metrics GC")
+			wfc.DeleteExpiredMetrics(duration)
 		}
 	}
 }
@@ -736,6 +763,18 @@ func (wfc *WorkflowController) GetContainerRuntimeExecutor() string {
 	return wfc.Config.ContainerRuntimeExecutor
 }
 
-func (wfc *WorkflowController) GetMetrics() map[string]prometheus.Metric {
-	return wfc.Metrics
+func (wfc *WorkflowController) GetMetrics() []prometheus.Metric {
+	var out []prometheus.Metric
+	for _, metric := range wfc.Metrics {
+		out = append(out, metric.Metric)
+	}
+	return out
+}
+
+func (wfc *WorkflowController) DeleteExpiredMetrics(ttl time.Duration) {
+	for key, metric := range wfc.Metrics {
+		if time.Since(metric.LastUpdated) > ttl {
+			delete(wfc.Metrics, key)
+		}
+	}
 }
