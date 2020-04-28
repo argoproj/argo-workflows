@@ -36,3 +36,23 @@ func TestModes_Add(t *testing.T) {
 		}
 	})
 }
+func TestModes_GetMode(t *testing.T) {
+	t.Run("Client", func(t *testing.T) {
+		mode, err := GetMode("Bearer ")
+		if assert.NoError(t, err) {
+			assert.Equal(t, Client, mode)
+		}
+	})
+	t.Run("Server", func(t *testing.T) {
+		mode, err := GetMode("")
+		if assert.NoError(t, err) {
+			assert.Equal(t, Server, mode)
+		}
+	})
+	t.Run("SSO", func(t *testing.T) {
+		mode, err := GetMode("Bearer id_token:")
+		if assert.NoError(t, err) {
+			assert.Equal(t, SSO, mode)
+		}
+	})
+}

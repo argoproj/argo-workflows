@@ -17,31 +17,44 @@ import (
 func TestServer_GetWFClient(t *testing.T) {
 	wfClient := &fakewfclientset.Clientset{}
 	kubeClient := &fake.Clientset{}
-	t.Run("NoAuth", func(t *testing.T) {
+	t.Run("None", func(t *testing.T) {
 		_, err := NewGatekeeper(Modes{}, wfClient, kubeClient, nil, nil)
 		assert.Error(t, err)
 	})
-	t.Run("SSO", func(t *testing.T) {
-		oauth2Service := &mocks.Service{}
-		oauth2Service.On("Authorize", mock.Anything, mock.Anything).Return(wfv1.User{Name: "my-name"}, nil)
-		s, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, oauth2Service)
+	t.Run("Client", func(t *testing.T) {
+		s, err := NewGatekeeper(Modes{Client: true}, wfClient, kubeClient, nil, nil)
 		if assert.NoError(t, err) {
-			ctx, err := s.Context(metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": "Bearer id_token:omwhatever"})))
+			// my-name:my-password
+			ctx, err := s.Context(metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": "Basic bXktbmFtZTpteS1wYXNzd29yZA=="})))
 			if assert.NoError(t, err) {
 				user := GetUser(ctx)
 				assert.Equal(t, "my-name", user.Name)
-				assert.Equal(t, wfClient, GetWfClient(ctx))
-				assert.Equal(t, kubeClient, GetKubeClient(ctx))
+				assert.NotEqual(t, wfClient, GetWfClient(ctx))
+				assert.NotEqual(t, kubeClient, GetKubeClient(ctx))
 			}
 		}
 	})
-	t.Run("ServerAuth", func(t *testing.T) {
+	t.Run("Server", func(t *testing.T) {
 		s, err := NewGatekeeper(Modes{Server: true}, wfClient, kubeClient, nil, nil)
 		assert.NoError(t, err)
 		ctx, err := s.Context(context.Background())
 		if assert.NoError(t, err) {
 			assert.Equal(t, wfClient, GetWfClient(ctx))
 			assert.Equal(t, kubeClient, GetKubeClient(ctx))
+		}
+	})
+	t.Run("SSO", func(t *testing.T) {
+		oauth2Service := &mocks.Service{}
+		oauth2Service.On("Authorize", mock.Anything, mock.Anything).Return(wfv1.User{Name: "my-name"}, nil)
+		s, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, oauth2Service)
+		if assert.NoError(t, err) {
+			ctx, err := s.Context(metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": "Bearer id_token:whatever"})))
+			if assert.NoError(t, err) {
+				user := GetUser(ctx)
+				assert.Equal(t, "my-name", user.Name)
+				assert.Equal(t, wfClient, GetWfClient(ctx))
+				assert.Equal(t, kubeClient, GetKubeClient(ctx))
+			}
 		}
 	})
 }
