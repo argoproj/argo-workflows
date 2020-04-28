@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/pkg/humanize"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -17,7 +18,6 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/pkg/humanize"
 )
 
 type CronSuite struct {
