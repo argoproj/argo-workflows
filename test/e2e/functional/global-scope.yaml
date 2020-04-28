@@ -39,16 +39,16 @@ spec:
         parameters:
           - name: output-1
             valueFrom:
-              parameter: "{{steps.consume-global-parameter-1.outputs.result}}"
+              parameter: "{{steps.consume-global-parameter-1.outputs.parameters.result}}"
           - name: output-2
             valueFrom:
-              parameter: "{{steps.consume-global-parameter-2.outputs.result}}"
+              parameter: "{{steps.consume-global-parameter-2.outputs.parameters.result}}"
           - name: output-3
             valueFrom:
-              parameter: "{{steps.consume-global-parameter-3.outputs.result}}"
+              parameter: "{{steps.consume-global-parameter-3.outputs.parameters.result}}"
           - name: output-4
             valueFrom:
-              parameter: "{{steps.consume-global-parameter-4.outputs.result}}"
+              parameter: "{{steps.consume-global-parameter-4.outputs.parameters.result}}"
 
     - name: global-parameter-generation
       inputs:
@@ -81,4 +81,9 @@ spec:
       container:
         image: alpine:latest
         command: [sh, -c]
-        args: ["echo {{workflow.outputs.parameters.global-parameter}}"]
+        args: ["echo {{workflow.outputs.parameters.global-parameter}}  > /tmp/hello_world.txt"]
+      outputs:
+        parameters:
+          - name: result
+            valueFrom:
+              path: /tmp/hello_world.txt

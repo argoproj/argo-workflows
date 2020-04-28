@@ -386,22 +386,22 @@ func (s *FunctionalSuite) TestGlobalScope() {
 			nodeStatus := status.Nodes.FindByDisplayName("consume-global-parameter-1")
 			if assert.NotNil(t, nodeStatus) {
 				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
-				assert.Equal(t, "initial", *nodeStatus.Outputs.Result)
+				assert.Equal(t, "initial", *nodeStatus.Outputs.Parameters[0].Value)
 			}
 			nodeStatus = status.Nodes.FindByDisplayName("consume-global-parameter-2")
 			if assert.NotNil(t, nodeStatus) {
 				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
-				assert.Equal(t, "initial", *nodeStatus.Outputs.Result)
+				assert.Equal(t, "initial", *nodeStatus.Outputs.Parameters[0].Value)
 			}
 			nodeStatus = status.Nodes.FindByDisplayName("consume-global-parameter-3")
 			if assert.NotNil(t, nodeStatus) {
 				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
-				assert.Equal(t, "final", *nodeStatus.Outputs.Result)
+				assert.Equal(t, "final", *nodeStatus.Outputs.Parameters[0].Value)
 			}
 			nodeStatus = status.Nodes.FindByDisplayName("consume-global-parameter-4")
 			if assert.NotNil(t, nodeStatus) {
 				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
-				assert.Equal(t, "final", *nodeStatus.Outputs.Result)
+				assert.Equal(t, "final", *nodeStatus.Outputs.Parameters[0].Value)
 			}
 		})
 }
