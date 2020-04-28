@@ -8,14 +8,13 @@ spec:
       containers:
         - name: argo-server
           args:
+            - -v
             - server
             - --namespaced
             - --auth-mode
             - client
             - --auth-mode
             - sso
-            - --loglevel
-            - debug
             - --secure
           imagePullPolicy:  Never
           env:
