@@ -1,5 +1,4 @@
 export * from './workflow-dag/workflow-dag';
-export * from './workflow-list-item/workflow-list-item';
 export * from './workflow-logs-viewer/workflow-logs-viewer';
 export * from './workflow-node-info/workflow-node-info';
 export * from './workflow-timeline/workflow-timeline';
