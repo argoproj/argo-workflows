@@ -376,6 +376,10 @@ func wfInformerListOptionsFunc(options *v1.ListOptions, cronWfName string) {
 }
 
 func TestCronSuite(t *testing.T) {
+	if testing.Short() {
+		log.Infof("Skipping CronSuite because --short flag is enabled")
+		t.SkipNow()
+	}
 	// To ensure consistency, always start at the next 30 second mark
 	_, _, sec := time.Now().Clock()
 	var toWait time.Duration
