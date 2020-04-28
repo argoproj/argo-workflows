@@ -97,6 +97,17 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 	if wf.Status.Message != "" {
 		fmt.Printf(fmtStr, "Message:", wf.Status.Message)
 	}
+	if len(wf.Status.Conditions) > 0 {
+		fmt.Printf(fmtStr, "Conditions:", "")
+		for _, condition := range wf.Status.Conditions {
+			conditionMessage := condition.Message
+			if conditionMessage == "" {
+				conditionMessage = string(condition.Status)
+			}
+			conditionPrefix := fmt.Sprintf("%s %s", workflowConditionIconMap[condition.Type], string(condition.Type))
+			fmt.Printf(fmtStr, conditionPrefix, conditionMessage)
+		}
+	}
 	fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
 	if !wf.Status.StartedAt.IsZero() {
 		fmt.Printf(fmtStr, "Started:", humanize.Timestamp(wf.Status.StartedAt.Time))
