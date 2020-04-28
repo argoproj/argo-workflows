@@ -460,10 +460,13 @@ func (s *CLISuite) TestWorkflowLint() {
 	})
 }
 
-func (s *CLISuite) TestWorkflowRetry() {
-	if os.Getenv("ARGO_SERVER") == "" && s.Persistence.IsEnabled() {
+func (s *CLISuite) TestWorkflowRetryNoPersistence() {
+	if s.Persistence.IsEnabled() {
+		// Persistence is enabled for this test, but it is not enabled for the Argo Server in this test suite.
+		// When this is the case, this behavior is tested in cli_with_server_test.go
 		s.T().SkipNow()
 	}
+
 	var retryTime corev1.Time
 
 	s.Given().
