@@ -91,7 +91,7 @@ commands:
           name: Run tests
           command: |
             trap 'make test-results/junit.xml' EXIT
-            make smoke test-e2e
+            make smoke test-e2e test-e2e-cron
       - store_test_results:
           path: test-results
           when: always
