@@ -21,11 +21,25 @@ func TestServer_GetWFClient(t *testing.T) {
 		_, err := NewGatekeeper(Modes{}, wfClient, kubeClient, nil, nil)
 		assert.Error(t, err)
 	})
+	t.Run("Invalid", func(t *testing.T) {
+		g, err := NewGatekeeper(Modes{Client: true}, wfClient, kubeClient, nil, nil)
+		if assert.NoError(t, err) {
+			_, err := g.Context(x("invalid"))
+			assert.Error(t, err)
+		}
+	})
+	t.Run("NotAllowed", func(t *testing.T) {
+		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, nil)
+		if assert.NoError(t, err) {
+			_, err := g.Context(x("Bearer "))
+			assert.Error(t, err)
+		}
+	})
 	// not possible to unit test client auth today
 	t.Run("Server", func(t *testing.T) {
-		s, err := NewGatekeeper(Modes{Server: true}, wfClient, kubeClient, nil, nil)
+		g, err := NewGatekeeper(Modes{Server: true}, wfClient, kubeClient, nil, nil)
 		assert.NoError(t, err)
-		ctx, err := s.Context(context.Background())
+		ctx, err := g.Context(x(""))
 		if assert.NoError(t, err) {
 			assert.Equal(t, wfClient, GetWfClient(ctx))
 			assert.Equal(t, kubeClient, GetKubeClient(ctx))
@@ -34,9 +48,9 @@ func TestServer_GetWFClient(t *testing.T) {
 	t.Run("SSO", func(t *testing.T) {
 		oauth2Service := &mocks.Service{}
 		oauth2Service.On("Authorize", mock.Anything, mock.Anything).Return(wfv1.User{Name: "my-name"}, nil)
-		s, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, oauth2Service)
+		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, oauth2Service)
 		if assert.NoError(t, err) {
-			ctx, err := s.Context(metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": "Bearer id_token:whatever"})))
+			ctx, err := g.Context(x("Bearer id_token:whatever"))
 			if assert.NoError(t, err) {
 				user := GetUser(ctx)
 				assert.Equal(t, "my-name", user.Name)
@@ -45,4 +59,8 @@ func TestServer_GetWFClient(t *testing.T) {
 			}
 		}
 	})
+}
+
+func x(authorization string) context.Context {
+	return metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": authorization}))
 }

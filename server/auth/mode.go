@@ -40,8 +40,5 @@ func GetMode(authorisation string) (Mode, error) {
 	if strings.HasPrefix(authorisation, "Bearer ") || strings.HasPrefix(authorisation, "Basic ") {
 		return Client, nil
 	}
-	if strings.HasPrefix(authorisation, oauth2.Prefix) {
-		return SSO, nil
-	}
 	return "", errors.New("unrecognized token")
 }
