@@ -12,9 +12,6 @@ GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo
 
 export DOCKER_BUILDKIT = 1
 
-# To allow you to build with cache for debugging purposes.
-DOCKER_BUILD_OPTS     := --no-cache
-
 # docker image publishing options
 IMAGE_NAMESPACE       ?= argoproj
 
@@ -78,7 +75,10 @@ else
 TEST_OPTS :=
 endif
 
+# the -s -w flags strip debugging information from the binaries reducing each binaries size by 20%
 override LDFLAGS += \
+  -s \
+  -w \
   -X github.com/argoproj/argo.version=$(VERSION) \
   -X github.com/argoproj/argo.buildDate=${BUILD_DATE} \
   -X github.com/argoproj/argo.gitCommit=${GIT_COMMIT} \
@@ -183,7 +183,7 @@ ifeq ($(DEV_IMAGE),true)
 	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli -f Dockerfile.dev --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	rm -f argo
 else
-	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
+	docker build-t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 endif
 ifeq ($(K3D),true)
 	k3d import-images $(IMAGE_NAMESPACE)/argocli:$(VERSION)
@@ -211,7 +211,7 @@ ifeq ($(DEV_IMAGE),true)
 	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller -f Dockerfile.dev --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	rm -f workflow-controller
 else
-	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
+	docker build-t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 endif
 ifeq ($(K3D),true)
 	k3d import-images $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
@@ -236,7 +236,7 @@ ifeq ($(DEV_IMAGE),true)
 	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec -f Dockerfile.dev --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	rm -f argoexec
 else
-	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
+	docker build-t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 endif
 ifeq ($(K3D),true)
 	k3d import-images $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
@@ -455,8 +455,10 @@ test-cli: test-images cli
 
 .PHONY: clean
 clean:
-	# Delete pre-go 1.3 vendor
-	rm -Rf vendor
+ifneq ($(findstring release,$(GIT_BRANCH)),)
+	docker rm -f `docker ps -aq`
+	docker system prune -fa
+endif
 	# Delete build files
 	rm -Rf dist/* ui/dist
 
