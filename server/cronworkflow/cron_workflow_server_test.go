@@ -93,13 +93,13 @@ metadata:
 	})
 	t.Run("UpdateCronWorkflow", func(t *testing.T) {
 		t.Run("Labelled", func(t *testing.T) {
-			cronWf, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", Name: "my-name", CronWorkflow: &cronWf})
+			cronWf, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", CronWorkflow: &cronWf})
 			if assert.NoError(t, err) {
 				assert.NotNil(t, cronWf)
 			}
 		})
 		t.Run("Unlabelled", func(t *testing.T) {
-			_, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", Name: "unlabelled", CronWorkflow: &cronWf})
+			_, err := server.UpdateCronWorkflow(ctx, &cronworkflowpkg.UpdateCronWorkflowRequest{Namespace: "my-ns", CronWorkflow: &unlabelled})
 			assert.Error(t, err)
 		})
 	})

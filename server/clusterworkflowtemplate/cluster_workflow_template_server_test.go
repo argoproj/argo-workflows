@@ -231,7 +231,6 @@ func TestWorkflowTemplateServer_UpdateClusterWorkflowTemplate(t *testing.T) {
 	server, ctx := getClusterWorkflowTemplateServer()
 	t.Run("Labelled", func(t *testing.T) {
 		req := &clusterwftmplpkg.ClusterWorkflowTemplateUpdateRequest{
-			Name:     "cluster-workflow-template-whalesay-template2",
 			Template: cwftObj2.DeepCopy(),
 		}
 		req.Template.Spec.Templates[0].Container.Image = "alpine:latest"
@@ -242,7 +241,6 @@ func TestWorkflowTemplateServer_UpdateClusterWorkflowTemplate(t *testing.T) {
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.UpdateClusterWorkflowTemplate(ctx, &clusterwftmplpkg.ClusterWorkflowTemplateUpdateRequest{
-			Name:     "cluster-workflow-template-whalesay-template",
 			Template: &unlabelled,
 		})
 		assert.Error(t, err)
