@@ -80,5 +80,15 @@ export const Utils = {
 
     getCurrentNamespace(): string {
         return localStorage.getItem('current_namespace');
+    },
+
+    workflowFinishTimeSorter(a: models.Workflow, b: models.Workflow): number {
+        if (!a.status.finishedAt) {
+            return -1;
+        }
+        if (!b.status.finishedAt) {
+            return 1;
+        }
+        return new Date(b.status.finishedAt).getTime() - new Date(a.status.finishedAt).getTime();
     }
 };
