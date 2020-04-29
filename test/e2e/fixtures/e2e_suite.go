@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/base64"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -105,7 +106,7 @@ func (s *E2ESuite) listImages() map[string]bool {
 		for _, image := range node.Status.Images {
 			for _, n := range image.Names {
 				// We want to ignore hashes.
-				if !strings.Contains(n, "@sha256") && strings.HasPrefix(n, "docker.io/") {
+				if !strings.Contains(n, "@sha256") {
 					images[n] = true
 				}
 			}
@@ -340,12 +341,12 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 	// Using an arbitrary image will result in slow and flakey tests as we can't really predict when they'll be
 	// downloaded or evicted. To keep tests fast and reliable you must use whitelisted images.
 	imageWhitelist := map[string]bool{
-		"docker.io/argoproj/argoexec:" + imageTag: true,
-		"docker.io/library/cowsay:v1":             true,
-		"docker.io/library/python:alpine3.6":      true,
+		"argoexec:" + imageTag: true,
+		"cowsay:v1":            true,
+		"python:alpine3.6":     true,
 	}
 	for n := range s.listImages() {
-		if !s.images[n] && !imageWhitelist[n] {
+		if !s.images[n] && !imageWhitelist[regexp.MustCompile(".*/").ReplaceAllString(n, "")] {
 			s.T().Fatalf("non-whitelisted image used in test: %s", n)
 		}
 	}
