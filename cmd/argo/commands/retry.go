@@ -38,7 +38,7 @@ func NewRetryCommand() *cobra.Command {
 				wf, err := serviceClient.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{
 					Name:              name,
 					Namespace:         namespace,
-					RestartSuccesful:  retryOps.restartSuccessful,
+					RestartSuccessful:  retryOps.restartSuccessful,
 					NodeFieldSelector: selector.String(),
 				})
 				if err != nil {
