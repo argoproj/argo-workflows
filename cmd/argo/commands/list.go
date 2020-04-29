@@ -35,6 +35,8 @@ type listFlags struct {
 	since         string   // --since
 	chunkSize     int64    // --chunk-size
 	noHeaders     bool     // --no-headers
+	cursor        string   // --continue
+	limit         int64    // --limit
 }
 
 func NewListCommand() *cobra.Command {
@@ -147,6 +149,8 @@ func NewListCommand() *cobra.Command {
 	command.Flags().StringVar(&listArgs.since, "since", "", "Show only workflows newer than a relative duration")
 	command.Flags().Int64VarP(&listArgs.chunkSize, "chunk-size", "", 500, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
 	command.Flags().BoolVar(&listArgs.noHeaders, "no-headers", false, "Don't print headers (default print headers).")
+	command.Flags().StringVar(&listArgs.cursor, "continue", "", "Return the next batch of workloads starting from this cursor. Note that the chunk size used to fetch this cursor must be passed in at the same time.")
+	command.Flags().Int64VarP(&listArgs.limit, "limit", "", 500, "Return a list with maximum N workflows. Pass 0 to retrieve the full list.")
 	return command
 }
 
