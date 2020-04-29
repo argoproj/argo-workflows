@@ -30,7 +30,7 @@ Some use-case specific documentation is available:
 * [Links](links.md)
 * [Managed Namespace](managed-namespace.md)
 * [Prometheus Metrics](metrics.md)
-* [node-field-selector](node-field-selector.md)
+* [Node Field Selectors](node-field-selector.md)
 * [Offloading Large Workflows](offloading-large-workflows.md)
 * [Public API](public-api.md)
 * [Release Instructions](releasing.md)
