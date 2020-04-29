@@ -51,9 +51,8 @@ func watchWorkflow(wfName string) {
 	errors.CheckError(err)
 	for {
 		event, err := stream.Recv()
-		errors.CheckError(err)
-		wf := event.Object
-		if wf == nil {
+		errors.CheckError(err)		
+		if err!= nil {
 			log.Debug("Re-establishing workflow watch")
 			stream, err = serviceClient.WatchWorkflows(ctx, req)
 			if err != nil {
@@ -61,8 +60,8 @@ func watchWorkflow(wfName string) {
 				return
 			}
 			continue
-
 		}
+		wf := event.Object
 		printWorkflowStatus(wf)
 		if !wf.Status.FinishedAt.IsZero() {
 			break
