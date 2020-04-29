@@ -91,7 +91,7 @@ commands:
           name: Run tests
           command: |
             trap 'make test-results/junit.xml' EXIT
-            make smoke test-e2e test-e2e-cron
+            make smoke $SUITE
       - store_test_results:
           path: test-results
           when: always
@@ -171,12 +171,22 @@ jobs:
       - run: git diff --exit-code
       - save_go_cache
       - save_go_mod
+  e2e-cron:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    machine:
+      image: ubuntu-1604:201903-01
+    environment:
+      DB: mysql
+      SUITE: test-e2e-cron
+    steps:
+      - e2e
   e2e-no-db:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
       image: ubuntu-1604:201903-01
     environment:
       DB: no-db
+      SUITE: test-e2e
     steps:
       - e2e
   e2e-postgres:
@@ -185,6 +195,7 @@ jobs:
       image: ubuntu-1604:201903-01
     environment:
       DB: postgres
+      SUITE: test-e2e
     steps:
       - e2e
   e2e-mysql:
@@ -193,6 +204,7 @@ jobs:
       image: ubuntu-1604:201903-01
     environment:
       DB: mysql
+      SUITE: test-e2e
     steps:
       - e2e
   docker-build:
@@ -233,7 +245,7 @@ workflows:
           context: SonarCloud
       - ui
       - codegen
+      - e2e-cron
       - e2e-no-db
       - e2e-postgres
-      - e2e-mysql
       - docker-build
