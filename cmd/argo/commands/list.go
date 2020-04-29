@@ -1,13 +1,13 @@
 package commands
 
 import (
-	"log"
 	"os"
 	"sort"
 	"strings"
 
 	"github.com/argoproj/pkg/errors"
 	argotime "github.com/argoproj/pkg/time"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -40,7 +40,7 @@ func NewListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "list workflows",
 		Run: func(cmd *cobra.Command, args []string) {
-			listOpts := metav1.ListOptions{
+			listOpts := &metav1.ListOptions{
 				Limit: listArgs.chunkSize,
 			}
 			labelSelector := labels.NewSelector()
@@ -67,23 +67,16 @@ func NewListCommand() *cobra.Command {
 				namespace = ""
 			}
 
-			wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
-				Namespace:   namespace,
-				ListOptions: &listOpts,
-			})
-			errors.CheckError(err)
-
-			tmpWorkFlows := wfList.Items
-			for wfList.ListMeta.Continue != "" {
-				listOpts.Continue = wfList.ListMeta.Continue
-				wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
-					Namespace:   namespace,
-					ListOptions: &listOpts,
-				})
-				if err != nil {
-					log.Fatal(err)
-				}
+			var tmpWorkFlows []wfv1.Workflow
+			for {
+				log.WithField("listOpts", listOpts).Debug()
+				wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{Namespace: namespace, ListOptions: listOpts})
+				errors.CheckError(err)
 				tmpWorkFlows = append(tmpWorkFlows, wfList.Items...)
+				if wfList.Continue == "" {
+					break
+				}
+				listOpts.Continue = wfList.Continue
 			}
 
 			var tmpWorkFlowsSelected []wfv1.Workflow
@@ -104,9 +97,7 @@ func NewListCommand() *cobra.Command {
 			} else {
 				workflows = make(wfv1.Workflows, 0)
 				minTime, err := argotime.ParseSince(listArgs.since)
-				if err != nil {
-					log.Fatal(err)
-				}
+				errors.CheckError(err)
 				for _, wf := range tmpWorkFlowsSelected {
 					if wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(*minTime) {
 						workflows = append(workflows, wf)
@@ -114,7 +105,7 @@ func NewListCommand() *cobra.Command {
 				}
 			}
 			sort.Sort(workflows)
-			err = printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{
+			err := printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{
 				NoHeaders: listArgs.noHeaders,
 				Namespace: listArgs.allNamespaces,
 				Output:    listArgs.output,

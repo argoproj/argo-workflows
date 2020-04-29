@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/argoproj/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -27,20 +28,21 @@ func NewListCommand() *cobra.Command {
 			serviceClient, err := apiClient.NewArchivedWorkflowServiceClient()
 			errors.CheckError(err)
 			namespace := client.Namespace()
-			options := &metav1.ListOptions{
+			listOpts := &metav1.ListOptions{
 				FieldSelector: "metadata.namespace=" + namespace,
 				LabelSelector: selector,
 				Limit:         chunkSize,
 			}
 			var workflows wfv1.Workflows
 			for {
-				resp, err := serviceClient.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: options})
+				log.WithField("listOpts", listOpts).Debug()
+				resp, err := serviceClient.ListArchivedWorkflows(ctx, &workflowarchivepkg.ListArchivedWorkflowsRequest{ListOptions: listOpts})
 				errors.CheckError(err)
 				workflows = append(workflows, resp.Items...)
 				if resp.Continue == "" {
 					break
 				}
-				options.Continue = resp.Continue
+				listOpts.Continue = resp.Continue
 			}
 			sort.Sort(workflows)
 			err = printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{Output: output, Namespace: true})
