@@ -92,24 +92,6 @@ func (s *E2ESuite) SetupSuite() {
 	s.cwfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates()
 }
 
-func (s *E2ESuite) listImages() map[string]bool {
-	list, err := s.KubeClient.CoreV1().Nodes().List(metav1.ListOptions{})
-	s.CheckError(err)
-	images := make(map[string]bool)
-	// looks O^3, but is actually going to be O(n)
-	for _, node := range list.Items {
-		for _, image := range node.Status.Images {
-			for _, n := range image.Names {
-				// We want to ignore hashes.
-				if !strings.Contains(n, "@sha256") {
-					images[n] = true
-				}
-			}
-		}
-	}
-	return images
-}
-
 func (s *E2ESuite) TearDownSuite() {
 	s.Persistence.Close()
 }
