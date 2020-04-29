@@ -22,7 +22,7 @@ require (
 	github.com/gavv/httpexpect/v2 v2.0.3
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-ini/ini v1.51.1 // indirect
-	github.com/go-openapi/jsonreference v0.19.3 // indirect
+	github.com/go-openapi/jsonreference v0.19.3
 	github.com/go-openapi/spec v0.19.7
 	github.com/go-openapi/swag v0.19.8 // indirect
 	github.com/go-sql-driver/mysql v1.4.1
