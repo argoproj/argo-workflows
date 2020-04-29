@@ -1,4 +1,4 @@
-# Asynchronous job pattern
+# Asynchronous Job Pattern
 
 ## Introduction
 
