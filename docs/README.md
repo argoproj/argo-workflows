@@ -18,7 +18,7 @@ Some use-case specific documentation is available:
 * [Contributing](CONTRIBUTING.md)
 * [Argo Workflow Architecture](architecture.md)
 * [Argo Server](argo-server.md)
-* [Asynchronous job pattern](async-pattern.md)
+* [Asynchronous Job Pattern](async-pattern.md)
 * [CLI](cli.md)
 * [Cluster Workflow Templates](cluster-workflow-templates.md)
 * [Configuring Your Artifact Repository](configure-artifact-repository.md)
