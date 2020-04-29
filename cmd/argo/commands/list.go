@@ -1,6 +1,9 @@
 package commands
 
 import (
+	"encoding/base64"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -8,7 +11,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/argoproj/pkg/errors"
+	argoerrors "github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
 	argotime "github.com/argoproj/pkg/time"
 	"github.com/spf13/cobra"
@@ -37,6 +40,13 @@ type listFlags struct {
 	limit         int64    // --limit
 }
 
+type cursor struct {
+	kubeCursor       string `json:"kube_cursor,omitempty"`
+	lastWorkflowName string `json:"last_workflow_name,omitempty"`
+	prefix           string `json:"prefix,omitempty"`
+	since            string `json:"since,omitempty"`
+}
+
 func NewListCommand() *cobra.Command {
 	var (
 		listArgs listFlags
@@ -45,6 +55,8 @@ func NewListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "list workflows",
 		Run: func(cmd *cobra.Command, args []string) {
+			kubeCursor, lastWorkflowName, err := getKubeCursor(&listArgs)
+			argoerrors.CheckError(err)
 
 			listOpts := metav1.ListOptions{
 				Limit: listArgs.chunkSize,
@@ -74,38 +86,54 @@ func NewListCommand() *cobra.Command {
 			}
 
 			initialFetch := true
+			wfName := ""
 
 			// Keep fetching workflows until we've got enough amount
 			var workflows wfv1.Workflows
-			cursor := ""
-			for initialFetch || cursor != "" {
-				initialFetch = false
-				listOpts.Continue = cursor
+			for initialFetch || kubeCursor != "" {
+				listOpts.Continue = kubeCursor
 				tmpWfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
 					Namespace:   namespace,
 					ListOptions: &listOpts,
 				})
-				errors.CheckError(err)
+				argoerrors.CheckError(err)
 
-				filterPrefix(tmpWfList, listArgs.prefix)
-				filterSince(tmpWfList, listArgs.since)
+				if initialFetch {
+					findTargetWorkflow(tmpWfList, lastWorkflowName)
+					initialFetch = false
+				}
+				filterWorkflow(tmpWfList, &listArgs)
 
 				if listArgs.limit != 0 && int64(len(workflows)+len(tmpWfList.Items)) >= listArgs.limit {
-					cursor = truncateWorkflowList(tmpWfList, &workflows, &listArgs)
+					wfName = truncateWorkflowList(tmpWfList, &workflows, &listArgs)
 					workflows = append(workflows, tmpWfList.Items...)
 					break
 				}
 
 				workflows = append(workflows, tmpWfList.Items...)
-				cursor = tmpWfList.ListMeta.Continue
+				kubeCursor = tmpWfList.ListMeta.Continue
+			}
+
+			encodedCursor := ""
+			if wfName != "" {
+				encodedCursor, err = encodeCursor(kubeCursor, wfName, &listArgs)
+				if err != nil {
+					log.Fatalf("Error when preparing the cursor for other workflows: %v", err)
+				}
 			}
 
 			switch listArgs.output {
 			case "", "wide":
 				printTable(workflows, &listArgs)
+				if encodedCursor != "" {
+					fmt.Printf("There are additional suppressed results, show them by passing in `--continue %s\n", encodedCursor)
+				}
 			case "name":
 				for _, wf := range workflows {
 					fmt.Println(wf.ObjectMeta.Name)
+				}
+				if encodedCursor != "" {
+					fmt.Printf("There are additional suppressed results, show them by passing in `--continue %s\n", encodedCursor)
 				}
 			default:
 				log.Fatalf("Unknown output mode: %s", listArgs.output)
@@ -126,41 +154,84 @@ func NewListCommand() *cobra.Command {
 	return command
 }
 
-func filterPrefix(wfList *wfv1.WorkflowList, prefix string) {
-	if prefix != "" {
-		tmpWorkFlowsFiltered := make([]wfv1.Workflow, 0)
+func getKubeCursor(listArgs *listFlags) (string, string, error) {
+	if listArgs.cursor != "" {
+		jsonString, err := base64.StdEncoding.DecodeString(listArgs.cursor)
+		if err != nil {
+			return "", "", errors.New("Invalid cursor: malformed value for --continue")
+		}
+		var data cursor
+		err = json.Unmarshal([]byte(jsonString), &data)
+		if err != nil || data.lastWorkflowName == "" && data.kubeCursor != "" {
+			return "", "", errors.New("Invalid cursor: malformed value for --continue")
+		}
+		if data.lastWorkflowName != "" && (data.prefix != listArgs.prefix || data.since != listArgs.since) {
+			return "", "", errors.New("Invalid cursor: please ensure that the identical values for `prefix` and `since` which you used to acquire this cursor are passed in")
+		}
+		return data.kubeCursor, data.lastWorkflowName, nil
+	}
+	return "", "", nil
+}
+
+func encodeCursor(kubeCursor string, lastWorkflowName string, listArgs *listFlags) (string, error) {
+	jsonCursor, err := json.Marshal(cursor{
+		kubeCursor:       kubeCursor,
+		lastWorkflowName: lastWorkflowName,
+		prefix:           listArgs.prefix,
+		since:            listArgs.since,
+	})
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(jsonCursor), nil
+}
+
+func findTargetWorkflow(wfList *wfv1.WorkflowList, targetWfName string) {
+	if targetWfName == "" {
+		return
+	}
+	idx := -1
+	for i, wf := range wfList.Items {
+		if wf.Name == targetWfName {
+			idx = i
+			break
+		}
+	}
+	wfList.Items = wfList.Items[idx+1:]
+}
+
+func filterWorkflow(wfList *wfv1.WorkflowList, listArgs *listFlags) {
+	if listArgs.prefix != "" || listArgs.since != "" {
+		var minTime *time.Time
+		if listArgs.since != "" {
+			t, err := argotime.ParseSince(listArgs.since)
+			argoerrors.CheckError(err)
+			minTime = t
+		}
+		tmpWorkflows := make([]wfv1.Workflow, 0)
 		for _, wf := range wfList.Items {
-			if strings.HasPrefix(wf.ObjectMeta.Name, prefix) {
-				tmpWorkFlowsFiltered = append(tmpWorkFlowsFiltered, wf)
+			ok := filterByPrefix(&wf, listArgs.prefix) && filterBySince(&wf, minTime)
+			if ok {
+				tmpWorkflows = append(tmpWorkflows, wf)
 			}
 		}
-		wfList.Items = tmpWorkFlowsFiltered
+		wfList.Items = tmpWorkflows
 	}
 }
 
-func filterSince(wfList *wfv1.WorkflowList, since string) {
-	if since != "" {
-		tmpWorkFlowsFiltered := make(wfv1.Workflows, 0)
-		minTime, err := argotime.ParseSince(since)
-		if err != nil {
-			log.Fatal(err)
-		}
-		for _, wf := range wfList.Items {
-			if wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(*minTime) {
-				tmpWorkFlowsFiltered = append(tmpWorkFlowsFiltered, wf)
-			}
-		}
-		wfList.Items = tmpWorkFlowsFiltered
-	}
+func filterByPrefix(wf *wfv1.Workflow, prefix string) bool {
+	return prefix == "" || strings.HasPrefix(wf.ObjectMeta.Name, prefix)
+}
+
+func filterBySince(wf *wfv1.Workflow, minTime *time.Time) bool {
+	return minTime == nil || wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(*minTime)
 }
 
 func truncateWorkflowList(wfList *wfv1.WorkflowList, workflows *wfv1.Workflows, listArgs *listFlags) string {
-	remaining := listArgs.limit - int64(len(*workflows))
-	cursor := ""
-	if remaining < int64(len(wfList.Items)) {
-	}
-	wfList.Items = wfList.Items[0:remaining]
-	return cursor
+	tail := listArgs.limit - int64(len(*workflows))
+	lastWorkflowName := wfList.Items[tail-1].Name
+	wfList.Items = wfList.Items[0:tail]
+	return lastWorkflowName
 }
 
 func printTable(wfList []wfv1.Workflow, listArgs *listFlags) {
