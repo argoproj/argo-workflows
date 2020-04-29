@@ -1,4 +1,4 @@
-package util
+package pkg
 
 func foo() string {
 	return "bar"

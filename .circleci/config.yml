@@ -17,12 +17,12 @@ commands:
       - restore_cache:
           name: Restore go mod cache
           keys:
-            - go-mod-v2-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
+            - go-mod-v3-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
   save_go_mod:
     steps:
       - save_cache:
           name: Save go mod cache
-          key:  go-mod-v2-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
+          key:  go-mod-v3-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - /home/circleci/.go_workspace/go/pkg/mod
           when: always
@@ -39,7 +39,7 @@ commands:
     steps:
       - save_cache:
           name: Save Golang cache
-          key: go-v6-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+          key: go-v7-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - /home/circleci/.cache/go-build
             - /home/circleci/sdk/go1.13.4
@@ -49,8 +49,8 @@ commands:
       - restore_cache:
           name: Restore Golang cache
           keys:
-            - go-v6-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
-            - go-v6-master-{{ .Environment.CIRCLE_JOB }}
+            - go-v7-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+            - go-v7-master-{{ .Environment.CIRCLE_JOB }}
   e2e:
     steps:
       - checkout
@@ -133,6 +133,7 @@ jobs:
             ls /usr/local/include/google/protobuf/
       - run: make codegen
       - run: make manifests
+      - run: make lint
       - run: git diff --exit-code
       - save_go_cache
       - save_go_mod
@@ -167,8 +168,6 @@ jobs:
           path: test-results
           destination: .
           when: always
-      - run: make lint
-      - run: git diff --exit-code
       - save_go_cache
       - save_go_mod
   e2e-cron:
@@ -246,6 +245,7 @@ workflows:
       - ui
       - codegen
       - e2e-cron
+      - e2e-mysql
       - e2e-no-db
       - e2e-postgres
       - docker-build
