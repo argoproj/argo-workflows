@@ -3,9 +3,7 @@ package commands
 import (
 	"fmt"
 	"log"
-	"math"
 	"os"
-	"sort"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -48,7 +46,9 @@ func NewListCommand() *cobra.Command {
 		Short: "list workflows",
 		Run: func(cmd *cobra.Command, args []string) {
 
-			listOpts := metav1.ListOptions{}
+			listOpts := metav1.ListOptions{
+				Limit: listArgs.chunkSize,
+			}
 			labelSelector := labels.NewSelector()
 			if len(listArgs.status) != 0 {
 				req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.In, listArgs.status)
@@ -73,59 +73,31 @@ func NewListCommand() *cobra.Command {
 				namespace = ""
 			}
 
-			wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
-				Namespace:   namespace,
-				ListOptions: &listOpts,
-			})
-			errors.CheckError(err)
+			initialFetch := true
 
-			tmpWorkFlows := wfList.Items
-			cursor := wfList.ListMeta.Continue
-			for cursor != "" {
+			// Keep fetching workflows until we've got enough amount
+			var workflows wfv1.Workflows
+			cursor := ""
+			for initialFetch || cursor != "" {
+				initialFetch = false
 				listOpts.Continue = cursor
 				tmpWfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
 					Namespace:   namespace,
 					ListOptions: &listOpts,
 				})
-				if err != nil {
-					log.Fatal(err)
+				errors.CheckError(err)
+
+				filterPrefix(tmpWfList, listArgs.prefix)
+				filterSince(tmpWfList, listArgs.since)
+
+				if listArgs.limit != 0 && int64(len(workflows)+len(tmpWfList.Items)) >= listArgs.limit {
+					cursor = truncateWorkflowList(tmpWfList, &workflows, &listArgs)
+					workflows = append(workflows, tmpWfList.Items...)
+					break
 				}
-				tmpWorkFlows = append(tmpWorkFlows, tmpWfList.Items...)
+
+				workflows = append(workflows, tmpWfList.Items...)
 				cursor = tmpWfList.ListMeta.Continue
-			}
-
-			var tmpWorkFlowsSelected []wfv1.Workflow
-			if listArgs.prefix == "" {
-				tmpWorkFlowsSelected = tmpWorkFlows
-			} else {
-				tmpWorkFlowsSelected = make([]wfv1.Workflow, 0)
-				for _, wf := range tmpWorkFlows {
-					if strings.HasPrefix(wf.ObjectMeta.Name, listArgs.prefix) {
-						tmpWorkFlowsSelected = append(tmpWorkFlowsSelected, wf)
-					}
-				}
-			}
-
-			var workflows wfv1.Workflows
-			if listArgs.since == "" {
-				workflows = tmpWorkFlowsSelected
-			} else {
-				workflows = make(wfv1.Workflows, 0)
-				minTime, err := argotime.ParseSince(listArgs.since)
-				if err != nil {
-					log.Fatal(err)
-				}
-				for _, wf := range tmpWorkFlowsSelected {
-					if wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(*minTime) {
-						workflows = append(workflows, wf)
-					}
-				}
-			}
-			sort.Sort(workflows)
-
-			if listArgs.chunkSize != 0 {
-				idx := int64(math.Min(float64(listArgs.chunkSize), float64(len(workflows))))
-				workflows = workflows[0:idx]
 			}
 
 			switch listArgs.output {
@@ -152,6 +124,43 @@ func NewListCommand() *cobra.Command {
 	command.Flags().StringVar(&listArgs.cursor, "continue", "", "Return the next batch of workloads starting from this cursor. Note that the chunk size used to fetch this cursor must be passed in at the same time.")
 	command.Flags().Int64VarP(&listArgs.limit, "limit", "", 500, "Return a list with maximum N workflows. Pass 0 to retrieve the full list.")
 	return command
+}
+
+func filterPrefix(wfList *wfv1.WorkflowList, prefix string) {
+	if prefix != "" {
+		tmpWorkFlowsFiltered := make([]wfv1.Workflow, 0)
+		for _, wf := range wfList.Items {
+			if strings.HasPrefix(wf.ObjectMeta.Name, prefix) {
+				tmpWorkFlowsFiltered = append(tmpWorkFlowsFiltered, wf)
+			}
+		}
+		wfList.Items = tmpWorkFlowsFiltered
+	}
+}
+
+func filterSince(wfList *wfv1.WorkflowList, since string) {
+	if since != "" {
+		tmpWorkFlowsFiltered := make(wfv1.Workflows, 0)
+		minTime, err := argotime.ParseSince(since)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, wf := range wfList.Items {
+			if wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(*minTime) {
+				tmpWorkFlowsFiltered = append(tmpWorkFlowsFiltered, wf)
+			}
+		}
+		wfList.Items = tmpWorkFlowsFiltered
+	}
+}
+
+func truncateWorkflowList(wfList *wfv1.WorkflowList, workflows *wfv1.Workflows, listArgs *listFlags) string {
+	remaining := listArgs.limit - int64(len(*workflows))
+	cursor := ""
+	if remaining < int64(len(wfList.Items)) {
+	}
+	wfList.Items = wfList.Items[0:remaining]
+	return cursor
 }
 
 func printTable(wfList []wfv1.Workflow, listArgs *listFlags) {
