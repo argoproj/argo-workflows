@@ -600,7 +600,12 @@ func (s *CLISuite) TestTemplate() {
 				}
 				templateWorkflowName = res[1]
 			}
-		}).When().Wait(30*time.Second).RunCli([]string{"get", templateWorkflowName}, func(t *testing.T, output string, err error) {
+		})
+		s.Given().
+			WorkflowName(templateWorkflowName).
+			When().
+			WaitForWorkflow(30*time.Second).
+			RunCli([]string{"get", templateWorkflowName}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, templateWorkflowName)
 				assert.Contains(t, output, "Succeeded")

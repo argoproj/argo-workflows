@@ -1137,11 +1137,6 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
       }
     },
     "spec": {
-      "workflowMetadata": {
-      	"labels": {
-        	"argo-e2e": "subject"
-      	}
-      },
       "templates": [
         {
           "name": "run-workflow",
@@ -1162,7 +1157,10 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
 		s.e(s.T()).POST("/api/v1/workflows/argo/submit").
 			WithBytes([]byte(`{
 			  "resourceKind": "WorkflowTemplate",
-			  "resourceName": "test"
+			  "resourceName": "test",
+			  "submitOptions": {
+                "labels": "argo-e2e=true"
+              }
 			}`)).
 			Expect().
 			Status(200)
@@ -1180,11 +1178,6 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
     },
     "spec": {
       "schedule": "* * * * *",
-      "workflowMetadata": {
-      	"labels": {
-      		"argo-e2e": "subject"
-		}
-	  },
       "workflowSpec": {
         "entrypoint": "whalesay",
         "templates": [
@@ -1207,7 +1200,10 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
 		s.e(s.T()).POST("/api/v1/workflows/argo/submit").
 			WithBytes([]byte(`{
 			  "resourceKind": "cronworkflow",
-			  "resourceName": "test"
+			  "resourceName": "test",
+			  "submitOptions": {
+                "labels": "argo-e2e=true"
+              }
 			}`)).
 			Expect().
 			Status(200)
@@ -1224,11 +1220,6 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
       }
     },
     "spec": {
-      "workflowMetadata": {
-      	"labels": {
-      		"argo-e2e": "subject"
-		}
-      },
       "templates": [
         {
           "name": "run-workflow",
@@ -1249,7 +1240,10 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
 		s.e(s.T()).POST("/api/v1/workflows/argo/submit").
 			WithBytes([]byte(`{
 			  "resourceKind": "ClusterWorkflowTemplate",
-			  "resourceName": "test"
+			  "resourceName": "test",
+			  "submitOptions": {
+                "labels": "argo-e2e=true"
+              }
 			}`)).
 			Expect().
 			Status(200)

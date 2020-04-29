@@ -5,9 +5,8 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 func TestConvertCronWorkflowToWorkflow(t *testing.T) {
@@ -70,7 +69,7 @@ status:
   startedAt: null
 `
 
-	var cronWf wfv1.CronWorkflow
+	var cronWf v1alpha1.CronWorkflow
 	err := yaml.Unmarshal([]byte(cronWfString), &cronWf)
 	assert.NoError(t, err)
 	wf := ConvertCronWorkflowToWorkflow(&cronWf)
@@ -122,11 +121,6 @@ spec:
     parameters:
       - name: message
         value: hello world
-  workflowMetadata:
-    labels: 
-      my-label: my-value
-    annotations:
-      my-annotation: my-value
   templates:
     - name: whalesay-template
       inputs:
@@ -140,42 +134,13 @@ spec:
 `
 
 func TestConvertWorkflowTemplateToWorkflow(t *testing.T) {
-	var wfTmpl wfv1.WorkflowTemplate
+	var wfTmpl v1alpha1.WorkflowTemplate
 	err := yaml.Unmarshal([]byte(workflowTmpl), &wfTmpl)
 	if err != nil {
 		panic(err)
 	}
 	wf := ConvertWorkflowTemplateToWorkflow(&wfTmpl)
-	if assert.NotNil(t, wf) {
-		assert.Equal(t, wf.Labels[LabelKeyWorkflowTemplate], wfTmpl.Name)
-		assert.Equal(t, wf.GenerateName, wfTmpl.Name+"-")
-		if assert.NotNil(t, wf) {
-			if assert.NotNil(t, wf.Labels) {
-				assert.Contains(t, wf.Labels, "my-label")
-				assert.Contains(t, wf.Annotations, "my-annotation")
-			}
-		}
-	}
-}
-
-func TestConvertClusterWorkflowTemplateToWorkflow(t *testing.T) {
-	wfTmpl := &wfv1.ClusterWorkflowTemplate{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "my-cwft",
-		},
-		Spec: wfv1.WorkflowTemplateSpec{
-			WorkflowMetadata: &metav1.ObjectMeta{
-				Labels:      map[string]string{"my-label": "my-value"},
-				Annotations: map[string]string{"my-annotation": "my-value"},
-			},
-		},
-	}
-	wf := ConvertClusterWorkflowTemplateToWorkflow(wfTmpl)
-	if assert.NotNil(t, wf) {
-		assert.Equal(t, wf.GenerateName, "my-cwft-")
-		if assert.NotNil(t, wf.Labels) {
-			assert.Contains(t, wf.Labels, "my-label")
-			assert.Contains(t, wf.Annotations, "my-annotation")
-		}
-	}
+	assert.NotNil(t, wf)
+	assert.Equal(t, wf.Labels[LabelKeyWorkflowTemplate], wfTmpl.Name)
+	assert.Equal(t, wf.GenerateName, wfTmpl.Name+"-")
 }
