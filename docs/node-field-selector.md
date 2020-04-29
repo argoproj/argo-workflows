@@ -1,4 +1,4 @@
-# node-field-selector
+# Node Field Selectors
 
 ![GA](assets/ga.svg)
 
