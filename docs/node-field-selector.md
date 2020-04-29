@@ -1,6 +1,6 @@
 # Node Field Selectors
 
-![GA](assets/ga.svg)
+![alpha](assets/alpha.svg)
 
 > v2.8 and after
 
