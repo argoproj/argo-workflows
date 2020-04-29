@@ -3,23 +3,4 @@ kind: Deployment
 metadata:
   name: argo-server
 spec:
-  template:
-    spec:
-      containers:
-        - name: argo-server
-          args:
-            - -v
-            - server
-            - --namespaced
-            - --auth-mode
-            - client
-            - --auth-mode
-            - sso
-            - --secure
-          imagePullPolicy:  Never
-          env:
-            - name: UPPERIO_DB_DEBUG
-              value: "1"
-          readinessProbe:
-            httpGet:
-              scheme: HTTPS
+  replicas: 0
