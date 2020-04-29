@@ -590,7 +590,7 @@ func (s *CLISuite) TestTemplate() {
 				assert.Contains(t, output, "Created:")
 			}
 		})
-		var templateWorkflowName string
+		var workflowName string
 		s.Given().RunCli([]string{"list"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				r := regexp.MustCompile(`\s+?(workflow-template-whalesay-template-[a-z0-9]+)`)
@@ -598,16 +598,16 @@ func (s *CLISuite) TestTemplate() {
 				if len(res) != 2 {
 					assert.Fail(t, "Internal test error, please report a bug")
 				}
-				templateWorkflowName = res[1]
+				workflowName = res[1]
 			}
 		})
 		s.Given().
-			WorkflowName(templateWorkflowName).
+			WorkflowName(workflowName).
 			When().
 			WaitForWorkflow(30*time.Second).
-			RunCli([]string{"get", templateWorkflowName}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"get", workflowName}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.Contains(t, output, templateWorkflowName)
+					assert.Contains(t, output, workflowName)
 					assert.Contains(t, output, "Succeeded")
 				}
 			})
