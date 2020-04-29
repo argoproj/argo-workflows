@@ -151,18 +151,7 @@ func (s *CLIWithServerSuite) TestWorkflowRetryPersistence() {
 		// When this is the case, this behavior is tested in cli_test.go
 		s.T().SkipNow()
 	}
-	s.Given().
-		Workflow("@testdata/exit-1.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(20*time.Second).
-		Given().
-		RunCli([]string{"retry", "exit-1"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "Name:")
-				assert.Contains(t, output, "Namespace:")
-			}
-		})
+	WorkflowRetryCommon(s.E2ESuite)
 }
 
 func (s *CLIWithServerSuite) TestWorkflowSuspendResumePersistence() {

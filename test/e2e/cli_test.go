@@ -467,12 +467,10 @@ func (s *CLISuite) TestWorkflowLint() {
 }
 
 func (s *CLISuite) TestWorkflowRetryNoPersistence() {
-	if s.Persistence.IsEnabled() {
-		// Persistence is enabled for this test, but it is not enabled for the Argo Server in this test suite.
-		// When this is the case, this behavior is tested in cli_with_server_test.go
-		s.T().SkipNow()
-	}
+	WorkflowRetryCommon(s.E2ESuite)
+}
 
+func WorkflowRetryCommon(s fixtures.E2ESuite) {
 	var retryTime corev1.Time
 
 	s.Given().
