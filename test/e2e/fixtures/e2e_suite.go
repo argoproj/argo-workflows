@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/base64"
 	"os"
-	"regexp"
 	"strings"
 	"time"
 
@@ -75,10 +74,98 @@ type E2ESuite struct {
 	cronClient        v1alpha1.CronWorkflowInterface
 	KubeClient        kubernetes.Interface
 	// Guard-rail.
-	// A list of images that exist on the K3S node at the start of the test are probably those created as part
-	// of the Kubernetes system (e.g. k8s.gcr.io/pause:3.1) or K3S. This is populated at the start of each test,
-	// and checked at the end of each test.
-	images map[string]bool
+	// The number of archived workflows. If is changes between two tests, we have a problem.
+	numWorkflows int
+}
+
+func (s *E2ESuite) SetupSuite() {
+	var err error
+	s.RestConfig, err = kubeconfig.DefaultRestConfig()
+	s.CheckError(err)
+	s.KubeClient, err = kubernetes.NewForConfig(s.RestConfig)
+	s.CheckError(err)
+	s.wfClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().Workflows(Namespace)
+	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
+	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
+	s.Persistence = newPersistence(s.KubeClient)
+	s.cwfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates()
+}
+
+package fixtures
+
+import (
+	"bufio"
+	"encoding/base64"
+	"os"
+	"strings"
+	"time"
+
+	// load the azure plugin (required to authenticate against AKS clusters).
+	_ "k8s.io/client-go/plugin/pkg/client/auth/azure"
+	// load the gcp plugin (required to authenticate against GKE clusters).
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	// load the oidc plugin (required to authenticate with OpenID Connect).
+	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/suite"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/yaml"
+
+	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/kubeconfig"
+	"github.com/argoproj/argo/workflow/packer"
+)
+
+const Namespace = "argo"
+const Label = "argo-e2e"
+
+// Cron tests run in parallel, so use a different label so they are not deleted when a new test runs
+const LabelCron = Label + "-cron"
+
+var imageTag string
+var k3d bool
+
+func init() {
+	gitBranch, err := runCli("git", "rev-parse", "--abbrev-ref=loose", "HEAD")
+	if err != nil {
+		panic(err)
+	}
+	imageTag = strings.TrimSpace(gitBranch)
+	if imageTag == "master" {
+		imageTag = "latest"
+	}
+	if strings.HasPrefix(gitBranch, "release-2") {
+		tags, err := runCli("git", "tag", "--merged")
+		if err != nil {
+			panic(err)
+		}
+		parts := strings.Split(tags, "\n")
+		imageTag = strings.ReplaceAll(parts[len(parts)-2], "/", "-")
+	}
+	context, err := runCli("kubectl", "config", "current-context")
+	if err != nil {
+		panic(err)
+	}
+	k3d = strings.TrimSpace(context) == "k3s-default"
+	log.WithFields(log.Fields{"imageTag": imageTag, "k3d": k3d}).Info()
+}
+
+type E2ESuite struct {
+	suite.Suite
+	Persistence       *Persistence
+	RestConfig        *rest.Config
+	wfClient          v1alpha1.WorkflowInterface
+	wfTemplateClient  v1alpha1.WorkflowTemplateInterface
+	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
+	cronClient        v1alpha1.CronWorkflowInterface
+	KubeClient        kubernetes.Interface
 	// Guard-rail.
 	// The number of archived workflows. If is changes between two tests, we have a problem.
 	numWorkflows int
@@ -130,8 +217,6 @@ func (s *E2ESuite) BeforeTest(suiteName, testName string) {
 	s.CheckError(err)
 	log.Infof("logging debug diagnostics to file://%s", name)
 	s.DeleteResources(Label)
-	s.images = s.listImages()
-	s.importImages()
 	numWorkflows := s.countWorkflows()
 	if s.numWorkflows > 0 && s.numWorkflows != numWorkflows {
 		s.T().Fatal("there should almost never be a change to the number of workflows between tests, this means the last test (not the current test) is bad and needs fixing - note this guard-rail does not work across test suites")
@@ -143,18 +228,6 @@ func (s *E2ESuite) countWorkflows() int {
 	workflows, err := s.wfClient.List(metav1.ListOptions{})
 	s.CheckError(err)
 	return len(workflows.Items)
-}
-
-func (s *E2ESuite) importImages() {
-	// If we are running K3D we should re-import these prior to running tests, as they may have been evicted.
-	if k3d {
-		for _, n := range []string{"docker.io/argoproj/argoexec:" + imageTag, "docker.io/library/cowsay:v1"} {
-			if !s.images[n] {
-				_, err := runCli("k3d", "import-images", n)
-				s.CheckError(err)
-			}
-		}
-	}
 }
 
 func (s *E2ESuite) DeleteResources(label string) {
@@ -337,19 +410,6 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 	s.CheckError(err)
 	for _, wf := range wfs.Items {
 		s.printWorkflowDiagnostics(wf.GetName())
-	}
-	// Using an arbitrary image will result in slow and flakey tests as we can't really predict when they'll be
-	// downloaded or evicted. To keep tests fast and reliable you must use whitelisted images.
-	imageWhitelist := map[string]bool{
-		"argoexec:" + imageTag: true,
-		"cowsay:v1":            true,
-		"python:alpine3.6":     true,
-	}
-	for n := range s.listImages() {
-		image := regexp.MustCompile(".*/").ReplaceAllString(n, "")
-		if !s.images[n] && !imageWhitelist[image] {
-			s.T().Fatalf("non-whitelisted image used in test: %s", image)
-		}
 	}
 	err = file.Close()
 	s.CheckError(err)

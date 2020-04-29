@@ -8,38 +8,34 @@ import (
 )
 
 func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) *wfv1.Workflow {
-	wf := toWorkflow(cronWf.TypeMeta, cronWf.ObjectMeta, cronWf.Spec.WorkflowSpec)
+	wf := toWorkflow(cronWf.TypeMeta, cronWf.ObjectMeta, cronWf.Spec.WorkflowSpec, cronWf.Spec.WorkflowMetadata)
 	wf.Labels[LabelKeyCronWorkflow] = cronWf.Name
-	if cronWf.Spec.WorkflowMetadata != nil {
-		for key, label := range cronWf.Spec.WorkflowMetadata.Labels {
-			wf.Labels[key] = label
-		}
-
-		if len(cronWf.Spec.WorkflowMetadata.Annotations) > 0 {
-			wf.Annotations = make(map[string]string)
-			for key, label := range cronWf.Spec.WorkflowMetadata.Annotations {
-				wf.Annotations[key] = label
-			}
-		}
-	}
 	wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *metav1.NewControllerRef(cronWf, wfv1.SchemeGroupVersion.WithKind(workflow.CronWorkflowKind))))
 	return wf
 }
 
 func ConvertWorkflowTemplateToWorkflow(template *wfv1.WorkflowTemplate) *wfv1.Workflow {
-	wf := toWorkflow(template.TypeMeta, template.ObjectMeta, template.Spec.WorkflowSpec)
+	wf := toWorkflow(template.TypeMeta, template.ObjectMeta, template.Spec.WorkflowSpec, template.Spec.WorkflowMetadata)
 	wf.Labels[LabelKeyWorkflowTemplate] = template.ObjectMeta.Name
 	return wf
 }
 
 func ConvertClusterWorkflowTemplateToWorkflow(template *wfv1.ClusterWorkflowTemplate) *wfv1.Workflow {
-	wf := toWorkflow(template.TypeMeta, template.ObjectMeta, template.Spec.WorkflowSpec)
+	wf := toWorkflow(template.TypeMeta, template.ObjectMeta, template.Spec.WorkflowSpec, template.Spec.WorkflowMetadata)
 	wf.Labels[LabelKeyClusterWorkflowTemplate] = template.ObjectMeta.Name
-
 	return wf
 }
 
-func toWorkflow(typeMeta metav1.TypeMeta, objectMeta metav1.ObjectMeta, spec wfv1.WorkflowSpec) *wfv1.Workflow {
+func toWorkflow(typeMeta metav1.TypeMeta, objectMeta metav1.ObjectMeta, spec wfv1.WorkflowSpec, workflowMetadata *metav1.ObjectMeta) *wfv1.Workflow {
+	if workflowMetadata == nil {
+		workflowMetadata = &metav1.ObjectMeta{}
+	}
+	if workflowMetadata.Annotations == nil {
+		workflowMetadata.Annotations = make(map[string]string)
+	}
+	if workflowMetadata.Labels == nil {
+		workflowMetadata.Labels = make(map[string]string)
+	}
 	wf := &wfv1.Workflow{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       workflow.WorkflowKind,
@@ -47,8 +43,8 @@ func toWorkflow(typeMeta metav1.TypeMeta, objectMeta metav1.ObjectMeta, spec wfv
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: objectMeta.GetName() + "-",
-			Labels:       make(map[string]string),
-			Annotations:  make(map[string]string),
+			Labels:       workflowMetadata.Labels,
+			Annotations:  workflowMetadata.Annotations,
 		},
 		Spec: spec,
 	}

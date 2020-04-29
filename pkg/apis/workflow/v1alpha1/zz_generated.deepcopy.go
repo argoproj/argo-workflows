@@ -2121,6 +2121,11 @@ func (in *WorkflowTemplateList) DeepCopyObject() runtime.Object {
 func (in *WorkflowTemplateSpec) DeepCopyInto(out *WorkflowTemplateSpec) {
 	*out = *in
 	in.WorkflowSpec.DeepCopyInto(&out.WorkflowSpec)
+	if in.WorkflowMetadata != nil {
+		in, out := &in.WorkflowMetadata, &out.WorkflowMetadata
+		*out = new(metav1.ObjectMeta)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 

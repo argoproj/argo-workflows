@@ -155,10 +155,9 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *wfv1.Subm
 	validateOptions([]wfv1.Workflow{tempwf}, submitOpts, cliOpts)
 
 	created, err := apiClient.NewWorkflowServiceClient().SubmitWorkflow(ctx, &workflowpkg.WorkflowSubmitRequest{
-		Namespace:     namespace,
-		ResourceKind:  kind,
-		ResourceName:  name,
-		SubmitOptions: submitOpts,
+		Namespace:    namespace,
+		ResourceKind: kind,
+		ResourceName: name,
 	})
 	if err != nil {
 		log.Fatalf("Failed to submit workflow: %v", err)
