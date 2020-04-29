@@ -346,8 +346,9 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 		"python:alpine3.6":     true,
 	}
 	for n := range s.listImages() {
-		if !s.images[n] && !imageWhitelist[regexp.MustCompile(".*/").ReplaceAllString(n, "")] {
-			s.T().Fatalf("non-whitelisted image used in test: %s", n)
+		image := regexp.MustCompile(".*/").ReplaceAllString(n, "")
+		if !s.images[n] && !imageWhitelist[image] {
+			s.T().Fatalf("non-whitelisted image used in test: %s", image)
 		}
 	}
 	err = file.Close()

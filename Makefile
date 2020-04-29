@@ -240,10 +240,10 @@ mocks: $(HOME)/go/bin/mockery
 	./hack/update-mocks.sh $(MOCK_FILES)
 
 .PHONY: codegen
-codegen: status codegen-core swagger mocks docs
+codegen: status proto swagger mocks docs
 
-.PHONY: codegen-core
-codegen-core:
+.PHONY: proto
+proto:
 	$(call backup_go_mod)
 	# We need the folder for compatibility
 	go mod vendor
@@ -470,7 +470,9 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go:
 pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go
 	go run ./hack secondaryswaggergen
 
-api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger pkg/apiclient/_.secondary.swagger.json $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
+$(SWAGGER_FILES): pkg/apiclient/_.secondary.swagger.json proto 
+
+api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
 	swagger mixin -c 680 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
 
 .PHONY: docs
