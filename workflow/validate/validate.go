@@ -40,6 +40,9 @@ type ValidateOpts struct {
 	// IgnoreEntrypoint indicates to skip/ignore the EntryPoint validation on workflow spec.
 	// Entrypoint is optional for WorkflowTemplate and ClusterWorkflowTemplate
 	IgnoreEntrypoint bool
+
+	// WorkflowTemplateValidation indicates that the current context is validating a WorkflowTemplate or ClusterWorkflowTemplate
+	WorkflowTemplateValidation bool
 }
 
 // templateValidationCtx is the context for validating a workflow spec
@@ -203,11 +206,17 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	}
 
 	if !opts.IgnoreEntrypoint {
+		var args wfv1.ArgumentsProvider
+		args = wfArgs
+
+		if opts.WorkflowTemplateValidation {
+			args = &FakeArguments{}
+		}
 		if hasWorkflowTemplateRef {
-			_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{TemplateRef: topLevelTmplRef}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
+			_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{TemplateRef: topLevelTmplRef}, tmplCtx, args, map[string]interface{}{})
 
 		} else {
-			_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: entrypoint}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
+			_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: entrypoint}, tmplCtx, args, map[string]interface{}{})
 		}
 		if err != nil {
 			return nil, err
@@ -244,13 +253,13 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 // ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
 func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate) (*wfv1.WorkflowConditions, error) {
 	wf := common.ConvertWorkflowTemplateToWorkflow(wftmpl)
-	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == ""})
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
 }
 
 // ValidateClusterWorkflowTemplate accepts a cluster workflow template and performs validation against it.
 func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate) (*wfv1.WorkflowConditions, error) {
 	wf := common.ConvertClusterWorkflowTemplateToWorkflow(cwftmpl)
-	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == ""})
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
 }
 
 // ValidateCronWorkflow validates a CronWorkflow

@@ -9,6 +9,5 @@ spec:
   templates:
     - name: sleep-3s
       container:
-        image: cowsay:v1
+        image: alpine
         command: [sh, -c, "sleep 3"]
-        imagePullPolicy: IfNotPresent

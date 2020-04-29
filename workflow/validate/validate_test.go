@@ -2365,7 +2365,7 @@ spec:
           - name: uid
             value: "{{workflow.uid}}"
           - name: priority
-            value: "{{workflow.priority}}"    
+            value: "{{workflow.priority}}"
 
   - name: whalesay
     inputs:
@@ -2433,5 +2433,28 @@ func TestWorkflowWithWFTRefWithEntrypoint(t *testing.T){
 	err := createWorkflowTemplate(templateWithEntrypoint)
 	assert.NoError(t, err)
 	_, err = validate(wfWithWFTRefNoEntrypoint)
+	assert.NoError(t, err)
+}
+
+var wfTemplateWithEntrypoint = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-with-entrypoint
+spec:
+  entrypoint: whalesay-template
+  templates:
+  - name: whalesay-template
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+`
+
+func TestWorkflowTemplateWithEntrypoint(t *testing.T) {
+	err := validateWorkflowTemplate(wfTemplateWithEntrypoint)
 	assert.NoError(t, err)
 }
