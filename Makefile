@@ -332,6 +332,10 @@ else
 endif
 endif
 
+.PHONY: pull-build-images
+pull-build-images:
+	./hack/pull-build-images.sh
+
 .PHONY: test-images
 test-images: dist/cowsay-v1 dist/python-alpine3.6
 

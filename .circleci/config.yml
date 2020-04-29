@@ -58,7 +58,7 @@ commands:
       - install_kustomize
       - run:
           name: Preemptively download images
-          command: grep FROM Dockerfile.dev|grep 'builder$\|argoexec-base$'|awk '{print $2}'|while read image; do docker pull $image; done
+          command: make pull-build-images test-images
           background: true
       - run:
           name: Install and start K3S v1.0.1
