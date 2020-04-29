@@ -606,11 +606,11 @@ func (s *CLISuite) TestTemplate() {
 			When().
 			WaitForWorkflow(30*time.Second).
 			RunCli([]string{"get", templateWorkflowName}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, templateWorkflowName)
-				assert.Contains(t, output, "Succeeded")
-			}
-		})
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, templateWorkflowName)
+					assert.Contains(t, output, "Succeeded")
+				}
+			})
 	})
 	s.Run("Delete", func() {
 		s.Given().RunCli([]string{"template", "delete", "workflow-template-whalesay-template"}, func(t *testing.T, output string, err error) {

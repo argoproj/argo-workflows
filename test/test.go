@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -51,3 +52,11 @@ func LoadWorkflowFromBytes(yamlBytes []byte) *wfv1.Workflow {
 }
 
 // LoadUnstructuredFromBytes returns an Unstructured unmarshalled from an yaml byte array
+func LoadUnstructuredFromBytes(yamlBytes []byte) *unstructured.Unstructured {
+	var un unstructured.Unstructured
+	err := yaml.Unmarshal(yamlBytes, &un)
+	if err != nil {
+		panic(err)
+	}
+	return &un
+}
