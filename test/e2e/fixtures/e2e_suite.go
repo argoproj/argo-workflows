@@ -55,7 +55,7 @@ func init() {
 			panic(err)
 		}
 		parts := strings.Split(tags, "\n")
-		imageTag = parts[len(parts)-2]
+		imageTag = strings.ReplaceAll(parts[len(parts)-2], "/", "-")
 	}
 	context, err := runCli("kubectl", "config", "current-context")
 	if err != nil {
