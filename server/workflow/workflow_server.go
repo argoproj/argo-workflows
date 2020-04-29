@@ -129,7 +129,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		}
 	}
 
-	return &v1alpha1.WorkflowList{Items: wfList.Items}, nil
+	return &v1alpha1.WorkflowList{ListMeta: metav1.ListMeta{Continue: wfList.Continue}, Items: wfList.Items}, nil
 }
 
 func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, ws workflowpkg.WorkflowService_WatchWorkflowsServer) error {
