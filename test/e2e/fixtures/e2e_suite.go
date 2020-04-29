@@ -48,107 +48,15 @@ func init() {
 	if imageTag == "master" {
 		imageTag = "latest"
 	}
-	if strings.HasPrefix(gitBranch, "release-2") {
+	if strings.HasPrefix(gitBranch, "release-") {
 		tags, err := runCli("git", "tag", "--merged")
 		if err != nil {
 			panic(err)
 		}
 		parts := strings.Split(tags, "\n")
-		imageTag = strings.ReplaceAll(parts[len(parts)-2], "/", "-")
+		imageTag = parts[len(parts)-2]
 	}
-	context, err := runCli("kubectl", "config", "current-context")
-	if err != nil {
-		panic(err)
-	}
-	k3d = strings.TrimSpace(context) == "k3s-default"
-	log.WithFields(log.Fields{"imageTag": imageTag, "k3d": k3d}).Info()
-}
-
-type E2ESuite struct {
-	suite.Suite
-	Persistence       *Persistence
-	RestConfig        *rest.Config
-	wfClient          v1alpha1.WorkflowInterface
-	wfTemplateClient  v1alpha1.WorkflowTemplateInterface
-	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
-	cronClient        v1alpha1.CronWorkflowInterface
-	KubeClient        kubernetes.Interface
-	// Guard-rail.
-	// The number of archived workflows. If is changes between two tests, we have a problem.
-	numWorkflows int
-}
-
-func (s *E2ESuite) SetupSuite() {
-	var err error
-	s.RestConfig, err = kubeconfig.DefaultRestConfig()
-	s.CheckError(err)
-	s.KubeClient, err = kubernetes.NewForConfig(s.RestConfig)
-	s.CheckError(err)
-	s.wfClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().Workflows(Namespace)
-	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
-	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
-	s.Persistence = newPersistence(s.KubeClient)
-	s.cwfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates()
-}
-
-package fixtures
-
-import (
-	"bufio"
-	"encoding/base64"
-	"os"
-	"strings"
-	"time"
-
-	// load the azure plugin (required to authenticate against AKS clusters).
-	_ "k8s.io/client-go/plugin/pkg/client/auth/azure"
-	// load the gcp plugin (required to authenticate against GKE clusters).
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	// load the oidc plugin (required to authenticate with OpenID Connect).
-	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
-
-	log "github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/suite"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"sigs.k8s.io/yaml"
-
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/util/kubeconfig"
-	"github.com/argoproj/argo/workflow/packer"
-)
-
-const Namespace = "argo"
-const Label = "argo-e2e"
-
-// Cron tests run in parallel, so use a different label so they are not deleted when a new test runs
-const LabelCron = Label + "-cron"
-
-var imageTag string
-var k3d bool
-
-func init() {
-	gitBranch, err := runCli("git", "rev-parse", "--abbrev-ref=loose", "HEAD")
-	if err != nil {
-		panic(err)
-	}
-	imageTag = strings.TrimSpace(gitBranch)
-	if imageTag == "master" {
-		imageTag = "latest"
-	}
-	if strings.HasPrefix(gitBranch, "release-2") {
-		tags, err := runCli("git", "tag", "--merged")
-		if err != nil {
-			panic(err)
-		}
-		parts := strings.Split(tags, "\n")
-		imageTag = strings.ReplaceAll(parts[len(parts)-2], "/", "-")
-	}
+	imageTag = strings.ReplaceAll(imageTag, "/", "-")
 	context, err := runCli("kubectl", "config", "current-context")
 	if err != nil {
 		panic(err)
