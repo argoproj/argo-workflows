@@ -57,7 +57,7 @@ commands:
       - maybe_skip_job
       - install_kustomize
       - run:
-          name: Preemptively download images
+          name: Preemptively pull images
           command: make pull-build-images test-images
           background: true
       - run:
