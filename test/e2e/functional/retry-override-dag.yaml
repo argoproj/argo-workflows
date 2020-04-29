@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-override-
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: steps
+  templates:
+    - name: steps
+      dag:
+        tasks:
+          - name: fail-0-retry
+            template: fail
+            retryStrategy:
+              limit: 0
+          - name: fail-1-retry
+            template: fail
+          - name: fail-2-retry
+            template: fail
+            retryStrategy:
+              limit: 2
+
+    - name: fail
+      retryStrategy:
+        limit: 1
+      container:
+        image: alpine
+        command: [sh, -c]
+        args: ["exit 1"]

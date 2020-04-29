@@ -500,6 +500,48 @@ spec:
 		})
 }
 
+func (s *FunctionalSuite) TestRetryOverride() {
+	s.Given().
+		Workflow("@functional/retry-override.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+
+			assert.NotNil(t, status.Nodes.FindByDisplayName("fail-0-retry(0)"))
+			assert.Nil(t, status.Nodes.FindByDisplayName("fail-0-retry(1)"))
+
+			assert.NotNil(t, status.Nodes.FindByDisplayName("fail-1-retry(1)"))
+			assert.Nil(t, status.Nodes.FindByDisplayName("fail-1-retry(2)"))
+
+			assert.NotNil(t, status.Nodes.FindByDisplayName("fail-2-retry(2)"))
+			assert.Nil(t, status.Nodes.FindByDisplayName("fail-2-retry(3)"))
+		})
+}
+
+func (s *FunctionalSuite) TestRetryOverrideDAG() {
+	s.Given().
+		Workflow("@functional/retry-override-dag.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+
+			assert.NotNil(t, status.Nodes.FindByDisplayName("fail-0-retry(0)"))
+			assert.Nil(t, status.Nodes.FindByDisplayName("fail-0-retry(1)"))
+
+			assert.NotNil(t, status.Nodes.FindByDisplayName("fail-1-retry(1)"))
+			assert.Nil(t, status.Nodes.FindByDisplayName("fail-1-retry(2)"))
+
+			assert.NotNil(t, status.Nodes.FindByDisplayName("fail-2-retry(2)"))
+			assert.Nil(t, status.Nodes.FindByDisplayName("fail-2-retry(3)"))
+		})
+}
+
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }

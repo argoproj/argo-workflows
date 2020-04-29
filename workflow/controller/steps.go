@@ -232,7 +232,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		}
 
 		executeTemplateOpts := &executeTemplateOpts{
-			boundaryID: stepsCtx.boundaryID,
+			boundaryID:     stepsCtx.boundaryID,
 			onExitTemplate: stepsCtx.onExitTemplate,
 			// Override the callee's retryStrategy (if any) if an override is provided
 			retryStrategyOverride: step.RetryStrategy,
