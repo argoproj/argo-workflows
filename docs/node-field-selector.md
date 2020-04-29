@@ -27,7 +27,7 @@ The field can be any of:
 | phase | Phase status of the node - eg Running |
 | templateRef.name | The name of the WorkflowTemplate the node is referring to |
 | templateRef.template | The template within the WorkflowTemplate the node is referring to |
-| inputs.parameters.xxxx.value | The value of input parameter xxxx |
+| inputs.parameters.<NAME>.value | The value of input parameter NAME |
 
 The operator can be '=' or '!='. Multiple selectors can be combined with a comma, in which case they are ANDed together.
 
