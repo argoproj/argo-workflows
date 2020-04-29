@@ -78,16 +78,18 @@ func NewListCommand() *cobra.Command {
 			errors.CheckError(err)
 
 			tmpWorkFlows := wfList.Items
-			for wfList.ListMeta.Continue != "" {
-				listOpts.Continue = wfList.ListMeta.Continue
-				wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
+			cursor := wfList.ListMeta.Continue
+			for cursor != "" {
+				listOpts.Continue = cursor
+				tmpWfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
 					Namespace:   namespace,
 					ListOptions: &listOpts,
 				})
 				if err != nil {
 					log.Fatal(err)
 				}
-				tmpWorkFlows = append(tmpWorkFlows, wfList.Items...)
+				tmpWorkFlows = append(tmpWorkFlows, tmpWfList.Items...)
+				cursor = tmpWfList.ListMeta.Continue
 			}
 
 			var tmpWorkFlowsSelected []wfv1.Workflow
