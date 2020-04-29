@@ -112,10 +112,10 @@ func (s *CLIWithServerSuite) TestArchive() {
 		})
 	s.Run("List", func() {
 		s.Given().
-			RunCli([]string{"archive", "list"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"archive", "list", "--chunk-size", "1"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.Contains(t, output, "NAMESPACE   NAME         STATUS")
-					assert.Contains(t, output, "argo        basic        Succeeded")
+					assert.Contains(t, output, "NAMESPACE   NAME    STATUS")
+					assert.Contains(t, output, "argo        basic   Succeeded")
 				}
 			})
 	})

@@ -28,7 +28,7 @@ type listFlags struct {
 	prefix        string   // --prefix
 	output        string   // --output
 	since         string   // --since
-	limit         int64    // --limit
+	chunkSize     int64    // --chunk-size
 	noHeaders     bool     // --no-headers
 }
 
@@ -41,7 +41,7 @@ func NewListCommand() *cobra.Command {
 		Short: "list workflows",
 		Run: func(cmd *cobra.Command, args []string) {
 			listOpts := metav1.ListOptions{
-				Limit: listArgs.limit,
+				Limit: listArgs.chunkSize,
 			}
 			labelSelector := labels.NewSelector()
 			if len(listArgs.status) != 0 {
@@ -129,7 +129,7 @@ func NewListCommand() *cobra.Command {
 	command.Flags().BoolVar(&listArgs.running, "running", false, "Show only running workflows")
 	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
 	command.Flags().StringVar(&listArgs.since, "since", "", "Show only workflows newer than a relative duration")
-	command.Flags().Int64Var(&listArgs.limit, "limit", 0, "Limit the total number of items returned.")
+	command.Flags().Int64VarP(&listArgs.chunkSize, "chunk-size", "", 0, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
 	command.Flags().BoolVar(&listArgs.noHeaders, "no-headers", false, "Don't print headers (default print headers).")
 	return command
 }
