@@ -84,3 +84,13 @@ curl --request PUT \
       "message": "<FAILURE-MESSAGE>"
     }'  
   ```
+
+## Retrying failed jobs
+
+Using `argo retry` on failed jobs that follow this pattern will cause Argo to re-attempt the Suspend step without re-triggering the job.  
+
+Instead you need to use the `--restart-successful` option, eg if using the template from above:
+
+```
+argo retry <WORKFLOWNAME> --restart-successful --node-field-selector templateRef.template=run-external-job,phase=Failed
+```
