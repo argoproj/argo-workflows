@@ -57,12 +57,17 @@ commands:
       - maybe_skip_job
       - install_kustomize
       - run:
+          name: Preemptively download images
+          command: grep FROM Dockerfile.dev|grep 'builder$\|argoexec-base$'|awk '{print $2}'|xargs docker pull
+          background: true
+      - run:
           name: Install and start K3S v1.0.1
           command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.1 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
           background: true
       - restore_go_cache
       - install_golang
       - restore_go_mod
+      - run: go mod download
       - run:
           name: Create KUBECONFIG
           # Copy kubeconfig file, and add a fake user for "argo --token xxx" testing
@@ -131,6 +136,7 @@ jobs:
             sudo find /usr/local/include -type d | xargs sudo chmod a+rx
             rm -f $PROTOC_ZIP
             ls /usr/local/include/google/protobuf/
+      - run: go mod download
       - run: make codegen
       - run: make manifests
       - run: make lint
@@ -148,6 +154,7 @@ jobs:
       - restore_go_cache
       - install_golang
       - restore_go_mod
+      - run: go mod download
       - run:
           name: Run tests
           command: |
