@@ -70,7 +70,8 @@ STATIC_BUILD          ?= true
 CI                    ?= false
 DB                    ?= postgres
 K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
-ARGO_TOKEN            = $(shell kubectl -n argo get secret -o name | grep argo-server | xargs kubectl -n argo get -o jsonpath='{.data.token}' | base64 --decode)
+# which components to start, useful if you want to disable them to debug
+COMPONENTS            := controller,argo-server
 
 ifeq ($(CI),true)
 TEST_OPTS := -coverprofile=coverage.out
@@ -126,7 +127,7 @@ status:
 # cli
 
 .PHONY: cli
-cli: dist/argo
+cli: dist/argo argo-server.crt argo-server.key
 
 ui/dist/node_modules.marker: ui/package.json ui/yarn.lock
 	# Get UI dependencies
@@ -154,9 +155,6 @@ server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
 	staticfiles -o server/static/files.go ui/dist/app
 
-dist/argo: server/static/files.go $(CLI_PKGS)
-	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
-
 dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
 dist/argo-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
@@ -164,9 +162,11 @@ dist/argo-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
 dist/argo-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
 dist/argo-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
+dist/argo: server/static/files.go $(CLI_PKGS)
+	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
+
 dist/argo-%: server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/argo
-
 
 argo-server.crt: argo-server.key
 
@@ -176,27 +176,22 @@ argo-server.key:
 .PHONY: cli-image
 cli-image: $(CLI_IMAGE_FILE)
 
-$(CLI_IMAGE_FILE): dist/argo-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) argo-server.crt argo-server.key
-	# Create CLI image
-ifeq ($(DEV_IMAGE),true)
-	cp dist/argo-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) argo
-	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli -f Dockerfile.dev --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
-	rm -f argo
-else
+$(CLI_IMAGE_FILE):
 	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
-endif
-ifeq ($(K3D),true)
-	k3d import-images $(IMAGE_NAMESPACE)/argocli:$(VERSION)
-endif
 	touch $(CLI_IMAGE_FILE)
 
 .PHONY: clis
 clis: dist/argo-linux-amd64 dist/argo-linux-arm64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/argo-darwin-amd64 dist/argo-windows-amd64 cli-image
 
-# controller
+.PHONY: controller
+controller: dist/workflow-controller
 
+dist/workflow-controller: GOARGS = GOOS= GOARCH=
 dist/workflow-controller-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/workflow-controller-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
+
+dist/workflow-controller: $(CONTROLLER_PKGS)
+	go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
 
 dist/workflow-controller-%: $(CONTROLLER_PKGS)
 	CGO_ENABLED=0 $(GOARGS) go build -v -i -ldflags '${LDFLAGS}' -o $@ ./cmd/workflow-controller
@@ -204,18 +199,8 @@ dist/workflow-controller-%: $(CONTROLLER_PKGS)
 .PHONY: controller-image
 controller-image: $(CONTROLLER_IMAGE_FILE)
 
-$(CONTROLLER_IMAGE_FILE): dist/workflow-controller-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
-	# Create controller image
-ifeq ($(DEV_IMAGE),true)
-	cp dist/workflow-controller-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) workflow-controller
-	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller -f Dockerfile.dev --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
-	rm -f workflow-controller
-else
+$(CONTROLLER_IMAGE_FILE):
 	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
-endif
-ifeq ($(K3D),true)
-	k3d import-images $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
-endif
 	touch $(CONTROLLER_IMAGE_FILE)
 
 # argoexec
@@ -232,9 +217,9 @@ executor-image: $(EXECUTOR_IMAGE_FILE)
 $(EXECUTOR_IMAGE_FILE): dist/argoexec-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
 	# Create executor image
 ifeq ($(DEV_IMAGE),true)
-	cp dist/argoexec-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) argoexec
+	mv dist/argoexec-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) argoexec
 	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec -f Dockerfile.dev --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
-	rm -f argoexec
+	mv argoexec dist/argoexec-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
 else
 	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 endif
@@ -251,12 +236,8 @@ $(HOME)/go/bin/mockery:
 	$(call restore_go_mod)
 
 .PHONY: mocks
-mocks: dist/update-mocks
-
-dist/update-mocks: $(HOME)/go/bin/mockery $(MOCK_FILES)
+mocks: $(HOME)/go/bin/mockery
 	./hack/update-mocks.sh $(MOCK_FILES)
-	@mkdir -p dist
-	touch dist/update-mocks
 
 .PHONY: codegen
 codegen: status codegen-core swagger mocks docs
@@ -325,14 +306,14 @@ $(VERSION_FILE):
 	touch $(VERSION_FILE)
 
 dist/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
-	kustomize build --load_restrictor=none test/e2e/manifests/postgres | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/:E2E_TAG/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/postgres.yaml
+	kustomize build --load_restrictor=none test/e2e/manifests/postgres | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/postgres.yaml
 
 dist/no-db.yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
 	# We additionally disable ALWAYS_OFFLOAD_NODE_STATUS
-	kustomize build --load_restrictor=none test/e2e/manifests/no-db | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/:E2E_TAG/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | sed 's/"true"/"false"/' > dist/no-db.yaml
+	kustomize build --load_restrictor=none test/e2e/manifests/no-db | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | sed 's/"true"/"false"/' > dist/no-db.yaml
 
 dist/mysql.yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
-	kustomize build --load_restrictor=none test/e2e/manifests/mysql | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/:E2E_TAG/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/mysql.yaml
+	kustomize build --load_restrictor=none test/e2e/manifests/mysql | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/mysql.yaml
 
 .PHONY: install
 install: dist/postgres.yaml dist/mysql.yaml dist/no-db.yaml
@@ -365,55 +346,53 @@ dist/python-alpine3.6:
 	docker pull python:alpine3.6
 	touch dist/python-alpine3.6
 
-.PHONY: start
-start: status install down controller-image cli-image executor-image wait-down up cli test-images wait-up env
-	# Switch to "argo" ns.
+.PHONY: stop
+stop:
+	killall argo workflow-controller pf.sh kubectl || true
+
+.PHONY: start-aux
+start-aux:
 	kubectl config set-context --current --namespace=argo
-
-.PHONY: run
-run: start pf
-
-.PHONY: down
-down:
-	# Scale down
-	kubectl -n argo scale deployment/argo-server --replicas 0
-	kubectl -n argo scale deployment/workflow-controller --replicas 0
-
-.PHONY: wait-down
-wait-down:
-	# Wait for pods to go away, so we don't wait for them to be ready later.
-	[ "`kubectl -n argo get pod -l app=argo-server -o name`" = "" ] || kubectl -n argo wait --for=delete pod -l app=argo-server  --timeout 30s
-	[ "`kubectl -n argo get pod -l app=workflow-controller -o name`" = "" ] || kubectl -n argo wait --for=delete pod -l app=workflow-controller  --timeout 2m
-
-.PHONY: up
-up:
-	# Scale up
-	kubectl -n argo scale deployment/workflow-controller --replicas 1
-	kubectl -n argo scale deployment/argo-server --replicas 1
-
-.PHONY: wait-up
-wait-up:
-	# Wait for pods to be ready
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
+	./hack/port-forward.sh
+	# Check minio, postgres and mysql are in hosts file
+	grep '127.0.0.1 *minio' /etc/hosts
+	grep '127.0.0.1 *postgres' /etc/hosts
+	grep '127.0.0.1 *mysql' /etc/hosts
+ifneq ($(findstring controller,$(COMPONENTS)),)
+	ALWAYS_OFFLOAD_NODE_STATUS=true OFFLOAD_NODE_STATUS_TTL=30s WORKFLOW_GC_PERIOD=30s UPPERIO_DB_DEBUG=1 ARCHIVED_WORKFLOW_GC_PERIOD=30s ./dist/workflow-controller --executor-image argoproj/argoexec:$(VERSION) --namespaced --loglevel debug &
+endif
+ifneq ($(findstring argo-server,$(COMPONENTS)),)
+	UPPERIO_DB_DEBUG=1 ./dist/argo -v server --namespaced --auth-mode client --secure &
+endif
+
+.PHONY: start
+start: status stop install controller cli executor-image start-aux wait env
+
+.PHONY: wait
+wait:
+ifneq ($(findstring controller,$(COMPONENTS)),)
+	# Wait for workflow controller
+	until lsof -i :9090 > /dev/null ; do sleep 10s ; done
+endif
+ifneq ($(findstring argo-server,$(COMPONENTS)),)
+	# Wait for Argo Server
+	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
+endif
+
+define print_env
+	export ARGO_SERVER=localhost:2746
+	export ARGO_SECURE=true
+	export ARGO_INSECURE_SKIP_VERIFY=true
+	export ARGO_TOKEN=$(shell ./dist/argo auth token)
+endef
 
 # this is a convenience to get the login token, you can use it as follows
 #   eval $(make env)
 #   argo token
-
 .PHONY: env
 env:
-	export ARGO_SERVER=localhost:2746
-	export ARGO_TOKEN=$(ARGO_TOKEN)
-
-.PHONY: pf
-pf:
-	# Start port-forwards
-	./hack/port-forward.sh
-
-.PHONY: pf-bg
-pf-bg:
-	# Start port-forwards in the background
-	./hack/port-forward.sh &
+	$(call print_env)
 
 .PHONY: logs
 logs:
@@ -461,8 +440,6 @@ test-cli: test-images cli
 
 .PHONY: clean
 clean:
-	# Delete pre-go 1.3 vendor
-	rm -Rf vendor
 	# Delete build files
 	rm -Rf dist/* ui/dist
 
@@ -500,7 +477,7 @@ docs: swagger
 # pre-push
 
 .PHONY: pre-commit
-pre-commit: test lint codegen manifests start pf-bg smoke test-api test-cli
+pre-commit: test lint codegen manifests start smoke test-api test-cli
 
 # release - targets only available on release branch
 ifneq ($(findstring release,$(GIT_BRANCH)),)
