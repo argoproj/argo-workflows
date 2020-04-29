@@ -460,7 +460,13 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		}
 
 		// Finally execute the template
-		_, _ = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
+		executeTemplateOpts := &executeTemplateOpts{
+			boundaryID:            dagCtx.boundaryID,
+			onExitTemplate:        dagCtx.onExitTemplate,
+			// Override the callee's retryStrategy (if any) if an override is provided
+			retryStrategyOverride: task.RetryStrategy,
+		}
+		_, _ = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, executeTemplateOpts)
 	}
 
 	if taskGroupNode != nil {

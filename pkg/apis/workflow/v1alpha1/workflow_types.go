@@ -744,6 +744,10 @@ type WorkflowStep struct {
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
+
+	// RetryStrategy describes how to retry a template when it fails. When RetryStrategy is set on here on a WorkflowStep level
+	// it takes precedence over the RetryStrategy of the called template (if any)
+	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,12,opt,name=retryStrategy"`
 }
 
 var _ TemplateReferenceHolder = &WorkflowStep{}
@@ -1597,6 +1601,10 @@ type DAGTask struct {
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
+
+	// RetryStrategy describes how to retry a template when it fails. When RetryStrategy is set on here on a DAGTask level
+	// it takes precedence over the RetryStrategy of the called template (if any)
+	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty" protobuf:"bytes,12,opt,name=retryStrategy"`
 }
 
 var _ TemplateReferenceHolder = &DAGTask{}

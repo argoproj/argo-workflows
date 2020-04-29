@@ -522,6 +522,11 @@ func (in *DAGTask) DeepCopyInto(out *DAGTask) {
 		*out = new(ContinueOn)
 		**out = **in
 	}
+	if in.RetryStrategy != nil {
+		in, out := &in.RetryStrategy, &out.RetryStrategy
+		*out = new(RetryStrategy)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 
@@ -2043,6 +2048,11 @@ func (in *WorkflowStep) DeepCopyInto(out *WorkflowStep) {
 		in, out := &in.ContinueOn, &out.ContinueOn
 		*out = new(ContinueOn)
 		**out = **in
+	}
+	if in.RetryStrategy != nil {
+		in, out := &in.RetryStrategy, &out.RetryStrategy
+		*out = new(RetryStrategy)
+		(*in).DeepCopyInto(*out)
 	}
 	return
 }

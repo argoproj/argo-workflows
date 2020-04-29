@@ -231,7 +231,13 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			continue
 		}
 
-		childNode, err := woc.executeTemplate(childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, &executeTemplateOpts{boundaryID: stepsCtx.boundaryID, onExitTemplate: stepsCtx.onExitTemplate})
+		executeTemplateOpts := &executeTemplateOpts{
+			boundaryID: stepsCtx.boundaryID,
+			onExitTemplate: stepsCtx.onExitTemplate,
+			// Override the callee's retryStrategy (if any) if an override is provided
+			retryStrategyOverride: step.RetryStrategy,
+		}
+		childNode, err := woc.executeTemplate(childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, executeTemplateOpts)
 		if err != nil {
 			switch err {
 			case ErrDeadlineExceeded:

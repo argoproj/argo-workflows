@@ -264,6 +264,10 @@ message DAGTask {
   // template, irrespective of the success, failure, or error of the
   // primary template.
   optional string onExit = 11;
+
+  // RetryStrategy describes how to retry a template when it fails. When RetryStrategy is set on here on a DAGTask level
+  // it takes precedence over the RetryStrategy of the called template (if any)
+  optional RetryStrategy retryStrategy = 12;
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -1312,6 +1316,10 @@ message WorkflowStep {
   // template, irrespective of the success, failure, or error of the
   // primary template.
   optional string onExit = 11;
+
+  // RetryStrategy describes how to retry a template when it fails. When RetryStrategy is set on here on a WorkflowStep level
+  // it takes precedence over the RetryStrategy of the called template (if any)
+  optional RetryStrategy retryStrategy = 12;
 }
 
 // WorkflowTemplate is the definition of a workflow template resource

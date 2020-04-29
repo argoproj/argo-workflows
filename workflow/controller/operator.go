@@ -1357,6 +1357,8 @@ type executeTemplateOpts struct {
 	// onExitTemplate signifies that executeTemplate was called as part of an onExit handler.
 	// Necessary for graceful shutdowns
 	onExitTemplate bool
+	// retryStrategyOverride override the callee's retryStrategy (if any) with itself
+	retryStrategyOverride *wfv1.RetryStrategy
 }
 
 // executeTemplate executes the template with the given arguments and returns the created NodeStatus
@@ -1430,6 +1432,13 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	// This node acts as a parent of all retries that will be done for
 	// the container. The status of this node should be "Success" if any
 	// of the retries succeed. Otherwise, it is "Failed".
+
+	// First, override the template's retryStrategy if applicable
+	if opts.retryStrategyOverride != nil {
+		processedTmpl.RetryStrategy = opts.retryStrategyOverride
+	}
+
+	// Then, continue with retry logic
 	retryNodeName := ""
 	if processedTmpl.RetryStrategy != nil {
 		retryNodeName = nodeName

@@ -387,6 +387,10 @@
         "onExit": {
           "type": "string",
           "description": "OnExit is a template reference which is invoked at the end of the\ntemplate, irrespective of the success, failure, or error of the\nprimary template."
+        },
+        "retryStrategy": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.RetryStrategy",
+          "title": "RetryStrategy describes how to retry a template when it fails. When RetryStrategy is set on here on a DAGTask level\nit takes precedence over the RetryStrategy of the called template (if any)"
         }
       },
       "title": "DAGTask represents a node in the graph during DAG execution"
@@ -1752,6 +1756,10 @@
         "onExit": {
           "type": "string",
           "description": "OnExit is a template reference which is invoked at the end of the\ntemplate, irrespective of the success, failure, or error of the\nprimary template."
+        },
+        "retryStrategy": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.RetryStrategy",
+          "title": "RetryStrategy describes how to retry a template when it fails. When RetryStrategy is set on here on a WorkflowStep level\nit takes precedence over the RetryStrategy of the called template (if any)"
         }
       },
       "title": "WorkflowStep is a reference to a template to execute in a series of step"
