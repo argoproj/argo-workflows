@@ -354,7 +354,8 @@ start-aux:
 	kubectl config set-context --current --namespace=argo
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
 	./hack/port-forward.sh
-	# Check minio, postgres and mysql are in hosts file
+	# Check dex, minio, postgres and mysql are in hosts file
+	grep '127.0.0.1 *dex' /etc/hosts
 	grep '127.0.0.1 *minio' /etc/hosts
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
