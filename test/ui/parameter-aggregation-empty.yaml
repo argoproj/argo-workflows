@@ -1,16 +1,14 @@
-
 # Test to ensure parameter aggregation works when every item is filtered
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: ui-dag-parameter-aggregation-empty-
+  generateName: ui-parameter-aggregation-empty-
 spec:
   entrypoint: parameter-aggregation
   templates:
   - name: parameter-aggregation
-    dag:
-      tasks:
-      - name: generate
+    steps:
+    - - name: generate
         template: echo
         arguments:
           parameters:
@@ -19,14 +17,20 @@ spec:
         withItems: [1, 2, 3, 4]
         when: "{{item}} == foo"
 
-      - name: consume
-        dependencies: [generate]
+    - - name: consume
         template: echo
         arguments:
           parameters:
           - name: message
             value: "{{item}}"
-        withParam: "{{tasks.generate.outputs.result}}"
+        withParam: "{{steps.generate.outputs.result}}"
+
+    - - name: done
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: done
 
   # echo prints a message
   - name: echo
@@ -34,7 +38,7 @@ spec:
       parameters:
       - name: message
     script:
-      image: alpine:latest
+      image: cowsay:v1
       command: [sh, -x]
       source: |
         #!/bin/sh

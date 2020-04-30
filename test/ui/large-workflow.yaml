@@ -1,10 +1,12 @@
 # massive workflows
-# 500 DAGs with 9 tasks a piece
+# 100 DAGs with 9 tasks a piece
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: massive-workflow
+  name: large-workflow
 spec:
+  ttlStrategy:
+    secondsAfterCompletion: 10
   entrypoint: main
   templates:
     - name: main
@@ -12,7 +14,7 @@ spec:
         - - name: dag
             template: dag
             withSequence:
-              count: "500"
+              count: "100"
     - name: dag
       dag:
         tasks:
@@ -44,4 +46,4 @@ spec:
             dependencies: [D, E, F]
     - name: whalesay
       container:
-        image: docker/whalesay:latest
+        image: cowsay:v1

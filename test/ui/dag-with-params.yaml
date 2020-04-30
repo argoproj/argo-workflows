@@ -11,7 +11,7 @@ spec:
       parameters:
       - name: message
     container:
-      image: alpine:latest
+      image: cowsay:v1
       command: [echo, "{{inputs.parameters.message}}"]
 
   - name: subpipeline-a
