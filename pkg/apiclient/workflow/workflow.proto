@@ -113,8 +113,6 @@ message WorkflowSubmitRequest{
     string resourceKind = 2;
     string resourceName = 3;
     github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SubmitOpts submitOptions = 4;
-    k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions createOptions = 5;
-
 }
 
 service WorkflowService {
