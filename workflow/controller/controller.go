@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 
@@ -575,14 +576,6 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 		log.Warnf("watch returned pod unrelated to any workflow: %s", pod.Name)
 		return true
 	}
-	// TODO: currently we reawaken the workflow on *any* pod updates.
-	// But this could be be much improved to become smarter by only
-	// requeue the workflow when there are changes that we care about.
-
-	// so what do we care about?
-
-	wfc.podInformer.GetStore()
-
 	wfc.wfQueue.Add(pod.ObjectMeta.Namespace + "/" + workflowName)
 	return true
 }
@@ -671,24 +664,58 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 		Add(*incompleteReq).
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 
-	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
-		options.LabelSelector = labelSelector.String()
-		req := c.Get().
-			Namespace(namespace).
-			Resource(resource).
-			VersionedParams(&options, metav1.ParameterCodec)
-		return req.Do().Get()
+	return &cache.ListWatch{
+		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+			options.LabelSelector = labelSelector.String()
+			req := c.Get().
+				Namespace(namespace).
+				Resource(resource).
+				VersionedParams(&options, metav1.ParameterCodec)
+			return req.Do().Get()
+		},
+		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+			options.Watch = true
+			options.LabelSelector = labelSelector.String()
+			req := c.Get().
+				Namespace(namespace).
+				Resource(resource).
+				VersionedParams(&options, metav1.ParameterCodec)
+			return req.Watch()
+		},
 	}
-	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
-		options.Watch = true
-		options.LabelSelector = labelSelector.String()
-		req := c.Get().
-			Namespace(namespace).
-			Resource(resource).
-			VersionedParams(&options, metav1.ParameterCodec)
-		return req.Watch()
-	}
-	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
+}
+
+/*
+metadata:
+  name
+  namespace
+  labels: {}
+  annotations: {}
+  deletionTimestamp
+spec:
+  serviceAccountName
+  nodeName
+status:
+  phase
+  message
+  podIp
+  initContainerStatuses: []
+  containerStatuses: []
+  conditions: []
+*/
+func interesting(from *apiv1.Pod, to *apiv1.Pod) bool {
+	return from == nil ||
+		to == nil ||
+		!reflect.DeepEqual(from.Labels, to.Labels) ||
+		!reflect.DeepEqual(from.Annotations, to.Annotations) ||
+		from.DeletionTimestamp != to.DeletionTimestamp ||
+		from.Spec.NodeName != to.Spec.NodeName ||
+		from.Status.Phase != to.Status.Phase ||
+		from.Status.Message != to.Status.Message ||
+		from.Status.PodIP != to.Status.PodIP ||
+		!reflect.DeepEqual(from.Status.InitContainerStatuses, to.Status.InitContainerStatuses) ||
+		!reflect.DeepEqual(from.Status.ContainerStatuses, to.Status.ContainerStatuses) ||
+		!reflect.DeepEqual(from.Status.Conditions, to.Status.Conditions)
 }
 
 func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
@@ -698,23 +725,30 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(obj)
-				if err == nil {
-					wfc.podQueue.Add(key)
+				if err != nil {
+					return
 				}
+				wfc.podQueue.Add(key)
 			},
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
-				if err == nil {
-					wfc.podQueue.Add(key)
+				if err != nil {
+					return
 				}
+				if !interesting(old.(*apiv1.Pod), new.(*apiv1.Pod)) {
+					log.WithField("key", key).Debug("not interesting")
+					return
+				}
+				wfc.podQueue.Add(key)
 			},
 			DeleteFunc: func(obj interface{}) {
 				// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 				// key function.
 				key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-				if err == nil {
-					wfc.podQueue.Add(key)
+				if err != nil {
+					return
 				}
+				wfc.podQueue.Add(key)
 			},
 		},
 	)
