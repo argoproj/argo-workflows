@@ -7104,9 +7104,6 @@
     "io.argoproj.workflow.v1alpha1.WorkflowSubmitRequest": {
       "type": "object",
       "properties": {
-        "createOptions": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.CreateOptions"
-        },
         "namespace": {
           "type": "string"
         },
