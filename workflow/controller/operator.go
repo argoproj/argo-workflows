@@ -507,14 +507,6 @@ func (woc *wfOperationCtx) persistUpdates() {
 	woc.wf.Status.CompressedNodes = ""
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
 
-	// HACK(jessesuen) after we successfully persist an update to the workflow, the informer's
-	// cache is now invalid. It's very common that we will need to immediately re-operate on a
-	// workflow due to queuing by the pod workers. The following sleep gives a *chance* for the
-	// informer's cache to catch up to the version of the workflow we just persisted. Without
-	// this sleep, the next worker to work on this workflow will very likely operate on a stale
-	// object and redo work.
-	time.Sleep(1 * time.Second)
-
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
 	// TODO: The completedPods will be labeled multiple times. I think it would be improved in the future.
@@ -754,21 +746,21 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				woc.addOutputsToGlobalScope(node.Outputs)
 				woc.updated = true
 			}
-			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
+			node := woc.wf.Status.Nodes[pod.Name]
 			if node.Completed() && !node.IsDaemoned() {
 				if tmpVal, tmpOk := pod.Labels[common.LabelKeyCompleted]; tmpOk {
 					if tmpVal == "true" {
 						return
 					}
 				}
-				woc.completedPods[pod.ObjectMeta.Name] = true
+				woc.completedPods[pod.Name] = true
 				if woc.shouldPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
 				}
 				woc.onNodeComplete(&node)
 			}
 			if node.Successful() {
-				woc.succeededPods[pod.ObjectMeta.Name] = true
+				woc.succeededPods[pod.Name] = true
 			}
 		}
 	}
@@ -962,13 +954,13 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			newPhase = wfv1.NodeRunning
 			tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
 			if !ok {
-				log.Warnf("%s missing template annotation", pod.ObjectMeta.Name)
+				log.Warnf("%s missing template annotation", pod.Name)
 				return nil
 			}
 			var tmpl wfv1.Template
 			err := json.Unmarshal([]byte(tmplStr), &tmpl)
 			if err != nil {
-				log.Warnf("%s template annotation unreadable: %v", pod.ObjectMeta.Name, err)
+				log.Warnf("%s template annotation unreadable: %v", pod.Name, err)
 				return nil
 			}
 			if tmpl.Daemon != nil && *tmpl.Daemon {
@@ -981,12 +973,12 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 				// proceed to mark node status as running (and daemoned)
 				newPhase = wfv1.NodeRunning
 				newDaemonStatus = pointer.BoolPtr(true)
-				log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
+				log.Infof("Processing ready daemon pod: %v", pod.Name)
 			}
 		}
 	default:
 		newPhase = wfv1.NodeError
-		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
+		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.Name, pod.Status.Phase)
 		log.Error(message)
 	}
 
@@ -1113,7 +1105,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	for _, ctr := range pod.Status.InitContainerStatuses {
 		if ctr.State.Terminated == nil {
 			// We should never get here
-			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.ObjectMeta.Name, ctr.Name)
+			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.Name, ctr.Name)
 			continue
 		}
 		if ctr.State.Terminated.ExitCode == 0 {
@@ -1133,7 +1125,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	for _, ctr := range pod.Status.ContainerStatuses {
 		if ctr.State.Terminated == nil {
 			// We should never get here
-			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.ObjectMeta.Name, ctr.Name)
+			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.Name, ctr.Name)
 			continue
 		}
 		if ctr.State.Terminated.ExitCode == 0 {
@@ -1151,7 +1143,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 				// executor is expected to annotate a message to the pod upon any errors.
 				// If we failed to see the annotated message, it is likely the pod ran with
 				// insufficient privileges. Give a hint to that effect.
-				errDetails = fmt.Sprintf("verify serviceaccount %s:%s has necessary privileges", pod.ObjectMeta.Namespace, pod.Spec.ServiceAccountName)
+				errDetails = fmt.Sprintf("verify serviceaccount %s:%s has necessary privileges", pod.Namespace, pod.Spec.ServiceAccountName)
 			}
 			errMsg := fmt.Sprintf("failed to save outputs: %s", errDetails)
 			failMessages[ctr.Name] = errMsg

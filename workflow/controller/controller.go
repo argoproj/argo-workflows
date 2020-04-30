@@ -572,12 +572,17 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 	workflowName, ok := pod.Labels[common.LabelKeyWorkflow]
 	if !ok {
 		// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
-		log.Warnf("watch returned pod unrelated to any workflow: %s", pod.ObjectMeta.Name)
+		log.Warnf("watch returned pod unrelated to any workflow: %s", pod.Name)
 		return true
 	}
 	// TODO: currently we reawaken the workflow on *any* pod updates.
 	// But this could be be much improved to become smarter by only
 	// requeue the workflow when there are changes that we care about.
+
+	// so what do we care about?
+
+	wfc.podInformer.GetStore()
+
 	wfc.wfQueue.Add(pod.ObjectMeta.Namespace + "/" + workflowName)
 	return true
 }
