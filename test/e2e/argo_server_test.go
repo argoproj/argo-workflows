@@ -1130,7 +1130,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 	})
 }
 
-func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
+func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
 
 	s.Run("CreateWFT", func() {
 		s.e(s.T()).POST("/api/v1/workflow-templates/argo").
@@ -1163,7 +1163,10 @@ func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
 		s.e(s.T()).POST("/api/v1/workflows/argo/submit").
 			WithBytes([]byte(`{
 			  "resourceKind": "WorkflowTemplate",
-			  "resourceName": "test"
+			  "resourceName": "test",
+			  "submitOptions": {
+                "labels": "argo-e2e=true"
+              }
 			}`)).
 			Expect().
 			Status(200)
@@ -1203,7 +1206,10 @@ func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
 		s.e(s.T()).POST("/api/v1/workflows/argo/submit").
 			WithBytes([]byte(`{
 			  "resourceKind": "cronworkflow",
-			  "resourceName": "test"
+			  "resourceName": "test",
+			  "submitOptions": {
+                "labels": "argo-e2e=true"
+              }
 			}`)).
 			Expect().
 			Status(200)
@@ -1240,7 +1246,10 @@ func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
 		s.e(s.T()).POST("/api/v1/workflows/argo/submit").
 			WithBytes([]byte(`{
 			  "resourceKind": "ClusterWorkflowTemplate",
-			  "resourceName": "test"
+			  "resourceName": "test",
+			  "submitOptions": {
+                "labels": "argo-e2e=true"
+              }
 			}`)).
 			Expect().
 			Status(200)
