@@ -303,6 +303,10 @@ func TestResumeWorkflowOffloaded(t *testing.T) {
 	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := unmarshalWF(suspendedWf)
 
+	//set threshold so this workflow is too big for compression to be valid
+	clearFunc := packer.SetMaxWorkflowSize(10)
+	defer clearFunc()
+
 	origNodes := origWf.Status.Nodes
 
 	origWf.Status.Nodes = nil
@@ -523,6 +527,10 @@ func TestRetryWorkflowOffloaded(t *testing.T) {
 
 	origWf.Status.Nodes = nil
 	origWf.Status.OffloadNodeStatusVersion = "123"
+
+	//set threshold so this workflow is too big for compression to be valid
+	clearFunc := packer.SetMaxWorkflowSize(10)
+	defer clearFunc()
 
 	_, err = wfIf.Create(origWf)
 	assert.NoError(t, err)
