@@ -17,12 +17,12 @@ commands:
       - restore_cache:
           name: Restore go mod cache
           keys:
-            - go-mod-v2-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
+            - go-mod-v3-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
   save_go_mod:
     steps:
       - save_cache:
           name: Save go mod cache
-          key:  go-mod-v2-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
+          key:  go-mod-v3-{{ checksum "go.sum" }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - /home/circleci/.go_workspace/go/pkg/mod
           when: always
@@ -39,7 +39,7 @@ commands:
     steps:
       - save_cache:
           name: Save Golang cache
-          key: go-v6-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+          key: go-v7-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - /home/circleci/.cache/go-build
             - /home/circleci/sdk/go1.13.4
@@ -49,13 +49,17 @@ commands:
       - restore_cache:
           name: Restore Golang cache
           keys:
-            - go-v6-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
-            - go-v6-master-{{ .Environment.CIRCLE_JOB }}
+            - go-v7-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+            - go-v7-master-{{ .Environment.CIRCLE_JOB }}
   e2e:
     steps:
       - checkout
       - maybe_skip_job
       - install_kustomize
+      - run:
+          name: Preemptively pull images
+          command: make pull-build-images test-images
+          background: true
       - run:
           name: Install and start K3S v1.0.1
           command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.1 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
@@ -63,34 +67,36 @@ commands:
       - restore_go_cache
       - install_golang
       - restore_go_mod
+      - run: go mod download
       - run:
           name: Create KUBECONFIG
           # Copy kubeconfig file, and add a fake user for "argo --token xxx" testing
           command: |
             mkdir -p ~/.kube
+            until stat /etc/rancher/k3s/k3s.yaml ; do sleep 10s ; done
             cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
             echo "- name: fake_token_user" >> ~/.kube/config
             echo "  user:" >> ~/.kube/config
             echo "    token: xxxxxx" >> ~/.kube/config
       - run:
           name: Start Argo
-          command: mkdir dist && KUBECONFIG=~/.kube/config make start DB=$DB E2E_EXECUTOR=docker DEV_IMAGE=true
-      - run:
-          name: Establish port forward
-          command: make pf
+          command: |
+            echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
+            echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
+            echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
+            mkdir dist
+            KUBECONFIG=~/.kube/config make start DB=$DB E2E_EXECUTOR=docker DEV_IMAGE=true
+            # CircleCI will kill spawned processes, so lets block for 20m
+            sleep 20m
           background: true
       - run:
-          name: Sleep for short while
-          command: sleep 10s
-      - run:
-          name: Follow logs, to help diagnose failures
-          command: make logs
-          background: true
+          name: Wait for Argo Server to be ready
+          command: make wait
       - run:
           name: Run tests
           command: |
             trap 'make test-results/junit.xml' EXIT
-            make smoke test-e2e
+            make smoke $SUITE
       - store_test_results:
           path: test-results
           when: always
@@ -130,8 +136,10 @@ jobs:
             sudo find /usr/local/include -type d | xargs sudo chmod a+rx
             rm -f $PROTOC_ZIP
             ls /usr/local/include/google/protobuf/
+      - run: go mod download
       - run: make codegen
       - run: make manifests
+      - run: make lint
       - run: git diff --exit-code
       - save_go_cache
       - save_go_mod
@@ -146,6 +154,7 @@ jobs:
       - restore_go_cache
       - install_golang
       - restore_go_mod
+      - run: go mod download
       - run:
           name: Run tests
           command: |
@@ -153,7 +162,7 @@ jobs:
             make test
       - run: |
           cp sonar-project.properties dist/
-          if [ $CIRCLE_BRANCH != master ]; then
+          if [ "$(echo "$CIRCLE_BRANCH" | grep 'master\|release-')" = '' ]; then
             echo "sonar.pullrequest.branch=$CIRCLE_BRANCH" >> sonar-project.properties
             echo "sonar.pullrequest.key=$CIRCLE_PR_NUMBER" >> sonar-project.properties
           fi
@@ -166,16 +175,24 @@ jobs:
           path: test-results
           destination: .
           when: always
-      - run: make lint
-      - run: git diff --exit-code
       - save_go_cache
       - save_go_mod
+  e2e-cron:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    machine:
+      image: ubuntu-1604:201903-01
+    environment:
+      DB: mysql
+      SUITE: test-e2e-cron
+    steps:
+      - e2e
   e2e-no-db:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
       image: ubuntu-1604:201903-01
     environment:
       DB: no-db
+      SUITE: test-e2e
     steps:
       - e2e
   e2e-postgres:
@@ -184,6 +201,7 @@ jobs:
       image: ubuntu-1604:201903-01
     environment:
       DB: postgres
+      SUITE: test-e2e
     steps:
       - e2e
   e2e-mysql:
@@ -192,6 +210,7 @@ jobs:
       image: ubuntu-1604:201903-01
     environment:
       DB: mysql
+      SUITE: test-e2e
     steps:
       - e2e
   docker-build:
@@ -232,7 +251,8 @@ workflows:
           context: SonarCloud
       - ui
       - codegen
+      - e2e-cron
+      - e2e-mysql
       - e2e-no-db
       - e2e-postgres
-      - e2e-mysql
       - docker-build

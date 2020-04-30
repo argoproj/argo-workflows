@@ -7,6 +7,7 @@ import * as models from '../../../../models';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
+import {getResolvedTemplates} from '../../../shared/template-resolution';
 import {Utils} from '../../../shared/utils';
 
 require('./workflow-node-info.scss');
@@ -71,7 +72,7 @@ export const WorkflowNodeSummary = (props: Props) => {
         }
     ];
     if (props.node.type === 'Pod') {
-        attributes.splice(2, 0, {title: 'POD NAME', value: props.node.id});
+        attributes.splice(2, 0, {title: 'POD NAME', value: props.node.id}, {title: 'HOST NODE NAME', value: props.node.hostNodeName});
     }
     if (props.node.resourcesDuration) {
         attributes.push({
@@ -184,7 +185,7 @@ export class WorkflowNodeContainers extends React.Component<Props, {selectedSide
     }
 
     public render() {
-        const template = Utils.getResolvedTemplates(this.props.workflow, this.props.node);
+        const template = getResolvedTemplates(this.props.workflow, this.props.node);
         if (!template || (!template.container && !template.script)) {
             return (
                 <div className='white-box'>

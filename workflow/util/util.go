@@ -410,6 +410,11 @@ func selectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
 	nodeFields := fields.Set{
 		"displayName":  node.DisplayName,
 		"templateName": node.TemplateName,
+		"phase":        string(node.Phase),
+	}
+	if node.TemplateRef != nil {
+		nodeFields["templateRef.name"] = node.TemplateRef.Name
+		nodeFields["templateRef.template"] = node.TemplateRef.Template
 	}
 	if node.Inputs != nil {
 		for _, inParam := range node.Inputs.Parameters {

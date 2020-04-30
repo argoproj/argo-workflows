@@ -131,7 +131,9 @@ func (a *ArtifactRepository) IsArchiveLogs() bool {
 type PersistConfig struct {
 	NodeStatusOffload bool `json:"nodeStatusOffLoad,omitempty"`
 	// Archive workflows to persistence.
-	Archive        bool              `json:"archive,omitempty"`
+	Archive bool `json:"archive,omitempty"`
+	// in days
+	ArchiveTTL     TTL               `json:"archiveTTL,omitempty"`
 	ClusterName    string            `json:"clusterName,omitempty"`
 	ConnectionPool *ConnectionPool   `json:"connectionPool"`
 	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
@@ -220,6 +222,7 @@ type HDFSArtifactRepository struct {
 type PrometheusConfig struct {
 	Enabled       bool   `json:"enabled,omitempty"`
 	DisableLegacy bool   `json:"disableLegacy"`
+	MetricsTTL    TTL    `json:"metricsTTL"`
 	Path          string `json:"path,omitempty"`
 	Port          string `json:"port,omitempty"`
 }

@@ -364,6 +364,38 @@ func (s *FunctionalSuite) TestParameterAggregation() {
 		})
 }
 
+func (s *FunctionalSuite) TestGlobalScope() {
+	s.Given().
+		Workflow("@functional/global-scope.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(60 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			nodeStatus := status.Nodes.FindByDisplayName("consume-global-parameter-1")
+			if assert.NotNil(t, nodeStatus) {
+				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+				assert.Equal(t, "initial", *nodeStatus.Outputs.Result)
+			}
+			nodeStatus = status.Nodes.FindByDisplayName("consume-global-parameter-2")
+			if assert.NotNil(t, nodeStatus) {
+				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+				assert.Equal(t, "initial", *nodeStatus.Outputs.Result)
+			}
+			nodeStatus = status.Nodes.FindByDisplayName("consume-global-parameter-3")
+			if assert.NotNil(t, nodeStatus) {
+				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+				assert.Equal(t, "final", *nodeStatus.Outputs.Result)
+			}
+			nodeStatus = status.Nodes.FindByDisplayName("consume-global-parameter-4")
+			if assert.NotNil(t, nodeStatus) {
+				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+				assert.Equal(t, "final", *nodeStatus.Outputs.Result)
+			}
+		})
+}
+
 func (s *FunctionalSuite) TestStopBehavior() {
 	s.Given().
 		Workflow("@functional/stop-terminate.yaml").

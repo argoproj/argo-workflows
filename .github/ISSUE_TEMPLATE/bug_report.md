@@ -21,6 +21,7 @@ Checklist:
 **Anything else we need to know?**:
 
 **Environment**:
+
 - Argo version:
 ```
 $ argo version
@@ -31,16 +32,22 @@ $ kubectl version -o yaml
 ```
 
 **Other debugging information (if applicable)**:
+
 - workflow result:
+
 ```
-argo get <workflowname>
+argo --loglevel DEBUG get <workflowname>
 ```
+
 - executor logs:
+
 ```
 kubectl logs <failedpodname> -c init
 kubectl logs <failedpodname> -c wait
 ```
+
 - workflow-controller logs:
+
 ```
 kubectl logs -n argo $(kubectl get pods -l app=workflow-controller -n argo -o name)
 ```

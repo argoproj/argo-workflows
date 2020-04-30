@@ -143,6 +143,8 @@ data:
       nodeStatusOffLoad: false
       # save completed workloads to the workflow archive
       archive: false
+      # the number of days to keep archived workflows (the default is forever)
+      archiveTTL: 180d
       # Optional name of the cluster I'm running in. This must be unique for your cluster.
       clusterName: default
       postgresql:

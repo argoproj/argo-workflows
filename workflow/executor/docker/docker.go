@@ -147,7 +147,6 @@ func (d *DockerExecutor) GetOutputStream(containerID string, combinedOutput bool
 
 func (d *DockerExecutor) GetExitCode(containerID string) (string, error) {
 	cmd := exec.Command("docker", "inspect", containerID, "--format='{{.State.ExitCode}}'")
-	log.Info(cmd.Args)
 	reader, err := cmd.StdoutPipe()
 	if err != nil {
 		return "", errors.InternalWrapError(err, "Could not pipe STDOUT")
@@ -170,9 +169,9 @@ func (d *DockerExecutor) GetExitCode(containerID string) (string, error) {
 	}
 	exitCode := strings.Trim(out, `'`)
 	// Ensure exit code is an int
-	_, err = strconv.Atoi(exitCode)
-	if err != nil {
-		return "", errors.InternalWrapError(err, "Could not parse exit code")
+	if _, err := strconv.Atoi(exitCode); err != nil {
+		log.Warningf("Was not able to parse exit code output '%s' as int: %s", exitCode, err)
+		return "", nil
 	}
 	return exitCode, nil
 }
