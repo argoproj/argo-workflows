@@ -146,7 +146,7 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		}
 	}
 
-	return &v1alpha1.WorkflowList{Items: wfList.Items}, nil
+	return &v1alpha1.WorkflowList{ListMeta: metav1.ListMeta{Continue: wfList.Continue}, Items: wfList.Items}, nil
 }
 
 func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, ws workflowpkg.WorkflowService_WatchWorkflowsServer) error {
@@ -155,7 +155,9 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 	if req.ListOptions != nil {
 		opts = *req.ListOptions
 	}
-	watch, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Watch(s.withInstanceID(opts))
+	opts = s.withInstanceID(opts)
+	wfIf := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace)
+	watch, err := wfIf.Watch(opts)
 	if err != nil {
 		return err
 	}
@@ -163,45 +165,49 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 	ctx := ws.Context()
 
 	log.Debug("Piping events to channel")
+	defer log.Debug("Result channel done")
 
-	for next := range watch.ResultChan() {
+	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		default:
-		}
-		log.Debug("Received event")
-		wf, ok := next.Object.(*v1alpha1.Workflow)
-		if !ok {
-			return fmt.Errorf("watch object was not a workflow %v", reflect.TypeOf(next.Object))
-		}
-		logCtx := log.WithFields(log.Fields{"workflow": wf.Name, "type": next.Type, "phase": wf.Status.Phase})
-		err := packer.DecompressWorkflow(wf)
-		if err != nil {
-			return err
-		}
-		if wf.Status.IsOffloadNodeStatus() {
-			if s.offloadNodeStatusRepo.IsEnabled() {
-				offloadedNodes, err := s.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+		case event, open := <-watch.ResultChan():
+			if !open {
+				log.Info("Re-establishing workflow watch")
+				watch, err = wfIf.Watch(opts)
 				if err != nil {
 					return err
 				}
-				wf.Status.Nodes = offloadedNodes
-			} else {
-				log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn(sqldb.OffloadNodeStatusDisabled)
+				continue
+			}
+			log.Debug("Received event")
+			wf, ok := event.Object.(*v1alpha1.Workflow)
+			if !ok {
+				return fmt.Errorf("watch object was not a workflow %v", reflect.TypeOf(event.Object))
+			}
+			logCtx := log.WithFields(log.Fields{"workflow": wf.Name, "type": event.Type, "phase": wf.Status.Phase})
+			err := packer.DecompressWorkflow(wf)
+			if err != nil {
+				return err
+			}
+			if wf.Status.IsOffloadNodeStatus() {
+				if s.offloadNodeStatusRepo.IsEnabled() {
+					offloadedNodes, err := s.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+					if err != nil {
+						return err
+					}
+					wf.Status.Nodes = offloadedNodes
+				} else {
+					log.WithFields(log.Fields{"namespace": wf.Namespace, "name": wf.Name}).Warn(sqldb.OffloadNodeStatusDisabled)
+				}
+			}
+			logCtx.Debug("Sending event")
+			err = ws.Send(&workflowpkg.WorkflowWatchEvent{Type: string(event.Type), Object: wf})
+			if err != nil {
+				return err
 			}
 		}
-		logCtx.Debug("Sending event")
-		err = ws.Send(&workflowpkg.WorkflowWatchEvent{Type: string(next.Type), Object: wf})
-		if err != nil {
-			return err
-		}
-
 	}
-
-	log.Debug("Result channel done")
-
-	return nil
 }
 
 func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *workflowpkg.WorkflowDeleteRequest) (*workflowpkg.WorkflowDeleteResponse, error) {

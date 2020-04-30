@@ -1,10 +1,11 @@
 import * as models from '../../../models';
+import {Pagination} from '../pagination';
 import requests from './requests';
 
 export class ArchivedWorkflowsService {
-    public list(namespace: string, phases: string[], labels: string[], minStartedAt: Date, maxStartedAt: Date, offset: number) {
+    public list(namespace: string, phases: string[], labels: string[], minStartedAt: Date, maxStartedAt: Date, pagination: Pagination) {
         return requests
-            .get(`api/v1/archived-workflows?${this.queryParams({namespace, phases, labels, minStartedAt, maxStartedAt, offset}).join('&')}`)
+            .get(`api/v1/archived-workflows?${this.queryParams({namespace, phases, labels, minStartedAt, maxStartedAt, pagination}).join('&')}`)
             .then(res => res.body as models.WorkflowList);
     }
 
@@ -16,7 +17,7 @@ export class ArchivedWorkflowsService {
         return requests.delete(`api/v1/archived-workflows/${uid}`);
     }
 
-    private queryParams(filter: {namespace?: string; phases?: Array<string>; labels?: Array<string>; minStartedAt?: Date; maxStartedAt?: Date; offset?: number}) {
+    private queryParams(filter: {namespace?: string; phases?: Array<string>; labels?: Array<string>; minStartedAt?: Date; maxStartedAt?: Date; pagination: Pagination}) {
         const queryParams: string[] = [];
         const fieldSelector = this.fieldSelectorParams(filter.namespace, filter.minStartedAt, filter.maxStartedAt);
         if (fieldSelector.length > 0) {
@@ -26,9 +27,10 @@ export class ArchivedWorkflowsService {
         if (labelSelector.length > 0) {
             queryParams.push(`listOptions.labelSelector=${labelSelector}`);
         }
-        if (filter.offset) {
-            queryParams.push(`listOptions.continue=${filter.offset}`);
+        if (filter.pagination.offset) {
+            queryParams.push(`listOptions.continue=${filter.pagination.offset}`);
         }
+        queryParams.push(`listOptions.limit=${filter.pagination.limit}`);
         return queryParams;
     }
 

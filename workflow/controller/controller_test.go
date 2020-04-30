@@ -5,7 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/argoproj/argo/workflow/common"
+
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -125,7 +126,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		wfQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		wfArchive:       sqldb.NullWorkflowArchive,
-		Metrics:         make(map[string]prometheus.Metric),
+		Metrics:         make(map[string]common.Metric),
 	}
 	return cancel, controller
 }
@@ -325,4 +326,22 @@ func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
 	defer cancel()
 
 	controller.archivedWorkflowGarbageCollector(make(chan struct{}))
+}
+
+func TestWorkflowControllerMetricsGarbageCollector(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+
+	controller.Metrics["metric-1"] = common.Metric{Metric: nil, LastUpdated: time.Now().Add(-1 * time.Minute)}
+	controller.Metrics["metric-2"] = common.Metric{Metric: nil, LastUpdated: time.Now().Add(3 * time.Second)}
+
+	controller.Config.MetricsConfig.Enabled = true
+	controller.Config.MetricsConfig.MetricsTTL = config.TTL(1 * time.Second)
+
+	stop := make(chan struct{})
+	go func() { time.Sleep(2 * time.Second); stop <- struct{}{} }()
+	controller.metricsGarbageCollector(stop)
+
+	assert.Contains(t, controller.Metrics, "metric-2")
+	assert.NotContains(t, controller.Metrics, "metric-1")
 }

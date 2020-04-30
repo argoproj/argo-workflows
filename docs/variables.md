@@ -14,8 +14,8 @@ The following variables are made available to reference various metadata of a wo
 |----------|------------|
 | `steps.<STEPNAME>.ip` | IP address of a previous daemon container step |
 | `steps.<STEPNAME>.status` | Phase status of any previous step |
+| `steps.<STEPNAME>.exitCode` | Exit code of any previous script or container step |
 | `steps.<STEPNAME>.outputs.result` | Output result of any previous container or script step |
-| `steps.<STEPNAME>.outputs.exitCode` | Exit code of any previous script step |
 | `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of any previous step |
 | `steps.<STEPNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous step |
 
@@ -24,8 +24,8 @@ The following variables are made available to reference various metadata of a wo
 |----------|------------|
 | `tasks.<TASKNAME>.ip` | IP address of a previous daemon container task |
 | `tasks.<TASKNAME>.status` | Phase status of any previous task |
+| `tasks.<TASKNAME>.exitCode` | Exit code of any previous script or container task |
 | `tasks.<TASKNAME>.outputs.result` | Output result of any previous container or script task |
-| `tasks.<TASKNAME>.outputs.exitCode` | Exit code of any previous script task |
 | `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task |
 | `tasks.<TASKNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous task |
 
@@ -72,6 +72,7 @@ For `Template`-level metrics:
 |----------|------------|
 | `workflow.name` | Workflow name |
 | `workflow.namespace` | Workflow namespace |
+| `workflow.serviceAccountName` | Workflow service account name |
 | `workflow.uid` | Workflow UID. Useful for setting ownership reference to a resource, or a unique artifact location |
 | `workflow.parameters.<NAME>` | Input parameter to the workflow |
 | `workflow.parameters` | All input parameters to the workflow as a JSON string |
