@@ -21,12 +21,19 @@ func kubeifySwagger(in, out string) {
 		panic(err)
 	}
 	definitions := swagger["definitions"].(obj)
+	definitions["io.k8s.apimachinery.pkg.apis.meta.v1.Fields"] = obj{}
+	definitions["io.k8s.apimachinery.pkg.apis.meta.v1.Initializer"] = obj{}
+	definitions["io.k8s.apimachinery.pkg.apis.meta.v1.Initializers"] = obj{}
+	definitions["io.k8s.apimachinery.pkg.apis.meta.v1.Status"] = obj{}
+	definitions["io.k8s.apimachinery.pkg.apis.meta.v1.StatusCause"] = obj{}
+	definitions["io.k8s.apimachinery.pkg.apis.meta.v1.StatusDetails"] = obj{}
+	delete(definitions, "io.k8s.apimachinery.pkg.apis.meta.v1.Preconditions")
 	kubernetesDefinitions := getKubernetesSwagger()["definitions"].(obj)
-	for n, d1 := range definitions {
-		d, ok := kubernetesDefinitions[n]
-		if ok && !reflect.DeepEqual(d1, d) {
+	for n, d := range definitions {
+		kd, ok := kubernetesDefinitions[n]
+		if ok && !reflect.DeepEqual(d, kd) {
 			log.Infof("replacing bad definition %s", n)
-			definitions[n] = d
+			definitions[n] = kd
 		}
 	}
 	data, err = json.MarshalIndent(swagger, "", "  ")

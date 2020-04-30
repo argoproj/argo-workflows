@@ -6981,20 +6981,6 @@
         }
       }
     },
-    "io.k8s.apimachinery.pkg.apis.meta.v1.Preconditions": {
-      "description": "Preconditions must be fulfilled before an operation (update, delete, etc.) is carried out.",
-      "type": "object",
-      "properties": {
-        "resourceVersion": {
-          "description": "Specifies the target ResourceVersion",
-          "type": "string"
-        },
-        "uid": {
-          "description": "Specifies the target UID.",
-          "type": "string"
-        }
-      }
-    },
     "io.k8s.apimachinery.pkg.apis.meta.v1.Status": {
       "description": "Status is a return value for calls that don't return other objects.",
       "type": "object",
