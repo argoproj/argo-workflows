@@ -48,7 +48,7 @@ func init() {
 	if imageTag == "master" {
 		imageTag = "latest"
 	}
-	if strings.HasPrefix(gitBranch, "release-2") {
+	if strings.HasPrefix(gitBranch, "release-") {
 		tags, err := runCli("git", "tag", "--merged")
 		if err != nil {
 			panic(err)
@@ -56,6 +56,7 @@ func init() {
 		parts := strings.Split(tags, "\n")
 		imageTag = parts[len(parts)-2]
 	}
+	imageTag = strings.ReplaceAll(imageTag, "/", "-")
 	context, err := runCli("kubectl", "config", "current-context")
 	if err != nil {
 		panic(err)
@@ -74,11 +75,6 @@ type E2ESuite struct {
 	cronClient        v1alpha1.CronWorkflowInterface
 	KubeClient        kubernetes.Interface
 	// Guard-rail.
-	// A list of images that exist on the K3S node at the start of the test are probably those created as part
-	// of the Kubernetes system (e.g. k8s.gcr.io/pause:3.1) or K3S. This is populated at the start of each test,
-	// and checked at the end of each test.
-	images map[string]bool
-	// Guard-rail.
 	// The number of archived workflows. If is changes between two tests, we have a problem.
 	numWorkflows int
 }
@@ -96,24 +92,6 @@ func (s *E2ESuite) SetupSuite() {
 	s.cwfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates()
 }
 
-func (s *E2ESuite) listImages() map[string]bool {
-	list, err := s.KubeClient.CoreV1().Nodes().List(metav1.ListOptions{})
-	s.CheckError(err)
-	images := make(map[string]bool)
-	// looks O^3, but is actually going to be O(n)
-	for _, node := range list.Items {
-		for _, image := range node.Status.Images {
-			for _, n := range image.Names {
-				// We want to ignore hashes.
-				if !strings.Contains(n, "@sha256") && strings.HasPrefix(n, "docker.io/") {
-					images[n] = true
-				}
-			}
-		}
-	}
-	return images
-}
-
 func (s *E2ESuite) TearDownSuite() {
 	s.Persistence.Close()
 }
@@ -129,8 +107,6 @@ func (s *E2ESuite) BeforeTest(suiteName, testName string) {
 	s.CheckError(err)
 	log.Infof("logging debug diagnostics to file://%s", name)
 	s.DeleteResources(Label)
-	s.images = s.listImages()
-	s.importImages()
 	numWorkflows := s.countWorkflows()
 	if s.numWorkflows > 0 && s.numWorkflows != numWorkflows {
 		s.T().Fatal("there should almost never be a change to the number of workflows between tests, this means the last test (not the current test) is bad and needs fixing - note this guard-rail does not work across test suites")
@@ -142,18 +118,6 @@ func (s *E2ESuite) countWorkflows() int {
 	workflows, err := s.wfClient.List(metav1.ListOptions{})
 	s.CheckError(err)
 	return len(workflows.Items)
-}
-
-func (s *E2ESuite) importImages() {
-	// If we are running K3D we should re-import these prior to running tests, as they may have been evicted.
-	if k3d {
-		for _, n := range []string{"docker.io/argoproj/argoexec:" + imageTag, "docker.io/library/cowsay:v1"} {
-			if !s.images[n] {
-				_, err := runCli("k3d", "import-images", n)
-				s.CheckError(err)
-			}
-		}
-	}
 }
 
 func (s *E2ESuite) DeleteResources(label string) {
@@ -336,18 +300,6 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 	s.CheckError(err)
 	for _, wf := range wfs.Items {
 		s.printWorkflowDiagnostics(wf.GetName())
-	}
-	// Using an arbitrary image will result in slow and flakey tests as we can't really predict when they'll be
-	// downloaded or evicted. To keep tests fast and reliable you must use whitelisted images.
-	imageWhitelist := map[string]bool{
-		"docker.io/argoproj/argoexec:" + imageTag: true,
-		"docker.io/library/cowsay:v1":             true,
-		"docker.io/library/python:alpine3.6":      true,
-	}
-	for n := range s.listImages() {
-		if !s.images[n] && !imageWhitelist[n] {
-			s.T().Fatalf("non-whitelisted image used in test: %s", n)
-		}
 	}
 	err = file.Close()
 	s.CheckError(err)
