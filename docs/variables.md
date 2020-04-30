@@ -33,6 +33,7 @@ The following variables are made available to reference various metadata of a wo
 | Variable | Description|
 |----------|------------|
 | `pod.name` | Pod name of the container/script |
+| `pod.retryAttempt` | The retry attempt number of the container/script if retryStrategy is specified |
 | `inputs.artifacts.<NAME>.path` | Local path of the input artifact |
 | `outputs.artifacts.<NAME>.path` | Local path of the output artifact |
 | `outputs.parameters.<NAME>.path` | Local path of the output parameter |
