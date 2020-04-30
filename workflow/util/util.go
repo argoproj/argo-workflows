@@ -372,24 +372,11 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, repo sqldb.OffloadNodeStatu
 			}
 
 			if workflowUpdated {
-				if wf.Status.IsOffloadNodeStatus() {
-					if !repo.IsEnabled() {
-						return false, fmt.Errorf(sqldb.OffloadNodeStatusDisabled)
-					}
-					offloadVersion, err := repo.Save(string(wf.UID), wf.Namespace, newNodes)
-					if err != nil {
-						return false, fmt.Errorf("unable to save offloaded nodes: %s", err)
-					}
-					wf.Status.OffloadNodeStatusVersion = offloadVersion
-					wf.Status.CompressedNodes = ""
-					wf.Status.Nodes = nil
-				} else {
-					wf.Status.Nodes = newNodes
-				}
+				wf.Status.Nodes = newNodes
 
-				err = packer.CompressWorkflowIfNeeded(wf)
+				err = compressAndOffloadNodes(wf, repo)
 				if err != nil {
-					return false, fmt.Errorf("unable to compress workflow: %s", err)
+					return false, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
 				}
 
 				_, err = wfIf.Update(wf)
@@ -404,6 +391,24 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, repo sqldb.OffloadNodeStatu
 		})
 		return err
 	}
+}
+
+func compressAndOffloadNodes(wf *wfv1.Workflow, repo sqldb.OffloadNodeStatusRepo) error {
+	err := packer.CompressWorkflowIfNeeded(wf)
+	if packer.IsTooLargeError(err) || os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true" {
+		if repo.IsEnabled() {
+			offloadVersion, err := repo.Save(string(wf.UID), wf.Namespace, wf.Status.Nodes)
+			if err == nil {
+				wf.Status.Nodes = nil
+				wf.Status.CompressedNodes = ""
+				wf.Status.OffloadNodeStatusVersion = offloadVersion
+				return nil
+			}
+		}
+	} else if err != nil {
+		return nil
+	}
+	return err
 }
 
 func selectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
@@ -728,29 +733,15 @@ func RetryWorkflow(kubeClient kubernetes.Interface, repo sqldb.OffloadNodeStatus
 		}
 	}
 
-	if wf.Status.IsOffloadNodeStatus() {
-		if !repo.IsEnabled() {
-			return nil, fmt.Errorf(sqldb.OffloadNodeStatusDisabled)
-		}
-		offloadVersion, err := repo.Save(string(newWF.UID), newWF.Namespace, newNodes)
-		if err != nil {
-			return nil, fmt.Errorf("unable to save offloaded nodes: %s", err)
-		}
-		newWF.Status.OffloadNodeStatusVersion = offloadVersion
-		newWF.Status.CompressedNodes = ""
-		newWF.Status.Nodes = nil
-	} else {
-		newWF.Status.Nodes = newNodes
+	newWF.Status.Nodes = newNodes
+	err = compressAndOffloadNodes(newWF, repo)
+	if err != nil {
+		return nil, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
 	}
 
 	newWF.Status.StoredTemplates = make(map[string]wfv1.Template)
 	for id, tmpl := range wf.Status.StoredTemplates {
 		newWF.Status.StoredTemplates[id] = tmpl
-	}
-
-	err = packer.CompressWorkflowIfNeeded(newWF)
-	if err != nil {
-		return nil, fmt.Errorf("unable to compress workflow: %s", err)
 	}
 
 	return wfClient.Update(newWF)
