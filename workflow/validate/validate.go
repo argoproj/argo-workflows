@@ -126,12 +126,10 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		}
 		topLevelTmplRef = wf.Spec.WorkflowTemplateRef.ConvertTemplateRef(entrypoint)
 	}
-
 	err = validateWorkflowFieldNames(wf.Spec.Templates)
-	var wfArgs wfv1.Arguments
-	if wf.Spec.Arguments.Parameters != nil {
-		wfArgs.Parameters = wf.Spec.Arguments.Parameters
-	}
+
+	wfArgs := wf.Spec.Arguments
+
 	if wf.Spec.WorkflowTemplateRef != nil {
 		wfArgs.Parameters = util.MergeParameters(wftmpl.GetArguments().Parameters, wfArgs.Parameters)
 	}
@@ -207,8 +205,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 
 	if !opts.IgnoreEntrypoint {
 		var args wfv1.ArgumentsProvider
-		args = wfArgs
-
+		args = &wfArgs
 		if opts.WorkflowTemplateValidation {
 			args = &FakeArguments{}
 		}

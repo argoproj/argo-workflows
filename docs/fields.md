@@ -538,7 +538,6 @@ WorkflowSpec is the specification of a Workflow.
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
-|`workflowTemplateRef`|[`TemplateRef`](#templateref)|workflowTemplateRef holds WorkflowTemplate reference -TODO-Bala update comments|
 
 ## WorkflowStatus
 
@@ -1482,8 +1481,6 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
-- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
-
 - [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
 
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
@@ -1547,18 +1544,6 @@ TTLStrategy is the strategy for the time to live depending on if the workflow su
 |`secondsAfterCompletion`|`int32`|SecondsAfterCompletion is the number of seconds to live after completion|
 |`secondsAfterFailure`|`int32`|SecondsAfterFailure is the number of seconds to live after failure|
 |`secondsAfterSuccess`|`int32`|SecondsAfterSuccess is the number of seconds to live after success|
-
-## TemplateRef
-
-TemplateRef is a reference of template resource.
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`clusterscope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).|
-|`name`|`string`|Name is the resource name of the template.|
-|`runtimeResolution`|`boolean`|RuntimeResolution skips validation at creation time.By enabling this option, you can create the referred workflow template before the actual runtime.|
-|`template`|`string`|Template is the name of referred template in the resource.|
 
 ## WorkflowCondition
 
@@ -2599,8 +2584,6 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
-- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
-
 - [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
 
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
@@ -2655,8 +2638,6 @@ TemplateRef is a reference of template resource.
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
-
-- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
 
 - [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
 

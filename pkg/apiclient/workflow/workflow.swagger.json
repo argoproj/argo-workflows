@@ -2384,7 +2384,7 @@
         },
         "storedWorkflowTemplateSpec": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowSpec",
-          "title": "StoredWorkflowTemplateSpec stores the top level workflowtemplate spec"
+          "title": "StoredWorkflowTemplateSpec stores the top level WorkflowTemplate spec"
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"

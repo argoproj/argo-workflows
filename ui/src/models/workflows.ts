@@ -766,6 +766,8 @@ export interface WorkflowStatus {
      * Conditions is a list of WorkflowConditions
      */
     conditions?: WorkflowCondition[];
+
+    storedWorkflowTemplateSpec?: WorkflowSpec;
 }
 
 export interface WorkflowCondition {
@@ -848,6 +850,13 @@ export interface WorkflowSpec {
      * Suspend will suspend the workflow and prevent execution of any future steps in the workflow
      */
     suspend?: boolean;
+
+    workflowTemplateRef?: WorkflowTemplateRef;
+}
+
+export interface WorkflowTemplateRef {
+    name?: string;
+    clusterScope?: boolean;
 }
 
 export interface DAGTemplate {

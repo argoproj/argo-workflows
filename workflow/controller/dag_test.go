@@ -107,7 +107,8 @@ func TestArtifactResolutionWhenSkippedDAG(t *testing.T) {
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-
+	err = woc.setWorkflowSpecAndEntrypoint()
+	assert.NoError(t, err)
 	woc.operate()
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
@@ -381,7 +382,8 @@ func TestDagAssessPhaseContinueOnExpandedTaskVariables(t *testing.T) {
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-
+	err = woc.setWorkflowSpecAndEntrypoint()
+	assert.NoError(t, err)
 	woc.operate()
 	woc.operate()
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
@@ -602,7 +604,8 @@ func TestDagAssessPhaseContinueOnExpandedTask(t *testing.T) {
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-
+	err = woc.setWorkflowSpecAndEntrypoint()
+	assert.NoError(t, err)
 	woc.operate()
 	woc.operate()
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
@@ -649,7 +652,8 @@ func TestDAGWithParamAndGlobalParam(t *testing.T) {
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-
+	err = woc.setWorkflowSpecAndEntrypoint()
+	assert.NoError(t, err)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 }

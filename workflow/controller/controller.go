@@ -505,7 +505,13 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	woc.setWorkflowSpec()
+	err = woc.setWorkflowSpecAndEntrypoint()
+	if err != nil {
+		woc.log.Errorf("Unable to get Workflow Template Reference for workflow, %s error: %s", woc.wf.Name, err)
+		woc.markWorkflowError(err, true)
+		woc.persistUpdates()
+		wfc.throttler.Remove(key)
+	}
 
 	woc.operate()
 	if woc.wf.Status.Completed() {

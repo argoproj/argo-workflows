@@ -2365,7 +2365,7 @@ spec:
           - name: uid
             value: "{{workflow.uid}}"
           - name: priority
-            value: "{{workflow.priority}}"
+            value: "{{workflow.priority}}"    
 
   - name: whalesay
     inputs:
@@ -2383,56 +2383,6 @@ spec:
 
 func TestWorfklowGlobalVariables(t *testing.T) {
 	_, err := validate(globalVariables)
-	assert.NoError(t, err)
-}
-
-const wfWithWFTRef=`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: A
-  workflowTemplateRef:
-    name: template-ref-target
-`
-
-func TestWorkflowWithWFTRef(t *testing.T){
-	err := createWorkflowTemplate(templateRefTarget)
-	assert.NoError(t, err)
-	_, err = validate(wfWithWFTRef)
-	assert.NoError(t, err)
-}
-
-var wfWithWFTRefNoEntrypoint=`
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  workflowTemplateRef:
-    name: template-ref-target
-`
-
-var templateWithEntrypoint = `
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: template-ref-target
-spec:
-  entrypoint: A
-  templates:
-  - name: A
-    container:
-      image: alpine:latest
-      command: [echo, hello]
-`
-
-
-func TestWorkflowWithWFTRefWithEntrypoint(t *testing.T){
-	err := createWorkflowTemplate(templateWithEntrypoint)
-	assert.NoError(t, err)
-	_, err = validate(wfWithWFTRefNoEntrypoint)
 	assert.NoError(t, err)
 }
 
@@ -2456,5 +2406,56 @@ spec:
 
 func TestWorkflowTemplateWithEntrypoint(t *testing.T) {
 	err := validateWorkflowTemplate(wfTemplateWithEntrypoint)
+	assert.NoError(t, err)
+}
+
+var wfWithWFTRefNoEntrypoint = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  namespace: default
+spec:
+  workflowTemplateRef:
+    name: template-ref-with-entrypoint
+`
+
+var templateWithEntrypoint = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-with-entrypoint
+  namespace: default
+spec:
+  entrypoint: A
+  templates:
+  - name: A
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+`
+
+func TestWorkflowWithWFTRefWithEntrypoint(t *testing.T) {
+	err := createWorkflowTemplate(templateWithEntrypoint)
+	assert.NoError(t, err)
+	_, err = validate(wfWithWFTRefNoEntrypoint)
+	assert.NoError(t, err)
+}
+
+const wfWithWFTRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: A
+  workflowTemplateRef:
+    name: template-ref-target
+`
+
+func TestWorkflowWithWFTRef(t *testing.T) {
+	err := createWorkflowTemplate(templateRefTarget)
+	assert.NoError(t, err)
+	_, err = validate(wfWithWFTRef)
 	assert.NoError(t, err)
 }

@@ -4212,6 +4212,21 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.WorkflowTemplateRef": {
+      "description": "WorkflowTemplateRef is a reference of workflow template resource on Top level io.argoproj.workflow.v1alpha1.",
+      "type": "object",
+      "properties": {
+        "clusterscope": {
+          "description": "ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).",
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "name": {
+          "description": "Name is the resource name of the workflow template.",
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec": {
       "description": "WorkflowTemplateSpec is a spec of WorkflowTemplate.",
       "type": "object",

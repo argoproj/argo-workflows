@@ -824,7 +824,7 @@ func (wftRef *WorkflowTemplateRef) ConvertTemplateRef(entrypoint string) *Templa
 	return &TemplateRef{
 		Name:         wftRef.Name,
 		ClusterScope: wftRef.ClusterScope,
-		Template: 	  entrypoint,
+		Template:     entrypoint,
 	}
 }
 

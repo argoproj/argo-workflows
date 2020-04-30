@@ -467,7 +467,7 @@ pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/wor
 	go run ./hack secondaryswaggergen
 
 api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger pkg/apiclient/_.secondary.swagger.json $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
-	swagger mixin -c 680 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
+	swagger mixin -c 684 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
 
 .PHONY: docs
 docs: swagger
@@ -497,3 +497,4 @@ publish-release: build
 	git push
 	git push $(GIT_REMOTE) $(VERSION)
 endif
+

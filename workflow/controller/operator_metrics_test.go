@@ -50,6 +50,8 @@ func TestBasicMetric(t *testing.T) {
 	_, err := wfcset.Create(wf)
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
+	err = woc.setWorkflowSpecAndEntrypoint()
+	assert.NoError(t, err)
 	woc.operate()
 
 	// Schedule first pod and mark completed
@@ -106,6 +108,8 @@ func TestCounterMetric(t *testing.T) {
 	_, err := wfcset.Create(wf)
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
+	err = woc.setWorkflowSpecAndEntrypoint()
+	assert.NoError(t, err)
 	woc.operate()
 
 	// Schedule first pod and mark completed

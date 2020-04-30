@@ -13,6 +13,8 @@ import (
 func TestStepsFailedRetries(t *testing.T) {
 	wf := test.LoadTestWorkflow("testdata/steps-failed-retries.yaml")
 	woc := newWoc(*wf)
+	err := woc.setWorkflowSpecAndEntrypoint()
+	assert.NoError(t, err)
 	woc.operate()
 	assert.Equal(t, string(wfv1.NodeFailed), string(woc.wf.Status.Phase))
 }
@@ -70,7 +72,8 @@ func TestArtifactResolutionWhenSkipped(t *testing.T) {
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-
+	err = woc.setWorkflowSpecAndEntrypoint()
+	assert.NoError(t, err)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
@@ -115,7 +118,8 @@ func TestStepsWithParamAndGlobalParam(t *testing.T) {
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-
+	err = woc.setWorkflowSpecAndEntrypoint()
+	assert.NoError(t, err)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 }

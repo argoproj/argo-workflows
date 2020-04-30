@@ -42,6 +42,10 @@ func newWoc(wfs ...wfv1.Workflow) *wfOperationCtx {
 		panic(err)
 	}
 	woc := newWorkflowOperationCtx(wf, controller)
+	err = woc.setWorkflowSpecAndEntrypoint()
+	if err != nil {
+		panic(err)
+	}
 	return woc
 }
 
@@ -177,6 +181,7 @@ func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 	woc = newWoc()
 	mainCtr = tmpl.Script.Container
 	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
+
 	pod, err = woc.createWorkflowPod(tmpl.Name, mainCtr, tmpl, &createWorkflowPodOpts{})
 	assert.NoError(t, err)
 	assert.NotContains(t, pod.Spec.Containers[1].VolumeMounts, volumeMount)
