@@ -328,6 +328,27 @@ func TestResumeWorkflowOffloaded(t *testing.T) {
 	assert.Equal(t, "1234", wf.Status.OffloadNodeStatusVersion)
 }
 
+//workflow is too big but offload is disabled
+func TestResumeWorkflowOffloadDisabled(t *testing.T) {
+	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
+	origWf := unmarshalWF(suspendedWf)
+
+	//set threshold so this workflow is too big for compression to be valid
+	clearFunc := packer.SetMaxWorkflowSize(10)
+	defer clearFunc()
+
+
+	_, err := wfIf.Create(origWf)
+	assert.NoError(t, err)
+
+	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
+	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(false)
+
+	err = ResumeWorkflow(wfIf, offloadNodeStatusRepo, "suspend", "")
+	assert.Error(t, err)
+}
+
+
 func TestResumeWorkflowByNodeName(t *testing.T) {
 	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := unmarshalWF(suspendedWf)

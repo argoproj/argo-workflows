@@ -390,7 +390,6 @@ func decompressAndFetchOffloadedNodes(wf *wfv1.Workflow, repo sqldb.OffloadNodeS
 		if !repo.IsEnabled() {
 			return fmt.Errorf(sqldb.OffloadNodeStatusDisabled)
 		}
-		var err error
 		nodes, err := repo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
 		if err != nil {
 			return fmt.Errorf("unable to retrieve offloaded nodes: %s", err)
@@ -403,21 +402,33 @@ func decompressAndFetchOffloadedNodes(wf *wfv1.Workflow, repo sqldb.OffloadNodeS
 
 func compressAndOffloadNodes(wf *wfv1.Workflow, repo sqldb.OffloadNodeStatusRepo, newNodes wfv1.Nodes) error {
 	wf.Status.Nodes = newNodes
-	err := packer.CompressWorkflowIfNeeded(wf)
-	if packer.IsTooLargeError(err) || os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true" {
-		if repo.IsEnabled() {
-			offloadVersion, err := repo.Save(string(wf.UID), wf.Namespace, wf.Status.Nodes)
-			if err == nil {
-				wf.Status.Nodes = nil
-				wf.Status.CompressedNodes = ""
-				wf.Status.OffloadNodeStatusVersion = offloadVersion
-				return nil
-			}
+	doOffload := wf.Status.IsOffloadNodeStatus() || os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true"
+
+	if !doOffload {
+		err := packer.CompressWorkflowIfNeeded(wf)
+		if packer.IsTooLargeError(err) && repo.IsEnabled() {
+			doOffload = true
+			err = nil
 		}
-	} else if err != nil {
-		return nil
+		if err != nil {
+			return err
+		}
 	}
-	return err
+
+	if doOffload {
+		if !repo.IsEnabled() {
+			return fmt.Errorf(sqldb.OffloadNodeStatusDisabled)
+		}
+		offloadVersion, err := repo.Save(string(wf.UID), wf.Namespace, wf.Status.Nodes)
+		if err == nil {
+			wf.Status.Nodes = nil
+			wf.Status.CompressedNodes = ""
+			wf.Status.OffloadNodeStatusVersion = offloadVersion
+		} else {
+			return err
+		}
+	}
+	return nil
 }
 
 func selectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
