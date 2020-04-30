@@ -337,9 +337,9 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, repo sqldb.OffloadNodeStatu
 				return false, err
 			}
 
-			err = packer.DecompressWorkflow(wf)
+			err = decompressAndFetchOffloadedNodes(wf, repo)
 			if err != nil {
-				return false, fmt.Errorf("unable to decompress workflow: %s", err)
+				return false, err
 			}
 
 			workflowUpdated := false
@@ -348,21 +348,10 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, repo sqldb.OffloadNodeStatu
 				workflowUpdated = true
 			}
 
-			nodes := wf.Status.Nodes
-			if wf.Status.IsOffloadNodeStatus() {
-				if !repo.IsEnabled() {
-					return false, fmt.Errorf(sqldb.OffloadNodeStatusDisabled)
-				}
-				var err error
-				nodes, err = repo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-				if err != nil {
-					return false, fmt.Errorf("unable to retrieve offloaded nodes: %s", err)
-				}
-			}
-			newNodes := nodes.DeepCopy()
+			newNodes := wf.Status.Nodes.DeepCopy()
 
 			// To resume a workflow with a suspended node we simply mark the node as Successful
-			for nodeID, node := range nodes {
+			for nodeID, node := range wf.Status.Nodes {
 				if node.IsActiveSuspendNode() {
 					node.Phase = wfv1.NodeSucceeded
 					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
@@ -372,9 +361,7 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, repo sqldb.OffloadNodeStatu
 			}
 
 			if workflowUpdated {
-				wf.Status.Nodes = newNodes
-
-				err = compressAndOffloadNodes(wf, repo)
+				err = compressAndOffloadNodes(wf, repo, newNodes)
 				if err != nil {
 					return false, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
 				}
@@ -393,7 +380,29 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, repo sqldb.OffloadNodeStatu
 	}
 }
 
-func compressAndOffloadNodes(wf *wfv1.Workflow, repo sqldb.OffloadNodeStatusRepo) error {
+func decompressAndFetchOffloadedNodes(wf *wfv1.Workflow, repo sqldb.OffloadNodeStatusRepo) error {
+	err := packer.DecompressWorkflow(wf)
+	if err != nil {
+		return err
+	}
+
+	if wf.Status.IsOffloadNodeStatus() {
+		if !repo.IsEnabled() {
+			return fmt.Errorf(sqldb.OffloadNodeStatusDisabled)
+		}
+		var err error
+		nodes, err := repo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
+		if err != nil {
+			return fmt.Errorf("unable to retrieve offloaded nodes: %s", err)
+		} else {
+			wf.Status.Nodes = nodes
+		}
+	}
+	return nil
+}
+
+func compressAndOffloadNodes(wf *wfv1.Workflow, repo sqldb.OffloadNodeStatusRepo, newNodes wfv1.Nodes) error {
+	wf.Status.Nodes = newNodes
 	err := packer.CompressWorkflowIfNeeded(wf)
 	if packer.IsTooLargeError(err) || os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true" {
 		if repo.IsEnabled() {
@@ -442,24 +451,13 @@ func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, repo sqldb.Offload
 			return false, err
 		}
 
-		err = packer.DecompressWorkflow(wf)
+		err = decompressAndFetchOffloadedNodes(wf, repo)
 		if err != nil {
-			log.Fatal(err)
-		}
-
-		nodes := wf.Status.Nodes
-		if wf.Status.IsOffloadNodeStatus() {
-			if !repo.IsEnabled() {
-				return false, fmt.Errorf(sqldb.OffloadNodeStatusDisabled)
-			}
-			var err error
-			nodes, err = repo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-			if err != nil {
-				return false, fmt.Errorf("unable to retrieve offloaded nodes: %s", err)
-			}
+			return false, err
 		}
 
 		nodeUpdated := false
+		nodes := wf.Status.Nodes
 		for nodeID, node := range nodes {
 			if node.IsActiveSuspendNode() {
 				if selectorMatchesNode(selector, node) {
@@ -474,22 +472,9 @@ func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, repo sqldb.Offload
 			}
 		}
 		if nodeUpdated {
-			if wf.Status.IsOffloadNodeStatus() {
-				if !repo.IsEnabled() {
-					return false, fmt.Errorf(sqldb.OffloadNodeStatusDisabled)
-				}
-				offloadVersion, err := repo.Save(string(wf.UID), wf.Namespace, nodes)
-				if err != nil {
-					return false, fmt.Errorf("unable to save offloaded nodes: %s", err)
-				}
-				wf.Status.OffloadNodeStatusVersion = offloadVersion
-				wf.Status.CompressedNodes = ""
-				wf.Status.Nodes = nil
-			}
-
-			err = packer.CompressWorkflowIfNeeded(wf)
+			compressAndOffloadNodes(wf, repo, nodes)
 			if err != nil {
-				return true, fmt.Errorf("unable to compress workflow: %s", err)
+				return false, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
 			}
 
 			_, err = wfIf.Update(wf)
@@ -649,9 +634,9 @@ func RetryWorkflow(kubeClient kubernetes.Interface, repo sqldb.OffloadNodeStatus
 		return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
 	}
 
-	err := packer.DecompressWorkflow(wf)
+	err := decompressAndFetchOffloadedNodes(wf, repo)
 	if err != nil {
-		return nil, fmt.Errorf("unable to decompress workflow: %s", err)
+		return nil, err
 	}
 
 	newWF := wf.DeepCopy()
@@ -673,16 +658,6 @@ func RetryWorkflow(kubeClient kubernetes.Interface, repo sqldb.OffloadNodeStatus
 	newNodes := make(map[string]wfv1.NodeStatus)
 	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
 	nodes := wf.Status.Nodes
-	if wf.Status.IsOffloadNodeStatus() {
-		if !repo.IsEnabled() {
-			return nil, fmt.Errorf(sqldb.OffloadNodeStatusDisabled)
-		}
-		var err error
-		nodes, err = repo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-		if err != nil {
-			return nil, fmt.Errorf("unable to retrieve offloaded nodes: %s", err)
-		}
-	}
 
 	// Get all children of nodes that match filter
 	nodeIDsToReset, err := getNodeIDsToReset(restartSuccessful, nodeFieldSelector, nodes)
@@ -733,8 +708,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, repo sqldb.OffloadNodeStatus
 		}
 	}
 
-	newWF.Status.Nodes = newNodes
-	err = compressAndOffloadNodes(newWF, repo)
+	err = compressAndOffloadNodes(newWF, repo, newNodes)
 	if err != nil {
 		return nil, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
 	}
