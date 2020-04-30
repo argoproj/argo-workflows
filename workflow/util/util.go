@@ -483,7 +483,7 @@ func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, repo sqldb.Offload
 			}
 		}
 		if nodeUpdated {
-			compressAndOffloadNodes(wf, repo, nodes)
+			err = compressAndOffloadNodes(wf, repo, nodes)
 			if err != nil {
 				return false, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
 			}
