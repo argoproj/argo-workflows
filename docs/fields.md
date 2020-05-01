@@ -228,6 +228,8 @@ Workflow is the definition of a workflow resource
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`apiVersion`|`string`|APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources|
+|`kind`|`string`|Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds|
 |`metadata`|[`ObjectMeta`](#objectmeta)|_No description available_|
 |`spec`|[`WorkflowSpec`](#workflowspec)|_No description available_|
 |`status`|[`WorkflowStatus`](#workflowstatus)|_No description available_|
@@ -246,6 +248,8 @@ CronWorkflow is the definition of a scheduled workflow resource
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`apiVersion`|`string`|APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources|
+|`kind`|`string`|Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds|
 |`metadata`|[`ObjectMeta`](#objectmeta)|_No description available_|
 |`spec`|[`CronWorkflowSpec`](#cronworkflowspec)|_No description available_|
 |`status`|[`CronWorkflowStatus`](#cronworkflowstatus)|_No description available_|
@@ -264,6 +268,8 @@ WorkflowTemplate is the definition of a workflow template resource
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
+|`apiVersion`|`string`|APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources|
+|`kind`|`string`|Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds|
 |`metadata`|[`ObjectMeta`](#objectmeta)|_No description available_|
 |`spec`|[`WorkflowTemplateSpec`](#workflowtemplatespec)|_No description available_|
 
@@ -503,38 +509,38 @@ WorkflowSpec is the specification of a Workflow.
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`activeDeadlineSeconds`|`int64`|Optional duration in seconds relative to the workflow start time which the workflow isallowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used toterminate a Running workflow|
-|`affinity`|[`Affinity`](#affinity)|Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1.Can be overridden by an affinity specified in the template|
-|`arguments`|[`Arguments`](#arguments)|Arguments contain the parameters and artifacts sent to the workflow entrypointParameters are referencable globally using the 'workflow' variable prefix.e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}|
+|`activeDeadlineSeconds`|`int64`|Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow|
+|`affinity`|[`Affinity`](#affinity)|Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template|
+|`arguments`|[`Arguments`](#arguments)|Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}|
 |`artifactRepositoryRef`|[`ArtifactRepositoryRef`](#artifactrepositoryref)|ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.|
-|`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.ServiceAccountName of ExecutorConfig must be specified if this value is false.|
-|`dnsConfig`|[`PodDNSConfig`](#poddnsconfig)|PodDNSConfig defines the DNS parameters of a pod in addition tothose generated from DNSPolicy.|
-|`dnsPolicy`|`string`|Set DNS policy for the pod.Defaults to "ClusterFirst".Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'.DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy.To have DNS options set along with hostNetwork, you have to specify DNS policyexplicitly to 'ClusterFirstWithHostNet'.|
+|`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.|
+|`dnsConfig`|[`PodDNSConfig`](#poddnsconfig)|PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy.|
+|`dnsPolicy`|`string`|Set DNS policy for the pod. Defaults to "ClusterFirst". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.|
 |`entrypoint`|`string`|Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.|
 |`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.|
-|`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`||
+|`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|_No description available_|
 |`hostNetwork`|`boolean`|Host networking requested for this workflow pod. Default to false.|
-|`imagePullSecrets`|`Array<`[`LocalObjectReference`](#localobjectreference)`>`|ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any imagesin pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secretscan be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet.More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod|
+|`imagePullSecrets`|`Array<`[`LocalObjectReference`](#localobjectreference)`>`|ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet. More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod|
 |`metrics`|[`Metrics`](#metrics)|Metrics are a list of metrics emitted from this Workflow|
-|`nodeSelector`|`Map< string , string >`|NodeSelector is a selector which will result in all pods of the workflowto be scheduled on the selected node(s). This is able to be overridden bya nodeSelector specified in the template.|
-|`onExit`|`string`|OnExit is a template reference which is invoked at the end of theworkflow, irrespective of the success, failure, or error of theprimary io.argoproj.workflow.v1alpha1.|
+|`nodeSelector`|`Map< string , string >`|NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeSelector specified in the template.|
+|`onExit`|`string`|OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1.|
 |`parallelism`|`int64`|Parallelism limits the max total parallel pods that can execute at the same time in a workflow|
-|`podDisruptionBudget`|[`PodDisruptionBudgetSpec`](#poddisruptionbudgetspec)|PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods.Controller will automatically add the selector with workflow name, if selector is empty.Optional: Defaults to empty.|
+|`podDisruptionBudget`|[`PodDisruptionBudgetSpec`](#poddisruptionbudgetspec)|PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty. Optional: Defaults to empty.|
 |`podGC`|[`PodGC`](#podgc)|PodGC describes the strategy to use when to deleting completed pods|
 |`podPriority`|`int32`|Priority to apply to workflow pods.|
 |`podPriorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
-|`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization ofcontainer fields which are not strings (e.g. resource limits).|
+|`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
 |`priority`|`int32`|Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.|
-|`schedulerName`|`string`|Set scheduler name for all pods.Will be overridden if container/script template's scheduler name is set.Default scheduler will be used if neither specified.|
-|`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings.Optional: Defaults to empty.  See type description for default values of each field.|
+|`schedulerName`|`string`|Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.|
+|`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.|
 |`serviceAccountName`|`string`|ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.|
 |`shutdown`|`string`|Shutdown will shutdown the workflow according to its ShutdownStrategy|
 |`suspend`|`boolean`|Suspend will suspend the workflow and prevent execution of any future steps in the workflow|
 |`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
-|~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution(Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will bedeleted after ttlSecondsAfterFinished expires. If this field is unset,ttlSecondsAfterFinished will not expire. If this field is set to zero,ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
-|`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if itSucceeded or Failed. If this struct is set, once the Workflow finishes, it will bedeleted after the time to live expires. If this field is unset,the controller config map will hold the default values.|
-|`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference.The Workflow controller will create the claims at the beginning of the workflowand delete the claims upon completion of the workflow|
+|~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. ~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
+|`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
+|`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
 
 ## WorkflowStatus
@@ -549,11 +555,11 @@ WorkflowStatus contains overall status information about a workflow
 |`finishedAt`|[`Time`](#time)|Time at which this workflow completed|
 |`message`|`string`|A human readable message indicating details about why the workflow is in this condition.|
 |`nodes`|[`NodeStatus`](#nodestatus)|Nodes is a mapping between a node ID and the node's status.|
-|`offloadNodeStatusVersion`|`string`|Whether on not node status has been offloaded to a database. If exists, then Nodes and CompressedNodes will be empty.This will actually be populated with a hash of the offloaded data.|
+|`offloadNodeStatusVersion`|`string`|Whether on not node status has been offloaded to a database. If exists, then Nodes and CompressedNodes will be empty. This will actually be populated with a hash of the offloaded data.|
 |`outputs`|[`Outputs`](#outputs)|Outputs captures output values and artifact locations produced by the workflow via global outputs|
-|`persistentVolumeClaims`|`Array<`[`Volume`](#volume)`>`|PersistentVolumeClaims tracks all PVCs that were created as part of the io.argoproj.workflow.v1alpha1.The contents of this list are drained at the end of the workflow.|
+|`persistentVolumeClaims`|`Array<`[`Volume`](#volume)`>`|PersistentVolumeClaims tracks all PVCs that were created as part of the io.argoproj.workflow.v1alpha1. The contents of this list are drained at the end of the workflow.|
 |`phase`|`string`|Phase a simple, high-level summary of where the workflow is in its lifecycle.|
-|`resourcesDuration`|`Map< string , int64 >`|ResourcesDuration is the total for the workflow|
+|`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is the total for the workflow|
 |`startedAt`|[`Time`](#time)|Time at which this workflow started|
 |`storedTemplates`|[`Template`](#template)|StoredTemplates is a mapping between a template ref and the node's status.|
 
@@ -796,11 +802,11 @@ CronWorkflowSpec is the specification of a CronWorkflow
 |`concurrencyPolicy`|`string`|ConcurrencyPolicy is the K8s-style concurrency policy that will be used|
 |`failedJobsHistoryLimit`|`int32`|FailedJobsHistoryLimit is the number of successful jobs to be kept at a time|
 |`schedule`|`string`|Schedule is a schedule to run the Workflow in Cron format|
-|`startingDeadlineSeconds`|`int64`|StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after itsoriginal scheduled time if it is missed.|
+|`startingDeadlineSeconds`|`int64`|StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.|
 |`successfulJobsHistoryLimit`|`int32`|SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time|
 |`suspend`|`boolean`|Suspend is a flag that will stop new CronWorkflows from running if set to true|
 |`timezone`|`string`|Timezone is the timezone against which the cron schedule will be calculated, e.g. "Asia/Tokyo". Default is machine's local time.|
-|`workflowMeta`|[`ObjectMeta`](#objectmeta)|WorkflowMetadata contains some metadata of the workflow to be run|
+|`workflowMetadata`|[`ObjectMeta`](#objectmeta)|WorkflowMetadata contains some metadata of the workflow to be run|
 |`workflowSpec`|[`WorkflowSpec`](#workflowspec)|WorkflowSpec is the spec of the workflow to be run|
 
 ## CronWorkflowStatus
@@ -1049,7 +1055,39 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`workflowSpec`|[`WorkflowSpec`](#workflowspec)|_No description available_|
+|`activeDeadlineSeconds`|`int64`|Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow|
+|`affinity`|[`Affinity`](#affinity)|Affinity sets the scheduling constraints for all pods in the io.argoproj.workflow.v1alpha1. Can be overridden by an affinity specified in the template|
+|`arguments`|[`Arguments`](#arguments)|Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{io.argoproj.workflow.v1alpha1.parameters.myparam}}|
+|`artifactRepositoryRef`|[`ArtifactRepositoryRef`](#artifactrepositoryref)|ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.|
+|`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.|
+|`dnsConfig`|[`PodDNSConfig`](#poddnsconfig)|PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy.|
+|`dnsPolicy`|`string`|Set DNS policy for the pod. Defaults to "ClusterFirst". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.|
+|`entrypoint`|`string`|Entrypoint is a template reference to the starting point of the io.argoproj.workflow.v1alpha1.|
+|`executor`|[`ExecutorConfig`](#executorconfig)|Executor holds configurations of executor containers of the io.argoproj.workflow.v1alpha1.|
+|`hostAliases`|`Array<`[`HostAlias`](#hostalias)`>`|_No description available_|
+|`hostNetwork`|`boolean`|Host networking requested for this workflow pod. Default to false.|
+|`imagePullSecrets`|`Array<`[`LocalObjectReference`](#localobjectreference)`>`|ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet. More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod|
+|`metrics`|[`Metrics`](#metrics)|Metrics are a list of metrics emitted from this Workflow|
+|`nodeSelector`|`Map< string , string >`|NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeSelector specified in the template.|
+|`onExit`|`string`|OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary io.argoproj.workflow.v1alpha1.|
+|`parallelism`|`int64`|Parallelism limits the max total parallel pods that can execute at the same time in a workflow|
+|`podDisruptionBudget`|[`PodDisruptionBudgetSpec`](#poddisruptionbudgetspec)|PodDisruptionBudget holds the number of concurrent disruptions that you allow for Workflow's Pods. Controller will automatically add the selector with workflow name, if selector is empty. Optional: Defaults to empty.|
+|`podGC`|[`PodGC`](#podgc)|PodGC describes the strategy to use when to deleting completed pods|
+|`podPriority`|`int32`|Priority to apply to workflow pods.|
+|`podPriorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
+|`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
+|`priority`|`int32`|Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.|
+|`schedulerName`|`string`|Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.|
+|`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.|
+|`serviceAccountName`|`string`|ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.|
+|`shutdown`|`string`|Shutdown will shutdown the workflow according to its ShutdownStrategy|
+|`suspend`|`boolean`|Suspend will suspend the workflow and prevent execution of any future steps in the workflow|
+|`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow|
+|`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
+|~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. ~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
+|`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
+|`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
+|`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
 
 ## Arguments
 
@@ -1465,11 +1503,11 @@ Template is a reusable and composable unit of execution in a workflow
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`activeDeadlineSeconds`|`int64`|Optional duration in seconds relative to the StartTime that the pod may be active on a nodebefore the system actively tries to terminate the pod; value must be positive integerThis field is only applicable to container and script templates.|
-|`affinity`|[`Affinity`](#affinity)|Affinity sets the pod's scheduling constraintsOverrides the affinity set at the workflow level (if any)|
-|`archiveLocation`|[`ArtifactLocation`](#artifactlocation)|Location in which all files related to the step will be stored (logs, artifacts, etc...).Can be overridden by individual items in Outputs. If omitted, will use the defaultartifact repository location configured in the controller, appended with the<workflowname>/<nodename> in the key.|
-|~`arguments`~|~[`Arguments`](#arguments)~|~Arguments hold arguments to the template.~ DEPRECATED: This field is not used.|
-|`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.ServiceAccountName of ExecutorConfig must be specified if this value is false.|
+|`activeDeadlineSeconds`|`int64`|Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates.|
+|`affinity`|[`Affinity`](#affinity)|Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)|
+|`archiveLocation`|[`ArtifactLocation`](#artifactlocation)|Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key.|
+|~`arguments`~|~[`Arguments`](#arguments)~|~Arguments hold arguments to the template. ~ DEPRECATED: This field is not used.|
+|`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.|
 |`container`|[`Container`](#container)|Container is the main container image to run in the pod|
 |`daemon`|`boolean`|Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness|
 |`dag`|[`DAGTemplate`](#dagtemplate)|DAG template subtype which runs a DAG|
@@ -1480,24 +1518,24 @@ Template is a reusable and composable unit of execution in a workflow
 |`metadata`|[`Metadata`](#metadata)|Metdata sets the pods's metadata, i.e. annotations and labels|
 |`metrics`|[`Metrics`](#metrics)|Metrics are a list of metrics emitted from this template|
 |`name`|`string`|Name is the name of the template|
-|`nodeSelector`|`Map< string , string >`|NodeSelector is a selector to schedule this step of the workflow to berun on the selected node(s). Overrides the selector set at the workflow level.|
+|`nodeSelector`|`Map< string , string >`|NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.|
 |`outputs`|[`Outputs`](#outputs)|Outputs describe the parameters and artifacts that this template produces|
-|`parallelism`|`int64`|Parallelism limits the max total parallel pods that can execute at the same time within theboundaries of this template invocation. If additional steps/dag templates are invoked, thepods created by those templates will not be counted towards this total.|
-|`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization ofcontainer fields which are not strings (e.g. resource limits).|
+|`parallelism`|`int64`|Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.|
+|`podSpecPatch`|`string`|PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).|
 |`priority`|`int32`|Priority to apply to workflow pods.|
 |`priorityClassName`|`string`|PriorityClassName to apply to workflow pods.|
 |`resource`|[`ResourceTemplate`](#resourcetemplate)|Resource template subtype which can run k8s resources|
 |`resubmitPendingPods`|`boolean`|ResubmitPendingPods is a flag to enable resubmitting pods that remain Pending after initial submission|
 |`retryStrategy`|[`RetryStrategy`](#retrystrategy)|RetryStrategy describes how to retry a template when it fails|
-|`schedulerName`|`string`|If specified, the pod will be dispatched by specified scheduler.Or it will be dispatched by workflow scope scheduler if specified.If neither specified, the pod will be dispatched by default scheduler.|
+|`schedulerName`|`string`|If specified, the pod will be dispatched by specified scheduler. Or it will be dispatched by workflow scope scheduler if specified. If neither specified, the pod will be dispatched by default scheduler.|
 |`script`|[`ScriptTemplate`](#scripttemplate)|Script runs a portion of code against an interpreter|
-|`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings.Optional: Defaults to empty.  See type description for default values of each field.|
+|`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.|
 |`serviceAccountName`|`string`|ServiceAccountName to apply to workflow pods|
-|`sidecars`|`Array<`[`UserContainer`](#usercontainer)`>`|Sidecars is a list of containers which run alongside the main containerSidecars are automatically killed when the main container completes|
+|`sidecars`|`Array<`[`UserContainer`](#usercontainer)`>`|Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes|
 |`steps`|`Array<`[`ParallelSteps`](#parallelsteps)`>`|Steps define a series of sequential/parallel workflow steps|
 |`suspend`|[`SuspendTemplate`](#suspendtemplate)|Suspend template subtype which can suspend a workflow when reaching the step|
-|~`template`~|~`string`~|~Template is the name of the template which is used as the base of this template.~ DEPRECATED: This field is not used.|
-|~`templateRef`~|~[`TemplateRef`](#templateref)~|~TemplateRef is the reference to the template resource which is used as the base of this template.~ DEPRECATED: This field is not used.|
+|~`template`~|~`string`~|~Template is the name of the template which is used as the base of this template. ~ DEPRECATED: This field is not used.|
+|~`templateRef`~|~[`TemplateRef`](#templateref)~|~TemplateRef is the reference to the template resource which is used as the base of this template. ~ DEPRECATED: This field is not used.|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a template.|
 
@@ -1543,22 +1581,22 @@ NodeStatus contains status information about an individual node in the workflow
 |`displayName`|`string`|DisplayName is a human readable representation of the node. Unique within a template boundary|
 |`finishedAt`|[`Time`](#time)|Time at which this node completed|
 |`hostNodeName`|`string`|HostNodeName name of the Kubernetes node on which the Pod is running, if applicable|
-|`id`|`string`|ID is a unique identifier of a node within the worklowIt is implemented as a hash of the node name, which makes the ID deterministic|
+|`id`|`string`|ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic|
 |`inputs`|[`Inputs`](#inputs)|Inputs captures input parameter values and artifact locations supplied to this template invocation|
 |`message`|`string`|A human readable message indicating details about why the node is in this condition.|
 |`name`|`string`|Name is unique name in the node tree used to generate the node ID|
-|`outboundNodes`|`Array< string >`|OutboundNodes tracks the node IDs which are considered "outbound" nodes to a template invocation.For every invocation of a template, there are nodes which we considered as "outbound". Essentially,these are last nodes in the execution sequence to run, before the template is considered completed.These nodes are then connected as parents to a following step.In the case of single pod steps (i.e. container, script, resource templates), this list will be nilsince the pod itself is already considered the "outbound" node.In the case of DAGs, outbound nodes are the "target" tasks (tasks with no children).In the case of steps, outbound nodes are all the containers involved in the last step group.NOTE: since templates are composable, the list of outbound nodes are carried upwards whena DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes ofa template, will be a superset of the outbound nodes of its last children.|
+|`outboundNodes`|`Array< string >`|OutboundNodes tracks the node IDs which are considered "outbound" nodes to a template invocation. For every invocation of a template, there are nodes which we considered as "outbound". Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step.In the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the "outbound" node. In the case of DAGs, outbound nodes are the "target" tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children.|
 |`outputs`|[`Outputs`](#outputs)|Outputs captures output parameter values and artifact locations produced by this template invocation|
-|`phase`|`string`|Phase a simple, high-level summary of where the node is in its lifecycle.Can be used as a state machine.|
+|`phase`|`string`|Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine.|
 |`podIP`|`string`|PodIP captures the IP of the pod for daemoned steps|
-|`resourcesDuration`|`Map< string , int64 >`|ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.|
+|`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.|
 |`startedAt`|[`Time`](#time)|Time at which this node started|
-|~`storedTemplateID`~|~`string`~|~StoredTemplateID is the ID of stored template.~ DEPRECATED: This value is not used anymore.|
-|`templateName`|`string`|TemplateName is the template name which this node corresponds to.Not applicable to virtual nodes (e.g. Retry, StepGroup)|
-|`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource which this node corresponds to.Not applicable to virtual nodes (e.g. Retry, StepGroup)|
+|~`storedTemplateID`~|~`string`~|~StoredTemplateID is the ID of stored template. ~ DEPRECATED: This value is not used anymore.|
+|`templateName`|`string`|TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)|
+|`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)|
 |`templateScope`|`string`|TemplateScope is the template scope in which the template of this node was retrieved.|
 |`type`|`string`|Type indicates type of node|
-|~`workflowTemplateName`~|~`string`~|~WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.~ DEPRECATED: This value is not used anymore.|
+|~`workflowTemplateName`~|~`string`~|~WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved. ~ DEPRECATED: This value is not used anymore.|
 
 ## Outputs
 
@@ -1670,13 +1708,21 @@ Artifact indicates an artifact to place at a specified path
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`archive`|[`ArchiveStrategy`](#archivestrategy)|Archive controls how the artifact will be saved to the artifact repository.|
-|`artifactLocation`|[`ArtifactLocation`](#artifactlocation)|ArtifactLocation contains the location of the artifact|
+|`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
+|`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
 |`from`|`string`|From allows an artifact to reference an artifact from a previous step|
-|`globalName`|`string`|GlobalName exports an output artifact to the global scope, making it available as'{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts|
-|`mode`|`int32`|mode bits to use on this file, must be a value between 0 and 0777set when loading input artifacts.|
+|`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
+|`git`|[`GitArtifact`](#gitartifact)|Git contains git artifact location details|
+|`globalName`|`string`|GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts|
+|`hdfs`|[`HDFSArtifact`](#hdfsartifact)|HDFS contains HDFS artifact location details|
+|`http`|[`HTTPArtifact`](#httpartifact)|HTTP contains HTTP artifact location details|
+|`mode`|`int32`|mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.|
 |`name`|`string`|name of the artifact. must be unique within a template's inputs/outputs.|
 |`optional`|`boolean`|Make Artifacts optional, if Artifacts doesn't generate or exist|
+|`oss`|[`OSSArtifact`](#ossartifact)|OSS contains OSS artifact location details|
 |`path`|`string`|Path is the container path to the artifact|
+|`raw`|[`RawArtifact`](#rawartifact)|Raw contains raw artifact location details|
+|`s3`|[`S3Artifact`](#s3artifact)|S3 contains S3 artifact location details|
 
 ## Parameter
 
@@ -1798,10 +1844,10 @@ Parameter indicate a passed string parameter to a service template with an optio
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|~`default`~|~`string`~|~Default is the default value to use for an input parameter if a value was not supplied~ DEPRECATED: This field is not used|
-|`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as'{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters|
+|~`default`~|~`string`~|~Default is the default value to use for an input parameter if a value was not supplied ~ DEPRECATED: This field is not used|
+|`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters|
 |`name`|`string`|Name is the parameter name|
-|`value`|`string`|Value is the literal value to use for the parameter.If specified in the context of an input parameter, the value takes precedence over any passed values|
+|`value`|`string`|Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values|
 |`valueFrom`|[`ValueFrom`](#valuefrom)|ValueFrom is the source for the output parameter's value|
 
 ## Prometheus
@@ -1828,7 +1874,7 @@ Prometheus is a prometheus metric to be emitted
 
 ## ArtifactLocation
 
-ArtifactLocation describes a location for a single or multiple artifacts.It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).It is also used to describe the location of multiple artifacts such as the archive locationof a single workflow step, which the executor will use as a default location to store its files.
+ArtifactLocation describes a location for a single or multiple artifacts. It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname). It is also used to describe the location of multiple artifacts such as the archive location of a single workflow step, which the executor will use as a default location to store its files.
 
 <details>
 <summary>Examples with this field (click to open)</summary>
@@ -1898,7 +1944,7 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`failFast`|`boolean`|This flag is for DAG logic. The DAG logic has a built-in "fail fast" feature to stop scheduling new steps,as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completedbefore failing the DAG itself.The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG tocompletion (either success or failure), regardless of the failed outcomes of branches in the DAG.More info and example about this feature at https://github.com/argoproj/argo/issues/1442|
+|`failFast`|`boolean`|This flag is for DAG logic. The DAG logic has a built-in "fail fast" feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself. The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at https://github.com/argoproj/argo/issues/1442|
 |`target`|`string`|Target are one or more names of targets to execute in a DAG|
 |`tasks`|`Array<`[`DAGTask`](#dagtask)`>`|Tasks are a list of DAG tasks|
 
@@ -1916,8 +1962,29 @@ UserContainer is a container specified by a user.
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`container`|[`Container`](#container)|_No description available_|
-|`mirrorVolumeMounts`|`boolean`|MirrorVolumeMounts will mount the same volumes specified in the main containerto the container (including artifacts), at the same mountPaths. This enablesdind daemon to partially see the same filesystem as the main container inorder to use features such as docker volume binding|
+|`args`|`Array< string >`|Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell|
+|`command`|`Array< string >`|Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell|
+|`env`|`Array<`[`EnvVar`](#envvar)`>`|List of environment variables to set in the container. Cannot be updated.|
+|`envFrom`|`Array<`[`EnvFromSource`](#envfromsource)`>`|List of sources to populate environment variables in the container. The keys defined within a source must be a C_IDENTIFIER. All invalid keys will be reported as an event when the container is starting. When a key exists in multiple sources, the value associated with the last source will take precedence. Values defined by an Env with a duplicate key will take precedence. Cannot be updated.|
+|`image`|`string`|Docker image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.|
+|`imagePullPolicy`|`string`|Image pull policy. One of Always, Never, IfNotPresent. Defaults to Always if :latest tag is specified, or IfNotPresent otherwise. Cannot be updated. More info: https://kubernetes.io/docs/concepts/containers/images#updating-images|
+|`lifecycle`|[`Lifecycle`](#lifecycle)|Actions that the management system should take in response to container lifecycle events. Cannot be updated.|
+|`livenessProbe`|[`Probe`](#probe)|Periodic probe of container liveness. Container will be restarted if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
+|`mirrorVolumeMounts`|`boolean`|MirrorVolumeMounts will mount the same volumes specified in the main container to the container (including artifacts), at the same mountPaths. This enables dind daemon to partially see the same filesystem as the main container in order to use features such as docker volume binding|
+|`name`|`string`|Name of the container specified as a DNS_LABEL. Each container in a pod must have a unique name (DNS_LABEL). Cannot be updated.|
+|`ports`|`Array<`[`ContainerPort`](#containerport)`>`|List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default "0.0.0.0" address inside a container will be accessible from the network. Cannot be updated.|
+|`readinessProbe`|[`Probe`](#probe)|Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
+|`resources`|[`ResourceRequirements`](#resourcerequirements)|Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/|
+|`securityContext`|[`SecurityContext`](#securitycontext)|Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/|
+|`startupProbe`|[`Probe`](#probe)|StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is an alpha feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
+|`stdin`|`boolean`|Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.|
+|`stdinOnce`|`boolean`|Whether the container runtime should close the stdin channel after it has been opened by a single attach. When stdin is true the stdin stream will remain open across multiple attach sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the first client attaches to stdin, and then remains open and accepts data until the client disconnects, at which time stdin is closed and remains closed until the container is restarted. If this flag is false, a container processes that reads from stdin will never receive an EOF. Default is false|
+|`terminationMessagePath`|`string`|Optional: Path at which the file to which the container's termination message will be written is mounted into the container's filesystem. Message written is intended to be brief final status, such as an assertion failure message. Will be truncated by the node if greater than 4096 bytes. The total message length across all containers will be limited to 12kb. Defaults to /dev/termination-log. Cannot be updated.|
+|`terminationMessagePolicy`|`string`|Indicate how the termination message should be populated. File will use the contents of terminationMessagePath to populate the container status message on both success and failure. FallbackToLogsOnError will use the last chunk of container log output if the termination message file is empty and the container exited with an error. The log output is limited to 2048 bytes or 80 lines, whichever is smaller. Defaults to File. Cannot be updated.|
+|`tty`|`boolean`|Whether this container should allocate a TTY for itself, also requires 'stdin' to be true. Default is false.|
+|`volumeDevices`|`Array<`[`VolumeDevice`](#volumedevice)`>`|volumeDevices is the list of block devices to be used by the container. This is a beta feature.|
+|`volumeMounts`|`Array<`[`VolumeMount`](#volumemount)`>`|Pod volumes to mount into the container's filesystem. Cannot be updated.|
+|`workingDir`|`string`|Container's working directory. If not specified, the container runtime's default will be used, which might be configured in the container image. Cannot be updated.|
 
 ## Inputs
 
@@ -2307,13 +2374,13 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`action`|`string`|Action is the action to perform to the resource.Must be one of: get, create, apply, delete, replace, patch|
-|`failureCondition`|`string`|FailureCondition is a label selector expression which describes the conditionsof the k8s resource in which the step was considered failed|
-|`flags`|`Array< string >`|Flags is a set of additional options passed to kubectl before submitting a resourceI.e. to disable resource validation:flags: [	"--validate=false"  # disable resource validation]|
+|`action`|`string`|Action is the action to perform to the resource. Must be one of: get, create, apply, delete, replace, patch|
+|`failureCondition`|`string`|FailureCondition is a label selector expression which describes the conditions of the k8s resource in which the step was considered failed|
+|`flags`|`Array< string >`|Flags is a set of additional options passed to kubectl before submitting a resource I.e. to disable resource validation: flags: [	"--validate=false"  # disable resource validation]|
 |`manifest`|`string`|Manifest contains the kubernetes manifest|
-|`mergeStrategy`|`string`|MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"Must be one of: strategic, merge, json|
+|`mergeStrategy`|`string`|MergeStrategy is the strategy used to merge a patch. It defaults to "strategic" Must be one of: strategic, merge, json|
 |`setOwnerReference`|`boolean`|SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.|
-|`successCondition`|`string`|SuccessCondition is a label selector expression which describes the conditionsof the k8s resource in which it is acceptable to proceed to the following step|
+|`successCondition`|`string`|SuccessCondition is a label selector expression which describes the conditions of the k8s resource in which it is acceptable to proceed to the following step|
 
 ## RetryStrategy
 
@@ -2393,8 +2460,29 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`container`|[`Container`](#container)|_No description available_|
+|`args`|`Array< string >`|Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell|
+|`command`|`Array< string >`|Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell|
+|`env`|`Array<`[`EnvVar`](#envvar)`>`|List of environment variables to set in the container. Cannot be updated.|
+|`envFrom`|`Array<`[`EnvFromSource`](#envfromsource)`>`|List of sources to populate environment variables in the container. The keys defined within a source must be a C_IDENTIFIER. All invalid keys will be reported as an event when the container is starting. When a key exists in multiple sources, the value associated with the last source will take precedence. Values defined by an Env with a duplicate key will take precedence. Cannot be updated.|
+|`image`|`string`|Docker image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.|
+|`imagePullPolicy`|`string`|Image pull policy. One of Always, Never, IfNotPresent. Defaults to Always if :latest tag is specified, or IfNotPresent otherwise. Cannot be updated. More info: https://kubernetes.io/docs/concepts/containers/images#updating-images|
+|`lifecycle`|[`Lifecycle`](#lifecycle)|Actions that the management system should take in response to container lifecycle events. Cannot be updated.|
+|`livenessProbe`|[`Probe`](#probe)|Periodic probe of container liveness. Container will be restarted if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
+|`name`|`string`|Name of the container specified as a DNS_LABEL. Each container in a pod must have a unique name (DNS_LABEL). Cannot be updated.|
+|`ports`|`Array<`[`ContainerPort`](#containerport)`>`|List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default "0.0.0.0" address inside a container will be accessible from the network. Cannot be updated.|
+|`readinessProbe`|[`Probe`](#probe)|Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
+|`resources`|[`ResourceRequirements`](#resourcerequirements)|Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/|
+|`securityContext`|[`SecurityContext`](#securitycontext)|Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/|
 |`source`|`string`|Source contains the source code of the script to execute|
+|`startupProbe`|[`Probe`](#probe)|StartupProbe indicates that the Pod has successfully initialized. If specified, no other probes are executed until this completes successfully. If this probe fails, the Pod will be restarted, just as if the livenessProbe failed. This can be used to provide different probe parameters at the beginning of a Pod's lifecycle, when it might take a long time to load data or warm a cache, than during steady-state operation. This cannot be updated. This is an alpha feature enabled by the StartupProbe feature flag. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
+|`stdin`|`boolean`|Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.|
+|`stdinOnce`|`boolean`|Whether the container runtime should close the stdin channel after it has been opened by a single attach. When stdin is true the stdin stream will remain open across multiple attach sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the first client attaches to stdin, and then remains open and accepts data until the client disconnects, at which time stdin is closed and remains closed until the container is restarted. If this flag is false, a container processes that reads from stdin will never receive an EOF. Default is false|
+|`terminationMessagePath`|`string`|Optional: Path at which the file to which the container's termination message will be written is mounted into the container's filesystem. Message written is intended to be brief final status, such as an assertion failure message. Will be truncated by the node if greater than 4096 bytes. The total message length across all containers will be limited to 12kb. Defaults to /dev/termination-log. Cannot be updated.|
+|`terminationMessagePolicy`|`string`|Indicate how the termination message should be populated. File will use the contents of terminationMessagePath to populate the container status message on both success and failure. FallbackToLogsOnError will use the last chunk of container log output if the termination message file is empty and the container exited with an error. The log output is limited to 2048 bytes or 80 lines, whichever is smaller. Defaults to File. Cannot be updated.|
+|`tty`|`boolean`|Whether this container should allocate a TTY for itself, also requires 'stdin' to be true. Default is false.|
+|`volumeDevices`|`Array<`[`VolumeDevice`](#volumedevice)`>`|volumeDevices is the list of block devices to be used by the container. This is a beta feature.|
+|`volumeMounts`|`Array<`[`VolumeMount`](#volumemount)`>`|Pod volumes to mount into the container's filesystem. Cannot be updated.|
+|`workingDir`|`string`|Container's working directory. If not specified, the container runtime's default will be used, which might be configured in the container image. Cannot be updated.|
 
 ## WorkflowStep
 
@@ -2525,14 +2613,14 @@ WorkflowStep is a reference to a template to execute in a series of step
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`arguments`|[`Arguments`](#arguments)|Arguments hold arguments to the template|
-|`continueOn`|[`ContinueOn`](#continueon)|ContinueOn makes argo to proceed with the following step even if this step fails.Errors and Failed states can be specified|
+|`continueOn`|[`ContinueOn`](#continueon)|ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified|
 |`name`|`string`|Name of the step|
-|`onExit`|`string`|OnExit is a template reference which is invoked at the end of thetemplate, irrespective of the success, failure, or error of theprimary template.|
+|`onExit`|`string`|OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.|
 |`template`|`string`|Template is the name of the template to execute as the step|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource to execute as the step.|
 |`when`|`string`|When is an expression in which the step should conditionally execute|
 |`withItems`|`Array<`[`Item`](#item)`>`|WithItems expands a step into multiple parallel steps from the items in the list|
-|`withParam`|`string`|WithParam expands a step into multiple parallel steps from the value in the parameter,which is expected to be a JSON list.|
+|`withParam`|`string`|WithParam expands a step into multiple parallel steps from the value in the parameter, which is expected to be a JSON list.|
 |`withSequence`|[`Sequence`](#sequence)|WithSequence expands a step into a numeric sequence|
 
 ## SuspendTemplate
@@ -2583,7 +2671,7 @@ TemplateRef is a reference of template resource.
 |:----------:|:----------:|---------------|
 |`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).|
 |`name`|`string`|Name is the resource name of the template.|
-|`runtimeResolution`|`boolean`|RuntimeResolution skips validation at creation time.By enabling this option, you can create the referred workflow template before the actual runtime.|
+|`runtimeResolution`|`boolean`|RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime.|
 |`template`|`string`|Template is the name of referred template in the resource.|
 
 ## ArchiveStrategy
@@ -2604,6 +2692,187 @@ ArchiveStrategy describes how to archive files/directory when saving artifacts
 |:----------:|:----------:|---------------|
 |`none`|[`NoneStrategy`](#nonestrategy)|_No description available_|
 |`tar`|[`TarStrategy`](#tarstrategy)|_No description available_|
+
+## ArtifactoryArtifact
+
+ArtifactoryArtifact is the location of an artifactory artifact
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
+|`url`|`string`|URL of the artifact|
+|`usernameSecret`|[`SecretKeySelector`](#secretkeyselector)|UsernameSecret is the secret selector to the repository username|
+
+## GCSArtifact
+
+GCSArtifact is the location of a GCS artifact
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
+
+- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`bucket`|`string`|Bucket is the name of the bucket|
+|`key`|`string`|Key is the path in the bucket where the artifact resides|
+|`serviceAccountKeySecret`|[`SecretKeySelector`](#secretkeyselector)|ServiceAccountKeySecret is the secret selector to the bucket's service account key|
+
+## GitArtifact
+
+GitArtifact is the location of an git artifact
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
+
+- [`ci.yaml`](../examples/ci.yaml)
+
+- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
+
+- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`depth`|`int64`|Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip|
+|`fetch`|`Array< string >`|Fetch specifies a number of refs that should be fetched before checkout|
+|`insecureIgnoreHostKey`|`boolean`|InsecureIgnoreHostKey disables SSH strict host key checking during git clone|
+|`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
+|`repo`|`string`|Repo is the git repository|
+|`revision`|`string`|Revision is the git commit, tag, branch to checkout|
+|`sshPrivateKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SSHPrivateKeySecret is the secret selector to the repository ssh private key|
+|`usernameSecret`|[`SecretKeySelector`](#secretkeyselector)|UsernameSecret is the secret selector to the repository username|
+
+## HDFSArtifact
+
+HDFSArtifact is the location of an HDFS artifact
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`addresses`|`Array< string >`|Addresses is accessible addresses of HDFS name nodes|
+|`force`|`boolean`|Force copies a file forcibly even if it exists (default: false)|
+|`hdfsUser`|`string`|HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.|
+|`krbCCacheSecret`|[`SecretKeySelector`](#secretkeyselector)|KrbCCacheSecret is the secret selector for Kerberos ccache Either ccache or keytab can be set to use Kerberos.|
+|`krbConfigConfigMap`|[`ConfigMapKeySelector`](#configmapkeyselector)|KrbConfig is the configmap selector for Kerberos config as string It must be set if either ccache or keytab is used.|
+|`krbKeytabSecret`|[`SecretKeySelector`](#secretkeyselector)|KrbKeytabSecret is the secret selector for Kerberos keytab Either ccache or keytab can be set to use Kerberos.|
+|`krbRealm`|`string`|KrbRealm is the Kerberos realm used with Kerberos keytab It must be set if keytab is used.|
+|`krbServicePrincipalName`|`string`|KrbServicePrincipalName is the principal name of Kerberos service It must be set if either ccache or keytab is used.|
+|`krbUsername`|`string`|KrbUsername is the Kerberos username used with Kerberos keytab It must be set if keytab is used.|
+|`path`|`string`|Path is a file path in HDFS|
+
+## HTTPArtifact
+
+HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`arguments-artifacts.yaml`](../examples/arguments-artifacts.yaml)
+
+- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
+
+- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
+
+- [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
+
+- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
+
+- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
+
+- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
+
+- [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
+
+- [`sidecar.yaml`](../examples/sidecar.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`url`|`string`|URL of the artifact|
+
+## OSSArtifact
+
+OSSArtifact is the location of an OSS artifact
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
+|`bucket`|`string`|Bucket is the name of the bucket|
+|`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
+|`key`|`string`|Key is the path in the bucket where the artifact resides|
+|`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
+
+## RawArtifact
+
+RawArtifact allows raw string content to be placed as an artifact in a container
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
+
+- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`data`|`string`|Data is the string contents of the artifact|
+
+## S3Artifact
+
+S3Artifact is the location of an S3 artifact
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
+|`bucket`|`string`|Bucket is the name of the bucket|
+|`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
+|`insecure`|`boolean`|Insecure will connect to the service with TLS|
+|`key`|`string`|Key is the key in the bucket where the artifact resides|
+|`region`|`string`|Region contains the optional bucket region|
+|`roleARN`|`string`|RoleARN is the Amazon Resource Name (ARN) of the role to assume.|
+|`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
+|`useSDKCreds`|`boolean`|UseSDKCreds tells the driver to figure out credentials based on sdk defaults.|
 
 ## ValueFrom
 
@@ -2644,7 +2913,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 |`default`|`string`|Default specifies a value to be used if retrieving the value from the specified source fails|
 |`jqFilter`|`string`|JQFilter expression against the resource object in resource templates|
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
-|`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from(e.g. '{{steps.mystep.outputs.myparam}}')|
+|`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|
 |`path`|`string`|Path in the container to retrieve an output parameter value from in container templates|
 
 ## Counter
@@ -2720,168 +2989,6 @@ MetricLabel is a single label for a prometheus metric
 |`key`|`string`|_No description available_|
 |`value`|`string`|_No description available_|
 
-## ArtifactoryArtifact
-
-ArtifactoryArtifact is the location of an artifactory artifact
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`artifactoryAuth`|[`ArtifactoryAuth`](#artifactoryauth)|_No description available_|
-|`url`|`string`|URL of the artifact|
-
-## GCSArtifact
-
-GCSArtifact is the location of a GCS artifact
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`input-artifact-gcs.yaml`](../examples/input-artifact-gcs.yaml)
-
-- [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`gCSBucket`|[`GCSBucket`](#gcsbucket)|_No description available_|
-|`key`|`string`|Key is the path in the bucket where the artifact resides|
-
-## GitArtifact
-
-GitArtifact is the location of an git artifact
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
-
-- [`ci.yaml`](../examples/ci.yaml)
-
-- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
-
-- [`input-artifact-git.yaml`](../examples/input-artifact-git.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`depth`|`uint64`|Depth specifies clones/fetches should be shallow and include the givennumber of commits from the branch tip|
-|`fetch`|`Array< string >`|Fetch specifies a number of refs that should be fetched before checkout|
-|`insecureIgnoreHostKey`|`boolean`|InsecureIgnoreHostKey disables SSH strict host key checking during git clone|
-|`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
-|`repo`|`string`|Repo is the git repository|
-|`revision`|`string`|Revision is the git commit, tag, branch to checkout|
-|`sshPrivateKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SSHPrivateKeySecret is the secret selector to the repository ssh private key|
-|`usernameSecret`|[`SecretKeySelector`](#secretkeyselector)|UsernameSecret is the secret selector to the repository username|
-
-## HDFSArtifact
-
-HDFSArtifact is the location of an HDFS artifact
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`force`|`boolean`|Force copies a file forcibly even if it exists (default: false)|
-|`hDFSConfig`|[`HDFSConfig`](#hdfsconfig)|_No description available_|
-|`path`|`string`|Path is a file path in HDFS|
-
-## HTTPArtifact
-
-HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`arguments-artifacts.yaml`](../examples/arguments-artifacts.yaml)
-
-- [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
-
-- [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
-
-- [`daemon-step.yaml`](../examples/daemon-step.yaml)
-
-- [`dag-daemon-task.yaml`](../examples/dag-daemon-task.yaml)
-
-- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
-
-- [`input-artifact-http.yaml`](../examples/input-artifact-http.yaml)
-
-- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
-
-- [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
-
-- [`sidecar.yaml`](../examples/sidecar.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`url`|`string`|URL of the artifact|
-
-## OSSArtifact
-
-OSSArtifact is the location of an OSS artifact
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`input-artifact-oss.yaml`](../examples/input-artifact-oss.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`key`|`string`|Key is the path in the bucket where the artifact resides|
-|`oSSBucket`|[`OSSBucket`](#ossbucket)|_No description available_|
-
-## RawArtifact
-
-RawArtifact allows raw string content to be placed as an artifact in a container
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
-
-- [`input-artifact-raw.yaml`](../examples/input-artifact-raw.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`data`|`string`|Data is the string contents of the artifact|
-
-## S3Artifact
-
-S3Artifact is the location of an S3 artifact
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`key`|`string`|Key is the key in the bucket where the artifact resides|
-|`s3Bucket`|[`S3Bucket`](#s3bucket)|_No description available_|
-
 ## DAGTask
 
 DAGTask represents a node in the graph during DAG execution
@@ -2931,15 +3038,15 @@ DAGTask represents a node in the graph during DAG execution
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`arguments`|[`Arguments`](#arguments)|Arguments are the parameter and artifact arguments to the template|
-|`continueOn`|[`ContinueOn`](#continueon)|ContinueOn makes argo to proceed with the following step even if this step fails.Errors and Failed states can be specified|
+|`continueOn`|[`ContinueOn`](#continueon)|ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified|
 |`dependencies`|`Array< string >`|Dependencies are name of other targets which this depends on|
 |`name`|`string`|Name is the name of the target|
-|`onExit`|`string`|OnExit is a template reference which is invoked at the end of thetemplate, irrespective of the success, failure, or error of theprimary template.|
+|`onExit`|`string`|OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.|
 |`template`|`string`|Name of template to execute|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource to execute.|
 |`when`|`string`|When is an expression in which the task should conditionally execute|
 |`withItems`|`Array<`[`Item`](#item)`>`|WithItems expands a task into multiple parallel tasks from the items in the list|
-|`withParam`|`string`|WithParam expands a task into multiple parallel tasks from the value in the parameter,which is expected to be a JSON list.|
+|`withParam`|`string`|WithParam expands a task into multiple parallel tasks from the value in the parameter, which is expected to be a JSON list.|
 |`withSequence`|[`Sequence`](#sequence)|WithSequence expands a task into a numeric sequence|
 
 ## Backoff
@@ -2962,7 +3069,7 @@ Backoff is a backoff strategy to use within retryStrategy
 
 ## ContinueOn
 
-ContinueOn defines if a workflow should continue even if a task or step fails/errors.It can be specified if the workflow should continue when the pod errors, fails or both.
+ContinueOn defines if a workflow should continue even if a task or step fails/errors. It can be specified if the workflow should continue when the pod errors, fails or both.
 
 <details>
 <summary>Examples with this field (click to open)</summary>
@@ -2982,12 +3089,12 @@ ContinueOn defines if a workflow should continue even if a task or step fails/er
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`error`|`boolean`||
-|`failed`|`boolean`||
+|`error`|`boolean`|_No description available_|
+|`failed`|`boolean`|_No description available_|
 
 ## Item
 
-
+Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number
 
 <details>
 <summary>Examples with this field (click to open)</summary>
@@ -3018,16 +3125,6 @@ ContinueOn defines if a workflow should continue even if a task or step fails/er
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
 </details>
 
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`boolVal`|`boolean`|_No description available_|
-|`listVal`|`Array<`[`ItemValue`](#itemvalue)`>`|_No description available_|
-|`mapVal`|[`ItemValue`](#itemvalue)|_No description available_|
-|`numVal`|`string`|_No description available_|
-|`strVal`|`string`|_No description available_|
-|`type`|`int64`|_No description available_|
-
 ## Sequence
 
 Sequence expands a workflow step into numeric range
@@ -3049,7 +3146,7 @@ Sequence expands a workflow step into numeric range
 
 ## NoneStrategy
 
-NoneStrategy indicates to skip tar process and upload the files or directory tree as independentfiles. Note that if the artifact is a directory, the artifact driver must support the ability tosave/load the directory appropriately.
+NoneStrategy indicates to skip tar process and upload the files or directory tree as independent files. Note that if the artifact is a directory, the artifact driver must support the ability to save/load the directory appropriately.
 
 <details>
 <summary>Examples with this field (click to open)</summary>
@@ -3074,94 +3171,7 @@ TarStrategy will tar and gzip the file or directory when saving
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact.Defaults to gzip.DefaultCompression.|
-
-## ArtifactoryAuth
-
-ArtifactoryAuth describes the secret selectors required for authenticating to artifactory
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`passwordSecret`|[`SecretKeySelector`](#secretkeyselector)|PasswordSecret is the secret selector to the repository password|
-|`usernameSecret`|[`SecretKeySelector`](#secretkeyselector)|UsernameSecret is the secret selector to the repository username|
-
-## GCSBucket
-
-GCSBucket contains the access information for interfacring with a GCS bucket
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`bucket`|`string`|Bucket is the name of the bucket|
-|`serviceAccountKeySecret`|[`SecretKeySelector`](#secretkeyselector)|ServiceAccountKeySecret is the secret selector to the bucket's service account key|
-
-## HDFSConfig
-
-HDFSConfig is configurations for HDFS
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`addresses`|`Array< string >`|Addresses is accessible addresses of HDFS name nodes|
-|`hDFSKrbConfig`|[`HDFSKrbConfig`](#hdfskrbconfig)|_No description available_|
-|`hdfsUser`|`string`|HDFSUser is the user to access HDFS file system.It is ignored if either ccache or keytab is used.|
-
-## OSSBucket
-
-OSSBucket contains the access information required for interfacing with an OSS bucket
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
-|`bucket`|`string`|Bucket is the name of the bucket|
-|`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
-|`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
-
-## S3Bucket
-
-S3Bucket contains the access information required for interfacing with an S3 bucket
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`accessKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccessKeySecret is the secret selector to the bucket's access key|
-|`bucket`|`string`|Bucket is the name of the bucket|
-|`endpoint`|`string`|Endpoint is the hostname of the bucket endpoint|
-|`insecure`|`boolean`|Insecure will connect to the service with TLS|
-|`region`|`string`|Region contains the optional bucket region|
-|`roleARN`|`string`|RoleARN is the Amazon Resource Name (ARN) of the role to assume.|
-|`secretKeySecret`|[`SecretKeySelector`](#secretkeyselector)|SecretKeySecret is the secret selector to the bucket's secret key|
-|`useSDKCreds`|`boolean`|UseSDKCreds tells the driver to figure out credentials based on sdk defaults.|
-
-## ItemValue
-
-
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`boolVal`|`boolean`|_No description available_|
-|`listVal`|`Array< string >`|_No description available_|
-|`mapVal`|`Map< string , string >`|_No description available_|
-|`numVal`|`string`|_No description available_|
-|`strVal`|`string`|_No description available_|
-|`type`|`int64`|_No description available_|
-
-## HDFSKrbConfig
-
-HDFSKrbConfig is auth configurations for Kerberos
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`krbCCacheSecret`|[`SecretKeySelector`](#secretkeyselector)|KrbCCacheSecret is the secret selector for Kerberos ccacheEither ccache or keytab can be set to use Kerberos.|
-|`krbConfigConfigMap`|[`ConfigMapKeySelector`](#configmapkeyselector)|KrbConfig is the configmap selector for Kerberos config as stringIt must be set if either ccache or keytab is used.|
-|`krbKeytabSecret`|[`SecretKeySelector`](#secretkeyselector)|KrbKeytabSecret is the secret selector for Kerberos keytabEither ccache or keytab can be set to use Kerberos.|
-|`krbRealm`|`string`|KrbRealm is the Kerberos realm used with Kerberos keytabIt must be set if keytab is used.|
-|`krbServicePrincipalName`|`string`|KrbServicePrincipalName is the principal name of Kerberos serviceIt must be set if either ccache or keytab is used.|
-|`krbUsername`|`string`|KrbUsername is the Kerberos username used with Kerberos keytabIt must be set if keytab is used.|
+|`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.|
 
 # External Fields
 
@@ -3825,6 +3835,179 @@ A single application container that you want to run within a pod.
 |`volumeMounts`|`Array<`[`VolumeMount`](#volumemount)`>`|Pod volumes to mount into the container's filesystem.Cannot be updated.|
 |`workingDir`|`string`|Container's working directory.If not specified, the container runtime's default will be used, whichmight be configured in the container image.Cannot be updated.|
 
+## EnvVar
+
+EnvVar represents an environment variable present in a Container.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
+
+- [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`name`|`string`|Name of the environment variable. Must be a C_IDENTIFIER.|
+|`value`|`string`|Variable references $(VAR_NAME) are expandedusing the previous defined environment variables in the container andany service environment variables. If a variable cannot be resolved,the reference in the input string will be unchanged. The $(VAR_NAME)syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escapedreferences will never be expanded, regardless of whether the variableexists or not.Defaults to "".|
+|`valueFrom`|[`EnvVarSource`](#envvarsource)|Source for the environment variable's value. Cannot be used if value is not empty.|
+
+## EnvFromSource
+
+EnvFromSource represents the source of a set of ConfigMaps
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`configMapRef`|[`ConfigMapEnvSource`](#configmapenvsource)|The ConfigMap to select from|
+|`prefix`|`string`|An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.|
+|`secretRef`|[`SecretEnvSource`](#secretenvsource)|The Secret to select from|
+
+## Lifecycle
+
+Lifecycle describes actions that the management system should take in response to container lifecycleevents. For the PostStart and PreStop lifecycle handlers, management of the container blocksuntil the action is complete, unless the container process fails, in which case the handler is aborted.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`postStart`|[`Handler`](#handler)|PostStart is called immediately after a container is created. If the handler fails,the container is terminated and restarted according to its restart policy.Other management of the container blocks until the hook completes.More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks|
+|`preStop`|[`Handler`](#handler)|PreStop is called immediately before a container is terminated due to anAPI request or management event such as liveness/startup probe failure,preemption, resource contention, etc. The handler is not called if thecontainer crashes or exits. The reason for termination is passed to thehandler. The Pod's termination grace period countdown begins before thePreStop hooked is executed. Regardless of the outcome of the handler, thecontainer will eventually terminate within the Pod's termination graceperiod. Other management of the container blocks until the hook completesor until the termination grace period is reached.More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks|
+
+## Probe
+
+Probe describes a health check to be performed against a container to determine whether it isalive or ready to receive traffic.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`failureThreshold`|`int32`|Minimum consecutive failures for the probe to be considered failed after having succeeded.Defaults to 3. Minimum value is 1.|
+|`handler`|[`Handler`](#handler)|The action taken to determine the health of a container|
+|`initialDelaySeconds`|`int32`|Number of seconds after the container has started before liveness probes are initiated.More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
+|`periodSeconds`|`int32`|How often (in seconds) to perform the probe.Default to 10 seconds. Minimum value is 1.|
+|`successThreshold`|`int32`|Minimum consecutive successes for the probe to be considered successful after having failed.Defaults to 1. Must be 1 for liveness and startup. Minimum value is 1.|
+|`timeoutSeconds`|`int32`|Number of seconds after which the probe times out.Defaults to 1 second. Minimum value is 1.More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
+
+## ContainerPort
+
+ContainerPort represents a network port in a single container.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`containerPort`|`int32`|Number of port to expose on the pod's IP address.This must be a valid port number, 0 < x < 65536.|
+|`hostIP`|`string`|What host IP to bind the external port to.|
+|`hostPort`|`int32`|Number of port to expose on the host.If specified, this must be a valid port number, 0 < x < 65536.If HostNetwork is specified, this must match ContainerPort.Most containers do not need this.|
+|`name`|`string`|If specified, this must be an IANA_SVC_NAME and unique within the pod. Eachnamed port in a pod must have a unique name. Name for the port that can bereferred to by services.|
+|`protocol`|`string`|Protocol for port. Must be UDP, TCP, or SCTP.Defaults to "TCP".|
+
+## ResourceRequirements
+
+ResourceRequirements describes the compute resource requirements.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
+
+- [`ci.yaml`](../examples/ci.yaml)
+
+- [`dns-config.yaml`](../examples/dns-config.yaml)
+
+- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
+
+- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
+
+- [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
+
+- [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
+
+- [`testvolume.yaml`](../examples/testvolume.yaml)
+
+- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`limits`|[`Quantity`](#quantity)|Limits describes the maximum amount of compute resources allowed.More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/|
+|`requests`|[`Quantity`](#quantity)|Requests describes the minimum amount of compute resources required.If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,otherwise to an implementation-defined value.More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/|
+
+## SecurityContext
+
+SecurityContext holds security configuration that will be applied to a container.Some fields are present in both SecurityContext and PodSecurityContext.  When bothare set, the values in SecurityContext take precedence.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`allowPrivilegeEscalation`|`boolean`|AllowPrivilegeEscalation controls whether a process can gain moreprivileges than its parent process. This bool directly controls ifthe no_new_privs flag will be set on the container process.AllowPrivilegeEscalation is true always when the container is:1) run as Privileged2) has CAP_SYS_ADMIN|
+|`capabilities`|[`Capabilities`](#capabilities)|The capabilities to add/drop when running containers.Defaults to the default set of capabilities granted by the container runtime.|
+|`privileged`|`boolean`|Run container in privileged mode.Processes in privileged containers are essentially equivalent to root on the host.Defaults to false.|
+|`procMount`|`string`|procMount denotes the type of proc mount to use for the containers.The default is DefaultProcMount which uses the container runtime defaults forreadonly paths and masked paths.This requires the ProcMountType feature flag to be enabled.|
+|`readOnlyRootFilesystem`|`boolean`|Whether this container has a read-only root filesystem.Default is false.|
+|`runAsGroup`|`int64`|The GID to run the entrypoint of the container process.Uses runtime default if unset.May also be set in PodSecurityContext.  If set in both SecurityContext andPodSecurityContext, the value specified in SecurityContext takes precedence.|
+|`runAsNonRoot`|`boolean`|Indicates that the container must run as a non-root user.If true, the Kubelet will validate the image at runtime to ensure that itdoes not run as UID 0 (root) and fail to start the container if it does.If unset or false, no such validation will be performed.May also be set in PodSecurityContext.  If set in both SecurityContext andPodSecurityContext, the value specified in SecurityContext takes precedence.|
+|`runAsUser`|`int64`|The UID to run the entrypoint of the container process.Defaults to user specified in image metadata if unspecified.May also be set in PodSecurityContext.  If set in both SecurityContext andPodSecurityContext, the value specified in SecurityContext takes precedence.|
+|`seLinuxOptions`|[`SELinuxOptions`](#selinuxoptions)|The SELinux context to be applied to the container.If unspecified, the container runtime will allocate a random SELinux context for eachcontainer.  May also be set in PodSecurityContext.  If set in both SecurityContext andPodSecurityContext, the value specified in SecurityContext takes precedence.|
+|`windowsOptions`|[`WindowsSecurityContextOptions`](#windowssecuritycontextoptions)|The Windows specific settings applied to all containers.If unspecified, the options from the PodSecurityContext will be used.If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.|
+
+## VolumeDevice
+
+volumeDevice describes a mapping of a raw block device within a container.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`devicePath`|`string`|devicePath is the path inside of the container that the device will be mapped to.|
+|`name`|`string`|name must match the name of a persistentVolumeClaim in the pod|
+
+## VolumeMount
+
+VolumeMount describes a mounting of a Volume within a container.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
+
+- [`ci.yaml`](../examples/ci.yaml)
+
+- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
+
+- [`init-container.yaml`](../examples/init-container.yaml)
+
+- [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
+
+- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
+
+- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`mountPath`|`string`|Path within the container at which the volume should be mounted.  Mustnot contain ':'.|
+|`mountPropagation`|`string`|mountPropagation determines how mounts are propagated from the hostto container and the other way around.When not set, MountPropagationNone is used.This field is beta in 1.10.|
+|`name`|`string`|This must match the Name of a Volume.|
+|`readOnly`|`boolean`|Mounted read-only if true, read-write otherwise (false or unspecified).Defaults to false.|
+|`subPath`|`string`|Path within the volume from which the container's volume should be mounted.Defaults to "" (volume's root).|
+|`subPathExpr`|`string`|Expanded path within the volume from which the container's volume should be mounted.Behaves similarly to SubPath but environment variable references $(VAR_NAME) are expanded using the container's environment.Defaults to "" (volume's root).SubPathExpr and SubPath are mutually exclusive.This field is beta in 1.15.|
+
 ## SecretKeySelector
 
 SecretKeySelector selects a key of a Secret.
@@ -4291,178 +4474,107 @@ Represents the source of a volume to mount.Only one of its members may be specif
 |`storageos`|[`StorageOSVolumeSource`](#storageosvolumesource)|StorageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.|
 |`vsphereVolume`|[`VsphereVirtualDiskVolumeSource`](#vspherevirtualdiskvolumesource)|VsphereVolume represents a vSphere volume attached and mounted on kubelets host machine|
 
-## EnvVar
+## EnvVarSource
 
-EnvVar represents an environment variable present in a Container.
+EnvVarSource represents a source for the value of an EnvVar.
 
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`colored-logs.yaml`](../examples/colored-logs.yaml)
+- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
+
+- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
+
+- [`global-outputs.yaml`](../examples/global-outputs.yaml)
+
+- [`k8s-jobs.yaml`](../examples/k8s-jobs.yaml)
+
+- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
+
+- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
+
+- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
+
+- [`output-parameter.yaml`](../examples/output-parameter.yaml)
+
+- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
+
+- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
+
+- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
 
 - [`secrets.yaml`](../examples/secrets.yaml)
-
-- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 </details>
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`name`|`string`|Name of the environment variable. Must be a C_IDENTIFIER.|
-|`value`|`string`|Variable references $(VAR_NAME) are expandedusing the previous defined environment variables in the container andany service environment variables. If a variable cannot be resolved,the reference in the input string will be unchanged. The $(VAR_NAME)syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escapedreferences will never be expanded, regardless of whether the variableexists or not.Defaults to "".|
-|`valueFrom`|[`EnvVarSource`](#envvarsource)|Source for the environment variable's value. Cannot be used if value is not empty.|
+|`configMapKeyRef`|[`ConfigMapKeySelector`](#configmapkeyselector)|Selects a key of a ConfigMap.|
+|`fieldRef`|[`ObjectFieldSelector`](#objectfieldselector)|Selects a field of the pod: supports metadata.name, metadata.namespace, metadata.labels, metadata.annotations,spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP.|
+|`resourceFieldRef`|[`ResourceFieldSelector`](#resourcefieldselector)|Selects a resource of the container: only resources limits and requests(limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.|
+|`secretKeyRef`|[`SecretKeySelector`](#secretkeyselector)|Selects a key of a secret in the pod's namespace|
 
-## EnvFromSource
+## ConfigMapEnvSource
 
-EnvFromSource represents the source of a set of ConfigMaps
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`configMapRef`|[`ConfigMapEnvSource`](#configmapenvsource)|The ConfigMap to select from|
-|`prefix`|`string`|An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.|
-|`secretRef`|[`SecretEnvSource`](#secretenvsource)|The Secret to select from|
-
-## Lifecycle
-
-Lifecycle describes actions that the management system should take in response to container lifecycleevents. For the PostStart and PreStop lifecycle handlers, management of the container blocksuntil the action is complete, unless the container process fails, in which case the handler is aborted.
+ConfigMapEnvSource selects a ConfigMap to populate the environmentvariables with.The contents of the target ConfigMap's Data field will represent thekey-value pairs as environment variables.
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`postStart`|[`Handler`](#handler)|PostStart is called immediately after a container is created. If the handler fails,the container is terminated and restarted according to its restart policy.Other management of the container blocks until the hook completes.More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks|
-|`preStop`|[`Handler`](#handler)|PreStop is called immediately before a container is terminated due to anAPI request or management event such as liveness/startup probe failure,preemption, resource contention, etc. The handler is not called if thecontainer crashes or exits. The reason for termination is passed to thehandler. The Pod's termination grace period countdown begins before thePreStop hooked is executed. Regardless of the outcome of the handler, thecontainer will eventually terminate within the Pod's termination graceperiod. Other management of the container blocks until the hook completesor until the termination grace period is reached.More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks|
+|`localObjectReference`|[`LocalObjectReference`](#localobjectreference)|The ConfigMap to select from.|
+|`optional`|`boolean`|Specify whether the ConfigMap must be defined|
 
-## Probe
+## SecretEnvSource
 
-Probe describes a health check to be performed against a container to determine whether it isalive or ready to receive traffic.
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`failureThreshold`|`int32`|Minimum consecutive failures for the probe to be considered failed after having succeeded.Defaults to 3. Minimum value is 1.|
-|`handler`|[`Handler`](#handler)|The action taken to determine the health of a container|
-|`initialDelaySeconds`|`int32`|Number of seconds after the container has started before liveness probes are initiated.More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
-|`periodSeconds`|`int32`|How often (in seconds) to perform the probe.Default to 10 seconds. Minimum value is 1.|
-|`successThreshold`|`int32`|Minimum consecutive successes for the probe to be considered successful after having failed.Defaults to 1. Must be 1 for liveness and startup. Minimum value is 1.|
-|`timeoutSeconds`|`int32`|Number of seconds after which the probe times out.Defaults to 1 second. Minimum value is 1.More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes|
-
-## ContainerPort
-
-ContainerPort represents a network port in a single container.
+SecretEnvSource selects a Secret to populate the environmentvariables with.The contents of the target Secret's Data field will represent thekey-value pairs as environment variables.
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`containerPort`|`int32`|Number of port to expose on the pod's IP address.This must be a valid port number, 0 < x < 65536.|
-|`hostIP`|`string`|What host IP to bind the external port to.|
-|`hostPort`|`int32`|Number of port to expose on the host.If specified, this must be a valid port number, 0 < x < 65536.If HostNetwork is specified, this must match ContainerPort.Most containers do not need this.|
-|`name`|`string`|If specified, this must be an IANA_SVC_NAME and unique within the pod. Eachnamed port in a pod must have a unique name. Name for the port that can bereferred to by services.|
-|`protocol`|`string`|Protocol for port. Must be UDP, TCP, or SCTP.Defaults to "TCP".|
+|`localObjectReference`|[`LocalObjectReference`](#localobjectreference)|The Secret to select from.|
+|`optional`|`boolean`|Specify whether the Secret must be defined|
 
-## ResourceRequirements
+## Handler
 
-ResourceRequirements describes the compute resource requirements.
+Handler defines a specific action that should be takenTODO: pass structured data to these actions, and document that data here.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`exec`|[`ExecAction`](#execaction)|One and only one of the following should be specified.Exec specifies the action to take.|
+|`httpGet`|[`HTTPGetAction`](#httpgetaction)|HTTPGet specifies the http request to perform.|
+|`tcpSocket`|[`TCPSocketAction`](#tcpsocketaction)|TCPSocket specifies an action involving a TCP port.TCP hooks not yet supportedTODO: implement a realistic TCP lifecycle hook|
+
+## Quantity
+
+Quantity is a fixed-point representation of a number.It provides convenient marshaling/unmarshaling in JSON and YAML,in addition to String() and AsInt64() accessors.The serialization format is:<quantity>        ::= <signedNumber><suffix>  (Note that <suffix> may be empty, from the "" case in <decimalSI>.)<digit>           ::= 0 | 1 | ... | 9<digits>          ::= <digit> | <digit><digits><number>          ::= <digits> | <digits>.<digits> | <digits>. | .<digits><sign>            ::= "+" | "-"<signedNumber>    ::= <number> | <sign><number><suffix>          ::= <binarySI> | <decimalExponent> | <decimalSI><binarySI>        ::= Ki | Mi | Gi | Ti | Pi | Ei  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)<decimalSI>       ::= m | "" | k | M | G | T | P | E  (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)<decimalExponent> ::= "e" <signedNumber> | "E" <signedNumber>No matter which of the three exponent forms is used, no quantity may representa number greater than 2^63-1 in magnitude, nor may it have more than 3 decimalplaces. Numbers larger or more precise will be capped or rounded up.(E.g.: 0.1m will rounded up to 1m.)This may be extended in the future if we require larger or smaller quantities.When a Quantity is parsed from a string, it will remember the type of suffixit had, and will use the same type again when it is serialized.Before serializing, Quantity will be put in "canonical form".This means that Exponent/suffix will be adjusted up or down (with acorresponding increase or decrease in Mantissa) such that:  a. No precision is lost  b. No fractional digits will be emitted  c. The exponent (or suffix) is as large as possible.The sign will be omitted unless the number is negative.Examples:  1.5 will be serialized as "1500m"  1.5Gi will be serialized as "1536Mi"Note that the quantity will NEVER be internally represented by afloating point number. That is the whole point of this exercise.Non-canonical values will still parse as long as they are well formed,but will be re-emitted in their canonical form. (So always use canonicalform, or don't diff.)This format is intended to make it difficult to use these numbers withoutwriting some sort of special handling code in the hopes that that willcause implementors to also use a fixed point implementation.
 
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
-
-- [`ci.yaml`](../examples/ci.yaml)
-
 - [`dns-config.yaml`](../examples/dns-config.yaml)
-
-- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
-
-- [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
 
 - [`pod-spec-patch-wf-tmpl.yaml`](../examples/pod-spec-patch-wf-tmpl.yaml)
 
 - [`pod-spec-yaml-patch.yaml`](../examples/pod-spec-yaml-patch.yaml)
-
-- [`testvolume.yaml`](../examples/testvolume.yaml)
-
-- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 </details>
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`limits`|[`Quantity`](#quantity)|Limits describes the maximum amount of compute resources allowed.More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/|
-|`requests`|[`Quantity`](#quantity)|Requests describes the minimum amount of compute resources required.If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,otherwise to an implementation-defined value.More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/|
+|`string`|`string`|_No description available_|
 
-## SecurityContext
+## Capabilities
 
-SecurityContext holds security configuration that will be applied to a container.Some fields are present in both SecurityContext and PodSecurityContext.  When bothare set, the values in SecurityContext take precedence.
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
-</details>
+Adds and removes POSIX capabilities from running containers.
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`allowPrivilegeEscalation`|`boolean`|AllowPrivilegeEscalation controls whether a process can gain moreprivileges than its parent process. This bool directly controls ifthe no_new_privs flag will be set on the container process.AllowPrivilegeEscalation is true always when the container is:1) run as Privileged2) has CAP_SYS_ADMIN|
-|`capabilities`|[`Capabilities`](#capabilities)|The capabilities to add/drop when running containers.Defaults to the default set of capabilities granted by the container runtime.|
-|`privileged`|`boolean`|Run container in privileged mode.Processes in privileged containers are essentially equivalent to root on the host.Defaults to false.|
-|`procMount`|`string`|procMount denotes the type of proc mount to use for the containers.The default is DefaultProcMount which uses the container runtime defaults forreadonly paths and masked paths.This requires the ProcMountType feature flag to be enabled.|
-|`readOnlyRootFilesystem`|`boolean`|Whether this container has a read-only root filesystem.Default is false.|
-|`runAsGroup`|`int64`|The GID to run the entrypoint of the container process.Uses runtime default if unset.May also be set in PodSecurityContext.  If set in both SecurityContext andPodSecurityContext, the value specified in SecurityContext takes precedence.|
-|`runAsNonRoot`|`boolean`|Indicates that the container must run as a non-root user.If true, the Kubelet will validate the image at runtime to ensure that itdoes not run as UID 0 (root) and fail to start the container if it does.If unset or false, no such validation will be performed.May also be set in PodSecurityContext.  If set in both SecurityContext andPodSecurityContext, the value specified in SecurityContext takes precedence.|
-|`runAsUser`|`int64`|The UID to run the entrypoint of the container process.Defaults to user specified in image metadata if unspecified.May also be set in PodSecurityContext.  If set in both SecurityContext andPodSecurityContext, the value specified in SecurityContext takes precedence.|
-|`seLinuxOptions`|[`SELinuxOptions`](#selinuxoptions)|The SELinux context to be applied to the container.If unspecified, the container runtime will allocate a random SELinux context for eachcontainer.  May also be set in PodSecurityContext.  If set in both SecurityContext andPodSecurityContext, the value specified in SecurityContext takes precedence.|
-|`windowsOptions`|[`WindowsSecurityContextOptions`](#windowssecuritycontextoptions)|The Windows specific settings applied to all containers.If unspecified, the options from the PodSecurityContext will be used.If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.|
-
-## VolumeDevice
-
-volumeDevice describes a mapping of a raw block device within a container.
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`devicePath`|`string`|devicePath is the path inside of the container that the device will be mapped to.|
-|`name`|`string`|name must match the name of a persistentVolumeClaim in the pod|
-
-## VolumeMount
-
-VolumeMount describes a mounting of a Volume within a container.
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
-
-- [`ci.yaml`](../examples/ci.yaml)
-
-- [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
-
-- [`init-container.yaml`](../examples/init-container.yaml)
-
-- [`secrets.yaml`](../examples/secrets.yaml)
-
-- [`volumes-emptydir.yaml`](../examples/volumes-emptydir.yaml)
-
-- [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
-
-- [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`mountPath`|`string`|Path within the container at which the volume should be mounted.  Mustnot contain ':'.|
-|`mountPropagation`|`string`|mountPropagation determines how mounts are propagated from the hostto container and the other way around.When not set, MountPropagationNone is used.This field is beta in 1.10.|
-|`name`|`string`|This must match the Name of a Volume.|
-|`readOnly`|`boolean`|Mounted read-only if true, read-write otherwise (false or unspecified).Defaults to false.|
-|`subPath`|`string`|Path within the volume from which the container's volume should be mounted.Defaults to "" (volume's root).|
-|`subPathExpr`|`string`|Expanded path within the volume from which the container's volume should be mounted.Behaves similarly to SubPath but environment variable references $(VAR_NAME) are expanded using the container's environment.Defaults to "" (volume's root).SubPathExpr and SubPath are mutually exclusive.This field is beta in 1.15.|
+|`add`|`Array< string >`|Added capabilities|
+|`drop`|`Array< string >`|Removed capabilities|
 
 ## FieldsV1
 
@@ -4534,15 +4646,6 @@ TypedLocalObjectReference contains enough information to let you locate thetyped
 |`apiGroup`|`string`|APIGroup is the group for the resource being referenced.If APIGroup is not specified, the specified Kind must be in the core API group.For any other third-party types, APIGroup is required.|
 |`kind`|`string`|Kind is the type of resource being referenced|
 |`name`|`string`|Name is the name of resource being referenced|
-
-## Quantity
-
-Quantity is a fixed-point representation of a number.It provides convenient marshaling/unmarshaling in JSON and YAML,in addition to String() and AsInt64() accessors.The serialization format is:<quantity>        ::= <signedNumber><suffix>  (Note that <suffix> may be empty, from the "" case in <decimalSI>.)<digit>           ::= 0 | 1 | ... | 9<digits>          ::= <digit> | <digit><digits><number>          ::= <digits> | <digits>.<digits> | <digits>. | .<digits><sign>            ::= "+" | "-"<signedNumber>    ::= <number> | <sign><number><suffix>          ::= <binarySI> | <decimalExponent> | <decimalSI><binarySI>        ::= Ki | Mi | Gi | Ti | Pi | Ei  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)<decimalSI>       ::= m | "" | k | M | G | T | P | E  (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)<decimalExponent> ::= "e" <signedNumber> | "E" <signedNumber>No matter which of the three exponent forms is used, no quantity may representa number greater than 2^63-1 in magnitude, nor may it have more than 3 decimalplaces. Numbers larger or more precise will be capped or rounded up.(E.g.: 0.1m will rounded up to 1m.)This may be extended in the future if we require larger or smaller quantities.When a Quantity is parsed from a string, it will remember the type of suffixit had, and will use the same type again when it is serialized.Before serializing, Quantity will be put in "canonical form".This means that Exponent/suffix will be adjusted up or down (with acorresponding increase or decrease in Mantissa) such that:  a. No precision is lost  b. No fractional digits will be emitted  c. The exponent (or suffix) is as large as possible.The sign will be omitted unless the number is negative.Examples:  1.5 will be serialized as "1500m"  1.5Gi will be serialized as "1536Mi"Note that the quantity will NEVER be internally represented by afloating point number. That is the whole point of this exercise.Non-canonical values will still parse as long as they are well formed,but will be re-emitted in their canonical form. (So always use canonicalform, or don't diff.)This format is intended to make it difficult to use these numbers withoutwriting some sort of special handling code in the hopes that that willcause implementors to also use a fixed point implementation.
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`string`|`string`|_No description available_|
 
 ## PersistentVolumeClaimCondition
 
@@ -4925,133 +5028,6 @@ Represents a vSphere volume resource.
 |`storagePolicyName`|`string`|Storage Policy Based Management (SPBM) profile name.|
 |`volumePath`|`string`|Path that identifies vSphere volume vmdk|
 
-## EnvVarSource
-
-EnvVarSource represents a source for the value of an EnvVar.
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
-
-- [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
-
-- [`global-outputs.yaml`](../examples/global-outputs.yaml)
-
-- [`k8s-jobs.yaml`](../examples/k8s-jobs.yaml)
-
-- [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
-
-- [`k8s-wait-wf.yaml`](../examples/k8s-wait-wf.yaml)
-
-- [`nested-workflow.yaml`](../examples/nested-workflow.yaml)
-
-- [`output-parameter.yaml`](../examples/output-parameter.yaml)
-
-- [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
-
-- [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
-
-- [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
-
-- [`secrets.yaml`](../examples/secrets.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`configMapKeyRef`|[`ConfigMapKeySelector`](#configmapkeyselector)|Selects a key of a ConfigMap.|
-|`fieldRef`|[`ObjectFieldSelector`](#objectfieldselector)|Selects a field of the pod: supports metadata.name, metadata.namespace, metadata.labels, metadata.annotations,spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP.|
-|`resourceFieldRef`|[`ResourceFieldSelector`](#resourcefieldselector)|Selects a resource of the container: only resources limits and requests(limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.|
-|`secretKeyRef`|[`SecretKeySelector`](#secretkeyselector)|Selects a key of a secret in the pod's namespace|
-
-## ConfigMapEnvSource
-
-ConfigMapEnvSource selects a ConfigMap to populate the environmentvariables with.The contents of the target ConfigMap's Data field will represent thekey-value pairs as environment variables.
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`localObjectReference`|[`LocalObjectReference`](#localobjectreference)|The ConfigMap to select from.|
-|`optional`|`boolean`|Specify whether the ConfigMap must be defined|
-
-## SecretEnvSource
-
-SecretEnvSource selects a Secret to populate the environmentvariables with.The contents of the target Secret's Data field will represent thekey-value pairs as environment variables.
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`localObjectReference`|[`LocalObjectReference`](#localobjectreference)|The Secret to select from.|
-|`optional`|`boolean`|Specify whether the Secret must be defined|
-
-## Handler
-
-Handler defines a specific action that should be takenTODO: pass structured data to these actions, and document that data here.
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`exec`|[`ExecAction`](#execaction)|One and only one of the following should be specified.Exec specifies the action to take.|
-|`httpGet`|[`HTTPGetAction`](#httpgetaction)|HTTPGet specifies the http request to perform.|
-|`tcpSocket`|[`TCPSocketAction`](#tcpsocketaction)|TCPSocket specifies an action involving a TCP port.TCP hooks not yet supportedTODO: implement a realistic TCP lifecycle hook|
-
-## Capabilities
-
-Adds and removes POSIX capabilities from running containers.
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`add`|`Array< string >`|Added capabilities|
-|`drop`|`Array< string >`|Removed capabilities|
-
-## NodeSelectorTerm
-
-A null or empty node selector term matches no objects. The requirements ofthem are ANDed.The TopologySelectorTerm type implements a subset of the NodeSelectorTerm.
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`matchExpressions`|`Array<`[`NodeSelectorRequirement`](#nodeselectorrequirement)`>`|A list of node selector requirements by node's labels.|
-|`matchFields`|`Array<`[`NodeSelectorRequirement`](#nodeselectorrequirement)`>`|A list of node selector requirements by node's fields.|
-
-## KeyToPath
-
-Maps a string key to a path within a volume.
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`key`|`string`|The key to project.|
-|`mode`|`int32`|Optional: mode bits to use on this file, must be a value between 0and 0777. If not specified, the volume defaultMode will be used.This might be in conflict with other options that affect the filemode, like fsGroup, and the result can be other mode bits set.|
-|`path`|`string`|The relative path of the file to map the key to.May not be an absolute path.May not contain the path element '..'.May not start with the string '..'.|
-
-## DownwardAPIVolumeFile
-
-DownwardAPIVolumeFile represents information to create the file containing the pod field
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`fieldRef`|[`ObjectFieldSelector`](#objectfieldselector)|Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.|
-|`mode`|`int32`|Optional: mode bits to use on this file, must be a value between 0and 0777. If not specified, the volume defaultMode will be used.This might be in conflict with other options that affect the filemode, like fsGroup, and the result can be other mode bits set.|
-|`path`|`string`|Required: Path is  the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'|
-|`resourceFieldRef`|[`ResourceFieldSelector`](#resourcefieldselector)|Selects a resource of the container: only resources limits and requests(limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.|
-
-## VolumeProjection
-
-Projection that may be projected along with other supported volume types
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`configMap`|[`ConfigMapProjection`](#configmapprojection)|information about the configMap data to project|
-|`downwardAPI`|[`DownwardAPIProjection`](#downwardapiprojection)|information about the downwardAPI data to project|
-|`secret`|[`SecretProjection`](#secretprojection)|information about the secret data to project|
-|`serviceAccountToken`|[`ServiceAccountTokenProjection`](#serviceaccounttokenprojection)|information about the serviceAccountToken data to project|
-
 ## ObjectFieldSelector
 
 ObjectFieldSelector selects an APIVersioned field of an object.
@@ -5118,6 +5094,61 @@ TCPSocketAction describes an action based on opening a socket
 |`host`|`string`|Optional: Host name to connect to, defaults to the pod IP.|
 |`port`|[`IntOrString`](#intorstring)|Number or name of the port to access on the container.Number must be in the range 1 to 65535.Name must be an IANA_SVC_NAME.|
 
+## NodeSelectorTerm
+
+A null or empty node selector term matches no objects. The requirements ofthem are ANDed.The TopologySelectorTerm type implements a subset of the NodeSelectorTerm.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`matchExpressions`|`Array<`[`NodeSelectorRequirement`](#nodeselectorrequirement)`>`|A list of node selector requirements by node's labels.|
+|`matchFields`|`Array<`[`NodeSelectorRequirement`](#nodeselectorrequirement)`>`|A list of node selector requirements by node's fields.|
+
+## KeyToPath
+
+Maps a string key to a path within a volume.
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`key`|`string`|The key to project.|
+|`mode`|`int32`|Optional: mode bits to use on this file, must be a value between 0and 0777. If not specified, the volume defaultMode will be used.This might be in conflict with other options that affect the filemode, like fsGroup, and the result can be other mode bits set.|
+|`path`|`string`|The relative path of the file to map the key to.May not be an absolute path.May not contain the path element '..'.May not start with the string '..'.|
+
+## DownwardAPIVolumeFile
+
+DownwardAPIVolumeFile represents information to create the file containing the pod field
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`fieldRef`|[`ObjectFieldSelector`](#objectfieldselector)|Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.|
+|`mode`|`int32`|Optional: mode bits to use on this file, must be a value between 0and 0777. If not specified, the volume defaultMode will be used.This might be in conflict with other options that affect the filemode, like fsGroup, and the result can be other mode bits set.|
+|`path`|`string`|Required: Path is  the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'|
+|`resourceFieldRef`|[`ResourceFieldSelector`](#resourcefieldselector)|Selects a resource of the container: only resources limits and requests(limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.|
+
+## VolumeProjection
+
+Projection that may be projected along with other supported volume types
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`configMap`|[`ConfigMapProjection`](#configmapprojection)|information about the configMap data to project|
+|`downwardAPI`|[`DownwardAPIProjection`](#downwardapiprojection)|information about the downwardAPI data to project|
+|`secret`|[`SecretProjection`](#secretprojection)|information about the secret data to project|
+|`serviceAccountToken`|[`ServiceAccountTokenProjection`](#serviceaccounttokenprojection)|information about the serviceAccountToken data to project|
+
+## HTTPHeader
+
+HTTPHeader describes a custom header to be used in HTTP probes
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`name`|`string`|The header field name|
+|`value`|`string`|The header field value|
+
 ## NodeSelectorRequirement
 
 A node selector requirement is a selector that contains values, a key, and an operatorthat relates the key and values.
@@ -5177,13 +5208,3 @@ ServiceAccountTokenProjection represents a projected service account tokenvolume
 |`audience`|`string`|Audience is the intended audience of the token. A recipient of a tokenmust identify itself with an identifier specified in the audience of thetoken, and otherwise should reject the token. The audience defaults to theidentifier of the apiserver.|
 |`expirationSeconds`|`int64`|ExpirationSeconds is the requested duration of validity of the serviceaccount token. As the token approaches expiration, the kubelet volumeplugin will proactively rotate the service account token. The kubelet willstart trying to rotate the token if the token is older than 80 percent ofits time to live or if the token is older than 24 hours.Defaults to 1 hourand must be at least 10 minutes.|
 |`path`|`string`|Path is the path relative to the mount point of the file to project thetoken into.|
-
-## HTTPHeader
-
-HTTPHeader describes a custom header to be used in HTTP probes
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`name`|`string`|The header field name|
-|`value`|`string`|The header field value|

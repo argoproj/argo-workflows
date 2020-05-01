@@ -48,7 +48,7 @@ type WorkflowArchive interface {
 	ListWorkflows(namespace string, minStartAt, maxStartAt time.Time, labelRequirements labels.Requirements, limit, offset int) (wfv1.Workflows, error)
 	GetWorkflow(uid string) (*wfv1.Workflow, error)
 	DeleteWorkflow(uid string) error
-	DeleteWorkflows(ttl time.Duration) error
+	DeleteExpiredWorkflows(ttl time.Duration) error
 }
 
 type workflowArchive struct {
@@ -220,7 +220,7 @@ func (r *workflowArchive) DeleteWorkflow(uid string) error {
 	return nil
 }
 
-func (r *workflowArchive) DeleteWorkflows(ttl time.Duration) error {
+func (r *workflowArchive) DeleteExpiredWorkflows(ttl time.Duration) error {
 	rs, err := r.session.
 		DeleteFrom(archiveTableName).
 		Where(r.clusterManagedNamespaceAndInstanceID()).

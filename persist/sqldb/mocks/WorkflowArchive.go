@@ -30,13 +30,13 @@ func (_m *WorkflowArchive) ArchiveWorkflow(wf *v1alpha1.Workflow) error {
 	return r0
 }
 
-// DeleteWorkflow provides a mock function with given fields: uid
-func (_m *WorkflowArchive) DeleteWorkflow(uid string) error {
-	ret := _m.Called(uid)
+// DeleteExpiredWorkflows provides a mock function with given fields: ttl
+func (_m *WorkflowArchive) DeleteExpiredWorkflows(ttl time.Duration) error {
+	ret := _m.Called(ttl)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(uid)
+	if rf, ok := ret.Get(0).(func(time.Duration) error); ok {
+		r0 = rf(ttl)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -44,13 +44,13 @@ func (_m *WorkflowArchive) DeleteWorkflow(uid string) error {
 	return r0
 }
 
-// DeleteWorkflows provides a mock function with given fields: ttl
-func (_m *WorkflowArchive) DeleteWorkflows(ttl time.Duration) error {
-	ret := _m.Called(ttl)
+// DeleteWorkflow provides a mock function with given fields: uid
+func (_m *WorkflowArchive) DeleteWorkflow(uid string) error {
+	ret := _m.Called(uid)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(time.Duration) error); ok {
-		r0 = rf(ttl)
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(uid)
 	} else {
 		r0 = ret.Error(0)
 	}

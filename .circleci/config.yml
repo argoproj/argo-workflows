@@ -75,23 +75,23 @@ commands:
             echo "    token: xxxxxx" >> ~/.kube/config
       - run:
           name: Start Argo
-          command: mkdir dist && KUBECONFIG=~/.kube/config make start DB=$DB E2E_EXECUTOR=docker DEV_IMAGE=true
-      - run:
-          name: Establish port forward
-          command: make pf
+          command: |
+            echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
+            echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
+            echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts
+            mkdir dist
+            KUBECONFIG=~/.kube/config make start DB=$DB E2E_EXECUTOR=docker DEV_IMAGE=true
+            # CircleCI will kill spawned processes, so lets block for 20m
+            sleep 20m
           background: true
       - run:
-          name: Sleep for short while
-          command: sleep 10s
-      - run:
-          name: Follow logs, to help diagnose failures
-          command: make logs
-          background: true
+          name: Wait for Argo Server to be ready
+          command: make wait
       - run:
           name: Run tests
           command: |
             trap 'make test-results/junit.xml' EXIT
-            make smoke test-e2e
+            make smoke test-e2e test-e2e-cron
       - store_test_results:
           path: test-results
           when: always
@@ -154,7 +154,7 @@ jobs:
             make test
       - run: |
           cp sonar-project.properties dist/
-          if [ $CIRCLE_BRANCH != master ]; then
+          if [ "$(echo "$CIRCLE_BRANCH" | grep 'master\|release-')" = '' ]; then
             echo "sonar.pullrequest.branch=$CIRCLE_BRANCH" >> sonar-project.properties
             echo "sonar.pullrequest.key=$CIRCLE_PR_NUMBER" >> sonar-project.properties
           fi
