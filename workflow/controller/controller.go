@@ -738,7 +738,7 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 					return
 				}
 				reason, significant := significantChange(old.(*apiv1.Pod), new.(*apiv1.Pod))
-				log.WithFields(log.Fields{"key": key, "reason": reason, "interesting": significant}).Debug()
+				log.WithFields(log.Fields{"key": key, "reason": reason, "significant": significant}).Debug()
 				if !significant {
 					return
 				}
