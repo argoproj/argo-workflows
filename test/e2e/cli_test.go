@@ -379,7 +379,7 @@ func (s *CLISuite) TestWorkflowDelete() {
 	})
 	s.Run("DeleteCompleted", func() {
 		s.Given().
-			Workflow("@smoke/sleep-3s.yaml").
+			Workflow("@testdata/sleep-3s.yaml").
 			When().
 			SubmitWorkflow().
 			Given().
