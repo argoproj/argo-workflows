@@ -17,7 +17,6 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"strings"
-	"syscall"
 	"time"
 
 	argofile "github.com/argoproj/pkg/file"
@@ -36,6 +35,7 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/common"
+	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
 
 const (
@@ -443,8 +443,8 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			output, err = we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
 			if err != nil {
 				// We have a default value to use instead of returning an error
-				if param.ValueFrom.Default != "" {
-					output = param.ValueFrom.Default
+				if param.ValueFrom.Default != nil {
+					output = *param.ValueFrom.Default
 				} else {
 					return err
 				}
@@ -455,8 +455,8 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			out, err := ioutil.ReadFile(mountedPath)
 			if err != nil {
 				// We have a default value to use instead of returning an error
-				if param.ValueFrom.Default != "" {
-					output = param.ValueFrom.Default
+				if param.ValueFrom.Default != nil {
+					output = *param.ValueFrom.Default
 				} else {
 					return err
 				}
@@ -963,7 +963,7 @@ func (we *WorkflowExecutor) monitorAnnotations(ctx context.Context) <-chan struc
 	// directly from kubernetes API. The controller uses this to fast-track notification of annotations
 	// instead of waiting for the volume file to get updated (which can take minutes)
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGUSR2)
+	signal.Notify(sigs, os_specific.GetOsSignal())
 
 	we.setExecutionControl()
 

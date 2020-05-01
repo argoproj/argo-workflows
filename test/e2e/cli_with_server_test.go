@@ -23,12 +23,16 @@ func (s *CLIWithServerSuite) BeforeTest(suiteName, testName string) {
 	token, err := s.GetServiceAccountToken()
 	s.CheckError(err)
 	_ = os.Setenv("ARGO_SERVER", "localhost:2746")
+	_ = os.Setenv("ARGO_SECURE", "true")
+	_ = os.Setenv("ARGO_INSECURE_SKIP_VERIFY", "true")
 	_ = os.Setenv("ARGO_TOKEN", token)
 }
 
 func (s *CLIWithServerSuite) AfterTest(suiteName, testName string) {
 	s.CLISuite.AfterTest(suiteName, testName)
 	_ = os.Unsetenv("ARGO_SERVER")
+	_ = os.Unsetenv("ARGO_SECURE")
+	_ = os.Unsetenv("ARGO_INSECURE_SKIP_VERIFY")
 	_ = os.Unsetenv("ARGO_TOKEN")
 }
 
@@ -159,6 +163,43 @@ func (s *CLIWithServerSuite) TestWorkflowRetryPersistence() {
 				assert.Contains(t, output, "Namespace:")
 			}
 		})
+}
+
+func (s *CLIWithServerSuite) TestWorkflowSuspendResumePersistence() {
+	if !s.Persistence.IsEnabled() {
+		// Persistence is disabled for this test, but it is enabled for the Argo Server in this test suite.
+		// When this is the case, this behavior is tested in cli_test.go
+		s.T().SkipNow()
+	}
+	s.Given().
+		Workflow("@testdata/sleep-3s.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflowToStart(10*time.Second).
+		RunCli([]string{"suspend", "sleep-3s"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "workflow sleep-3s suspended")
+			}
+		}).
+		RunCli([]string{"resume", "sleep-3s"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "workflow sleep-3s resumed")
+			}
+		}).
+		WaitForWorkflow(20 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *CLIWithServerSuite) TestNodeSuspendResumePersistence() {
+	if !s.Persistence.IsEnabled() {
+		// Persistence is disabled for this test, but it is enabled for the Argo Server in this test suite.
+		// When this is the case, this behavior is tested in cli_test.go
+		s.T().SkipNow()
+	}
+	NodeSuspendResumeCommon(s.E2ESuite)
 }
 
 func TestCLIWithServerSuite(t *testing.T) {

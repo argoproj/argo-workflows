@@ -40,15 +40,6 @@ RUN if [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "amd64" ]; then \
     tar --extract --file docker.tgz --strip-components 1 --directory /usr/local/bin/ && \
     rm docker.tgz
 
-# Install dep
-ENV DEP_VERSION=0.5.1
-RUN if [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "amd64" ]; then \
-	wget https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-amd64 -O /usr/local/bin/dep; \
-    elif [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "arm64" ]; then \
-	wget https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-arm64 -O /usr/local/bin/dep; \
-    fi && \
-    chmod +x /usr/local/bin/dep
-
 ####################################################################################################
 # argoexec-base
 # Used as the base for both the release and development version of argoexec
@@ -108,6 +99,7 @@ RUN touch ui/dist/node_modules.marker
 RUN touch ui/dist/app/index.html
 # fail the build if we are "dirty"
 RUN git diff --exit-code
+RUN make argo-server.crt argo-server.key
 RUN if [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "amd64" ]; then \
 	make dist/argo-linux-amd64 dist/workflow-controller-linux-amd64 dist/argoexec-linux-amd64; \
     elif [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "arm64" ]; then \
@@ -136,5 +128,7 @@ ENTRYPOINT [ "workflow-controller" ]
 FROM scratch as argocli
 COPY --from=argoexec-base /etc/ssh/ssh_known_hosts /etc/ssh/ssh_known_hosts
 COPY --from=argoexec-base /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=argo-build /go/src/github.com/argoproj/argo/argo-server.crt argo-server.crt
+COPY --from=argo-build /go/src/github.com/argoproj/argo/argo-server.key argo-server.key
 COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argo-linux-* /bin/argo
 ENTRYPOINT [ "argo" ]
