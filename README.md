@@ -12,6 +12,8 @@ Argo Workflows is an open source container-native workflow engine for orchestrat
 * Easily run compute intensive jobs for machine learning or data processing in a fraction of the time using Argo Workflows on Kubernetes.
 * Run CI/CD pipelines natively on Kubernetes without configuring complex software development products.
 
+Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted project.
+
 ## Why Argo Workflows?
 * Designed from the ground up for containers without the overhead and limitations of legacy VM and server-based environments.
 * Cloud agnostic and can run on any Kubernetes cluster.
@@ -33,18 +35,12 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/
 * [How to configure your artifact repository](docs/configure-artifact-repository.md)
 
 ## Features
-* Incredibly easy to use UI
-* Server interface with REST API
+* Easy to use UI
 * Artifact support (S3, Artifactory, HTTP, Git, GCS, raw)
-* Archiving Workflows after executing for later access
 * Workflow templating to store commonly used Workflows in the cluster
+* Archiving Workflows after executing for later access
 * Scheduled workflows
-* Event emission
-* Prometheus metrics
-* Multiple executors
-* Fine-tuned garbage collection
-* Automatically calculated resource usage per step
-* Pod Disruption Budget support
+* Server interface with REST API
 * DAG or Steps based declaration of workflows
 * Step level input & outputs (artifacts/parameters)
 * Loops
@@ -64,6 +60,12 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/
 * Daemoned steps
 * DinD (docker-in-docker)
 * Script steps
+* Event emission
+* Prometheus metrics
+* Multiple executors
+* Fine-tuned garbage collection
+* Automatically calculated resource usage per step
+* Pod Disruption Budget support
 
 ## Community Blogs and Presentations
 * [Argo Ansible role: Provisioning Argo Workflows on OpenShift](https://medium.com/@marekermk/provisioning-argo-on-openshift-with-ansible-and-kustomize-340a1fda8b50)
@@ -78,5 +80,5 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/
 
 ## Project Resources
 * Argo GitHub:  https://github.com/argoproj
-* Argo website: https://argoproj.github.io/
+* Argo Website: https://argoproj.github.io/
 * Argo Slack:   [click here to join](https://argoproj.github.io/community/join-slack)
