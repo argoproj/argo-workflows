@@ -379,7 +379,7 @@ func (s *CLISuite) TestWorkflowDelete() {
 	})
 	s.Run("DeleteCompleted", func() {
 		s.Given().
-			Workflow("@smoke/basic.yaml").
+			Workflow("@testdata/sleep-3s.yaml").
 			When().
 			SubmitWorkflow().
 			Given().
@@ -394,7 +394,7 @@ func (s *CLISuite) TestWorkflowDelete() {
 			Given().
 			RunCli([]string{"delete", "--completed", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.Contains(t, output, "Workflow 'basic' deleted")
+					assert.Contains(t, output, "deleted")
 				}
 			})
 	})
