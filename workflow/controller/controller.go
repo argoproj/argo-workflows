@@ -638,6 +638,9 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
 				if err == nil {
+					if old.(*unstructured.Unstructured).GetResourceVersion() == new.(*unstructured.Unstructured).GetResourceVersion() {
+						return
+					}
 					wfc.wfQueue.Add(key)
 					priority, creation := getWfPriority(new)
 					wfc.throttler.Add(key, priority, creation)
@@ -699,6 +702,9 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 			},
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
+				if old.(*unstructured.Unstructured).GetResourceVersion() == new.(*unstructured.Unstructured).GetResourceVersion() {
+					return
+				}
 				if err == nil {
 					wfc.podQueue.Add(key)
 				}
