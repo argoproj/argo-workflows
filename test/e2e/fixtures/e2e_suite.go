@@ -80,6 +80,7 @@ type E2ESuite struct {
 }
 
 func (s *E2ESuite) SetupSuite() {
+	s.OpenLog(s.Suite.T().Name(), "SetupSuite")
 	var err error
 	s.RestConfig, err = kubeconfig.DefaultRestConfig()
 	s.CheckError(err)
@@ -94,9 +95,10 @@ func (s *E2ESuite) SetupSuite() {
 
 func (s *E2ESuite) TearDownSuite() {
 	s.Persistence.Close()
+	s.CloseLog()
 }
 
-func (s *E2ESuite) BeforeTest(suiteName, testName string) {
+func (s *E2ESuite) OpenLog(suiteName string, testName string) {
 	dir := "/tmp/log/argo-e2e"
 	err := os.MkdirAll(dir, 0777)
 	s.CheckError(err)
@@ -106,6 +108,10 @@ func (s *E2ESuite) BeforeTest(suiteName, testName string) {
 	err = file.setFile(f)
 	s.CheckError(err)
 	log.Infof("logging debug diagnostics to file://%s", name)
+}
+
+func (s *E2ESuite) BeforeTest(suiteName, testName string) {
+	s.OpenLog(suiteName, testName)
 	s.DeleteResources(Label)
 	numWorkflows := s.countWorkflows()
 	if s.numWorkflows > 0 && s.numWorkflows != numWorkflows {
@@ -301,7 +307,11 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 	for _, wf := range wfs.Items {
 		s.printWorkflowDiagnostics(wf.GetName())
 	}
-	err = file.Close()
+	s.CloseLog()
+}
+
+func (s *E2ESuite) CloseLog() {
+	err := file.Close()
 	s.CheckError(err)
 }
 

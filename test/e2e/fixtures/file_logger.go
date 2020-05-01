@@ -29,6 +29,9 @@ func (f *fileLogger) Fire(l *log.Entry) error {
 }
 
 func (f *fileLogger) Close() error {
+	if f.file == nil {
+		return nil
+	}
 	err := f.file.Close()
 	f.file = nil
 	return err
