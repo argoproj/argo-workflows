@@ -1,0 +1,36 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.14.1
+ignore: {}
+# patches apply the minimum changes required to fix a vulnerability
+patch:
+  SNYK-JS-LODASH-567746:
+    - dagre > lodash:
+        patched: '2020-05-01T03:26:38.702Z'
+    - dagre > graphlib > lodash:
+        patched: '2020-05-01T03:26:38.702Z'
+    - argo-ui > dagre > lodash:
+        patched: '2020-05-01T03:26:38.702Z'
+    - react-form > react-redux > lodash:
+        patched: '2020-05-01T03:26:38.702Z'
+    - react-form > redux > lodash:
+        patched: '2020-05-01T03:26:38.702Z'
+    - argo-ui > dagre > graphlib > lodash:
+        patched: '2020-05-01T03:26:38.702Z'
+    - argo-ui > react-form > react-redux > lodash:
+        patched: '2020-05-01T03:26:38.702Z'
+    - argo-ui > react-form > redux > lodash:
+        patched: '2020-05-01T03:26:38.702Z'
+    - '@babel/core > lodash':
+        patched: '2020-05-01T03:26:38.702Z'
+    - formik > lodash:
+        patched: '2020-05-01T03:26:38.702Z'
+    - '@babel/core > @babel/traverse > lodash':
+        patched: '2020-05-01T03:26:38.702Z'
+    - '@babel/core > @babel/helpers > @babel/traverse > lodash':
+        patched: '2020-05-01T03:26:38.702Z'
+    - '@babel/core > @babel/helpers > @babel/traverse > @babel/generator > lodash':
+        patched: '2020-05-01T03:26:38.702Z'
+    - '@babel/core > @babel/helpers > @babel/traverse > @babel/helper-split-export-declaration > @babel/types > lodash':
+        patched: '2020-05-01T03:26:38.702Z'
+    - '@babel/core > @babel/helpers > @babel/traverse > @babel/helper-function-name > @babel/helper-get-function-arity > @babel/types > lodash':
+        patched: '2020-05-01T03:26:38.702Z'
