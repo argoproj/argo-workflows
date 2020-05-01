@@ -206,6 +206,7 @@ $(CONTROLLER_IMAGE_FILE):
 # argoexec
 
 dist/argoexec-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
+dist/argoexec-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
 dist/argoexec-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
 
 dist/argoexec-%: $(ARGOEXEC_PKGS)
@@ -240,10 +241,10 @@ mocks: $(HOME)/go/bin/mockery
 	./hack/update-mocks.sh $(MOCK_FILES)
 
 .PHONY: codegen
-codegen: status codegen-core swagger mocks docs
+codegen: status proto swagger mocks docs
 
-.PHONY: codegen-core
-codegen-core:
+.PHONY: proto
+proto:
 	$(call backup_go_mod)
 	# We need the folder for compatibility
 	go mod vendor
@@ -331,6 +332,10 @@ else
 	kubectl -n argo apply -f dist/no-db.yaml
 endif
 endif
+
+.PHONY: pull-build-images
+pull-build-images:
+	./hack/pull-build-images.sh
 
 .PHONY: test-images
 test-images: dist/cowsay-v1 dist/python-alpine3.6
@@ -466,7 +471,9 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go:
 pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go
 	go run ./hack secondaryswaggergen
 
-api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger pkg/apiclient/_.secondary.swagger.json $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
+$(SWAGGER_FILES): pkg/apiclient/_.secondary.swagger.json proto 
+
+api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
 	swagger mixin -c 680 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
 
 .PHONY: docs

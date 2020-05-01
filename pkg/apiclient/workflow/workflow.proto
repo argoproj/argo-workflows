@@ -43,7 +43,7 @@ message WorkflowResubmitRequest {
 message WorkflowRetryRequest {
     string name = 1;
     string namespace = 2;
-    bool restartSuccesful = 3;
+    bool restartSuccessful = 3;
     string nodeFieldSelector = 4;
 }
 message WorkflowResumeRequest {
@@ -113,8 +113,6 @@ message WorkflowSubmitRequest{
     string resourceKind = 2;
     string resourceName = 3;
     github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SubmitOpts submitOptions = 4;
-    k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions createOptions = 5;
-
 }
 
 service WorkflowService {
