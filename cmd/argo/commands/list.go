@@ -56,96 +56,7 @@ func NewListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "list workflows",
 		Run: func(cmd *cobra.Command, args []string) {
-			kubeCursor, lastWorkflowName, err := getKubeCursor(&listArgs)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-
-			listOpts := metav1.ListOptions{
-				Limit: listArgs.chunkSize,
-			}
-			labelSelector := labels.NewSelector()
-			if len(listArgs.status) != 0 {
-				req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.In, listArgs.status)
-				if req != nil {
-					labelSelector = labelSelector.Add(*req)
-				}
-			}
-			if listArgs.completed {
-				req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"true"})
-				labelSelector = labelSelector.Add(*req)
-			}
-			if listArgs.running {
-				req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.NotEquals, []string{"true"})
-				labelSelector = labelSelector.Add(*req)
-			}
-			listOpts.LabelSelector = labelSelector.String()
-
-			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewWorkflowServiceClient()
-			namespace := client.Namespace()
-			if listArgs.allNamespaces {
-				namespace = ""
-			}
-
-			initialFetch := true
-			wfName := ""
-
-			// Keep fetching workflows until we've got enough amount
-			var workflows wfv1.Workflows
-			for initialFetch || kubeCursor != "" {
-				listOpts.Continue = kubeCursor
-				tmpWfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
-					Namespace:   namespace,
-					ListOptions: &listOpts,
-				})
-				argoerrors.CheckError(err)
-
-				if initialFetch {
-					findTargetWorkflow(tmpWfList, lastWorkflowName)
-					initialFetch = false
-				}
-				filterWorkflow(tmpWfList, &listArgs)
-
-				if listArgs.limit != 0 && int64(len(workflows)+len(tmpWfList.Items)) > listArgs.limit {
-					if int64(len(workflows)) == listArgs.limit {
-						wfName = workflows[listArgs.limit-1].Name
-					} else {
-						wfName = truncateWorkflowList(tmpWfList, &workflows, &listArgs)
-						workflows = append(workflows, tmpWfList.Items...)
-					}
-					break
-				}
-
-				workflows = append(workflows, tmpWfList.Items...)
-				kubeCursor = tmpWfList.ListMeta.Continue
-			}
-
-			encodedCursor := ""
-			if wfName != "" {
-				encodedCursor, err = encodeCursor(kubeCursor, wfName, &listArgs)
-				if err != nil {
-					log.Errorf("Error when preparing the cursor for other workflows: %v", err)
-				}
-			}
-
-			switch listArgs.output {
-			case "", "wide":
-				printTable(workflows, &listArgs)
-				if encodedCursor != "" {
-					fmt.Printf("There are additional suppressed results, show them by passing in `--continue %s`\n", encodedCursor)
-				}
-			case "name":
-				for _, wf := range workflows {
-					fmt.Println(wf.ObjectMeta.Name)
-				}
-				if encodedCursor != "" {
-					fmt.Printf("There are additional suppressed results, show them by passing in `--continue %s`\n", encodedCursor)
-				}
-			default:
-				log.Errorf("Unknown output mode: %s", listArgs.output)
-			}
+			listWorkflows(&listArgs)
 		},
 	}
 	command.Flags().BoolVar(&listArgs.allNamespaces, "all-namespaces", false, "Show workflows from all namespaces")
@@ -160,6 +71,101 @@ func NewListCommand() *cobra.Command {
 	command.Flags().StringVar(&listArgs.continueToken, "continue", "", "Return the next batch of workloads starting from this token. Note that the chunk size used to fetch this token must be passed in at the same time.")
 	command.Flags().Int64VarP(&listArgs.limit, "limit", "", 500, "Return a list with maximum N workflows. Pass 0 to retrieve the full list.")
 	return command
+}
+
+func listWorkflows(listArgs *listFlags) {
+	kubeCursor, lastWorkflowName, err := getKubeCursor(listArgs)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	listOpts := metav1.ListOptions{
+		Limit: listArgs.chunkSize,
+	}
+	labelSelector := labels.NewSelector()
+	if len(listArgs.status) != 0 {
+		req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.In, listArgs.status)
+		if req != nil {
+			labelSelector = labelSelector.Add(*req)
+		}
+	}
+	if listArgs.completed {
+		req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"true"})
+		labelSelector = labelSelector.Add(*req)
+	}
+	if listArgs.running {
+		req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.NotEquals, []string{"true"})
+		labelSelector = labelSelector.Add(*req)
+	}
+	listOpts.LabelSelector = labelSelector.String()
+
+	ctx, apiClient := client.NewAPIClient()
+	serviceClient := apiClient.NewWorkflowServiceClient()
+	namespace := client.Namespace()
+	if listArgs.allNamespaces {
+		namespace = ""
+	}
+
+	initialFetch := true
+	wfName := ""
+
+	// Keep fetching workflows until we've got enough amount
+	var workflows wfv1.Workflows
+	for initialFetch || kubeCursor != "" {
+		listOpts.Continue = kubeCursor
+		tmpWfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
+			Namespace:   namespace,
+			ListOptions: &listOpts,
+		})
+		argoerrors.CheckError(err)
+
+		if initialFetch {
+			findTargetWorkflow(tmpWfList, lastWorkflowName)
+			initialFetch = false
+		}
+		filterWorkflow(tmpWfList, listArgs)
+
+		if listArgs.limit != 0 && int64(len(workflows)+len(tmpWfList.Items)) > listArgs.limit {
+			if int64(len(workflows)) == listArgs.limit {
+				// No need to intake more workflows
+				// Will continue from the last workflow to be returned
+				wfName = workflows[listArgs.limit-1].Name
+			} else {
+				wfName = truncateWorkflowList(tmpWfList, &workflows, listArgs)
+				workflows = append(workflows, tmpWfList.Items...)
+			}
+			break
+		}
+
+		workflows = append(workflows, tmpWfList.Items...)
+		kubeCursor = tmpWfList.ListMeta.Continue
+	}
+
+	encodedCursor := ""
+	if wfName != "" {
+		encodedCursor, err = encodeCursor(kubeCursor, wfName, listArgs)
+		if err != nil {
+			log.Errorf("Error when preparing the cursor for other workflows: %v", err)
+		}
+	}
+
+	switch listArgs.output {
+	case "", "wide":
+		printTable(workflows, listArgs)
+		if encodedCursor != "" {
+			fmt.Printf("There are additional suppressed results, show them by passing in `--continue %s`\n", encodedCursor)
+		}
+	case "name":
+		for _, wf := range workflows {
+			fmt.Println(wf.ObjectMeta.Name)
+		}
+		if encodedCursor != "" {
+			fmt.Printf("There are additional suppressed results, show them by passing in `--continue %s`\n", encodedCursor)
+		}
+	default:
+		log.Errorf("Unknown output mode: %s", listArgs.output)
+	}
 }
 
 func getKubeCursor(listArgs *listFlags) (string, string, error) {
