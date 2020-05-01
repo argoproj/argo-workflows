@@ -73,7 +73,7 @@ func getWfPhase(obj interface{}) wfv1.NodePhase {
 		return ""
 	}
 	phase, hasPhase, err := unstructured.NestedString(un.Object, "status", "phase")
-	if err != nil || !hasPhase{
+	if err != nil || !hasPhase {
 		return ""
 	}
 
