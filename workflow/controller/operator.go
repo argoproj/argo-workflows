@@ -1476,9 +1476,9 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			if processedTmpl.IsPodType() {
 				localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
 			}
-			localParams[common.LocalVarPodRetryAttempt] = strconv.Itoa(len(retryParentNode.Children))
-
 			// Inject the retryAttempt number
+			localParams[common.LocalVarRetryAttempt] = strconv.Itoa(len(retryParentNode.Children))
+
 			processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, localParams)
 			if err != nil {
 				return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, err), err
