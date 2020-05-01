@@ -40,15 +40,6 @@ RUN if [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "amd64" ]; then \
     tar --extract --file docker.tgz --strip-components 1 --directory /usr/local/bin/ && \
     rm docker.tgz
 
-# Install dep
-ENV DEP_VERSION=0.5.1
-RUN if [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "amd64" ]; then \
-	wget https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-amd64 -O /usr/local/bin/dep; \
-    elif [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "arm64" ]; then \
-	wget https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-arm64 -O /usr/local/bin/dep; \
-    fi && \
-    chmod +x /usr/local/bin/dep
-
 ####################################################################################################
 # argoexec-base
 # Used as the base for both the release and development version of argoexec
