@@ -37,6 +37,7 @@ Some use-case specific documentation is available:
 * [Resource Duration](resource-duration.md)
 * [REST API](rest-api.md)
 * [Running Locally](running-locally.md)
+* [Scaling](scaling.md)
 * [Security](security.md)
 * [Service Accounts](service-accounts.md)
 * [Static Code Analysis](static-code-analysis.md)
