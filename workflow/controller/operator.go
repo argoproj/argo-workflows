@@ -87,6 +87,7 @@ type wfOperationCtx struct {
 	// preExecutionNodePhases contains the phases of all the nodes before the current operation. Necessary to infer
 	// changes in phase for metric emission
 	preExecutionNodePhases map[string]wfv1.NodePhase
+	metricsService         metrics.Service
 }
 
 var (
@@ -997,12 +998,12 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			newDaemonStatus = nil
 		}
 		if (newDaemonStatus != nil && node.Daemoned == nil) || (newDaemonStatus == nil && node.Daemoned != nil) {
-			log.Infof("Setting node %v daemoned: %v -> %v", node, node.Daemoned, newDaemonStatus)
+			log.Infof("Setting node %v daemoned: %v -> %v", node.Name, node.Daemoned, newDaemonStatus)
 			node.Daemoned = newDaemonStatus
 			updated = true
 			if pod.Status.PodIP != "" && pod.Status.PodIP != node.PodIP {
 				// only update Pod IP for daemoned nodes to reduce number of updates
-				log.Infof("Updating daemon node %s IP %s -> %s", node, node.PodIP, pod.Status.PodIP)
+				log.Infof("Updating daemon node %s IP %s -> %s", node.Name, node.PodIP, pod.Status.PodIP)
 				node.PodIP = pod.Status.PodIP
 			}
 		}
@@ -1010,7 +1011,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
 	if ok && node.Outputs == nil {
 		updated = true
-		log.Infof("Setting node %v outputs", node)
+		log.Infof("Setting node %v outputs", node.Name)
 		var outputs wfv1.Outputs
 		err := json.Unmarshal([]byte(outputStr), &outputs)
 		if err != nil {
@@ -1021,7 +1022,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		}
 	}
 	if node.Phase != newPhase {
-		log.Infof("Updating node %s status %s -> %s", node, node.Phase, newPhase)
+		log.Infof("Updating node %s status %s -> %s", node.Name, node.Phase, newPhase)
 		// if we are transitioning from Pending to a different state, clear out pending message
 		if node.Phase == wfv1.NodePending {
 			node.Message = ""
@@ -1030,7 +1031,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		node.Phase = newPhase
 	}
 	if message != "" && node.Message != message {
-		log.Infof("Updating node %s message: %s", node, message)
+		log.Infof("Updating node %s message: %s", node.Name, message)
 		updated = true
 		node.Message = message
 	}
@@ -1689,7 +1690,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		node.Message = messages[0]
 	}
 	woc.wf.Status.Nodes[nodeID] = node
-	woc.log.Infof("%s node %v initialized %s%s", node.Type, node, node.Phase, message)
+	woc.log.Infof("%s node %v initialized %s%s", node.Type, node.Name, node.Phase, message)
 	woc.updated = true
 	return &node
 }
@@ -1701,20 +1702,20 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 		panic(fmt.Sprintf("node %s uninitialized", nodeName))
 	}
 	if node.Phase != phase {
-		woc.log.Infof("node %s phase %s -> %s", node, node.Phase, phase)
+		woc.log.Infof("node %s phase %s -> %s", node.Name, node.Phase, phase)
 		node.Phase = phase
 		woc.updated = true
 	}
 	if len(message) > 0 {
 		if message[0] != node.Message {
-			woc.log.Infof("node %s message: %s", node, message[0])
+			woc.log.Infof("node %s message: %s", node.Name, message[0])
 			node.Message = message[0]
 			woc.updated = true
 		}
 	}
 	if node.Completed() && node.FinishedAt.IsZero() {
 		node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-		woc.log.Infof("node %s finished: %s", node, node.FinishedAt)
+		woc.log.Infof("node %s finished: %s", node.Name, node.FinishedAt)
 		woc.updated = true
 	}
 	if woc.updated && node.Completed() {
