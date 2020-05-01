@@ -575,9 +575,6 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 		log.Warnf("watch returned pod unrelated to any workflow: %s", pod.ObjectMeta.Name)
 		return true
 	}
-	// TODO: currently we reawaken the workflow on *any* pod updates.
-	// But this could be be much improved to become smarter by only
-	// requeue the workflow when there are changes that we care about.
 	wfc.wfQueue.Add(pod.ObjectMeta.Namespace + "/" + workflowName)
 	return true
 }
@@ -700,6 +697,9 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
 				if err == nil {
+					if !significantPodChange(old.(*apiv1.Pod), new.(*apiv1.Pod)) {
+						return
+					}
 					wfc.podQueue.Add(key)
 				}
 			},
