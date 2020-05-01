@@ -441,8 +441,8 @@ spec:
         image: argoproj/argocli:latest
         name: argo-server
         ports:
-        - containerPort: 2746
-          name: web
+          - containerPort: 2746
+            name: web
         readinessProbe:
           httpGet:
             path: /
@@ -450,6 +450,13 @@ spec:
             scheme: HTTP
           initialDelaySeconds: 10
           periodSeconds: 20
+        resources:
+          limits:
+            cpu: 100m
+            memory: 64Mi
+          requests:
+            cpu: 100m
+            memory: 32Mi
       serviceAccountName: argo-server
 ---
 apiVersion: apps/v1
