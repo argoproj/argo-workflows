@@ -43,6 +43,7 @@ Some use-case specific documentation is available:
 * [Transport Layer Security](tls.md)
 * [Workflow Variables](variables.md)
 * [Versioning](versioning.md)
+* [Windows Container Support](windows.md)
 * [Workflow Archive](workflow-archive.md)
 * [Workflow Controller Configmap](workflow-controller-configmap.md)
 * [Workflow Creator](workflow-creator.md)

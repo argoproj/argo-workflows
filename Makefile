@@ -206,6 +206,7 @@ $(CONTROLLER_IMAGE_FILE):
 # argoexec
 
 dist/argoexec-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
+dist/argoexec-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
 dist/argoexec-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
 
 dist/argoexec-%: $(ARGOEXEC_PKGS)
