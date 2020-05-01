@@ -5064,7 +5064,7 @@
         "namespace": {
           "type": "string"
         },
-        "restartSuccesful": {
+        "restartSuccessful": {
           "type": "boolean",
           "format": "boolean"
         },
