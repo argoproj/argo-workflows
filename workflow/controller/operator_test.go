@@ -427,7 +427,7 @@ func TestAssessNodeStatus(t *testing.T) {
 		node: &wfv1.NodeStatus{},
 		want: wfv1.NodeFailed,
 	}, {
-		name: "pod termination",
+		name: "pod deleted during operation",
 		pod: &apiv1.Pod{
 			ObjectMeta: metav1.ObjectMeta{DeletionTimestamp: &metav1.Time{Time: time.Now()}},
 			Status: apiv1.PodStatus{
@@ -435,7 +435,7 @@ func TestAssessNodeStatus(t *testing.T) {
 			},
 		},
 		node: &wfv1.NodeStatus{},
-		want: wfv1.NodeFailed,
+		want: wfv1.NodeError,
 	}, {
 		name: "pod running",
 		pod: &apiv1.Pod{

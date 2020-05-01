@@ -163,11 +163,11 @@ func (s *FunctionalSuite) TestFastFailOnPodTermination() {
 		WaitForWorkflow(120 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Equal(t, wfv1.NodeError, status.Phase)
 			assert.Len(t, status.Nodes, 4)
 			nodeStatus := status.Nodes.FindByDisplayName("sleep")
-			assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
-			assert.Equal(t, "pod termination", nodeStatus.Message)
+			assert.Equal(t, wfv1.NodeError, nodeStatus.Phase)
+			assert.Equal(t, "pod deleted during operation", nodeStatus.Message)
 		})
 }
 
@@ -397,7 +397,6 @@ func (s *FunctionalSuite) TestGlobalScope() {
 }
 
 func (s *FunctionalSuite) TestStopBehavior() {
-	s.T().SkipNow()
 	s.Given().
 		Workflow("@functional/stop-terminate.yaml").
 		When().
