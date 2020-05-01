@@ -129,7 +129,7 @@ func NewWorkflowController(
 // MetricsServer starts a prometheus metrics server if enabled in the configmap
 func (wfc *WorkflowController) MetricsServer(ctx context.Context) {
 	if wfc.Config.MetricsConfig.Enabled {
-		informer := util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowMetricsResyncPeriod, wfc.tweakWorkflowMetricslist)
+		informer := util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowMetricsResyncPeriod, wfc.tweakWorkflowMetricsList)
 		go informer.Run(ctx.Done())
 		registry := metrics.NewMetricsRegistry(wfc, informer, wfc.Config.MetricsConfig.DisableLegacy)
 		metrics.RunServer(ctx, wfc.Config.MetricsConfig, registry)
@@ -602,7 +602,7 @@ func (wfc *WorkflowController) tweakListOptions(completedOp selection.Operator, 
 	options.LabelSelector = labelSelector.String()
 }
 
-func (wfc *WorkflowController) tweakWorkflowMetricslist(options *metav1.ListOptions) {
+func (wfc *WorkflowController) tweakWorkflowMetricsList(options *metav1.ListOptions) {
 	options.FieldSelector = fields.Everything().String()
 	labelSelector := labels.NewSelector().Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 	options.LabelSelector = labelSelector.String()

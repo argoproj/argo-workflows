@@ -23,11 +23,10 @@ type MetricsProvider interface {
 func NewMetricsRegistry(metricsProvider MetricsProvider, informer cache.SharedIndexInformer, disableLegacyMetrics bool) *prometheus.Registry {
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(&customMetricsCollector{provider: metricsProvider})
-	workflowLister := util.NewWorkflowLister(informer)
-	registry.MustRegister(&controllerCollector{store: workflowLister})
+	registry.MustRegister(newControllerCollector(informer))
 
 	if !disableLegacyMetrics {
-		registry.MustRegister(&legacyWorkflowCollector{store: workflowLister})
+		registry.MustRegister(&legacyWorkflowCollector{store: util.NewWorkflowLister(informer)})
 	}
 
 	return registry
