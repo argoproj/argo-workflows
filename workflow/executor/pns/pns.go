@@ -22,6 +22,7 @@ import (
 	"github.com/argoproj/argo/util/archive"
 	"github.com/argoproj/argo/workflow/common"
 	execcommon "github.com/argoproj/argo/workflow/executor/common"
+	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
 
 type PNSExecutor struct {
@@ -97,7 +98,7 @@ func (p *PNSExecutor) enterChroot() error {
 	if err := p.mainFS.Chdir(); err != nil {
 		return errors.InternalWrapErrorf(err, "failed to chdir to main filesystem: %v", err)
 	}
-	err := syscall.Chroot(".")
+	err := os_specific.CallChroot()
 	if err != nil {
 		return errors.InternalWrapErrorf(err, "failed to chroot to main filesystem: %v", err)
 	}
@@ -109,7 +110,7 @@ func (p *PNSExecutor) exitChroot() error {
 	if err := p.rootFS.Chdir(); err != nil {
 		return errors.InternalWrapError(err)
 	}
-	err := syscall.Chroot(".")
+	err := os_specific.CallChroot()
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
