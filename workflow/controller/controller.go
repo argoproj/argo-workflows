@@ -84,6 +84,7 @@ type WorkflowController struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wfArchive             sqldb.WorkflowArchive
 	Metrics               map[string]common.Metric
+	metricsService        metrics.Service
 }
 
 const (
@@ -121,6 +122,7 @@ func NewWorkflowController(
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 		Metrics:                    make(map[string]common.Metric),
+		metricsService:             metrics.NewService(),
 	}
 	wfc.throttler = NewThrottler(0, wfc.wfQueue)
 	return &wfc
@@ -131,7 +133,7 @@ func (wfc *WorkflowController) MetricsServer(ctx context.Context) {
 	if wfc.Config.MetricsConfig.Enabled {
 		informer := util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowMetricsResyncPeriod, wfc.tweakWorkflowMetricslist)
 		go informer.Run(ctx.Done())
-		registry := metrics.NewMetricsRegistry(wfc, informer, wfc.Config.MetricsConfig.DisableLegacy)
+		registry := metrics.NewMetricsRegistry(wfc, informer, wfc.metricsService, wfc.Config.MetricsConfig.DisableLegacy)
 		metrics.RunServer(ctx, wfc.Config.MetricsConfig, registry)
 	}
 }
@@ -697,7 +699,9 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
 				if err == nil {
-					if !significantPodChange(old.(*apiv1.Pod), new.(*apiv1.Pod)) {
+					significant := significantPodChange(old.(*apiv1.Pod), new.(*apiv1.Pod))
+					wfc.metricsService.PodChange(significant).Inc()
+					if !significant {
 						return
 					}
 					wfc.podQueue.Add(key)

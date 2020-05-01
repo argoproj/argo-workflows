@@ -41,6 +41,7 @@ import (
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/templateresolution"
+	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
 
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
@@ -87,6 +88,7 @@ type wfOperationCtx struct {
 	// preExecutionNodePhases contains the phases of all the nodes before the current operation. Necessary to infer
 	// changes in phase for metric emission
 	preExecutionNodePhases map[string]wfv1.NodePhase
+	metricsService         metrics.Service
 }
 
 var (
@@ -132,6 +134,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		deadline:               time.Now().UTC().Add(maxOperationTime),
 		auditLogger:            argo.NewAuditLogger(wf.ObjectMeta.Namespace, wfc.kubeclientset, wf.ObjectMeta.Name),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
+		metricsService:         wfc.metricsService,
 	}
 
 	if woc.wf.Status.Nodes == nil {
@@ -502,6 +505,21 @@ func (woc *wfOperationCtx) persistUpdates() {
 		woc.wf = wf
 	}
 
+	// After we successfully persist an update to the workflow, the informer's
+	// cache is now invalid. It's very common that we will need to immediately re-operate on a
+	// workflow due to queuing by the pod workers, so we update the informer.
+	// Without this, the next worker to work on this workflow will very likely operate on a stale
+	// object and redo work.
+	un, err := util.ToUnstructured(woc.wf)
+	if err != nil {
+		log.Errorf("failed to convert workflow to unstructured: %v", err)
+	} else {
+		err = woc.controller.incompleteWfInformer.GetStore().Update(un)
+		if err != nil {
+			log.Errorf("failed to update workflow: %v", err)
+		}
+	}
+
 	// restore to pre-compressed state
 	woc.wf.Status.Nodes = nodes
 	woc.wf.Status.CompressedNodes = ""
@@ -547,6 +565,7 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.Workflo
 // retries the UPDATE multiple times. For reasoning behind this technique, see:
 // https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#concurrency-control-and-consistency
 func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface) (*wfv1.Workflow, error) {
+	woc.metricsService.ReapplyUpdate().Inc()
 	// First generate the patch
 	oldData, err := json.Marshal(woc.orig)
 	if err != nil {

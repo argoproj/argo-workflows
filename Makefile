@@ -338,18 +338,9 @@ pull-build-images:
 	./hack/pull-build-images.sh
 
 .PHONY: test-images
-test-images: dist/cowsay-v1 dist/python-alpine3.6
-
-dist/cowsay-v1:
-	docker build -t cowsay:v1 test/e2e/images/cowsay
-ifeq ($(K3D),true)
-	k3d import-images cowsay:v1
-endif
-	touch dist/cowsay-v1
-
-dist/python-alpine3.6:
+test-images:
+	docker pull argoproj/argosay:v1
 	docker pull python:alpine3.6
-	touch dist/python-alpine3.6
 
 .PHONY: stop
 stop:
