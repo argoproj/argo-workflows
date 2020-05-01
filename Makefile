@@ -72,6 +72,7 @@ DB                    ?= postgres
 K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 # which components to start, useful if you want to disable them to debug
 COMPONENTS            := controller,argo-server
+LOG_LEVEL             := debug
 
 ifeq ($(CI),true)
 TEST_OPTS := -coverprofile=coverage.out
@@ -206,6 +207,7 @@ $(CONTROLLER_IMAGE_FILE):
 # argoexec
 
 dist/argoexec-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
+dist/argoexec-windows-amd64: GOARGS = GOOS=windows GOARCH=amd64
 dist/argoexec-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
 
 dist/argoexec-%: $(ARGOEXEC_PKGS)
@@ -240,10 +242,10 @@ mocks: $(HOME)/go/bin/mockery
 	./hack/update-mocks.sh $(MOCK_FILES)
 
 .PHONY: codegen
-codegen: status codegen-core swagger mocks docs
+codegen: status proto swagger mocks docs
 
-.PHONY: codegen-core
-codegen-core:
+.PHONY: proto
+proto:
 	$(call backup_go_mod)
 	# We need the folder for compatibility
 	go mod vendor
@@ -332,19 +334,14 @@ else
 endif
 endif
 
+.PHONY: pull-build-images
+pull-build-images:
+	./hack/pull-build-images.sh
+
 .PHONY: test-images
-test-images: dist/cowsay-v1 dist/python-alpine3.6
-
-dist/cowsay-v1:
-	docker build -t cowsay:v1 test/e2e/images/cowsay
-ifeq ($(K3D),true)
-	k3d import-images cowsay:v1
-endif
-	touch dist/cowsay-v1
-
-dist/python-alpine3.6:
+test-images:
+	docker pull argoproj/argosay:v1
 	docker pull python:alpine3.6
-	touch dist/python-alpine3.6
 
 .PHONY: stop
 stop:
@@ -360,10 +357,10 @@ start-aux:
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
 ifneq ($(findstring controller,$(COMPONENTS)),)
-	ALWAYS_OFFLOAD_NODE_STATUS=true OFFLOAD_NODE_STATUS_TTL=30s WORKFLOW_GC_PERIOD=30s UPPERIO_DB_DEBUG=1 ARCHIVED_WORKFLOW_GC_PERIOD=30s ./dist/workflow-controller --executor-image argoproj/argoexec:$(VERSION) --namespaced --loglevel debug &
+	ALWAYS_OFFLOAD_NODE_STATUS=true OFFLOAD_NODE_STATUS_TTL=30s WORKFLOW_GC_PERIOD=30s UPPERIO_DB_DEBUG=1 ARCHIVED_WORKFLOW_GC_PERIOD=30s ./dist/workflow-controller --executor-image argoproj/argoexec:$(VERSION) --namespaced --loglevel $(LOG_LEVEL) &
 endif
 ifneq ($(findstring argo-server,$(COMPONENTS)),)
-	UPPERIO_DB_DEBUG=1 ./dist/argo -v server --namespaced --auth-mode client --secure &
+	UPPERIO_DB_DEBUG=1 ./dist/argo --loglevel $(LOG_LEVEL) server --namespaced --auth-mode client --secure &
 endif
 
 .PHONY: start
@@ -497,4 +494,3 @@ publish-release: build
 	git push
 	git push $(GIT_REMOTE) $(VERSION)
 endif
-

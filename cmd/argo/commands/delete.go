@@ -7,6 +7,7 @@ import (
 	"github.com/argoproj/pkg/errors"
 	argotime "github.com/argoproj/pkg/time"
 	"github.com/spf13/cobra"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
@@ -69,10 +70,11 @@ func NewDeleteCommand() *cobra.Command {
 				}
 			}
 			for _, md := range workflowsToDelete {
-				_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{
-					Name:      md.Name,
-					Namespace: md.Namespace,
-				})
+				_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: md.Name, Namespace: md.Namespace})
+				if err != nil && apierr.IsNotFound(err) {
+					fmt.Printf("Workflow '%s' not found\n", md.Name)
+					continue
+				}
 				errors.CheckError(err)
 				fmt.Printf("Workflow '%s' deleted\n", md.Name)
 			}

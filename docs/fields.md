@@ -34,6 +34,8 @@ Workflow is the definition of a workflow resource
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
 
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
+
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
@@ -81,6 +83,10 @@ Workflow is the definition of a workflow resource
 - [`global-parameters.yaml`](../examples/global-parameters.yaml)
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
+
+- [`hello-windows.yaml`](../examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 
@@ -307,6 +313,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
 
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
+
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
@@ -356,6 +364,10 @@ WorkflowSpec is the specification of a Workflow.
 - [`global-parameters.yaml`](../examples/global-parameters.yaml)
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
+
+- [`hello-windows.yaml`](../examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 
@@ -595,6 +607,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
 
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
+
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
@@ -644,6 +658,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`global-parameters.yaml`](../examples/global-parameters.yaml)
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
+
+- [`hello-windows.yaml`](../examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 
@@ -849,6 +867,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
 
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
+
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
@@ -898,6 +918,10 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`global-parameters.yaml`](../examples/global-parameters.yaml)
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
+
+- [`hello-windows.yaml`](../examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 
@@ -1297,6 +1321,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
 
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
+
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
@@ -1346,6 +1372,10 @@ Template is a reusable and composable unit of execution in a workflow
 - [`global-parameters.yaml`](../examples/global-parameters.yaml)
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
+
+- [`hello-windows.yaml`](../examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 
@@ -2133,6 +2163,8 @@ Pod metdata
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
 
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
+
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
@@ -2182,6 +2214,10 @@ Pod metdata
 - [`global-parameters.yaml`](../examples/global-parameters.yaml)
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
+
+- [`hello-windows.yaml`](../examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 
@@ -2414,6 +2450,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
 
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
+
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
@@ -2517,6 +2555,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`global-outputs.yaml`](../examples/global-outputs.yaml)
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
 
 - [`influxdb-ci.yaml`](../examples/influxdb-ci.yaml)
 
@@ -3192,6 +3232,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
 
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
+
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
@@ -3241,6 +3283,10 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`global-parameters.yaml`](../examples/global-parameters.yaml)
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
+
+- [`hello-windows.yaml`](../examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 
@@ -3670,6 +3716,10 @@ A single application container that you want to run within a pod.
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
 
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
+
+- [`hello-windows.yaml`](../examples/hello-windows.yaml)
+
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 
 - [`image-pull-secrets.yaml`](../examples/image-pull-secrets.yaml)
@@ -3820,6 +3870,8 @@ EnvVar represents an environment variable present in a Container.
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
+
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
@@ -4194,6 +4246,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devicesand 
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
 
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
+
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
@@ -4243,6 +4297,10 @@ PersistentVolumeClaimSpec describes the common attributes of storage devicesand 
 - [`global-parameters.yaml`](../examples/global-parameters.yaml)
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
+
+- [`hello-windows.yaml`](../examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 

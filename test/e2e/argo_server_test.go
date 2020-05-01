@@ -220,7 +220,7 @@ func (s *ArgoServerSuite) TestPermission() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "cowsay:v1",
+            "image": "argoproj/argosay:v1",
             "command": ["sh"],
             "args": ["-c", "sleep 1"]
           }
@@ -268,7 +268,7 @@ func (s *ArgoServerSuite) TestPermission() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "cowsay:v1",
+            "image": "argoproj/argosay:v1",
             "imagePullPolicy": "IfNotPresent",
             "command": ["sh"],
             "args": ["-c", "sleep 1"]
@@ -391,7 +391,7 @@ func (s *ArgoServerSuite) TestLintWorkflow() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "cowsay:v1",
+            "image": "argoproj/argosay:v1",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -422,7 +422,7 @@ func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "cowsay:v1",
+            "image": "argoproj/argosay:v1",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -456,7 +456,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "cowsay:v1",
+            "image": "argoproj/argosay:v1",
             "imagePullPolicy": "IfNotPresent",
             "command": ["sh"],
             "args": ["-c", "sleep 10"]
@@ -612,7 +612,7 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
           {
             "name": "whalesay",
             "container": {
-              "image": "cowsay:v1",
+              "image": "argoproj/argosay:v1",
               "imagePullPolicy": "IfNotPresent"
             }
           }
@@ -650,7 +650,7 @@ spec:
     templates:
       - name: whalesay
         container:
-          image: cowsay:v1
+          image: argoproj/argosay:v1
           imagePullPolicy: IfNotPresent
           command: ["sh", -c]
           args: ["echo hello"]
@@ -702,7 +702,7 @@ spec:
           {
             "name": "whalesay",
             "container": {
-              "image": "cowsay:v1",
+              "image": "argoproj/argosay:v1",
               "imagePullPolicy": "IfNotPresent"
             }
           }
@@ -859,7 +859,7 @@ spec:
   templates:
     - name: run-archie
       container:
-        image: cowsay:v1
+        image: argoproj/argosay:v1
         command: [cowsay, ":) Hello Argo!"]
         imagePullPolicy: IfNotPresent`).
 		When().
@@ -881,7 +881,7 @@ spec:
   templates:
     - name: run-betty
       container:
-        image: cowsay:v1
+        image: argoproj/argosay:v1
         command: [cowsay, ":) Hello Argo!"]
         imagePullPolicy: IfNotPresent`).
 		When().
@@ -1009,7 +1009,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
           "name": "run-workflow",
           "container": {
             "name": "",
-            "image": "cowsay:v1",
+            "image": "argoproj/argosay:v1",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -1038,7 +1038,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
           "name": "run-workflow",
           "container": {
             "name": "",
-            "image": "cowsay:v1",
+            "image": "argoproj/argosay:v1",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -1101,7 +1101,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
           "name": "run-workflow",
           "container": {
             "name": "",
-            "image": "cowsay:v2",
+            "image": "argoproj/argosay:v2",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -1114,7 +1114,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 			Status(200).
 			JSON().
 			Path("$.spec.templates[0].container.image").
-			Equal("cowsay:v2")
+			Equal("argoproj/argosay:v2")
 	})
 
 	s.Run("Delete", func() {
@@ -1124,7 +1124,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 	})
 }
 
-func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
+func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
 
 	s.Run("CreateWFT", func() {
 		s.e(s.T()).POST("/api/v1/workflow-templates/argo").
@@ -1142,7 +1142,7 @@ func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
           "name": "run-workflow",
           "container": {
             "name": "",
-            "image": "cowsay:v1",
+            "image": "argoproj/argosay:v1",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -1157,7 +1157,10 @@ func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
 		s.e(s.T()).POST("/api/v1/workflows/argo/submit").
 			WithBytes([]byte(`{
 			  "resourceKind": "WorkflowTemplate",
-			  "resourceName": "test"
+			  "resourceName": "test",
+			  "submitOptions": {
+                "labels": "argo-e2e=true"
+              }
 			}`)).
 			Expect().
 			Status(200)
@@ -1181,7 +1184,7 @@ func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
           {
             "name": "whalesay",
             "container": {
-              "image": "cowsay:v1",
+              "image": "argoproj/argosay:v1",
               "imagePullPolicy": "IfNotPresent"
             }
           }
@@ -1197,7 +1200,10 @@ func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
 		s.e(s.T()).POST("/api/v1/workflows/argo/submit").
 			WithBytes([]byte(`{
 			  "resourceKind": "cronworkflow",
-			  "resourceName": "test"
+			  "resourceName": "test",
+			  "submitOptions": {
+                "labels": "argo-e2e=true"
+              }
 			}`)).
 			Expect().
 			Status(200)
@@ -1219,7 +1225,7 @@ func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
           "name": "run-workflow",
           "container": {
             "name": "",
-            "image": "cowsay:v1",
+            "image": "argoproj/argosay:v1",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -1234,7 +1240,10 @@ func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
 		s.e(s.T()).POST("/api/v1/workflows/argo/submit").
 			WithBytes([]byte(`{
 			  "resourceKind": "ClusterWorkflowTemplate",
-			  "resourceName": "test"
+			  "resourceName": "test",
+			  "submitOptions": {
+                "labels": "argo-e2e=true"
+              }
 			}`)).
 			Expect().
 			Status(200)
