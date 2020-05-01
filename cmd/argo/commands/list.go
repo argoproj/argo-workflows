@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -18,6 +17,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
@@ -56,7 +57,10 @@ func NewListCommand() *cobra.Command {
 		Short: "list workflows",
 		Run: func(cmd *cobra.Command, args []string) {
 			kubeCursor, lastWorkflowName, err := getKubeCursor(&listArgs)
-			argoerrors.CheckError(err)
+			if err != nil {
+				log.Error(err)
+				return
+			}
 
 			listOpts := metav1.ListOptions{
 				Limit: listArgs.chunkSize,
@@ -105,8 +109,12 @@ func NewListCommand() *cobra.Command {
 				filterWorkflow(tmpWfList, &listArgs)
 
 				if listArgs.limit != 0 && int64(len(workflows)+len(tmpWfList.Items)) > listArgs.limit {
-					wfName = truncateWorkflowList(tmpWfList, &workflows, &listArgs)
-					workflows = append(workflows, tmpWfList.Items...)
+					if int64(len(workflows)) == listArgs.limit {
+						wfName = workflows[listArgs.limit-1].Name
+					} else {
+						wfName = truncateWorkflowList(tmpWfList, &workflows, &listArgs)
+						workflows = append(workflows, tmpWfList.Items...)
+					}
 					break
 				}
 
@@ -118,7 +126,7 @@ func NewListCommand() *cobra.Command {
 			if wfName != "" {
 				encodedCursor, err = encodeCursor(kubeCursor, wfName, &listArgs)
 				if err != nil {
-					log.Fatalf("Error when preparing the cursor for other workflows: %v", err)
+					log.Errorf("Error when preparing the cursor for other workflows: %v", err)
 				}
 			}
 
@@ -136,7 +144,7 @@ func NewListCommand() *cobra.Command {
 					fmt.Printf("There are additional suppressed results, show them by passing in `--continue %s`\n", encodedCursor)
 				}
 			default:
-				log.Fatalf("Unknown output mode: %s", listArgs.output)
+				log.Errorf("Unknown output mode: %s", listArgs.output)
 			}
 		},
 	}
@@ -158,15 +166,15 @@ func getKubeCursor(listArgs *listFlags) (string, string, error) {
 	if listArgs.continueToken != "" {
 		jsonString, err := base64.RawURLEncoding.DecodeString(listArgs.continueToken)
 		if err != nil {
-			return "", "", errors.New("Invalid cursor: malformed value for --continue")
+			return "", "", errors.New("Invalid continue token: malformed value")
 		}
 		var data cursor
 		err = json.Unmarshal([]byte(jsonString), &data)
 		if err != nil || data.LastWorkflowName == "" && data.KubeCursor != "" {
-			return "", "", errors.New("Invalid cursor: malformed value for --continue")
+			return "", "", errors.New("Invalid continue token: malformed value")
 		}
 		if data.LastWorkflowName != "" && (data.Prefix != listArgs.prefix || data.Since != listArgs.since) {
-			return "", "", errors.New("Invalid cursor: please ensure that the identical values for `prefix` and `since` which you used to acquire this cursor are passed in")
+			return "", "", errors.New("Invalid continue token: please ensure that you are using the identical values for `prefix` and `since` with which this token was acquired")
 		}
 		return data.KubeCursor, data.LastWorkflowName, nil
 	}

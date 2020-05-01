@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -273,6 +274,19 @@ func (s *CLISuite) TestRoot() {
 
 				// header + 1 workflows + empty line
 				assert.Len(t, strings.Split(output, "\n"), 3)
+			}
+		})
+
+		s.Given().RunCli([]string{"list", "--prefix", "basic-", "--limit", fmt.Sprintf("%d", numWorkflow)}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "NAME")
+				assert.Contains(t, output, "STATUS")
+				assert.Contains(t, output, "AGE")
+				assert.Contains(t, output, "DURATION")
+				assert.Contains(t, output, "PRIORITY")
+
+				// header + 3 workflows + empty line
+				assert.Len(t, strings.Split(output, "\n"), numWorkflow+2)
 			}
 		})
 	})
