@@ -19,7 +19,7 @@ spec:
                   from: "{{steps.generate-artifact.outputs.artifacts.hello-art}}"
     - name: whalesay
       container:
-        image: cowsay:v1
+        image: argoproj/argosay:v1
         command: [sh, -c]
         args: ["sleep 1; cowsay hello world | tee /tmp/hello_world123.txt"]
       outputs:
