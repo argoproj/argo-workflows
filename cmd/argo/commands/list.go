@@ -79,26 +79,7 @@ func listWorkflows(listArgs *listFlags) {
 		log.Error(err)
 		return
 	}
-
-	listOpts := metav1.ListOptions{
-		Limit: listArgs.chunkSize,
-	}
-	labelSelector := labels.NewSelector()
-	if len(listArgs.status) != 0 {
-		req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.In, listArgs.status)
-		if req != nil {
-			labelSelector = labelSelector.Add(*req)
-		}
-	}
-	if listArgs.completed {
-		req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"true"})
-		labelSelector = labelSelector.Add(*req)
-	}
-	if listArgs.running {
-		req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.NotEquals, []string{"true"})
-		labelSelector = labelSelector.Add(*req)
-	}
-	listOpts.LabelSelector = labelSelector.String()
+	listOpts := getListOpts(listArgs)
 
 	ctx, apiClient := client.NewAPIClient()
 	serviceClient := apiClient.NewWorkflowServiceClient()
@@ -166,6 +147,30 @@ func listWorkflows(listArgs *listFlags) {
 	default:
 		log.Errorf("Unknown output mode: %s", listArgs.output)
 	}
+}
+
+func getListOpts(listArgs *listFlags) metav1.ListOptions {
+	listOpts := metav1.ListOptions{
+		Limit: listArgs.chunkSize,
+	}
+	labelSelector := labels.NewSelector()
+	if len(listArgs.status) != 0 {
+		req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.In, listArgs.status)
+		if req != nil {
+			labelSelector = labelSelector.Add(*req)
+		}
+	}
+	if listArgs.completed {
+		req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"true"})
+		labelSelector = labelSelector.Add(*req)
+	}
+	if listArgs.running {
+		req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.NotEquals, []string{"true"})
+		labelSelector = labelSelector.Add(*req)
+	}
+	listOpts.LabelSelector = labelSelector.String()
+
+	return listOpts
 }
 
 func getKubeCursor(listArgs *listFlags) (string, string, error) {
