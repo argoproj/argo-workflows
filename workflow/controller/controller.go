@@ -573,7 +573,7 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 	workflowName, ok := pod.Labels[common.LabelKeyWorkflow]
 	if !ok {
 		// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
-		log.Warnf("watch returned pod unrelated to any workflow: %s", pod.Name)
+		log.Warnf("watch returned pod unrelated to any workflow: %s", pod.ObjectMeta.Name)
 		return true
 	}
 	wfc.wfQueue.Add(pod.ObjectMeta.Namespace + "/" + workflowName)
@@ -664,25 +664,24 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 		Add(*incompleteReq).
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 
-	return &cache.ListWatch{
-		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-			options.LabelSelector = labelSelector.String()
-			req := c.Get().
-				Namespace(namespace).
-				Resource(resource).
-				VersionedParams(&options, metav1.ParameterCodec)
-			return req.Do().Get()
-		},
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			options.Watch = true
-			options.LabelSelector = labelSelector.String()
-			req := c.Get().
-				Namespace(namespace).
-				Resource(resource).
-				VersionedParams(&options, metav1.ParameterCodec)
-			return req.Watch()
-		},
+	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
+		options.LabelSelector = labelSelector.String()
+		req := c.Get().
+			Namespace(namespace).
+			Resource(resource).
+			VersionedParams(&options, metav1.ParameterCodec)
+		return req.Do().Get()
 	}
+	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
+		options.Watch = true
+		options.LabelSelector = labelSelector.String()
+		req := c.Get().
+			Namespace(namespace).
+			Resource(resource).
+			VersionedParams(&options, metav1.ParameterCodec)
+		return req.Watch()
+	}
+	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
 }
 
 /*
@@ -717,7 +716,6 @@ func significantChange(from *apiv1.Pod, to *apiv1.Pod) (string, bool) {
 		}
 	}
 	return "", false
-
 }
 
 func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
@@ -727,31 +725,28 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(obj)
-				if err != nil {
-					return
+				if err == nil {
+					wfc.podQueue.Add(key)
 				}
-				wfc.podQueue.Add(key)
 			},
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
-				if err != nil {
-					return
+				if err == nil {
+					reason, significant := significantChange(old.(*apiv1.Pod), new.(*apiv1.Pod))
+					log.WithFields(log.Fields{"key": key, "reason": reason, "significant": significant}).Debug()
+					if !significant {
+						return
+					}
+					wfc.podQueue.Add(key)
 				}
-				reason, significant := significantChange(old.(*apiv1.Pod), new.(*apiv1.Pod))
-				log.WithFields(log.Fields{"key": key, "reason": reason, "significant": significant}).Debug()
-				if !significant {
-					return
-				}
-				wfc.podQueue.Add(key)
 			},
 			DeleteFunc: func(obj interface{}) {
 				// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 				// key function.
 				key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-				if err != nil {
-					return
+				if err == nil {
+					wfc.podQueue.Add(key)
 				}
-				wfc.podQueue.Add(key)
 			},
 		},
 	)

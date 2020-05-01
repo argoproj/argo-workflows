@@ -746,21 +746,21 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				woc.addOutputsToGlobalScope(node.Outputs)
 				woc.updated = true
 			}
-			node := woc.wf.Status.Nodes[pod.Name]
+			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
 			if node.Completed() && !node.IsDaemoned() {
 				if tmpVal, tmpOk := pod.Labels[common.LabelKeyCompleted]; tmpOk {
 					if tmpVal == "true" {
 						return
 					}
 				}
-				woc.completedPods[pod.Name] = true
+				woc.completedPods[pod.ObjectMeta.Name] = true
 				if woc.shouldPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
 				}
 				woc.onNodeComplete(&node)
 			}
 			if node.Successful() {
-				woc.succeededPods[pod.Name] = true
+				woc.succeededPods[pod.ObjectMeta.Name] = true
 			}
 		}
 	}
@@ -954,13 +954,13 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			newPhase = wfv1.NodeRunning
 			tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
 			if !ok {
-				log.Warnf("%s missing template annotation", pod.Name)
+				log.Warnf("%s missing template annotation", pod.ObjectMeta.Name)
 				return nil
 			}
 			var tmpl wfv1.Template
 			err := json.Unmarshal([]byte(tmplStr), &tmpl)
 			if err != nil {
-				log.Warnf("%s template annotation unreadable: %v", pod.Name, err)
+				log.Warnf("%s template annotation unreadable: %v", pod.ObjectMeta.Name, err)
 				return nil
 			}
 			if tmpl.Daemon != nil && *tmpl.Daemon {
@@ -973,12 +973,12 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 				// proceed to mark node status as running (and daemoned)
 				newPhase = wfv1.NodeRunning
 				newDaemonStatus = pointer.BoolPtr(true)
-				log.Infof("Processing ready daemon pod: %v", pod.Name)
+				log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 			}
 		}
 	default:
 		newPhase = wfv1.NodeError
-		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.Name, pod.Status.Phase)
+		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
 		log.Error(message)
 	}
 
@@ -1105,7 +1105,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	for _, ctr := range pod.Status.InitContainerStatuses {
 		if ctr.State.Terminated == nil {
 			// We should never get here
-			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.Name, ctr.Name)
+			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.ObjectMeta.Name, ctr.Name)
 			continue
 		}
 		if ctr.State.Terminated.ExitCode == 0 {
@@ -1125,7 +1125,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	for _, ctr := range pod.Status.ContainerStatuses {
 		if ctr.State.Terminated == nil {
 			// We should never get here
-			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.Name, ctr.Name)
+			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.ObjectMeta.Name, ctr.Name)
 			continue
 		}
 		if ctr.State.Terminated.ExitCode == 0 {
@@ -1143,7 +1143,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 				// executor is expected to annotate a message to the pod upon any errors.
 				// If we failed to see the annotated message, it is likely the pod ran with
 				// insufficient privileges. Give a hint to that effect.
-				errDetails = fmt.Sprintf("verify serviceaccount %s:%s has necessary privileges", pod.Namespace, pod.Spec.ServiceAccountName)
+				errDetails = fmt.Sprintf("verify serviceaccount %s:%s has necessary privileges", pod.ObjectMeta.Namespace, pod.Spec.ServiceAccountName)
 			}
 			errMsg := fmt.Sprintf("failed to save outputs: %s", errDetails)
 			failMessages[ctr.Name] = errMsg
