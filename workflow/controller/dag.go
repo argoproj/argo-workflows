@@ -394,7 +394,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			for _, depName := range task.Dependencies {
 				depNode := dagCtx.GetTaskNode(depName)
 				outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
-				woc.log.Infof("DAG outbound nodes of %s are %s", depNode, outboundNodeIDs)
+				woc.log.Infof("DAG outbound nodes of %s are %s", depNode.Name, outboundNodeIDs)
 				for _, outNodeID := range outboundNodeIDs {
 					woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, taskNodeName)
 				}

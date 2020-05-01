@@ -91,7 +91,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 		sgNode := woc.executeStepGroup(stepGroup.Steps, sgNodeName, &stepsCtx)
 
 		if !sgNode.Completed() {
-			woc.log.Infof("Workflow step group node %v not yet completed", sgNode)
+			woc.log.Infof("Workflow step group node %s not yet completed", sgNode.Name)
 			return node, nil
 		}
 
@@ -239,7 +239,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			case ErrParallelismReached:
 			default:
 				errMsg := fmt.Sprintf("child '%s' errored", childNodeName)
-				woc.log.Infof("Step group node %s deemed errored due to child %s error: %s", node, childNodeName, err.Error())
+				woc.log.Infof("Step group node %s deemed errored due to child %s error: %s", node.Name, childNodeName, err.Error())
 				woc.addChildNode(sgNodeName, childNodeName)
 				return woc.markNodePhase(node.Name, wfv1.NodeError, errMsg)
 			}
@@ -278,7 +278,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		step := nodeSteps[childNode.Name]
 		if !childNode.Successful() && !step.ContinuesOn(childNode.Phase) {
 			failMessage := fmt.Sprintf("child '%s' failed", childNodeID)
-			woc.log.Infof("Step group node %s deemed failed: %s", node, failMessage)
+			woc.log.Infof("Step group node %s deemed failed: %s", node.Name, failMessage)
 			return woc.markNodePhase(node.Name, wfv1.NodeFailed, failMessage)
 		}
 	}

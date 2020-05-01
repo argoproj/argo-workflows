@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"reflect"
 	"strings"
 	"time"
 
@@ -684,40 +683,6 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
 }
 
-/*
-metadata:
-  name
-  namespace
-  labels: {}
-  annotations: {}
-  deletionTimestamp
-spec:
-  serviceAccountName
-  nodeName
-status:
-  phase
-  message
-  podIp
-  initContainerStatuses: []
-  containerStatuses: []
-  conditions: []
-*/
-func significantChange(from *apiv1.Pod, to *apiv1.Pod) (string, bool) {
-	for reason, b := range map[string]bool{
-		"nodeName":              from.Spec.NodeName != to.Spec.NodeName,
-		"phase":                 from.Status.Phase != to.Status.Phase,
-		"message":               from.Status.Message != to.Status.Message,
-		"podIp":                 from.Status.PodIP != to.Status.PodIP,
-		"initContainerStatuses": !reflect.DeepEqual(from.Status.InitContainerStatuses, to.Status.InitContainerStatuses),
-		"containerStatuses":     !reflect.DeepEqual(from.Status.ContainerStatuses, to.Status.ContainerStatuses),
-	} {
-		if b {
-			return reason, true
-		}
-	}
-	return "", false
-}
-
 func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 	source := wfc.newWorkflowPodWatch()
 	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{})
@@ -732,9 +697,7 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
 				if err == nil {
-					reason, significant := significantChange(old.(*apiv1.Pod), new.(*apiv1.Pod))
-					log.WithFields(log.Fields{"key": key, "reason": reason, "significant": significant}).Debug()
-					if !significant {
+					if !significantPodChange(old.(*apiv1.Pod), new.(*apiv1.Pod)) {
 						return
 					}
 					wfc.podQueue.Add(key)

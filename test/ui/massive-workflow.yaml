@@ -5,8 +5,8 @@ kind: Workflow
 metadata:
   name: massive-workflow
 spec:
-  ttlStrategy:
-    secondsAfterCompletion: 10
+  podGC:
+    strategy: OnPodCompletion
   entrypoint: main
   templates:
     - name: main
