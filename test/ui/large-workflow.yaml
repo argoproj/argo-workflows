@@ -1,5 +1,5 @@
 # massive workflows
-# 100 DAGs with 9 tasks a piece
+# 50 DAGs with 9 tasks a piece
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -14,7 +14,7 @@ spec:
         - - name: dag
             template: dag
             withSequence:
-              count: "100"
+              count: "50"
     - name: dag
       dag:
         tasks:

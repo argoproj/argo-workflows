@@ -703,19 +703,21 @@ status:
   containerStatuses: []
   conditions: []
 */
-func interesting(from *apiv1.Pod, to *apiv1.Pod) bool {
-	return from == nil ||
-		to == nil ||
-		!reflect.DeepEqual(from.Labels, to.Labels) ||
-		!reflect.DeepEqual(from.Annotations, to.Annotations) ||
-		from.DeletionTimestamp != to.DeletionTimestamp ||
-		from.Spec.NodeName != to.Spec.NodeName ||
-		from.Status.Phase != to.Status.Phase ||
-		from.Status.Message != to.Status.Message ||
-		from.Status.PodIP != to.Status.PodIP ||
-		!reflect.DeepEqual(from.Status.InitContainerStatuses, to.Status.InitContainerStatuses) ||
-		!reflect.DeepEqual(from.Status.ContainerStatuses, to.Status.ContainerStatuses) ||
-		!reflect.DeepEqual(from.Status.Conditions, to.Status.Conditions)
+func significantChange(from *apiv1.Pod, to *apiv1.Pod) (string, bool) {
+	for reason, b := range map[string]bool{
+		"nodeName":              from.Spec.NodeName != to.Spec.NodeName,
+		"phase":                 from.Status.Phase != to.Status.Phase,
+		"message":               from.Status.Message != to.Status.Message,
+		"podIp":                 from.Status.PodIP != to.Status.PodIP,
+		"initContainerStatuses": !reflect.DeepEqual(from.Status.InitContainerStatuses, to.Status.InitContainerStatuses),
+		"containerStatuses":     !reflect.DeepEqual(from.Status.ContainerStatuses, to.Status.ContainerStatuses),
+	} {
+		if b {
+			return reason, true
+		}
+	}
+	return "", false
+
 }
 
 func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
@@ -735,8 +737,9 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 				if err != nil {
 					return
 				}
-				if !interesting(old.(*apiv1.Pod), new.(*apiv1.Pod)) {
-					log.WithField("key", key).Debug("not interesting")
+				reason, significant := significantChange(old.(*apiv1.Pod), new.(*apiv1.Pod))
+				log.WithFields(log.Fields{"key": key, "reason": reason, "interesting": significant}).Debug()
+				if !significant {
 					return
 				}
 				wfc.podQueue.Add(key)
