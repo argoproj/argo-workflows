@@ -8,6 +8,8 @@ You cannot horizontally scale the controller.
 
 ## Vertically Scaling
 
+You can scale the controller vertically:
+
 - If you have workflows with many steps, increase `--pod-workers`.
 - If you have many workflows, increase `--workflow-workers`. 
 
@@ -15,9 +17,9 @@ You will need to increase the controller's memory and CPU.
 
 ## Sharding
 
-### Controller Per Namespace
+### One Install Per Namespace
 
-Rather than running a single in your cluster, run one per namespace using the `--namespaced` flag.
+Rather than running a single installation in your cluster, run one per namespace using the `--namespaced` flag.
 
 ### Instance ID
 
@@ -43,3 +45,5 @@ You'll may need to pass the instance ID to the CLI:
 ```
 argo --instance-id i1 submit my-wf.yaml
 ```
+
+You do not need to have one instance ID per namespace, you could have many or few.
