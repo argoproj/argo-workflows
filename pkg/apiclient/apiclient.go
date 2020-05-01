@@ -3,6 +3,7 @@ package apiclient
 import (
 	"context"
 
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd"
 
 	clusterworkflowtmplpkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
@@ -38,6 +39,7 @@ func NewClient(argoServer string, authSupplier func() string, clientConfig clien
 }
 
 func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
+	log.WithField("opts", opts).Debug("Client options")
 	if opts.ArgoServerOpts.URL != "" {
 		return newArgoServerClient(opts.ArgoServerOpts, opts.AuthSupplier())
 	} else {

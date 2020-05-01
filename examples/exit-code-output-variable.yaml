@@ -16,7 +16,8 @@ spec:
             arguments:
               parameters:
                 - name: exitCode
-                  value: "{{steps.failing-container.outputs.exitCode}}"
+                  value: "{{steps.failing-container.exitCode}}"
+
     - name: failing-container
       script:
         image: alpine:3.6
