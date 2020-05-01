@@ -20,7 +20,7 @@ func newControllerCollector(informer cache.SharedIndexInformer) *controllerColle
 			Namespace:   argoNamespace,
 			Subsystem:   workflowsSubsystem,
 			Name:        "count",
-			Help:        "Number of Workflows currently accessible by the controller by status NEW",
+			Help:        "Number of Workflows currently accessible by the controller by status",
 			ConstLabels: map[string]string{"status": string(phase)},
 		}
 	}
