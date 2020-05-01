@@ -337,7 +337,6 @@ func TestResumeWorkflowOffloadDisabled(t *testing.T) {
 	clearFunc := packer.SetMaxWorkflowSize(10)
 	defer clearFunc()
 
-
 	_, err := wfIf.Create(origWf)
 	assert.NoError(t, err)
 
@@ -347,7 +346,6 @@ func TestResumeWorkflowOffloadDisabled(t *testing.T) {
 	err = ResumeWorkflow(wfIf, offloadNodeStatusRepo, "suspend", "")
 	assert.Error(t, err)
 }
-
 
 func TestResumeWorkflowByNodeName(t *testing.T) {
 	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
@@ -398,7 +396,6 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeFailed, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 }
-
 
 var failedWf = `
 apiVersion: argoproj.io/v1alpha1
