@@ -75,7 +75,7 @@ func (g *Given) checkImages(templates []wfv1.Template) {
 	// downloaded or evicted. To keep tests fast and reliable you must use whitelisted images.
 	imageWhitelist := map[string]bool{
 		"argoexec:" + imageTag: true,
-		"argoproj/argosay:v1":            true,
+		"argoproj/argosay:v1":  true,
 		"python:alpine3.6":     true,
 	}
 	for _, t := range templates {

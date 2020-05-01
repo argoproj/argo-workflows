@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/argoproj/argo/workflow/common"
+	metricsmocks "github.com/argoproj/argo/workflow/metrics/mocks"
 
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -118,15 +119,17 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
 		},
-		kubeclientset:   kube,
-		wfclientset:     wfclientset,
-		completedPods:   make(chan string, 512),
-		wftmplInformer:  wftmplInformer,
-		cwftmplInformer: cwftmplInformer,
-		wfQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		podQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		wfArchive:       sqldb.NullWorkflowArchive,
-		Metrics:         make(map[string]common.Metric),
+		kubeclientset:        kube,
+		wfclientset:          wfclientset,
+		completedPods:        make(chan string, 512),
+		incompleteWfInformer: &testSharedIndexInformer{},
+		wftmplInformer:       wftmplInformer,
+		cwftmplInformer:      cwftmplInformer,
+		wfQueue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		podQueue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfArchive:            sqldb.NullWorkflowArchive,
+		Metrics:              make(map[string]common.Metric),
+		metricsService:       &metricsmocks.Service{},
 	}
 	return cancel, controller
 }
