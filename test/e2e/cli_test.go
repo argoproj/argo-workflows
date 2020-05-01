@@ -214,12 +214,13 @@ func (s *CLISuite) TestRoot() {
 		})
 	})
 	s.Run("List", func() {
-		for i := 0; i < 3; i++ {
+		numWorkflow := 3
+		continueToken := ""
+		for i := 0; i < numWorkflow; i++ {
 			s.Given().
 				Workflow("@smoke/basic-generate-name.yaml").
 				When().
-				SubmitWorkflow().
-				WaitForWorkflow(20 * time.Second)
+				SubmitWorkflow()
 		}
 		s.Given().RunCli([]string{"list"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
@@ -231,7 +232,7 @@ func (s *CLISuite) TestRoot() {
 			}
 		})
 
-		s.Given().RunCli([]string{"list", "--chunk-size", "1"}, func(t *testing.T, output string, err error) {
+		s.Given().RunCli([]string{"list", "--prefix", "basic-", "--chunk-size", "1"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "NAME")
 				assert.Contains(t, output, "STATUS")
@@ -239,7 +240,38 @@ func (s *CLISuite) TestRoot() {
 				assert.Contains(t, output, "DURATION")
 				assert.Contains(t, output, "PRIORITY")
 
-				// header + 1 workflow + empty line
+				// chunk size doesn't affect the amount of workflows returned
+				// header + 3 workflows + empty line
+				assert.Len(t, strings.Split(output, "\n"), numWorkflow+2)
+			}
+		})
+
+		s.Given().RunCli([]string{"list", "--prefix", "basic-", "--limit", "2"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "NAME")
+				assert.Contains(t, output, "STATUS")
+				assert.Contains(t, output, "AGE")
+				assert.Contains(t, output, "DURATION")
+				assert.Contains(t, output, "PRIORITY")
+
+				// header + 2 workflows + continue reminder + empty line
+				assert.Len(t, strings.Split(output, "\n"), 5)
+
+				tokens := strings.Split(output, "`")
+				assert.Len(t, tokens, 3)
+				continueToken = strings.Split(tokens[1], " ")[1]
+			}
+		})
+
+		s.Given().RunCli([]string{"list", "--prefix", "basic-", "--limit", "2", "--continue", continueToken}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "NAME")
+				assert.Contains(t, output, "STATUS")
+				assert.Contains(t, output, "AGE")
+				assert.Contains(t, output, "DURATION")
+				assert.Contains(t, output, "PRIORITY")
+
+				// header + 1 workflows + empty line
 				assert.Len(t, strings.Split(output, "\n"), 3)
 			}
 		})
