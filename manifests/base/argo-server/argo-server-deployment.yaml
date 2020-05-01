@@ -19,6 +19,13 @@ spec:
           ports:
             - name: web
               containerPort: 2746
+          resources:
+            limits:
+              cpu: 100m
+              memory: 64Mi
+            requests:
+              cpu: 100m
+              memory: 32Mi
           readinessProbe:
             httpGet:
               port: 2746

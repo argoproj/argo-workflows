@@ -493,6 +493,13 @@ spec:
             scheme: HTTP
           initialDelaySeconds: 10
           periodSeconds: 20
+        resources:
+          limits:
+            cpu: 100m
+            memory: 64Mi
+          requests:
+            cpu: 100m
+            memory: 32Mi
       nodeSelector:
         kubernetes.io/os: linux
       serviceAccountName: argo-server
