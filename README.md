@@ -33,15 +33,20 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/
 * [How to configure your artifact repository](docs/configure-artifact-repository.md)
 
 ## Features
-* Server interface with UI
-* DAG or Steps based declaration of workflows
+* Incredibly easy to use UI
+* Server interface with REST API
 * Artifact support (S3, Artifactory, HTTP, Git, GCS, raw)
-* Step level input & outputs (artifacts/parameters)
 * Archiving Workflows after executing for later access
 * Workflow templating to store commonly used Workflows in the cluster
 * Scheduled workflows
+* Event emission
 * Prometheus metrics
 * Multiple executors
+* Fine-tuned garbage collection
+* Automatically calculated resource usage per step
+* Pod Disruption Budget support
+* DAG or Steps based declaration of workflows
+* Step level input & outputs (artifacts/parameters)
 * Loops
 * Parameterization
 * Conditionals
