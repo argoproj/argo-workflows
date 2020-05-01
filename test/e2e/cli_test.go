@@ -643,6 +643,8 @@ func (s *CLISuite) TestWorkflowResubmit() {
 		})
 }
 
+
+
 func (s *CLISuite) TestCron() {
 	s.Run("Lint", func() {
 		s.Given().RunCli([]string{"cron", "lint", "testdata/basic.yaml"}, func(t *testing.T, output string, err error) {
@@ -747,6 +749,44 @@ func (s *CLISuite) TestClusterTemplateCommands() {
 					assert.Contains(t, output, "cluster-workflow-template-whalesay-template")
 				}
 			})
+	})
+}
+
+func (s *CLISuite) TestTopLevelWFTRefSubmit(){
+	s.Run("CreateWFT", func() {
+		s.Given().RunCli([]string{"template", "create", "smoke/workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
+	})
+	s.Run("CreateWF", func() {
+		s.Given().RunCli([]string{ "submit", "testdata/top-level-wft-ref.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
+	})
+	s.Run("CreateCWFT", func() {
+		s.Given().RunCli([]string{"cluster-template", "create", "smoke/cluster-workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
+	})
+	s.Run("CreateWFWithCWFTRef", func() {
+		s.Given().RunCli([]string{ "submit", "testdata/top-level-cwft-ref.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
 	})
 }
 

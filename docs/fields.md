@@ -227,6 +227,8 @@ Workflow is the definition of a workflow resource
 - [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
 
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
+
+- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
 </details>
 
 ### Fields
@@ -512,6 +514,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
 </details>
 
 ### Fields
@@ -806,6 +810,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
 </details>
 
 ### Fields
@@ -1066,6 +1072,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
 </details>
 
 ### Fields
@@ -1226,6 +1234,8 @@ Arguments to a template
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
 </details>
 
 ### Fields
@@ -1510,6 +1520,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
+
+- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
 
 - [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
 
@@ -1857,6 +1869,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
 </details>
 
 ### Fields
@@ -2362,6 +2376,8 @@ Pod metdata
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
 </details>
 
 ### Fields
@@ -2624,6 +2640,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
+
 - [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
 
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
@@ -2678,6 +2696,8 @@ TemplateRef is a reference of template resource.
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
+
+- [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
 
 - [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
 
@@ -3431,6 +3451,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
 </details>
 
 ### Fields
@@ -4445,6 +4467,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devicesand 
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
 </details>
 
 ### Fields
