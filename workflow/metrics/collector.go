@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"os"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/tools/cache"
@@ -15,7 +16,8 @@ const (
 )
 
 type MetricsProvider interface {
-	GetMetrics() map[string]prometheus.Metric
+	GetMetrics() []prometheus.Metric
+	DeleteExpiredMetrics(ttl time.Duration)
 }
 
 func NewMetricsRegistry(metricsProvider MetricsProvider, informer cache.SharedIndexInformer, disableLegacyMetrics bool) *prometheus.Registry {
