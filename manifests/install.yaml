@@ -407,6 +407,8 @@ spec:
             scheme: HTTP
           initialDelaySeconds: 10
           periodSeconds: 20
+      nodeSelector:
+        kubernetes.io/os: linux
       serviceAccountName: argo-server
 ---
 apiVersion: apps/v1
@@ -432,4 +434,6 @@ spec:
         - workflow-controller
         image: argoproj/workflow-controller:latest
         name: workflow-controller
+      nodeSelector:
+        kubernetes.io/os: linux
       serviceAccountName: argo
