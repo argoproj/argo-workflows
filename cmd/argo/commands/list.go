@@ -36,15 +36,15 @@ type listFlags struct {
 	since         string   // --since
 	chunkSize     int64    // --chunk-size
 	noHeaders     bool     // --no-headers
-	cursor        string   // --continue
+	continueToken string   // --continue
 	limit         int64    // --limit
 }
 
 type cursor struct {
-	kubeCursor       string `json:"kube_cursor,omitempty"`
-	lastWorkflowName string `json:"last_workflow_name,omitempty"`
-	prefix           string `json:"prefix,omitempty"`
-	since            string `json:"since,omitempty"`
+	KubeCursor       string `json:"kube_cursor,omitempty"`
+	LastWorkflowName string `json:"last_workflow_name,omitempty"`
+	Prefix           string `json:"prefix,omitempty"`
+	Since            string `json:"since,omitempty"`
 }
 
 func NewListCommand() *cobra.Command {
@@ -104,7 +104,7 @@ func NewListCommand() *cobra.Command {
 				}
 				filterWorkflow(tmpWfList, &listArgs)
 
-				if listArgs.limit != 0 && int64(len(workflows)+len(tmpWfList.Items)) >= listArgs.limit {
+				if listArgs.limit != 0 && int64(len(workflows)+len(tmpWfList.Items)) > listArgs.limit {
 					wfName = truncateWorkflowList(tmpWfList, &workflows, &listArgs)
 					workflows = append(workflows, tmpWfList.Items...)
 					break
@@ -126,14 +126,14 @@ func NewListCommand() *cobra.Command {
 			case "", "wide":
 				printTable(workflows, &listArgs)
 				if encodedCursor != "" {
-					fmt.Printf("There are additional suppressed results, show them by passing in `--continue %s\n", encodedCursor)
+					fmt.Printf("There are additional suppressed results, show them by passing in `--continue %s`\n", encodedCursor)
 				}
 			case "name":
 				for _, wf := range workflows {
 					fmt.Println(wf.ObjectMeta.Name)
 				}
 				if encodedCursor != "" {
-					fmt.Printf("There are additional suppressed results, show them by passing in `--continue %s\n", encodedCursor)
+					fmt.Printf("There are additional suppressed results, show them by passing in `--continue %s`\n", encodedCursor)
 				}
 			default:
 				log.Fatalf("Unknown output mode: %s", listArgs.output)
@@ -149,41 +149,42 @@ func NewListCommand() *cobra.Command {
 	command.Flags().StringVar(&listArgs.since, "since", "", "Show only workflows newer than a relative duration")
 	command.Flags().Int64VarP(&listArgs.chunkSize, "chunk-size", "", 500, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
 	command.Flags().BoolVar(&listArgs.noHeaders, "no-headers", false, "Don't print headers (default print headers).")
-	command.Flags().StringVar(&listArgs.cursor, "continue", "", "Return the next batch of workloads starting from this cursor. Note that the chunk size used to fetch this cursor must be passed in at the same time.")
+	command.Flags().StringVar(&listArgs.continueToken, "continue", "", "Return the next batch of workloads starting from this token. Note that the chunk size used to fetch this token must be passed in at the same time.")
 	command.Flags().Int64VarP(&listArgs.limit, "limit", "", 500, "Return a list with maximum N workflows. Pass 0 to retrieve the full list.")
 	return command
 }
 
 func getKubeCursor(listArgs *listFlags) (string, string, error) {
-	if listArgs.cursor != "" {
-		jsonString, err := base64.StdEncoding.DecodeString(listArgs.cursor)
+	if listArgs.continueToken != "" {
+		jsonString, err := base64.RawURLEncoding.DecodeString(listArgs.continueToken)
 		if err != nil {
 			return "", "", errors.New("Invalid cursor: malformed value for --continue")
 		}
 		var data cursor
 		err = json.Unmarshal([]byte(jsonString), &data)
-		if err != nil || data.lastWorkflowName == "" && data.kubeCursor != "" {
+		if err != nil || data.LastWorkflowName == "" && data.KubeCursor != "" {
 			return "", "", errors.New("Invalid cursor: malformed value for --continue")
 		}
-		if data.lastWorkflowName != "" && (data.prefix != listArgs.prefix || data.since != listArgs.since) {
+		if data.LastWorkflowName != "" && (data.Prefix != listArgs.prefix || data.Since != listArgs.since) {
 			return "", "", errors.New("Invalid cursor: please ensure that the identical values for `prefix` and `since` which you used to acquire this cursor are passed in")
 		}
-		return data.kubeCursor, data.lastWorkflowName, nil
+		return data.KubeCursor, data.LastWorkflowName, nil
 	}
 	return "", "", nil
 }
 
 func encodeCursor(kubeCursor string, lastWorkflowName string, listArgs *listFlags) (string, error) {
 	jsonCursor, err := json.Marshal(cursor{
-		kubeCursor:       kubeCursor,
-		lastWorkflowName: lastWorkflowName,
-		prefix:           listArgs.prefix,
-		since:            listArgs.since,
+		KubeCursor:       kubeCursor,
+		LastWorkflowName: lastWorkflowName,
+		Prefix:           listArgs.prefix,
+		Since:            listArgs.since,
 	})
 	if err != nil {
 		return "", err
 	}
-	return base64.StdEncoding.EncodeToString(jsonCursor), nil
+
+	return base64.RawURLEncoding.EncodeToString(jsonCursor), nil
 }
 
 func findTargetWorkflow(wfList *wfv1.WorkflowList, targetWfName string) {
