@@ -1467,8 +1467,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			node = lastChildNode
 		} else {
 			// Create a new child node and append it to the retry node.
-			childrenLength := strconv.Itoa(len(retryParentNode.Children))
-			nodeName = fmt.Sprintf("%s(%s)", retryNodeName, childrenLength)
+			nodeName = fmt.Sprintf("%s(%d)", retryNodeName, len(retryParentNode.Children))
 			woc.addChildNode(retryNodeName, nodeName)
 			node = nil
 
@@ -1477,8 +1476,9 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			if processedTmpl.IsPodType() {
 				localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
 			}
+			localParams[common.LocalVarPodRetryAttempt] = strconv.Itoa(len(retryParentNode.Children))
+
 			// Inject the retryAttempt number
-			localParams[common.LocalVarPodRetryAttempt] = childrenLength
 			processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, localParams)
 			if err != nil {
 				return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, err), err

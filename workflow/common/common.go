@@ -133,7 +133,7 @@ const (
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"
 	// LocalVarPodRetryAttempt is a step level variable that references the retry attempt number if retryStrategy is specified
-	LocalVarPodRetryAttempt = "pod.retryAttempt"
+	LocalVarPodRetryAttempt = "retryAttempt"
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"

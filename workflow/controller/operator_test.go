@@ -575,7 +575,7 @@ spec:
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
-      args: ["cowsay {{pod.retryAttempt}}"]
+      args: ["cowsay {{retryAttempt}}"]
 `
 
 func TestRetryAttemptVariable(t *testing.T) {
@@ -588,7 +588,7 @@ func TestRetryAttemptVariable(t *testing.T) {
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
 
-	iterations := 10
+	iterations := 5
 	for i := 1; i <= iterations; i++ {
 		if i != 1 {
 			makePodsPhase(t, apiv1.PodFailed, controller.kubeclientset, wf.ObjectMeta.Namespace)
@@ -623,7 +623,7 @@ spec:
           arguments:
             parameters:
             - name: message
-              value: "{{pod.retryAttempt}}"
+              value: "{{retryAttempt}}"
           template: whalesay
 
   - name: whalesay
@@ -646,7 +646,7 @@ func TestStepsRetryAttemptVariable(t *testing.T) {
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
 
-	iterations := 10
+	iterations := 5
 	for i := 1; i <= iterations; i++ {
 		if i != 1 {
 			makePodsPhase(t, apiv1.PodFailed, controller.kubeclientset, wf.ObjectMeta.Namespace)
