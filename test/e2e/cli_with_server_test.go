@@ -193,6 +193,15 @@ func (s *CLIWithServerSuite) TestWorkflowSuspendResumePersistence() {
 		})
 }
 
+func (s *CLIWithServerSuite) TestNodeSuspendResumePersistence() {
+	if !s.Persistence.IsEnabled() {
+		// Persistence is disabled for this test, but it is enabled for the Argo Server in this test suite.
+		// When this is the case, this behavior is tested in cli_test.go
+		s.T().SkipNow()
+	}
+	NodeSuspendResumeCommon(s.E2ESuite)
+}
+
 func TestCLIWithServerSuite(t *testing.T) {
 	suite.Run(t, new(CLIWithServerSuite))
 }

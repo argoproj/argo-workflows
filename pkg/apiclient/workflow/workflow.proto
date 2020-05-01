@@ -44,7 +44,7 @@ message WorkflowResubmitRequest {
 message WorkflowRetryRequest {
     string name = 1;
     string namespace = 2;
-    bool restartSuccesful = 3;
+    bool restartSuccessful = 3;
     string nodeFieldSelector = 4;
 }
 message WorkflowResumeRequest {
