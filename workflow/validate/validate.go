@@ -698,7 +698,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].name is required", tmpl.Name, i)
 			}
 			_, ok := stepNames[step.Name]
-			if ok {
+			if !ok {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].name '%s' is not unique", tmpl.Name, i, step.Name)
 			}
 			if errs := isValidWorkflowFieldName(step.Name); len(errs) != 0 {
@@ -733,7 +733,10 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 
 		for _, step := range stepGroup.Steps {
 			aggregate := len(step.WithItems) > 0 || step.WithParam != ""
-			resolvedTmpl := resolvedTemplates[step.Name]
+			resolvedTmpl, ok := resolvedTemplates[step.Name]
+			if !ok {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s unable to resolve template", tmpl.Name, i, step.Name)
+			}
 			ctx.addOutputsToScope(resolvedTmpl, fmt.Sprintf("steps.%s", step.Name), scope, aggregate, false)
 
 			// Validate the template again with actual arguments.
