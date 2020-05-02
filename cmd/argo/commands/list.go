@@ -78,6 +78,33 @@ func listWorkflows(listArgs *listFlags) {
 	}
 	listOpts := getListOpts(listArgs)
 
+	kubeCursor, wfName, workflows := fetchWorkflows(kubeCursor, lastWorkflowName, &listOpts, listArgs)
+
+	encodedCursor := ""
+	if wfName != "" {
+		encodedCursor, err = encodeCursor(kubeCursor, wfName, listArgs)
+		if err != nil {
+			log.Errorf("Error when preparing the cursor for other workflows: %v", err)
+		}
+	}
+
+	err = printer.PrintWorkflows(*workflows, os.Stdout, printer.PrintOpts{
+		NoHeaders: listArgs.noHeaders,
+		Namespace: listArgs.allNamespaces,
+		Output:    listArgs.output,
+	})
+	argoerrors.CheckError(err)
+
+	if encodedCursor != "" {
+		switch listArgs.output {
+		case "", "wide", "name":
+			fmt.Printf("There are additional suppressed results, show them by passing in `--continue %s`\n", encodedCursor)
+		default:
+		}
+	}
+}
+
+func fetchWorkflows(cursor string, lastWorkflowName string, listOpts *metav1.ListOptions, listArgs *listFlags) (string, string, *wfv1.Workflows) {
 	ctx, apiClient := client.NewAPIClient()
 	serviceClient := apiClient.NewWorkflowServiceClient()
 	namespace := client.Namespace()
@@ -87,6 +114,7 @@ func listWorkflows(listArgs *listFlags) {
 
 	initialFetch := true
 	wfName := ""
+	kubeCursor := cursor
 
 	// Keep fetching workflows until we've got enough amount
 	var workflows wfv1.Workflows
@@ -94,7 +122,7 @@ func listWorkflows(listArgs *listFlags) {
 		listOpts.Continue = kubeCursor
 		tmpWfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
 			Namespace:   namespace,
-			ListOptions: &listOpts,
+			ListOptions: listOpts,
 		})
 		argoerrors.CheckError(err)
 
@@ -119,29 +147,7 @@ func listWorkflows(listArgs *listFlags) {
 		workflows = append(workflows, tmpWfList.Items...)
 		kubeCursor = tmpWfList.ListMeta.Continue
 	}
-
-	encodedCursor := ""
-	if wfName != "" {
-		encodedCursor, err = encodeCursor(kubeCursor, wfName, listArgs)
-		if err != nil {
-			log.Errorf("Error when preparing the cursor for other workflows: %v", err)
-		}
-	}
-
-	err = printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{
-		NoHeaders: listArgs.noHeaders,
-		Namespace: listArgs.allNamespaces,
-		Output:    listArgs.output,
-	})
-	argoerrors.CheckError(err)
-
-	if encodedCursor != "" {
-		switch listArgs.output {
-		case "", "wide", "name":
-			fmt.Printf("There are additional suppressed results, show them by passing in `--continue %s`\n", encodedCursor)
-		default:
-		}
-	}
+	return kubeCursor, wfName, &workflows
 }
 
 func getListOpts(listArgs *listFlags) metav1.ListOptions {
@@ -247,47 +253,4 @@ func truncateWorkflowList(wfList *wfv1.WorkflowList, workflows *wfv1.Workflows, 
 	lastWorkflowName := wfList.Items[tail-1].Name
 	wfList.Items = wfList.Items[0:tail]
 	return lastWorkflowName
-}
-
-func countPendingRunningCompleted(wf *wfv1.Workflow) (int, int, int) {
-	pending := 0
-	running := 0
-	completed := 0
-	for _, node := range wf.Status.Nodes {
-		tmpl := wf.GetTemplateByName(node.TemplateName)
-		if tmpl == nil || !tmpl.IsPodType() {
-			continue
-		}
-		if node.Completed() {
-			completed++
-		} else if node.Phase == wfv1.NodeRunning {
-			running++
-		} else {
-			pending++
-		}
-	}
-	return pending, running, completed
-}
-
-// parameterString returns a human readable display string of the parameters, truncating if necessary
-func parameterString(params []wfv1.Parameter) string {
-	truncateString := func(str string, num int) string {
-		bnoden := str
-		if len(str) > num {
-			if num > 3 {
-				num -= 3
-			}
-			bnoden = str[0:num-15] + "..." + str[len(str)-15:]
-		}
-		return bnoden
-	}
-
-	pStrs := make([]string, 0)
-	for _, p := range params {
-		if p.Value != nil {
-			str := fmt.Sprintf("%s=%s", p.Name, truncateString(*p.Value, 50))
-			pStrs = append(pStrs, str)
-		}
-	}
-	return strings.Join(pStrs, ",")
 }
