@@ -577,8 +577,8 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 		log.Warnf("watch returned pod unrelated to any workflow: %s", pod.ObjectMeta.Name)
 		return true
 	}
-	defer wfc.metricsService.PodProcessed()
-	wfc.wfQueue.Add(pod.ObjectMeta.Namespace + "/" + workflowName)
+	wfc.metricsService.PodProcessed()
+	wfc.wfQueue.AddAfter(pod.ObjectMeta.Namespace+"/"+workflowName, 1*time.Second)
 	return true
 }
 
@@ -706,6 +706,9 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 					return
 				}
 				if err == nil {
+					if !significantPodChange(old.(*apiv1.Pod), new.(*apiv1.Pod)) {
+						return
+					}
 					wfc.podQueue.Add(key)
 				}
 			},
