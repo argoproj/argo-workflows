@@ -272,8 +272,7 @@ func (s *CLISuite) TestRoot() {
 				assert.Contains(t, output, "DURATION")
 				assert.Contains(t, output, "PRIORITY")
 
-				// header + 1 workflows + empty line
-				assert.Len(t, strings.Split(output, "\n"), 3)
+				assert.NotContains(t, output, "There are additional suppressed results")
 			}
 		})
 

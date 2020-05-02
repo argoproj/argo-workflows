@@ -2,9 +2,15 @@ package commands
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
+	"time"
 
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/stretchr/testify/assert"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 )
 
 func getListArgs() listFlags {
@@ -21,6 +27,42 @@ func getListArgs() listFlags {
 		continueToken: "",
 		limit:         500,
 	}
+}
+
+func getWorkflowList() wfv1.WorkflowList {
+	wfList := wfv1.WorkflowList{
+		Items: []wfv1.Workflow{},
+	}
+	now := time.Now()
+	for i := 0; i < 3; i++ {
+		wfList.Items = append(wfList.Items, wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("my-wf-%d", i), Namespace: "my-ns", CreationTimestamp: metav1.Time{Time: now}},
+			Spec: wfv1.WorkflowSpec{
+				Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{
+					{Name: "my-param", Value: pointer.StringPtr("my-value")},
+				}},
+				Priority: pointer.Int32Ptr(2),
+				Templates: []wfv1.Template{
+					{Name: "t0", Container: &corev1.Container{}},
+				},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase:      wfv1.NodeRunning,
+				StartedAt:  metav1.Time{Time: now},
+				FinishedAt: metav1.Time{Time: now.Add(3 * time.Second)},
+				Nodes: wfv1.Nodes{
+					"n0": {Phase: wfv1.NodePending, Type: wfv1.NodeTypePod, TemplateName: "t0"},
+					"n1": {Phase: wfv1.NodeRunning, Type: wfv1.NodeTypePod, TemplateName: "t0"},
+					"n2": {Phase: wfv1.NodeRunning, Type: wfv1.NodeTypePod, TemplateName: "t0"},
+					"n3": {Phase: wfv1.NodeSucceeded, Type: wfv1.NodeTypePod, TemplateName: "t0"},
+					"n4": {Phase: wfv1.NodeFailed, Type: wfv1.NodeTypePod, TemplateName: "t0"},
+					"n5": {Phase: wfv1.NodeError, Type: wfv1.NodeTypePod, TemplateName: "t0"},
+				},
+			},
+		},
+		)
+	}
+	return wfList
 }
 
 // TestGetListOpts
@@ -113,4 +155,38 @@ func TestPrintCursor(t *testing.T) {
 	buf.Reset()
 	printCursor("", "", &listArgs, &buf)
 	assert.Equal(t, "", buf.String())
+}
+
+// TestTruncateWorkflowList
+func TestTruncateWorkflowList(t *testing.T) {
+	wfList := getWorkflowList()
+	listArgs := getListArgs()
+	listArgs.limit = 3
+	var workflows wfv1.Workflows
+	lastWfName := truncateWorkflowList(&wfList, &workflows, &listArgs)
+	assert.Equal(t, "my-wf-2", lastWfName)
+}
+
+// TestFilterByPrefix
+func TestFilterByPrefix(t *testing.T) {
+	wfList := getWorkflowList()
+	wf := wfList.Items[0]
+	assert.True(t, filterByPrefix(&wf, ""))
+	assert.True(t, filterByPrefix(&wf, "my-wf"))
+	assert.False(t, filterByPrefix(&wf, "foo"))
+}
+
+// TestFilterBySince
+func TestFilterBySince(t *testing.T) {
+	wfList := getWorkflowList()
+	wf := wfList.Items[0]
+
+	assert.True(t, filterBySince(&wf, nil))
+
+	ts := wf.ObjectMeta.CreationTimestamp.Add(-1)
+	assert.True(t, filterBySince(&wf, &ts))
+
+	ts = time.Now()
+	wf.Status.FinishedAt.Reset()
+	assert.True(t, filterBySince(&wf, &ts))
 }
