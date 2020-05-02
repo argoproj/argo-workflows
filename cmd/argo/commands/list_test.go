@@ -42,8 +42,14 @@ func TestGetListOpts(t *testing.T) {
 // TestGetKubeCursor
 func TestGetKubeCursor(t *testing.T) {
 	listArgs := getListArgs()
-	listArgs.continueToken = "BLAH"
 	cursor, wfName, err := getKubeCursor(&listArgs)
+	if assert.Nil(t, err) {
+		assert.Equal(t, "", cursor)
+		assert.Equal(t, "", wfName)
+	}
+
+	listArgs.continueToken = "BLAH"
+	cursor, wfName, err = getKubeCursor(&listArgs)
 	if assert.Error(t, err) {
 		assert.Contains(t, err.Error(), "malformed value")
 		assert.Equal(t, "", cursor)
