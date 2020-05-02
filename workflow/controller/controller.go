@@ -84,6 +84,7 @@ type WorkflowController struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wfArchive             sqldb.WorkflowArchive
 	Metrics               map[string]common.Metric
+	metricsService        metrics.Service
 }
 
 const (
@@ -121,6 +122,7 @@ func NewWorkflowController(
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 		Metrics:                    make(map[string]common.Metric),
+		metricsService:             metrics.NewService(),
 	}
 	wfc.throttler = NewThrottler(0, wfc.wfQueue)
 	return &wfc
@@ -131,7 +133,7 @@ func (wfc *WorkflowController) MetricsServer(ctx context.Context) {
 	if wfc.Config.MetricsConfig.Enabled {
 		informer := util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowMetricsResyncPeriod, wfc.tweakWorkflowMetricslist)
 		go informer.Run(ctx.Done())
-		registry := metrics.NewMetricsRegistry(wfc, informer, wfc.Config.MetricsConfig.DisableLegacy)
+		registry := metrics.NewMetricsRegistry(wfc, informer, wfc.metricsService, wfc.Config.MetricsConfig.DisableLegacy)
 		metrics.RunServer(ctx, wfc.Config.MetricsConfig, registry)
 	}
 }
@@ -575,9 +577,7 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 		log.Warnf("watch returned pod unrelated to any workflow: %s", pod.ObjectMeta.Name)
 		return true
 	}
-	// TODO: currently we reawaken the workflow on *any* pod updates.
-	// But this could be be much improved to become smarter by only
-	// requeue the workflow when there are changes that we care about.
+	defer wfc.metricsService.PodProcessed()
 	wfc.wfQueue.Add(pod.ObjectMeta.Namespace + "/" + workflowName)
 	return true
 }
@@ -702,7 +702,7 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 			},
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
-				if old.(*unstructured.Unstructured).GetResourceVersion() == new.(*unstructured.Unstructured).GetResourceVersion() {
+				if old.(*apiv1.Pod).GetResourceVersion() == new.(*apiv1.Pod).GetResourceVersion() {
 					return
 				}
 				if err == nil {

@@ -9,7 +9,8 @@ import (
 
 // legacyWorkflowCollector collects metrics about all workflows in the cluster
 type controllerCollector struct {
-	store util.WorkflowLister
+	store   util.WorkflowLister
+	service Service
 }
 
 // Describe implements the prometheus.Collector interface
@@ -30,6 +31,9 @@ func (wc *controllerCollector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 	for _, metric := range wc.collectWorkflowStatuses(workflows) {
+		ch <- metric
+	}
+	for _, metric := range wc.service.Metrics() {
 		ch <- metric
 	}
 }

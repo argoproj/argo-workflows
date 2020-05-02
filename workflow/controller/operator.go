@@ -170,6 +170,8 @@ func (woc *wfOperationCtx) operate() {
 
 	woc.log.Infof("Processing workflow")
 
+	started := time.Now()
+	defer woc.controller.metricsService.WorkflowProcessed(time.Since(started))
 	// Update workflow duration variable
 	woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
 
@@ -461,6 +463,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if !woc.updated {
 		return
 	}
+	defer woc.controller.metricsService.UpdatesPersisted()
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 	// try and compress nodes if needed
 	nodes := woc.wf.Status.Nodes
@@ -562,6 +565,7 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.Workflo
 // retries the UPDATE multiple times. For reasoning behind this technique, see:
 // https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#concurrency-control-and-consistency
 func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface) (*wfv1.Workflow, error) {
+	woc.controller.metricsService.UpdateReapplied()
 	// First generate the patch
 	oldData, err := json.Marshal(woc.orig)
 	if err != nil {

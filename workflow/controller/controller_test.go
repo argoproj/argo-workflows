@@ -5,7 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/mock"
+
 	"github.com/argoproj/argo/workflow/common"
+	metricsmocks "github.com/argoproj/argo/workflow/metrics/mocks"
 
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -114,6 +117,9 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		panic("Timed out waiting for caches to sync")
 	}
 	kube := fake.NewSimpleClientset()
+	metricsService := &metricsmocks.Service{}
+	metricsService.On("UpdatesPersisted").Return()
+	metricsService.On("WorkflowProcessed", mock.Anything).Return()
 	controller := &WorkflowController{
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
@@ -127,6 +133,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		podQueue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		wfArchive:            sqldb.NullWorkflowArchive,
 		Metrics:              make(map[string]common.Metric),
+		metricsService:       metricsService,
 		incompleteWfInformer: &testSharedIndexInformer{},
 	}
 	return cancel, controller
