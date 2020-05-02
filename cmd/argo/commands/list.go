@@ -7,24 +7,21 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"text/tabwriter"
 	"time"
 
 	argoerrors "github.com/argoproj/pkg/errors"
-	"github.com/argoproj/pkg/humanize"
 	argotime "github.com/argoproj/pkg/time"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/printer"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/util"
 )
 
 type listFlags struct {
@@ -66,7 +63,7 @@ func NewListCommand() *cobra.Command {
 	command.Flags().BoolVar(&listArgs.running, "running", false, "Show only running workflows")
 	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
 	command.Flags().StringVar(&listArgs.since, "since", "", "Show only workflows newer than a relative duration")
-	command.Flags().Int64VarP(&listArgs.chunkSize, "chunk-size", "", 500, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
+	command.Flags().Int64VarP(&listArgs.chunkSize, "chunk-size", "", 0, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
 	command.Flags().BoolVar(&listArgs.noHeaders, "no-headers", false, "Don't print headers (default print headers).")
 	command.Flags().StringVar(&listArgs.continueToken, "continue", "", "Return the next batch of workloads starting from this token. Note that the chunk size used to fetch this token must be passed in at the same time.")
 	command.Flags().Int64VarP(&listArgs.limit, "limit", "", 500, "Return a list with maximum N workflows. Pass 0 to retrieve the full list.")
@@ -131,21 +128,19 @@ func listWorkflows(listArgs *listFlags) {
 		}
 	}
 
-	switch listArgs.output {
-	case "", "wide":
-		printTable(workflows, listArgs)
-		if encodedCursor != "" {
+	err = printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{
+		NoHeaders: listArgs.noHeaders,
+		Namespace: listArgs.allNamespaces,
+		Output:    listArgs.output,
+	})
+	argoerrors.CheckError(err)
+
+	if encodedCursor != "" {
+		switch listArgs.output {
+		case "", "wide", "name":
 			fmt.Printf("There are additional suppressed results, show them by passing in `--continue %s`\n", encodedCursor)
+		default:
 		}
-	case "name":
-		for _, wf := range workflows {
-			fmt.Println(wf.ObjectMeta.Name)
-		}
-		if encodedCursor != "" {
-			fmt.Printf("There are additional suppressed results, show them by passing in `--continue %s`\n", encodedCursor)
-		}
-	default:
-		log.Errorf("Unknown output mode: %s", listArgs.output)
 	}
 }
 
@@ -254,39 +249,6 @@ func truncateWorkflowList(wfList *wfv1.WorkflowList, workflows *wfv1.Workflows, 
 	return lastWorkflowName
 }
 
-func printTable(wfList []wfv1.Workflow, listArgs *listFlags) {
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	if !listArgs.noHeaders {
-		if listArgs.allNamespaces {
-			fmt.Fprint(w, "NAMESPACE\t")
-		}
-		fmt.Fprint(w, "NAME\tSTATUS\tAGE\tDURATION\tPRIORITY")
-		if listArgs.output == "wide" {
-			fmt.Fprint(w, "\tP/R/C\tPARAMETERS")
-		}
-		fmt.Fprint(w, "\n")
-	}
-	for _, wf := range wfList {
-		ageStr := humanize.RelativeDurationShort(wf.ObjectMeta.CreationTimestamp.Time, time.Now())
-		durationStr := humanize.RelativeDurationShort(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time)
-		if listArgs.allNamespaces {
-			fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Namespace)
-		}
-		var priority int
-		if wf.Spec.Priority != nil {
-			priority = int(*wf.Spec.Priority)
-		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d", wf.ObjectMeta.Name, workflowStatus(&wf), ageStr, durationStr, priority)
-		if listArgs.output == "wide" {
-			pending, running, completed := countPendingRunningCompleted(&wf)
-			fmt.Fprintf(w, "\t%d/%d/%d", pending, running, completed)
-			fmt.Fprintf(w, "\t%s", parameterString(wf.Spec.Arguments.Parameters))
-		}
-		fmt.Fprintf(w, "\n")
-	}
-	_ = w.Flush()
-}
-
 func countPendingRunningCompleted(wf *wfv1.Workflow) (int, int, int) {
 	pending := 0
 	running := 0
@@ -328,27 +290,4 @@ func parameterString(params []wfv1.Parameter) string {
 		}
 	}
 	return strings.Join(pStrs, ",")
-}
-
-// workflowStatus returns a human readable inferred workflow status based on workflow phase and conditions
-func workflowStatus(wf *wfv1.Workflow) wfv1.NodePhase {
-	switch wf.Status.Phase {
-	case wfv1.NodeRunning:
-		if util.IsWorkflowSuspended(wf) {
-			return "Running (Suspended)"
-		}
-		return wf.Status.Phase
-	case wfv1.NodeFailed:
-		if wf.Spec.Shutdown != "" {
-			return "Failed (Terminated)"
-		}
-		return wf.Status.Phase
-	case "", wfv1.NodePending:
-		if !wf.ObjectMeta.CreationTimestamp.IsZero() {
-			return wfv1.NodePending
-		}
-		return "Unknown"
-	default:
-		return wf.Status.Phase
-	}
 }

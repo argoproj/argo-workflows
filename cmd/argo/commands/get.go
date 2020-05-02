@@ -17,6 +17,7 @@ import (
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/printer"
 )
 
 const onExitSuffix = "onExit"
@@ -93,9 +94,20 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 		serviceAccount = "default"
 	}
 	fmt.Printf(fmtStr, "ServiceAccount:", serviceAccount)
-	fmt.Printf(fmtStr, "Status:", workflowStatus(wf))
+	fmt.Printf(fmtStr, "Status:", printer.WorkflowStatus(wf))
 	if wf.Status.Message != "" {
 		fmt.Printf(fmtStr, "Message:", wf.Status.Message)
+	}
+	if len(wf.Status.Conditions) > 0 {
+		fmt.Printf(fmtStr, "Conditions:", "")
+		for _, condition := range wf.Status.Conditions {
+			conditionMessage := condition.Message
+			if conditionMessage == "" {
+				conditionMessage = string(condition.Status)
+			}
+			conditionPrefix := fmt.Sprintf("%s %s", workflowConditionIconMap[condition.Type], string(condition.Type))
+			fmt.Printf(fmtStr, conditionPrefix, conditionMessage)
+		}
 	}
 	fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
 	if !wf.Status.StartedAt.IsZero() {

@@ -1228,7 +1228,7 @@ func TestSuspendTemplateWithFailedResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
-	err = util.StopWorkflow(wfcset, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1", "Step failed!")
+	err = util.StopWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1", "Step failed!")
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -2969,4 +2969,49 @@ func TestNestedStepGroupGlobalParams(t *testing.T) {
 
 	assert.Equal(t, "hello world", *woc.wf.Status.Outputs.Parameters[0].Value)
 	assert.Equal(t, "global-param", woc.wf.Status.Outputs.Parameters[0].Name)
+}
+
+var globalVariablePlaceholders = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: output-value-global-variables-wf
+  namespace: testNamespace
+spec:
+  serviceAccountName: testServiceAccountName
+  entrypoint: tell-workflow-global-variables
+  templates:
+  - name: tell-workflow-global-variables
+    outputs:
+      parameters:
+      - name: namespace
+        value: "{{workflow.namespace}}"
+      - name: serviceAccountName
+        value: "{{workflow.serviceAccountName}}"
+    container:
+      image: busybox
+`
+
+func TestResolvePlaceholdersInGlobalVariables(t *testing.T) {
+	wf := unmarshalWF(globalVariablePlaceholders)
+	woc := newWoc(*wf)
+	woc.artifactRepository.S3 = new(config.S3ArtifactRepository)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+
+	templateString := pods.Items[0].ObjectMeta.Annotations["workflows.argoproj.io/template"]
+	var template wfv1.Template
+	err = json.Unmarshal([]byte(templateString), &template)
+	assert.NoError(t, err)
+	namespaceValue := template.Outputs.Parameters[0].Value
+	assert.NotNil(t, namespaceValue)
+	assert.NotEmpty(t, *namespaceValue)
+	assert.Equal(t, "testNamespace", *namespaceValue)
+	serviceAccountNameValue := template.Outputs.Parameters[1].Value
+	assert.NotNil(t, serviceAccountNameValue)
+	assert.NotEmpty(t, *serviceAccountNameValue)
+	assert.Equal(t, "testServiceAccountName", *serviceAccountNameValue)
 }

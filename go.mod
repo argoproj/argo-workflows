@@ -22,7 +22,7 @@ require (
 	github.com/gavv/httpexpect/v2 v2.0.3
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-ini/ini v1.51.1 // indirect
-	github.com/go-openapi/jsonreference v0.19.3 // indirect
+	github.com/go-openapi/jsonreference v0.19.3
 	github.com/go-openapi/spec v0.19.7
 	github.com/go-openapi/swag v0.19.8 // indirect
 	github.com/go-sql-driver/mysql v1.4.1
@@ -80,7 +80,7 @@ require (
 	gopkg.in/jcmturner/gokrb5.v5 v5.3.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1
-	gopkg.in/yaml.v2 v2.2.8 // indirect
+	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.0.0-20191219150132-17cfeff5d095
 	k8s.io/apimachinery v0.16.7-beta.0
 	k8s.io/client-go v0.0.0-20191225075139-73fd2ddc9180
