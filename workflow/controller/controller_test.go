@@ -5,12 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/mock"
-
-	"github.com/argoproj/argo/workflow/common"
-	metricsmocks "github.com/argoproj/argo/workflow/metrics/mocks"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,6 +23,8 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
+	"github.com/argoproj/argo/workflow/common"
+	metricsmocks "github.com/argoproj/argo/workflow/metrics/mocks"
 )
 
 var helloWorldWf = `
