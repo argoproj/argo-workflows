@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,7 +14,7 @@ func getListArgs() listFlags {
 		completed:     false,
 		running:       false,
 		prefix:        "",
-		output:        "",
+		output:        "wide",
 		since:         "",
 		chunkSize:     500,
 		noHeaders:     false,
@@ -99,4 +100,17 @@ func TestGetKubeCursor(t *testing.T) {
 		assert.Equal(t, "bar", cursor)
 		assert.Equal(t, "foo", wfName)
 	}
+}
+
+// TestPrintCursor
+func TestPrintCursor(t *testing.T) {
+	listArgs := getListArgs()
+	var buf bytes.Buffer
+
+	printCursor("", "foo", &listArgs, &buf)
+	assert.Contains(t, buf.String(), "There are additional suppressed results")
+
+	buf.Reset()
+	printCursor("", "", &listArgs, &buf)
+	assert.Equal(t, "", buf.String())
 }

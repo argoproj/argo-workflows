@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -80,14 +81,6 @@ func listWorkflows(listArgs *listFlags) {
 
 	kubeCursor, wfName, workflows := fetchWorkflows(kubeCursor, lastWorkflowName, &listOpts, listArgs)
 
-	encodedCursor := ""
-	if wfName != "" {
-		encodedCursor, err = encodeCursor(kubeCursor, wfName, listArgs)
-		if err != nil {
-			log.Errorf("Error when preparing the cursor for other workflows: %v", err)
-		}
-	}
-
 	err = printer.PrintWorkflows(*workflows, os.Stdout, printer.PrintOpts{
 		NoHeaders: listArgs.noHeaders,
 		Namespace: listArgs.allNamespaces,
@@ -95,13 +88,7 @@ func listWorkflows(listArgs *listFlags) {
 	})
 	argoerrors.CheckError(err)
 
-	if encodedCursor != "" {
-		switch listArgs.output {
-		case "", "wide", "name":
-			fmt.Printf("There are additional suppressed results, show them by passing in `--continue %s`\n", encodedCursor)
-		default:
-		}
-	}
+	printCursor(kubeCursor, wfName, listArgs, os.Stdout)
 }
 
 func fetchWorkflows(cursor string, lastWorkflowName string, listOpts *metav1.ListOptions, listArgs *listFlags) (string, string, *wfv1.Workflows) {
@@ -205,6 +192,21 @@ func encodeCursor(kubeCursor string, lastWorkflowName string, listArgs *listFlag
 	}
 
 	return base64.RawURLEncoding.EncodeToString(jsonCursor), nil
+}
+
+func printCursor(kubeCursor string, wfName string, listArgs *listFlags, out io.Writer) {
+	if wfName != "" {
+		encodedCursor, err := encodeCursor(kubeCursor, wfName, listArgs)
+		if err != nil {
+			log.Errorf("Error when preparing the cursor for other workflows: %v", err)
+		}
+
+		switch listArgs.output {
+		case "", "wide", "name":
+			fmt.Fprintf(out, "There are additional suppressed results, show them by passing in `--continue %s`\n", encodedCursor)
+		default:
+		}
+	}
 }
 
 func findTargetWorkflow(wfList *wfv1.WorkflowList, targetWfName string) {
