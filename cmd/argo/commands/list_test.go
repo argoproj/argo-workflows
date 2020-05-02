@@ -29,14 +29,16 @@ func getListArgs() listFlags {
 	}
 }
 
+var numWorkflow = 3
+
 func getWorkflowList() wfv1.WorkflowList {
 	wfList := wfv1.WorkflowList{
 		Items: []wfv1.Workflow{},
 	}
 	now := time.Now()
-	for i := 0; i < 3; i++ {
+	for i := 0; i < numWorkflow; i++ {
 		wfList.Items = append(wfList.Items, wfv1.Workflow{
-			ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("my-wf-%d", i), Namespace: "my-ns", CreationTimestamp: metav1.Time{Time: now}},
+			ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("my-wf-%d", i), Namespace: "my-ns", CreationTimestamp: metav1.Time{Time: now.Add(time.Duration(-10*i) * time.Second)}},
 			Spec: wfv1.WorkflowSpec{
 				Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{
 					{Name: "my-param", Value: pointer.StringPtr("my-value")},
@@ -161,7 +163,7 @@ func TestPrintCursor(t *testing.T) {
 func TestTruncateWorkflowList(t *testing.T) {
 	wfList := getWorkflowList()
 	listArgs := getListArgs()
-	listArgs.limit = 3
+	listArgs.limit = int64(numWorkflow)
 	var workflows wfv1.Workflows
 	lastWfName := truncateWorkflowList(&wfList, &workflows, &listArgs)
 	assert.Equal(t, "my-wf-2", lastWfName)
@@ -189,4 +191,39 @@ func TestFilterBySince(t *testing.T) {
 	ts = time.Now()
 	wf.Status.FinishedAt.Reset()
 	assert.True(t, filterBySince(&wf, &ts))
+}
+
+// TestFilterWorkflow
+func TestFilterWorkflow(t *testing.T) {
+	wfList := getWorkflowList()
+	listArgs := getListArgs()
+	filterWorkflow(&wfList, &listArgs)
+	assert.Equal(t, numWorkflow, len(wfList.Items))
+
+	listArgs.prefix = "my-wf-1"
+	filterWorkflow(&wfList, &listArgs)
+	assert.Equal(t, 1, len(wfList.Items))
+
+	wfList = getWorkflowList()
+	listArgs.prefix = ""
+	listArgs.since = "15s"
+	filterWorkflow(&wfList, &listArgs)
+	assert.Equal(t, 2, len(wfList.Items))
+}
+
+// TestFindTargetWorkflow
+func TestFindTargetWorkflow(t *testing.T) {
+	wfList := getWorkflowList()
+
+	// case: empty name
+	findTargetWorkflow(&wfList, "")
+	assert.Equal(t, numWorkflow, len(wfList.Items))
+
+	// case: not found
+	findTargetWorkflow(&wfList, "foobar")
+	assert.Equal(t, numWorkflow, len(wfList.Items))
+
+	// case: found
+	findTargetWorkflow(&wfList, "my-wf-1")
+	assert.Equal(t, 1, len(wfList.Items))
 }
