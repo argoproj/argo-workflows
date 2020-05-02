@@ -1251,7 +1251,6 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
 
 }
 
-
 func TestArgoServerSuite(t *testing.T) {
 	suite.Run(t, new(ArgoServerSuite))
 }
