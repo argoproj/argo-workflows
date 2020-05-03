@@ -779,4 +779,3 @@ func (wfc *WorkflowController) GetContainerRuntimeExecutor() string {
 	}
 	return wfc.Config.ContainerRuntimeExecutor
 }
-
