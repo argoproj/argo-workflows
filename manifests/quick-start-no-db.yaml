@@ -353,8 +353,6 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  featureFlags: |
-    resourcesDuration: true
   links: |
     - name: Example Workflow Link
       scope: workflow
@@ -367,6 +365,8 @@ data:
     enabled: true
     path: /metrics
     port: 9090
+  resourcesDuration: |
+    enabled: true
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

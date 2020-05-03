@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {formatDuration} from './duration';
+import {denominator, formatDuration} from './duration';
 
 interface Props {
     resourcesDuration: {[resource: string]: number};
@@ -11,7 +11,7 @@ export class ResourcesDuration extends React.Component<Props> {
             <>
                 {this.props.resourcesDuration &&
                     Object.entries(this.props.resourcesDuration)
-                        .map(([resource, duration]) => formatDuration(duration) + '*' + resource)
+                        .map(([resource, duration]) => formatDuration(duration) + '*(' + denominator(resource) + ' ' + resource + ')')
                         .join(',')}{' '}
                 <a href='https://github.com/argoproj/argo/blob/master/docs/resource-duration.md'>
                     <i className='fa fa-info-circle' />
