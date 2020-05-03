@@ -170,8 +170,6 @@ func (woc *wfOperationCtx) operate() {
 
 	woc.log.Infof("Processing workflow")
 
-	started := time.Now()
-	defer woc.controller.metricsService.WorkflowProcessed(time.Since(started))
 	// Update workflow duration variable
 	woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
 

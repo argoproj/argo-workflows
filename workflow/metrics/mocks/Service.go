@@ -14,6 +14,11 @@ type Service struct {
 	mock.Mock
 }
 
+// InsignificantPodChange provides a mock function with given fields:
+func (_m *Service) InsignificantPodChange() {
+	_m.Called()
+}
+
 // Metrics provides a mock function with given fields:
 func (_m *Service) Metrics() []prometheus.Metric {
 	ret := _m.Called()
@@ -35,6 +40,16 @@ func (_m *Service) PodProcessed() {
 	_m.Called()
 }
 
+// PodResourceVersionRepeated provides a mock function with given fields:
+func (_m *Service) PodResourceVersionRepeated() {
+	_m.Called()
+}
+
+// SignificantPodChange provides a mock function with given fields:
+func (_m *Service) SignificantPodChange() {
+	_m.Called()
+}
+
 // UpdateReapplied provides a mock function with given fields:
 func (_m *Service) UpdateReapplied() {
 	_m.Called()
@@ -48,4 +63,9 @@ func (_m *Service) UpdatesPersisted() {
 // WorkflowProcessed provides a mock function with given fields: duration
 func (_m *Service) WorkflowProcessed(duration time.Duration) {
 	_m.Called(duration)
+}
+
+// WorkflowResourceVersionRepeated provides a mock function with given fields:
+func (_m *Service) WorkflowResourceVersionRepeated() {
+	_m.Called()
 }

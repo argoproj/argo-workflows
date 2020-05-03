@@ -482,6 +482,9 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
+	started := time.Now()
+	defer func() { wfc.metricsService.WorkflowProcessed(time.Since(started)) }()
+
 	woc := newWorkflowOperationCtx(wf, wfc)
 
 	// Loading running workflow from persistence storage if nodeStatusOffload enabled
@@ -578,7 +581,7 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 		return true
 	}
 	wfc.metricsService.PodProcessed()
-	wfc.wfQueue.AddAfter(pod.ObjectMeta.Namespace+"/"+workflowName, 1*time.Second)
+	wfc.wfQueue.Add(pod.ObjectMeta.Namespace + "/" + workflowName)
 	return true
 }
 
@@ -639,6 +642,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 				key, err := cache.MetaNamespaceKeyFunc(new)
 				if err == nil {
 					if old.(*unstructured.Unstructured).GetResourceVersion() == new.(*unstructured.Unstructured).GetResourceVersion() {
+						wfc.metricsService.WorkflowResourceVersionRepeated()
 						return
 					}
 					wfc.wfQueue.Add(key)
@@ -703,12 +707,15 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
 				if old.(*apiv1.Pod).GetResourceVersion() == new.(*apiv1.Pod).GetResourceVersion() {
+					wfc.metricsService.PodResourceVersionRepeated()
 					return
 				}
 				if err == nil {
 					if !significantPodChange(old.(*apiv1.Pod), new.(*apiv1.Pod)) {
+						wfc.metricsService.InsignificantPodChange()
 						return
 					}
+					wfc.metricsService.SignificantPodChange()
 					wfc.podQueue.Add(key)
 				}
 			},
