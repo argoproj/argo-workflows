@@ -125,16 +125,16 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
 		},
-		kubeclientset:        kube,
-		wfclientset:          wfclientset,
-		completedPods:        make(chan string, 512),
-		wftmplInformer:       wftmplInformer,
-		cwftmplInformer:      cwftmplInformer,
-		wfQueue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		podQueue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		wfArchive:            sqldb.NullWorkflowArchive,
-		metrics:              metrics,
-		incompleteWfInformer: &testSharedIndexInformer{},
+		kubeclientset:   kube,
+		wfclientset:     wfclientset,
+		completedPods:   make(chan string, 512),
+		wftmplInformer:  wftmplInformer,
+		cwftmplInformer: cwftmplInformer,
+		wfQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		podQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfArchive:       sqldb.NullWorkflowArchive,
+		metrics:         metrics,
+		wfInformer:      &testSharedIndexInformer{},
 	}
 	return cancel, controller
 }

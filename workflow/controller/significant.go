@@ -25,9 +25,7 @@ func significantPodChange(from *apiv1.Pod, to *apiv1.Pod) bool {
 	return from.Spec.NodeName != to.Spec.NodeName ||
 		from.Status.Phase != to.Status.Phase ||
 		from.Status.Message != to.Status.Message ||
-		from.Status.PodIP != to.Status.PodIP ||
-		significantContainerStatusesChange(from.Status.ContainerStatuses, to.Status.ContainerStatuses) ||
-		significantContainerStatusesChange(from.Status.InitContainerStatuses, to.Status.InitContainerStatuses)
+		from.Status.PodIP != to.Status.PodIP
 }
 
 func significantContainerStatusesChange(from []apiv1.ContainerStatus, to []apiv1.ContainerStatus) bool {

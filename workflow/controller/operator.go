@@ -512,7 +512,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if err != nil {
 		log.Errorf("failed to convert workflow to unstructured: %v", err)
 	} else {
-		err = woc.controller.incompleteWfInformer.GetStore().Update(un)
+		err = woc.controller.wfInformer.GetStore().Update(un)
 		if err != nil {
 			log.Errorf("failed to update workflow: %v", err)
 		}

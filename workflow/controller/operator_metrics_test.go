@@ -108,5 +108,5 @@ func TestCounterMetric(t *testing.T) {
 	// Process first metrics
 	woc.operate()
 
-	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
 }
