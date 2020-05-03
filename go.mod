@@ -71,6 +71,7 @@ require (
 	golang.org/x/crypto v0.0.0-20200311171314-f7b00557c8c4
 	golang.org/x/net v0.0.0-20200301022130-244492dfa37a
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
+	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 	golang.org/x/tools v0.0.0-20200414205525-6a72e3782ce5 // indirect
 	google.golang.org/api v0.20.0
 	google.golang.org/genproto v0.0.0-20200317114155-1f3552e48f24
