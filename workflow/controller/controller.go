@@ -597,12 +597,6 @@ func (wfc *WorkflowController) tweakListOptions(completedOp selection.Operator, 
 	options.LabelSelector = labelSelector.String()
 }
 
-func (wfc *WorkflowController) tweakWorkflowMetricslist(options *metav1.ListOptions) {
-	options.FieldSelector = fields.Everything().String()
-	labelSelector := labels.NewSelector().Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
-	options.LabelSelector = labelSelector.String()
-}
-
 func getWfPriority(obj interface{}) (int32, time.Time) {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
