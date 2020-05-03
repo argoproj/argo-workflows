@@ -1,4 +1,4 @@
-# Resource Duration 
+# Resource Duration
 
 ![alpha](assets/alpha.svg)
 
