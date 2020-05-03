@@ -3,13 +3,11 @@ package controller
 import (
 	"testing"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 
-	dto "github.com/prometheus/client_model/go"
-
 	apiv1 "k8s.io/api/core/v1"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 var basicMetric = `
@@ -59,12 +57,7 @@ func TestBasicMetric(t *testing.T) {
 	// Process first metrics
 	woc.operate()
 
-	metricDesc := wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
-	assert.Contains(t, controller.Metrics, metricDesc)
-	metric := controller.Metrics[metricDesc].Metric.(prometheus.Gauge)
-	metrtcString, err := getMetricStringValue(metric)
-	assert.NoError(t, err)
-	assert.Contains(t, metrtcString, `label:<name:"name" value:"random-int" > gauge:<value:`)
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
 
 var counterMetric = `
@@ -115,27 +108,5 @@ func TestCounterMetric(t *testing.T) {
 	// Process first metrics
 	woc.operate()
 
-	metricTotalDesc := wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
-	assert.Contains(t, controller.Metrics, metricTotalDesc)
-	metricErrorDesc := wf.Spec.Templates[0].Metrics.Prometheus[1].GetDesc()
-	assert.Contains(t, controller.Metrics, metricErrorDesc)
-
-	metricTotalCounter := controller.Metrics[metricTotalDesc].Metric.(prometheus.Counter)
-	metricTotalCounterString, err := getMetricStringValue(metricTotalCounter)
-	assert.NoError(t, err)
-	assert.Contains(t, metricTotalCounterString, `label:<name:"name" value:"flakey" > counter:<value:1 >`)
-
-	metricErrorCounter := controller.Metrics[metricErrorDesc].Metric.(prometheus.Counter)
-	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
-	assert.NoError(t, err)
-	assert.Contains(t, metricErrorCounterString, `label:<name:"name" value:"flakey" > counter:<value:1 >`)
-}
-
-func getMetricStringValue(metric prometheus.Metric) (string, error) {
-	metricString := &dto.Metric{}
-	err := metric.Write(metricString)
-	if err != nil {
-		return "", err
-	}
-	return proto.CompactTextString(metricString), nil
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }

@@ -2,12 +2,8 @@ package metrics
 
 import (
 	"os"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/client-go/tools/cache"
-
-	"github.com/argoproj/argo/workflow/util"
 )
 
 const (
@@ -15,21 +11,9 @@ const (
 	workflowsSubsystem = "workflows"
 )
 
-type MetricsProvider interface {
-	GetMetrics() []prometheus.Metric
-	DeleteExpiredMetrics(ttl time.Duration)
-}
-
-func NewMetricsRegistry(metricsProvider MetricsProvider, informer cache.SharedIndexInformer, service Service, disableLegacyMetrics bool) *prometheus.Registry {
+func NewMetricsRegistry(metrics Interface) *prometheus.Registry {
 	registry := prometheus.NewRegistry()
-	registry.MustRegister(&customMetricsCollector{provider: metricsProvider})
-	workflowLister := util.NewWorkflowLister(informer)
-	registry.MustRegister(&controllerCollector{store: workflowLister, service: service})
-
-	if !disableLegacyMetrics {
-		registry.MustRegister(&legacyWorkflowCollector{store: workflowLister})
-	}
-
+	registry.MustRegister(metrics)
 	return registry
 }
 

@@ -461,7 +461,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if !woc.updated {
 		return
 	}
-	defer woc.controller.metricsService.UpdatesPersisted()
+	defer woc.controller.metrics.UpdatesPersisted()
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 	// try and compress nodes if needed
 	nodes := woc.wf.Status.Nodes
@@ -563,7 +563,7 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.Workflo
 // retries the UPDATE multiple times. For reasoning behind this technique, see:
 // https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#concurrency-control-and-consistency
 func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface) (*wfv1.Workflow, error) {
-	woc.controller.metricsService.UpdateReapplied()
+	woc.controller.metrics.UpdateReapplied()
 	// First generate the patch
 	oldData, err := json.Marshal(woc.orig)
 	if err != nil {
@@ -2503,7 +2503,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 				continue
 			}
 			updatedMetric := metrics.ConstructRealTimeGaugeMetric(metricTmpl, valueFunc)
-			woc.controller.Metrics[metricTmpl.GetDesc()] = common.Metric{Metric: updatedMetric, LastUpdated: time.Now()}
+			woc.controller.metrics.SetCustom(metricTmpl.GetDesc(), common.Metric{Metric: updatedMetric, LastUpdated: time.Now()})
 			continue
 		} else {
 			metricSpec := metricTmpl.DeepCopy()
@@ -2517,14 +2517,14 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			}
 			metricSpec.SetValueString(replacedValue)
 
-			metric := woc.controller.Metrics[metricSpec.GetDesc()].Metric
+			metric := woc.controller.metrics.GetCustom(metricSpec.GetDesc())
 			// It is valid to pass a nil metric to ConstructOrUpdateMetric, in that case the metric will be created for us
 			updatedMetric, err := metrics.ConstructOrUpdateMetric(metric, metricSpec)
 			if err != nil {
 				woc.reportMetricEmissionError(fmt.Sprintf("could not compute metric '%s': %s", metricSpec.Name, err))
 				continue
 			}
-			woc.controller.Metrics[metricSpec.GetDesc()] = common.Metric{Metric: updatedMetric, LastUpdated: time.Now()}
+			woc.controller.metrics.SetCustom(metricSpec.GetDesc(), common.Metric{Metric: updatedMetric, LastUpdated: time.Now()})
 			continue
 		}
 	}

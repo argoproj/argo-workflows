@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -27,8 +27,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"upper.io/db.v3/lib/sqlbuilder"
-
-	"github.com/argoproj/pkg/errors"
 
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/config"
@@ -83,14 +81,12 @@ type WorkflowController struct {
 	session               sqlbuilder.Database
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wfArchive             sqldb.WorkflowArchive
-	Metrics               map[string]common.Metric
-	metricsService        metrics.Service
+	metrics               metrics.Interface
 }
 
 const (
 	workflowResyncPeriod                = 20 * time.Minute
 	workflowTemplateResyncPeriod        = 20 * time.Minute
-	workflowMetricsResyncPeriod         = 1 * time.Minute
 	podResyncPeriod                     = 30 * time.Minute
 	clusterWorkflowTemplateResyncPeriod = 20 * time.Minute
 )
@@ -121,8 +117,7 @@ func NewWorkflowController(
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
-		Metrics:                    make(map[string]common.Metric),
-		metricsService:             metrics.NewService(),
+		metrics:                    metrics.New(),
 	}
 	wfc.throttler = NewThrottler(0, wfc.wfQueue)
 	return &wfc
@@ -131,9 +126,7 @@ func NewWorkflowController(
 // MetricsServer starts a prometheus metrics server if enabled in the configmap
 func (wfc *WorkflowController) MetricsServer(ctx context.Context) {
 	if wfc.Config.MetricsConfig.Enabled {
-		informer := util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowMetricsResyncPeriod, wfc.tweakWorkflowMetricslist)
-		go informer.Run(ctx.Done())
-		registry := metrics.NewMetricsRegistry(wfc, informer, wfc.metricsService, wfc.Config.MetricsConfig.DisableLegacy)
+		registry := metrics.NewMetricsRegistry(wfc.metrics)
 		metrics.RunServer(ctx, wfc.Config.MetricsConfig, registry)
 	}
 }
@@ -414,7 +407,7 @@ func (wfc *WorkflowController) metricsGarbageCollector(stopCh <-chan struct{}) {
 			return
 		case <-ticker.C:
 			log.Info("Performing metrics GC")
-			wfc.DeleteExpiredMetrics(duration)
+			wfc.metrics.DeleteExpiredMetrics(duration)
 		}
 	}
 }
@@ -482,8 +475,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	started := time.Now()
-	defer func() { wfc.metricsService.WorkflowProcessed(time.Since(started)) }()
+	defer wfc.metrics.WorkflowProcessed()
 
 	woc := newWorkflowOperationCtx(wf, wfc)
 
@@ -580,7 +572,7 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 		log.Warnf("watch returned pod unrelated to any workflow: %s", pod.ObjectMeta.Name)
 		return true
 	}
-	wfc.metricsService.PodProcessed()
+	wfc.metrics.PodProcessed()
 	wfc.wfQueue.Add(pod.ObjectMeta.Namespace + "/" + workflowName)
 	return true
 }
@@ -641,9 +633,18 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
 				if err == nil {
-					if old.(*unstructured.Unstructured).GetResourceVersion() == new.(*unstructured.Unstructured).GetResourceVersion() {
-						wfc.metricsService.WorkflowResourceVersionRepeated()
+					oldWf := old.(*unstructured.Unstructured)
+					newWf := new.(*unstructured.Unstructured)
+					if oldWf.GetResourceVersion() == newWf.GetResourceVersion() {
+						wfc.metrics.WorkflowResourceVersionRepeated()
 						return
+					}
+					oldPhase, exists, err := unstructured.NestedString(oldWf.Object, "status", "phase")
+					if err == nil && exists {
+						newPhase, exists, err := unstructured.NestedString(oldWf.Object, "status", "phase")
+						if err == nil && exists {
+							wfc.metrics.WorkflowUpdated(wfv1.NodePhase(oldPhase), wfv1.NodePhase(newPhase))
+						}
 					}
 					wfc.wfQueue.Add(key)
 					priority, creation := getWfPriority(new)
@@ -707,15 +708,15 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
 				if old.(*apiv1.Pod).GetResourceVersion() == new.(*apiv1.Pod).GetResourceVersion() {
-					wfc.metricsService.PodResourceVersionRepeated()
+					wfc.metrics.PodResourceVersionRepeated()
 					return
 				}
 				if err == nil {
 					if !significantPodChange(old.(*apiv1.Pod), new.(*apiv1.Pod)) {
-						wfc.metricsService.InsignificantPodChange()
+						wfc.metrics.InsignificantPodChange()
 						return
 					}
-					wfc.metricsService.SignificantPodChange()
+					wfc.metrics.SignificantPodChange()
 					wfc.podQueue.Add(key)
 				}
 			},
@@ -779,18 +780,3 @@ func (wfc *WorkflowController) GetContainerRuntimeExecutor() string {
 	return wfc.Config.ContainerRuntimeExecutor
 }
 
-func (wfc *WorkflowController) GetMetrics() []prometheus.Metric {
-	var out []prometheus.Metric
-	for _, metric := range wfc.Metrics {
-		out = append(out, metric.Metric)
-	}
-	return out
-}
-
-func (wfc *WorkflowController) DeleteExpiredMetrics(ttl time.Duration) {
-	for key, metric := range wfc.Metrics {
-		if time.Since(metric.LastUpdated) > ttl {
-			delete(wfc.Metrics, key)
-		}
-	}
-}

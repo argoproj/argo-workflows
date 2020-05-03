@@ -7,6 +7,6 @@ import (
 )
 
 type Metric struct {
-	Metric      prometheus.Metric
+	prometheus.Metric
 	LastUpdated time.Time
 }

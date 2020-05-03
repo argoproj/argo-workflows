@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -23,7 +24,6 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
-	"github.com/argoproj/argo/workflow/common"
 	metricsmocks "github.com/argoproj/argo/workflow/metrics/mocks"
 )
 
@@ -115,9 +115,12 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		panic("Timed out waiting for caches to sync")
 	}
 	kube := fake.NewSimpleClientset()
-	metricsService := &metricsmocks.Service{}
-	metricsService.On("UpdatesPersisted").Return()
-	metricsService.On("WorkflowProcessed", mock.Anything).Return()
+	metrics := &metricsmocks.Interface{}
+	metrics.On("UpdatesPersisted").Return()
+	metrics.On("WorkflowProcessed", mock.Anything).Return()
+	metrics.On("DeleteExpiredMetrics", mock.Anything).Return()
+	metrics.On("SetCustom", mock.Anything, mock.Anything).Return()
+	metrics.On("GetCustom", mock.Anything).Return(prometheus.NewGauge(prometheus.GaugeOpts{}))
 	controller := &WorkflowController{
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
@@ -130,8 +133,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		wfQueue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		wfArchive:            sqldb.NullWorkflowArchive,
-		Metrics:              make(map[string]common.Metric),
-		metricsService:       metricsService,
+		metrics:              metrics,
 		incompleteWfInformer: &testSharedIndexInformer{},
 	}
 	return cancel, controller
@@ -338,16 +340,10 @@ func TestWorkflowControllerMetricsGarbageCollector(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 
-	controller.Metrics["metric-1"] = common.Metric{Metric: nil, LastUpdated: time.Now().Add(-1 * time.Minute)}
-	controller.Metrics["metric-2"] = common.Metric{Metric: nil, LastUpdated: time.Now().Add(3 * time.Second)}
-
 	controller.Config.MetricsConfig.Enabled = true
 	controller.Config.MetricsConfig.MetricsTTL = config.TTL(1 * time.Second)
 
 	stop := make(chan struct{})
 	go func() { time.Sleep(2 * time.Second); stop <- struct{}{} }()
 	controller.metricsGarbageCollector(stop)
-
-	assert.Contains(t, controller.Metrics, "metric-2")
-	assert.NotContains(t, controller.Metrics, "metric-1")
 }
