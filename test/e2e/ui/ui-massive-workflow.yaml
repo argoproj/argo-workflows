@@ -12,7 +12,7 @@ spec:
         - - name: dag
             template: dag
             withSequence:
-              count: "500"
+              count: "100"
     - name: dag
       dag:
         tasks:
