@@ -6,7 +6,7 @@
 
 ## To start Argo Server with SSO.
 
-First, create a [secret](../manifests/quick-start/base/argo-server-oauth2-secret.yaml) with the correct OAuth 2 values.
+First, create a [secret](../manifests/quick-start/base/argo-server-sso-secret.yaml) with the correct OAuth 2 values.
 
 Finally, start using the SSO [auth mode](argo-server-auth-mode.md):
 

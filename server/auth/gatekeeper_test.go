@@ -11,7 +11,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/server/auth/oauth2/mocks"
+	"github.com/argoproj/argo/server/auth/sso/mocks"
 )
 
 func TestServer_GetWFClient(t *testing.T) {
@@ -46,9 +46,9 @@ func TestServer_GetWFClient(t *testing.T) {
 		}
 	})
 	t.Run("SSO", func(t *testing.T) {
-		oauth2Service := &mocks.Service{}
-		oauth2Service.On("Authorize", mock.Anything, mock.Anything).Return(wfv1.User{Name: "my-name"}, nil)
-		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, oauth2Service)
+		ssoIf := &mocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(wfv1.User{Name: "my-name"}, nil)
+		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf)
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer id_token:whatever"))
 			if assert.NoError(t, err) {

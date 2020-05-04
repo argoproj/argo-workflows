@@ -33,7 +33,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/artifacts"
 	"github.com/argoproj/argo/server/auth"
-	"github.com/argoproj/argo/server/auth/oauth2"
+	"github.com/argoproj/argo/server/auth/sso"
 	"github.com/argoproj/argo/server/clusterworkflowtemplate"
 	"github.com/argoproj/argo/server/cronworkflow"
 	"github.com/argoproj/argo/server/info"
@@ -58,7 +58,7 @@ type argoServer struct {
 	managedNamespace string
 	kubeClientset    *kubernetes.Clientset
 	authenticator    auth.Gatekeeper
-	oAuth2Service    oauth2.Service
+	oAuth2Service    sso.Interface
 	configController config.Controller
 	stopCh           chan struct{}
 }
@@ -77,14 +77,14 @@ type ArgoServerOpts struct {
 }
 
 func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
-	oauth2Service := oauth2.NullService
+	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
-		secrets, err := opts.KubeClientset.CoreV1().Secrets(opts.Namespace).Get("argo-server-oauth2", metav1.GetOptions{})
+		secrets, err := opts.KubeClientset.CoreV1().Secrets(opts.Namespace).Get("argo-server-sso", metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
 		d := secrets.Data
-		oauth2Service, err = oauth2.NewService(string(d["issuer"]), string(d["clientId"]), string(d["clientSecret"]), string(d["redirectUrl"]), opts.BaseHRef, opts.TLSConfig != nil)
+		ssoIf, err = sso.New(string(d["issuer"]), string(d["clientId"]), string(d["clientSecret"]), string(d["redirectUrl"]), opts.BaseHRef, opts.TLSConfig != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -92,7 +92,7 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 	} else {
 		log.Info("SSO disabled")
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, oauth2Service)
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, ssoIf)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 		managedNamespace: opts.ManagedNamespace,
 		kubeClientset:    opts.KubeClientset,
 		authenticator:    gatekeeper,
-		oAuth2Service:    oauth2Service,
+		oAuth2Service:    ssoIf,
 		configController: config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset),
 		stopCh:           make(chan struct{}),
 	}, nil

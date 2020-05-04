@@ -1,4 +1,4 @@
-package oauth2
+package sso
 
 import (
 	"context"
@@ -16,28 +16,26 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-// https://github.com/dexidp/dex/blob/master/Documentation/using-dex.md
-
 const Prefix = "Bearer id_token:"
 
 type claims struct {
 	Groups []string `json:"groups"`
 }
 
-type Service interface {
+type Interface interface {
 	Authorize(ctx context.Context, authorization string) (wfv1.User, error)
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
 }
 
-type service struct {
+type sso struct {
 	config          *oauth2.Config
 	idTokenVerifier *oidc.IDTokenVerifier
 	baseHRef        string
 	secure          bool
 }
 
-func NewService(issuer, clientID, clientSecret, redirectURL, baseHRef string, secure bool) (Service, error) {
+func New(issuer, clientID, clientSecret, redirectURL, baseHRef string, secure bool) (Interface, error) {
 	if issuer == "" {
 		return nil, fmt.Errorf("issuer empty")
 	}
@@ -63,12 +61,12 @@ func NewService(issuer, clientID, clientSecret, redirectURL, baseHRef string, se
 	}
 	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: clientID})
 	log.WithFields(log.Fields{"redirectURL": config.RedirectURL, "issuer": issuer, "clientId": clientID}).Info("SSO configuration")
-	return &service{config, idTokenVerifier, baseHRef, secure}, nil
+	return &sso{config, idTokenVerifier, baseHRef, secure}, nil
 }
 
 const stateCookieName = "oauthState"
 
-func (s *service) HandleRedirect(w http.ResponseWriter, r *http.Request) {
+func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	state := rand.RandString(10)
 	http.SetCookie(w, &http.Cookie{
 		Name:     stateCookieName,
@@ -81,7 +79,7 @@ func (s *service) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, s.config.AuthCodeURL(state), http.StatusFound)
 }
 
-func (s *service) HandleCallback(w http.ResponseWriter, r *http.Request) {
+func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	state := r.URL.Query().Get("state")
 	cookie, err := r.Cookie(stateCookieName)
@@ -140,7 +138,7 @@ func (s *service) HandleCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 // authorize verifies a bearer token and pulls user information form the claims.
-func (s *service) Authorize(ctx context.Context, authorisation string) (wfv1.User, error) {
+func (s *sso) Authorize(ctx context.Context, authorisation string) (wfv1.User, error) {
 	rawIDToken, err := zjwt.JWT(strings.TrimPrefix(authorisation, Prefix))
 	if err != nil {
 		return wfv1.NullUser, fmt.Errorf("failed to decompress token %v", err)

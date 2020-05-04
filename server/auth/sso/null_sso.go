@@ -1,4 +1,4 @@
-package oauth2
+package sso
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-var NullService Service = nullService{}
+var NullSSO Interface = nullService{}
 
 type nullService struct {
 }

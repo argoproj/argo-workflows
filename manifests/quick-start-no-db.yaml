@@ -438,7 +438,7 @@ metadata:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: argo-server-oauth2
+  name: argo-server-sso
 stringData:
   clientId: argo-server
   clientSecret: ZXhhbXBsZS1hcHAtc2VjcmV0

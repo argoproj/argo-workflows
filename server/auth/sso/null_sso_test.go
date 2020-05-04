@@ -1,4 +1,4 @@
-package oauth2
+package sso
 
 import (
 	"context"
@@ -11,21 +11,21 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-func Test_nullService_Authorize(t *testing.T) {
-	user, err := NullService.Authorize(context.Background(), "")
+func Test_nullSSO_Authorize(t *testing.T) {
+	user, err := NullSSO.Authorize(context.Background(), "")
 	if assert.Error(t, err) {
 		assert.Equal(t, wfv1.NullUser, user)
 	}
 }
 
-func Test_nullService_HandleCallback(t *testing.T) {
+func Test_nullSSO_HandleCallback(t *testing.T) {
 	w := &testhttp.TestResponseWriter{}
-	NullService.HandleCallback(w, &http.Request{})
+	NullSSO.HandleCallback(w, &http.Request{})
 	assert.Equal(t, http.StatusNotImplemented, w.StatusCode)
 }
 
-func Test_nullService_HandleRedirect(t *testing.T) {
+func Test_nullSSO_HandleRedirect(t *testing.T) {
 	w := &testhttp.TestResponseWriter{}
-	NullService.HandleRedirect(w, &http.Request{})
+	NullSSO.HandleRedirect(w, &http.Request{})
 	assert.Equal(t, http.StatusNotImplemented, w.StatusCode)
 }

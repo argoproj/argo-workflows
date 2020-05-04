@@ -15,7 +15,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/server/auth/oauth2"
+	"github.com/argoproj/argo/server/auth/sso"
 	"github.com/argoproj/argo/util/kubeconfig"
 )
 
@@ -36,17 +36,17 @@ type Gatekeeper interface {
 type gatekeeper struct {
 	Modes Modes
 	// global clients, not to be used if there are better ones
-	wfClient      versioned.Interface
-	kubeClient    kubernetes.Interface
-	restConfig    *rest.Config
-	oauth2Service oauth2.Service
+	wfClient   versioned.Interface
+	kubeClient kubernetes.Interface
+	restConfig *rest.Config
+	ssoIf      sso.Interface
 }
 
-func NewGatekeeper(modes Modes, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, oauth2Service oauth2.Service) (Gatekeeper, error) {
+func NewGatekeeper(modes Modes, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, ssoIf sso.Interface) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
-	return &gatekeeper{modes, wfClient, kubeClient, restConfig, oauth2Service}, nil
+	return &gatekeeper{modes, wfClient, kubeClient, restConfig, ssoIf}, nil
 }
 
 func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
@@ -141,7 +141,7 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 	case Server:
 		return s.wfClient, s.kubeClient, wfv1.NullUser, nil
 	case SSO:
-		user, err := s.oauth2Service.Authorize(ctx, authorization)
+		user, err := s.ssoIf.Authorize(ctx, authorization)
 		if err != nil {
 			return nil, nil, wfv1.NullUser, status.Error(codes.Unauthenticated, err.Error())
 		}
