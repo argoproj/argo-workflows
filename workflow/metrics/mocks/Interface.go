@@ -50,9 +50,9 @@ func (_m *Interface) GetCustom(desc string) prometheus.Metric {
 	return r0
 }
 
-// InsignificantPodChange provides a mock function with given fields:
-func (_m *Interface) InsignificantPodChange() {
-	_m.Called()
+// PodChanged provides a mock function with given fields: significant
+func (_m *Interface) PodChanged(significant bool) {
+	_m.Called(significant)
 }
 
 // PodProcessed provides a mock function with given fields:
@@ -70,18 +70,13 @@ func (_m *Interface) SetCustom(desc string, metric common.Metric) {
 	_m.Called(desc, metric)
 }
 
-// SignificantPodChange provides a mock function with given fields:
-func (_m *Interface) SignificantPodChange() {
-	_m.Called()
-}
-
-// UpdateReapplied provides a mock function with given fields:
-func (_m *Interface) UpdateReapplied() {
-	_m.Called()
-}
-
 // UpdatesPersisted provides a mock function with given fields:
 func (_m *Interface) UpdatesPersisted() {
+	_m.Called()
+}
+
+// UpdatesReapplied provides a mock function with given fields:
+func (_m *Interface) UpdatesReapplied() {
 	_m.Called()
 }
 

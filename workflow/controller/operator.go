@@ -563,7 +563,7 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.Workflo
 // retries the UPDATE multiple times. For reasoning behind this technique, see:
 // https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#concurrency-control-and-consistency
 func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface) (*wfv1.Workflow, error) {
-	woc.controller.metrics.UpdateReapplied()
+	woc.controller.metrics.UpdatesReapplied()
 	// First generate the patch
 	oldData, err := json.Marshal(woc.orig)
 	if err != nil {

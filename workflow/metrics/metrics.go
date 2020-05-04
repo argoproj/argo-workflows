@@ -13,21 +13,21 @@ type Interface interface {
 	prometheus.Collector
 	// the following funcs are named after events that can happen and therefore all match the commond naming convention
 	// for events - i.e. name+verb(past tense)
-	InsignificantPodChange()
+	PodChanged(significant bool)
 	PodResourceVersionRepeated()
 	PodProcessed()
-	SignificantPodChange()
 	WorkflowResourceVersionRepeated()
 	WorkflowProcessed()
 	UpdatesPersisted()
-	UpdateReapplied()
-	// delete any expired custom metrics
-	DeleteExpiredMetrics(ttl time.Duration)
-	SetCustom(desc string, metric common.Metric)
-	GetCustom(desc string) prometheus.Metric
+	UpdatesReapplied()
 	WorkflowAdded(phase wfv1.NodePhase)
 	WorkflowUpdated(from, to wfv1.NodePhase)
 	WorkflowDeleted(phase wfv1.NodePhase)
+	// delete any expired custom metrics
+	DeleteExpiredMetrics(ttl time.Duration)
+	// custom metrics
+	SetCustom(desc string, metric common.Metric)
+	GetCustom(desc string) prometheus.Metric
 }
 
 func New() Interface {
@@ -139,8 +139,12 @@ func (m metrics) WorkflowDeleted(phase wfv1.NodePhase) {
 	m.runtimePhases[phase].Dec()
 }
 
-func (m *metrics) InsignificantPodChange() {
-	m.insignificantPodChange.Inc()
+func (m *metrics) PodChanged(significant bool) {
+	if significant {
+		m.significantPodChange.Inc()
+	} else {
+		m.insignificantPodChange.Inc()
+	}
 }
 
 func (m *metrics) PodResourceVersionRepeated() {
@@ -159,7 +163,7 @@ func (m *metrics) UpdatesPersisted() {
 	m.updatesPersisted.Inc()
 }
 
-func (m *metrics) UpdateReapplied() {
+func (m *metrics) UpdatesReapplied() {
 	m.updatesReapplied.Inc()
 }
 

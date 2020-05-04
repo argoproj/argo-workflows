@@ -717,11 +717,11 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 					} else {
 						log.WithField("diff", diff).Debug("Pod diff")
 					}
-					if !significantPodChange(oldPod, newPod) {
-						wfc.metrics.InsignificantPodChange()
+					significant := significantPodChange(oldPod, newPod)
+					wfc.metrics.PodChanged(significant)
+					if !significant {
 						return
 					}
-					wfc.metrics.SignificantPodChange()
 					wfc.podQueue.Add(key)
 				}
 			},

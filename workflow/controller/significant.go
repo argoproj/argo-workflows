@@ -1,9 +1,6 @@
 package controller
 
 import (
-	"encoding/json"
-
-	jsonpatch "github.com/evanphx/json-patch"
 	apiv1 "k8s.io/api/core/v1"
 )
 
@@ -26,27 +23,14 @@ status:
   containerStatuses: []
   conditions: []
 */
+// TODO is the only change we really need to care about the phase of the pod?
 func significantPodChange(from *apiv1.Pod, to *apiv1.Pod) bool {
 	return from.Spec.NodeName != to.Spec.NodeName ||
 		from.Status.Phase != to.Status.Phase ||
 		from.Status.Message != to.Status.Message ||
-		from.Status.PodIP != to.Status.PodIP
-}
-
-func newDiff(a, b interface{}) (string, error) {
-	aData, err := json.Marshal(a)
-	if err != nil {
-		return "", err
-	}
-	bData, err := json.Marshal(b)
-	if err != nil {
-		return "", err
-	}
-	patchData, err := jsonpatch.CreateMergePatch(aData, bData)
-	if err != nil {
-		return "", err
-	}
-	return string(patchData), nil
+		from.Status.PodIP != to.Status.PodIP ||
+		significantContainerStatusesChange(from.Status.ContainerStatuses, to.Status.ContainerStatuses) ||
+		significantContainerStatusesChange(from.Status.InitContainerStatuses, to.Status.InitContainerStatuses)
 }
 
 func significantContainerStatusesChange(from []apiv1.ContainerStatus, to []apiv1.ContainerStatus) bool {
