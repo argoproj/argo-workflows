@@ -564,7 +564,7 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 		return true
 	}
 	wfc.metrics.PodProcessed()
-	wfc.wfQueue.Add(pod.ObjectMeta.Namespace + "/" + workflowName)
+	wfc.wfQueue.AddAfter(pod.ObjectMeta.Namespace+"/"+workflowName, 1*time.Second)
 	return true
 }
 
@@ -607,12 +607,8 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 				if err == nil {
 					oldWf := old.(*unstructured.Unstructured)
 					newWf := new.(*unstructured.Unstructured)
-					diff, err := newDiff(oldWf, newWf)
-					if err != nil {
-						log.Errorf("failed to diff: %v", err)
-					} else {
-						log.WithField("diff", diff).Debug("Workflow diff")
-					}
+					// we can get repeated resource version which we don't need to process
+					// this is common due to how we put the workflow back
 					if oldWf.GetResourceVersion() == newWf.GetResourceVersion() {
 						wfc.metrics.WorkflowResourceVersionRepeated()
 						return
@@ -711,13 +707,7 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 						wfc.metrics.PodResourceVersionRepeated()
 						return
 					}
-					diff, err := newDiff(oldPod, newPod)
-					if err != nil {
-						log.Errorf("failed to diff: %v", err)
-					} else {
-						log.WithField("diff", diff).Debug("Pod diff")
-					}
-					significant := significantPodChange(oldPod, newPod)
+					significant := oldPod.Status.Phase != newPod.Status.Phase
 					wfc.metrics.PodChanged(significant)
 					if !significant {
 						return
