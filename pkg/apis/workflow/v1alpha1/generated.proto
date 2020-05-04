@@ -721,6 +721,10 @@ message ResourceTemplate {
   repeated string flags = 7;
 }
 
+message ResumeOp {
+  optional string nodeSelector = 1;
+}
+
 // RetryStrategy provides controls on how to retry a workflow step
 message RetryStrategy {
   // Limit is the maximum number of attempts when retrying a container
@@ -791,6 +795,14 @@ message Sequence {
   optional string format = 4;
 }
 
+message ShutdownOp {
+  optional string shutdownStrategy = 1;
+
+  optional string nodeSelector = 4;
+
+  optional string message = 3;
+}
+
 // SubmitOpts are workflow submission options
 message SubmitOpts {
   // Name overrides metadata.name
@@ -822,6 +834,9 @@ message SubmitOpts {
 
   // OwnerReference creates a metadata.ownerReference
   optional k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference ownerReference = 11;
+}
+
+message SuspendOp {
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
@@ -1080,6 +1095,30 @@ message WorkflowList {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   repeated Workflow items = 2;
+}
+
+// +genclient
+// +genclient:noStatus
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowOp {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional WorkflowOpSpec spec = 2;
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message WorkflowOpList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated WorkflowOp items = 2;
+}
+
+message WorkflowOpSpec {
+  optional SuspendOp suspend = 1;
+
+  optional ResumeOp resume = 2;
+
+  optional ShutdownOp shutdown = 3;
 }
 
 // WorkflowSpec is the specification of a Workflow.

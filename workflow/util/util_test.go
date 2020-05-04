@@ -279,91 +279,26 @@ status:
   startedAt: "2020-04-10T15:21:23Z"
 `
 
-func TestResumeWorkflowCompressed(t *testing.T) {
-	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
-	origWf := unmarshalWF(suspendedWf)
-
-	clearFunc := packer.SetMaxWorkflowSize(1156)
-	defer clearFunc()
-	err := packer.CompressWorkflowIfNeeded(origWf)
-	assert.NoError(t, err)
-
-	_, err = wfIf.Create(origWf)
-	assert.NoError(t, err)
-
-	err = ResumeWorkflow(wfIf, sqldb.ExplosiveOffloadNodeStatusRepo, "suspend", "")
-	assert.NoError(t, err)
-
-	wf, err := wfIf.Get("suspend", metav1.GetOptions{})
-	assert.NoError(t, err)
-	assert.NotEmpty(t, wf.Status.CompressedNodes)
-}
-
-func TestResumeWorkflowOffloaded(t *testing.T) {
-	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
-	origWf := unmarshalWF(suspendedWf)
-
-	//set threshold so this workflow is too big for compression to be valid
-	clearFunc := packer.SetMaxWorkflowSize(10)
-	defer clearFunc()
-
-	origNodes := origWf.Status.Nodes
-
-	origWf.Status.Nodes = nil
-	origWf.Status.OffloadNodeStatusVersion = "123"
-
-	_, err := wfIf.Create(origWf)
-	assert.NoError(t, err)
-
-	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
-	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(true)
-	offloadNodeStatusRepo.On("Get", "4f08d325-dc5a-43a3-9986-259e259e6ea3", "123").Return(origNodes, nil)
-	offloadNodeStatusRepo.On("Save", "4f08d325-dc5a-43a3-9986-259e259e6ea3", mock.Anything, mock.Anything).Return("1234", nil)
-
-	err = ResumeWorkflow(wfIf, offloadNodeStatusRepo, "suspend", "")
-	assert.NoError(t, err)
-
-	wf, err := wfIf.Get("suspend", metav1.GetOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, "1234", wf.Status.OffloadNodeStatusVersion)
-}
-
-//workflow is too big but offload is disabled
-func TestResumeWorkflowOffloadDisabled(t *testing.T) {
-	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
-	origWf := unmarshalWF(suspendedWf)
-
-	//set threshold so this workflow is too big for compression to be valid
-	clearFunc := packer.SetMaxWorkflowSize(10)
-	defer clearFunc()
-
-	_, err := wfIf.Create(origWf)
-	assert.NoError(t, err)
-
-	offloadNodeStatusRepo := &mocks.OffloadNodeStatusRepo{}
-	offloadNodeStatusRepo.On("IsEnabled", mock.Anything).Return(false)
-
-	err = ResumeWorkflow(wfIf, offloadNodeStatusRepo, "suspend", "")
-	assert.Error(t, err)
-}
-
 func TestResumeWorkflowByNodeName(t *testing.T) {
+	opsIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().WorkflowOps("")
 	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := unmarshalWF(suspendedWf)
 
-	_, err := wfIf.Create(origWf)
+	wf, err := wfIf.Create(origWf)
 	assert.NoError(t, err)
 
 	//will return error as displayName does not match any nodes
-	err = ResumeWorkflow(wfIf, nil, "suspend", "displayName=nonexistant")
-	assert.Error(t, err)
+	err = ResumeWorkflow(opsIf, wf, "displayName=nonexistant")
+	assert.NoError(t, err)
+
+	_ = opsIf.DeleteCollection(nil, metav1.ListOptions{})
 
 	//displayName didn't match suspend node so should still be running
-	wf, err := wfIf.Get("suspend", metav1.GetOptions{})
+	wf, err = wfIf.Get("suspend", metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
-	err = ResumeWorkflow(wfIf, nil, "suspend", "displayName=approve")
+	err = ResumeWorkflow(opsIf, wf, "displayName=approve")
 	assert.NoError(t, err)
 
 	//displayName matched node so has succeeded
@@ -373,22 +308,23 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 }
 
 func TestStopWorkflowByNodeName(t *testing.T) {
+	opsIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().WorkflowOps("")
 	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := unmarshalWF(suspendedWf)
 
-	_, err := wfIf.Create(origWf)
+	wf, err := wfIf.Create(origWf)
 	assert.NoError(t, err)
 
 	//will return error as displayName does not match any nodes
-	err = StopWorkflow(wfIf, nil, "suspend", "displayName=nonexistant", "error occurred")
+	err = StopWorkflow(opsIf, wf, "displayName=nonexistant", "error occurred")
 	assert.Error(t, err)
 
 	//displayName didn't match suspend node so should still be running
-	wf, err := wfIf.Get("suspend", metav1.GetOptions{})
+	wf, err = wfIf.Get("suspend", metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
-	err = StopWorkflow(wfIf, nil, "suspend", "displayName=approve", "error occurred")
+	err = StopWorkflow(opsIf, wf, "displayName=approve", "error occurred")
 	assert.NoError(t, err)
 
 	//displayName matched node so has succeeded

@@ -24,6 +24,10 @@ func (c *FakeArgoprojV1alpha1) Workflows(namespace string) v1alpha1.WorkflowInte
 	return &FakeWorkflows{c, namespace}
 }
 
+func (c *FakeArgoprojV1alpha1) WorkflowOps(namespace string) v1alpha1.WorkflowOpInterface {
+	return &FakeWorkflowOps{c, namespace}
+}
+
 func (c *FakeArgoprojV1alpha1) WorkflowTemplates(namespace string) v1alpha1.WorkflowTemplateInterface {
 	return &FakeWorkflowTemplates{c, namespace}
 }

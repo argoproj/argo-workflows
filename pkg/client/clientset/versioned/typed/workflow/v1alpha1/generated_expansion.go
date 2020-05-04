@@ -8,4 +8,6 @@ type CronWorkflowExpansion interface{}
 
 type WorkflowExpansion interface{}
 
+type WorkflowOpExpansion interface{}
+
 type WorkflowTemplateExpansion interface{}

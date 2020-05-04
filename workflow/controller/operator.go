@@ -24,6 +24,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
@@ -41,6 +42,7 @@ import (
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/templateresolution"
+	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
 
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
@@ -2617,4 +2619,52 @@ func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (boo
 		return hasOutputResultRef(name, parentTemplate), nil
 	}
 	return false, nil
+}
+
+func (woc *wfOperationCtx) executeWorkflowOp(op wfv1.WorkflowOp) {
+	if op.Spec.Suspend != nil {
+		woc.log.Info("Suspending workflow")
+		woc.wf.Spec.Suspend = pointer.BoolPtr(true)
+		woc.updated = true
+	}
+	if op.Spec.Resume != nil {
+		woc.log.Info("Resuming workflow")
+		selector, err := fields.ParseSelector(op.Spec.Resume.NodeSelector)
+		if err != nil {
+			panic(err)
+		}
+		// To resume a workflow with a suspended node we simply mark the node as Successful
+		for nodeID, node := range woc.wf.Status.Nodes {
+			if node.IsActiveSuspendNode() && (selector.Empty() || util.SelectorMatchesNode(selector, node)) {
+				woc.log.Infof("Resuming %v", nodeID)
+				node.Phase = wfv1.NodeSucceeded
+				node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+				woc.wf.Status.Nodes[nodeID] = node
+			}
+		}
+		woc.updated = true
+	}
+	shutdown := op.Spec.Shutdown
+	if shutdown != nil {
+		woc.wf.Spec.Shutdown = shutdown.ShutdownStrategy
+		selector, err := fields.ParseSelector(shutdown.NodeSelector)
+		if err != nil {
+			panic(err)
+		}
+		// To resume a workflow with a suspended node we simply mark the node as Successful
+		for nodeID, node := range woc.wf.Status.Nodes {
+			if node.IsActiveSuspendNode() && (selector.Empty() || util.SelectorMatchesNode(selector, node)) {
+				woc.log.Infof("Resuming %v", nodeID)
+				node.Phase = wfv1.NodeFailed
+				node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+				if shutdown.Message != "" {
+					node.Message = shutdown.Message
+				}
+				woc.wf.Status.Nodes[nodeID] = node
+				woc.updated = true
+			}
+		}
+		woc.updated = true
+	}
+	_ = woc.controller.wfclientset.ArgoprojV1alpha1().WorkflowOps(op.Namespace).Delete(op.Name, &metav1.DeleteOptions{})
 }

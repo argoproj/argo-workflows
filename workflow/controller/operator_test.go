@@ -14,8 +14,8 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
-	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
 	"github.com/argoproj/argo/util/argo"
 	"github.com/argoproj/argo/workflow/common"
@@ -852,30 +852,41 @@ func TestSuspendResume(t *testing.T) {
 	assert.NoError(t, err)
 
 	// suspend the workflow
-	err = util.SuspendWorkflow(wfcset, wf.ObjectMeta.Name)
+	ops := controller.wfclientset.ArgoprojV1alpha1().WorkflowOps("")
+	err = util.SuspendWorkflow(ops, wf)
 	assert.NoError(t, err)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
-	assert.True(t, *wf.Spec.Suspend)
 
 	// operate should not result in no workflows being created since it is suspended
 	woc := newWorkflowOperationCtx(wf, controller)
+
+	executeWorkflowOp(t, ops, woc)
+
 	woc.operate()
 	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow and operate again. two pods should be able to be scheduled
-	err = util.ResumeWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "")
+	err = util.ResumeWorkflow(ops, wf, "")
 	assert.NoError(t, err)
+	woc = newWorkflowOperationCtx(wf, controller)
+	executeWorkflowOp(t, ops, woc)
+	woc.operate()
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Nil(t, wf.Spec.Suspend)
-	woc = newWorkflowOperationCtx(wf, controller)
-	woc.operate()
 	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(pods.Items))
+}
+
+func executeWorkflowOp(t *testing.T, ops v1alpha1.WorkflowOpInterface, woc *wfOperationCtx) {
+	list, err := ops.List(metav1.ListOptions{})
+	if assert.NoError(t, err) {
+		if assert.Len(t, list.Items, 1) {
+			woc.executeWorkflowOp(list.Items[0])
+		}
+	}
 }
 
 var suspendTemplateWithDeadline = `
@@ -899,7 +910,7 @@ func TestSuspendWithDeadline(t *testing.T) {
 	// operate the workflow. it should become in a suspended state after
 	wf := unmarshalWF(suspendTemplateWithDeadline)
 	wf, err := wfcset.Create(wf)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
@@ -1171,6 +1182,7 @@ spec:
 func TestSuspendTemplate(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
+	ops := controller.wfclientset.ArgoprojV1alpha1().WorkflowOps("")
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
@@ -1191,8 +1203,11 @@ func TestSuspendTemplate(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
-	err = util.ResumeWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "")
+	err = util.ResumeWorkflow(ops, wf, "")
 	assert.NoError(t, err)
+	woc = newWorkflowOperationCtx(wf, controller)
+	executeWorkflowOp(t, ops, woc)
+	woc.operate()
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.False(t, util.IsWorkflowSuspended(wf))
@@ -1208,6 +1223,7 @@ func TestSuspendTemplate(t *testing.T) {
 func TestSuspendTemplateWithFailedResume(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
+	ops := controller.wfclientset.ArgoprojV1alpha1().WorkflowOps("")
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
@@ -1228,8 +1244,11 @@ func TestSuspendTemplateWithFailedResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
-	err = util.StopWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1", "Step failed!")
+	err = util.StopWorkflow(ops, wf, "inputs.parameters.param1.value=value1", "Step failed!")
 	assert.NoError(t, err)
+	woc = newWorkflowOperationCtx(wf, controller)
+	executeWorkflowOp(t, ops, woc)
+	woc.operate()
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.False(t, util.IsWorkflowSuspended(wf))
@@ -1246,6 +1265,7 @@ func TestSuspendTemplateWithFailedResume(t *testing.T) {
 func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
+	ops := controller.wfclientset.ArgoprojV1alpha1().WorkflowOps("")
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// operate the workflow. it should become in a suspended state after
@@ -1266,11 +1286,12 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow, but with non-matching selector
-	err = util.ResumeWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "inputs.paramaters.param1.value=value2")
-	assert.Error(t, err)
+	err = util.ResumeWorkflow(controller.wfclientset.ArgoprojV1alpha1().WorkflowOps(""), wf, "inputs.paramaters.param1.value=value2")
+	assert.NoError(t, err)
 
 	// operate the workflow. nothing should have happened
 	woc = newWorkflowOperationCtx(wf, controller)
+	executeWorkflowOp(t, ops, woc)
 	woc.operate()
 	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
@@ -1278,8 +1299,11 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.True(t, util.IsWorkflowSuspended(wf))
 
 	// resume the workflow, but with matching selector
-	err = util.ResumeWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1")
+	err = util.ResumeWorkflow(controller.wfclientset.ArgoprojV1alpha1().WorkflowOps(""), wf, "inputs.parameters.param1.value=value1")
 	assert.NoError(t, err)
+	woc = newWorkflowOperationCtx(wf, controller)
+	executeWorkflowOp(t, ops, woc)
+	woc.operate()
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.False(t, util.IsWorkflowSuspended(wf))

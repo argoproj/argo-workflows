@@ -23,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
@@ -31,7 +30,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/errors"
@@ -298,83 +296,35 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 }
 
 // SuspendWorkflow suspends a workflow by setting spec.suspend to true. Retries conflict errors
-func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error {
+func SuspendWorkflow(opIf v1alpha1.WorkflowOpInterface, workflow *wfv1.Workflow) error {
 	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		wf, err := wfIf.Get(workflowName, metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
-		if IsWorkflowCompleted(wf) {
-			return false, errSuspendedCompletedWorkflow
-		}
-		if wf.Spec.Suspend == nil || !*wf.Spec.Suspend {
-			wf.Spec.Suspend = pointer.BoolPtr(true)
-			_, err = wfIf.Update(wf)
-			if err != nil {
-				if apierr.IsConflict(err) {
-					return false, nil
-				}
-				return false, err
-			}
-		}
-		return true, nil
+		_, err := opIf.Create(&wfv1.WorkflowOp{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName:    workflow.Name + "-",
+				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(workflow, workflow.GroupVersionKind())},
+			},
+			Spec: wfv1.WorkflowOpSpec{Suspend: &wfv1.SuspendOp{}},
+		})
+		return err == nil, err
 	})
 	return err
 }
 
 // ResumeWorkflow resumes a workflow by setting spec.suspend to nil and any suspended nodes to Successful.
 // Retries conflict errors
-func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, repo sqldb.OffloadNodeStatusRepo, workflowName string, nodeFieldSelector string) error {
-	if len(nodeFieldSelector) > 0 {
-		return updateWorkflowNodeByKey(wfIf, repo, workflowName, nodeFieldSelector, wfv1.NodeSucceeded, "")
-	} else {
-		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-			wf, err := wfIf.Get(workflowName, metav1.GetOptions{})
-			if err != nil {
-				return false, err
-			}
-
-			err = decompressAndFetchOffloadedNodes(wf, repo)
-			if err != nil {
-				return false, err
-			}
-
-			workflowUpdated := false
-			if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
-				wf.Spec.Suspend = nil
-				workflowUpdated = true
-			}
-
-			newNodes := wf.Status.Nodes.DeepCopy()
-
-			// To resume a workflow with a suspended node we simply mark the node as Successful
-			for nodeID, node := range wf.Status.Nodes {
-				if node.IsActiveSuspendNode() {
-					node.Phase = wfv1.NodeSucceeded
-					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-					newNodes[nodeID] = node
-					workflowUpdated = true
-				}
-			}
-
-			if workflowUpdated {
-				err = compressAndOffloadNodes(wf, repo, newNodes)
-				if err != nil {
-					return false, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
-				}
-
-				_, err = wfIf.Update(wf)
-				if err != nil {
-					if apierr.IsConflict(err) {
-						return false, nil
-					}
-					return false, err
-				}
-			}
-			return true, nil
+func ResumeWorkflow(opIf v1alpha1.WorkflowOpInterface, workflow *wfv1.Workflow, nodeFieldSelector string) error {
+	return wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+		_, err := opIf.Create(&wfv1.WorkflowOp{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName:    workflow.Name + "-",
+				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(workflow, workflow.GroupVersionKind())},
+			},
+			Spec: wfv1.WorkflowOpSpec{
+				Resume: &wfv1.ResumeOp{NodeSelector: nodeFieldSelector},
+			},
 		})
-		return err
-	}
+		return err == nil, err
+	})
 }
 
 func decompressAndFetchOffloadedNodes(wf *wfv1.Workflow, repo sqldb.OffloadNodeStatusRepo) error {
@@ -428,7 +378,7 @@ func compressAndOffloadNodes(wf *wfv1.Workflow, repo sqldb.OffloadNodeStatusRepo
 	return nil
 }
 
-func selectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
+func SelectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
 	nodeFields := fields.Set{
 		"displayName":  node.DisplayName,
 		"templateName": node.TemplateName,
@@ -445,59 +395,6 @@ func selectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
 	}
 
 	return selector.Matches(nodeFields)
-}
-
-func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, repo sqldb.OffloadNodeStatusRepo, workflowName string, nodeFieldSelector string, phase wfv1.NodePhase, message string) error {
-	selector, err := fields.ParseSelector(nodeFieldSelector)
-
-	if err != nil {
-		return err
-	}
-	err = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		wf, err := wfIf.Get(workflowName, metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
-
-		err = decompressAndFetchOffloadedNodes(wf, repo)
-		if err != nil {
-			return false, err
-		}
-
-		nodeUpdated := false
-		nodes := wf.Status.Nodes
-		for nodeID, node := range nodes {
-			if node.IsActiveSuspendNode() {
-				if selectorMatchesNode(selector, node) {
-					node.Phase = phase
-					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-					if len(message) > 0 {
-						node.Message = message
-					}
-					nodes[nodeID] = node
-					nodeUpdated = true
-				}
-			}
-		}
-		if nodeUpdated {
-			err = compressAndOffloadNodes(wf, repo, nodes)
-			if err != nil {
-				return false, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
-			}
-
-			_, err = wfIf.Update(wf)
-			if err != nil {
-				if apierr.IsConflict(err) {
-					return false, nil
-				}
-				return false, err
-			}
-		} else {
-			return true, fmt.Errorf("No nodes matching nodeFieldSelector: %s", nodeFieldSelector)
-		}
-		return true, nil
-	})
-	return err
 }
 
 const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
@@ -740,7 +637,7 @@ func getNodeIDsToReset(restartSuccessful bool, nodeFieldSelector string, nodes w
 		return nil, err
 	} else {
 		for _, node := range nodes {
-			if selectorMatchesNode(selector, node) {
+			if SelectorMatchesNode(selector, node) {
 				//traverse all children of the node
 				var queue []string
 				queue = append(queue, node.ID)
@@ -760,8 +657,6 @@ func getNodeIDsToReset(restartSuccessful bool, nodeFieldSelector string, nodes w
 	return nodeIDsToReset, nil
 }
 
-var errSuspendedCompletedWorkflow = errors.Errorf(errors.CodeBadRequest, "cannot suspend completed workflows")
-
 // IsWorkflowSuspended returns whether or not a workflow is considered suspended
 func IsWorkflowSuspended(wf *wfv1.Workflow) bool {
 	if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
@@ -775,60 +670,43 @@ func IsWorkflowSuspended(wf *wfv1.Workflow) bool {
 	return false
 }
 
+func TerminateWorkflowByName(){
+
+}
+
 // TerminateWorkflow terminates a workflow by setting its spec.shutdown to ShutdownStrategyTerminate
-func TerminateWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
-	patchObj := map[string]interface{}{
-		"spec": map[string]interface{}{
-			"shutdown": wfv1.ShutdownStrategyTerminate,
-		},
-	}
-	var err error
-	patch, err := json.Marshal(patchObj)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		_, err = wfClient.Patch(name, types.MergePatchType, patch)
-		if err != nil {
-			if !apierr.IsConflict(err) {
-				return false, err
-			}
-			return false, nil
-		}
-		return true, nil
+func TerminateWorkflow(opIf v1alpha1.WorkflowOpInterface, workflow *wfv1.Workflow) error {
+	return wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+		_, err := opIf.Create(&wfv1.WorkflowOp{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName:    workflow.Name + "-",
+				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(workflow, workflow.GroupVersionKind())},
+			},
+			Spec: wfv1.WorkflowOpSpec{
+				Shutdown: &wfv1.ShutdownOp{ShutdownStrategy: wfv1.ShutdownStrategyTerminate},
+			},
+		})
+		return err == nil, err
 	})
-	return err
 }
 
 // StopWorkflow terminates a workflow by setting its spec.shutdown to ShutdownStrategyStop
 // Or terminates a single resume step referenced by nodeFieldSelector
-func StopWorkflow(wfClient v1alpha1.WorkflowInterface, repo sqldb.OffloadNodeStatusRepo, name string, nodeFieldSelector string, message string) error {
-	if len(nodeFieldSelector) > 0 {
-		return updateWorkflowNodeByKey(wfClient, repo, name, nodeFieldSelector, wfv1.NodeFailed, message)
-	} else {
-		patchObj := map[string]interface{}{
-			"spec": map[string]interface{}{
-				"shutdown": wfv1.ShutdownStrategyStop,
+func StopWorkflow(opIf v1alpha1.WorkflowOpInterface, workflow *wfv1.Workflow, nodeFieldSelector string, message string) error {
+	return wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+		_, err := opIf.Create(&wfv1.WorkflowOp{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName:    workflow.Name + "-",
+				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(workflow, workflow.GroupVersionKind())},
 			},
-		}
-		var err error
-		patch, err := json.Marshal(patchObj)
-		if err != nil {
-			return errors.InternalWrapError(err)
-		}
-		for attempt := 0; attempt < 10; attempt++ {
-			_, err = wfClient.Patch(name, types.MergePatchType, patch)
-			if err != nil {
-				if !apierr.IsConflict(err) {
-					return err
-				}
-			} else {
-				break
-			}
-			time.Sleep(100 * time.Millisecond)
-		}
-		return err
-	}
+			Spec: wfv1.WorkflowOpSpec{Shutdown: &wfv1.ShutdownOp{
+				ShutdownStrategy: wfv1.ShutdownStrategyStop,
+				NodeSelector:     nodeFieldSelector,
+				Message:          message,
+			}},
+		})
+		return err == nil, err
+	})
 }
 
 // Reads from stdin

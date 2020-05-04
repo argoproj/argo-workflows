@@ -72,6 +72,7 @@ type WorkflowController struct {
 	incompleteWfInformer cache.SharedIndexInformer
 	// only complete (i.e. not running) workflows
 	completedWfInformer   cache.SharedIndexInformer
+	workflowOpInformer    wfextvv1alpha1.WorkflowOpInformer
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
@@ -174,14 +175,28 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	wfc.incompleteWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.incompleteWorkflowTweakListOptions)
 	wfc.completedWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.completedWorkflowTweakListOptions)
 	wfc.wftmplInformer = wfc.newWorkflowTemplateInformer()
+	wfc.workflowOpInformer = wfextv.NewSharedInformerFactoryWithOptions(wfc.wfclientset, workflowResyncPeriod, wfextv.WithNamespace(wfc.GetManagedNamespace())).Argoproj().V1alpha1().WorkflowOps()
 
 	wfc.addWorkflowInformerHandler()
 	wfc.podInformer = wfc.newPodInformer()
+
+	wfc.workflowOpInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			op := wfv1.WorkflowOp{}
+			err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.(*unstructured.Unstructured).Object, &op)
+			if err != nil {
+				log.Errorf("failed to convert op: %v", err)
+				return
+			}
+			wfc.wfQueue.Add(op)
+		},
+	})
 
 	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
 	go wfc.incompleteWfInformer.Run(ctx.Done())
 	go wfc.completedWfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
+	go wfc.workflowOpInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
 	go wfc.podLabeler(ctx.Done())
 	go wfc.podGarbageCollector(ctx.Done())
@@ -192,7 +207,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	wfc.createClusterWorkflowTemplateInformer(ctx)
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
-	for _, informer := range []cache.SharedIndexInformer{wfc.incompleteWfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
+	for _, informer := range []cache.SharedIndexInformer{wfc.incompleteWfInformer, wfc.wftmplInformer.Informer(), wfc.workflowOpInformer.Informer(), wfc.podInformer} {
 		if !cache.WaitForCacheSync(ctx.Done(), informer.HasSynced) {
 			log.Error("Timed out waiting for caches to sync")
 			return
@@ -424,13 +439,21 @@ func (wfc *WorkflowController) runWorker() {
 
 // processNextItem is the worker logic for handling workflow updates
 func (wfc *WorkflowController) processNextItem() bool {
-	key, quit := wfc.wfQueue.Get()
+	item, quit := wfc.wfQueue.Get()
 	if quit {
 		return false
 	}
-	defer wfc.wfQueue.Done(key)
+	defer wfc.wfQueue.Done(item)
 
-	obj, exists, err := wfc.incompleteWfInformer.GetIndexer().GetByKey(key.(string))
+	key := ""
+	switch k := item.(type) {
+	case string:
+		key = k
+	case wfv1.WorkflowOp:
+		key = k.GetOwnerReferences()[0].Name
+	}
+
+	obj, exists, err := wfc.incompleteWfInformer.GetIndexer().GetByKey(key)
 	if err != nil {
 		log.Errorf("Failed to get workflow '%s' from informer index: %+v", key, err)
 		return true
@@ -448,7 +471,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	if key, ok = wfc.throttler.Next(key); !ok {
+	if _, ok = wfc.throttler.Next(key); !ok {
 		log.Warnf("Workflow %s processing has been postponed due to max parallelism limit", key)
 		return true
 	}
@@ -503,6 +526,11 @@ func (wfc *WorkflowController) processNextItem() bool {
 		woc.persistUpdates()
 		wfc.throttler.Remove(key)
 		return true
+	}
+
+	switch k := item.(type) {
+	case wfv1.WorkflowOp:
+		woc.executeWorkflowOp(k)
 	}
 	woc.operate()
 	if woc.wf.Status.Completed() {

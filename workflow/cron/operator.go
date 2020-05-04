@@ -25,6 +25,7 @@ type cronWfOperationCtx struct {
 	cronWf      *v1alpha1.CronWorkflow
 	wfClientset versioned.Interface
 	wfClient    typed.WorkflowInterface
+	opsIf       typed.WorkflowOpInterface
 	wfLister    util.WorkflowLister
 	cronWfIf    typed.CronWorkflowInterface
 }
@@ -127,7 +128,11 @@ func (woc *cronWfOperationCtx) enforceRuntimePolicy() (bool, error) {
 func (woc *cronWfOperationCtx) terminateOutstandingWorkflows() error {
 	for _, wfObjectRef := range woc.cronWf.Status.Active {
 		log.Infof("stopping '%s'", wfObjectRef.Name)
-		err := util.TerminateWorkflow(woc.wfClient, wfObjectRef.Name)
+		wf, err := woc.wfClient.Get(wfObjectRef.Name, v1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("error stopping workflow %s: %e", wfObjectRef.Name, err)
+		}
+		err = util.TerminateWorkflow(woc.opsIf, wf)
 		if err != nil {
 			return fmt.Errorf("error stopping workflow %s: %e", wfObjectRef.Name, err)
 		}

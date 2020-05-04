@@ -22,6 +22,14 @@ type WorkflowListerExpansion interface{}
 // WorkflowNamespaceLister.
 type WorkflowNamespaceListerExpansion interface{}
 
+// WorkflowOpListerExpansion allows custom methods to be added to
+// WorkflowOpLister.
+type WorkflowOpListerExpansion interface{}
+
+// WorkflowOpNamespaceListerExpansion allows custom methods to be added to
+// WorkflowOpNamespaceLister.
+type WorkflowOpNamespaceListerExpansion interface{}
+
 // WorkflowTemplateListerExpansion allows custom methods to be added to
 // WorkflowTemplateLister.
 type WorkflowTemplateListerExpansion interface{}
