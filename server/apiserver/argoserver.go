@@ -41,6 +41,7 @@ import (
 	"github.com/argoproj/argo/server/workflowarchive"
 	"github.com/argoproj/argo/server/workflowtemplate"
 	grpcutil "github.com/argoproj/argo/util/grpc"
+	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/util/json"
 )
 
@@ -119,6 +120,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.Fatal(err)
 	}
+	instanceIDService := instanceid.NewService(configMap.InstanceID)
 	var offloadRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	var wfArchive = sqldb.NullWorkflowArchive
 	persistence := configMap.Persistence
@@ -135,10 +137,10 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		}
 		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
 		// disable the archiving - and still read old records
-		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, configMap.InstanceID)
+		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
 	}
-	artifactServer := artifacts.NewArtifactServer(as.authenticator, offloadRepo, wfArchive)
-	grpcServer := as.newGRPCServer(configMap.InstanceID, offloadRepo, wfArchive, configMap.Links)
+	artifactServer := artifacts.NewArtifactServer(as.authenticator, offloadRepo, wfArchive, instanceIDService)
+	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, configMap.Links)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
 	// Start listener
@@ -181,7 +183,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	<-as.stopCh
 }
 
-func (as *argoServer) newGRPCServer(instanceID string, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, links []*v1alpha1.Link) *grpc.Server {
+func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, links []*v1alpha1.Link) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
 
 	sOpts := []grpc.ServerOption{
@@ -208,11 +210,11 @@ func (as *argoServer) newGRPCServer(instanceID string, offloadNodeStatusRepo sql
 	grpcServer := grpc.NewServer(sOpts...)
 
 	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace, links))
-	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(instanceID, offloadNodeStatusRepo))
-	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer())
-	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer(instanceID))
+	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(instanceIDService, offloadNodeStatusRepo))
+	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer(instanceIDService))
+	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer(instanceIDService))
 	workflowarchivepkg.RegisterArchivedWorkflowServiceServer(grpcServer, workflowarchive.NewWorkflowArchiveServer(wfArchive))
-	clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceServer(grpcServer, clusterworkflowtemplate.NewClusterWorkflowTemplateServer())
+	clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceServer(grpcServer, clusterworkflowtemplate.NewClusterWorkflowTemplateServer(instanceIDService))
 	return grpcServer
 }
 

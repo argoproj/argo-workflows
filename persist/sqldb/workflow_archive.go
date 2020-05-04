@@ -14,6 +14,7 @@ import (
 	"upper.io/db.v3/lib/sqlbuilder"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/instanceid"
 )
 
 const archiveTableName = "argo_archived_workflows"
@@ -52,16 +53,16 @@ type WorkflowArchive interface {
 }
 
 type workflowArchive struct {
-	session          sqlbuilder.Database
-	clusterName      string
-	managedNamespace string
-	instanceID       string
-	dbType           dbType
+	session           sqlbuilder.Database
+	clusterName       string
+	managedNamespace  string
+	instanceIDService instanceid.Service
+	dbType            dbType
 }
 
 // NewWorkflowArchive returns a new workflowArchive
-func NewWorkflowArchive(session sqlbuilder.Database, clusterName, managedNamespace, instanceID string) WorkflowArchive {
-	return &workflowArchive{session: session, clusterName: clusterName, managedNamespace: managedNamespace, instanceID: instanceID, dbType: dbTypeFor(session)}
+func NewWorkflowArchive(session sqlbuilder.Database, clusterName, managedNamespace string, instanceIDService instanceid.Service) WorkflowArchive {
+	return &workflowArchive{session: session, clusterName: clusterName, managedNamespace: managedNamespace, instanceIDService: instanceIDService, dbType: dbTypeFor(session)}
 }
 
 func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
@@ -84,7 +85,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 			Insert(&archivedWorkflowRecord{
 				archivedWorkflowMetadata: archivedWorkflowMetadata{
 					ClusterName: r.clusterName,
-					InstanceID:  r.instanceID,
+					InstanceID:  r.instanceIDService.InstanceID(),
 					UID:         string(wf.UID),
 					Name:        wf.Name,
 					Namespace:   wf.Namespace,
@@ -158,7 +159,7 @@ func (r *workflowArchive) clusterManagedNamespaceAndInstanceID() db.Compound {
 	return db.And(
 		db.Cond{"clustername": r.clusterName},
 		namespaceEqual(r.managedNamespace),
-		db.Cond{"instanceid": r.instanceID},
+		db.Cond{"instanceid": r.instanceIDService.InstanceID()},
 	)
 }
 

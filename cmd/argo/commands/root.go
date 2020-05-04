@@ -60,7 +60,7 @@ If you're using the Argo Server (e.g. because you need large workflow support or
 	command.AddCommand(clustertemplate.NewClusterTemplateCommand())
 
 	client.AddKubectlFlagsToCmd(command)
-	client.AddArgoServerFlagsToCmd(command)
+	client.AddAPIClientFlagsToCmd(command)
 
 	// global log level
 	var logLevel string
