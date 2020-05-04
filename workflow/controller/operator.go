@@ -1045,9 +1045,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 			// finishedAt might not have been set.
 			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 		}
-		if woc.controller.Config.ResourcesDuration.IsEnabled() {
-			node.ResourcesDuration = resource.DurationForPod(pod)
-		}
+		node.ResourcesDuration = resource.DurationForPod(pod)
 	}
 	if updated {
 		return node

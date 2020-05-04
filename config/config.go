@@ -56,9 +56,6 @@ type Config struct {
 	// MetricsConfig specifies configuration for metrics emission
 	MetricsConfig PrometheusConfig `json:"metricsConfig,omitempty"`
 
-	// ResourcesDuration can disable capture.
-	ResourcesDuration Disableable `json:"resourcesDuration,omitempty"`
-
 	// TelemetryConfig specifies configuration for telemetry emission
 	TelemetryConfig PrometheusConfig `json:"telemetryConfig,omitempty"`
 

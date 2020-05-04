@@ -12,8 +12,6 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  resourcesDuration: |
-    enabled: true
   metricsConfig: |
     disableLegacy: true
     enabled: true
