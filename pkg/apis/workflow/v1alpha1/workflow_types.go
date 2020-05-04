@@ -1733,27 +1733,9 @@ func (wf *Workflow) GetResourceScope() ResourceScope {
 	return ResourceScopeLocal
 }
 
-// GetArguments returns the Arguments.
+// GetSpec returns the WorkflowSpec of workflow.
 func (wf *Workflow) GetSpec() WorkflowSpec {
 	return wf.Spec
-}
-
-// GetArguments returns the Arguments.
-func (wf *Workflow) GetArguments() Arguments {
-	return wf.Spec.Arguments
-}
-
-// GetEntrypoint returns the Entrypoint.
-func (wf *Workflow) GetEntrypoint() string {
-	return wf.Spec.Entrypoint
-}
-
-func (wf *Workflow) GetVolumes() []apiv1.Volume {
-	return wf.Spec.Volumes
-}
-
-func (wf *Workflow) GetTemplates() []Template {
-	return wf.Spec.Templates
 }
 
 // NodeID creates a deterministic node ID based on a node name

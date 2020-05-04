@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	"strings"
 
-	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -57,25 +56,7 @@ func (cwftmpl *ClusterWorkflowTemplate) GetResourceScope() ResourceScope {
 	return ResourceScopeCluster
 }
 
-// GetArguments returns the Arguments.
-func (cwftmpl *ClusterWorkflowTemplate) GetArguments() Arguments {
-	return cwftmpl.Spec.Arguments
-}
-
-// GetEntrypoint returns the Entrypoint.
-func (cwftmpl *ClusterWorkflowTemplate) GetEntrypoint() string {
-	return cwftmpl.Spec.Entrypoint
-}
-
-// GetVolumes returns the Volumes
-func (cwftmpl *ClusterWorkflowTemplate) GetVolumes() []apiv1.Volume {
-	return cwftmpl.Spec.Volumes
-}
-
-func (cwftmpl *ClusterWorkflowTemplate) GetTemplates() []Template {
-	return cwftmpl.Spec.Templates
-}
-
+// GetSpec returns the WorkflowSpec of cluster workflow template.
 func (cwftmpl *ClusterWorkflowTemplate) GetSpec() *WorkflowSpec {
 	return &cwftmpl.Spec.WorkflowSpec
 }

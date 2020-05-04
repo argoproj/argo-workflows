@@ -122,7 +122,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 			return nil, err
 		}
 		if entrypoint == "" {
-			entrypoint = wftmpl.GetEntrypoint()
+			entrypoint = wftmpl.GetSpec().Entrypoint
 		}
 		topLevelTmplRef = wf.Spec.WorkflowTemplateRef.ConvertTemplateRef(entrypoint)
 	}
@@ -131,7 +131,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	wfArgs := wf.Spec.Arguments
 
 	if wf.Spec.WorkflowTemplateRef != nil {
-		wfArgs.Parameters = util.MergeParameters(wftmpl.GetArguments().Parameters, wfArgs.Parameters)
+		wfArgs.Parameters = util.MergeParameters(wftmpl.GetSpec().Arguments.Parameters, wfArgs.Parameters)
 	}
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())

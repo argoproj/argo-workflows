@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	"strings"
 
-	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -61,25 +60,7 @@ func (wftmpl *WorkflowTemplate) GetResourceScope() ResourceScope {
 	return ResourceScopeNamespaced
 }
 
-// GetArguments returns the Arguments.
-func (wftmpl *WorkflowTemplate) GetArguments() Arguments {
-	return wftmpl.Spec.Arguments
-}
-
-// GetEntrypoint returns the Entrypoint.
-func (wftmpl *WorkflowTemplate) GetEntrypoint() string {
-	return wftmpl.Spec.Entrypoint
-}
-
-// GetVolumes returns the Volumes
-func (wftmpl *WorkflowTemplate) GetVolumes() []apiv1.Volume {
-	return wftmpl.Spec.Volumes
-}
-
-func (wftmpl *WorkflowTemplate) GetTemplates() []Template {
-	return wftmpl.Spec.Templates
-}
-
+// GetSpec returns the WorkflowSpec of workflow template.
 func (wftmpl *WorkflowTemplate) GetSpec() *WorkflowSpec {
 	return &wftmpl.Spec.WorkflowSpec
 }
