@@ -75,19 +75,3 @@ func MergeParameters(params ...[]wfv1.Parameter) []wfv1.Parameter {
 	}
 	return resultParams
 }
-
-// Merge the two Volumes Slice and overwriting duplicate keys,
-func MergeVolume(params ...[]apiv1.Volume) []apiv1.Volume {
-	resultParams := make([]apiv1.Volume, 0)
-	passedParams := make(map[string]bool)
-	for _, param := range params {
-		for _, item := range param {
-			if _, ok := passedParams[item.Name]; ok {
-				continue
-			}
-			resultParams = append(resultParams, item)
-			passedParams[item.Name] = true
-		}
-	}
-	return resultParams
-}
