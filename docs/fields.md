@@ -5232,6 +5232,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`coinflip.yaml`](../examples/coinflip.yaml)
 
+- [`colored-logs.yaml`](../examples/colored-logs.yaml)
+
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
@@ -5281,6 +5283,10 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`global-parameters.yaml`](../examples/global-parameters.yaml)
 
 - [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
+
+- [`hello-hybrid.yaml`](../examples/hello-hybrid.yaml)
+
+- [`hello-windows.yaml`](../examples/hello-windows.yaml)
 
 - [`hello-world.yaml`](../examples/hello-world.yaml)
 
