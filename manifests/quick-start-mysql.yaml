@@ -383,8 +383,6 @@ data:
       passwordSecret:
         name: argo-mysql-config
         key: password
-  resourcesDuration: |
-    enabled: true
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

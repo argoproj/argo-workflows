@@ -365,8 +365,6 @@ data:
     enabled: true
     path: /metrics
     port: 9090
-  resourcesDuration: |
-    enabled: true
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

@@ -383,8 +383,6 @@ data:
       passwordSecret:
         name: argo-postgres-config
         key: password
-  resourcesDuration: |
-    enabled: true
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
