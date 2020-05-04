@@ -18,8 +18,6 @@ export const WorkflowSteps = (props: WorkflowStepsProps) => {
     if (templates) {
         entryPointTemplate = templates.find(template => template.name === props.workflow.spec.entrypoint) || {steps: [] as models.WorkflowStep[][]};
     }
-
-    // const entryPointTemp late = props.workflow.spec.templates.find(template => template.name === props.workflow.spec.entrypoint) || {steps: [] as models.WorkflowStep[][]};
     const phase = props.workflow.status.phase;
     let isSucceeded = false;
     let isFailed = false;

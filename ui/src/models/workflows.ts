@@ -851,11 +851,21 @@ export interface WorkflowSpec {
      */
     suspend?: boolean;
 
+    /**
+     * workflowTemplateRef is the reference to the workflow template resource to execute.
+     */
     workflowTemplateRef?: WorkflowTemplateRef;
 }
 
 export interface WorkflowTemplateRef {
-    name?: string;
+    /**
+     * Name is the resource name of the template.
+     */
+    name: string;
+    
+    /**
+     * ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+     */
     clusterScope?: boolean;
 }
 
