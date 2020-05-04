@@ -1,7 +1,7 @@
 package controller
 
 import (
-	jsonpatch "github.com/evanphx/json-patch"
+	"github.com/sergi/go-diff/diffmatchpatch"
 	"gopkg.in/yaml.v2"
 )
 
@@ -14,9 +14,6 @@ func newDiff(a, b interface{}) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	patchData, err := jsonpatch.CreateMergePatch(aData, bData)
-	if err != nil {
-		return "", err
-	}
-	return string(patchData), nil
+	dmp := diffmatchpatch.New()
+	return dmp.DiffPrettyText(dmp.DiffMain(string(aData), string(bData), false)), nil
 }
