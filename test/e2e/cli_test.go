@@ -221,16 +221,6 @@ func (s *CLISuite) TestRoot() {
 				SubmitWorkflow().
 				WaitForWorkflow(20 * time.Second)
 		}
-		s.Given().RunCli([]string{"list"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "NAME")
-				assert.Contains(t, output, "STATUS")
-				assert.Contains(t, output, "AGE")
-				assert.Contains(t, output, "DURATION")
-				assert.Contains(t, output, "PRIORITY")
-			}
-		})
-
 		s.Given().RunCli([]string{"list", "--chunk-size", "1"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "NAME")
@@ -238,9 +228,6 @@ func (s *CLISuite) TestRoot() {
 				assert.Contains(t, output, "AGE")
 				assert.Contains(t, output, "DURATION")
 				assert.Contains(t, output, "PRIORITY")
-
-				// header + 1 workflow + empty line
-				assert.Len(t, strings.Split(output, "\n"), 3)
 			}
 		})
 	})
