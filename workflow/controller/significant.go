@@ -1,6 +1,11 @@
 package controller
 
-import apiv1 "k8s.io/api/core/v1"
+import (
+	"encoding/json"
+
+	jsonpatch "github.com/evanphx/json-patch"
+	apiv1 "k8s.io/api/core/v1"
+)
 
 /*
 These are tho only fields that we ever look at significant in, some are immutable:
@@ -26,6 +31,22 @@ func significantPodChange(from *apiv1.Pod, to *apiv1.Pod) bool {
 		from.Status.Phase != to.Status.Phase ||
 		from.Status.Message != to.Status.Message ||
 		from.Status.PodIP != to.Status.PodIP
+}
+
+func newDiff(a, b interface{}) (string, error) {
+	aData, err := json.Marshal(a)
+	if err != nil {
+		return "", err
+	}
+	bData, err := json.Marshal(b)
+	if err != nil {
+		return "", err
+	}
+	patchData, err := jsonpatch.CreateMergePatch(aData, bData)
+	if err != nil {
+		return "", err
+	}
+	return string(patchData), nil
 }
 
 func significantContainerStatusesChange(from []apiv1.ContainerStatus, to []apiv1.ContainerStatus) bool {

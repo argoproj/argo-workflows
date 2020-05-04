@@ -607,6 +607,12 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 				if err == nil {
 					oldWf := old.(*unstructured.Unstructured)
 					newWf := new.(*unstructured.Unstructured)
+					diff, err := newDiff(oldWf, newWf)
+					if err != nil {
+						log.Errorf("failed to diff: %v", err)
+					} else {
+						log.WithField("diff", diff).Debug("Workflow diff")
+					}
 					if oldWf.GetResourceVersion() == newWf.GetResourceVersion() {
 						wfc.metrics.WorkflowResourceVersionRepeated()
 						return
@@ -698,12 +704,20 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 			},
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
-				if old.(*apiv1.Pod).GetResourceVersion() == new.(*apiv1.Pod).GetResourceVersion() {
-					wfc.metrics.PodResourceVersionRepeated()
-					return
-				}
 				if err == nil {
-					if !significantPodChange(old.(*apiv1.Pod), new.(*apiv1.Pod)) {
+					oldPod := old.(*apiv1.Pod)
+					newPod := new.(*apiv1.Pod)
+					if oldPod.GetResourceVersion() == newPod.GetResourceVersion() {
+						wfc.metrics.PodResourceVersionRepeated()
+						return
+					}
+					diff, err := newDiff(oldPod, newPod)
+					if err != nil {
+						log.Errorf("failed to diff: %v", err)
+					} else {
+						log.WithField("diff", diff).Debug("Pod diff")
+					}
+					if !significantPodChange(oldPod, newPod) {
 						wfc.metrics.InsignificantPodChange()
 						return
 					}
