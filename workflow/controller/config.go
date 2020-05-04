@@ -12,6 +12,7 @@ import (
 	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
+	"github.com/argoproj/argo/util/instanceid"
 )
 
 func (wfc *WorkflowController) updateConfig(config config.Config) error {
@@ -57,7 +58,8 @@ func (wfc *WorkflowController) updateConfig(config config.Config) error {
 			log.Info("Node status offloading is disabled")
 		}
 		if persistence.Archive {
-			wfc.wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), wfc.managedNamespace, wfc.Config.InstanceID)
+			instanceIDService := instanceid.NewService(wfc.Config.InstanceID)
+			wfc.wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), wfc.managedNamespace, instanceIDService)
 			log.Info("Workflow archiving is enabled")
 		} else {
 			log.Info("Workflow archiving is disabled")
