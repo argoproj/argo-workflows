@@ -18,17 +18,17 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
-	"github.com/argoproj/argo/workflow/packer"
+	"github.com/argoproj/argo/workflow/hydrator"
 )
 
 type ArtifactServer struct {
-	authN                 auth.Gatekeeper
-	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
-	wfArchive             sqldb.WorkflowArchive
+	authN     auth.Gatekeeper
+	hydrator  hydrator.Interface
+	wfArchive sqldb.WorkflowArchive
 }
 
-func NewArtifactServer(authN auth.Gatekeeper, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *ArtifactServer {
-	return &ArtifactServer{authN, offloadNodeStatusRepo, wfArchive}
+func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive) *ArtifactServer {
+	return &ArtifactServer{authN, hydrator, wfArchive}
 }
 
 func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
@@ -164,20 +164,9 @@ func (a *ArtifactServer) getWorkflow(ctx context.Context, namespace string, work
 	if err != nil {
 		return nil, err
 	}
-	err = packer.DecompressWorkflow(wf)
+	err = a.hydrator.Hydrate(wf)
 	if err != nil {
 		return nil, err
-	}
-	if wf.Status.IsOffloadNodeStatus() {
-		if a.offloadNodeStatusRepo.IsEnabled() {
-			offloadedNodes, err := a.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-			if err != nil {
-				return nil, err
-			}
-			wf.Status.Nodes = offloadedNodes
-		} else {
-			log.WithFields(log.Fields{"namespace": namespace, "name": workflowName}).Warn(sqldb.OffloadNodeStatusDisabled)
-		}
 	}
 	return wf, nil
 }

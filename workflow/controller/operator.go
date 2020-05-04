@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"os"
 	"reflect"
 	"regexp"
 	"runtime/debug"
@@ -39,7 +38,6 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/metrics"
-	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/validate"
 
@@ -462,23 +460,9 @@ func (woc *wfOperationCtx) persistUpdates() {
 	}
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 	// try and compress nodes if needed
-	nodes := woc.wf.Status.Nodes
-
-	err := packer.CompressWorkflowIfNeeded(woc.wf)
-	if packer.IsTooLargeError(err) || os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true" {
-		if woc.controller.offloadNodeStatusRepo.IsEnabled() {
-			offloadVersion, err := woc.controller.offloadNodeStatusRepo.Save(string(woc.wf.UID), woc.wf.Namespace, nodes)
-			if err != nil {
-				woc.log.Warnf("Failed to offload node status: %v", err)
-				woc.markWorkflowError(err, true)
-			} else {
-				woc.wf.Status.Nodes = nil
-				woc.wf.Status.CompressedNodes = ""
-				woc.wf.Status.OffloadNodeStatusVersion = offloadVersion
-			}
-		}
-	} else if err != nil {
-		woc.log.Warnf("Error compressing workflow: %v", err)
+	err := woc.controller.hydrator.Dehydrate(woc.wf)
+	if err != nil {
+		woc.log.Warnf("Failed to offload node status: %v", err)
 		woc.markWorkflowError(err, true)
 	}
 	wf, err := wfClient.Update(woc.wf)
@@ -502,9 +486,12 @@ func (woc *wfOperationCtx) persistUpdates() {
 		woc.wf = wf
 	}
 
-	// restore to pre-compressed state
-	woc.wf.Status.Nodes = nodes
-	woc.wf.Status.CompressedNodes = ""
+	err = woc.controller.hydrator.Hydrate(woc.wf)
+	if err != nil {
+		woc.log.Warnf("Failed to hydrate: %v", err)
+		woc.markWorkflowError(err, true)
+	}
+
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
 
 	// HACK(jessesuen) after we successfully persist an update to the workflow, the informer's

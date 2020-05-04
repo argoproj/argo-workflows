@@ -9,21 +9,21 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/hydrator"
 )
 
 type Then struct {
-	t                     *testing.T
-	workflowName          string
-	wfTemplateNames       []string
-	cronWorkflowName      string
-	client                v1alpha1.WorkflowInterface
-	cronClient            v1alpha1.CronWorkflowInterface
-	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
-	kubeClient            kubernetes.Interface
+	t                *testing.T
+	workflowName     string
+	wfTemplateNames  []string
+	cronWorkflowName string
+	client           v1alpha1.WorkflowInterface
+	cronClient       v1alpha1.CronWorkflowInterface
+	hydrator         hydrator.Interface
+	kubeClient       kubernetes.Interface
 }
 
 func (t *Then) ExpectWorkflow(block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
@@ -43,12 +43,9 @@ func (t *Then) expectWorkflow(workflowName string, block func(t *testing.T, meta
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	if wf.Status.IsOffloadNodeStatus() {
-		offloadedNodes, err := t.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-		if err != nil {
-			t.t.Fatal(err)
-		}
-		wf.Status.Nodes = offloadedNodes
+	err = t.hydrator.Hydrate(wf)
+	if err != nil {
+		t.t.Fatal(err)
 	}
 	block(t.t, &wf.ObjectMeta, &wf.Status)
 	if t.t.Failed() {
@@ -129,13 +126,13 @@ func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err
 
 func (t *Then) When() *When {
 	return &When{
-		t:                     t.t,
-		client:                t.client,
-		cronClient:            t.cronClient,
-		offloadNodeStatusRepo: t.offloadNodeStatusRepo,
-		workflowName:          t.workflowName,
-		wfTemplateNames:       t.wfTemplateNames,
-		cronWorkflowName:      t.cronWorkflowName,
-		kubeClient:            t.kubeClient,
+		t:                t.t,
+		client:           t.client,
+		cronClient:       t.cronClient,
+		hydrator:         t.hydrator,
+		workflowName:     t.workflowName,
+		wfTemplateNames:  t.wfTemplateNames,
+		cronWorkflowName: t.cronWorkflowName,
+		kubeClient:       t.kubeClient,
 	}
 }

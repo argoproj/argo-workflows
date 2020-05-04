@@ -5,8 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo/workflow/common"
-
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -18,7 +16,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/yaml"
-
+	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/hydrator"
 	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -126,6 +125,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		wfQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		wfArchive:       sqldb.NullWorkflowArchive,
+		hydrator:        hydrator.New(sqldb.ExplosiveOffloadNodeStatusRepo),
 		Metrics:         make(map[string]common.Metric),
 	}
 	return cancel, controller

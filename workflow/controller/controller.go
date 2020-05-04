@@ -40,8 +40,8 @@ import (
 	authutil "github.com/argoproj/argo/util/auth"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/cron"
+	"github.com/argoproj/argo/workflow/hydrator"
 	"github.com/argoproj/argo/workflow/metrics"
-	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/ttlcontroller"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -82,6 +82,7 @@ type WorkflowController struct {
 	throttler             Throttler
 	session               sqlbuilder.Database
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
+	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
 	Metrics               map[string]common.Metric
 }
@@ -482,28 +483,15 @@ func (wfc *WorkflowController) processNextItem() bool {
 
 	woc := newWorkflowOperationCtx(wf, wfc)
 
-	// Loading running workflow from persistence storage if nodeStatusOffload enabled
-	if wf.Status.IsOffloadNodeStatus() {
-		nodes, err := wfc.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-		if err != nil {
-			woc.log.Errorf("getting offloaded nodes failed: %v", err)
-			woc.markWorkflowError(err, true)
-			woc.persistUpdates()
-			wfc.throttler.Remove(key)
-			return true
-		}
-		woc.wf.Status.Nodes = nodes
-	}
-
-	// Decompress the node if it is compressed
-	err = packer.DecompressWorkflow(woc.wf)
+	err = wfc.hydrator.Hydrate(wf)
 	if err != nil {
-		woc.log.Errorf("workflow decompression failed: %v", err)
+		woc.log.Errorf("hydration failed: %v", err)
 		woc.markWorkflowError(err, true)
 		woc.persistUpdates()
 		wfc.throttler.Remove(key)
 		return true
 	}
+
 	woc.operate()
 	if woc.wf.Status.Completed() {
 		wfc.throttler.Remove(key)
