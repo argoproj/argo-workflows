@@ -799,9 +799,6 @@ message SubmitOpts {
   // GenerateName overrides metadata.generateName
   optional string generateName = 2;
 
-  // InstanceID binds the Resource to the specified instance ID
-  optional string instanceID = 3;
-
   // Entrypoint overrides spec.entrypoint
   optional string entrypoint = 4;
 
