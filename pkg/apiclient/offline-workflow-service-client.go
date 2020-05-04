@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"google.golang.org/grpc"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -60,13 +59,13 @@ func (o offlineWorkflowServiceClient) StopWorkflow(context.Context, *workflowpkg
 type offlineWorkflowTemplateNamespacedGetter struct{}
 
 func (w offlineWorkflowTemplateNamespacedGetter) Get(name string) (*wfv1.WorkflowTemplate, error) {
-	return &wfv1.WorkflowTemplate{ObjectMeta: metav1.ObjectMeta{Name: name}}, nil
+	return nil, OfflineErr
 }
 
 type offlineClusterWorkflowTemplateNamespacedGetter struct{}
 
 func (o offlineClusterWorkflowTemplateNamespacedGetter) Get(name string) (*wfv1.ClusterWorkflowTemplate, error) {
-	return &wfv1.ClusterWorkflowTemplate{ObjectMeta: metav1.ObjectMeta{Name: name}}, nil
+	return nil, OfflineErr
 }
 
 func (o offlineWorkflowServiceClient) LintWorkflow(_ context.Context, req *workflowpkg.WorkflowLintRequest, _ ...grpc.CallOption) (*wfv1.Workflow, error) {
