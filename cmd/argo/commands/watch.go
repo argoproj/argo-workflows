@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/argoproj/pkg/errors"
@@ -51,21 +52,17 @@ func watchWorkflow(wfName string) {
 	errors.CheckError(err)
 	for {
 		event, err := stream.Recv()
-		errors.CheckError(err)
-		wf := event.Object
-		if wf == nil {
+		if err == io.EOF {
 			log.Debug("Re-establishing workflow watch")
 			stream, err = serviceClient.WatchWorkflows(ctx, req)
-			if err != nil {
-				errors.CheckError(err)
-				return
-			}
+			errors.CheckError(err)
 			continue
-
 		}
+		errors.CheckError(err)
+		wf := event.Object
 		printWorkflowStatus(wf)
 		if !wf.Status.FinishedAt.IsZero() {
-			break
+			return
 		}
 	}
 }
