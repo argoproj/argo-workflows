@@ -253,6 +253,7 @@
         "parameters": [
           {
             "name": "name",
+            "description": "DEPRECATED: This field is ignored.",
             "in": "path",
             "required": true,
             "type": "string"
@@ -302,7 +303,8 @@
       "type": "object",
       "properties": {
         "name": {
-          "type": "string"
+          "type": "string",
+          "description": "DEPRECATED: This field is ignored."
         },
         "template": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ClusterWorkflowTemplate"

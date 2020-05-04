@@ -289,6 +289,7 @@
         "parameters": [
           {
             "type": "string",
+            "description": "DEPRECATED: This field is ignored.",
             "name": "name",
             "in": "path",
             "required": true
@@ -563,6 +564,7 @@
           },
           {
             "type": "string",
+            "description": "DEPRECATED: This field is ignored.",
             "name": "name",
             "in": "path",
             "required": true
@@ -960,6 +962,7 @@
           },
           {
             "type": "string",
+            "description": "DEPRECATED: This field is ignored.",
             "name": "name",
             "in": "path",
             "required": true
@@ -1707,6 +1710,7 @@
       "type": "object",
       "properties": {
         "name": {
+          "description": "DEPRECATED: This field is ignored.",
           "type": "string"
         },
         "template": {
@@ -1749,6 +1753,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
         },
         "name": {
+          "description": "DEPRECATED: This field is ignored.",
           "type": "string"
         },
         "namespace": {
@@ -7009,6 +7014,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.CreateOptions"
         },
         "instanceID": {
+          "description": "This field is no longer used.",
           "type": "string"
         },
         "namespace": {
@@ -7191,6 +7197,7 @@
       "type": "object",
       "properties": {
         "name": {
+          "description": "DEPRECATED: This field is ignored.",
           "type": "string"
         },
         "namespace": {
