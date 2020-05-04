@@ -593,47 +593,45 @@ func getWfPriority(obj interface{}) (int32, time.Time) {
 
 func (wfc *WorkflowController) addWorkflowInformerHandler() {
 	wfc.wfInformer.AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(obj)
-				if err == nil {
-					wf := obj.(*unstructured.Unstructured)
-					if !getPhase(wf).Completed() {
+		cache.FilteringResourceEventHandler{
+			FilterFunc: func(obj interface{}) bool {
+				wf := obj.(*unstructured.Unstructured)
+				return wf.GetLabels()[common.LabelKeyCompleted] != "true"
+			},
+			Handler: cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+					key, err := cache.MetaNamespaceKeyFunc(obj)
+					if err == nil {
 						wfc.wfQueue.Add(key)
 						priority, creation := getWfPriority(obj)
 						wfc.throttler.Add(key, priority, creation)
 					}
-				}
-			},
-			UpdateFunc: func(old, new interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(new)
-				if err == nil {
-					oldWf := old.(*unstructured.Unstructured)
-					newWf := new.(*unstructured.Unstructured)
-					// we can get repeated resource version which we don't need to process
-					// this is common due to how we put the workflow back
-					if oldWf.GetResourceVersion() == newWf.GetResourceVersion() {
-						wfc.metrics.WorkflowResourceVersionRepeated()
-						return
-					}
-					if !getPhase(newWf).Completed() {
+				},
+				UpdateFunc: func(old, new interface{}) {
+					key, err := cache.MetaNamespaceKeyFunc(new)
+					if err == nil {
+						oldWf := old.(*unstructured.Unstructured)
+						newWf := new.(*unstructured.Unstructured)
+						// we can get repeated resource version which we don't need to process
+						// this is common due to how we put the workflow back
+						if oldWf.GetResourceVersion() == newWf.GetResourceVersion() {
+							wfc.metrics.WorkflowResourceVersionRepeated()
+							return
+						}
 						wfc.wfQueue.Add(key)
 						priority, creation := getWfPriority(new)
 						wfc.throttler.Add(key, priority, creation)
-					} else {
+					}
+				},
+				DeleteFunc: func(obj interface{}) {
+					// IndexerInformer uses a delta queue, therefore for deletes we have to use this
+					// key function.
+					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+					if err == nil {
+						wfc.wfQueue.Add(key)
 						wfc.throttler.Remove(key)
 					}
-				}
-			},
-			DeleteFunc: func(obj interface{}) {
-				// IndexerInformer uses a delta queue, therefore for deletes we have to use this
-				// key function.
-				key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-				if err == nil {
-					wf := obj.(*unstructured.Unstructured)
-					wfc.wfQueue.Add(key)
-					wfc.throttler.Remove(key)
-				}
+				},
 			},
 		},
 	)
