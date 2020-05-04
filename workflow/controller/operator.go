@@ -106,7 +106,7 @@ var (
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
 // for before requeuing the workflow onto the workqueue.
-const maxOperationTime = 600 * time.Second
+const maxOperationTime = 10 * time.Second
 
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
 type failedNodeStatus struct {
@@ -2655,17 +2655,13 @@ func (woc *wfOperationCtx) getTopLevelWorkflowTemplate() (*wfv1.WorkflowSpec, er
 }
 
 func (woc *wfOperationCtx) convertWFTmplRefToTmplRef() *wfv1.TemplateRef {
-	tmplRef := &wfv1.TemplateRef{}
-	tmplRef.Name = woc.wf.Spec.WorkflowTemplateRef.Name
-	tmplRef.ClusterScope = woc.wf.Spec.WorkflowTemplateRef.ClusterScope
 
 	entrypoint := woc.wf.Spec.Entrypoint
 
 	if entrypoint == "" {
 		entrypoint = woc.wfSpec.Entrypoint
 	}
-	tmplRef.Template = entrypoint
-	return tmplRef
+	return woc.wf.Spec.WorkflowTemplateRef.ConvertTemplateRef(entrypoint)
 }
 
 func (woc *wfOperationCtx) setWorkflowSpecAndEntrypoint() error {

@@ -1344,7 +1344,7 @@ message WorkflowTemplateRef {
   optional string name = 1;
 
   // ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
-  optional bool clusterscope = 4;
+  optional bool clusterscope = 2;
 }
 
 // WorkflowTemplateSpec is a spec of WorkflowTemplate.

@@ -60,7 +60,6 @@ func WriteTeriminateMessage(message string) {
 }
 
 // Merge the two parameters Slice and overwriting duplicate keys,
-// TODO Try to generalize the below two merge functions - Bala
 func MergeParameters(params ...[]wfv1.Parameter) []wfv1.Parameter {
 	resultParams := make([]wfv1.Parameter, 0)
 	passedParams := make(map[string]bool)

@@ -817,7 +817,7 @@ type WorkflowTemplateRef struct {
 	// Name is the resource name of the workflow template.
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 	// ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
-	ClusterScope bool `json:"clusterscope,omitempty" protobuf:"varint,4,opt,name=clusterscope"`
+	ClusterScope bool `json:"clusterscope,omitempty" protobuf:"varint,2,opt,name=clusterscope"`
 }
 
 func (wftRef *WorkflowTemplateRef) ConvertTemplateRef(entrypoint string) *TemplateRef {
