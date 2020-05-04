@@ -106,7 +106,7 @@ func NewListCommand() *cobra.Command {
 				}
 			}
 			sort.Sort(workflows)
-			err := printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{
+			err = printer.PrintWorkflows(workflows, os.Stdout, printer.PrintOpts{
 				NoHeaders: listArgs.noHeaders,
 				Namespace: listArgs.allNamespaces,
 				Output:    listArgs.output,
