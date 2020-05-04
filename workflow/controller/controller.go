@@ -597,9 +597,12 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 			AddFunc: func(obj interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(obj)
 				if err == nil {
-					wfc.wfQueue.Add(key)
-					priority, creation := getWfPriority(obj)
-					wfc.throttler.Add(key, priority, creation)
+					wf := obj.(*unstructured.Unstructured)
+					if !getPhase(wf).Completed() {
+						wfc.wfQueue.Add(key)
+						priority, creation := getWfPriority(obj)
+						wfc.throttler.Add(key, priority, creation)
+					}
 				}
 			},
 			UpdateFunc: func(old, new interface{}) {
@@ -613,9 +616,13 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 						wfc.metrics.WorkflowResourceVersionRepeated()
 						return
 					}
-					wfc.wfQueue.Add(key)
-					priority, creation := getWfPriority(new)
-					wfc.throttler.Add(key, priority, creation)
+					if !getPhase(newWf).Completed() {
+						wfc.wfQueue.Add(key)
+						priority, creation := getWfPriority(new)
+						wfc.throttler.Add(key, priority, creation)
+					} else {
+						wfc.throttler.Remove(key)
+					}
 				}
 			},
 			DeleteFunc: func(obj interface{}) {
@@ -623,6 +630,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 				// key function.
 				key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 				if err == nil {
+					wf := obj.(*unstructured.Unstructured)
 					wfc.wfQueue.Add(key)
 					wfc.throttler.Remove(key)
 				}
