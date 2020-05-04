@@ -112,10 +112,15 @@ func (s *CLIWithServerSuite) TestArchive() {
 		})
 	s.Run("List", func() {
 		s.Given().
-			RunCli([]string{"archive", "list"}, func(t *testing.T, output string, err error) {
+			RunCli([]string{"archive", "list", "--chunk-size", "1"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.Contains(t, output, "NAMESPACE NAME")
-					assert.Contains(t, output, "argo basic")
+					lines := strings.Split(output, "\n")
+					assert.Contains(t, lines[0], "NAMESPACE")
+					assert.Contains(t, lines[0], "NAME")
+					assert.Contains(t, lines[0], "STATUS")
+					assert.Contains(t, lines[1], "argo")
+					assert.Contains(t, lines[1], "basic")
+					assert.Contains(t, lines[1], "Succeeded")
 				}
 			})
 	})
@@ -191,6 +196,15 @@ func (s *CLIWithServerSuite) TestWorkflowSuspendResumePersistence() {
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})
+}
+
+func (s *CLIWithServerSuite) TestNodeSuspendResumePersistence() {
+	if !s.Persistence.IsEnabled() {
+		// Persistence is disabled for this test, but it is enabled for the Argo Server in this test suite.
+		// When this is the case, this behavior is tested in cli_test.go
+		s.T().SkipNow()
+	}
+	NodeSuspendResumeCommon(s.E2ESuite)
 }
 
 func TestCLIWithServerSuite(t *testing.T) {

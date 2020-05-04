@@ -221,16 +221,6 @@ func (s *CLISuite) TestRoot() {
 				SubmitWorkflow().
 				WaitForWorkflow(20 * time.Second)
 		}
-		s.Given().RunCli([]string{"list"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "NAME")
-				assert.Contains(t, output, "STATUS")
-				assert.Contains(t, output, "AGE")
-				assert.Contains(t, output, "DURATION")
-				assert.Contains(t, output, "PRIORITY")
-			}
-		})
-
 		s.Given().RunCli([]string{"list", "--chunk-size", "1"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "NAME")
@@ -238,9 +228,6 @@ func (s *CLISuite) TestRoot() {
 				assert.Contains(t, output, "AGE")
 				assert.Contains(t, output, "DURATION")
 				assert.Contains(t, output, "PRIORITY")
-
-				// header + 1 workflow + empty line
-				assert.Len(t, strings.Split(output, "\n"), 3)
 			}
 		})
 	})
@@ -307,9 +294,15 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 		})
 }
 
-func (s *CLISuite) TestNodeSuspendResume() {
-	// https://github.com/argoproj/argo/issues/2621
-	s.T().SkipNow()
+func (s *CLISuite) TestNodeSuspendResumeNoPersistence() {
+	if s.Persistence.IsEnabled() {
+		// Persistence is enabled for this test, but it is not enabled for the Argo Server in this test suite.
+		s.T().SkipNow()
+	}
+	NodeSuspendResumeCommon(s.E2ESuite)
+}
+
+func NodeSuspendResumeCommon(s fixtures.E2ESuite) {
 	s.Given().
 		Workflow("@testdata/node-suspend.yaml").
 		When().
@@ -373,7 +366,7 @@ func (s *CLISuite) TestWorkflowDelete() {
 	})
 	s.Run("DeleteCompleted", func() {
 		s.Given().
-			Workflow("@smoke/basic.yaml").
+			Workflow("@testdata/sleep-3s.yaml").
 			When().
 			SubmitWorkflow().
 			Given().
@@ -388,7 +381,7 @@ func (s *CLISuite) TestWorkflowDelete() {
 			Given().
 			RunCli([]string{"delete", "--completed", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.Contains(t, output, "Workflow 'basic' deleted")
+					assert.Contains(t, output, "deleted")
 				}
 			})
 	})

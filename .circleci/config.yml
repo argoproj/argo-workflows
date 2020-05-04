@@ -248,8 +248,7 @@ workflows:
   version: 2
   argo-workflow:
     jobs:
-      - test:
-          context: SonarCloud
+      - test
       - ui
       - codegen
       - e2e-cron
