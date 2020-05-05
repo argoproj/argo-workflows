@@ -12,7 +12,7 @@
   "info": {
     "description": "Argo",
     "title": "Argo",
-    "version": "latest"
+    "version": "v2.8.0-rc3"
   },
   "host": "localhost:2746",
   "paths": {
@@ -289,7 +289,6 @@
         "parameters": [
           {
             "type": "string",
-            "description": "DEPRECATED: This field is ignored.",
             "name": "name",
             "in": "path",
             "required": true
@@ -564,7 +563,6 @@
           },
           {
             "type": "string",
-            "description": "DEPRECATED: This field is ignored.",
             "name": "name",
             "in": "path",
             "required": true
@@ -962,7 +960,6 @@
           },
           {
             "type": "string",
-            "description": "DEPRECATED: This field is ignored.",
             "name": "name",
             "in": "path",
             "required": true
@@ -2003,7 +2000,6 @@
       "type": "object",
       "properties": {
         "name": {
-          "description": "DEPRECATED: This field is ignored.",
           "type": "string"
         },
         "template": {
@@ -3439,7 +3435,6 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
         },
         "name": {
-          "description": "DEPRECATED: This field is ignored.",
           "type": "string"
         },
         "namespace": {
@@ -3699,7 +3694,6 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.CreateOptions"
         },
         "instanceID": {
-          "description": "This field is no longer used.",
           "type": "string"
         },
         "namespace": {
@@ -4119,6 +4113,9 @@
     "io.argoproj.workflow.v1alpha1.WorkflowSubmitRequest": {
       "type": "object",
       "properties": {
+        "createOptions": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.CreateOptions"
+        },
         "namespace": {
           "type": "string"
         },
@@ -4407,7 +4404,6 @@
       "type": "object",
       "properties": {
         "name": {
-          "description": "DEPRECATED: This field is ignored.",
           "type": "string"
         },
         "namespace": {
