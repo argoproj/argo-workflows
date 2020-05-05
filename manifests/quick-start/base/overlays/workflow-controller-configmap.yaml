@@ -15,6 +15,7 @@ data:
   featureFlags: |
     resourcesDuration: true
   metricsConfig: |
+    disableLegacy: true
     enabled: true
     path: /metrics
     port: 9090

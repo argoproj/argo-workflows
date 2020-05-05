@@ -6,7 +6,7 @@ The Workflow Controller Configmap is used to set controller-wide settings.
 
 For a detailed example, please see [`workflow-controller-configmap.yaml`](./workflow-controller-configmap.yaml).
 
-## Setting the Configmap 
+## Setting the Configmap
 
 The configmap should be saved as a K8s Configmap on the cluster in the same namespace as the `workflow-controller`.
 It should then be referenced by the `workflow-controller` as an command argument:
@@ -37,6 +37,8 @@ spec:
         image: argoproj/workflow-controller:latest
         name: workflow-controller
       serviceAccountName: argo
+      nodeSelector:
+              kubernetes.io/os: linux
 ```
 
 ## Alternate Structure
@@ -69,7 +71,7 @@ data:
 ```
 
 In version 2.7+, the `config: |` key is optional. However, if the `config: |` key is not used, all nested maps under top level
-keys should be strings. This makes it easier to generate the map with some configuration management tools like Kustomize. 
+keys should be strings. This makes it easier to generate the map with some configuration management tools like Kustomize.
 
 ```yaml
 # This file describes the config settings available in the workflow controller configmap
@@ -91,5 +93,5 @@ data:                      # "config: |" key is optional in 2.7+!
        key: accessKey
      secretKeySecret:
        name: my-s3-credentials
-       key: secretKey    
+       key: secretKey
 ```

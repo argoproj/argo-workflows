@@ -7,31 +7,31 @@ spec:
   templates:
   - name: a
     container:
-      image:  cowsay:v1
+      image:  argoproj/argosay:v1
       command: [cowsay]
       args: ["hello world"]
   - name: b
     retryStrategy:
       limit: 2
     container:
-      image: alpine:latest
+      image: argoproj/argosay:v1
       command: [sh, -c]
       args: ["sleep 30; echo haha"]
   - name: c
     retryStrategy:
       limit: 3
     container:
-      image: alpine:latest
+      image: argoproj/argosay:v1
       command: [sh, -c]
       args: ["echo intentional failure; exit 2"]
   - name: d
     container:
-      image: alpine:latest
+      image: argoproj/argosay:v1
       command: [sh, -c]
       args: ["echo intentional failure; exit 2"]
   - name: e
     container:
-      image: alpine:latest
+      image: argoproj/argosay:v1
       command: [sh, -c]
       args: ["sleep 30; echo haha"]
   - name: statis

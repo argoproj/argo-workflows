@@ -221,16 +221,6 @@ func (s *CLISuite) TestRoot() {
 				SubmitWorkflow().
 				WaitForWorkflow(20 * time.Second)
 		}
-		s.Given().RunCli([]string{"list"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "NAME")
-				assert.Contains(t, output, "STATUS")
-				assert.Contains(t, output, "AGE")
-				assert.Contains(t, output, "DURATION")
-				assert.Contains(t, output, "PRIORITY")
-			}
-		})
-
 		s.Given().RunCli([]string{"list", "--chunk-size", "1"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "NAME")
@@ -238,9 +228,6 @@ func (s *CLISuite) TestRoot() {
 				assert.Contains(t, output, "AGE")
 				assert.Contains(t, output, "DURATION")
 				assert.Contains(t, output, "PRIORITY")
-
-				// header + 1 workflow + empty line
-				assert.Len(t, strings.Split(output, "\n"), 3)
 			}
 		})
 	})
@@ -280,24 +267,21 @@ func (s *CLISuite) TestRoot() {
 }
 
 func (s *CLISuite) TestWorkflowSuspendResume() {
-	// https://github.com/argoproj/argo/issues/2620
-	s.T().SkipNow()
+	if s.Persistence.IsEnabled() {
+		// Persistence is enabled for this test, but it is not enabled for the Argo Server in this test suite.
+		// When this is the case, this behavior is tested in cli_with_server_test.go
+		s.T().SkipNow()
+	}
 	s.Given().
 		Workflow("@testdata/sleep-3s.yaml").
 		When().
 		SubmitWorkflow().
+		WaitForWorkflowToStart(10*time.Second).
 		RunCli([]string{"suspend", "sleep-3s"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "workflow sleep-3s suspended")
 			}
 		}).
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			if assert.Equal(t, wfv1.NodeRunning, status.Phase) {
-				assert.True(t, status.AnyActiveSuspendNode())
-			}
-		}).
-		When().
 		RunCli([]string{"resume", "sleep-3s"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "workflow sleep-3s resumed")
@@ -310,9 +294,15 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 		})
 }
 
-func (s *CLISuite) TestNodeSuspendResume() {
-	// https://github.com/argoproj/argo/issues/2621
-	s.T().SkipNow()
+func (s *CLISuite) TestNodeSuspendResumeNoPersistence() {
+	if s.Persistence.IsEnabled() {
+		// Persistence is enabled for this test, but it is not enabled for the Argo Server in this test suite.
+		s.T().SkipNow()
+	}
+	NodeSuspendResumeCommon(s.E2ESuite)
+}
+
+func NodeSuspendResumeCommon(s fixtures.E2ESuite) {
 	s.Given().
 		Workflow("@testdata/node-suspend.yaml").
 		When().
@@ -376,7 +366,7 @@ func (s *CLISuite) TestWorkflowDelete() {
 	})
 	s.Run("DeleteCompleted", func() {
 		s.Given().
-			Workflow("@smoke/basic.yaml").
+			Workflow("@testdata/sleep-3s.yaml").
 			When().
 			SubmitWorkflow().
 			Given().
@@ -391,7 +381,7 @@ func (s *CLISuite) TestWorkflowDelete() {
 			Given().
 			RunCli([]string{"delete", "--completed", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.Contains(t, output, "Workflow 'basic' deleted")
+					assert.Contains(t, output, "deleted")
 				}
 			})
 	})
@@ -593,7 +583,7 @@ func (s *CLISuite) TestTemplate() {
 				assert.Contains(t, output, "Created:")
 			}
 		})
-		var templateWorkflowName string
+		var workflowName string
 		s.Given().RunCli([]string{"list"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				r := regexp.MustCompile(`\s+?(workflow-template-whalesay-template-[a-z0-9]+)`)
@@ -601,14 +591,19 @@ func (s *CLISuite) TestTemplate() {
 				if len(res) != 2 {
 					assert.Fail(t, "Internal test error, please report a bug")
 				}
-				templateWorkflowName = res[1]
-			}
-		}).When().Wait(30*time.Second).RunCli([]string{"get", templateWorkflowName}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, templateWorkflowName)
-				assert.Contains(t, output, "Succeeded")
+				workflowName = res[1]
 			}
 		})
+		s.Given().
+			WorkflowName(workflowName).
+			When().
+			WaitForWorkflow(30*time.Second).
+			RunCli([]string{"get", workflowName}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, workflowName)
+					assert.Contains(t, output, "Succeeded")
+				}
+			})
 	})
 	s.Run("Delete", func() {
 		s.Given().RunCli([]string{"template", "delete", "workflow-template-whalesay-template"}, func(t *testing.T, output string, err error) {
