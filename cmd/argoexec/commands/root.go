@@ -40,6 +40,10 @@ func init() {
 }
 
 func initConfig() {
+	log.SetFormatter(&log.TextFormatter{
+		TimestampFormat: "2006-01-02T15:04:05.000Z",
+		FullTimestamp:   true,
+	})
 	cli.SetLogLevel(logLevel)
 	cli.SetGLogLevel(glogLevel)
 }
