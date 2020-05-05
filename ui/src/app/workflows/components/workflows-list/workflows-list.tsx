@@ -22,7 +22,7 @@ import * as classNames from 'classnames';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {formatDuration, wfDuration} from '../../../shared/duration';
-import {defaultPaginationLimit, Pagination, parseLimit} from '../../../shared/pagination';
+import {Pagination, parseLimit} from '../../../shared/pagination';
 import {WorkflowFilters} from '../workflow-filters/workflow-filters';
 
 require('./workflows-list.scss');
@@ -188,6 +188,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         } else {
                             if (index > -1) {
                                 workflows[index] = workflowChange.object;
+                            } else if (!this.state.pagination.limit) {
+                                workflows.unshift(workflowChange.object);
                             }
                         }
                         return {workflows, updated: true};
@@ -214,7 +216,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         if (pagination.offset) {
             params.append('offset', pagination.offset);
         }
-        if (pagination.limit !== defaultPaginationLimit) {
+        if (pagination.limit) {
             params.append('limit', pagination.limit.toString());
         }
         const url = 'workflows/' + namespace + '?' + params.toString();
