@@ -19,6 +19,7 @@ spec:
             withSequence:
               count: "{{workflow.parameters.limit}}"
     - name: dag
+      dag:
         tasks:
           - name: A
             template: whalesay
