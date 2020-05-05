@@ -2,19 +2,30 @@
 @import 'node_modules/@fortawesome/fontawesome-free/scss/variables';
 @import 'node_modules/@fortawesome/fontawesome-free/scss/mixins';
 
+.workflow-dag-render-options-panel {
+    margin:10px;
+    padding:10px;
+display: inline-block;
+    background-color: white;
+    box-shadow: 1px 1px 3px $argo-color-gray-4;
+    a {
+        padding:10px;
+        color: $argo-color-gray-6;
+    }
+}
+
 .workflow-dag {
-    position: relative;
+
     text-align: center;
 
     .line {
         fill: transparent;
         stroke-width: 2px;
-        stroke: $argo-color-gray-5;
+        stroke: $argo-color-gray-4;
     }
 
     .label {
-        stroke: $argo-color-gray-6;
-        font-size: 75%;
+        stroke: $argo-color-gray-7;
         font-weight: lighter;
     }
 

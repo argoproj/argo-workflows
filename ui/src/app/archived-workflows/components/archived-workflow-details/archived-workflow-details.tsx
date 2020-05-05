@@ -9,10 +9,8 @@ import {Loading} from '../../../shared/components/loading';
 import {YamlEditor} from '../../../shared/components/yaml/yaml-editor';
 import {services} from '../../../shared/services';
 import {
-    defaultWorkflowDagRenderOptions,
     WorkflowArtifacts,
     WorkflowDag,
-    WorkflowDagRenderOptions,
     WorkflowLogsViewer,
     WorkflowNodeInfo,
     WorkflowParametersPanel,
@@ -20,13 +18,11 @@ import {
     WorkflowTimeline,
     WorkflowYamlViewer
 } from '../../../workflows/components';
-import {WorkflowDagRenderOptionsPanel} from '../../../workflows/components/workflow-dag/workflow-dag-render-options-panel';
 import {WorkflowYamlPanel} from '../../../workflows/components/workflow-details/workflow-yaml-panel';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 interface State {
-    workflowDagRenderOptions: WorkflowDagRenderOptions;
     workflow?: Workflow;
     links?: Link[];
     error?: Error;
@@ -67,7 +63,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = {workflowDagRenderOptions: defaultWorkflowDagRenderOptions};
+        this.state = {};
     }
 
     public componentDidMount(): void {
@@ -121,12 +117,6 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                     ],
                     tools: (
                         <div className='workflow-details__topbar-buttons'>
-                            {this.tab === 'workflow' && (
-                                <WorkflowDagRenderOptionsPanel
-                                    {...this.state.workflowDagRenderOptions}
-                                    onChange={workflowDagRenderOptions => this.setState({workflowDagRenderOptions})}
-                                />
-                            )}
                             <a className={classNames({active: this.tab === 'summary'})} onClick={() => (this.tab = 'summary')}>
                                 <i className='fa fa-columns' />
                             </a>
@@ -169,12 +159,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                     <div>
                         <div className='workflow-details__graph-container'>
                             {this.tab === 'workflow' ? (
-                                <WorkflowDag
-                                    renderOptions={this.state.workflowDagRenderOptions}
-                                    workflow={this.state.workflow}
-                                    selectedNodeId={this.nodeId}
-                                    nodeClicked={node => (this.nodeId = node.id)}
-                                />
+                                <WorkflowDag workflow={this.state.workflow} selectedNodeId={this.nodeId} nodeClicked={node => (this.nodeId = node.id)} />
                             ) : (
                                 <WorkflowTimeline workflow={this.state.workflow} selectedNodeId={this.nodeId} nodeClicked={node => (this.nodeId = node.id)} />
                             )}

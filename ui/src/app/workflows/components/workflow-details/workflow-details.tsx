@@ -1,4 +1,4 @@
-import {AppContext, NotificationType, Page, SlidingPanel, TopBarFilter} from 'argo-ui';
+import {AppContext, NotificationType, Page, SlidingPanel} from 'argo-ui';
 import * as classNames from 'classnames';
 import * as PropTypes from 'prop-types';
 import * as React from 'react';
@@ -9,11 +9,10 @@ import {Link, NodePhase, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {services} from '../../../shared/services';
 
-import {WorkflowArtifacts, WorkflowDag, WorkflowDagRenderOptions, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowSummaryPanel, WorkflowTimeline, WorkflowYamlViewer} from '..';
+import {WorkflowArtifacts, WorkflowDag, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowSummaryPanel, WorkflowTimeline, WorkflowYamlViewer} from '..';
 import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Consumer, ContextApis} from '../../../shared/context';
 import {Utils} from '../../../shared/utils';
-import {WorkflowDagRenderOptionsPanel} from '../workflow-dag/workflow-dag-render-options-panel';
 import {WorkflowParametersPanel} from '../workflow-parameters-panel';
 import {WorkflowYamlPanel} from './workflow-yaml-panel';
 
@@ -27,23 +26,7 @@ function parseSidePanelParam(param: string) {
     return null;
 }
 
-export const defaultNodesToDisplay = [
-    'phase:Pending',
-    'phase:Running',
-    'phase:Succeeded',
-    'phase:Skipped',
-    'phase:Failed',
-    'phase:Error',
-    'type:Pod',
-    'type:Steps',
-    'type:DAG',
-    'type:Retry',
-    'type:Skipped',
-    'type:Suspend'
-];
-
 interface WorkflowDetailsState {
-    workflowDagRenderOptions: WorkflowDagRenderOptions;
     workflow: Workflow;
     links: Link[];
 }
@@ -72,7 +55,6 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
     constructor(props: RouteComponentProps<any>) {
         super(props);
         this.state = {
-            workflowDagRenderOptions: {horizontal: false, zoom: 1, nodesToDisplay: defaultNodesToDisplay},
             workflow: null,
             links: null
         };
@@ -106,43 +88,13 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
     public render() {
         const selectedNode = this.state.workflow && this.state.workflow.status && this.state.workflow.status.nodes && this.state.workflow.status.nodes[this.selectedNodeId];
         const workflowPhase: NodePhase = this.state.workflow && this.state.workflow.status ? this.state.workflow.status.phase : undefined;
-        const filter: TopBarFilter<string> = {
-            items: [
-                {content: () => <span>Phase</span>},
-                {value: 'phase:Pending', label: 'Pending'},
-                {value: 'phase:Running', label: 'Running'},
-                {value: 'phase:Succeeded', label: 'Succeeded'},
-                {value: 'phase:Skipped', label: 'Skipped'},
-                {value: 'phase:Failed', label: 'Failed'},
-                {value: 'phase:Error', label: 'Error'},
-                {content: () => <span>Type</span>},
-                {value: 'type:Pod', label: 'Pod'},
-                {value: 'type:Steps', label: 'Steps'},
-                {value: 'type:DAG', label: 'DAG'},
-                {value: 'type:Retry', label: 'Retry'},
-                {value: 'type:Skipped', label: 'Skipped'},
-                {value: 'type:Suspend', label: 'Suspend'},
-                {value: 'type:TaskGroup', label: 'TaskGroup'},
-                {value: 'type:StepGroup', label: 'StepGroup'}
-            ],
-            selectedValues: this.state.workflowDagRenderOptions.nodesToDisplay,
-            selectionChanged: items => {
-                this.setState({
-                    workflowDagRenderOptions: {
-                        nodesToDisplay: items,
-                        horizontal: this.state.workflowDagRenderOptions.horizontal,
-                        zoom: this.state.workflowDagRenderOptions.zoom
-                    }
-                });
-            }
-        };
+
         return (
             <Consumer>
                 {ctx => (
                     <Page
                         title={'Workflow Details'}
                         toolbar={{
-                            filter,
                             breadcrumbs: [
                                 {
                                     title: 'Workflows',
@@ -155,12 +107,6 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                             },
                             tools: (
                                 <div className='workflow-details__topbar-buttons'>
-                                    {this.selectedTabKey === 'workflow' && (
-                                        <WorkflowDagRenderOptionsPanel
-                                            {...this.state.workflowDagRenderOptions}
-                                            onChange={workflowDagRenderOptions => this.setState({workflowDagRenderOptions})}
-                                        />
-                                    )}
                                     <a className={classNames({active: this.selectedTabKey === 'summary'})} onClick={() => this.selectTab('summary')}>
                                         <i className='fa fa-columns' />
                                         {this.state.workflow && this.state.workflow.status.conditions && hasWarningConditionBadge(this.state.workflow.status.conditions) && (
@@ -182,12 +128,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                                     <div>
                                         <div className='workflow-details__graph-container'>
                                             {(this.selectedTabKey === 'workflow' && (
-                                                <WorkflowDag
-                                                    renderOptions={this.state.workflowDagRenderOptions}
-                                                    workflow={this.state.workflow}
-                                                    selectedNodeId={this.selectedNodeId}
-                                                    nodeClicked={node => this.selectNode(node.id)}
-                                                />
+                                                <WorkflowDag workflow={this.state.workflow} selectedNodeId={this.selectedNodeId} nodeClicked={node => this.selectNode(node.id)} />
                                             )) || (
                                                 <WorkflowTimeline
                                                     workflow={this.state.workflow}
