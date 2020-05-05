@@ -3,6 +3,7 @@ import * as dagre from 'dagre';
 import * as React from 'react';
 
 import * as models from '../../../../models';
+import {NodePhase} from '../../../../models';
 import {Utils} from '../../../shared/utils';
 import {defaultNodesToDisplay} from '../workflow-details/workflow-details';
 
@@ -25,14 +26,6 @@ export interface WorkflowDagProps {
     renderOptions: WorkflowDagRenderOptions;
 }
 
-interface Line {
-    x1: number;
-    y1: number;
-    x2: number;
-    y2: number;
-    noArrow: boolean;
-}
-
 require('./workflow-dag.scss');
 
 export class WorkflowDag extends React.Component<WorkflowDagProps> {
@@ -40,22 +33,61 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
         return this.props.renderOptions.zoom || 1;
     }
 
-    private get nodeWidth() {
+    private get nodeSize() {
         return 32 / this.zoom;
     }
-
-    private get nodeHeight() {
-        return 32 / this.zoom;
+    
+    private static iconPath(phase: NodePhase, suspended: boolean) {
+        if (suspended) {
+            return (
+                <path
+                    fill='currentColor'
+                    d='M144 479H48c-26.5 0-48-21.5-48-48V79c0-26.5 21.5-48 48-48h96c26.5 0 48 21.5 48 48v352c0 26.5-21.5 48-48 48zm304-48V79c0-26.5-21.5-48-48-48h-96c-26.5 0-48 21.5-48 48v352c0 26.5 21.5 48 48 48h96c26.5 0 48-21.5 48-48z'
+                />
+            );
+        }
+        switch (phase) {
+            case 'Pending':
+                return (
+                    <path
+                        fill='currentColor'
+                        d='M256,8C119,8,8,119,8,256S119,504,256,504,504,393,504,256,393,8,256,8Zm92.49,313h0l-20,25a16,16,0,0,1-22.49,2.5h0l-67-49.72a40,40,0,0,1-15-31.23V112a16,16,0,0,1,16-16h32a16,16,0,0,1,16,16V256l58,42.5A16,16,0,0,1,348.49,321Z'
+                    />
+                );
+            case 'Failed':
+            case 'Error':
+                return (
+                    <path
+                        fill='currentColor'
+                        d='M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z'
+                    />
+                );
+            case 'Skipped':
+            case 'Succeeded':
+                return (
+                    <path
+                        fill='currentColor'
+                        d='M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.401c-9.998 9.997-26.207 9.997-36.204-.001z'
+                    />
+                );
+            case 'Running':
+                return (
+                    <path
+                        fill='currentColor'
+                        d='M288 39.056v16.659c0 10.804 7.281 20.159 17.686 23.066C383.204 100.434 440 171.518 440 256c0 101.689-82.295 184-184 184-101.689 0-184-82.295-184-184 0-84.47 56.786-155.564 134.312-177.219C216.719 75.874 224 66.517 224 55.712V39.064c0-15.709-14.834-27.153-30.046-23.234C86.603 43.482 7.394 141.206 8.003 257.332c.72 137.052 111.477 246.956 248.531 246.667C393.255 503.711 504 392.788 504 256c0-115.633-79.14-212.779-186.211-240.236C302.678 11.889 288 23.456 288 39.056z'
+                    />
+                );
+        }
     }
 
     public render() {
         const graph = new dagre.graphlib.Graph();
         // https://github.com/dagrejs/dagre/wiki
         graph.setGraph({
-            edgesep: 20 / this.zoom,
-            nodesep: 50 / this.zoom,
+            edgesep: this.nodeSize,
+            nodesep: this.nodeSize * 2,
             rankdir: this.props.renderOptions.horizontal ? 'LR' : 'TB',
-            ranksep: 50 / this.zoom
+            ranksep: this.nodeSize * 2
         });
         graph.setDefaultEdgeLabel(() => ({}));
         const nodes = (this.props.workflow.status && this.props.workflow.status.nodes) || {};
@@ -64,7 +96,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
             if (this.filterNode(node)) {
                 graph.setNode(node.id, {label, width: 1, height: 1, ...nodes[node.id]});
             } else {
-                graph.setNode(node.id, {label, width: this.nodeWidth, height: this.nodeHeight, ...nodes[node.id]});
+                graph.setNode(node.id, {label, width: this.nodeSize, height: this.nodeSize, ...nodes[node.id]});
             }
         });
         Object.keys(nodes).forEach(nodeId => {
@@ -82,99 +114,50 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
         }
 
         dagre.layout(graph);
-        const edges: {from: string; to: string; lines: Line[]}[] = [];
-        graph.edges().forEach(edgeInfo => {
-            const edge = graph.edge(edgeInfo);
-            const lines: Line[] = [];
-            if (edge.points.length > 1) {
-                for (let i = 1; i < edge.points.length; i++) {
-                    const toNode = nodes[edgeInfo.w];
-                    lines.push({
-                        x1: edge.points[i - 1].x,
-                        y1: edge.points[i - 1].y,
-                        x2: edge.points[i].x,
-                        y2: edge.points[i].y,
-                        noArrow: this.filterNode(toNode)
-                    });
-                }
-            }
-            edges.push({from: edgeInfo.v, to: edgeInfo.w, lines});
-        });
         const size = this.getGraphSize(graph.nodes().map(id => graph.node(id)));
         return (
-            <div className='workflow-dag' style={{width: size.width, height: size.height}}>
-                {graph.nodes().map(id => {
-                    const node = graph.node(id) as models.NodeStatus & dagre.Node;
-                    const small = this.filterNode(node);
-                    return (
-                        <div key={`node/${id}`}>
-                            <div
-                                key='label'
-                                title={node.label}
-                                className={classNames(
-                                    'workflow-dag__node',
-                                    `fas`,
-                                    'workflow-dag__node-status',
-                                    'workflow-dag__node-status--' + (Utils.isNodeSuspended(node) ? 'suspended' : node.phase.toLocaleLowerCase()),
-                                    {
-                                        active: node.id === this.props.selectedNodeId,
-                                        virtual: this.filterNode(node),
-                                        small
-                                    }
-                                )}
-                                style={{
-                                    left: node.x - node.width / 2,
-                                    top: node.y - node.height / 2,
-                                    width: node.width,
-                                    height: node.height,
-                                    lineHeight: this.nodeHeight + 'px',
-                                    fontSize: 1 / this.zoom + 'em',
-                                    borderRadius: this.nodeWidth / 2 + 'px'
-                                }}
-                                onClick={() => this.props.nodeClicked && this.props.nodeClicked(node)}
-                            />
-                            {!small && (
-                                <div
-                                    key='title'
-                                    className='workflow-dag__node-title'
-                                    style={{
-                                        position: 'absolute',
-                                        left: node.x - node.width,
-                                        top: node.y + node.height / 2,
-                                        width: node.width * 2,
-                                        lineHeight: this.nodeHeight + 'px',
-                                        textAlign: 'center',
-                                        fontSize: 0.75 / this.zoom + 'em'
-                                    }}>
-                                    {node.label}
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
-                {edges.map(edge => (
-                    <div key={`edge/${edge.from},${edge.to}`} className='workflow-dag__edge'>
-                        {edge.lines.map(line => {
-                            const distance = Math.sqrt(Math.pow(line.x1 - line.x2, 2) + Math.pow(line.y1 - line.y2, 2));
-                            const xMid = (line.x1 + line.x2) / 2;
-                            const yMid = (line.y1 + line.y2) / 2;
-                            const angle = (Math.atan2(line.y1 - line.y2, line.x1 - line.x2) * 180) / Math.PI;
-                            return (
-                                <div
-                                    className={classNames('workflow-dag__line', {'workflow-dag__line--no-arrow': line.noArrow})}
-                                    key={`line/${line.x1},line-${line.x2}->${line.y1},${line.y2}`}
-                                    style={{
-                                        width: distance,
-                                        left: xMid - distance / 2,
-                                        top: yMid,
-                                        transform: ` rotate(${angle}deg)`
-                                    }}
+            <svg className='workflow-dag' style={{width: size.width, height: size.height}}>
+                <g transform={`translate(${this.nodeSize},${this.nodeSize})`}>
+                    {graph
+                        .edges()
+                        .map(edge => graph.edge(edge))
+                        .map(edge => edge.points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(', '))
+                        .map(points => (
+                            <path key={`line-${points}`} d={points} className='line' />
+                        ))}
+                    {graph.nodes().map(id => {
+                        const node = graph.node(id) as models.NodeStatus & dagre.Node;
+                        return (
+                            <g key={`node/${id}`} transform={`translate(${node.x},${node.y})`}>
+                                <circle
+                                    r={node.width / 2}
+                                    className={classNames(
+                                        'workflow-dag__node',
+                                        'workflow-dag__node-status',
+                                        'workflow-dag__node-status--' + (Utils.isNodeSuspended(node) ? 'suspended' : node.phase.toLocaleLowerCase()),
+                                        {
+                                            active: node.id === this.props.selectedNodeId
+                                        }
+                                    )}
+                                    onClick={() => this.props.nodeClicked && this.props.nodeClicked(node)}
                                 />
-                            );
-                        })}
-                    </div>
-                ))}
-            </div>
+                                {!this.filterNode(node) && (
+                                    <>
+                                        <g transform={`translate(-${node.width / 4},-${node.height / 4})`}>
+                                            <g transform={`scale(${0.032 / this.zoom})`} color='white'>
+                                                {WorkflowDag.iconPath(node.phase, Utils.isNodeSuspended(node))}
+                                            </g>
+                                        </g>
+                                        <g transform={`translate(-${node.width},${node.height})`}>
+                                            <text fontSize={'66%'}>{node.name.substr(0, 14)}...</text>
+                                        </g>
+                                    </>
+                                )}
+                            </g>
+                        );
+                    })}
+                </g>
+            </svg>
         );
     }
 
@@ -210,6 +193,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
             width = Math.max(node.x + node.width / 2, width);
             height = Math.max(node.y + node.height / 2, height);
         });
-        return {width, height};
+        return {width: width + this.nodeSize * 2, height: height + (this.nodeSize * 5) / 2};
     }
 }
