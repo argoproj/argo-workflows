@@ -226,9 +226,10 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                 <div className='argo-table-list'>
                     <div className='row argo-table-list__head'>
                         <div className='columns small-1' />
-                        <div className='columns small-4'>NAME</div>
-                        <div className='columns small-3'>NAMESPACE</div>
+                        <div className='columns small-3'>NAME</div>
+                        <div className='columns small-2'>NAMESPACE</div>
                         <div className='columns small-2'>STARTED</div>
+                        <div className='columns small-2'>FINISHED</div>
                         <div className='columns small-2'>DURATION</div>
                     </div>
                     {this.state.workflows.map(w => (
@@ -236,10 +237,12 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                             <div className='columns small-1'>
                                 <i className={classNames('fa', Utils.statusIconClasses(w.status.phase))} />
                             </div>
-                            <div className='columns small-4'>{w.metadata.name}</div>
-                            <div className='columns small-3'>{w.metadata.namespace}</div>
+                            <div className='columns small-3'>{w.metadata.name}</div>
+                            <div className='columns small-2'>{w.metadata.namespace}</div>
                             <div className='columns small-2'>
                                 <Timestamp date={w.status.startedAt} />
+                            </div>
+                            <div className='columns small-2'>
                                 <Timestamp date={w.status.finishedAt} />
                             </div>
                             <div className='columns small-2'>{formatDuration(wfDuration(w.status))}</div>
