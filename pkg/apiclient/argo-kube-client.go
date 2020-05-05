@@ -21,15 +21,17 @@ import (
 	workflowserver "github.com/argoproj/argo/server/workflow"
 	workflowtemplateserver "github.com/argoproj/argo/server/workflowtemplate"
 	"github.com/argoproj/argo/util/help"
+	"github.com/argoproj/argo/util/instanceid"
 )
 
 var argoKubeOffloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 var NoArgoServerErr = fmt.Errorf("this is impossible if you are not using the Argo Server, see " + help.CLI)
 
 type argoKubeClient struct {
+	instanceIDService instanceid.Service
 }
 
-func newArgoKubeClient(clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
+func newArgoKubeClient(clientConfig clientcmd.ClientConfig, instanceIDService instanceid.Service) (context.Context, Client, error) {
 	restConfig, err := clientConfig.ClientConfig()
 	if err != nil {
 		return nil, nil, err
@@ -47,18 +49,19 @@ func newArgoKubeClient(clientConfig clientcmd.ClientConfig) (context.Context, Cl
 	if err != nil {
 		return nil, nil, err
 	}
-	return ctx, &argoKubeClient{}, nil
+	return ctx, &argoKubeClient{instanceIDService}, nil
 }
 
 func (a *argoKubeClient) NewWorkflowServiceClient() workflowpkg.WorkflowServiceClient {
-	return &argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer("", argoKubeOffloadNodeStatusRepo)}
+	return &argoKubeWorkflowServiceClient{workflowserver.NewWorkflowServer(a.instanceIDService, argoKubeOffloadNodeStatusRepo)}
 }
 
 func (a *argoKubeClient) NewCronWorkflowServiceClient() cronworkflow.CronWorkflowServiceClient {
-	return &argoKubeCronWorkflowServiceClient{cronworkflowserver.NewCronWorkflowServer("")}
+	return &argoKubeCronWorkflowServiceClient{cronworkflowserver.NewCronWorkflowServer(a.instanceIDService)}
 }
+
 func (a *argoKubeClient) NewWorkflowTemplateServiceClient() workflowtemplate.WorkflowTemplateServiceClient {
-	return &argoKubeWorkflowTemplateServiceClient{workflowtemplateserver.NewWorkflowTemplateServer()}
+	return &argoKubeWorkflowTemplateServiceClient{workflowtemplateserver.NewWorkflowTemplateServer(a.instanceIDService)}
 }
 
 func (a *argoKubeClient) NewArchivedWorkflowServiceClient() (workflowarchivepkg.ArchivedWorkflowServiceClient, error) {
@@ -70,5 +73,5 @@ func (a *argoKubeClient) NewInfoServiceClient() (infopkg.InfoServiceClient, erro
 }
 
 func (a *argoKubeClient) NewClusterWorkflowTemplateServiceClient() clusterworkflowtemplate.ClusterWorkflowTemplateServiceClient {
-	return &argoKubeWorkflowClusterTemplateServiceClient{clusterworkflowtmplserver.NewClusterWorkflowTemplateServer()}
+	return &argoKubeWorkflowClusterTemplateServiceClient{clusterworkflowtmplserver.NewClusterWorkflowTemplateServer(a.instanceIDService)}
 }

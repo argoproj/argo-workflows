@@ -72,6 +72,7 @@ DB                    ?= postgres
 K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 # which components to start, useful if you want to disable them to debug
 COMPONENTS            := controller,argo-server
+LOG_LEVEL             := debug
 
 ifeq ($(CI),true)
 TEST_OPTS := -coverprofile=coverage.out
@@ -338,18 +339,9 @@ pull-build-images:
 	./hack/pull-build-images.sh
 
 .PHONY: test-images
-test-images: dist/cowsay-v1 dist/python-alpine3.6
-
-dist/cowsay-v1:
-	docker build -t cowsay:v1 test/e2e/images/cowsay
-ifeq ($(K3D),true)
-	k3d import-images cowsay:v1
-endif
-	touch dist/cowsay-v1
-
-dist/python-alpine3.6:
+test-images:
+	docker pull argoproj/argosay:v1
 	docker pull python:alpine3.6
-	touch dist/python-alpine3.6
 
 .PHONY: stop
 stop:
@@ -365,10 +357,10 @@ start-aux:
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
 ifneq ($(findstring controller,$(COMPONENTS)),)
-	ALWAYS_OFFLOAD_NODE_STATUS=true OFFLOAD_NODE_STATUS_TTL=30s WORKFLOW_GC_PERIOD=30s UPPERIO_DB_DEBUG=1 ARCHIVED_WORKFLOW_GC_PERIOD=30s ./dist/workflow-controller --executor-image argoproj/argoexec:$(VERSION) --namespaced --loglevel debug &
+	ALWAYS_OFFLOAD_NODE_STATUS=true OFFLOAD_NODE_STATUS_TTL=30s WORKFLOW_GC_PERIOD=30s UPPERIO_DB_DEBUG=1 ARCHIVED_WORKFLOW_GC_PERIOD=30s ./dist/workflow-controller --executor-image argoproj/argoexec:$(VERSION) --namespaced --loglevel $(LOG_LEVEL) &
 endif
 ifneq ($(findstring argo-server,$(COMPONENTS)),)
-	UPPERIO_DB_DEBUG=1 ./dist/argo -v server --namespaced --auth-mode client --secure &
+	UPPERIO_DB_DEBUG=1 ./dist/argo --loglevel $(LOG_LEVEL) server --namespaced --auth-mode client --secure &
 endif
 
 .PHONY: start
@@ -468,13 +460,22 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go:
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
 	$(call restore_go_mod)
 
-pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go
+pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	go run ./hack secondaryswaggergen
 
-$(SWAGGER_FILES): pkg/apiclient/_.secondary.swagger.json proto 
+dist/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
+	swagger mixin -c 680 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > dist/swagger.json
 
-api/openapi-spec/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
-	swagger mixin -c 680 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > api/openapi-spec/swagger.json
+dist/kubernetes.swagger.json:
+	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.15/api/openapi-spec/swagger.json
+
+dist/kubeified.swagger.json: dist/swagger.json dist/kubernetes.swagger.json hack/kubeifyswagger.go
+	go run ./hack kubeifyswagger dist/swagger.json dist/kubeified.swagger.json
+
+api/openapi-spec/swagger.json: dist/kubeified.swagger.json
+	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json > api/openapi-spec/swagger.json
+	swagger validate api/openapi-spec/swagger.json
+	go test ./api/openapi-spec
 
 .PHONY: docs
 docs: swagger
