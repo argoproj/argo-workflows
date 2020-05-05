@@ -125,11 +125,11 @@ func (m migrate) Exec(ctx context.Context) error {
 			ansiSQLChange(`alter table argo_archived_workflows alter column workflow set not null`),
 		),
 		ternary(dbType == MySQL,
-			ansiSQLChange(`alter table argo_archived_workflows modify column startedat timestamp not null`),
+			ansiSQLChange(`alter table argo_archived_workflows modify column startedat timestamp not null default CURRENT_TIMESTAMP`),
 			ansiSQLChange(`alter table argo_archived_workflows alter column startedat set not null`),
 		),
 		ternary(dbType == MySQL,
-			ansiSQLChange(`alter table argo_archived_workflows modify column finishedat timestamp not null`),
+			ansiSQLChange(`alter table argo_archived_workflows modify column finishedat timestamp not null default CURRENT_TIMESTAMP`),
 			ansiSQLChange(`alter table argo_archived_workflows alter column finishedat set not null`),
 		),
 		ansiSQLChange(`alter table argo_archived_workflows add clustername varchar(64)`), // DNS entry can only be max 63 bytes

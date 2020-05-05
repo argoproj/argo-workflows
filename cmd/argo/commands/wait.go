@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"sync"
 
@@ -78,20 +79,13 @@ func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Cont
 	}
 	for {
 		event, err := stream.Recv()
-		if err != nil {
-			errors.CheckError(err)
-			break
-		}
-		wf := event.Object
-		if wf == nil {
+		if err == io.EOF {
 			log.Debug("Re-establishing workflow watch")
 			stream, err = serviceClient.WatchWorkflows(ctx, req)
-			if err != nil {
-				errors.CheckError(err)
-				return false
-			}
-			continue
+			errors.CheckError(err)
 		}
+		errors.CheckError(err)
+		wf := event.Object
 		if !wf.Status.FinishedAt.IsZero() {
 			if !quiet {
 				fmt.Printf("%s %s at %v\n", wfName, wf.Status.Phase, wf.Status.FinishedAt)
@@ -102,5 +96,4 @@ func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Cont
 			return true
 		}
 	}
-	return true
 }

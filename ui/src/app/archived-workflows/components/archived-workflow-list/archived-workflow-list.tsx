@@ -15,7 +15,7 @@ import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {formatDuration, wfDuration} from '../../../shared/duration';
 import {exampleWorkflow} from '../../../shared/examples';
-import {defaultPaginationLimit, Pagination, parseLimit} from '../../../shared/pagination';
+import {Pagination, parseLimit} from '../../../shared/pagination';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 import {ArchivedWorkflowFilters} from '../archived-workflow-filters/archived-workflow-filters';
@@ -34,6 +34,8 @@ interface State {
     error?: Error;
 }
 
+const defaultPaginationLimit = 10;
+
 export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, State> {
     private get wfInput() {
         return Utils.tryJsonParse(this.queryParam('new'));
@@ -43,7 +45,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         super(props, context);
         this.state = {
             loading: true,
-            pagination: {offset: this.queryParam('offset'), limit: parseLimit(this.queryParam('limit'))},
+            pagination: {offset: this.queryParam('offset'), limit: parseLimit(this.queryParam('limit')) || defaultPaginationLimit},
             initialized: false,
             managedNamespace: false,
             namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || '',
