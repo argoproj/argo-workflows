@@ -724,17 +724,10 @@ func TestTerminateWorkflow(t *testing.T) {
 		Namespace: wf.Namespace,
 	}
 	wf, err = server.TerminateWorkflow(ctx, &rsmWfReq)
-	assert.NotNil(t, wf)
-	assert.Equal(t, v1alpha1.ShutdownStrategyTerminate, wf.Spec.Shutdown)
-	assert.Nil(t, err)
+	if assert.NoError(t, err) {
+		assert.NotNil(t, wf)
 
-	rsmWfReq = workflowpkg.WorkflowTerminateRequest{
-		Name:      "hello-world-9tql2-not",
-		Namespace: "workflows",
 	}
-	wf, err = server.TerminateWorkflow(ctx, &rsmWfReq)
-	assert.Nil(t, wf)
-	assert.NotNil(t, err)
 }
 
 func TestStopWorkflow(t *testing.T) {

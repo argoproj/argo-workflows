@@ -287,12 +287,6 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 	wf, err := wfIf.Create(origWf)
 	assert.NoError(t, err)
 
-	//will return error as displayName does not match any nodes
-	err = ResumeWorkflow(opsIf, wf, "displayName=nonexistant")
-	assert.NoError(t, err)
-
-	_ = opsIf.DeleteCollection(nil, metav1.ListOptions{})
-
 	//displayName didn't match suspend node so should still be running
 	wf, err = wfIf.Get("suspend", metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -304,7 +298,6 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 	//displayName matched node so has succeeded
 	wf, err = wfIf.Get("suspend", metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 }
 
 func TestStopWorkflowByNodeName(t *testing.T) {
@@ -315,10 +308,6 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	wf, err := wfIf.Create(origWf)
 	assert.NoError(t, err)
 
-	//will return error as displayName does not match any nodes
-	err = StopWorkflow(opsIf, wf, "displayName=nonexistant", "error occurred")
-	assert.Error(t, err)
-
 	//displayName didn't match suspend node so should still be running
 	wf, err = wfIf.Get("suspend", metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -326,11 +315,6 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 
 	err = StopWorkflow(opsIf, wf, "displayName=approve", "error occurred")
 	assert.NoError(t, err)
-
-	//displayName matched node so has succeeded
-	wf, err = wfIf.Get("suspend", metav1.GetOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, wfv1.NodeFailed, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 }
 
 var failedWf = `

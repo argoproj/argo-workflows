@@ -670,7 +670,7 @@ func IsWorkflowSuspended(wf *wfv1.Workflow) bool {
 	return false
 }
 
-func TerminateWorkflowByName(){
+func TerminateWorkflowByName() {
 
 }
 
