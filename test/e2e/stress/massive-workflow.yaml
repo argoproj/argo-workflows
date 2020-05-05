@@ -1,18 +1,23 @@
 # massive workflows
-# 500 DAGs with 9 tasks a piece
+#  DAGs with 9 tasks a piece
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: massive-workflow
 spec:
   entrypoint: main
+  arguments:
+    parameters:
+      - name: limit
+        value: 1000
+
   templates:
     - name: main
       steps:
         - - name: dag
             template: dag
             withSequence:
-              count: "500"
+              count: "{{workflow.parameters.limit}}"
     - name: dag
       dag:
         tasks:
@@ -44,4 +49,6 @@ spec:
             dependencies: [D, E, F]
     - name: whalesay
       container:
-        image: docker/whalesay:latest
+        image: argoproj/argosay:v1
+      command: [sh, -c]
+      args: ["echo sleeping 1s; sleep 1"]
