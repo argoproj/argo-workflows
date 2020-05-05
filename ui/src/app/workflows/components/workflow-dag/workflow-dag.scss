@@ -4,12 +4,18 @@
 
 .workflow-dag {
     position: relative;
+    text-align: center;
 
     .line {
         fill: transparent;
         stroke-width: 2px;
         stroke: $argo-color-gray-5;
+    }
 
+    .label {
+        stroke: $argo-color-gray-6;
+        font-size: 75%;
+        font-weight: lighter;
     }
 
     &__node {
@@ -40,5 +46,4 @@
             fill: $argo-color-gray-4;
         }
     }
-
 }

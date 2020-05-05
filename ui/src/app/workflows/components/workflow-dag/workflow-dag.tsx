@@ -115,14 +115,15 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
         dagre.layout(graph);
         const size = this.getGraphSize(graph.nodes().map(id => graph.node(id)));
         return (
-            <svg className='workflow-dag' style={{width: size.width, height: size.height}}>
+          <div className='workflow-dag' >
+            <svg style={{width: size.width, height: size.height}}>
                 <g transform={`translate(${this.nodeSize},${this.nodeSize})`}>
                     {graph
                         .edges()
                         .map(edge => graph.edge(edge))
                         .map(edge => edge.points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(', '))
                         .map(points => (
-                            <path key={`line-${points}`} d={points} className='line' />
+                            <path key={`line/${points}`} d={points} className='line' />
                         ))}
                     {graph.nodes().map(id => {
                         const node = graph.node(id) as models.NodeStatus & dagre.Node;
@@ -143,8 +144,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
                                 {!this.filterNode(node) && (
                                     <>
                                         {this.icon(node.phase, Utils.isNodeSuspended(node))}
-                                        <g transform={`translate(-${node.width},${node.height})`}>
-                                            <text fontSize={'66%'}>{node.name.substr(0, 14)}...</text>
+                                        <g transform={`translate(0,${node.height})`}>
+                                            <text textAnchor='middle' className='label'>{WorkflowDag.truncate(node.label)}</text>
                                         </g>
                                     </>
                                 )}
@@ -153,7 +154,13 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
                     })}
                 </g>
             </svg>
+          </div>
         );
+    }
+
+    private static truncate(label:string) {
+        const number = 16;
+        return label.length <= number ? label : label.substr(0, number-3)+"...";
     }
 
     private icon(phase: NodePhase, suspended: boolean) {
@@ -198,9 +205,9 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
         let width = 0;
         let height = 0;
         nodes.forEach(node => {
-            width = Math.max(node.x + node.width / 2, width);
-            height = Math.max(node.y + node.height / 2, height);
+            width = Math.max(node.x + node.width , width);
+            height = Math.max(node.y + node.height , height);
         });
-        return {width: width + this.nodeSize * 2, height: height + (this.nodeSize * 5) / 2};
+        return {width: width + this.nodeSize * 2, height: height + this.nodeSize * 2};
     }
 }
