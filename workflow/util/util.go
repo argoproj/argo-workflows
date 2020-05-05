@@ -301,7 +301,7 @@ func SuspendWorkflow(opIf v1alpha1.WorkflowOpInterface, wf *wfv1.Workflow) error
 		_, err := opIf.Create(&wfv1.WorkflowOp{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName:    wf.Name + "-",
-				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)))},
+				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))},
 			},
 			Spec: wfv1.WorkflowOpSpec{Suspend: &wfv1.SuspendOp{}},
 		})
@@ -317,7 +317,7 @@ func ResumeWorkflow(opIf v1alpha1.WorkflowOpInterface, wf *wfv1.Workflow, nodeFi
 		_, err := opIf.Create(&wfv1.WorkflowOp{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName:    wf.Name + "-",
-				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)))},
+				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))},
 			},
 			Spec: wfv1.WorkflowOpSpec{
 				Resume: &wfv1.ResumeOp{NodeSelector: nodeFieldSelector},
@@ -676,7 +676,7 @@ func TerminateWorkflow(opIf v1alpha1.WorkflowOpInterface, wf *wfv1.Workflow) err
 		_, err := opIf.Create(&wfv1.WorkflowOp{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName:    wf.Name + "-",
-				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)))},
+				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))},
 			},
 			Spec: wfv1.WorkflowOpSpec{
 				Shutdown: &wfv1.ShutdownOp{ShutdownStrategy: wfv1.ShutdownStrategyTerminate},
@@ -693,7 +693,7 @@ func StopWorkflow(opIf v1alpha1.WorkflowOpInterface, wf *wfv1.Workflow, nodeFiel
 		_, err := opIf.Create(&wfv1.WorkflowOp{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName:    wf.Name + "-",
-				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)))},
+				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind))},
 			},
 			Spec: wfv1.WorkflowOpSpec{Shutdown: &wfv1.ShutdownOp{
 				ShutdownStrategy: wfv1.ShutdownStrategyStop,

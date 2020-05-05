@@ -284,11 +284,11 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := unmarshalWF(suspendedWf)
 
-	wf, err := wfIf.Create(origWf)
+	_, err := wfIf.Create(origWf)
 	assert.NoError(t, err)
 
 	//displayName didn't match suspend node so should still be running
-	wf, err = wfIf.Get("suspend", metav1.GetOptions{})
+	wf, err := wfIf.Get("suspend", metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
@@ -296,7 +296,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 	assert.NoError(t, err)
 
 	//displayName matched node so has succeeded
-	wf, err = wfIf.Get("suspend", metav1.GetOptions{})
+	_, err = wfIf.Get("suspend", metav1.GetOptions{})
 	assert.NoError(t, err)
 }
 
@@ -305,11 +305,11 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	wfIf := fakeClientset.NewSimpleClientset().ArgoprojV1alpha1().Workflows("")
 	origWf := unmarshalWF(suspendedWf)
 
-	wf, err := wfIf.Create(origWf)
+	_, err := wfIf.Create(origWf)
 	assert.NoError(t, err)
 
 	//displayName didn't match suspend node so should still be running
-	wf, err = wfIf.Get("suspend", metav1.GetOptions{})
+	wf, err := wfIf.Get("suspend", metav1.GetOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
