@@ -88,3 +88,12 @@ rules:
     - create
     - get
     - delete
+- apiGroups:
+    - argoproj.io
+  resources:
+    - workflowopss
+  verbs:
+    - get
+    - list
+    - watch
+    - delete

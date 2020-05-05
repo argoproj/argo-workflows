@@ -272,6 +272,15 @@ rules:
   - create
   - get
   - delete
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowopss
+  verbs:
+  - get
+  - list
+  - watch
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -318,6 +327,12 @@ rules:
   - update
   - patch
   - delete
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowopss
+  verbs:
+  - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
