@@ -10,6 +10,9 @@ spec:
     - name: limit
       value: 1000
 
+  podGC:
+    strategy: OnPodSuccess
+
   templates:
   - name: pod-limits
     steps:
