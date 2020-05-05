@@ -36,7 +36,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
     private get nodeSize() {
         return 32 / this.zoom;
     }
-    
     private static iconPath(phase: NodePhase, suspended: boolean) {
         if (suspended) {
             return (
@@ -143,11 +142,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
                                 />
                                 {!this.filterNode(node) && (
                                     <>
-                                        <g transform={`translate(-${node.width / 4},-${node.height / 4})`}>
-                                            <g transform={`scale(${0.032 / this.zoom})`} color='white'>
-                                                {WorkflowDag.iconPath(node.phase, Utils.isNodeSuspended(node))}
-                                            </g>
-                                        </g>
+                                        {this.icon(node.phase, Utils.isNodeSuspended(node))}
                                         <g transform={`translate(-${node.width},${node.height})`}>
                                             <text fontSize={'66%'}>{node.name.substr(0, 14)}...</text>
                                         </g>
@@ -158,6 +153,19 @@ export class WorkflowDag extends React.Component<WorkflowDagProps> {
                     })}
                 </g>
             </svg>
+        );
+    }
+
+    private icon(phase: NodePhase, suspended: boolean) {
+        return (
+            <g>
+                <g transform={`translate(-${this.nodeSize / 4},-${this.nodeSize / 4}), scale(${0.032 / this.zoom})`} color='white'>
+                    {WorkflowDag.iconPath(phase, suspended)}
+                </g>
+                {phase === 'Running' && (
+                    <animateTransform attributeType='xml' attributeName='transform' type='rotate' from='0 0 0 ' to='360 0 0' dur='1s' additive='sum' repeatCount='indefinite' />
+                )}
+            </g>
         );
     }
 
