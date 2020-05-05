@@ -19,7 +19,6 @@ spec:
             withSequence:
               count: "{{workflow.parameters.limit}}"
     - name: dag
-      dag:ui/src/app/workflows/components/workflow-dag/workflow-dag.scss
         tasks:
           - name: A
             template: whalesay
