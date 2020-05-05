@@ -161,7 +161,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         workflowList
             .then(wfList => {
                 this.setState({
-                    workflows: wfList.items.sort(Utils.workflowFinishTimeSorter) || [],
+                    workflows: wfList.items || [],
                     pagination: {offset: pagination.offset, limit: pagination.limit, nextOffset: wfList.metadata.continue},
                     namespace: newNamespace,
                     selectedPhases,

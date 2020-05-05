@@ -188,7 +188,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             .then(list => {
                 this.setState({
                     namespace: newNamespace,
-                    workflows: list.items.sort(Utils.workflowFinishTimeSorter) || [],
+                    workflows: list.items || [],
                     selectedPhases,
                     selectedLabels,
                     minStartedAt,
