@@ -296,12 +296,12 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 }
 
 // SuspendWorkflow suspends a workflow by setting spec.suspend to true. Retries conflict errors
-func SuspendWorkflow(opIf v1alpha1.WorkflowOpInterface, workflow *wfv1.Workflow) error {
+func SuspendWorkflow(opIf v1alpha1.WorkflowOpInterface, wf *wfv1.Workflow) error {
 	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		_, err := opIf.Create(&wfv1.WorkflowOp{
 			ObjectMeta: metav1.ObjectMeta{
-				GenerateName:    workflow.Name + "-",
-				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(workflow, workflow.GroupVersionKind())},
+				GenerateName:    wf.Name + "-",
+				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)))},
 			},
 			Spec: wfv1.WorkflowOpSpec{Suspend: &wfv1.SuspendOp{}},
 		})
@@ -312,12 +312,12 @@ func SuspendWorkflow(opIf v1alpha1.WorkflowOpInterface, workflow *wfv1.Workflow)
 
 // ResumeWorkflow resumes a workflow by setting spec.suspend to nil and any suspended nodes to Successful.
 // Retries conflict errors
-func ResumeWorkflow(opIf v1alpha1.WorkflowOpInterface, workflow *wfv1.Workflow, nodeFieldSelector string) error {
+func ResumeWorkflow(opIf v1alpha1.WorkflowOpInterface, wf *wfv1.Workflow, nodeFieldSelector string) error {
 	return wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		_, err := opIf.Create(&wfv1.WorkflowOp{
 			ObjectMeta: metav1.ObjectMeta{
-				GenerateName:    workflow.Name + "-",
-				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(workflow, workflow.GroupVersionKind())},
+				GenerateName:    wf.Name + "-",
+				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)))},
 			},
 			Spec: wfv1.WorkflowOpSpec{
 				Resume: &wfv1.ResumeOp{NodeSelector: nodeFieldSelector},
@@ -670,17 +670,13 @@ func IsWorkflowSuspended(wf *wfv1.Workflow) bool {
 	return false
 }
 
-func TerminateWorkflowByName() {
-
-}
-
 // TerminateWorkflow terminates a workflow by setting its spec.shutdown to ShutdownStrategyTerminate
-func TerminateWorkflow(opIf v1alpha1.WorkflowOpInterface, workflow *wfv1.Workflow) error {
+func TerminateWorkflow(opIf v1alpha1.WorkflowOpInterface, wf *wfv1.Workflow) error {
 	return wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		_, err := opIf.Create(&wfv1.WorkflowOp{
 			ObjectMeta: metav1.ObjectMeta{
-				GenerateName:    workflow.Name + "-",
-				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(workflow, workflow.GroupVersionKind())},
+				GenerateName:    wf.Name + "-",
+				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)))},
 			},
 			Spec: wfv1.WorkflowOpSpec{
 				Shutdown: &wfv1.ShutdownOp{ShutdownStrategy: wfv1.ShutdownStrategyTerminate},
@@ -692,12 +688,12 @@ func TerminateWorkflow(opIf v1alpha1.WorkflowOpInterface, workflow *wfv1.Workflo
 
 // StopWorkflow terminates a workflow by setting its spec.shutdown to ShutdownStrategyStop
 // Or terminates a single resume step referenced by nodeFieldSelector
-func StopWorkflow(opIf v1alpha1.WorkflowOpInterface, workflow *wfv1.Workflow, nodeFieldSelector string, message string) error {
+func StopWorkflow(opIf v1alpha1.WorkflowOpInterface, wf *wfv1.Workflow, nodeFieldSelector string, message string) error {
 	return wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		_, err := opIf.Create(&wfv1.WorkflowOp{
 			ObjectMeta: metav1.ObjectMeta{
-				GenerateName:    workflow.Name + "-",
-				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(workflow, workflow.GroupVersionKind())},
+				GenerateName:    wf.Name + "-",
+				OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)))},
 			},
 			Spec: wfv1.WorkflowOpSpec{Shutdown: &wfv1.ShutdownOp{
 				ShutdownStrategy: wfv1.ShutdownStrategyStop,
