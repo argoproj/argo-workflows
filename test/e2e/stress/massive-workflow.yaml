@@ -12,7 +12,7 @@ spec:
         value: 1000
 
   podGC:
-    strategy: OnPodSuccess
+    strategy: OnPodCompletion
 
   templates:
     - name: main

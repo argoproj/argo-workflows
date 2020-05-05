@@ -126,20 +126,17 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         });
         graph.setDefaultEdgeLabel(() => ({}));
         const nodes = (this.props.workflow.status && this.props.workflow.status.nodes) || {};
-        Object.values(nodes).forEach(node => {
+        Object.values(nodes).map(node => {
             const label = Utils.shortNodeName(node);
             if (this.filterNode(node)) {
                 graph.setNode(node.id, {label, width: 1, height: 1, ...nodes[node.id]});
             } else {
                 graph.setNode(node.id, {label, width: this.nodeSize, height: this.nodeSize, ...nodes[node.id]});
             }
-        });
-        Object.keys(nodes).forEach(nodeId => {
-            const node = nodes[nodeId];
             (node.children || []).forEach(childId => {
                 // make sure workflow is in consistent state and child node exist
                 if (nodes[childId]) {
-                    graph.setEdge(nodeId, childId);
+                    graph.setEdge(node.id, childId);
                 }
             });
         });
