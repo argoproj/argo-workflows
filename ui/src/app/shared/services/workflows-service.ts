@@ -20,7 +20,9 @@ export class WorkflowsService {
         if (pagination.offset) {
             params.push(`listOptions.continue=${pagination.offset}`);
         }
-        params.push(`listOptions.limit=${pagination.limit}`);
+        if (pagination.limit) {
+            params.push(`listOptions.limit=${pagination.limit}`);
+        }
         params.push(`fields=metadata,items.metadata.name,items.metadata.namespace,items.status.phase,items.status.finishedAt,items.status.startedAt`);
         return requests.get(`api/v1/workflows/${namespace}?${params.join('&')}`).then(res => res.body as WorkflowList);
     }
