@@ -111,7 +111,7 @@ func (cc *controller) Run(stopCh <-chan struct{}, onChange func(config Config) e
 					log.Infof("Detected ConfigMap update.")
 					err := cc.updateConfig(newCm, onChange)
 					if err != nil {
-						log.Errorf("Update of config failed due to: %v", err)
+						log.Errorf("HydrateWithNodes of config failed due to: %v", err)
 					}
 				}
 			},

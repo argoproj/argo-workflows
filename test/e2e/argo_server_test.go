@@ -487,11 +487,6 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			Array().
 			Length().
 			Equal(1)
-		if s.Persistence.IsEnabled() {
-			// check we are loading offloaded node status
-			j.Path("$.items[0].status.offloadNodeStatusVersion").
-				NotNull()
-		}
 		j.Path("$.items[0].status.nodes").
 			NotNull()
 	})
@@ -518,12 +513,6 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			Expect().
 			Status(200).
 			JSON()
-		if s.Persistence.IsEnabled() {
-			// check we are loading offloaded node status
-			j.
-				Path("$.status.offloadNodeStatusVersion").
-				NotNull()
-		}
 		j.Path("$.status.nodes").
 			NotNull()
 		s.e(s.T()).GET("/api/v1/workflows/argo/not-found").
@@ -681,7 +670,7 @@ spec:
 			Raw()
 	})
 
-	s.Run("Update", func() {
+	s.Run("HydrateWithNodes", func() {
 		s.e(s.T()).PUT("/api/v1/cron-workflows/argo/test").
 			WithBytes([]byte(`{"cronWorkflow": {
     "metadata": {
@@ -1091,7 +1080,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 			Raw()
 	})
 
-	s.Run("Update", func() {
+	s.Run("HydrateWithNodes", func() {
 		s.e(s.T()).PUT("/api/v1/workflow-templates/argo/test").
 			WithBytes([]byte(`{"template": {
     "metadata": {

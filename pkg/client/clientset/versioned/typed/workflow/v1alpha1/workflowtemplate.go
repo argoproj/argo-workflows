@@ -103,7 +103,7 @@ func (c *workflowTemplates) Create(workflowTemplate *v1alpha1.WorkflowTemplate) 
 	return
 }
 
-// Update takes the representation of a workflowTemplate and updates it. Returns the server's representation of the workflowTemplate, and an error, if there is any.
+// HydrateWithNodes takes the representation of a workflowTemplate and updates it. Returns the server's representation of the workflowTemplate, and an error, if there is any.
 func (c *workflowTemplates) Update(workflowTemplate *v1alpha1.WorkflowTemplate) (result *v1alpha1.WorkflowTemplate, err error) {
 	result = &v1alpha1.WorkflowTemplate{}
 	err = c.client.Put().

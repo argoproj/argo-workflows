@@ -229,7 +229,7 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateReferenceHolder,
 		tmpl = newTmpl
 	}
 
-	// Update the template base of the context.
+	// HydrateWithNodes the template base of the context.
 	newTmplCtx, err := ctx.WithTemplateHolder(tmplHolder)
 	if err != nil {
 		return nil, nil, false, err

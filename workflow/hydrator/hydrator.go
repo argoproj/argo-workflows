@@ -9,8 +9,14 @@ import (
 )
 
 type Interface interface {
+	// whether or not the workflow in hydrated
+	IsHydrated(wf *wfv1.Workflow) bool
+	// hydrate the workflow - doing nothing if it is already hydrated
 	Hydrate(wf *wfv1.Workflow) error
+	// dehydrate the workflow - doing nothing if already dehydrated
 	Dehydrate(wf *wfv1.Workflow) error
+	// hydrate the workflow using the provided nodes
+	HydrateWithNodes(wf *wfv1.Workflow, nodes wfv1.Nodes)
 }
 
 func New(offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) Interface {
@@ -21,8 +27,18 @@ type hydrator struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 }
 
+func (h hydrator) IsHydrated(wf *wfv1.Workflow) bool {
+	return !(wf.Status.CompressedNodes != "" || wf.Status.IsOffloadNodeStatus())
+}
+
+func (h hydrator) HydrateWithNodes(wf *wfv1.Workflow, nodes wfv1.Nodes) {
+	wf.Status.Nodes = nodes
+	wf.Status.CompressedNodes = ""
+	wf.Status.OffloadNodeStatusVersion = ""
+}
+
 func (h hydrator) Hydrate(wf *wfv1.Workflow) error {
-	if wf.Status.CompressedNodes == "" && !wf.Status.IsOffloadNodeStatus() {
+	if h.IsHydrated(wf) {
 		return nil
 	}
 	err := packer.DecompressWorkflow(wf)
@@ -34,15 +50,13 @@ func (h hydrator) Hydrate(wf *wfv1.Workflow) error {
 		if err != nil {
 			return err
 		}
-		wf.Status.Nodes = offloadedNodes
-		wf.Status.CompressedNodes = ""
-		wf.Status.OffloadNodeStatusVersion = ""
+		h.HydrateWithNodes(wf, offloadedNodes)
 	}
 	return nil
 }
 
 func (h hydrator) Dehydrate(wf *wfv1.Workflow) error {
-	if wf.Status.CompressedNodes != "" && wf.Status.IsOffloadNodeStatus() {
+	if !h.IsHydrated(wf) {
 		return nil
 	}
 	err := packer.CompressWorkflowIfNeeded(wf)

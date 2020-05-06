@@ -73,7 +73,7 @@ func (c *FakeWorkflows) Create(workflow *v1alpha1.Workflow) (result *v1alpha1.Wo
 	return obj.(*v1alpha1.Workflow), err
 }
 
-// Update takes the representation of a workflow and updates it. Returns the server's representation of the workflow, and an error, if there is any.
+// HydrateWithNodes takes the representation of a workflow and updates it. Returns the server's representation of the workflow, and an error, if there is any.
 func (c *FakeWorkflows) Update(workflow *v1alpha1.Workflow) (result *v1alpha1.Workflow, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(workflowsResource, c.ns, workflow), &v1alpha1.Workflow{})

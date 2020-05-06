@@ -39,3 +39,22 @@ func (_m *Interface) Hydrate(wf *v1alpha1.Workflow) error {
 
 	return r0
 }
+
+// HydrateWithNodes provides a mock function with given fields: wf, nodes
+func (_m *Interface) HydrateWithNodes(wf *v1alpha1.Workflow, nodes v1alpha1.Nodes) {
+	_m.Called(wf, nodes)
+}
+
+// IsHydrated provides a mock function with given fields: wf
+func (_m *Interface) IsHydrated(wf *v1alpha1.Workflow) bool {
+	ret := _m.Called(wf)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(*v1alpha1.Workflow) bool); ok {
+		r0 = rf(wf)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}

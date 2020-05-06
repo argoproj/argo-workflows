@@ -68,7 +68,7 @@ func (c *FakeClusterWorkflowTemplates) Create(clusterWorkflowTemplate *v1alpha1.
 	return obj.(*v1alpha1.ClusterWorkflowTemplate), err
 }
 
-// Update takes the representation of a clusterWorkflowTemplate and updates it. Returns the server's representation of the clusterWorkflowTemplate, and an error, if there is any.
+// HydrateWithNodes takes the representation of a clusterWorkflowTemplate and updates it. Returns the server's representation of the clusterWorkflowTemplate, and an error, if there is any.
 func (c *FakeClusterWorkflowTemplates) Update(clusterWorkflowTemplate *v1alpha1.ClusterWorkflowTemplate) (result *v1alpha1.ClusterWorkflowTemplate, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewRootUpdateAction(clusterworkflowtemplatesResource, clusterWorkflowTemplate), &v1alpha1.ClusterWorkflowTemplate{})

@@ -167,7 +167,7 @@ func (woc *wfOperationCtx) operate() {
 
 	woc.log.Infof("Processing workflow")
 
-	// Update workflow duration variable
+	// HydrateWithNodes workflow duration variable
 	woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
 
 	// Populate the phase of all the nodes prior to execution
@@ -452,7 +452,7 @@ func (woc *wfOperationCtx) getNodeByName(nodeName string) *wfv1.NodeStatus {
 
 // persistUpdates will update a workflow with any updates made during workflow operation.
 // It also labels any pods as completed if we have extracted everything we need from it.
-// NOTE: a previous implementation used Patch instead of Update, but Patch does not work with
+// NOTE: a previous implementation used Patch instead of HydrateWithNodes, but Patch does not work with
 // the fake CRD clientset which makes unit testing extremely difficult.
 func (woc *wfOperationCtx) persistUpdates() {
 	if !woc.updated {
@@ -460,6 +460,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	}
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 	// try and compress nodes if needed
+	nodes := woc.wf.Status.Nodes
 	err := woc.controller.hydrator.Dehydrate(woc.wf)
 	if err != nil {
 		woc.log.Warnf("Failed to offload node status: %v", err)
@@ -483,13 +484,11 @@ func (woc *wfOperationCtx) persistUpdates() {
 		}
 		woc.wf = wf
 	} else {
-		woc.wf = wf
+		woc.controller.hydrator.HydrateWithNodes(wf, nodes)
 	}
 
-	err = woc.controller.hydrator.Hydrate(woc.wf)
-	if err != nil {
-		woc.log.Warnf("Failed to hydrate: %v", err)
-		woc.markWorkflowError(err, true)
+	if !woc.controller.hydrator.IsHydrated(woc.wf) {
+		panic("should be hydrated")
 	}
 
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
@@ -555,7 +554,7 @@ func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface) (*
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	// Next get latest version of the workflow, apply the patch and retyr the Update
+	// Next get latest version of the workflow, apply the patch and retyr the HydrateWithNodes
 	attempt := 1
 	for {
 		currWf, err := wfClient.Get(woc.wf.ObjectMeta.Name, metav1.GetOptions{})
@@ -577,11 +576,11 @@ func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface) (*
 		}
 		wf, err := wfClient.Update(&newWf)
 		if err == nil {
-			woc.log.Infof("Update retry attempt %d successful", attempt)
+			woc.log.Infof("HydrateWithNodes retry attempt %d successful", attempt)
 			return wf, nil
 		}
 		attempt++
-		woc.log.Warnf("Update retry attempt %d failed: %v", attempt, err)
+		woc.log.Warnf("HydrateWithNodes retry attempt %d failed: %v", attempt, err)
 		if attempt > 5 {
 			return nil, err
 		}
@@ -1623,7 +1622,7 @@ func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wf
 		node.Inputs = executeTmpl.Inputs.DeepCopy()
 	}
 
-	// Update the node
+	// HydrateWithNodes the node
 	woc.wf.Status.Nodes[node.ID] = *node
 	woc.updated = true
 

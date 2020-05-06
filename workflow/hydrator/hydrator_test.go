@@ -30,7 +30,7 @@ func TestHydrator(t *testing.T) {
 			wf := &wfv1.Workflow{Status: wfv1.WorkflowStatus{OffloadNodeStatusVersion: "foo"}}
 			err := hydrator.Dehydrate(wf)
 			if assert.NoError(t, err) {
-				assert.False(t, wf.Status.IsOffloadNodeStatus())
+				assert.True(t, wf.Status.IsOffloadNodeStatus())
 			}
 		})
 		t.Run("Noop", func(t *testing.T) {
