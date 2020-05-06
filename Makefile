@@ -128,7 +128,7 @@ define docker_build
 	[ $(DEV_IMAGE) = true ] && $(MAKE) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) $(2)
 	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	[ $(DEV_IMAGE) = true ] && mv $(2) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
-	[ $(K3D),true ] && k3d import-images $(IMAGE_NAMESPACE)/$(1):$(VERSION)
+	[ $(K3D) = true ] && k3d import-images $(IMAGE_NAMESPACE)/$(1):$(VERSION)
 	touch $(3)
 endef
 
