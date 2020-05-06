@@ -71,7 +71,8 @@ func CompressWorkflowIfNeeded(wf *wfv1.Workflow) error {
 }
 
 func compressWorkflow(wf *wfv1.Workflow) error {
-	nodeContent, err := json.Marshal(wf.Status.Nodes)
+	nodes := wf.Status.Nodes
+	nodeContent, err := json.Marshal(nodes)
 	if err != nil {
 		return err
 	}
@@ -83,6 +84,8 @@ func compressWorkflow(wf *wfv1.Workflow) error {
 		return err
 	}
 	if large {
+		wf.Status.CompressedNodes = ""
+		wf.Status.Nodes = nodes
 		compressedSize, _ := getSize(wf)
 		return fmt.Errorf("%s compressed size %d > maxSize %d", tooLarge, compressedSize, getMaxWorkflowSize())
 	}

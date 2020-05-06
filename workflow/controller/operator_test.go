@@ -1373,14 +1373,14 @@ func TestSuspendTemplate(t *testing.T) {
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	if assert.False(t, util.IsWorkflowSuspended(wf)) {
-		// operate the workflow. it should reach the second step
-		woc = newWorkflowOperationCtx(wf, controller)
-		woc.operate()
-		pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
-		assert.NoError(t, err)
-		assert.Equal(t, 1, len(pods.Items))
-	}
+	assert.False(t, util.IsWorkflowSuspended(wf))
+
+	// operate the workflow. it should reach the second step
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(pods.Items))
 }
 
 func TestSuspendTemplateWithFailedResume(t *testing.T) {

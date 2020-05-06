@@ -77,10 +77,7 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 	woc.operate()
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.False(t, wf.Status.IsOffloadNodeStatus())
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
-	assert.NotEmpty(t, woc.wf.Status.Nodes)
-	assert.Empty(t, woc.wf.Status.CompressedNodes)
+	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 }
 
 // TestPersistWithoutLargeWfSupport verifies persistence with largeWFsuppport

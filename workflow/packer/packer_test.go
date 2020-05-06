@@ -67,6 +67,8 @@ func TestDecompressWorkflow(t *testing.T) {
 			assert.True(t, IsTooLargeError(err))
 			// if too large, we want the original back please
 			assert.NotNil(t, wf)
+			assert.NotEmpty(t, wf.Status.Nodes)
+			assert.Empty(t, wf.Status.CompressedNodes)
 		}
 	})
 }
