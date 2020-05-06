@@ -766,7 +766,6 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				if woc.shouldPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
 				}
-				woc.onNodeComplete(&node)
 			}
 			if node.Successful() {
 				woc.succeededPods[pod.ObjectMeta.Name] = true
