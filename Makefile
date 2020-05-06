@@ -73,6 +73,11 @@ K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-
 # which components to start, useful if you want to disable them to debug
 COMPONENTS            := controller,argo-server
 LOG_LEVEL             := debug
+ALWAYS_OFFLOAD_NODE_STATUS := true
+
+ifeq ($(DB),no-db)
+ALWAYS_OFFLOAD_NODE_STATUS := false
+endif
 
 ifeq ($(CI),true)
 TEST_OPTS := -coverprofile=coverage.out
@@ -311,8 +316,7 @@ dist/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
 	kustomize build --load_restrictor=none test/e2e/manifests/postgres | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/postgres.yaml
 
 dist/no-db.yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
-	# We additionally disable ALWAYS_OFFLOAD_NODE_STATUS
-	kustomize build --load_restrictor=none test/e2e/manifests/no-db | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | sed 's/"true"/"false"/' > dist/no-db.yaml
+	kustomize build --load_restrictor=none test/e2e/manifests/no-db | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/no-db.yaml
 
 dist/mysql.yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
 	kustomize build --load_restrictor=none test/e2e/manifests/mysql | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/mysql.yaml
@@ -357,7 +361,7 @@ start-aux:
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
 ifneq ($(findstring controller,$(COMPONENTS)),)
-	ALWAYS_OFFLOAD_NODE_STATUS=true OFFLOAD_NODE_STATUS_TTL=30s WORKFLOW_GC_PERIOD=30s UPPERIO_DB_DEBUG=1 ARCHIVED_WORKFLOW_GC_PERIOD=30s ./dist/workflow-controller --executor-image argoproj/argoexec:$(VERSION) --namespaced --loglevel $(LOG_LEVEL) &
+	ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) OFFLOAD_NODE_STATUS_TTL=30s WORKFLOW_GC_PERIOD=30s UPPERIO_DB_DEBUG=1 ARCHIVED_WORKFLOW_GC_PERIOD=30s ./dist/workflow-controller --executor-image argoproj/argoexec:$(VERSION) --namespaced --loglevel $(LOG_LEVEL) &
 endif
 ifneq ($(findstring argo-server,$(COMPONENTS)),)
 	UPPERIO_DB_DEBUG=1 ./dist/argo --loglevel $(LOG_LEVEL) server --namespaced --auth-mode client --secure &
