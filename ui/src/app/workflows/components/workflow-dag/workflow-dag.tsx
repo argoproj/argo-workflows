@@ -4,6 +4,7 @@ import * as React from 'react';
 
 import * as models from '../../../../models';
 import {NodePhase, NodeStatus} from '../../../../models';
+import {Loading} from '../../../shared/components/loading';
 import {Utils} from '../../../shared/utils';
 import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel';
 
@@ -116,6 +117,9 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     }
 
     public render() {
+        if (!this.props.nodes) {
+            return <Loading />;
+        }
         const graph = new dagre.graphlib.Graph();
         // https://github.com/dagrejs/dagre/wiki
         graph.setGraph({
@@ -129,13 +133,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         Object.values(nodes).forEach(node => {
             const label = Utils.shortNodeName(node);
             const nodeSize = this.filterNode(node) ? 1 : this.nodeSize;
+            // one of the key improvements is passing less data to Dagre to layout
             graph.setNode(node.id, {label, width: nodeSize, height: nodeSize, phase: node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase});
-            (node.children || []).forEach(childId => {
-                // make sure workflow is in consistent state and child node exist
-                if (nodes[childId]) {
-                    graph.setEdge(node.id, childId);
-                }
-            });
+            (node.children || [])
+                .map(childId => nodes[childId])
+                .filter(child => child !== null)
+                .forEach(child => graph.setEdge(node.id, child.id));
         });
         const onExitHandlerNodeId = Object.keys(nodes).find(id => nodes[id].name === `${this.props.workflowName}.onExit`);
         if (onExitHandlerNodeId) {
@@ -156,10 +159,10 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                 .map(points => (
                                     <path key={`line/${points}`} d={points} className='line' />
                                 ))}
-                            {graph.nodes().map(id => {
-                                const node = graph.node(id);
-                                return (
-                                    <g key={`node/${id}`} transform={`translate(${node.x},${node.y})`}>
+                            {graph.nodes()
+                              .map(id => graph.node(id))
+                              .map(node => (
+                                    <g key={`node/${node.id}`} transform={`translate(${node.x},${node.y})`}>
                                         <circle
                                             r={node.width / 2}
                                             className={classNames(
@@ -183,8 +186,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                             </>
                                         )}
                                     </g>
-                                );
-                            })}
+                                )
+                            )}
                         </g>
                     </svg>
                 </div>
