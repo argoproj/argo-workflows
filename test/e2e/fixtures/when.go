@@ -106,7 +106,7 @@ func (w *When) WaitForWorkflowCondition(test func(wf *wfv1.Workflow) bool, condi
 }
 
 func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow) bool, condition string, timeout time.Duration) *When {
-	start:=time.Now()
+	start := time.Now()
 	logCtx := log.WithFields(log.Fields{"workflow": workflowName, "condition": condition, "timeout": timeout})
 	logCtx.Info("Waiting for condition")
 	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", workflowName)).String()}
