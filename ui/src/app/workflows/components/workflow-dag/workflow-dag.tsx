@@ -159,9 +159,10 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                 .map(points => (
                                     <path key={`line/${points}`} d={points} className='line' />
                                 ))}
-                            {graph.nodes()
-                              .map(id => graph.node(id))
-                              .map(node => (
+                            {graph
+                                .nodes()
+                                .map(id => graph.node(id))
+                                .map(node => (
                                     <g key={`node/${node.id}`} transform={`translate(${node.x},${node.y})`}>
                                         <circle
                                             r={node.width / 2}
@@ -186,8 +187,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                             </>
                                         )}
                                     </g>
-                                )
-                            )}
+                                ))}
                         </g>
                     </svg>
                 </div>
