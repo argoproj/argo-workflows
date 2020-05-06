@@ -89,18 +89,30 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         }
     }
 
-    private static truncate(label: string) {
-        const max = 10;
-        if (label.length <= max) {
+    private static formatLabel(label: string) {
+        const maxPerLine = 14;
+        if (label.length <= maxPerLine) {
             return <tspan>{label}</tspan>;
+        }
+        if (label.length <= maxPerLine * 2) {
+            return (
+                <>
+                    <tspan x={0} dy='-0.2em'>
+                        {label.substr(0, label.length / 2 - 1)}
+                    </tspan>
+                    <tspan x={0} dy='1.2em'>
+                        {label.substr(label.length / 2)}
+                    </tspan>
+                </>
+            );
         }
         return (
             <>
-                <tspan x={0} dy={0}>
-                    {label.substr(0, max - 2)}..
+                <tspan x={0} dy='-0.2em'>
+                    {label.substr(0, maxPerLine - 2)}..
                 </tspan>
                 <tspan x={0} dy='1.2em'>
-                    {label.substr(label.length + 1 - max)}
+                    {label.substr(label.length + 1 - maxPerLine)}
                 </tspan>
             </>
         );
@@ -135,8 +147,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         const graph = new dagre.graphlib.Graph();
         // https://github.com/dagrejs/dagre/wiki
         graph.setGraph({
-            edgesep: this.nodeSize / 2,
-            nodesep: this.nodeSize,
+            edgesep: this.nodeSize,
+            nodesep: this.nodeSize * 2,
             rankdir: this.state.horizontal ? 'LR' : 'TB',
             ranksep: this.nodeSize
         });
@@ -167,7 +179,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                             {graph
                                 .edges()
                                 .map(edge => graph.edge(edge))
-                                .map(edge => edge.points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(', '))
+                                .map(edge => edge.points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(', '))
                                 .map(points => (
                                     <path key={`line/${points}`} d={points} className='line' />
                                 ))}
@@ -192,8 +204,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                             <>
                                                 {this.icon(node.phase)}
                                                 <g transform={`translate(0,${node.height})`}>
-                                                    <text className='label' fontSize={10 / this.scale}>
-                                                        {WorkflowDag.truncate(node.label)}
+                                                    <text className='label' fontSize={12 / this.scale}>
+                                                        {WorkflowDag.formatLabel(node.label)}
                                                     </text>
                                                 </g>
                                             </>

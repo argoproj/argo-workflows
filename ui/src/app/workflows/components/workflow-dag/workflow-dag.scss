@@ -29,6 +29,7 @@
   .label {
     text-anchor: middle;
     font-family: "Heebo", sans-serif;
+    text-rendering: optimizeLegibility;
   }
 
   &__node {

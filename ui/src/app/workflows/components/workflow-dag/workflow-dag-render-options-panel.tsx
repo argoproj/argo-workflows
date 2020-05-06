@@ -43,7 +43,7 @@ export class WorkflowDagRenderOptionsPanel extends React.Component<WorkflowDagRe
                 <DropDown
                     isMenu={true}
                     anchor={() => (
-                        <div className={classNames('top-bar__filter', {'top-bar__filter--selected': filter.selectedValues.length !== this.props.nodesToDisplay.length})}>
+                        <div className={classNames('top-bar__filter', {'top-bar__filter--selected': filter.selectedValues !== this.props.nodesToDisplay})}>
                             <i className='argo-icon-filter' aria-hidden='true' />
                             <i className='fa fa-angle-down' aria-hidden='true' />
                         </div>
