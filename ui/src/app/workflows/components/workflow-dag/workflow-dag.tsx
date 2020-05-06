@@ -62,6 +62,13 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     </g>
                 );
             case 'Skipped':
+                return (
+                    <path
+                        fill='currentColor'
+                        // tslint:disable-next-line
+                        d='M500.5 231.4l-192-160C287.9 54.3 256 68.6 256 96v320c0 27.4 31.9 41.8 52.5 24.6l192-160c15.3-12.8 15.3-36.4 0-49.2zm-256 0l-192-160C31.9 54.3 0 68.6 0 96v320c0 27.4 31.9 41.8 52.5 24.6l192-160c15.3-12.8 15.3-36.4 0-49.2z'
+                    />
+                );
             case 'Succeeded':
                 return (
                     <path
@@ -175,14 +182,25 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 <WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.setState(workflowDagRenderOptions)} />
                 <div className='workflow-dag'>
                     <svg style={{width: size.width, height: size.height}}>
+                        <defs>
+                            <marker id='arrow' viewBox='0 0 10 10' refX={10} refY={5} markerWidth={this.nodeSize / 4} markerHeight={this.nodeSize / 4} orient='auto-start-reverse'>
+                                <path d='M 0 0 L 10 5 L 0 10 z' className='arrow' />
+                            </marker>
+                            <filter id='shadow' x='0' y='0' width='200%' height='200%'>
+                                <feOffset result='offOut' in='SourceGraphic' dx={0.5} dy={0.5} />
+                                <feColorMatrix result='matrixOut' in='offOut' type='matrix' values='0.1 0 0 0 0 0 0.1 0 0 0 0 0 0.1 0 0 0 0 0 1 0' />
+                                <feGaussianBlur result='blurOut' in='matrixOut' stdDeviation={0.5} />
+                                <feBlend in='SourceGraphic' in2='blurOut' mode='normal' />
+                            </filter>
+                        </defs>
                         <g transform={`translate(${this.nodeSize},${this.nodeSize})`}>
-                            {graph
-                                .edges()
-                                .map(edge => graph.edge(edge))
-                                .map(edge => edge.points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(', '))
-                                .map(points => (
-                                    <path key={`line/${points}`} d={points} className='line' />
-                                ))}
+                            {graph.edges().map(edge => {
+                                const points = graph
+                                    .edge(edge)
+                                    .points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`))
+                                    .join(', ');
+                                return <path key={`line/${points}`} d={points} className='line' markerEnd={graph.node(edge.w).width > 1 && 'url(#arrow)'} />;
+                            })}
                             {graph
                                 .nodes()
                                 .map(id => graph.node(id))
@@ -198,6 +216,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                                     active: node.id === this.props.selectedNodeId
                                                 }
                                             )}
+                                            filter='url(#shadow)'
                                             onClick={() => this.props.nodeClicked && this.props.nodeClicked(node.id)}
                                         />
                                         {node.width > 1 && (
