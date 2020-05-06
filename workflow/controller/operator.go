@@ -489,8 +489,8 @@ func (woc *wfOperationCtx) persistUpdates() {
 	}
 
 	if !woc.controller.hydrator.IsHydrated(woc.wf) {
-		// TODO - remove this panic once tested
-		panic("should not be hydrated")
+		woc.log.Error("workflow should be hydrated")
+		return
 	}
 
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
@@ -543,9 +543,8 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.Workflo
 // retries the UPDATE multiple times. For reasoning behind this technique, see:
 // https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#concurrency-control-and-consistency
 func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, nodes wfv1.Nodes) (*wfv1.Workflow, error) {
-	if woc.controller.hydrator.IsHydrated(woc.orig) {
-		// TODO - remove this panic once tested
-		panic("original should be hydrated")
+	if !woc.controller.hydrator.IsHydrated(woc.orig) {
+		return nil, fmt.Errorf("original workflow should be hydrated")
 	}
 	// First generate the patch
 	oldData, err := json.Marshal(woc.orig)
