@@ -8,7 +8,7 @@
   padding: 10px;
   display: inline-block;
   background-color: white;
-  box-shadow: 1px 1px 3px $argo-color-gray-4;
+  box-shadow: 1px 1px 3px $argo-color-gray-5;
 
   a {
     padding: 10px;
@@ -27,8 +27,8 @@
   }
 
   .label {
-    stroke: $argo-color-gray-7;
-    font-weight: lighter;
+    text-anchor: middle;
+    font-family: "Heebo", sans-serif;
   }
 
   &__node {

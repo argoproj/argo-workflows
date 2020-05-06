@@ -90,8 +90,20 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     }
 
     private static truncate(label: string) {
-        const max = 16;
-        return label.length <= max ? label : label.substr(0, max - 3) + '...';
+        const max = 10;
+        if (label.length <= max) {
+            return <tspan>{label}</tspan>;
+        }
+        return (
+            <>
+                <tspan x={0} dy={0}>
+                    {label.substr(0, max - 2)}..
+                </tspan>
+                <tspan x={0} dy='1.2em'>
+                    {label.substr(label.length + 1 - max)}
+                </tspan>
+            </>
+        );
     }
 
     constructor(props: Readonly<WorkflowDagProps>) {
@@ -134,7 +146,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             const label = Utils.shortNodeName(node);
             const nodeSize = this.filterNode(node) ? 1 : this.nodeSize;
             // one of the key improvements is passing less data to Dagre to layout
-            graph.setNode(node.id, {label, width: nodeSize, height: nodeSize, phase: node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase});
+            graph.setNode(node.id, {label, id: node.id, width: nodeSize, height: nodeSize, phase: node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase});
             (node.children || [])
                 .map(childId => nodes[childId])
                 .filter(child => child !== null)
@@ -180,7 +192,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                             <>
                                                 {this.icon(node.phase)}
                                                 <g transform={`translate(0,${node.height})`}>
-                                                    <text textAnchor='middle' className='label' fontSize={10 / this.scale} textRendering='optimizeLegibility'>
+                                                    <text className='label' fontSize={10 / this.scale}>
                                                         {WorkflowDag.truncate(node.label)}
                                                     </text>
                                                 </g>
