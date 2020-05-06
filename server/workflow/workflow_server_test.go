@@ -675,8 +675,6 @@ func TestRetryWorkflow(t *testing.T) {
 		_, err := server.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{Name: "unlabelled", Namespace: "workflows"})
 		assert.Error(t, err)
 	})
-		}
-	}
 }
 
 func TestSuspendResumeWorkflow(t *testing.T) {
