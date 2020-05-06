@@ -64,7 +64,7 @@ func (h hydrator) Dehydrate(wf *wfv1.Workflow) error {
 		wf.Status.OffloadNodeStatusVersion = ""
 		return nil
 	}
-	if packer.IsTooLargeError(err) || os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true" {
+	if (packer.IsTooLargeError(err) || os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true") && h.offloadNodeStatusRepo.IsEnabled() {
 		offloadVersion, err := h.offloadNodeStatusRepo.Save(string(wf.UID), wf.Namespace, wf.Status.Nodes)
 		if err != nil {
 			return err

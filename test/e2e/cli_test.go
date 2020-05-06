@@ -267,11 +267,6 @@ func (s *CLISuite) TestRoot() {
 }
 
 func (s *CLISuite) TestWorkflowSuspendResume() {
-	if s.Persistence.IsEnabled() {
-		// Persistence is enabled for this test, but it is not enabled for the Argo Server in this test suite.
-		// When this is the case, this behavior is tested in cli_with_server_test.go
-		s.T().SkipNow()
-	}
 	s.Given().
 		Workflow("@testdata/sleep-3s.yaml").
 		When().
@@ -294,15 +289,7 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 		})
 }
 
-func (s *CLISuite) TestNodeSuspendResumeNoPersistence() {
-	if s.Persistence.IsEnabled() {
-		// Persistence is enabled for this test, but it is not enabled for the Argo Server in this test suite.
-		s.T().SkipNow()
-	}
-	NodeSuspendResumeCommon(s.E2ESuite)
-}
-
-func NodeSuspendResumeCommon(s fixtures.E2ESuite) {
+func (s *CLISuite) TestNodeSuspendResume() {
 	s.Given().
 		Workflow("@testdata/node-suspend.yaml").
 		When().
@@ -453,13 +440,7 @@ func (s *CLISuite) TestWorkflowLint() {
 	})
 }
 
-func (s *CLISuite) TestWorkflowRetryNoPersistence() {
-	if s.Persistence.IsEnabled() {
-		// Persistence is enabled for this test, but it is not enabled for the Argo Server in this test suite.
-		// When this is the case, this behavior is tested in cli_with_server_test.go
-		s.T().SkipNow()
-	}
-
+func (s *CLISuite) TestWorkflowRetry() {
 	var retryTime corev1.Time
 
 	s.Given().
