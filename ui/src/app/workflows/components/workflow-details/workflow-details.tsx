@@ -128,7 +128,12 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                                     <div>
                                         <div className='workflow-details__graph-container'>
                                             {(this.selectedTabKey === 'workflow' && (
-                                                <WorkflowDag workflow={this.state.workflow} selectedNodeId={this.selectedNodeId} nodeClicked={node => this.selectNode(node.id)} />
+                                                <WorkflowDag
+                                                    nodes={this.state.workflow.status.nodes}
+                                                    workflowName={this.state.workflow.metadata.name}
+                                                    selectedNodeId={this.selectedNodeId}
+                                                    nodeClicked={nodeId => this.selectNode(nodeId)}
+                                                />
                                             )) || (
                                                 <WorkflowTimeline
                                                     workflow={this.state.workflow}
@@ -170,7 +175,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
         );
     }
 
-    private getItems(workflowPhase: 'Pending' | 'Running' | 'Succeeded' | 'Skipped' | 'Failed' | 'Error', ctx: any) {
+    private getItems(workflowPhase: NodePhase, ctx: any) {
         const items = [
             {
                 title: 'Retry',

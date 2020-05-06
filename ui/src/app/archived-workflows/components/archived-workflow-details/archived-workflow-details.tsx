@@ -159,7 +159,12 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                     <div>
                         <div className='workflow-details__graph-container'>
                             {this.tab === 'workflow' ? (
-                                <WorkflowDag workflow={this.state.workflow} selectedNodeId={this.nodeId} nodeClicked={node => (this.nodeId = node.id)} />
+                                <WorkflowDag
+                                    nodes={this.state.workflow.status.nodes}
+                                    workflowName={this.state.workflow.metadata.name}
+                                    selectedNodeId={this.nodeId}
+                                    nodeClicked={nodeId => (this.nodeId = nodeId)}
+                                />
                             ) : (
                                 <WorkflowTimeline workflow={this.state.workflow} selectedNodeId={this.nodeId} nodeClicked={node => (this.nodeId = node.id)} />
                             )}

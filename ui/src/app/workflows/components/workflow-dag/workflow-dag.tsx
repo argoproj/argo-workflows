@@ -3,7 +3,7 @@ import * as dagre from 'dagre';
 import * as React from 'react';
 
 import * as models from '../../../../models';
-import {NodePhase} from '../../../../models';
+import {NodePhase, NodeStatus} from '../../../../models';
 import {Utils} from '../../../shared/utils';
 import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel';
 
@@ -14,9 +14,10 @@ export interface WorkflowDagRenderOptions {
 }
 
 export interface WorkflowDagProps {
-    workflow: models.Workflow;
+    workflowName: string;
+    nodes: {[nodeId: string]: NodeStatus};
     selectedNodeId?: string;
-    nodeClicked?: (node: models.NodeStatus) => any;
+    nodeClicked?: (nodeId: string) => any;
 }
 
 require('./workflow-dag.scss');
@@ -38,23 +39,14 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
      * * open the "times" page: https://fontawesome.com/icons/times?style=solid
      * * right click on the smallest icon (next to the unicode character) and view source.
      */
-    private static iconPath(phase: NodePhase, suspended: boolean) {
-        if (suspended) {
-            return (
-                <path
-                    fill='currentColor'
-                    // tslint:disable-next-line
-                    d='M144 479H48c-26.5 0-48-21.5-48-48V79c0-26.5 21.5-48 48-48h96c26.5 0 48 21.5 48 48v352c0 26.5-21.5 48-48 48zm304-48V79c0-26.5-21.5-48-48-48h-96c-26.5 0-48 21.5-48 48v352c0 26.5 21.5 48 48 48h96c26.5 0 48-21.5 48-48z'
-                />
-            );
-        }
+    private static iconPath(phase: NodePhase) {
         switch (phase) {
             case 'Pending':
                 return (
                     <path
                         fill='currentColor'
                         // tslint:disable-next-line
-                        d='M256,8C119,8,8,119,8,256S119,504,256,504,504,393,504,256,393,8,256,8Zm92.49,313h0l-20,25a16,16,0,0,1-22.49,2.5h0l-67-49.72a40,40,0,0,1-15-31.23V112a16,16,0,0,1,16-16h32a16,16,0,0,1,16,16V256l58,42.5A16,16,0,0,1,348.49,321Z'
+            d='M256,8C119,8,8,119,8,256S119,504,256,504,504,393,504,256,393,8,256,8Zm92.49,313h0l-20,25a16,16,0,0,1-22.49,2.5h0l-67-49.72a40,40,0,0,1-15-31.23V112a16,16,0,0,1,16-16h32a16,16,0,0,1,16,16V256l58,42.5A16,16,0,0,1,348.49,321Z'
                     />
                 );
             case 'Failed':
@@ -64,7 +56,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                         <path
                             fill='currentColor'
                             // tslint:disable-next-line
-                            d='M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z'
+              d='M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z'
                         />
                     </g>
                 );
@@ -74,7 +66,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     <path
                         fill='currentColor'
                         // tslint:disable-next-line
-                        d='M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.401c-9.998 9.997-26.207 9.997-36.204-.001z'
+            d='M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.401c-9.998 9.997-26.207 9.997-36.204-.001z'
                     />
                 );
             case 'Running':
@@ -82,7 +74,15 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                     <path
                         fill='currentColor'
                         // tslint:disable-next-line
-                        d='M288 39.056v16.659c0 10.804 7.281 20.159 17.686 23.066C383.204 100.434 440 171.518 440 256c0 101.689-82.295 184-184 184-101.689 0-184-82.295-184-184 0-84.47 56.786-155.564 134.312-177.219C216.719 75.874 224 66.517 224 55.712V39.064c0-15.709-14.834-27.153-30.046-23.234C86.603 43.482 7.394 141.206 8.003 257.332c.72 137.052 111.477 246.956 248.531 246.667C393.255 503.711 504 392.788 504 256c0-115.633-79.14-212.779-186.211-240.236C302.678 11.889 288 23.456 288 39.056z'
+            d='M288 39.056v16.659c0 10.804 7.281 20.159 17.686 23.066C383.204 100.434 440 171.518 440 256c0 101.689-82.295 184-184 184-101.689 0-184-82.295-184-184 0-84.47 56.786-155.564 134.312-177.219C216.719 75.874 224 66.517 224 55.712V39.064c0-15.709-14.834-27.153-30.046-23.234C86.603 43.482 7.394 141.206 8.003 257.332c.72 137.052 111.477 246.956 248.531 246.667C393.255 503.711 504 392.788 504 256c0-115.633-79.14-212.779-186.211-240.236C302.678 11.889 288 23.456 288 39.056z'
+                    />
+                );
+            case 'Suspended':
+                return (
+                    <path
+                        fill='currentColor'
+                        // tslint:disable-next-line
+              d='M144 479H48c-26.5 0-48-21.5-48-48V79c0-26.5 21.5-48 48-48h96c26.5 0 48 21.5 48 48v352c0 26.5-21.5 48-48 48zm304-48V79c0-26.5-21.5-48-48-48h-96c-26.5 0-48 21.5-48 48v352c0 26.5 21.5 48 48 48h96c26.5 0 48-21.5 48-48z'
                     />
                 );
         }
@@ -125,14 +125,11 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             ranksep: this.nodeSize
         });
         graph.setDefaultEdgeLabel(() => ({}));
-        const nodes = (this.props.workflow.status && this.props.workflow.status.nodes) || {};
-        Object.values(nodes).map(node => {
+        const nodes = this.props.nodes;
+        Object.values(nodes).forEach(node => {
             const label = Utils.shortNodeName(node);
-            if (this.filterNode(node)) {
-                graph.setNode(node.id, {label, width: 1, height: 1, ...nodes[node.id]});
-            } else {
-                graph.setNode(node.id, {label, width: this.nodeSize, height: this.nodeSize, ...nodes[node.id]});
-            }
+            const nodeSize = this.filterNode(node) ? 1 : this.nodeSize;
+            graph.setNode(node.id, {label, width: nodeSize, height: nodeSize, phase: node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase});
             (node.children || []).forEach(childId => {
                 // make sure workflow is in consistent state and child node exist
                 if (nodes[childId]) {
@@ -140,11 +137,10 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 }
             });
         });
-        const onExitHandlerNodeId = Object.keys(nodes).find(id => nodes[id].name === `${this.props.workflow.metadata.name}.onExit`);
+        const onExitHandlerNodeId = Object.keys(nodes).find(id => nodes[id].name === `${this.props.workflowName}.onExit`);
         if (onExitHandlerNodeId) {
-            this.getOutboundNodes(this.props.workflow.metadata.name).forEach(nodeId => graph.setEdge(nodeId, onExitHandlerNodeId));
+            this.getOutboundNodes(this.props.workflowName).forEach(nodeId => graph.setEdge(nodeId, onExitHandlerNodeId));
         }
-
         dagre.layout(graph);
         const size = this.getGraphSize(graph.nodes().map(id => graph.node(id)));
         return (
@@ -161,7 +157,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                     <path key={`line/${points}`} d={points} className='line' />
                                 ))}
                             {graph.nodes().map(id => {
-                                const node = graph.node(id) as models.NodeStatus & dagre.Node;
+                                const node = graph.node(id);
                                 return (
                                     <g key={`node/${id}`} transform={`translate(${node.x},${node.y})`}>
                                         <circle
@@ -169,16 +165,16 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                             className={classNames(
                                                 'workflow-dag__node',
                                                 'workflow-dag__node-status',
-                                                'workflow-dag__node-status--' + (Utils.isNodeSuspended(node) ? 'suspended' : node.phase.toLocaleLowerCase()),
+                                                'workflow-dag__node-status--' + node.phase.toLocaleLowerCase(),
                                                 {
                                                     active: node.id === this.props.selectedNodeId
                                                 }
                                             )}
-                                            onClick={() => this.props.nodeClicked && this.props.nodeClicked(node)}
+                                            onClick={() => this.props.nodeClicked && this.props.nodeClicked(node.id)}
                                         />
-                                        {!this.filterNode(node) && (
+                                        {node.width > 1 && (
                                             <>
-                                                {this.icon(node.phase, Utils.isNodeSuspended(node))}
+                                                {this.icon(node.phase)}
                                                 <g transform={`translate(0,${node.height})`}>
                                                     <text textAnchor='middle' className='label' fontSize={10 / this.scale} textRendering='optimizeLegibility'>
                                                         {WorkflowDag.truncate(node.label)}
@@ -196,11 +192,11 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         );
     }
 
-    private icon(phase: NodePhase, suspended: boolean) {
+    private icon(phase: NodePhase) {
         return (
             <g>
                 <g transform={`translate(-${this.nodeSize / 4},-${this.nodeSize / 4}), scale(${0.032 / this.scale})`} color='white'>
-                    {WorkflowDag.iconPath(phase, suspended)}
+                    {WorkflowDag.iconPath(phase)}
                 </g>
                 {phase === 'Running' && (
                     <animateTransform attributeType='xml' attributeName='transform' type='rotate' from='0 0 0 ' to='360 0 0' dur='1s' additive='sum' repeatCount='indefinite' />
@@ -210,13 +206,13 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     }
 
     private getOutboundNodes(nodeID: string): string[] {
-        const node = this.props.workflow.status.nodes[nodeID];
+        const node = this.props.nodes[nodeID];
         if (node.type === 'Pod' || node.type === 'Skipped') {
             return [node.id];
         }
         let outbound = Array<string>();
         for (const outboundNodeID of node.outboundNodes || []) {
-            const outNode = this.props.workflow.status.nodes[outboundNodeID];
+            const outNode = this.props.nodes[outboundNodeID];
             if (outNode.type === 'Pod') {
                 outbound.push(outboundNodeID);
             } else {

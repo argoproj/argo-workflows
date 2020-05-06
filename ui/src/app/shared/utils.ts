@@ -46,10 +46,6 @@ export const Utils = {
         }
     },
 
-    isNodeSuspended(node: models.NodeStatus): boolean {
-        return node.type === 'Suspend' && node.phase === 'Running';
-    },
-
     isWorkflowSuspended(wf: models.Workflow): boolean {
         if (wf === null || wf.spec === null) {
             return false;
