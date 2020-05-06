@@ -14,11 +14,11 @@ spec:
       serviceAccountName: argo
       containers:
       - name: workflow-controller
-        image: argoproj/workflow-controller:v2.8.0-rc3
+        image: argoproj/workflow-controller:v2.8.0-rc4
         command:
         - workflow-controller
         args:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:v2.8.0-rc3
+        - argoproj/argoexec:v2.8.0-rc4
