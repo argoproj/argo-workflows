@@ -22,6 +22,9 @@ type hydrator struct {
 }
 
 func (h hydrator) Hydrate(wf *wfv1.Workflow) error {
+	if wf.Status.CompressedNodes == "" && !wf.Status.IsOffloadNodeStatus() {
+		return nil
+	}
 	err := packer.DecompressWorkflow(wf)
 	if err != nil {
 		return err
@@ -39,6 +42,9 @@ func (h hydrator) Hydrate(wf *wfv1.Workflow) error {
 }
 
 func (h hydrator) Dehydrate(wf *wfv1.Workflow) error {
+	if wf.Status.CompressedNodes != "" && wf.Status.IsOffloadNodeStatus() {
+		return nil
+	}
 	err := packer.CompressWorkflowIfNeeded(wf)
 	if err == nil {
 		wf.Status.OffloadNodeStatusVersion = ""
