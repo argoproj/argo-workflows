@@ -31,8 +31,8 @@ func (h hydrator) IsHydrated(wf *wfv1.Workflow) bool {
 	return !(wf.Status.CompressedNodes != "" || wf.Status.IsOffloadNodeStatus())
 }
 
-func (h hydrator) HydrateWithNodes(wf *wfv1.Workflow, nodes wfv1.Nodes) {
-	wf.Status.Nodes = nodes
+func (h hydrator) HydrateWithNodes(wf *wfv1.Workflow, offloadedNodes wfv1.Nodes) {
+	wf.Status.Nodes = offloadedNodes
 	wf.Status.CompressedNodes = ""
 	wf.Status.OffloadNodeStatusVersion = ""
 }

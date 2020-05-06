@@ -670,7 +670,7 @@ spec:
 			Raw()
 	})
 
-	s.Run("HydrateWithNodes", func() {
+	s.Run("Update", func() {
 		s.e(s.T()).PUT("/api/v1/cron-workflows/argo/test").
 			WithBytes([]byte(`{"cronWorkflow": {
     "metadata": {
@@ -1080,7 +1080,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 			Raw()
 	})
 
-	s.Run("HydrateWithNodes", func() {
+	s.Run("Update", func() {
 		s.e(s.T()).PUT("/api/v1/workflow-templates/argo/test").
 			WithBytes([]byte(`{"template": {
     "metadata": {

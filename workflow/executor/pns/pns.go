@@ -356,7 +356,7 @@ func (p *PNSExecutor) updateCtrIDMap() {
 			}
 		}
 
-		// HydrateWithNodes maps of pids to container ids
+		// Update maps of pids to container ids
 		if _, ok := p.pidToCtrID[pid]; !ok {
 			containerID, err := parseContainerID(pid)
 			if err != nil {

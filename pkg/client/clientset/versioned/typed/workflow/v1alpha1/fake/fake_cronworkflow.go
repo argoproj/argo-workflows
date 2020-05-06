@@ -73,7 +73,7 @@ func (c *FakeCronWorkflows) Create(cronWorkflow *v1alpha1.CronWorkflow) (result 
 	return obj.(*v1alpha1.CronWorkflow), err
 }
 
-// HydrateWithNodes takes the representation of a cronWorkflow and updates it. Returns the server's representation of the cronWorkflow, and an error, if there is any.
+// Update takes the representation of a cronWorkflow and updates it. Returns the server's representation of the cronWorkflow, and an error, if there is any.
 func (c *FakeCronWorkflows) Update(cronWorkflow *v1alpha1.CronWorkflow) (result *v1alpha1.CronWorkflow, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(cronworkflowsResource, c.ns, cronWorkflow), &v1alpha1.CronWorkflow{})

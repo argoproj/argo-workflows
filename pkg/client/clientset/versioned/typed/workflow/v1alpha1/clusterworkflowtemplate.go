@@ -97,7 +97,7 @@ func (c *clusterWorkflowTemplates) Create(clusterWorkflowTemplate *v1alpha1.Clus
 	return
 }
 
-// HydrateWithNodes takes the representation of a clusterWorkflowTemplate and updates it. Returns the server's representation of the clusterWorkflowTemplate, and an error, if there is any.
+// Update takes the representation of a clusterWorkflowTemplate and updates it. Returns the server's representation of the clusterWorkflowTemplate, and an error, if there is any.
 func (c *clusterWorkflowTemplates) Update(clusterWorkflowTemplate *v1alpha1.ClusterWorkflowTemplate) (result *v1alpha1.ClusterWorkflowTemplate, err error) {
 	result = &v1alpha1.ClusterWorkflowTemplate{}
 	err = c.client.Put().

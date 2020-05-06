@@ -103,7 +103,7 @@ func (c *cronWorkflows) Create(cronWorkflow *v1alpha1.CronWorkflow) (result *v1a
 	return
 }
 
-// HydrateWithNodes takes the representation of a cronWorkflow and updates it. Returns the server's representation of the cronWorkflow, and an error, if there is any.
+// Update takes the representation of a cronWorkflow and updates it. Returns the server's representation of the cronWorkflow, and an error, if there is any.
 func (c *cronWorkflows) Update(cronWorkflow *v1alpha1.CronWorkflow) (result *v1alpha1.CronWorkflow, err error) {
 	result = &v1alpha1.CronWorkflow{}
 	err = c.client.Put().
