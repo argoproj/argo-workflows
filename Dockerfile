@@ -71,7 +71,7 @@ COPY --from=builder /usr/local/bin/docker /usr/local/bin/
 
 ####################################################################################################
 
-FROM node:11.15.0 as argo-ui
+FROM node:14.0.0 as argo-ui
 
 ADD ["ui", "."]
 
