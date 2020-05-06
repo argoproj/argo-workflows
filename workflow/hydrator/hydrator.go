@@ -32,6 +32,8 @@ func (h hydrator) Hydrate(wf *wfv1.Workflow) error {
 			return err
 		}
 		wf.Status.Nodes = offloadedNodes
+		wf.Status.CompressedNodes = ""
+		wf.Status.OffloadNodeStatusVersion = ""
 	}
 	return nil
 }

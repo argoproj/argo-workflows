@@ -23,10 +23,10 @@ import (
 )
 
 type ArtifactServer struct {
-	authN     auth.Gatekeeper
-	hydrator  hydrator.Interface
-	wfArchive sqldb.WorkflowArchive
-	instanceIDService     instanceid.Service
+	authN             auth.Gatekeeper
+	hydrator          hydrator.Interface
+	wfArchive         sqldb.WorkflowArchive
+	instanceIDService instanceid.Service
 }
 
 func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service) *ArtifactServer {

@@ -54,7 +54,7 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
-	controller.offloadNodeStatusRepo, controller.hydrator =  getMockDBCtx(fmt.Errorf("not found"), false)
+	controller.offloadNodeStatusRepo, controller.hydrator = getMockDBCtx(fmt.Errorf("not found"), false)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
@@ -72,12 +72,12 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
-	controller.offloadNodeStatusRepo, controller.hydrator =  getMockDBCtx(errors.New("23324", "test"), false)
+	controller.offloadNodeStatusRepo, controller.hydrator = getMockDBCtx(errors.New("23324", "test"), false)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.NodeError, wf.Status.Phase)
 }
 
 // TestPersistWithoutLargeWfSupport verifies persistence with largeWFsuppport
@@ -89,7 +89,7 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
-	controller.offloadNodeStatusRepo, controller.hydrator =  getMockDBCtx(nil, true)
+	controller.offloadNodeStatusRepo, controller.hydrator = getMockDBCtx(nil, true)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
@@ -100,7 +100,7 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 	assert.Empty(t, wf.Status.Nodes)
 	assert.Empty(t, wf.Status.CompressedNodes)
 	// check the updated in-memory version is pre-offloaded state
-	assert.True(t, woc.wf.Status.IsOffloadNodeStatus())
+	assert.False(t, woc.wf.Status.IsOffloadNodeStatus())
 	assert.NotEmpty(t, woc.wf.Status.Nodes)
 	assert.Empty(t, woc.wf.Status.CompressedNodes)
 }

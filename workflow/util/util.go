@@ -345,14 +345,12 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface
 				workflowUpdated = true
 			}
 
-			newNodes := wf.Status.Nodes.DeepCopy()
-
 			// To resume a workflow with a suspended node we simply mark the node as Successful
 			for nodeID, node := range wf.Status.Nodes {
 				if node.IsActiveSuspendNode() {
 					node.Phase = wfv1.NodeSucceeded
 					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-					newNodes[nodeID] = node
+					wf.Status.Nodes[nodeID] = node
 					workflowUpdated = true
 				}
 			}

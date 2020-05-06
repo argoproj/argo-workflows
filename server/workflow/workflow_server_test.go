@@ -667,9 +667,9 @@ func TestRetryWorkflow(t *testing.T) {
 	server, ctx := getWorkflowServer()
 	t.Run("Labelled", func(t *testing.T) {
 		retried, err := server.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{Name: "failed", Namespace: "workflows"})
-			if assert.NoError(t, err) {
+		if assert.NoError(t, err) {
 			assert.NotNil(t, retried)
-			}
+		}
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{Name: "unlabelled", Namespace: "workflows"})
@@ -682,11 +682,11 @@ func TestSuspendResumeWorkflow(t *testing.T) {
 	wf, err := server.SuspendWorkflow(ctx, &workflowpkg.WorkflowSuspendRequest{Name: "hello-world-9tql2-run", Namespace: "workflows"})
 	if assert.NoError(t, err) {
 		assert.NotNil(t, wf)
-			assert.Equal(t, true, *wf.Spec.Suspend)
+		assert.Equal(t, true, *wf.Spec.Suspend)
 		wf, err = server.ResumeWorkflow(ctx, &workflowpkg.WorkflowResumeRequest{Name: wf.Name, Namespace: wf.Namespace})
 		if assert.NoError(t, err) {
 			assert.NotNil(t, wf)
-				assert.Nil(t, wf.Spec.Suspend)
+			assert.Nil(t, wf.Spec.Suspend)
 		}
 	}
 }
