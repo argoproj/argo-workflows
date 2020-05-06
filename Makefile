@@ -12,8 +12,16 @@ GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo
 
 export DOCKER_BUILDKIT = 1
 
-# To allow you to build with cache for debugging purposes.
+# To allow you to build with or without cache for debugging purposes.
 DOCKER_BUILD_OPTS     := --no-cache
+# Use a different Dockerfile, e.g. for building for Windows or dev images.
+DOCKERFILE            := Dockerfile
+
+# If we are building dev images, then we want to use the Docker cache for speed.
+ifeq ($(DEV_IMAGE),true)
+DOCKER_BUILD_OPTS     :=
+DOCKERFILE            := Dockerfile.dev
+endif
 
 # docker image publishing options
 IMAGE_NAMESPACE       ?= argoproj
@@ -114,6 +122,15 @@ define restore_go_mod
 	# Restore the back-ups.
 	mv dist/go.mod dist/go.sum .
 endef
+# docker_build,image_name,binary_name,marker_file_name
+define docker_build
+	# If we're making a dev build, we build this locally (this will be faster due to existing Go build caches).
+	[ $(DEV_IMAGE) = true ] && $(MAKE) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) $(2)
+	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
+	[ $(DEV_IMAGE) = true ] && mv $(2) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
+	[ $(K3D),true ] && k3d import-images $(IMAGE_NAMESPACE)/$(1):$(VERSION)
+	touch $(3)
+endef
 
 .PHONY: build
 build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
@@ -123,7 +140,7 @@ build: status clis executor-image controller-image manifests/install.yaml manife
 
 .PHONY: status
 status:
-	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), GIT_TREE_STATE=$(GIT_TREE_STATE), MANIFESTS_VERSION=$(MANIFESTS_VERSION), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE)
+	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), GIT_TREE_STATE=$(GIT_TREE_STATE), MANIFESTS_VERSION=$(MANIFESTS_VERSION), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE), K3D=$(K3D)
 
 # cli
 
@@ -178,8 +195,7 @@ argo-server.key:
 cli-image: $(CLI_IMAGE_FILE)
 
 $(CLI_IMAGE_FILE):
-	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
-	touch $(CLI_IMAGE_FILE)
+	$(call docker_build,argocli,argo,$(CLI_IMAGE_FILE))
 
 .PHONY: clis
 clis: dist/argo-linux-amd64 dist/argo-linux-arm64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/argo-darwin-amd64 dist/argo-windows-amd64 cli-image
@@ -201,8 +217,7 @@ dist/workflow-controller-%: $(CONTROLLER_PKGS)
 controller-image: $(CONTROLLER_IMAGE_FILE)
 
 $(CONTROLLER_IMAGE_FILE):
-	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
-	touch $(CONTROLLER_IMAGE_FILE)
+	$(call docker_build,workflow-controller,workflow-controller,$(CONTROLLER_IMAGE_FILE))
 
 # argoexec
 
@@ -216,19 +231,9 @@ dist/argoexec-%: $(ARGOEXEC_PKGS)
 .PHONY: executor-image
 executor-image: $(EXECUTOR_IMAGE_FILE)
 
-$(EXECUTOR_IMAGE_FILE): dist/argoexec-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
 	# Create executor image
-ifeq ($(DEV_IMAGE),true)
-	mv dist/argoexec-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) argoexec
-	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec -f Dockerfile.dev --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
-	mv argoexec dist/argoexec-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
-else
-	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
-endif
-ifeq ($(K3D),true)
-	k3d import-images $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
-endif
-	touch $(EXECUTOR_IMAGE_FILE)
+$(EXECUTOR_IMAGE_FILE):
+	$(call docker_build,argoexec,argoexec,$(EXECUTOR_IMAGE_FILE))
 
 # generation
 
