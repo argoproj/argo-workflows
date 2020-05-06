@@ -17,11 +17,6 @@ DOCKER_BUILD_OPTS     := --no-cache
 # Use a different Dockerfile, e.g. for building for Windows or dev images.
 DOCKERFILE            := Dockerfile
 
-# If we are building dev images, then we want to use the Docker cache for speed.
-ifeq ($(DEV_IMAGE),true)
-DOCKER_BUILD_OPTS     :=
-DOCKERFILE            := Dockerfile.dev
-endif
 
 # docker image publishing options
 IMAGE_NAMESPACE       ?= argoproj
@@ -64,6 +59,12 @@ else
 MANIFESTS_VERSION     := latest
 DEV_IMAGE             := true
 endif
+endif
+
+# If we are building dev images, then we want to use the Docker cache for speed.
+ifeq ($(DEV_IMAGE),true)
+DOCKER_BUILD_OPTS     :=
+DOCKERFILE            := Dockerfile.dev
 endif
 
 # version change, so does the file location
@@ -125,10 +126,10 @@ endef
 # docker_build,image_name,binary_name,marker_file_name
 define docker_build
 	# If we're making a dev build, we build this locally (this will be faster due to existing Go build caches).
-	[ $(DEV_IMAGE) = true ] && $(MAKE) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) $(2)
+	if [ $(DEV_IMAGE) = true ]; then $(MAKE) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) $(2); fi
 	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
-	[ $(DEV_IMAGE) = true ] && mv $(2) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
-	[ $(K3D) = true ] && k3d import-images $(IMAGE_NAMESPACE)/$(1):$(VERSION)
+	if [ $(DEV_IMAGE) = true ]; then mv $(2) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH); fi
+	if [ $(K3D) = true ]; then k3d import-images $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
 	touch $(3)
 endef
 
