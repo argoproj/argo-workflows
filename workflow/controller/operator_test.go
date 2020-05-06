@@ -561,7 +561,7 @@ func TestBackoffMessage(t *testing.T) {
 	assert.Equal(t, "", newRetryNode.Message)
 }
 
-var retryAttemptVariableTemplate = `
+var retriesVariableTemplate = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -575,14 +575,14 @@ spec:
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
-      args: ["cowsay {{retryAttempt}}"]
+      args: ["cowsay {{retries}}"]
 `
 
-func TestRetryAttemptVariable(t *testing.T) {
+func TestRetriesVariable(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(retryAttemptVariableTemplate)
+	wf := unmarshalWF(retriesVariableTemplate)
 	wf, err := wfcset.Create(wf)
 	assert.Nil(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
@@ -607,7 +607,7 @@ func TestRetryAttemptVariable(t *testing.T) {
 	}
 }
 
-var stepsRetryAttemptVariableTemplate = `
+var stepsRetriesVariableTemplate = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -622,25 +622,25 @@ spec:
       - - name: whalesay-success
           arguments:
             parameters:
-            - name: message
-              value: "{{retryAttempt}}"
+            - name: retries
+              value: "{{retries}}"
           template: whalesay
 
   - name: whalesay
     inputs:
       parameters:
-        - name: message
+        - name: retries
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
-      args: ["cowsay {{inputs.parameters.message}}"]
+      args: ["cowsay {{inputs.parameters.retries}}"]
 `
 
-func TestStepsRetryAttemptVariable(t *testing.T) {
+func TestStepsRetriesVariable(t *testing.T) {
 	cancel, controller := newController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(stepsRetryAttemptVariableTemplate)
+	wf := unmarshalWF(stepsRetriesVariableTemplate)
 	wf, err := wfcset.Create(wf)
 	assert.Nil(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})

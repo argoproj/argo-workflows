@@ -132,8 +132,8 @@ const (
 	GlobalVarWorkflowParameters = "workflow.parameters"
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"
-	// LocalVarRetryAttempt is a step level variable that references the retry attempt number if retryStrategy is specified
-	LocalVarRetryAttempt = "retryAttempt"
+	// LocalVarRetries is a step level variable that references the retries number if retryStrategy is specified
+	LocalVarRetries = "retries"
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"

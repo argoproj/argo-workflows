@@ -1477,7 +1477,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 				localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
 			}
 			// Inject the retryAttempt number
-			localParams[common.LocalVarRetryAttempt] = strconv.Itoa(len(retryParentNode.Children))
+			localParams[common.LocalVarRetries] = strconv.Itoa(len(retryParentNode.Children))
 
 			processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, localParams)
 			if err != nil {

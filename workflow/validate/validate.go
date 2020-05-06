@@ -319,8 +319,8 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 		scope[common.LocalVarPodName] = placeholderGenerator.NextPlaceholder()
 	}
 	if tmpl.RetryStrategy != nil {
-		localParams[common.LocalVarRetryAttempt] = placeholderGenerator.NextPlaceholder()
-		scope[common.LocalVarRetryAttempt] = placeholderGenerator.NextPlaceholder()
+		localParams[common.LocalVarRetries] = placeholderGenerator.NextPlaceholder()
+		scope[common.LocalVarRetries] = placeholderGenerator.NextPlaceholder()
 	}
 	if tmpl.IsLeaf() {
 		for _, art := range tmpl.Outputs.Artifacts {
