@@ -1002,7 +1002,7 @@ message TemplateRef {
   // By enabling this option, you can create the referred workflow template before the actual runtime.
   optional bool runtimeResolution = 3;
 
-  // ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+  // ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
   optional bool clusterScope = 4;
 }
 
@@ -1235,7 +1235,7 @@ message WorkflowSpec {
   // Shutdown will shutdown the workflow according to its ShutdownStrategy
   optional string shutdown = 33;
 
-  // workflowTemplateRef holds WorkflowTemplate reference -TODO-Bala update comments
+  // WorkflowTemplateRef holds top level WorkflowTemplate reference to execute it.
   optional WorkflowTemplateRef workflowTemplateRef = 34;
 }
 
@@ -1338,13 +1338,13 @@ message WorkflowTemplateList {
   repeated WorkflowTemplate items = 2;
 }
 
-// WorkflowTemplateRef is a reference of workflow template resource on Top level workflow.
+// WorkflowTemplateRef is a reference of workflow template resource on top level workflow.
 message WorkflowTemplateRef {
   // Name is the resource name of the workflow template.
   optional string name = 1;
 
-  // ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
-  optional bool clusterscope = 2;
+  // ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
+  optional bool clusterScope = 2;
 }
 
 // WorkflowTemplateSpec is a spec of WorkflowTemplate.

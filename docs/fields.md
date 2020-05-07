@@ -228,6 +228,8 @@ Workflow is the definition of a workflow resource
 
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
+- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
+
 - [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
 </details>
 
@@ -514,6 +516,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
 
 - [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
 </details>
@@ -811,6 +815,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 
+- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
+
 - [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
 </details>
 
@@ -1073,6 +1079,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 
+- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
+
 - [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
 </details>
 
@@ -1235,7 +1243,7 @@ Arguments to a template
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 
-- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
+- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
 </details>
 
 ### Fields
@@ -1870,7 +1878,7 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 
-- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
+- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
 </details>
 
 ### Fields
@@ -2376,6 +2384,8 @@ Pod metdata
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
 
 - [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
 </details>
@@ -3452,6 +3462,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 
+- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
+
 - [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
 </details>
 
@@ -4467,6 +4479,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devicesand 
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
 
 - [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
 </details>

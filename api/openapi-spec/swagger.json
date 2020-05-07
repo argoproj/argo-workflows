@@ -4213,11 +4213,11 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.WorkflowTemplateRef": {
-      "description": "WorkflowTemplateRef is a reference of workflow template resource on Top level io.argoproj.workflow.v1alpha1.",
+      "description": "WorkflowTemplateRef is a reference of workflow template resource on top level io.argoproj.workflow.v1alpha1.",
       "type": "object",
       "properties": {
-        "clusterscope": {
-          "description": "ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).",
+        "clusterScope": {
+          "description": "ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).",
           "type": "boolean",
           "format": "boolean"
         },

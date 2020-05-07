@@ -2661,6 +2661,7 @@ func TestStatusConditions(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	//woc.operate()
 	assert.Equal(t, len(woc.wf.Status.Conditions), 0)
+	woc.setWorkflowSpecAndEntrypoint()
 	woc.markWorkflowSuccess()
 	assert.Equal(t, woc.wf.Status.Conditions[0].Status, metav1.ConditionStatus("True"))
 }
