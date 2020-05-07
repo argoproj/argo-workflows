@@ -74,8 +74,10 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 
 	var newDeadline *time.Time
 	if woc.wf.Spec.Shutdown != "" {
-		// Signal termination by setting a Zero deadline
-		newDeadline = &time.Time{}
+		_, onExitPod := pod.Labels[common.LabelKeyOnExit]
+		if woc.wf.Spec.Shutdown == wfv1.ShutdownStrategyTerminate || (woc.wf.Spec.Shutdown == wfv1.ShutdownStrategyStop && !onExitPod) {
+			newDeadline = &time.Time{}
+		}
 	} else {
 		if podExecCtl.Deadline == nil && woc.workflowDeadline == nil {
 			return nil
