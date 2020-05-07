@@ -186,7 +186,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             <>
                 <WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.setState(workflowDagRenderOptions)} />
                 <div className='workflow-dag'>
-                    <svg style={{width: graph.graph().width+4, height: graph.graph().height +this.nodeSize/2, margin: this.nodeSize}}>
+                    <svg style={{width: graph.graph().width + 4, height: graph.graph().height + this.nodeSize / 2, margin: this.nodeSize}}>
                         <defs>
                             <marker id='arrow' viewBox='0 0 10 10' refX={10} refY={5} markerWidth={this.nodeSize / 6} markerHeight={this.nodeSize / 6} orient='auto-start-reverse'>
                                 <path d='M 0 0 L 10 5 L 0 10 z' className='arrow' />
