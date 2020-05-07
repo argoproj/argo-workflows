@@ -5463,6 +5463,10 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
+
+- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
 </details>
 
 ### Fields
