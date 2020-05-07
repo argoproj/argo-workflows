@@ -162,17 +162,23 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         graph.setDefaultEdgeLabel(() => ({}));
         const nodes = this.props.nodes;
         Object.values(nodes)
-          .filter(node => !!node)
-          .forEach(node => {
-            const label = Utils.shortNodeName(node);
-            const nodeSize = this.filterNode(node) ? 1 : this.nodeSize;
-            // one of the key improvements is passing less data to Dagre to layout
-            graph.setNode(node.id, {label, id: node.id, width: nodeSize, height: nodeSize, phase: node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase});
-            (node.children || [])
-                .map(childId => nodes[childId])
-                .filter(child => !!child)
-                .forEach(child => graph.setEdge(node.id, child.id));
-        });
+            .filter(node => !!node)
+            .forEach(node => {
+                const label = Utils.shortNodeName(node);
+                const nodeSize = this.filterNode(node) ? 1 : this.nodeSize;
+                // one of the key improvements is passing less data to Dagre to layout
+                graph.setNode(node.id, {
+                    label,
+                    id: node.id,
+                    width: nodeSize,
+                    height: nodeSize,
+                    phase: node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase
+                });
+                (node.children || [])
+                    .map(childId => nodes[childId])
+                    .filter(child => !!child)
+                    .forEach(child => graph.setEdge(node.id, child.id));
+            });
         const onExitHandlerNodeId = Object.keys(nodes).find(id => nodes[id].name === `${this.props.workflowName}.onExit`);
         if (onExitHandlerNodeId) {
             this.getOutboundNodes(this.props.workflowName).forEach(nodeId => graph.setEdge(nodeId, onExitHandlerNodeId));
