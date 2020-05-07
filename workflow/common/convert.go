@@ -26,7 +26,7 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) *wfv1.Workflow {
 	return wf
 }
 
-func ConvertWorkflowTemplateToWorkflow(templateName string, clusterScope bool) *wfv1.Workflow {
+func NewWorkflowFromWorkflowTemplate(templateName string, clusterScope bool) *wfv1.Workflow {
 
 	wf := &wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{

@@ -411,9 +411,9 @@ func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.Wo
 		}
 		wf = common.ConvertCronWorkflowToWorkflow(cronWf)
 	case workflow.WorkflowTemplateKind, workflow.WorkflowTemplateSingular, workflow.WorkflowTemplatePlural, workflow.WorkflowTemplateShortName:
-		wf = common.ConvertWorkflowTemplateToWorkflow(req.ResourceName, false)
+		wf = common.NewWorkflowFromWorkflowTemplate(req.ResourceName, false)
 	case workflow.ClusterWorkflowTemplateKind, workflow.ClusterWorkflowTemplateSingular, workflow.ClusterWorkflowTemplatePlural, workflow.ClusterWorkflowTemplateShortName:
-		wf = common.ConvertWorkflowTemplateToWorkflow(req.ResourceName, true)
+		wf = common.NewWorkflowFromWorkflowTemplate(req.ResourceName, true)
 	default:
 		return nil, errors.Errorf(errors.CodeBadRequest, "Resource kind '%s' is not supported for submitting", req.ResourceKind)
 	}

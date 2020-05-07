@@ -269,7 +269,7 @@ type WorkflowSpec struct {
 	// Shutdown will shutdown the workflow according to its ShutdownStrategy
 	Shutdown ShutdownStrategy `json:"shutdown,omitempty" protobuf:"bytes,33,opt,name=shutdown,casttype=ShutdownStrategy"`
 
-	// workflowTemplateRef holds WorkflowTemplate reference -TODO-Bala update comments
+	// WorkflowTemplateRef holds top level WorkflowTemplate reference to execute it.
 	WorkflowTemplateRef *WorkflowTemplateRef `json:"workflowTemplateRef,omitempty" protobuf:"bytes,34,opt,name=workflowTemplateRef"`
 }
 
@@ -808,16 +808,16 @@ type TemplateRef struct {
 	// RuntimeResolution skips validation at creation time.
 	// By enabling this option, you can create the referred workflow template before the actual runtime.
 	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
-	// ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+	// ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
 }
 
-// WorkflowTemplateRef is a reference of workflow template resource on Top level workflow.
+// WorkflowTemplateRef is a reference of workflow template resource on top level workflow.
 type WorkflowTemplateRef struct {
 	// Name is the resource name of the workflow template.
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
-	// ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
-	ClusterScope bool `json:"clusterscope,omitempty" protobuf:"varint,2,opt,name=clusterscope"`
+	// ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
+	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,2,opt,name=clusterScope"`
 }
 
 func (wftRef *WorkflowTemplateRef) ConvertTemplateRef(entrypoint string) *TemplateRef {
@@ -923,7 +923,7 @@ type WorkflowStatus struct {
 	// ResourcesDuration is the total for the workflow
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
 
-	//StoredWorkflowTemplateSpec stores the top level WorkflowTemplate spec
+	// StoredWorkflowTemplateSpec stores the top level WorkflowTemplate spec
 	StoredWorkflowTemplateSpec *WorkflowSpec `json:"storedWorkflowTemplateSpec,omitempty" protobuf:"bytes,14,opt,name=storedWorkflowTemplateSpec"`
 }
 
