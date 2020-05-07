@@ -23,6 +23,8 @@ export interface WorkflowDagProps {
 
 require('./workflow-dag.scss');
 
+type DagPhase = NodePhase | 'Suspended';
+
 export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRenderOptions> {
     private get scale() {
         return this.state.scale;
@@ -40,7 +42,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
      * * open the "times" page: https://fontawesome.com/icons/times?style=solid
      * * right click on the smallest icon (next to the unicode character) and view source.
      */
-    private static iconPath(phase: string) {
+    private static iconPath(phase: DagPhase) {
         switch (phase) {
             case 'Pending':
                 return (
@@ -152,26 +154,24 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         }
         const graph = new dagre.graphlib.Graph();
         // https://github.com/dagrejs/dagre/wiki
+        // https://stackoverflow.com/questions/7034/graph-visualization-library-in-javascript
         graph.setGraph({
             edgesep: this.nodeSize,
             nodesep: this.nodeSize * 2,
             rankdir: this.state.horizontal ? 'LR' : 'TB',
-            ranksep: this.nodeSize
+            ranksep: this.nodeSize,
+            // these two settings seem to be about 25% faster
+            acyclicer: 'greedy',
+            ranker: 'longest-path'
         });
         graph.setDefaultEdgeLabel(() => ({}));
         const nodes = this.props.nodes;
         Object.values(nodes)
             .filter(node => !!node)
             .forEach(node => {
-                const label = Utils.shortNodeName(node);
                 const nodeSize = this.filterNode(node) ? 1 : this.nodeSize;
                 // one of the key improvements is passing less data to Dagre to layout
-                graph.setNode(node.id, {
-                    label,
-                    width: nodeSize,
-                    height: nodeSize,
-                    phase: node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase
-                });
+                graph.setNode(node.id, { width: nodeSize, height: nodeSize });
                 (node.children || [])
                     .map(childId => nodes[childId])
                     .filter(child => !!child)
@@ -181,7 +181,10 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         if (onExitHandlerNodeId) {
             this.getOutboundNodes(this.props.workflowName).forEach(nodeId => graph.setEdge(nodeId, onExitHandlerNodeId));
         }
+
+        const start = new Date().getTime();
         dagre.layout(graph);
+        console.log(new Date().getTime() - start);
         return (
             <>
                 <WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.setState(workflowDagRenderOptions)} />
@@ -206,23 +209,25 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                     .join(' ');
                                 return <path key={`line/${edge.v}-${edge.w}`} d={points} className='line' markerEnd={(graph.node(edge.w).width > 1 && 'url(#arrow)') || null} />;
                             })}
-                            {graph.nodes().map(id => {
-                                const node = graph.node(id);
+                            {graph.nodes().map(nodeId => {
+                                const v = graph.node(nodeId);
+                                const node = nodes[nodeId];
+                                const phase: DagPhase = node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase;
                                 return (
-                                    <g key={`node/${id}`} transform={`translate(${node.x},${node.y})`} onClick={() => this.selectNode(id)} className='node'>
+                                    <g key={`node/${nodeId}`} transform={`translate(${v.x},${v.y})`} onClick={() => this.selectNode(nodeId)} className='node'>
                                         <circle
-                                            r={node.width / 2}
-                                            className={classNames('workflow-dag__node', 'workflow-dag__node-status', 'workflow-dag__node-status--' + node.phase.toLowerCase(), {
-                                                active: node.id === this.props.selectedNodeId
+                                            r={v.width / 2}
+                                            className={classNames('workflow-dag__node', 'workflow-dag__node-status', 'workflow-dag__node-status--' + phase.toLowerCase(), {
+                                                active: v.id === this.props.selectedNodeId
                                             })}
                                             filter='url(#shadow)'
                                         />
-                                        {node.width > 1 && (
+                                        {v.width > 1 && (
                                             <>
-                                                {this.icon(node.phase)}
-                                                <g transform={`translate(0,${node.height})`}>
+                                                {this.icon(phase)}
+                                                <g transform={`translate(0,${v.height})`}>
                                                     <text className='label' fontSize={12 / this.scale}>
-                                                        {WorkflowDag.formatLabel(node.label)}
+                                                        {WorkflowDag.formatLabel(Utils.shortNodeName(node))}
                                                     </text>
                                                 </g>
                                             </>
@@ -241,7 +246,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         return this.props.nodeClicked && this.props.nodeClicked(nodeId);
     }
 
-    private icon(phase: NodePhase) {
+    private icon(phase: DagPhase) {
         return (
             <g>
                 <g transform={`translate(-${this.nodeSize / 4},-${this.nodeSize / 4}), scale(${0.032 / this.scale})`} color='white'>
