@@ -3268,6 +3268,12 @@ status:
 // proper finishedTime tag.
 func TestMaxDurationOnErroredFirstNode(t *testing.T) {
 	wf := unmarshalWF(maxDurationOnErroredFirstNode)
+
+	// Simulate node failed just now
+	node := wf.Status.Nodes["echo-wngc4-1641470511"]
+	node.StartedAt = metav1.Time{Time: time.Now().Add(-1 * time.Second)}
+	wf.Status.Nodes["echo-wngc4-1641470511"] = node
+
 	woc := newWoc(*wf)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
