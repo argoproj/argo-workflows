@@ -113,6 +113,13 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	hasWorkflowTemplateRef := wf.Spec.WorkflowTemplateRef != nil
 
 	if hasWorkflowTemplateRef {
+		err := ValidateFieldsWithWFTRef(wf.Spec)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if hasWorkflowTemplateRef {
 		if wf.Spec.WorkflowTemplateRef.ClusterScope {
 			wftmpl, err = cwftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
 		} else {
@@ -245,6 +252,29 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		}
 	}
 	return wfConditions, nil
+}
+
+func ValidateFieldsWithWFTRef(v interface{}) error {
+	val := reflect.ValueOf(v)
+	// Acceptable fields if workflow has top level workflow template reference.
+	validFields := map[string]bool{
+		"Entrypoint":            true,
+		"Suspend":               true,
+		"ActiveDeadlineSeconds": true,
+		"Priority":              true,
+		"Arguments":             true,
+		"WorkflowTemplateRef":   true,
+	}
+	for i := 0; i < val.NumField(); i++ {
+		// Lookup the validate tag
+		field := val.Type().Field(i)
+		fieldVal := val.Field(i).IsZero()
+		_, ok := validFields[field.Name]
+		if !ok && !fieldVal {
+			return errors.Errorf(errors.CodeBadRequest, "%s is invalid field in spec if workflow has top level template reference", field.Name)
+		}
+	}
+	return nil
 }
 
 // ValidateWorkflowTemplate accepts a workflow template and performs validation against it.

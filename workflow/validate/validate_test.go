@@ -2449,6 +2449,10 @@ metadata:
   generateName: hello-world-
 spec:
   entrypoint: A
+  arguments:
+    parameters:
+    - name: lines-count
+      value: 3
   workflowTemplateRef:
     name: template-ref-target
 `
@@ -2458,4 +2462,31 @@ func TestWorkflowWithWFTRef(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = validate(wfWithWFTRef)
 	assert.NoError(t, err)
+}
+
+const invalidWFWithWFTRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: A
+  arguments:
+    parameters:
+    - name: lines-count
+      value: 3
+  workflowTemplateRef:
+    name: template-ref-target
+  templates:
+  - name: A
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+`
+
+func TestValidateFieldsWithWFTRef(t *testing.T) {
+	err := createWorkflowTemplate(templateRefTarget)
+	assert.NoError(t, err)
+	_, err = validate(invalidWFWithWFTRef)
+	assert.Error(t, err)
 }

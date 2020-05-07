@@ -2595,7 +2595,7 @@ func (woc *wfOperationCtx) createPDBResource() error {
 }
 
 func (woc *wfOperationCtx) deletePDBResource() error {
-	if woc.wf.Spec.PodDisruptionBudget == nil {
+	if woc.wfSpec.PodDisruptionBudget == nil {
 		return nil
 	}
 	var err error
