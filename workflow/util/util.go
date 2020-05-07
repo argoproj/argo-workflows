@@ -588,7 +588,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 		return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
 	}
 
-	err := hydrator.Dehydrate(wf)
+	err := hydrator.Hydrate(wf)
 	if err != nil {
 		return nil, err
 	}
