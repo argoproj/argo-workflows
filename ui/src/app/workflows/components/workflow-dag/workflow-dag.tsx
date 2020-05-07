@@ -40,7 +40,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
      * * open the "times" page: https://fontawesome.com/icons/times?style=solid
      * * right click on the smallest icon (next to the unicode character) and view source.
      */
-    private static iconPath(phase: NodePhase) {
+    private static iconPath(phase: string) {
         switch (phase) {
             case 'Pending':
                 return (
@@ -183,7 +183,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 <div className='workflow-dag'>
                     <svg style={{width: size.width, height: size.height}}>
                         <defs>
-                            <marker id='arrow' viewBox='0 0 10 10' refX={10} refY={5} markerWidth={this.nodeSize / 4} markerHeight={this.nodeSize / 4} orient='auto-start-reverse'>
+                            <marker id='arrow' viewBox='0 0 10 10' refX={10} refY={5} markerWidth={this.nodeSize / 6} markerHeight={this.nodeSize / 6} orient='auto-start-reverse'>
                                 <path d='M 0 0 L 10 5 L 0 10 z' className='arrow' />
                             </marker>
                             <filter id='shadow' x='0' y='0' width='200%' height='200%'>
@@ -197,15 +197,15 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                             {graph.edges().map(edge => {
                                 const points = graph
                                     .edge(edge)
-                                    .points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`))
-                                    .join(', ');
+                                    .points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`))
+                                    .join(' ');
                                 return <path key={`line/${points}`} d={points} className='line' markerEnd={graph.node(edge.w).width > 1 && 'url(#arrow)'} />;
                             })}
                             {graph
                                 .nodes()
                                 .map(id => graph.node(id))
                                 .map(node => (
-                                    <g key={`node/${node.id}`} transform={`translate(${node.x},${node.y})`}>
+                                    <g key={`node/${node.id}`} transform={`translate(${node.x},${node.y})`} onClick={() => this.selectNode(node.id)} className='node'>
                                         <circle
                                             r={node.width / 2}
                                             className={classNames(
@@ -217,7 +217,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                                 }
                                             )}
                                             filter='url(#shadow)'
-                                            onClick={() => this.props.nodeClicked && this.props.nodeClicked(node.id)}
                                         />
                                         {node.width > 1 && (
                                             <>
@@ -236,6 +235,10 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 </div>
             </>
         );
+    }
+
+    private selectNode(nodeId: string) {
+        return this.props.nodeClicked && this.props.nodeClicked(nodeId);
     }
 
     private icon(phase: NodePhase) {

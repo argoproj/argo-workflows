@@ -916,7 +916,7 @@ export interface WorkflowStep {
     templateRef?: TemplateRef;
 }
 
-export type NodePhase = 'Pending' | 'Running' | 'Succeeded' | 'Suspended' | 'Skipped' | 'Failed' | 'Error';
+export type NodePhase = 'Pending' | 'Running' | 'Succeeded' | 'Skipped' | 'Failed' | 'Error';
 
 export const NODE_PHASE = {
     PENDING: 'Pending',
@@ -924,9 +924,7 @@ export const NODE_PHASE = {
     SUCCEEDED: 'Succeeded',
     SKIPPED: 'Skipped',
     FAILED: 'Failed',
-    ERROR: 'Error',
-    // this is a fake phase - no actual node even has this
-    SUSPENDED: 'Suspended'
+    ERROR: 'Error'
 };
 
 export type ResourceScope = 'local' | 'namespaced' | 'cluster';

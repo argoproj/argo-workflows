@@ -36,9 +36,11 @@
     text-rendering: optimizeLegibility;
   }
 
-  &__node {
+  .node {
     cursor: pointer;
+  }
 
+  &__node {
     &.active {
       stroke: $argo-color-teal-6;
     }
