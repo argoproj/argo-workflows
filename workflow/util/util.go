@@ -334,7 +334,7 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface
 				return false, err
 			}
 
-			err = hydrator.Hydrate(wf)
+			err = decompressAndFetchOffloadedNodes(wf, hydrator)
 			if err != nil {
 				return false, err
 			}
@@ -345,18 +345,20 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface
 				workflowUpdated = true
 			}
 
+			newNodes := wf.Status.Nodes.DeepCopy()
+
 			// To resume a workflow with a suspended node we simply mark the node as Successful
 			for nodeID, node := range wf.Status.Nodes {
 				if node.IsActiveSuspendNode() {
 					node.Phase = wfv1.NodeSucceeded
 					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-					wf.Status.Nodes[nodeID] = node
+					newNodes[nodeID] = node
 					workflowUpdated = true
 				}
 			}
 
 			if workflowUpdated {
-				err := hydrator.Dehydrate(wf)
+				err = compressAndOffloadNodes(wf, hydrator, newNodes)
 				if err != nil {
 					return false, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
 				}
@@ -373,6 +375,15 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface
 		})
 		return err
 	}
+}
+
+func decompressAndFetchOffloadedNodes(wf *wfv1.Workflow, hydrator hydrator.Interface) error {
+	return hydrator.Hydrate(wf)
+}
+
+func compressAndOffloadNodes(wf *wfv1.Workflow, hydrator hydrator.Interface, newNodes wfv1.Nodes) error {
+	wf.Status.Nodes = newNodes
+	return hydrator.Dehydrate(wf)
 }
 
 func selectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
@@ -406,7 +417,7 @@ func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.
 			return false, err
 		}
 
-		err = hydrator.Hydrate(wf)
+		err = decompressAndFetchOffloadedNodes(wf, hydrator)
 		if err != nil {
 			return false, err
 		}
@@ -427,10 +438,11 @@ func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.
 			}
 		}
 		if nodeUpdated {
-			err := hydrator.Dehydrate(wf)
+			err = compressAndOffloadNodes(wf, hydrator, nodes)
 			if err != nil {
-				return false, err
+				return false, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
 			}
+
 			_, err = wfIf.Update(wf)
 			if err != nil {
 				if apierr.IsConflict(err) {
@@ -588,7 +600,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 		return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
 	}
 
-	err := hydrator.Hydrate(wf)
+	err := decompressAndFetchOffloadedNodes(wf, hydrator)
 	if err != nil {
 		return nil, err
 	}
@@ -662,7 +674,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, hydrator hydrator.Interface,
 		}
 	}
 
-	err = hydrator.Dehydrate(wf)
+	err = compressAndOffloadNodes(newWF, hydrator, newNodes)
 	if err != nil {
 		return nil, fmt.Errorf("unable to compress or offload workflow nodes: %s", err)
 	}

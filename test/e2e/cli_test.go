@@ -450,7 +450,7 @@ func (s *CLISuite) TestWorkflowRetry() {
 		WaitForWorkflowToStart(5*time.Second).
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.AnyActiveSuspendNode()
-		}, "suspended node (1/2)", 30*time.Second).
+		}, "suspended node", 30*time.Second).
 		RunCli([]string{"terminate", "retry-test"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "workflow retry-test terminated")
@@ -468,7 +468,7 @@ func (s *CLISuite) TestWorkflowRetry() {
 		}).
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
 			return wf.Status.AnyActiveSuspendNode()
-		}, "suspended node (2/2)", 20*time.Second).
+		}, "suspended node", 20*time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			outerStepsPodNode := status.Nodes.FindByDisplayName("steps-outer-step1")
