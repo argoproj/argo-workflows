@@ -83,6 +83,12 @@ K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-
 COMPONENTS            := controller,argo-server
 LOG_LEVEL             := debug
 
+ifeq ($(DB),no-db)
+ALWAYS_OFFLOAD_NODE_STATUS := false
+else
+ALWAYS_OFFLOAD_NODE_STATUS := true
+endif
+
 ifeq ($(CI),true)
 TEST_OPTS := -coverprofile=coverage.out
 else
@@ -362,7 +368,7 @@ start-aux:
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
 ifneq ($(findstring controller,$(COMPONENTS)),)
-	ALWAYS_OFFLOAD_NODE_STATUS=true OFFLOAD_NODE_STATUS_TTL=30s WORKFLOW_GC_PERIOD=30s UPPERIO_DB_DEBUG=1 ARCHIVED_WORKFLOW_GC_PERIOD=30s ./dist/workflow-controller --executor-image argoproj/argoexec:$(VERSION) --namespaced --loglevel $(LOG_LEVEL) &
+	ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) OFFLOAD_NODE_STATUS_TTL=30s WORKFLOW_GC_PERIOD=30s UPPERIO_DB_DEBUG=1 ARCHIVED_WORKFLOW_GC_PERIOD=30s ./dist/workflow-controller --executor-image argoproj/argoexec:$(VERSION) --namespaced --loglevel $(LOG_LEVEL) &
 endif
 ifneq ($(findstring argo-server,$(COMPONENTS)),)
 	UPPERIO_DB_DEBUG=1 ./dist/argo --loglevel $(LOG_LEVEL) server --namespaced --auth-mode client --secure &
