@@ -63,3 +63,10 @@ func TestWorkflowConditions_UpsertConditionMessage(t *testing.T) {
 	wfCond.UpsertConditionMessage(WorkflowCondition{Type: WorkflowConditionCompleted, Message: "world!"})
 	assert.Equal(t, "Hello, world!", wfCond[0].Message)
 }
+
+func TestShutdownStrategy_ShouldExecute(t *testing.T) {
+	assert.False(t, ShutdownStrategyTerminate.ShouldExecute(true))
+	assert.False(t, ShutdownStrategyTerminate.ShouldExecute(false))
+	assert.False(t, ShutdownStrategyStop.ShouldExecute(false))
+	assert.True(t, ShutdownStrategyStop.ShouldExecute(true))
+}
