@@ -168,7 +168,6 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 // one of the key improvements is passing less data to Dagre to layout
                 graph.setNode(node.id, {
                     label,
-                    id: node.id,
                     width: nodeSize,
                     height: nodeSize,
                     phase: node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase
@@ -187,7 +186,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             <>
                 <WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.setState(workflowDagRenderOptions)} />
                 <div className='workflow-dag'>
-                    <svg style={{width: graph.graph().width, height: graph.graph().height}}>
+                    <svg style={{width: graph.graph().width+4, height: graph.graph().height +this.nodeSize/2, margin: this.nodeSize}}>
                         <defs>
                             <marker id='arrow' viewBox='0 0 10 10' refX={10} refY={5} markerWidth={this.nodeSize / 6} markerHeight={this.nodeSize / 6} orient='auto-start-reverse'>
                                 <path d='M 0 0 L 10 5 L 0 10 z' className='arrow' />
@@ -199,18 +198,18 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                 <feBlend in='SourceGraphic' in2='blurOut' mode='normal' />
                             </filter>
                         </defs>
-                        <g transform={`translate(${this.nodeSize},${this.nodeSize})`}>
+                        <g>
                             {graph.edges().map(edge => {
                                 const points = graph
                                     .edge(edge)
                                     .points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`))
                                     .join(' ');
-                                return <path key={`line/${points}`} d={points} className='line' markerEnd={(graph.node(edge.w).width > 1 && 'url(#arrow)') || null} />;
+                                return <path key={`line/${edge.v}-${edge.w}`} d={points} className='line' markerEnd={(graph.node(edge.w).width > 1 && 'url(#arrow)') || null} />;
                             })}
                             {graph.nodes().map(id => {
                                 const node = graph.node(id);
                                 return (
-                                    <g key={`node/${id}`} transform={`translate(${node.x},${node.y})`} onClick={() => this.selectNode(node.id)} className='node'>
+                                    <g key={`node/${id}`} transform={`translate(${node.x},${node.y})`} onClick={() => this.selectNode(id)} className='node'>
                                         <circle
                                             r={node.width / 2}
                                             className={classNames('workflow-dag__node', 'workflow-dag__node-status', 'workflow-dag__node-status--' + node.phase.toLowerCase(), {
