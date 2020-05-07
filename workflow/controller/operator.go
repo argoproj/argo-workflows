@@ -50,7 +50,11 @@ import (
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
 type wfOperationCtx struct {
+
 	// wf is the workflow object
+	// wf.spec should not be used for execution logic.
+	// All execution logic should refer the wfSpec.
+
 	wf *wfv1.Workflow
 	// orig is the original workflow object for purposes of creating a patch
 	orig *wfv1.Workflow
@@ -89,6 +93,7 @@ type wfOperationCtx struct {
 	// preExecutionNodePhases contains the phases of all the nodes before the current operation. Necessary to infer
 	// changes in phase for metric emission
 	preExecutionNodePhases map[string]wfv1.NodePhase
+
 	// wfSpec holds the WorkflowSpec for execution
 	wfSpec *wfv1.WorkflowSpec
 	// entrypoint is the starting point for workflow execution
