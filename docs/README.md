@@ -23,6 +23,7 @@ Some use-case specific documentation is available:
 * [Cluster Workflow Templates](cluster-workflow-templates.md)
 * [Configuring Your Artifact Repository](configure-artifact-repository.md)
 * [Core Concepts](core-concepts.md)
+* [Cost Optimisation](cost-optimisation.md)
 * [Cron Workflows](cron-workflows.md)
 * [Default Workflow Spec](default-workflow-specs.md)
 * [Argo Fields](fields.md)
