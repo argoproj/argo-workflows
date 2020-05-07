@@ -15,7 +15,7 @@ import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {formatDuration, wfDuration} from '../../../shared/duration';
 import {exampleWorkflow} from '../../../shared/examples';
-import {defaultPaginationLimit, Pagination, parseLimit} from '../../../shared/pagination';
+import {Pagination, parseLimit} from '../../../shared/pagination';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 import {ArchivedWorkflowFilters} from '../archived-workflow-filters/archived-workflow-filters';
@@ -34,6 +34,8 @@ interface State {
     error?: Error;
 }
 
+const defaultPaginationLimit = 10;
+
 export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, State> {
     private get wfInput() {
         return Utils.tryJsonParse(this.queryParam('new'));
@@ -43,7 +45,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         super(props, context);
         this.state = {
             loading: true,
-            pagination: {offset: this.queryParam('offset'), limit: parseLimit(this.queryParam('limit'))},
+            pagination: {offset: this.queryParam('offset'), limit: parseLimit(this.queryParam('limit')) || defaultPaginationLimit},
             initialized: false,
             managedNamespace: false,
             namespace: this.props.match.params.namespace || Utils.getCurrentNamespace() || '',
@@ -224,9 +226,10 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                 <div className='argo-table-list'>
                     <div className='row argo-table-list__head'>
                         <div className='columns small-1' />
-                        <div className='columns small-4'>NAME</div>
-                        <div className='columns small-3'>NAMESPACE</div>
+                        <div className='columns small-3'>NAME</div>
+                        <div className='columns small-2'>NAMESPACE</div>
                         <div className='columns small-2'>STARTED</div>
+                        <div className='columns small-2'>FINISHED</div>
                         <div className='columns small-2'>DURATION</div>
                     </div>
                     {this.state.workflows.map(w => (
@@ -234,10 +237,12 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                             <div className='columns small-1'>
                                 <i className={classNames('fa', Utils.statusIconClasses(w.status.phase))} />
                             </div>
-                            <div className='columns small-4'>{w.metadata.name}</div>
-                            <div className='columns small-3'>{w.metadata.namespace}</div>
+                            <div className='columns small-3'>{w.metadata.name}</div>
+                            <div className='columns small-2'>{w.metadata.namespace}</div>
                             <div className='columns small-2'>
                                 <Timestamp date={w.status.startedAt} />
+                            </div>
+                            <div className='columns small-2'>
                                 <Timestamp date={w.status.finishedAt} />
                             </div>
                             <div className='columns small-2'>{formatDuration(wfDuration(w.status))}</div>

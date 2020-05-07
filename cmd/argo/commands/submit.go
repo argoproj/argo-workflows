@@ -66,7 +66,6 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringVar(&submitOpts.Entrypoint, "entrypoint", "", "override entrypoint")
 	command.Flags().StringArrayVarP(&submitOpts.Parameters, "parameter", "p", []string{}, "pass an input parameter")
 	command.Flags().StringVar(&submitOpts.ServiceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
-	command.Flags().StringVar(&submitOpts.InstanceID, "instanceid", "", "submit with a specific controller's instance id label")
 	command.Flags().BoolVar(&submitOpts.DryRun, "dry-run", false, "modify the workflow on the client-side without creating it")
 	command.Flags().BoolVar(&submitOpts.ServerDryRun, "server-dry-run", false, "send request to server with dry-run flag which will modify the workflow without creating it")
 	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
@@ -198,7 +197,6 @@ func submitWorkflows(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cli
 		created, err := serviceClient.CreateWorkflow(ctx, &workflowpkg.WorkflowCreateRequest{
 			Namespace:     wf.Namespace,
 			Workflow:      &wf,
-			InstanceID:    submitOpts.InstanceID,
 			ServerDryRun:  submitOpts.ServerDryRun,
 			CreateOptions: options,
 		})

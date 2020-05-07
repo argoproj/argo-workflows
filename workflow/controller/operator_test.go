@@ -382,6 +382,185 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	assert.Equal(t, wfv1.NodeError, n.Phase)
 }
 
+var backoffMessage = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: "2020-05-05T15:18:40Z"
+  generateName: retry-backoff-
+  generation: 21
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Failed
+  name: retry-backoff-s69z6
+  namespace: argo
+  resourceVersion: "348670"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/retry-backoff-s69z6
+  uid: 110dbef4-c54b-4963-9739-03e9878810d9
+spec:
+  arguments: {}
+  entrypoint: retry-backoff
+  templates:
+  - arguments: {}
+    container:
+      args:
+      - import random; import sys; exit_code = random.choice([1, 1]); sys.exit(exit_code)
+      command:
+      - python
+      - -c
+      image: python:alpine3.6
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: retry-backoff
+    outputs: {}
+    retryStrategy:
+      backoff:
+        duration: "1"
+        factor: 2
+        maxDuration: 1m
+      limit: 10
+status:
+  nodes:
+    retry-backoff-s69z6:
+      children:
+      - retry-backoff-s69z6-1807967148
+      - retry-backoff-s69z6-130058153
+      displayName: retry-backoff-s69z6
+      id: retry-backoff-s69z6
+      name: retry-backoff-s69z6
+      phase: Running
+      startedAt: "2020-05-05T15:18:40Z"
+      templateName: retry-backoff
+      templateScope: local/retry-backoff-s69z6
+      type: Retry
+    retry-backoff-s69z6-130058153:
+      displayName: retry-backoff-s69z6(1)
+      finishedAt: "2020-05-05T15:18:43Z"
+      hostNodeName: minikube
+      id: retry-backoff-s69z6-130058153
+      message: failed with exit code 1
+      name: retry-backoff-s69z6(1)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: retry-backoff-s69z6/retry-backoff-s69z6-130058153/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 1
+        memory: 0
+      startedAt: "2020-05-05T15:18:45Z"
+      templateName: retry-backoff
+      templateScope: local/retry-backoff-s69z6
+      type: Pod
+    retry-backoff-s69z6-1807967148:
+      displayName: retry-backoff-s69z6(0)
+      finishedAt: "2020-05-05T15:18:43Z"
+      hostNodeName: minikube
+      id: retry-backoff-s69z6-1807967148
+      message: failed with exit code 1
+      name: retry-backoff-s69z6(0)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: retry-backoff-s69z6/retry-backoff-s69z6-1807967148/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 2
+        memory: 0
+      startedAt: "2020-05-05T15:18:40Z"
+      templateName: retry-backoff
+      templateScope: local/retry-backoff-s69z6
+      type: Pod
+  phase: Running
+  resourcesDuration:
+    cpu: 5
+    memory: 0
+  startedAt: "2020-05-05T15:18:40Z"
+`
+
+func TestBackoffMessage(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	assert.NotNil(t, controller)
+	wf := unmarshalWF(backoffMessage)
+	assert.NotNil(t, wf)
+	woc := newWorkflowOperationCtx(wf, controller)
+	assert.NotNil(t, woc)
+
+	retryNode := woc.getNodeByName("retry-backoff-s69z6")
+
+	// Simulate backoff of 4 secods
+	firstNode, err := woc.getFirstChildNode(retryNode)
+	assert.NoError(t, err)
+	firstNode.StartedAt = metav1.Time{Time: time.Now().Add(-8 * time.Second)}
+	firstNode.FinishedAt = metav1.Time{Time: time.Now().Add(-6 * time.Second)}
+	woc.wf.Status.Nodes[firstNode.ID] = *firstNode
+	lastNode, err := woc.getLastChildNode(retryNode)
+	assert.NoError(t, err)
+	lastNode.StartedAt = metav1.Time{Time: time.Now().Add(-3 * time.Second)}
+	lastNode.FinishedAt = metav1.Time{Time: time.Now().Add(-1 * time.Second)}
+	woc.wf.Status.Nodes[lastNode.ID] = *lastNode
+
+	newRetryNode, proceed, err := woc.processNodeRetries(retryNode, *woc.wf.Spec.Templates[0].RetryStrategy)
+	assert.NoError(t, err)
+	assert.False(t, proceed)
+	assert.Equal(t, "Backoff for 4 seconds", newRetryNode.Message)
+
+	// Advance time one second
+	firstNode.StartedAt = metav1.Time{Time: time.Now().Add(-9 * time.Second)}
+	firstNode.FinishedAt = metav1.Time{Time: time.Now().Add(-7 * time.Second)}
+	woc.wf.Status.Nodes[firstNode.ID] = *firstNode
+	lastNode.StartedAt = metav1.Time{Time: time.Now().Add(-4 * time.Second)}
+	lastNode.FinishedAt = metav1.Time{Time: time.Now().Add(-2 * time.Second)}
+	woc.wf.Status.Nodes[lastNode.ID] = *lastNode
+
+	newRetryNode, proceed, err = woc.processNodeRetries(retryNode, *woc.wf.Spec.Templates[0].RetryStrategy)
+	assert.NoError(t, err)
+	assert.False(t, proceed)
+	// Message should not change
+	assert.Equal(t, "Backoff for 4 seconds", newRetryNode.Message)
+
+	// Advance time 3 seconds
+	firstNode.StartedAt = metav1.Time{Time: time.Now().Add(-12 * time.Second)}
+	firstNode.FinishedAt = metav1.Time{Time: time.Now().Add(-10 * time.Second)}
+	woc.wf.Status.Nodes[firstNode.ID] = *firstNode
+	lastNode.StartedAt = metav1.Time{Time: time.Now().Add(-7 * time.Second)}
+	lastNode.FinishedAt = metav1.Time{Time: time.Now().Add(-5 * time.Second)}
+	woc.wf.Status.Nodes[lastNode.ID] = *lastNode
+
+	newRetryNode, proceed, err = woc.processNodeRetries(retryNode, *woc.wf.Spec.Templates[0].RetryStrategy)
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	// New node is started, message should be clear
+	assert.Equal(t, "", newRetryNode.Message)
+}
+
 func TestAssessNodeStatus(t *testing.T) {
 	daemoned := true
 	tests := []struct {
