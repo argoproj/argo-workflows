@@ -132,7 +132,7 @@ endef
 # docker_build,image_name,binary_name,marker_file_name
 define docker_build
 	# If we're making a dev build, we build this locally (this will be faster due to existing Go build caches).
-	if [ $(DEV_IMAGE) = true ]; then $(MAKE) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) $(2); fi
+	if [ $(DEV_IMAGE) = true ]; then mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) $(2); fi
 	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	if [ $(DEV_IMAGE) = true ]; then mv $(2) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH); fi
 	if [ $(K3D) = true ]; then k3d import-images $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
@@ -201,7 +201,7 @@ argo-server.key:
 .PHONY: cli-image
 cli-image: $(CLI_IMAGE_FILE)
 
-$(CLI_IMAGE_FILE):
+$(CLI_IMAGE_FILE): dist/argo-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
 	$(call docker_build,argocli,argo,$(CLI_IMAGE_FILE))
 
 .PHONY: clis
@@ -223,7 +223,7 @@ dist/workflow-controller-%: $(CONTROLLER_PKGS)
 .PHONY: controller-image
 controller-image: $(CONTROLLER_IMAGE_FILE)
 
-$(CONTROLLER_IMAGE_FILE):
+$(CONTROLLER_IMAGE_FILE): dist/workflow-controller-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
 	$(call docker_build,workflow-controller,workflow-controller,$(CONTROLLER_IMAGE_FILE))
 
 # argoexec
@@ -239,7 +239,7 @@ dist/argoexec-%: $(ARGOEXEC_PKGS)
 executor-image: $(EXECUTOR_IMAGE_FILE)
 
 	# Create executor image
-$(EXECUTOR_IMAGE_FILE):
+$(EXECUTOR_IMAGE_FILE): dist/argoexec-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
 	$(call docker_build,argoexec,argoexec,$(EXECUTOR_IMAGE_FILE))
 
 # generation
