@@ -653,3 +653,240 @@ func TestDAGWithParamAndGlobalParam(t *testing.T) {
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 }
+
+var terminatingDAGWithRetryStrategyNodes = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-diamond-xfww2
+spec:
+  arguments: {}
+  entrypoint: diamond
+  shutdown: Terminate
+  templates:
+  - arguments: {}
+    dag:
+      tasks:
+      - arguments: {}
+        name: A
+        template: echo
+      - arguments: {}
+        dependencies:
+        - A
+        name: B
+        template: echo
+      - arguments: {}
+        dependencies:
+        - A
+        name: C
+        template: echo
+      - arguments: {}
+        dependencies:
+        - B
+        - C
+        name: D
+        template: echo
+    inputs: {}
+    metadata: {}
+    name: diamond
+    outputs: {}
+  - arguments: {}
+    container:
+      args:
+      - sleep 10
+      command:
+      - sh
+      - -c
+      image: alpine:3.7
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: echo
+    outputs: {}
+    retryStrategy:
+      limit: 4
+status:
+  finishedAt: null
+  nodes:
+    dag-diamond-xfww2:
+      children:
+      - dag-diamond-xfww2-1488588956
+      displayName: dag-diamond-xfww2
+      finishedAt: null
+      id: dag-diamond-xfww2
+      name: dag-diamond-xfww2
+      phase: Running
+      startedAt: "2020-05-06T16:15:38Z"
+      templateName: diamond
+      templateScope: local/dag-diamond-xfww2
+      type: DAG
+    dag-diamond-xfww2-990947287:
+      boundaryID: dag-diamond-xfww2
+      children:
+      - dag-diamond-xfww2-1522144194
+      - dag-diamond-xfww2-1538921813
+      displayName: A(0)
+      finishedAt: "2020-05-06T16:15:50Z"
+      hostNodeName: minikube
+      id: dag-diamond-xfww2-990947287
+      name: dag-diamond-xfww2.A(0)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-diamond-xfww2/dag-diamond-xfww2-990947287/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 21
+        memory: 0
+      startedAt: "2020-05-06T16:15:38Z"
+      templateName: echo
+      templateScope: local/dag-diamond-xfww2
+      type: Pod
+    dag-diamond-xfww2-1488588956:
+      boundaryID: dag-diamond-xfww2
+      children:
+      - dag-diamond-xfww2-990947287
+      displayName: A
+      finishedAt: "2020-05-06T16:15:51Z"
+      id: dag-diamond-xfww2-1488588956
+      name: dag-diamond-xfww2.A
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-diamond-xfww2/dag-diamond-xfww2-990947287/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+      phase: Succeeded
+      startedAt: "2020-05-06T16:15:38Z"
+      templateName: echo
+      templateScope: local/dag-diamond-xfww2
+      type: Retry
+    dag-diamond-xfww2-1522144194:
+      boundaryID: dag-diamond-xfww2
+      children:
+      - dag-diamond-xfww2-2043927737
+      displayName: C
+      finishedAt: "2020-05-06T16:15:59Z"
+      id: dag-diamond-xfww2-1522144194
+      message: Stopped with strategy 'Terminate'
+      name: dag-diamond-xfww2.C
+      phase: Failed
+      startedAt: "2020-05-06T16:15:51Z"
+      templateName: echo
+      templateScope: local/dag-diamond-xfww2
+      type: Retry
+    dag-diamond-xfww2-1538921813:
+      boundaryID: dag-diamond-xfww2
+      children:
+      - dag-diamond-xfww2-3629114292
+      displayName: B
+      finishedAt: "2020-05-06T16:15:59Z"
+      id: dag-diamond-xfww2-1538921813
+      message: Stopped with strategy 'Terminate'
+      name: dag-diamond-xfww2.B
+      phase: Failed
+      startedAt: "2020-05-06T16:15:52Z"
+      templateName: echo
+      templateScope: local/dag-diamond-xfww2
+      type: Retry
+    dag-diamond-xfww2-2043927737:
+      boundaryID: dag-diamond-xfww2
+      displayName: C(0)
+      finishedAt: "2020-05-06T16:15:58Z"
+      hostNodeName: minikube
+      id: dag-diamond-xfww2-2043927737
+      message: terminated
+      name: dag-diamond-xfww2.C(0)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-diamond-xfww2/dag-diamond-xfww2-2043927737/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+      phase: Failed
+      resourcesDuration:
+        cpu: 11
+        memory: 0
+      startedAt: "2020-05-06T16:15:51Z"
+      templateName: echo
+      templateScope: local/dag-diamond-xfww2
+      type: Pod
+    dag-diamond-xfww2-3629114292:
+      boundaryID: dag-diamond-xfww2
+      displayName: B(0)
+      finishedAt: "2020-05-06T16:15:58Z"
+      hostNodeName: minikube
+      id: dag-diamond-xfww2-3629114292
+      message: terminated
+      name: dag-diamond-xfww2.B(0)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-diamond-xfww2/dag-diamond-xfww2-3629114292/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+      phase: Failed
+      resourcesDuration:
+        cpu: 9
+        memory: 0
+      startedAt: "2020-05-06T16:15:52Z"
+      templateName: echo
+      templateScope: local/dag-diamond-xfww2
+      type: Pod
+  phase: Running
+  startedAt: "2020-05-06T16:15:38Z"
+`
+
+// This tests that a DAG with retry strategy in its tasks fails successfully when terminated
+func TestTerminatingDAGWithRetryStrategyNodes(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := unmarshalWF(terminatingDAGWithRetryStrategyNodes)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+}
