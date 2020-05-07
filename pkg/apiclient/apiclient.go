@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"context"
+	"fmt"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd"
@@ -12,6 +13,7 @@ import (
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo/util/instanceid"
 )
 
 type Client interface {
@@ -25,6 +27,7 @@ type Client interface {
 
 type Opts struct {
 	ArgoServerOpts ArgoServerOpts
+	InstanceID     string
 	AuthSupplier   func() string
 	ClientConfig   clientcmd.ClientConfig
 }
@@ -40,9 +43,12 @@ func NewClient(argoServer string, authSupplier func() string, clientConfig clien
 
 func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
 	log.WithField("opts", opts).Debug("Client options")
+	if opts.ArgoServerOpts.URL != "" && opts.InstanceID != "" {
+		return nil, nil, fmt.Errorf("cannot use instance ID with Argo Server")
+	}
 	if opts.ArgoServerOpts.URL != "" {
 		return newArgoServerClient(opts.ArgoServerOpts, opts.AuthSupplier())
 	} else {
-		return newArgoKubeClient(opts.ClientConfig)
+		return newArgoKubeClient(opts.ClientConfig, instanceid.NewService(opts.InstanceID))
 	}
 }
