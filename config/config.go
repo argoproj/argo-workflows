@@ -221,8 +221,7 @@ type HDFSArtifactRepository struct {
 // PrometheusConfig defines a config for a metrics server
 type PrometheusConfig struct {
 	Enabled       bool   `json:"enabled,omitempty"`
-	DisableLegacy bool   `json:"disableLegacy"`
 	MetricsTTL    TTL    `json:"metricsTTL"`
 	Path          string `json:"path,omitempty"`
-	Port          string `json:"port,omitempty"`
+	Port          int `json:"port,omitempty"`
 }

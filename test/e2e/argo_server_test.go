@@ -41,13 +41,6 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.CheckError(err)
 }
 
-type httpLogger struct {
-}
-
-func (d *httpLogger) Logf(fmt string, args ...interface{}) {
-	log.Debugf(fmt, args...)
-}
-
 func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 	return httpexpect.
 		WithConfig(httpexpect.Config{

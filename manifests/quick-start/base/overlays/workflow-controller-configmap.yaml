@@ -15,9 +15,12 @@ data:
   featureFlags: |
     resourcesDuration: true
   metricsConfig: |
-    disableLegacy: true
     enabled: true
     path: /metrics
+    port: 9090
+  telemetryConfig: |
+    enabled: true
+    path: /telemetry
     port: 9090
   links: |
     - name: Example Workflow Link

@@ -20,16 +20,11 @@ type MetricsProvider interface {
 	DeleteExpiredMetrics(ttl time.Duration)
 }
 
-func NewMetricsRegistry(metricsProvider MetricsProvider, informer cache.SharedIndexInformer, disableLegacyMetrics bool) *prometheus.Registry {
+func NewMetricsRegistry(metricsProvider MetricsProvider, informer cache.SharedIndexInformer) *prometheus.Registry {
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(&customMetricsCollector{provider: metricsProvider})
 	workflowLister := util.NewWorkflowLister(informer)
 	registry.MustRegister(&controllerCollector{store: workflowLister})
-
-	if !disableLegacyMetrics {
-		registry.MustRegister(&legacyWorkflowCollector{store: workflowLister})
-	}
-
 	return registry
 }
 

@@ -84,8 +84,7 @@ func NewRootCommand() *cobra.Command {
 			wfController.UpdateConfig()
 
 			go wfController.Run(ctx, workflowWorkers, podWorkers)
-			go wfController.MetricsServer(ctx)
-			go wfController.TelemetryServer(ctx)
+			go wfController.RunPrometheusServers(ctx)
 			go wfController.RunTTLController(ctx)
 			go wfController.RunCronController(ctx)
 

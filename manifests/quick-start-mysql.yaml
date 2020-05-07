@@ -363,7 +363,6 @@ data:
       scope: pod
       url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
   metricsConfig: |
-    disableLegacy: true
     enabled: true
     path: /metrics
     port: 9090
@@ -385,6 +384,10 @@ data:
       passwordSecret:
         name: argo-mysql-config
         key: password
+  telemetryConfig: |
+    enabled: true
+    path: /telemetry
+    port: 9090
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

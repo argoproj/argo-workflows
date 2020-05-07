@@ -123,16 +123,15 @@ data:
 
     # metricsConfig controls the path and port for prometheus metrics
     metricsConfig:
-      disableLegacy: false  # Switch to "true" to disable legacy metrics. "false" by default
       enabled: true
       path: /metrics
-      port: 8080
+      port: 9090
 
     # telemetryConfig controls the path and port for prometheus telemetry
     telemetryConfig:
       enabled: true
       path: /telemetry
-      port: 8080
+      port: 9090
 
     # enable persistence using postgres
     persistence:

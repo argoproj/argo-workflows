@@ -126,22 +126,20 @@ func NewWorkflowController(
 	return &wfc
 }
 
-// MetricsServer starts a prometheus metrics server if enabled in the configmap
-func (wfc *WorkflowController) MetricsServer(ctx context.Context) {
+func (wfc *WorkflowController) RunPrometheusServers(ctx context.Context) {
+	sc := metrics.ServerConfigs{}
 	if wfc.Config.MetricsConfig.Enabled {
 		informer := util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowMetricsResyncPeriod, wfc.tweakWorkflowMetricslist)
 		go informer.Run(ctx.Done())
-		registry := metrics.NewMetricsRegistry(wfc, informer, wfc.Config.MetricsConfig.DisableLegacy)
-		metrics.RunServer(ctx, wfc.Config.MetricsConfig, registry)
+		sc.Add(wfc.Config.MetricsConfig.Port, wfc.Config.MetricsConfig.Path, metrics.NewMetricsRegistry(wfc, informer))
 	}
-}
-
-// TelemetryServer starts a prometheus telemetry server if enabled in the configmap
-func (wfc *WorkflowController) TelemetryServer(ctx context.Context) {
-	if wfc.Config.TelemetryConfig.Enabled && !wfc.Config.MetricsConfig.DisableLegacy {
-		registry := metrics.NewTelemetryRegistry()
-		metrics.RunServer(ctx, wfc.Config.TelemetryConfig, registry)
+	if wfc.Config.TelemetryConfig.Enabled {
+		sc.Add(wfc.Config.TelemetryConfig.Port, wfc.Config.TelemetryConfig.Path, metrics.NewTelemetryRegistry())
 	}
+	for port, c := range sc {
+		go c.RunServer(ctx, port)
+	}
+	<-ctx.Done()
 }
 
 // RunTTLController runs the workflow TTL controller
