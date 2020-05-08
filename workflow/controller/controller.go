@@ -82,7 +82,7 @@ type WorkflowController struct {
 	session               sqlbuilder.Database
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wfArchive             sqldb.WorkflowArchive
-	Metrics               metrics.Metrics
+	metrics               metrics.Metrics
 }
 
 const (
@@ -122,7 +122,7 @@ func NewWorkflowController(
 	wfc.throttler = NewThrottler(0, wfc.wfQueue)
 	wfc.UpdateConfig()
 
-	wfc.Metrics = metrics.New(wfc.getMetricsServerConfig())
+	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
 	return &wfc
 }
 
@@ -141,7 +141,7 @@ func (wfc *WorkflowController) RunTTLController(ctx context.Context) {
 }
 
 func (wfc *WorkflowController) RunCronController(ctx context.Context) {
-	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.Metrics)
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.metrics)
 	cronController.Run(ctx)
 }
 
@@ -172,7 +172,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 
 	// Metrics are enabled by default
 	if wfc.Config.MetricsConfig.Enabled == nil || *wfc.Config.MetricsConfig.Enabled {
-		go wfc.Metrics.RunServer(ctx.Done())
+		go wfc.metrics.RunServer(ctx.Done())
 	}
 
 	wfc.createClusterWorkflowTemplateInformer(ctx)
@@ -535,7 +535,7 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 		log.Warnf("watch returned pod unrelated to any workflow: %s", pod.ObjectMeta.Name)
 		return true
 	}
-	wfc.Metrics.PodProcessed()
+	wfc.metrics.PodProcessed()
 	// TODO: currently we reawaken the workflow on *any* pod updates.
 	// But this could be be much improved to become smarter by only
 	// requeue the workflow when there are changes that we care about.
@@ -612,7 +612,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 			UpdateFunc: func(old, new interface{}) {
 				oldWf, newWf := old.(*unstructured.Unstructured), new.(*unstructured.Unstructured)
 				if oldWf.GetResourceVersion() == newWf.GetResourceVersion() {
-					wfc.Metrics.WorkflowResourceVersionRepeated()
+					wfc.metrics.WorkflowResourceVersionRepeated()
 				}
 
 				key, err := cache.MetaNamespaceKeyFunc(new)
@@ -638,13 +638,13 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 func (wfc *WorkflowController) getMetricsEventHandler() cache.ResourceEventHandler {
 	return cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			wfc.Metrics.WorkflowAdded(getWfPhase(obj))
+			wfc.metrics.WorkflowAdded(getWfPhase(obj))
 		},
 		UpdateFunc: func(old, new interface{}) {
-			wfc.Metrics.WorkflowUpdated(getWfPhase(old), getWfPhase(new))
+			wfc.metrics.WorkflowUpdated(getWfPhase(old), getWfPhase(new))
 		},
 		DeleteFunc: func(obj interface{}) {
-			wfc.Metrics.WorkflowDeleted(getWfPhase(obj))
+			wfc.metrics.WorkflowDeleted(getWfPhase(obj))
 		},
 	}
 }
@@ -693,9 +693,9 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 			UpdateFunc: func(old, new interface{}) {
 				oldPod, newPod := old.(*apiv1.Pod), new.(*apiv1.Pod)
 				if oldPod.ResourceVersion == newPod.ResourceVersion {
-					wfc.Metrics.PodResourceVersionRepeated()
+					wfc.metrics.PodResourceVersionRepeated()
 				}
-				wfc.Metrics.PodChanged(oldPod.Status.Phase != newPod.Status.Phase)
+				wfc.metrics.PodChanged(oldPod.Status.Phase != newPod.Status.Phase)
 
 				key, err := cache.MetaNamespaceKeyFunc(new)
 				if err == nil {

@@ -460,7 +460,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if !woc.updated {
 		return
 	}
-	defer woc.controller.Metrics.UpdatePersisted(workflow.WorkflowKind)
+	defer woc.controller.metrics.UpdatePersisted(workflow.WorkflowKind)
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 	// try and compress nodes if needed
 	nodes := woc.wf.Status.Nodes
@@ -556,7 +556,7 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.Workflo
 // retries the UPDATE multiple times. For reasoning behind this technique, see:
 // https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#concurrency-control-and-consistency
 func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface) (*wfv1.Workflow, error) {
-	woc.controller.Metrics.UpdatesReapplied()
+	woc.controller.metrics.UpdatesReapplied()
 	// First generate the patch
 	oldData, err := json.Marshal(woc.orig)
 	if err != nil {
@@ -2502,7 +2502,7 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 				continue
 			}
 			updatedMetric := metrics.ConstructRealTimeGaugeMetric(metricTmpl, valueFunc)
-			woc.controller.Metrics.UpsertCustomMetric(metricTmpl.GetDesc(), common.Metric{Metric: updatedMetric, LastUpdated: time.Now()})
+			woc.controller.metrics.UpsertCustomMetric(metricTmpl.GetDesc(), common.Metric{Metric: updatedMetric, LastUpdated: time.Now()})
 			continue
 		} else {
 			metricSpec := metricTmpl.DeepCopy()
@@ -2516,14 +2516,14 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 			}
 			metricSpec.SetValueString(replacedValue)
 
-			metric := woc.controller.Metrics.GetCustomMetric(metricSpec.GetDesc()).Metric
+			metric := woc.controller.metrics.GetCustomMetric(metricSpec.GetDesc()).Metric
 			// It is valid to pass a nil metric to ConstructOrUpdateMetric, in that case the metric will be created for us
 			updatedMetric, err := metrics.ConstructOrUpdateMetric(metric, metricSpec)
 			if err != nil {
 				woc.reportMetricEmissionError(fmt.Sprintf("could not compute metric '%s': %s", metricSpec.Name, err))
 				continue
 			}
-			woc.controller.Metrics.UpsertCustomMetric(metricSpec.GetDesc(), common.Metric{Metric: updatedMetric, LastUpdated: time.Now()})
+			woc.controller.metrics.UpsertCustomMetric(metricSpec.GetDesc(), common.Metric{Metric: updatedMetric, LastUpdated: time.Now()})
 			continue
 		}
 	}
