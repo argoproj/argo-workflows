@@ -890,7 +890,8 @@ func TestTerminatingDAGWithRetryStrategyNodes(t *testing.T) {
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.setWorkflowSpecAndEntrypoint()
+	err = woc.setWorkflowSpecAndEntrypoint()
+	assert.NoError(t, err)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
 }

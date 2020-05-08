@@ -522,7 +522,8 @@ func TestBackoffMessage(t *testing.T) {
 	assert.NotNil(t, wf)
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
-	woc.setWorkflowSpecAndEntrypoint()
+	err := woc.setWorkflowSpecAndEntrypoint()
+	assert.NoError(t, err)
 	retryNode := woc.getNodeByName("retry-backoff-s69z6")
 
 	// Simulate backoff of 4 secods
@@ -2840,7 +2841,8 @@ func TestStatusConditions(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	//woc.operate()
 	assert.Equal(t, len(woc.wf.Status.Conditions), 0)
-	woc.setWorkflowSpecAndEntrypoint()
+	err = woc.setWorkflowSpecAndEntrypoint()
+	assert.NoError(t, err)
 	woc.markWorkflowSuccess()
 	assert.Equal(t, woc.wf.Status.Conditions[0].Status, metav1.ConditionStatus("True"))
 }
