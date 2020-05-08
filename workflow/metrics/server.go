@@ -1,33 +1,73 @@
 package metrics
 
 import (
-	"context"
 	"fmt"
 	"net/http"
-
-	"github.com/argoproj/argo/config"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 )
 
 // RunServer starts a metrics server
-func RunServer(ctx context.Context, config config.PrometheusConfig, registry *prometheus.Registry) {
+func (m Metrics) RunServer(stopCh <-chan struct{}) {
 	mux := http.NewServeMux()
-	mux.Handle(config.Path, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
-	srv := &http.Server{Addr: fmt.Sprintf(":%s", config.Port), Handler: mux}
+	mux.Handle(m.path, promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
+	srv := &http.Server{Addr: fmt.Sprintf(":%s", m.port), Handler: mux}
 
 	defer func() {
 		if cerr := srv.Close(); cerr != nil {
-			log.Fatalf("Encountered an '%s' error when tried to close the metrics server running on '%s'", cerr, config.Port)
+			log.Fatalf("Encountered an '%s' error when tried to close the metrics server running on '%s'", cerr, m.port)
 		}
 	}()
 
-	log.Infof("Starting prometheus metrics server at 0.0.0.0:%s%s", config.Port, config.Path)
+	go m.garbageCollector(stopCh)
+
+	log.Infof("Starting prometheus metrics server at localhost:%s%s", m.port, m.path)
 	if err := srv.ListenAndServe(); err != nil {
 		panic(err)
 	}
+}
 
-	<-ctx.Done()
+func (m Metrics) Describe(ch chan<- *prometheus.Desc) {
+	for _, metric := range m.workflowsByPhase {
+		ch <- metric.Desc()
+	}
+
+	for _, metric := range m.customMetrics {
+		ch <- metric.Metric.Desc()
+	}
+}
+
+func (m Metrics) Collect(ch chan<- prometheus.Metric) {
+	for _, metric := range m.workflowsByPhase {
+		ch <- metric
+	}
+
+	for _, metric := range m.customMetrics {
+		ch <- metric.Metric
+	}
+}
+
+func (m Metrics) garbageCollector(stopCh <-chan struct{}) {
+	if m.ttl == 0 {
+		return
+	}
+
+	ticker := time.NewTicker(m.ttl)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-stopCh:
+			return
+		case <-ticker.C:
+			for key, metric := range m.customMetrics {
+				if time.Since(metric.LastUpdated) > m.ttl {
+					delete(m.customMetrics, key)
+				}
+			}
+		}
+	}
 }

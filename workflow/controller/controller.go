@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -83,13 +82,12 @@ type WorkflowController struct {
 	session               sqlbuilder.Database
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wfArchive             sqldb.WorkflowArchive
-	Metrics               map[string]common.Metric
+	Metrics               metrics.Metrics
 }
 
 const (
 	workflowResyncPeriod                = 20 * time.Minute
 	workflowTemplateResyncPeriod        = 20 * time.Minute
-	workflowMetricsResyncPeriod         = 1 * time.Minute
 	podResyncPeriod                     = 30 * time.Minute
 	clusterWorkflowTemplateResyncPeriod = 20 * time.Minute
 )
@@ -120,28 +118,13 @@ func NewWorkflowController(
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
-		Metrics:                    make(map[string]common.Metric),
 	}
 	wfc.throttler = NewThrottler(0, wfc.wfQueue)
+	wfc.UpdateConfig()
+
+	// TODO: Consider ConfigMap
+	wfc.Metrics = metrics.New("/metrics", "9090", time.Duration(0))
 	return &wfc
-}
-
-// MetricsServer starts a prometheus metrics server if enabled in the configmap
-func (wfc *WorkflowController) MetricsServer(ctx context.Context) {
-	if wfc.Config.MetricsConfig.Enabled {
-		informer := util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowMetricsResyncPeriod, wfc.tweakWorkflowMetricslist)
-		go informer.Run(ctx.Done())
-		registry := metrics.NewMetricsRegistry(wfc, informer, wfc.Config.MetricsConfig.DisableLegacy)
-		metrics.RunServer(ctx, wfc.Config.MetricsConfig, registry)
-	}
-}
-
-// TelemetryServer starts a prometheus telemetry server if enabled in the configmap
-func (wfc *WorkflowController) TelemetryServer(ctx context.Context) {
-	if wfc.Config.TelemetryConfig.Enabled && !wfc.Config.MetricsConfig.DisableLegacy {
-		registry := metrics.NewTelemetryRegistry()
-		metrics.RunServer(ctx, wfc.Config.TelemetryConfig, registry)
-	}
 }
 
 // RunTTLController runs the workflow TTL controller
@@ -183,11 +166,11 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.completedWfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
+	go wfc.Metrics.RunServer(ctx.Done())
 	go wfc.podLabeler(ctx.Done())
 	go wfc.podGarbageCollector(ctx.Done())
 	go wfc.workflowGarbageCollector(ctx.Done())
 	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
-	go wfc.metricsGarbageCollector(ctx.Done())
 
 	wfc.createClusterWorkflowTemplateInformer(ctx)
 
@@ -387,32 +370,6 @@ func (wfc *WorkflowController) archivedWorkflowGarbageCollector(stopCh <-chan st
 			if err != nil {
 				log.WithField("err", err).Error("Failed to delete archived workflows")
 			}
-		}
-	}
-}
-
-func (wfc *WorkflowController) metricsGarbageCollector(stopCh <-chan struct{}) {
-	if !wfc.Config.MetricsConfig.Enabled {
-		log.Info("Cannot start metrics GC: metrics are disabled")
-		return
-	}
-	ttl := wfc.Config.MetricsConfig.MetricsTTL
-	if ttl == config.TTL(0) {
-		log.Info("Metrics TTL is zero, metrics GC is disabled")
-		return
-	}
-	duration := time.Duration(ttl)
-	log.WithFields(log.Fields{"ttl": ttl}).Info("Performing metrics GC")
-	ticker := time.NewTicker(duration)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-stopCh:
-			log.Info("Stopping metrics GC")
-			return
-		case <-ticker.C:
-			log.Info("Performing metrics GC")
-			wfc.DeleteExpiredMetrics(duration)
 		}
 	}
 }
@@ -624,7 +581,26 @@ func getWfPriority(obj interface{}) (int32, time.Time) {
 	return int32(priority), un.GetCreationTimestamp().Time
 }
 
+func getWfPhase(obj interface{}) (wfv1.NodePhase, bool) {
+	un, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		return "", false
+	}
+	phase, hasPhase, err := unstructured.NestedString(un.Object, "status", "phase")
+	if err != nil {
+		return "", false
+	}
+	if !hasPhase {
+		return wfv1.NodePending, true
+	}
+	return wfv1.NodePhase(phase), true
+}
+
 func (wfc *WorkflowController) addWorkflowInformerHandler() {
+	metricsEventHandler := wfc.getMetricsEventHandler()
+	wfc.completedWfInformer.AddEventHandler(metricsEventHandler)
+	wfc.incompleteWfInformer.AddEventHandler(metricsEventHandler)
+
 	wfc.incompleteWfInformer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
@@ -654,6 +630,29 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 			},
 		},
 	)
+}
+
+func (wfc *WorkflowController) getMetricsEventHandler() cache.ResourceEventHandler {
+	return cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			if phase, ok := getWfPhase(obj); ok {
+				wfc.Metrics.AddWorkflowPhase(phase)
+			}
+		},
+		UpdateFunc: func(old, new interface{}) {
+			if phase, ok := getWfPhase(old); ok {
+				wfc.Metrics.DeleteWorkflowPhase(phase)
+			}
+			if phase, ok := getWfPhase(new); ok {
+				wfc.Metrics.AddWorkflowPhase(phase)
+			}
+		},
+		DeleteFunc: func(obj interface{}) {
+			if phase, ok := getWfPhase(obj); ok {
+				wfc.Metrics.DeleteWorkflowPhase(phase)
+			}
+		},
+	}
 }
 
 func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
@@ -761,20 +760,4 @@ func (wfc *WorkflowController) GetContainerRuntimeExecutor() string {
 		return wfc.containerRuntimeExecutor
 	}
 	return wfc.Config.ContainerRuntimeExecutor
-}
-
-func (wfc *WorkflowController) GetMetrics() []prometheus.Metric {
-	var out []prometheus.Metric
-	for _, metric := range wfc.Metrics {
-		out = append(out, metric.Metric)
-	}
-	return out
-}
-
-func (wfc *WorkflowController) DeleteExpiredMetrics(ttl time.Duration) {
-	for key, metric := range wfc.Metrics {
-		if time.Since(metric.LastUpdated) > ttl {
-			delete(wfc.Metrics, key)
-		}
-	}
 }
