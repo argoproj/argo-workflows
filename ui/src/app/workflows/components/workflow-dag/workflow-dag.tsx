@@ -1,11 +1,11 @@
-import * as classNames from "classnames";
-import * as dagre from "dagre";
-import * as React from "react";
+import * as classNames from 'classnames';
+import * as dagre from 'dagre';
+import * as React from 'react';
 
-import { NodePhase, NodeStatus } from "../../../../models";
-import { Loading } from "../../../shared/components/loading";
-import { Utils } from "../../../shared/utils";
-import { WorkflowDagRenderOptionsPanel } from "./workflow-dag-render-options-panel";
+import {NodePhase, NodeStatus} from '../../../../models';
+import {Loading} from '../../../shared/components/loading';
+import {Utils} from '../../../shared/utils';
+import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel';
 
 export interface WorkflowDagRenderOptions {
     horizontal: boolean;
@@ -23,8 +23,6 @@ export interface WorkflowDagProps {
 require('./workflow-dag.scss');
 
 type DagPhase = NodePhase | 'Suspended';
-
-
 
 export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRenderOptions> {
     private get scale() {
@@ -127,7 +125,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             </>
         );
     }
-    private hash :{ nodeSize: number;nodeCount: number };
+    private hash: {nodeSize: number; nodeCount: number};
     private graph: dagre.graphlib.Graph;
 
     constructor(props: Readonly<WorkflowDagProps>) {
@@ -156,8 +154,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         if (!this.props.nodes) {
             return <Loading />;
         }
-            const {nodes, edges} = this.prepareGraph();
-            this.layoutGraph(nodes, edges);
+        const {nodes, edges} = this.prepareGraph();
+        this.layoutGraph(nodes, edges);
 
         return (
             <>
@@ -165,8 +163,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 <div className='workflow-dag'>
                     <svg
                         style={{
-                            width: this.graph.graph().width + this.nodeSize*2,
-                            height: this.graph.graph().height + this.nodeSize*2,
+                            width: this.graph.graph().width + this.nodeSize * 2,
+                            height: this.graph.graph().height + this.nodeSize * 2,
                             margin: this.nodeSize
                         }}>
                         <defs>
@@ -186,7 +184,9 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                     .edge(edge)
                                     .points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`))
                                     .join(' ');
-                                return <path key={`line/${edge.v}-${edge.w}`} d={points} className='line' markerEnd={(this.graph.node(edge.w).width > 1 && 'url(#arrow)') || null} />;
+                                return (
+                                    <path key={`line/${edge.v}-${edge.w}`} d={points} className='line' markerEnd={(this.graph.node(edge.w).width > 1 && 'url(#arrow)') || null} />
+                                );
                             })}
                             {this.graph.nodes().map(nodeId => {
                                 const v = this.graph.node(nodeId);
@@ -228,12 +228,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
 
         const edges = Object.values(this.props.nodes)
             .filter(node => !!node)
-            .map(node =>
-                (node.children || [])
-                    .map(childId => this.props.nodes[childId])
-                    .filter(child => !!child)
-                    .map(child => ({from: node.id, to: child.id}))
-            )
+            .map(node => (node.children || []).map(childId => ({from: node.id, to: childId})))
             .reduce((a, b) => a.concat(b));
         const onExitHandlerNodeId = nodes.find(nodeId => this.props.nodes[nodeId].name === `${this.props.workflowName}.onExit`);
         if (onExitHandlerNodeId) {
@@ -243,10 +238,10 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     }
 
     private layoutGraph(nodes: string[], edges: {from: string; to: string}[]) {
-        const hash = {nodeSize: this.nodeSize, nodeCount : nodes.length};
+        const hash = {nodeSize: this.nodeSize, nodeCount: nodes.length};
         // this hash check prevents having to do the expensive layout operation, if the graph does not re-laying out
         if (this.hash === hash) {
-            return
+            return;
         }
         this.hash = hash;
 
@@ -262,7 +257,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         });
         this.graph.setDefaultEdgeLabel(() => ({}));
         nodes.forEach(v => {
-            const s = this.filterNode(this.props.nodes[v]) ?1 : this.nodeSize;
+            const s = this.filterNode(this.props.nodes[v]) ? 1 : this.nodeSize;
             this.graph.setNode(v, {width: s, height: s});
         });
         edges.forEach(edge => this.graph.setEdge(edge.from, edge.to));
