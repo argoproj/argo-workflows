@@ -13,4 +13,4 @@ spec:
     - name: exit
       container:
         image: argoproj/argosay:v2
-        command: [sh, -c, exit 1]
+        args: [exit, 1]

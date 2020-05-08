@@ -263,8 +263,7 @@ spec:
     resubmitPendingPods: true
     container:
       image: argoproj/argosay:v2
-      command: [sh, -c]
-      args: ["cowsay a"]
+      args: ["echo", "a"]
       resources:
         limits:
           memory: 128M
@@ -315,8 +314,7 @@ spec:
       limit: 1
     container:
       image: argoproj/argosay:v2
-      command: [sh, -c]
-      args: ["cowsay a"]
+      args: ["echo", "a"]
       resources:
         limits:
           memory: 128M
@@ -471,10 +469,7 @@ spec:
   - name: generate
     container:
       image: argoproj/argosay:v2
-      command: [sh, -c]
-      args: ["
-        echo 'my-output-parameter' > /tmp/my-output-parameter.txt
-      "]
+      args: [echo, my-output-parameter, /tmp/my-output-parameter.txt]
     outputs:
       parameters:
       - name: out-parameter
