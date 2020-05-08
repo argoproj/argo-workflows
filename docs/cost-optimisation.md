@@ -79,3 +79,11 @@ The correct values depend on the size of artifacts your workflows download. For 
 
 Smaller requests can be set in the pod spec patch's [resource requirements](fields.md#resourcerequirements). 
 
+## A Node Selector To Use Cheaper Instances
+
+You can use a [node selector](fields.md#nodeselector) for cheaper instances, e.g. spot instances:
+
+```
+nodeSelector:
+  "node-role.kubernetes.io/argo-spot-worker": "true"
+```
