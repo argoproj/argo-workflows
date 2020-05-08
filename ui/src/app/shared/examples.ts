@@ -25,7 +25,7 @@ export const exampleWorkflow = (namespace: string): Workflow => ({
         templates: [
             {
                 name: 'argosay',
-                container: container
+                container
             }
         ]
     }
@@ -58,7 +58,7 @@ export const exampleWorkflowTemplate = (namespace: string): WorkflowTemplate => 
         templates: [
             {
                 name: 'argosay',
-                container: container
+                container
             }
         ]
     }
@@ -76,7 +76,7 @@ export const exampleCronWorkflow = (namespace: string): CronWorkflow => ({
             templates: [
                 {
                     name: 'argosay',
-                    container: container
+                    container
                 }
             ]
         }
