@@ -30,10 +30,7 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
     }
 
     public componentDidMount(): void {
-        services.cronWorkflows
-            .get(this.name, this.namespace)
-            .then(cronWf => this.setState({cronWorkflow: cronWf}))
-            .catch(error => this.setState({error}));
+        this.getCronWorkflow();
     }
 
     public render() {
@@ -50,6 +47,18 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
                                 title: 'Delete',
                                 iconClassName: 'fa fa-trash',
                                 action: () => this.deleteWorkflowTemplate()
+                            },
+                            {
+                                title: 'Suspend',
+                                iconClassName: 'fa fa-pause',
+                                action: () => this.suspendCronWorkflow(),
+                                disabled: !this.state.cronWorkflow || this.state.cronWorkflow.spec.suspend
+                            },
+                            {
+                                title: 'Resume',
+                                iconClassName: 'fa fa-play',
+                                action: () => this.resumeCronWorkflow(),
+                                disabled: !this.state.cronWorkflow || !this.state.cronWorkflow.spec.suspend
                             }
                         ]
                     },
@@ -77,6 +86,13 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
         );
     }
 
+    private getCronWorkflow() {
+        services.cronWorkflows
+            .get(this.name, this.namespace)
+            .then(cronWf => this.setState({cronWorkflow: cronWf}))
+            .catch(error => this.setState({error}));
+    }
+
     private deleteWorkflowTemplate() {
         if (!confirm('Are you sure you want to delete this cron workflow?\nThere is no undo.')) {
             return;
@@ -92,5 +108,33 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
             .then(() => {
                 document.location.href = uiUrl('cron-workflows');
             });
+    }
+
+    private suspendCronWorkflow() {
+        const wf = {...this.state.cronWorkflow};
+        wf.spec.suspend = true;
+        services.cronWorkflows
+            .update(wf, this.name, this.namespace)
+            .catch(e => {
+                this.appContext.apis.notifications.show({
+                    content: 'Failed to suspend cron workflow ' + e,
+                    type: NotificationType.Error
+                });
+            })
+            .then(() => this.getCronWorkflow());
+    }
+
+    private resumeCronWorkflow() {
+        const wf = {...this.state.cronWorkflow};
+        wf.spec.suspend = false;
+        services.cronWorkflows
+            .update(wf, this.name, this.namespace)
+            .catch(e => {
+                this.appContext.apis.notifications.show({
+                    content: 'Failed to resume cron workflow ' + e,
+                    type: NotificationType.Error
+                });
+            })
+            .then(() => this.getCronWorkflow());
     }
 }

@@ -27,7 +27,7 @@ export const CronWorkflowSummaryPanel = (props: Props) => {
         {title: 'Starting Deadline Seconds', value: props.cronWorkflow.spec.startingDeadlineSeconds},
         {title: 'Successful Jobs History Limit', value: props.cronWorkflow.spec.successfulJobsHistoryLimit},
         {title: 'Failed Jobs History Limit', value: props.cronWorkflow.spec.failedJobsHistoryLimit},
-        {title: 'Suspended', value: props.cronWorkflow.spec.suspend},
+        {title: 'Suspended', value: (!!props.cronWorkflow.spec.suspend).toString()},
         {title: 'Created', value: <Timestamp date={props.cronWorkflow.metadata.creationTimestamp} />}
     ];
     return (
