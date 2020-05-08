@@ -22,6 +22,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
+	"github.com/argoproj/argo/workflow/metrics"
 )
 
 var helloWorldWf = `
@@ -124,6 +125,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		wfQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		wfArchive:       sqldb.NullWorkflowArchive,
+		Metrics:         metrics.New("", "", time.Duration(0)),
 	}
 	return cancel, controller
 }

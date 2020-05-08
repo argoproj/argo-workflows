@@ -60,7 +60,7 @@ func TestBasicMetric(t *testing.T) {
 	woc.operate()
 
 	metricDesc := wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
-	assert.Contains(t, controller.Metrics, metricDesc)
+	assert.NotNil(t, controller.Metrics.GetCustomMetric(metricDesc).Metric)
 	metric := controller.Metrics.GetCustomMetric(metricDesc).Metric.(prometheus.Gauge)
 	metricString, err := getMetricStringValue(metric)
 	assert.NoError(t, err)
