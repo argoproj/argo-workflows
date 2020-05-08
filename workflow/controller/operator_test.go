@@ -560,6 +560,111 @@ func TestBackoffMessage(t *testing.T) {
 	assert.Equal(t, "", newRetryNode.Message)
 }
 
+var retriesVariableTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: whalesay
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    retryStrategy:
+      limit: 10
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay {{retries}}"]
+`
+
+func TestRetriesVariable(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(retriesVariableTemplate)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+
+	iterations := 5
+	for i := 1; i <= iterations; i++ {
+		if i != 1 {
+			makePodsPhase(t, apiv1.PodFailed, controller.kubeclientset, wf.ObjectMeta.Namespace)
+			wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+			assert.Nil(t, err)
+		}
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+	}
+
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, iterations, len(pods.Items))
+	for i := 0; i < iterations; i++ {
+		assert.Equal(t, fmt.Sprintf("cowsay %d", i), pods.Items[i].Spec.Containers[1].Args[0])
+	}
+}
+
+var stepsRetriesVariableTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: whalesay
+spec:
+  entrypoint: step-retry
+  templates:
+  - name: step-retry
+    retryStrategy:
+      limit: 10
+    steps:
+      - - name: whalesay-success
+          arguments:
+            parameters:
+            - name: retries
+              value: "{{retries}}"
+          template: whalesay
+
+  - name: whalesay
+    inputs:
+      parameters:
+        - name: retries
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay {{inputs.parameters.retries}}"]
+`
+
+func TestStepsRetriesVariable(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(stepsRetriesVariableTemplate)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+
+	iterations := 5
+	for i := 1; i <= iterations; i++ {
+		if i != 1 {
+			makePodsPhase(t, apiv1.PodFailed, controller.kubeclientset, wf.ObjectMeta.Namespace)
+			wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+			assert.Nil(t, err)
+		}
+		// move to next retry step
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+	}
+
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, iterations, len(pods.Items))
+	for i := 0; i < iterations; i++ {
+		assert.Equal(t, fmt.Sprintf("cowsay %d", i), pods.Items[i].Spec.Containers[1].Args[0])
+	}
+}
+
 func TestAssessNodeStatus(t *testing.T) {
 	daemoned := true
 	tests := []struct {
@@ -2685,7 +2790,7 @@ metadata:
   name: artifact-repo-config-ref
 spec:
   entrypoint: whalesay
-  poddisruptionbudget: 
+  poddisruptionbudget:
     minavailable: 100%
   templates:
   - name: whalesay
