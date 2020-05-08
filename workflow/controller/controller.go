@@ -122,8 +122,7 @@ func NewWorkflowController(
 	wfc.throttler = NewThrottler(0, wfc.wfQueue)
 	wfc.UpdateConfig()
 
-	// TODO: Consider ConfigMap
-	wfc.Metrics = metrics.New("/metrics", "9090", time.Duration(0))
+	wfc.Metrics = metrics.New(wfc.getMetricsServerConfig())
 	return &wfc
 }
 
@@ -166,11 +165,15 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.completedWfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
-	go wfc.Metrics.RunServer(ctx.Done())
 	go wfc.podLabeler(ctx.Done())
 	go wfc.podGarbageCollector(ctx.Done())
 	go wfc.workflowGarbageCollector(ctx.Done())
 	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
+
+	// Metrics are enabled by default
+	if wfc.Config.MetricsConfig.Enabled == nil || *wfc.Config.MetricsConfig.Enabled {
+		go wfc.Metrics.RunServer(ctx.Done())
+	}
 
 	wfc.createClusterWorkflowTemplateInformer(ctx)
 
@@ -755,4 +758,22 @@ func (wfc *WorkflowController) GetContainerRuntimeExecutor() string {
 		return wfc.containerRuntimeExecutor
 	}
 	return wfc.Config.ContainerRuntimeExecutor
+}
+
+func (wfc *WorkflowController) getMetricsServerConfig() metrics.ServerConfig {
+	path := wfc.Config.MetricsConfig.Path
+	if path == "" {
+		path = "/metrics"
+	}
+
+	port := wfc.Config.MetricsConfig.Port
+	if port == "" {
+		port = "9090"
+	}
+
+	return metrics.ServerConfig{
+		Path: path,
+		Port: port,
+		TTL:  time.Duration(wfc.Config.MetricsConfig.MetricsTTL),
+	}
 }

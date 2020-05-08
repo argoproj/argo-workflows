@@ -15,11 +15,15 @@ const (
 	workflowsSubsystem = "workflows"
 )
 
+type ServerConfig struct {
+	Path string
+	Port string
+	TTL  time.Duration
+}
+
 type Metrics struct {
-	path     string
-	port     string
-	registry *prometheus.Registry
-	ttl      time.Duration
+	registry     *prometheus.Registry
+	serverConfig ServerConfig
 
 	insignificantPodChange          prometheus.Counter
 	significantPodChange            prometheus.Counter
@@ -35,11 +39,9 @@ type Metrics struct {
 
 var _ prometheus.Collector = Metrics{}
 
-func New(path, port string, ttl time.Duration) Metrics {
+func New(config ServerConfig) Metrics {
 	metrics := Metrics{
-		path:                            path,
-		port:                            port,
-		ttl:                             ttl,
+		serverConfig:                    config,
 		insignificantPodChange:          newCounter("pod_updates", "Number of pod updates", map[string]string{"significant": "false"}),
 		significantPodChange:            newCounter("pod_updates", "Number of pod updates", map[string]string{"significant": "true"}),
 		updatesReapplied:                newCounter("updates_reapplied", "Number of times we re-applied a workflow update. Ideally should always be zero.", nil),

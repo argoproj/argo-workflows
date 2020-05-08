@@ -14,18 +14,18 @@ import (
 // RunServer starts a metrics server
 func (m Metrics) RunServer(stopCh <-chan struct{}) {
 	mux := http.NewServeMux()
-	mux.Handle(m.path, promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
-	srv := &http.Server{Addr: fmt.Sprintf(":%s", m.port), Handler: mux}
+	mux.Handle(m.serverConfig.Path, promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
+	srv := &http.Server{Addr: fmt.Sprintf(":%s", m.serverConfig.Port), Handler: mux}
 
 	defer func() {
 		if cerr := srv.Close(); cerr != nil {
-			log.Fatalf("Encountered an '%s' error when tried to close the metrics server running on '%s'", cerr, m.port)
+			log.Fatalf("Encountered an '%s' error when tried to close the metrics server running on '%s'", cerr, m.serverConfig.Port)
 		}
 	}()
 
 	go m.garbageCollector(stopCh)
 
-	log.Infof("Starting prometheus metrics server at localhost:%s%s", m.port, m.path)
+	log.Infof("Starting prometheus metrics server at localhost:%s%s", m.serverConfig.Port, m.serverConfig.Path)
 	if err := srv.ListenAndServe(); err != nil {
 		panic(err)
 	}
@@ -44,11 +44,11 @@ func (m Metrics) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (m Metrics) garbageCollector(stopCh <-chan struct{}) {
-	if m.ttl == 0 {
+	if m.serverConfig.TTL == 0 {
 		return
 	}
 
-	ticker := time.NewTicker(m.ttl)
+	ticker := time.NewTicker(m.serverConfig.TTL)
 	defer ticker.Stop()
 	for {
 		select {
@@ -56,7 +56,7 @@ func (m Metrics) garbageCollector(stopCh <-chan struct{}) {
 			return
 		case <-ticker.C:
 			for key, metric := range m.customMetrics {
-				if time.Since(metric.LastUpdated) > m.ttl {
+				if time.Since(metric.LastUpdated) > m.serverConfig.TTL {
 					delete(m.customMetrics, key)
 				}
 			}

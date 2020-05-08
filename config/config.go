@@ -54,13 +54,14 @@ type Config struct {
 	InstanceID string `json:"instanceID,omitempty"`
 
 	// MetricsConfig specifies configuration for metrics emission
-	MetricsConfig PrometheusConfig `json:"metricsConfig,omitempty"`
+	MetricsConfig MetricsConfig `json:"metricsConfig,omitempty"`
 
 	// FeatureFlags for general/experimental features
 	FeatureFlags FeatureFlags `json:"featureFlags,omitempty"`
 
 	// TelemetryConfig specifies configuration for telemetry emission
-	TelemetryConfig PrometheusConfig `json:"telemetryConfig,omitempty"`
+	// DEPRECATED: Telemetry is emitted under metrics. See "metricsConfig"
+	TelemetryConfig MetricsConfig `json:"telemetryConfig,omitempty"`
 
 	// Parallelism limits the max total parallel workflows that can execute at the same time
 	Parallelism int `json:"parallelism,omitempty"`
@@ -218,11 +219,17 @@ type HDFSArtifactRepository struct {
 	Force bool `json:"force,omitempty"`
 }
 
-// PrometheusConfig defines a config for a metrics server
-type PrometheusConfig struct {
-	Enabled       bool   `json:"enabled,omitempty"`
-	DisableLegacy bool   `json:"disableLegacy"`
-	MetricsTTL    TTL    `json:"metricsTTL"`
-	Path          string `json:"path,omitempty"`
-	Port          string `json:"port,omitempty"`
+// MetricsConfig defines a config for a metrics server
+type MetricsConfig struct {
+	// Enabled controls metric emission. Default is true, set "enabled: false" to turn off
+	Enabled *bool `json:"enabled,omitempty"`
+	// DisableLegacy turns off legacy metrics
+	// DEPRECATED: Legacy metrics are now removed
+	DisableLegacy bool `json:"disableLegacy"`
+	// MetricsTTL sets how often custom metrics are cleared from memory
+	MetricsTTL TTL `json:"metricsTTL"`
+	// Path is the path where metrics are emitted. Must start with a "/". Default is "/metrics"
+	Path string `json:"path,omitempty"`
+	// Port is the port where metrics are emitted. Default is "9090"
+	Port string `json:"port,omitempty"`
 }
