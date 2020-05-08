@@ -8,11 +8,11 @@ import (
 
 type FilesServer struct {
 	baseHRef string
-	secure   bool
+	hsts     bool
 }
 
-func NewFilesServer(baseHRef string, secure bool) *FilesServer {
-	return &FilesServer{baseHRef, secure}
+func NewFilesServer(baseHRef string, hsts bool) *FilesServer {
+	return &FilesServer{baseHRef, hsts}
 }
 
 func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +29,7 @@ func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("X-Frame-Options", "DENY")
 	w.Header().Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline'")
-	if s.secure {
+	if s.hsts {
 		w.Header().Set("Strict-Transport-Security", "max-age=31536000")
 	}
 
