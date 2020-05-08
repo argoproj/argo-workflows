@@ -81,6 +81,9 @@ func (m Metrics) allMetrics() []prometheus.Metric {
 	for _, metric := range m.workflowsByPhase {
 		allMetrics = append(allMetrics, metric)
 	}
+	for _, metric := range m.completedWorkflows {
+		allMetrics = append(allMetrics, metric)
+	}
 	for _, metric := range m.updatesPersisted {
 		allMetrics = append(allMetrics, metric)
 	}
