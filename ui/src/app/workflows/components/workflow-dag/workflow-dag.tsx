@@ -134,7 +134,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             </>
         );
     }
-    private hash: {scale: number; nodeCount: number};
+    private hash: {scale: number; nodeCount: number; nodesToDisplay: string[]};
     private graph: {
         width: number;
         height: number;
@@ -195,22 +195,21 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                         <g transform={`translate(${this.hgap},${this.vgap})`}>
                             {this.graph.edges.map(edge => {
                                 const points = edge.points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ');
-                                return <path key={`line/${edge.v}-${edge.w}`} d={points} className='line' markerEnd={this.filterNode(edge.w) ? '' : 'url(#arrow)'} />;
+                                return <path key={`line/${edge.v}-${edge.w}`} d={points} className='line' markerEnd={this.hiddenNode(edge.w) ? '' : 'url(#arrow)'} />;
                             })}
                             {Array.from(this.graph.nodes).map(([nodeId, v]) => {
                                 const node = this.props.nodes[nodeId];
                                 const phase: DagPhase = node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase;
-                                const filterNode = this.filterNode(nodeId);
+                                const hide = this.hiddenNode(nodeId);
                                 return (
                                     <g key={`node/${nodeId}`} transform={`translate(${v.x},${v.y})`} onClick={() => this.selectNode(nodeId)} className='node'>
                                         <circle
-                                            r={filterNode ? 0 : this.nodeSize / 2}
+                                            r={hide ? 0 : this.nodeSize / 2}
                                             className={classNames('workflow-dag__node', 'workflow-dag__node-status', 'workflow-dag__node-status--' + phase.toLowerCase(), {
                                                 active: nodeId === this.props.selectedNodeId
                                             })}
-                                            filter='url(#shadow)'
                                         />
-                                        {!filterNode && (
+                                        {!hide && (
                                             <>
                                                 {this.icon(phase)}
                                                 <g transform={`translate(0,${this.nodeSize})`}>
@@ -236,7 +235,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             .map(node => node.id);
         const edges = Object.values(this.props.nodes)
             .filter(node => !!node)
-            .map(node => (node.children || []).map(childId => ({v: node.id, w: childId})))
+            .map(node =>
+                (node.children || [])
+                    // we can get outbound nodes, but no node
+                    .filter(childId => this.props.nodes[childId])
+                    .map(childId => ({v: node.id, w: childId}))
+            )
             .reduce((a, b) => a.concat(b));
         const onExitHandlerNodeId = nodes.find(nodeId => this.props.nodes[nodeId].name === `${this.props.workflowName}.onExit`);
         if (onExitHandlerNodeId) {
@@ -246,16 +250,16 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     }
 
     private layoutGraph(nodes: string[], edges: {v: string; w: string}[]) {
-        const hash = {scale: this.scale, nodeCount: nodes.length};
-        // this hash check prevents having to do the expensive layout operation, if the graph does not re-laying out
+        const hash = {scale: this.scale, nodeCount: nodes.length, nodesToDisplay: this.state.nodesToDisplay};
+        // this hash check prevents having to do the expensive layout operation, if the graph does not re-laying out (e.g. phase change only)
         if (this.hash === hash) {
             return;
         }
         this.hash = hash;
 
         const g = new Graph();
-        nodes.forEach(n => g.nodes.push(n));
-        edges.forEach(e => g.edges.add(e));
+        g.nodes = nodes;
+        g.edges = new Set(edges);
         const layers = new CoffmanGrahamSorter(g).sort();
 
         this.graph = {
@@ -264,12 +268,14 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             nodes: new Map<string, {x: number; y: number}>(),
             edges: []
         };
+        // we have a lot of logic here about laying it out with suitable gaps - but what if we
+        // would just translate it somehow?
         if (this.state.horizontal) {
             this.graph.width = layers.length * this.hgap * 2;
         } else {
             this.graph.height = layers.length * this.vgap * 2;
         }
-        layers.forEach((level, i) => {
+        layers.forEach(level => {
             if (this.state.horizontal) {
                 this.graph.height = Math.max(this.graph.height, level.length * this.vgap * 2);
             } else {
@@ -286,6 +292,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 });
             });
         });
+        // `h` and `v` move the arrow heads to next to the node, otherwise they would be behind it
         const h = this.state.horizontal ? this.hgap / 2 : 0;
         const v = !this.state.horizontal ? this.vgap / 2 : 0;
         this.graph.edges = edges.map(e => ({
@@ -293,12 +300,13 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             w: e.w,
             points: [
                 {
-                    x: this.graph.nodes.get(e.v).x + (this.filterNode(e.v) ? 0 : h),
-                    y: this.graph.nodes.get(e.v).y + (this.filterNode(e.v) ? 0 : v)
+                    // for hidden nodes, we want to size them zero
+                    x: this.graph.nodes.get(e.v).x + (this.hiddenNode(e.v) ? 0 : h),
+                    y: this.graph.nodes.get(e.v).y + (this.hiddenNode(e.v) ? 0 : v)
                 },
                 {
-                    x: this.graph.nodes.get(e.w).x - (this.filterNode(e.w) ? 0 : h),
-                    y: this.graph.nodes.get(e.w).y - (this.filterNode(e.w) ? 0 : v)
+                    x: this.graph.nodes.get(e.w).x - (this.hiddenNode(e.w) ? 0 : h),
+                    y: this.graph.nodes.get(e.w).y - (this.hiddenNode(e.w) ? 0 : v)
                 }
             ]
         }));
@@ -338,11 +346,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         return outbound;
     }
 
-    private filterNode(id: string) {
+    private hiddenNode(id: string) {
         const node = this.props.nodes[id];
-        if (!node) {
-            throw new Error(id);
-        }
         // Filter the node if it is a virtual node or a Retry node with one child
         return (
             !(this.state.nodesToDisplay.includes('type:' + node.type) && this.state.nodesToDisplay.includes('phase:' + node.phase)) ||

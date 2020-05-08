@@ -2,15 +2,16 @@ import {DfsSorter} from './dfs-sorter';
 import {Graph, node} from './graph';
 
 export class CoffmanGrahamSorter {
-    public graph: Graph;
-    public width: number = 9999;
+    private graph: Graph;
+    private width: number = 9999;
 
     constructor(g: Graph) {
         this.graph = g;
     }
 
     public sort() {
-        this.graph.removeTransitives();
+        // normally you should remove transitive here, but this is expensive, and we don't expect to find any
+        // this.graph.removeTransitives();
         const nodes = new DfsSorter(this.graph).sort();
         const layers = new Array<node[]>();
         const levels = new Map<node, number>();
