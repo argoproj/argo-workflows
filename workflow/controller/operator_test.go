@@ -522,7 +522,7 @@ func TestBackoffMessage(t *testing.T) {
 	assert.NotNil(t, wf)
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
-
+	woc.setWorkflowSpecAndEntrypoint()
 	retryNode := woc.getNodeByName("retry-backoff-s69z6")
 
 	// Simulate backoff of 4 secods
