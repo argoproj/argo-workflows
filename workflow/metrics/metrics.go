@@ -1,10 +1,12 @@
 package metrics
 
 import (
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/prometheus/client_golang/prometheus"
-	"time"
 )
 
 const (
