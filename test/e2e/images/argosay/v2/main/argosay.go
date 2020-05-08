@@ -2,16 +2,21 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
 func main() {
 	err := argosay(os.Args[1:]...)
 	if err != nil {
+		if exitErr, ok := err.(exitError); ok {
+			os.Exit(exitErr.code)
+		}
 		panic(err)
 	}
 }
@@ -24,23 +29,26 @@ func argosay(args ...string) error {
 		return cat(args[1:])
 	case "echo":
 		return echo(args[1:])
+	case "exit":
+		return exit(args[1:])
 	case "sleep":
 		return sleep(args[1:])
 	}
-	return errors.New("usage: argosay [cat [file...]|echo [string] [file]|sleep duration]")
+	return errors.New("usage: argosay [cat [file...]|echo [string] [file]|sleep duration|exit [code]]")
 }
 
-func sleep(args []string) error {
-	switch len(args) {
-	case 1:
-		duration, err := time.ParseDuration(args[0])
+func cat(args []string) error {
+	for _, file := range args {
+		open, err := os.Open(file)
 		if err != nil {
 			return err
 		}
-		time.Sleep(duration)
-		return nil
+		_, err = io.Copy(os.Stdout, open)
+		if err != nil {
+			return err
+		}
 	}
-	return errors.New("usage: argosay sleep duration")
+	return nil
 }
 
 func echo(args []string) error {
@@ -66,16 +74,37 @@ func echo(args []string) error {
 	return errors.New("usage: argosay echo [string] [file]")
 }
 
-func cat(args []string) error {
-	for _, file := range args {
-		open, err := os.Open(file)
+type exitError struct {
+	code int
+}
+
+func (e exitError) Error() string {
+	return fmt.Sprintf("exit code %v", e.code)
+}
+
+func exit(args []string) error {
+	switch len(args) {
+	case 1:
+		code, err := strconv.Atoi(args[0])
 		if err != nil {
 			return err
 		}
-		_, err = io.Copy(os.Stdout, open)
-		if err != nil {
-			return err
+		if code != 0 {
+			return exitError{code}
 		}
 	}
 	return nil
+}
+
+func sleep(args []string) error {
+	switch len(args) {
+	case 1:
+		duration, err := time.ParseDuration(args[0])
+		if err != nil {
+			return err
+		}
+		time.Sleep(duration)
+		return nil
+	}
+	return errors.New("usage: argosay sleep duration")
 }

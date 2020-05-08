@@ -25,4 +25,9 @@ func Test(t *testing.T) {
 		assert.NoError(t, argosay("sleep", "1s"))
 		assert.Error(t, argosay("sleep", "garbage"))
 	})
+	t.Run("exit", func(t *testing.T) {
+		assert.NoError(t, argosay("exit"))
+		assert.NoError(t, argosay("exit", "0"))
+		assert.Equal(t, exitError{1}, argosay("exit", "1"))
+	})
 }

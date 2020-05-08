@@ -357,6 +357,7 @@ test/e2e/images/argosay/v2/argosay: $(shell find test/e2e/images/argosay/v2/main
 
 .PHONY: test-images
 test-images:
+	docker pull argoproj/argosay:v1
 	docker pull argoproj/argosay:v2
 	docker pull python:alpine3.6
 
