@@ -24,19 +24,19 @@ type Metrics struct {
 	registry     *prometheus.Registry
 	serverConfig ServerConfig
 
-	workflowsProcessed              prometheus.Counter
-	workflowsByPhase                map[v1alpha1.NodePhase]prometheus.Gauge
-	customMetrics                   map[string]common.Metric
+	workflowsProcessed prometheus.Counter
+	workflowsByPhase   map[v1alpha1.NodePhase]prometheus.Gauge
+	customMetrics      map[string]common.Metric
 }
 
 var _ prometheus.Collector = Metrics{}
 
 func New(config ServerConfig) Metrics {
 	metrics := Metrics{
-		serverConfig:                    config,
-		workflowsProcessed:              newCounter("workflows_processed", "Number of workflow updates processed", nil),
-		workflowsByPhase:                getWorkflowPhaseGauges(),
-		customMetrics:                   make(map[string]common.Metric),
+		serverConfig:       config,
+		workflowsProcessed: newCounter("workflows_processed", "Number of workflow updates processed", nil),
+		workflowsByPhase:   getWorkflowPhaseGauges(),
+		customMetrics:      make(map[string]common.Metric),
 	}
 
 	registry := prometheus.NewRegistry()
