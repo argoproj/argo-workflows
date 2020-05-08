@@ -195,14 +195,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                         <g transform={`translate(${this.hgap},${this.vgap})`}>
                             {this.graph.edges.map(edge => {
                                 const points = edge.points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ');
-                                return (
-                                    <path key={`line/${edge.v}-${edge.w}`} d={points} className='line' markerEnd={this.filterNode(this.props.nodes[edge.w]) ? '' : 'url(#arrow)'} />
-                                );
+                                return <path key={`line/${edge.v}-${edge.w}`} d={points} className='line' markerEnd={this.filterNode(edge.w) ? '' : 'url(#arrow)'} />;
                             })}
                             {Array.from(this.graph.nodes).map(([nodeId, v]) => {
                                 const node = this.props.nodes[nodeId];
                                 const phase: DagPhase = node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase;
-                                const filterNode = this.filterNode(this.props.nodes[nodeId]);
+                                const filterNode = this.filterNode(nodeId);
                                 return (
                                     <g key={`node/${nodeId}`} transform={`translate(${v.x},${v.y})`} onClick={() => this.selectNode(nodeId)} className='node'>
                                         <circle
@@ -295,12 +293,12 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             w: e.w,
             points: [
                 {
-                    x: this.graph.nodes.get(e.v).x + (this.filterNode(this.props.nodes[e.v]) ? 0 : h),
-                    y: this.graph.nodes.get(e.v).y + (this.filterNode(this.props.nodes[e.v]) ? 0 : v)
+                    x: this.graph.nodes.get(e.v).x + (this.filterNode(e.v) ? 0 : h),
+                    y: this.graph.nodes.get(e.v).y + (this.filterNode(e.v) ? 0 : v)
                 },
                 {
-                    x: this.graph.nodes.get(e.w).x - (this.filterNode(this.props.nodes[e.w]) ? 0 : h),
-                    y: this.graph.nodes.get(e.w).y - (this.filterNode(this.props.nodes[e.w]) ? 0 : v)
+                    x: this.graph.nodes.get(e.w).x - (this.filterNode(e.w) ? 0 : h),
+                    y: this.graph.nodes.get(e.w).y - (this.filterNode(e.w) ? 0 : v)
                 }
             ]
         }));
@@ -340,7 +338,11 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         return outbound;
     }
 
-    private filterNode(node: NodeStatus) {
+    private filterNode(id: string) {
+        const node = this.props.nodes[id];
+        if (!node) {
+            throw new Error(id);
+        }
         // Filter the node if it is a virtual node or a Retry node with one child
         return (
             !(this.state.nodesToDisplay.includes('type:' + node.type) && this.state.nodesToDisplay.includes('phase:' + node.phase)) ||
