@@ -7,7 +7,7 @@ spec:
   templates:
   - name: whalesay
     container:
-      image: argoproj/argosay:v1
+      image: argoproj/argosay:v2
       command:
       - cowsay
       args:

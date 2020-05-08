@@ -1,10 +1,10 @@
 import * as classNames from 'classnames';
-import * as dagre from 'dagre';
 import * as React from 'react';
 
 import {NodePhase, NodeStatus} from '../../../../models';
 import {Loading} from '../../../shared/components/loading';
 import {Utils} from '../../../shared/utils';
+import {coffmanGrahamSorter, graph} from './graph';
 import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel';
 
 export interface WorkflowDagRenderOptions {
@@ -31,6 +31,14 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
 
     private get nodeSize() {
         return 32 / this.scale;
+    }
+
+    private get hgap() {
+        return this.nodeSize*2;
+    }
+
+    private get vgap() {
+        return this.nodeSize;
     }
 
     /**
@@ -125,8 +133,13 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             </>
         );
     }
-    private hash: {nodeSize: number; nodeCount: number};
-    private graph: dagre.graphlib.Graph;
+    private hash: {scale: number; nodeCount: number};
+    private graph: {
+        width: number;
+        height: number;
+        edges: {v: string; w: string; points: {x: number; y: number}[]}[];
+        nodes: Map<string, {x: number; y: number}>;
+    };
 
     constructor(props: Readonly<WorkflowDagProps>) {
         super(props);
@@ -163,8 +176,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 <div className='workflow-dag'>
                     <svg
                         style={{
-                            width: this.graph.graph().width + this.nodeSize * 2,
-                            height: this.graph.graph().height + this.nodeSize * 2,
+                            width: this.graph.width + this.hgap * 2,
+                            height: this.graph.height + this.vgap * 2,
                             margin: this.nodeSize
                         }}>
                         <defs>
@@ -178,33 +191,30 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                 <feBlend in='SourceGraphic' in2='blurOut' mode='normal' />
                             </filter>
                         </defs>
-                        <g transform={`translate(${this.nodeSize},${this.nodeSize})`}>
-                            {this.graph.edges().map(edge => {
-                                const points = this.graph
-                                    .edge(edge)
-                                    .points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`))
-                                    .join(' ');
+                        <g transform={`translate(${this.hgap},${this.vgap})`}>
+                            {this.graph.edges.map(edge => {
+                                const points = edge.points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y} ` : `L ${p.x} ${p.y}`)).join(' ');
                                 return (
-                                    <path key={`line/${edge.v}-${edge.w}`} d={points} className='line' markerEnd={(this.graph.node(edge.w).width > 1 && 'url(#arrow)') || null} />
+                                    <path key={`line/${edge.v}-${edge.w}`} d={points} className='line' markerEnd={this.filterNode(this.props.nodes[edge.w]) ? '' : 'url(#arrow)'} />
                                 );
                             })}
-                            {this.graph.nodes().map(nodeId => {
-                                const v = this.graph.node(nodeId);
+                            {Array.from(this.graph.nodes).map(([nodeId, v]) => {
                                 const node = this.props.nodes[nodeId];
                                 const phase: DagPhase = node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase;
+                                const filterNode = this.filterNode(this.props.nodes[nodeId]);
                                 return (
                                     <g key={`node/${nodeId}`} transform={`translate(${v.x},${v.y})`} onClick={() => this.selectNode(nodeId)} className='node'>
                                         <circle
-                                            r={v.width / 2}
+                                            r={filterNode ? 0 : this.nodeSize / 2}
                                             className={classNames('workflow-dag__node', 'workflow-dag__node-status', 'workflow-dag__node-status--' + phase.toLowerCase(), {
-                                                active: v.id === this.props.selectedNodeId
+                                                active: nodeId === this.props.selectedNodeId
                                             })}
                                             filter='url(#shadow)'
                                         />
-                                        {v.width > 1 && (
+                                        {!filterNode && (
                                             <>
                                                 {this.icon(phase)}
-                                                <g transform={`translate(0,${v.height})`}>
+                                                <g transform={`translate(0,${this.nodeSize})`}>
                                                     <text className='label' fontSize={12 / this.scale}>
                                                         {WorkflowDag.formatLabel(Utils.shortNodeName(node))}
                                                     </text>
@@ -225,43 +235,74 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         const nodes = Object.values(this.props.nodes)
             .filter(node => !!node)
             .map(node => node.id);
-
         const edges = Object.values(this.props.nodes)
             .filter(node => !!node)
-            .map(node => (node.children || []).map(childId => ({from: node.id, to: childId})))
+            .map(node => (node.children || []).map(childId => ({v: node.id, w: childId})))
             .reduce((a, b) => a.concat(b));
         const onExitHandlerNodeId = nodes.find(nodeId => this.props.nodes[nodeId].name === `${this.props.workflowName}.onExit`);
         if (onExitHandlerNodeId) {
-            this.getOutboundNodes(this.props.workflowName).forEach(v => edges.push({from: v, to: onExitHandlerNodeId}));
+            this.getOutboundNodes(this.props.workflowName).forEach(v => edges.push({v, w: onExitHandlerNodeId}));
         }
         return {nodes, edges};
     }
 
-    private layoutGraph(nodes: string[], edges: {from: string; to: string}[]) {
-        const hash = {nodeSize: this.nodeSize, nodeCount: nodes.length};
+    private layoutGraph(nodes: string[], edges: {v: string; w: string}[]) {
+        const hash = {scale: this.scale, nodeCount: nodes.length};
         // this hash check prevents having to do the expensive layout operation, if the graph does not re-laying out
         if (this.hash === hash) {
             return;
         }
         this.hash = hash;
 
-        this.graph = new dagre.graphlib.Graph();
-        this.graph.setGraph({
-            edgesep: this.nodeSize,
-            nodesep: this.nodeSize * 2,
-            rankdir: this.state.horizontal ? 'LR' : 'TB',
-            ranksep: this.nodeSize,
-            // these two settings seem to be about 25% faster
-            acyclicer: 'greedy',
-            ranker: 'longest-path'
+        const g = new graph();
+        nodes.forEach(n => g.nodes.push(n));
+        edges.forEach(e => g.edges.add(e));
+        const layers = new coffmanGrahamSorter(g).sort();
+
+        this.graph = {
+            width: 0,
+            height: 0,
+            nodes: new Map<string, {x: number; y: number}>(),
+            edges: []
+        };
+        if (this.state.horizontal) {
+            this.graph.width = layers.length * this.hgap * 2;
+        } else {
+            this.graph.height = layers.length * this.vgap * 2;
+        }
+        layers.forEach((level, i) => {
+            if (this.state.horizontal) {
+                this.graph.height = Math.max(this.graph.height, level.length * this.vgap * 2);
+            } else {
+                this.graph.width = Math.max(this.graph.width, level.length * this.hgap * 2);
+            }
         });
-        this.graph.setDefaultEdgeLabel(() => ({}));
-        nodes.forEach(v => {
-            const s = this.filterNode(this.props.nodes[v]) ? 1 : this.nodeSize;
-            this.graph.setNode(v, {width: s, height: s});
+        layers.forEach((level, i) => {
+            level.forEach((node, j) => {
+                const l = this.state.horizontal ? 0 : this.graph.width / 2 - level.length * this.hgap;
+                const t = !this.state.horizontal ? 0 : this.graph.height / 2 - level.length * this.vgap;
+                this.graph.nodes.set(node, {
+                    x: (this.state.horizontal ? i : j) * this.hgap * 2 + l,
+                    y: (this.state.horizontal ? j : i) * this.vgap * 2 + t
+                });
+            });
         });
-        edges.forEach(edge => this.graph.setEdge(edge.from, edge.to));
-        dagre.layout(this.graph);
+        const h = this.state.horizontal ? this.hgap / 2 : 0;
+        const v = !this.state.horizontal ? this.vgap / 2 : 0;
+        this.graph.edges = edges.map(e => ({
+            v: e.v,
+            w: e.w,
+            points: [
+                {
+                    x: this.graph.nodes.get(e.v).x + (this.filterNode(this.props.nodes[e.v]) ? 0 : h),
+                    y: this.graph.nodes.get(e.v).y + (this.filterNode(this.props.nodes[e.v]) ? 0 : v)
+                },
+                {
+                    x: this.graph.nodes.get(e.w).x - (this.filterNode(this.props.nodes[e.w]) ? 0 : h),
+                    y: this.graph.nodes.get(e.w).y - (this.filterNode(this.props.nodes[e.w]) ? 0 : v)
+                }
+            ]
+        }));
     }
 
     private selectNode(nodeId: string) {

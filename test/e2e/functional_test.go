@@ -53,12 +53,12 @@ spec:
 
   - name: whalesay
     container:
-      image: argoproj/argosay:v1
+      image: argoproj/argosay:v2
       imagePullPolicy: IfNotPresent
 
   - name: whalesplosion
     container:
-      image: argoproj/argosay:v1
+      image: argoproj/argosay:v2
       imagePullPolicy: IfNotPresent
       command: ["sh", "-c", "sleep 5 ; exit 1"]
 `).
@@ -124,12 +124,12 @@ spec:
     - name: whalesay
       container:
         imagePullPolicy: IfNotPresent
-        image: argoproj/argosay:v1
+        image: argoproj/argosay:v2
 
     - name: whalesplosion
       container:
         imagePullPolicy: IfNotPresent
-        image: argoproj/argosay:v1
+        image: argoproj/argosay:v2
         command: ["sh", "-c", "sleep 10; exit 1"]
 `).
 		When().
@@ -262,7 +262,7 @@ spec:
   - name: cowsay
     resubmitPendingPods: true
     container:
-      image: argoproj/argosay:v1
+      image: argoproj/argosay:v2
       command: [sh, -c]
       args: ["cowsay a"]
       resources:
@@ -314,7 +314,7 @@ spec:
     retryStrategy:
       limit: 1
     container:
-      image: argoproj/argosay:v1
+      image: argoproj/argosay:v2
       command: [sh, -c]
       args: ["cowsay a"]
       resources:
@@ -470,7 +470,7 @@ spec:
 
   - name: generate
     container:
-      image: argoproj/argosay:v1
+      image: argoproj/argosay:v2
       command: [sh, -c]
       args: ["
         echo 'my-output-parameter' > /tmp/my-output-parameter.txt

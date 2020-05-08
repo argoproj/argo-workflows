@@ -23,7 +23,7 @@ spec:
 
   - name: whalesay
     container:
-      image: argoproj/argosay:v1
+      image: argoproj/argosay:v2
       command: [sh, -x, -c]
       args: ["
         sleep 1;
@@ -60,7 +60,7 @@ spec:
       - name: C
       - name: D
     container:
-      image: argoproj/argosay:v1
+      image: argoproj/argosay:v2
       command: [cowsay]
       args: ["{{inputs.parameters.A}} {{inputs.parameters.B}} {{inputs.parameters.C}} {{inputs.parameters.D}}"]
 

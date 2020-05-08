@@ -22,10 +22,10 @@ spec:
         parameters:
           - name: message
       container:
-        image: argoproj/argosay:v1
+        image: argoproj/argosay:v2
         command: [sleep, "10"]
 
     - name: exit
       container:
-        image: argoproj/argosay:v1
+        image: argoproj/argosay:v2
         command: [echo, "one exit"]

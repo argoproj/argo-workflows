@@ -346,7 +346,7 @@ pull-build-images:
 
 .PHONY: test-images
 test-images:
-	docker pull argoproj/argosay:v1
+	docker pull argoproj/argosay:v2
 	docker pull python:alpine3.6
 
 .PHONY: stop

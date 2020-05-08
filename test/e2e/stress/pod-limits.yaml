@@ -23,6 +23,6 @@ spec:
 
   - name: run-pod
     container:
-      image: argoproj/argosay:v1
+      image: argoproj/argosay:v2
       command: [sh, -c]
       args: ["echo sleeping 1s; sleep 1"]
