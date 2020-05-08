@@ -157,7 +157,7 @@ endif
 	@mkdir -p ui/dist
 	touch ui/dist/node_modules.marker
 
-ui/dist/app/index.html: ui/dist/node_modules.marker ui/src
+ui/dist/app/index.html: ui/dist/node_modules.marker $(UI_FILES)
 	# Build UI
 	@mkdir -p ui/dist/app
 ifeq ($(CI),false)
