@@ -45,7 +45,7 @@ func New(path, port string, ttl time.Duration) Metrics {
 		updatesReapplied:                newCounter("updates_reapplied", "Number of times we re-applied a workflow update. Ideally should always be zero.", nil),
 		podResourceVersionRepeated:      newCounter("pod_resource_version_repeated", "Number of pod updates had the same resource version as the old one", nil),
 		podsProcessed:                   newCounter("pods_processed", "Number of pod updates processed", nil),
-		workflowResourceVersionRepeated: newCounter("workflow_resource_version_repeated", "Number of workflow updates that the same resource version as the old one", nil),
+		workflowResourceVersionRepeated: newCounter("workflow_resource_version_repeated", "Number of workflow updates that have the same resource version as the old one", nil),
 		workflowsProcessed:              newCounter("workflows_processed", "Number of workflow updates processed", nil),
 		workflowsByPhase:                getWorkflowPhaseGauges(),
 		customMetrics:                   make(map[string]common.Metric),
@@ -89,11 +89,15 @@ func (m Metrics) allMetrics() []prometheus.Metric {
 }
 
 func (m Metrics) AddWorkflowPhase(phase v1alpha1.NodePhase) {
-	m.workflowsByPhase[phase].Inc()
+	if _, ok := m.workflowsByPhase[phase]; ok {
+		m.workflowsByPhase[phase].Inc()
+	}
 }
 
 func (m Metrics) DeleteWorkflowPhase(phase v1alpha1.NodePhase) {
-	m.workflowsByPhase[phase].Dec()
+	if _, ok := m.workflowsByPhase[phase]; ok {
+		m.workflowsByPhase[phase].Dec()
+	}
 }
 
 func (m Metrics) GetCustomMetric(key string) common.Metric {

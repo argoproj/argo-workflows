@@ -116,9 +116,9 @@ func TestCounterMetric(t *testing.T) {
 	woc.operate()
 
 	metricTotalDesc := wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
-	assert.Contains(t, controller.Metrics, metricTotalDesc)
+	assert.NotNil(t, controller.Metrics.GetCustomMetric(metricTotalDesc).Metric)
 	metricErrorDesc := wf.Spec.Templates[0].Metrics.Prometheus[1].GetDesc()
-	assert.Contains(t, controller.Metrics, metricErrorDesc)
+	assert.NotNil(t, controller.Metrics.GetCustomMetric(metricErrorDesc).Metric)
 
 	metricTotalCounter := controller.Metrics.GetCustomMetric(metricTotalDesc).Metric.(prometheus.Counter)
 	metricTotalCounterString, err := getMetricStringValue(metricTotalCounter)
