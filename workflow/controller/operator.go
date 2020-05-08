@@ -451,7 +451,6 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if !woc.updated {
 		return
 	}
-	defer woc.controller.metrics.UpdatePersisted(workflow.WorkflowKind)
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 	// try and compress nodes if needed
 	nodes := woc.wf.Status.Nodes
