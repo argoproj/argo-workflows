@@ -118,7 +118,6 @@ func newHistogram(name, help string, labels map[string]string, buckets []float64
 }
 
 func getWorkflowPhaseGauges() map[wfv1.NodePhase]prometheus.Gauge {
-
 	getOptsByPahse := func(phase wfv1.NodePhase) prometheus.GaugeOpts {
 		return prometheus.GaugeOpts{
 			Namespace:   argoNamespace,
@@ -131,6 +130,24 @@ func getWorkflowPhaseGauges() map[wfv1.NodePhase]prometheus.Gauge {
 	return map[wfv1.NodePhase]prometheus.Gauge{
 		wfv1.NodePending:   prometheus.NewGauge(getOptsByPahse(wfv1.NodePending)),
 		wfv1.NodeRunning:   prometheus.NewGauge(getOptsByPahse(wfv1.NodeRunning)),
+		wfv1.NodeSucceeded: prometheus.NewGauge(getOptsByPahse(wfv1.NodeSucceeded)),
+		wfv1.NodeSkipped:   prometheus.NewGauge(getOptsByPahse(wfv1.NodeSkipped)),
+		wfv1.NodeFailed:    prometheus.NewGauge(getOptsByPahse(wfv1.NodeFailed)),
+		wfv1.NodeError:     prometheus.NewGauge(getOptsByPahse(wfv1.NodeError)),
+	}
+}
+
+func getCompletedWorkflowPhaseGauges() map[wfv1.NodePhase]prometheus.Gauge {
+	getOptsByPahse := func(phase wfv1.NodePhase) prometheus.GaugeOpts {
+		return prometheus.GaugeOpts{
+			Namespace:   argoNamespace,
+			Subsystem:   workflowsSubsystem,
+			Name:        "complete",
+			Help:        "Number of completed workflows by status",
+			ConstLabels: map[string]string{"status": string(phase)},
+		}
+	}
+	return map[wfv1.NodePhase]prometheus.Gauge{
 		wfv1.NodeSucceeded: prometheus.NewGauge(getOptsByPahse(wfv1.NodeSucceeded)),
 		wfv1.NodeSkipped:   prometheus.NewGauge(getOptsByPahse(wfv1.NodeSkipped)),
 		wfv1.NodeFailed:    prometheus.NewGauge(getOptsByPahse(wfv1.NodeFailed)),

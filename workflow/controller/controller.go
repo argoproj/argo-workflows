@@ -579,19 +579,19 @@ func getWfPriority(obj interface{}) (int32, time.Time) {
 	return int32(priority), un.GetCreationTimestamp().Time
 }
 
-func getWfPhase(obj interface{}) (wfv1.NodePhase, bool) {
+func getWfPhase(obj interface{}) wfv1.NodePhase {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		return "", false
+		return ""
 	}
 	phase, hasPhase, err := unstructured.NestedString(un.Object, "status", "phase")
 	if err != nil {
-		return "", false
+		return ""
 	}
 	if !hasPhase {
-		return wfv1.NodePending, true
+		return wfv1.NodePending
 	}
-	return wfv1.NodePhase(phase), true
+	return wfv1.NodePhase(phase)
 }
 
 func (wfc *WorkflowController) addWorkflowInformerHandler() {
@@ -610,6 +610,11 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 				}
 			},
 			UpdateFunc: func(old, new interface{}) {
+				oldWf, newWf := old.(*unstructured.Unstructured), new.(*unstructured.Unstructured)
+				if oldWf.GetResourceVersion() == newWf.GetResourceVersion() {
+					wfc.Metrics.WorkflowResourceVersionRepeated()
+				}
+
 				key, err := cache.MetaNamespaceKeyFunc(new)
 				if err == nil {
 					wfc.wfQueue.Add(key)
@@ -633,22 +638,13 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 func (wfc *WorkflowController) getMetricsEventHandler() cache.ResourceEventHandler {
 	return cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			if phase, ok := getWfPhase(obj); ok {
-				wfc.Metrics.AddWorkflowPhase(phase)
-			}
+			wfc.Metrics.WorkflowAdded(getWfPhase(obj))
 		},
 		UpdateFunc: func(old, new interface{}) {
-			if phase, ok := getWfPhase(old); ok {
-				wfc.Metrics.DeleteWorkflowPhase(phase)
-			}
-			if phase, ok := getWfPhase(new); ok {
-				wfc.Metrics.AddWorkflowPhase(phase)
-			}
+			wfc.Metrics.WorkflowUpdated(getWfPhase(old), getWfPhase(new))
 		},
 		DeleteFunc: func(obj interface{}) {
-			if phase, ok := getWfPhase(obj); ok {
-				wfc.Metrics.DeleteWorkflowPhase(phase)
-			}
+			wfc.Metrics.WorkflowDeleted(getWfPhase(obj))
 		},
 	}
 }
@@ -695,6 +691,12 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 				}
 			},
 			UpdateFunc: func(old, new interface{}) {
+				oldPod, newPod := old.(*apiv1.Pod), new.(*apiv1.Pod)
+				if oldPod.ResourceVersion == newPod.ResourceVersion {
+					wfc.Metrics.PodResourceVersionRepeated()
+				}
+				wfc.Metrics.PodChanged(oldPod.Status.Phase != newPod.Status.Phase)
+
 				key, err := cache.MetaNamespaceKeyFunc(new)
 				if err == nil {
 					wfc.podQueue.Add(key)

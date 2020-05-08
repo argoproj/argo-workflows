@@ -25,16 +25,16 @@ type Metrics struct {
 	registry     *prometheus.Registry
 	serverConfig ServerConfig
 
-	insignificantPodChange          prometheus.Counter
-	significantPodChange            prometheus.Counter
-	updatesPersisted                map[string]prometheus.Counter
 	updatesReapplied                prometheus.Counter
 	podResourceVersionRepeated      prometheus.Counter
 	podsProcessed                   prometheus.Counter
 	workflowResourceVersionRepeated prometheus.Counter
 	workflowsProcessed              prometheus.Counter
 	workflowsByPhase                map[v1alpha1.NodePhase]prometheus.Gauge
+	completedWorkflows              map[v1alpha1.NodePhase]prometheus.Gauge
 	customMetrics                   map[string]common.Metric
+	updatesPersisted                map[string]prometheus.Counter
+	podChange                       map[bool]prometheus.Counter
 }
 
 var _ prometheus.Collector = Metrics{}
@@ -42,20 +42,23 @@ var _ prometheus.Collector = Metrics{}
 func New(config ServerConfig) Metrics {
 	metrics := Metrics{
 		serverConfig:                    config,
-		insignificantPodChange:          newCounter("pod_updates", "Number of pod updates", map[string]string{"significant": "false"}),
-		significantPodChange:            newCounter("pod_updates", "Number of pod updates", map[string]string{"significant": "true"}),
 		updatesReapplied:                newCounter("updates_reapplied", "Number of times we re-applied a workflow update. Ideally should always be zero.", nil),
 		podResourceVersionRepeated:      newCounter("pod_resource_version_repeated", "Number of pod updates had the same resource version as the old one", nil),
 		podsProcessed:                   newCounter("pods_processed", "Number of pod updates processed", nil),
 		workflowResourceVersionRepeated: newCounter("workflow_resource_version_repeated", "Number of workflow updates that have the same resource version as the old one", nil),
 		workflowsProcessed:              newCounter("workflows_processed", "Number of workflow updates processed", nil),
 		workflowsByPhase:                getWorkflowPhaseGauges(),
+		completedWorkflows:              getCompletedWorkflowPhaseGauges(),
 		customMetrics:                   make(map[string]common.Metric),
 		updatesPersisted: map[string]prometheus.Counter{
 			workflow.WorkflowKind:                newCounter("updates_persisted", "Number of times an update was persisted", map[string]string{"kind": "workflow"}),
 			workflow.CronWorkflowKind:            newCounter("updates_persisted", "Number of times an update was persisted", map[string]string{"kind": "cron_workflow"}),
 			workflow.WorkflowTemplateKind:        newCounter("updates_persisted", "Number of times an update was persisted", map[string]string{"kind": "workflow_template"}),
 			workflow.ClusterWorkflowTemplateKind: newCounter("updates_persisted", "Number of times an update was persisted", map[string]string{"kind": "cluster_workflow_template"}),
+		},
+		podChange: map[bool]prometheus.Counter{
+			true:  newCounter("pod_updates", "Number of pod updates", map[string]string{"significant": "false"}),
+			false: newCounter("pod_updates", "Number of pod updates", map[string]string{"significant": "true"}),
 		},
 	}
 
@@ -69,8 +72,6 @@ func New(config ServerConfig) Metrics {
 
 func (m Metrics) allMetrics() []prometheus.Metric {
 	allMetrics := []prometheus.Metric{
-		m.insignificantPodChange,
-		m.significantPodChange,
 		m.updatesReapplied,
 		m.podResourceVersionRepeated,
 		m.podsProcessed,
@@ -83,6 +84,9 @@ func (m Metrics) allMetrics() []prometheus.Metric {
 	for _, metric := range m.updatesPersisted {
 		allMetrics = append(allMetrics, metric)
 	}
+	for _, metric := range m.podChange {
+		allMetrics = append(allMetrics, metric)
+	}
 	for _, metric := range m.customMetrics {
 		allMetrics = append(allMetrics, metric.Metric)
 	}
@@ -90,13 +94,21 @@ func (m Metrics) allMetrics() []prometheus.Metric {
 	return allMetrics
 }
 
-func (m Metrics) AddWorkflowPhase(phase v1alpha1.NodePhase) {
+func (m Metrics) WorkflowAdded(phase v1alpha1.NodePhase) {
 	if _, ok := m.workflowsByPhase[phase]; ok {
 		m.workflowsByPhase[phase].Inc()
 	}
 }
 
-func (m Metrics) DeleteWorkflowPhase(phase v1alpha1.NodePhase) {
+func (m Metrics) WorkflowUpdated(fromPhase, toPhase v1alpha1.NodePhase) {
+	m.WorkflowDeleted(fromPhase)
+	m.WorkflowAdded(toPhase)
+	if fromPhase != "" && toPhase != "" && !fromPhase.Completed() && toPhase.Completed() {
+		m.completedWorkflows[toPhase].Inc()
+	}
+}
+
+func (m Metrics) WorkflowDeleted(phase v1alpha1.NodePhase) {
 	if _, ok := m.workflowsByPhase[phase]; ok {
 		m.workflowsByPhase[phase].Dec()
 	}
@@ -123,4 +135,16 @@ func (m Metrics) PodProcessed() {
 
 func (m Metrics) UpdatesReapplied() {
 	m.updatesReapplied.Inc()
+}
+
+func (m Metrics) PodResourceVersionRepeated() {
+	m.podResourceVersionRepeated.Inc()
+}
+
+func (m Metrics) PodChanged(significant bool) {
+	m.podChange[significant].Inc()
+}
+
+func (m Metrics) WorkflowResourceVersionRepeated() {
+	m.workflowResourceVersionRepeated.Inc()
 }
