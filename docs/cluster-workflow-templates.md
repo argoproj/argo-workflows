@@ -7,7 +7,7 @@
 `ClusterWorkflowTemplates` are cluster scoped `WorkflowTemplates`. `ClusterWorkflowTemplate` 
 can be created cluster scoped like `ClusterRole` and can be accessed all namespaces in the cluster. 
 
-`WorkflowTemplate` documentation [link](./workflow-template.md)
+`WorkflowTemplates` documentation [link](./workflow-templates.md)
 
 ## Defining `ClusterWorkflowTemplate`
 
