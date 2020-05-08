@@ -142,7 +142,7 @@ func (wfc *WorkflowController) RunTTLController(ctx context.Context) {
 }
 
 func (wfc *WorkflowController) RunCronController(ctx context.Context) {
-	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID)
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, wfc.Metrics)
 	cronController.Run(ctx)
 }
 
@@ -532,6 +532,7 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 		log.Warnf("watch returned pod unrelated to any workflow: %s", pod.ObjectMeta.Name)
 		return true
 	}
+	wfc.Metrics.PodProcessed()
 	// TODO: currently we reawaken the workflow on *any* pod updates.
 	// But this could be be much improved to become smarter by only
 	// requeue the workflow when there are changes that we care about.
@@ -556,12 +557,6 @@ func (wfc *WorkflowController) tweakListOptions(completedOp selection.Operator, 
 	labelSelector := labels.NewSelector().
 		Add(*requirement).
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
-	options.LabelSelector = labelSelector.String()
-}
-
-func (wfc *WorkflowController) tweakWorkflowMetricslist(options *metav1.ListOptions) {
-	options.FieldSelector = fields.Everything().String()
-	labelSelector := labels.NewSelector().Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 	options.LabelSelector = labelSelector.String()
 }
 

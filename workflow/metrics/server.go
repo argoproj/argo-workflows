@@ -32,22 +32,14 @@ func (m Metrics) RunServer(stopCh <-chan struct{}) {
 }
 
 func (m Metrics) Describe(ch chan<- *prometheus.Desc) {
-	for _, metric := range m.workflowsByPhase {
+	for _, metric := range m.allMetrics() {
 		ch <- metric.Desc()
-	}
-
-	for _, metric := range m.customMetrics {
-		ch <- metric.Metric.Desc()
 	}
 }
 
 func (m Metrics) Collect(ch chan<- prometheus.Metric) {
-	for _, metric := range m.workflowsByPhase {
+	for _, metric := range m.allMetrics() {
 		ch <- metric
-	}
-
-	for _, metric := range m.customMetrics {
-		ch <- metric.Metric
 	}
 }
 
