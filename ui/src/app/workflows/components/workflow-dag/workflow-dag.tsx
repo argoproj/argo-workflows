@@ -4,7 +4,8 @@ import * as React from 'react';
 import {NodePhase, NodeStatus} from '../../../../models';
 import {Loading} from '../../../shared/components/loading';
 import {Utils} from '../../../shared/utils';
-import {coffmanGrahamSorter, graph} from './graph';
+import {CoffmanGrahamSorter} from './graph/coffman-graham-sorter';
+import {Graph} from './graph/graph';
 import {WorkflowDagRenderOptionsPanel} from './workflow-dag-render-options-panel';
 
 export interface WorkflowDagRenderOptions {
@@ -34,7 +35,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     }
 
     private get hgap() {
-        return this.nodeSize*2;
+        return this.nodeSize * 2;
     }
 
     private get vgap() {
@@ -254,10 +255,10 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
         }
         this.hash = hash;
 
-        const g = new graph();
+        const g = new Graph();
         nodes.forEach(n => g.nodes.push(n));
         edges.forEach(e => g.edges.add(e));
-        const layers = new coffmanGrahamSorter(g).sort();
+        const layers = new CoffmanGrahamSorter(g).sort();
 
         this.graph = {
             width: 0,
