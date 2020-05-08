@@ -84,6 +84,9 @@ type wfOperationCtx struct {
 	workflowDeadline *time.Time
 	// auditLogger is the argo audit logger
 	auditLogger *argo.AuditLogger
+	// preExecutionNodePhases contains the phases of all the nodes before the current operation. Necessary to infer
+	// changes in phase for metric emission
+	preExecutionNodePhases map[string]wfv1.NodePhase
 }
 
 var (
@@ -120,14 +123,15 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 			"workflow":  wf.ObjectMeta.Name,
 			"namespace": wf.ObjectMeta.Namespace,
 		}),
-		controller:         wfc,
-		globalParams:       make(map[string]string),
-		volumes:            wf.Spec.DeepCopy().Volumes,
-		artifactRepository: &wfc.Config.ArtifactRepository,
-		completedPods:      make(map[string]bool),
-		succeededPods:      make(map[string]bool),
-		deadline:           time.Now().UTC().Add(maxOperationTime),
-		auditLogger:        argo.NewAuditLogger(wf.ObjectMeta.Namespace, wfc.kubeclientset, wf.ObjectMeta.Name),
+		controller:             wfc,
+		globalParams:           make(map[string]string),
+		volumes:                wf.Spec.DeepCopy().Volumes,
+		artifactRepository:     &wfc.Config.ArtifactRepository,
+		completedPods:          make(map[string]bool),
+		succeededPods:          make(map[string]bool),
+		deadline:               time.Now().UTC().Add(maxOperationTime),
+		auditLogger:            argo.NewAuditLogger(wf.ObjectMeta.Namespace, wfc.kubeclientset, wf.ObjectMeta.Name),
+		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
 	}
 
 	if woc.wf.Status.Nodes == nil {
@@ -167,6 +171,11 @@ func (woc *wfOperationCtx) operate() {
 
 	// Update workflow duration variable
 	woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
+
+	// Populate the phase of all the nodes prior to execution
+	for _, node := range woc.wf.Status.Nodes {
+		woc.preExecutionNodePhases[node.ID] = node.Phase
+	}
 
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == "" {
@@ -1383,7 +1392,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 				// Check if this node completed between executions. If it did, emit metrics. If a node completes within
 				// the same execution, its metrics are emitted below.
 				// We can infer that this node completed during the current operation, emit metrics
-				if prevNodeStatus, ok := woc.orig.Status.Nodes[node.ID]; ok && !prevNodeStatus.Phase.Completed() {
+				if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Completed() {
 					localScope, realTimeScope := woc.prepareMetricScope(node)
 					woc.computeMetrics(resolvedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 				}
@@ -1502,7 +1511,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	if resolvedTmpl.Metrics != nil {
 		// Check if the node was just created, if it was emit realtime metrics.
 		// If the node did not previously exist, we can infer that it was created during the current operation, emit real time metrics.
-		if _, ok := woc.orig.Status.Nodes[node.ID]; !ok {
+		if _, ok := woc.preExecutionNodePhases[node.ID]; !ok {
 			localScope, realTimeScope := woc.prepareMetricScope(node)
 			woc.computeMetrics(resolvedTmpl.Metrics.Prometheus, localScope, realTimeScope, true)
 		}
@@ -1510,7 +1519,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		// This check is necessary because sometimes a node will be marked completed during the current execution and will
 		// not be considered again. The best example of this is the entrypoint steps/dag template (once completed, the
 		// workflow ends and it's not reconsidered). This checks makes sure that its metrics also get emitted.
-		if prevNodeStatus, ok := woc.orig.Status.Nodes[node.ID]; ok && !prevNodeStatus.Phase.Completed() && node.Completed() {
+		if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Completed() && node.Completed() {
 			localScope, realTimeScope := woc.prepareMetricScope(node)
 			woc.computeMetrics(resolvedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 		}
