@@ -10,5 +10,5 @@ spec:
     - name: run-workflow
       container:
         image: argoproj/argosay:v2
-        command: [cowsay, ":) Hello Argo!"]
+        args: [echo, ":) Hello Argo!"]
         imagePullPolicy: IfNotPresent

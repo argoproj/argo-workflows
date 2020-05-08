@@ -344,6 +344,17 @@ endif
 pull-build-images:
 	./hack/pull-build-images.sh
 
+.PHONY: argosay
+argosay: test/e2e/images/argosay/v2/argosay
+	cd test/e2e/images/argosay/v2 && docker build . -t argoproj/argosay:v2
+ifeq ($(K3D),true)
+	k3d import-images argoproj/argosay:v2
+endif
+	docker push argoproj/argosay:v2
+
+test/e2e/images/argosay/v2/argosay: $(shell find test/e2e/images/argosay/v2/main -type f)
+	cd test/e2e/images/argosay/v2 && GOOS=linux CGO_ENABLED=0 go build -ldflags '-w -s' -o argosay ./main
+
 .PHONY: test-images
 test-images:
 	docker pull argoproj/argosay:v2

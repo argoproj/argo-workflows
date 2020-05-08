@@ -1,5 +1,5 @@
 FROM scratch
 
-ADD argosay .
+ADD argosay /
 
-CMD ["argosay"]
+ENTRYPOINT ["/argosay"]

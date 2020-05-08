@@ -53,5 +53,4 @@ spec:
     - name: whalesay
       container:
         image: argoproj/argosay:v2
-        command: [sh, -c]
-        args: ["echo sleeping 1s; sleep 1"]
+        args: [sleep, 1s]

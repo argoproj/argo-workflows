@@ -21,7 +21,7 @@ export const exampleWorkflow = (namespace: string): Workflow => ({
                 name: 'whalesay',
                 container: {
                     name: 'main',
-                    image: 'docker/whalesay:latest',
+                    image: 'docker/argoproj/argosay:v2',
                     command: ['cowsay'],
                     args: ['hello world']
                 }
@@ -39,7 +39,7 @@ export const exampleClusterWorkflowTemplate = (): ClusterWorkflowTemplate => ({
                 name: 'whalesay',
                 container: {
                     name: 'main',
-                    image: 'docker/whalesay:latest',
+                    image: 'docker/argoproj/argosay:v2',
                     command: ['cowsay'],
                     args: ['hello world']
                 }
@@ -59,7 +59,7 @@ export const exampleWorkflowTemplate = (namespace: string): WorkflowTemplate => 
                 name: 'whalesay',
                 container: {
                     name: 'main',
-                    image: 'docker/whalesay:latest',
+                    image: 'docker/argoproj/argosay:v2',
                     command: ['cowsay'],
                     args: ['hello world']
                 }
@@ -82,7 +82,7 @@ export const exampleCronWorkflow = (namespace: string): CronWorkflow => ({
                     name: 'whalesay',
                     container: {
                         name: 'main',
-                        image: 'docker/whalesay:latest',
+                        image: 'docker/argoproj/argosay:v2',
                         command: ['cowsay'],
                         args: ['hello world']
                     }
