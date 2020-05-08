@@ -10,7 +10,7 @@
       {
         "name": "whalesay",
         "container": {
-          "image": "argoproj/argosay:v2",
+          "image": "argoproj/argosay:v1",
           "command": [
             "cowsay"
           ],
