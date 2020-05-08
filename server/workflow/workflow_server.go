@@ -3,6 +3,7 @@ package workflow
 import (
 	"fmt"
 	"reflect"
+	"sort"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -129,6 +130,9 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *workflowpkg.Wor
 		}
 	}
 
+	// we make no promises about the overall list sorting, we just sort each page
+	sort.Sort(wfList.Items)
+
 	return &v1alpha1.WorkflowList{ListMeta: metav1.ListMeta{Continue: wfList.Continue}, Items: wfList.Items}, nil
 }
 
@@ -156,7 +160,7 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 			return ctx.Err()
 		case event, open := <-watch.ResultChan():
 			if !open {
-				log.Info("Re-establishing workflow watch")
+				log.Debug("Re-establishing workflow watch")
 				watch, err = wfIf.Watch(*opts)
 				if err != nil {
 					return err
