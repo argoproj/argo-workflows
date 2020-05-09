@@ -13,6 +13,7 @@ require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 interface State {
     cronWorkflow?: CronWorkflow;
+    editing: boolean;
     error?: Error;
 }
 
@@ -27,7 +28,7 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = {};
+        this.state = { editing: false };
     }
 
     public componentDidMount(): void {
@@ -56,13 +57,13 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
                                 title: 'Suspend',
                                 iconClassName: 'fa fa-pause',
                                 action: () => this.suspendCronWorkflow(),
-                                disabled: !this.state.cronWorkflow || this.state.cronWorkflow.spec.suspend
+                                disabled: this.state.editing || !this.state.cronWorkflow || this.state.cronWorkflow.spec.suspend
                             },
                             {
                                 title: 'Resume',
                                 iconClassName: 'fa fa-play',
                                 action: () => this.resumeCronWorkflow(),
-                                disabled: !this.state.cronWorkflow || !this.state.cronWorkflow.spec.suspend
+                                disabled: this.state.editing || !this.state.cronWorkflow || !this.state.cronWorkflow.spec.suspend
                             }
                         ]
                     },
@@ -86,7 +87,12 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
             return <Loading />;
         }
         return (
-            <CronWorkflowSummaryPanel cronWorkflow={this.state.cronWorkflow} onChange={cronWorkflow => this.setState({cronWorkflow})} onError={error => this.setState({error})} />
+            <CronWorkflowSummaryPanel
+                cronWorkflow={this.state.cronWorkflow}
+                onChange={cronWorkflow => this.setState({cronWorkflow, editing: false})}
+                onError={error => this.setState({error})}
+                onEdit={() => this.setState({editing: true})}
+            />
         );
     }
 

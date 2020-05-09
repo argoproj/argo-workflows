@@ -10,7 +10,7 @@ const jsonMergePatch = require('json-merge-patch');
 interface Props {
     cronWorkflow: CronWorkflow;
     onChange: (cronWorkflow: CronWorkflow) => void;
-
+    onEdit: () => void;
     onError(error: Error): void;
 }
 
@@ -48,6 +48,7 @@ export const CronWorkflowSummaryPanel = (props: Props) => {
                     <YamlEditor
                         editing={false}
                         value={props.cronWorkflow}
+                        onEdit={props.onEdit}
                         onSubmit={(value: CronWorkflow) => {
                             // magic - we get the latest from the server and then apply the changes from the rendered version to this
                             const original = props.cronWorkflow;

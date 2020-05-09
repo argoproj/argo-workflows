@@ -7,6 +7,7 @@ interface Props<T> {
     title?: string;
     value: T;
     editing: boolean;
+    onEdit?: () => void;
     onSubmit: (value: T) => void;
 }
 
@@ -55,7 +56,15 @@ export class YamlEditor<T> extends React.Component<Props<T>, State> {
                         Submit
                     </button>
                 )) || (
-                    <button onClick={() => this.setState({editing: true, value: jsYaml.dump(this.props.value)})} className='argo-button argo-button--base'>
+                    <button
+                        onClick={() => {
+                            if (this.props.onEdit) {
+                                this.props.onEdit();
+                            }
+                            this.setState({value: jsYaml.dump(this.props.value), editing: true});
+                        }}
+                        className='argo-button argo-button--base'
+                    >
                         Edit
                     </button>
                 )}
