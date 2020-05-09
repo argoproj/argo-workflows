@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -40,7 +41,6 @@ import (
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/ttlcontroller"
 	"github.com/argoproj/argo/workflow/util"
-	"github.com/argoproj/pkg/errors"
 )
 
 // WorkflowController is the controller for workflow resources
@@ -617,20 +617,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 			wfc.metrics.WorkflowDeleted(getWfPhase(obj))
 		},
 	})
-}
-
-func (wfc *WorkflowController) getMetricsEventHandler() cache.ResourceEventHandler {
-	return cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			wfc.metrics.WorkflowAdded(getWfPhase(obj))
-		},
-		UpdateFunc: func(old, new interface{}) {
-			wfc.metrics.WorkflowUpdated(getWfPhase(old), getWfPhase(new))
-		},
-		DeleteFunc: func(obj interface{}) {
-			wfc.metrics.WorkflowDeleted(getWfPhase(obj))
-		},
-	}
 }
 
 func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
