@@ -123,7 +123,7 @@ spec:
             s3:
               bucket: argo
               # TODO {{workflow.parameters.revision}}
-              key: node_modules-{{revision}}
+              key: node_modules-{{workflow.parameters.revision}}
               endpoint: minio:9000
               insecure: true
               accessKeySecret:
@@ -149,7 +149,7 @@ spec:
             path: /go/src/github.com/argoproj/argo/ui/node_modules
             s3:
               bucket: argo
-              key: node_modules-{{revision}}
+              key: node_modules-{{workflow.parameters.revision}}
               endpoint: minio:9000
               insecure: true
               accessKeySecret:
@@ -187,7 +187,7 @@ spec:
             optional: true
             s3:
               bucket: argo
-              key: go-build-cache-{{revision}}
+              key: go-build-cache-{{workflow.parameters.revision}}
               endpoint: minio:9000
               insecure: true
               accessKeySecret:
@@ -201,7 +201,7 @@ spec:
             optional: true
             s3:
               bucket: argo
-              key: node_modules-{{revision}}
+              key: node_modules-{{workflow.parameters.revision}}
               endpoint: minio:9000
               insecure: true
               accessKeySecret:
@@ -229,7 +229,7 @@ spec:
             path: /root/.cache/go-build
             s3:
               bucket: argo
-              key: go-build-cache-{{revision}}
+              key: go-build-cache-{{workflow.parameters.revision}}
               endpoint: minio:9000
               insecure: true
               accessKeySecret:
@@ -242,7 +242,7 @@ spec:
             path: /go/pkg/mod
             s3:
               bucket: argo
-              key: go-mod-{{revision}}
+              key: go-mod-{{workflow.parameters.revision}}
               endpoint: minio:9000
               insecure: true
               accessKeySecret:
@@ -259,7 +259,7 @@ spec:
             path: /root/.cache/go-build
             s3:
               bucket: argo
-              key: go-build-cache-{{revision}}
+              key: go-build-cache-{{workflow.parameters.revision}}
               endpoint: minio:9000
               insecure: true
               accessKeySecret:
@@ -272,7 +272,7 @@ spec:
             path: /go/pkg/mod
             s3:
               bucket: argo
-              key: go-mod-{{revision}}
+              key: go-mod-{{workflow.parameters.revision}}
               endpoint: minio:9000
               insecure: true
               accessKeySecret:
@@ -302,7 +302,7 @@ spec:
             path: /go/pkg/mod
             s3:
               bucket: argo
-              key: go-mod-{{revision}}
+              key: go-mod-{{workflow.parameters.revision}}
               endpoint: minio:9000
               insecure: true
               accessKeySecret:
@@ -332,7 +332,7 @@ spec:
             path: /go/pkg/mod
             s3:
               bucket: argo
-              key: go-mod-{{revision}}
+              key: go-mod-{{workflow.parameters.revision}}
               endpoint: minio:9000
               insecure: true
               accessKeySecret:
