@@ -1,3 +1,5 @@
+bou.ke/staticfiles v0.0.0-20190225145250-827d7f6389cd h1:7C8NlNNaforPxSBAogtUdw9VrvgDpSNmbaruZsIxP4Q=
+bou.ke/staticfiles v0.0.0-20190225145250-827d7f6389cd/go.mod h1:JpKWzdMX3ZBe8DYU+jWnZyYT4tJR9pMee/kPGvap41o=
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.38.0/go.mod h1:990N+gfupTy94rShfmMCWGDn0LpTmnzTp2qbd1dvSRU=
