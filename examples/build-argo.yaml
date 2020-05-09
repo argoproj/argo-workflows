@@ -1,3 +1,5 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
 metadata:
   generateName: build-argo-
 spec:
@@ -10,13 +12,25 @@ spec:
   # delete all pods as soon as possible
   podGC:
     strategy: OnPodSuccess
+    
   entrypoint: main
+  
   arguments:
     parameters:
       - name: revision
         value: ci
       - name: org
         value: alexec
+        
+  volumeClaimTemplates:
+    - metadata:
+        name: argo-build
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
+            
   templates:
     - name: main
       dag:
@@ -28,34 +42,18 @@ spec:
             template: ui
             dependencies:
               - checkout
-            arguments:
-              artifacts:
-                - name: src
-                  from: "{{tasks.checkout.outputs.artifacts.src}}"
 
           - name: ui-lint
             template: ui-lint
             dependencies:
               - checkout
               - ui
-            arguments:
-              artifacts:
-                - name: src
-                  from: "{{tasks.checkout.outputs.artifacts.src}}"
-                - name: ui-dist
-                  from: "{{tasks.ui.outputs.artifacts.ui-dist}}"
 
           - name: build
             template: build
             dependencies:
               - checkout
               - ui
-            arguments:
-              artifacts:
-                - name: src
-                  from: "{{tasks.checkout.outputs.artifacts.src}}"
-                - name: ui-dist
-                  from: "{{tasks.ui.outputs.artifacts.ui-dist}}"
 
           - name: test
             template: test
@@ -63,12 +61,6 @@ spec:
               - build
               - checkout
               - ui
-            arguments:
-              artifacts:
-                - name: src
-                  from: "{{tasks.checkout.outputs.artifacts.src}}"
-                - name: ui-dist
-                  from: "{{tasks.ui.outputs.artifacts.ui-dist}}"
 
           - name: lint
             template: lint
@@ -76,12 +68,6 @@ spec:
               - build
               - checkout
               - ui
-            arguments:
-              artifacts:
-                - name: src
-                  from: "{{tasks.checkout.outputs.artifacts.src}}"
-                - name: ui-dist
-                  from: "{{tasks.ui.outputs.artifacts.ui-dist}}"
 
           - name: codegen
             template: codegen
@@ -89,12 +75,6 @@ spec:
               - build
               - checkout
               - ui
-            arguments:
-              artifacts:
-                - name: src
-                  from: "{{tasks.checkout.outputs.artifacts.src}}"
-                - name: ui-dist
-                  from: "{{tasks.ui.outputs.artifacts.ui-dist}}"
 
     - name: checkout
       inputs:
@@ -105,18 +85,6 @@ spec:
               repo: https://github.com/{{workflow.parameters.org}}/argo.git
               revision: "{{workflow.parameters.revision}}"
               depth: 1
-      container:
-        image: argoproj/argosay:v2
-      outputs:
-        artifacts:
-          - name: src
-            path: /go/src/github.com/argoproj/argo
-
-    - name: ui
-      inputs:
-        artifacts:
-          - name: src
-            path: /go/src/github.com/argoproj/argo
           - name: node_modules
             path: /go/src/github.com/argoproj/argo/ui/node_modules
             optional: true
@@ -132,56 +100,6 @@ spec:
               secretKeySecret:
                 name: my-minio-cred
                 key: secretkey
-      script:
-        image: node:14.0.0
-        command:
-          - sh
-          - -eux -o pipefail
-        source: |
-          yarn install --frozen-lockfile
-          mkdir dist
-          touch dist/node_modules.marker
-          yarn build
-        workingDir: /go/src/github.com/argoproj/argo/ui
-      outputs:
-        artifacts:
-          - name: node_modules
-            path: /go/src/github.com/argoproj/argo/ui/node_modules
-            s3:
-              bucket: argo
-              key: node_modules-{{workflow.parameters.revision}}
-              endpoint: minio:9000
-              insecure: true
-              accessKeySecret:
-                name: my-minio-cred
-                key: accesskey
-              secretKeySecret:
-                name: my-minio-cred
-                key: secretkey
-          - name: ui-dist
-            path: /go/src/github.com/argoproj/argo/ui/dist
-
-    - name: ui-lint
-      inputs:
-        artifacts:
-          - name: src
-            path: /go/src/github.com/argoproj/argo
-          - name: ui-dist
-            path: /go/src/github.com/argoproj/argo/ui/dist
-      script:
-        image: node:14.0.0
-        command:
-          - sh
-          - -eux -o pipefail
-        source: |
-          yarn install --frozen-lockfile
-          yarn lint
-          git diff --exit-code .
-        workingDir: /go/src/github.com/argoproj/argo/ui
-
-    - name: build
-      inputs:
-        artifacts:
           - name: go-build-cache
             path: /root/.cache/go-build
             optional: true
@@ -201,6 +119,42 @@ spec:
             optional: true
             s3:
               bucket: argo
+              key: go-mod-{{workflow.parameters.revision}}
+              endpoint: minio:9000
+              insecure: true
+              accessKeySecret:
+                name: my-minio-cred
+                key: accesskey
+              secretKeySecret:
+                name: my-minio-cred
+                key: secretkey
+      container:
+        image: argoproj/argosay:v2
+        volumeMounts:
+          - name: argo-build
+            mountPath: /go
+
+    - name: ui
+      script:
+        image: node:14.0.0
+        command:
+          - sh
+          - -eux
+        source: |
+          yarn install --frozen-lockfile
+          mkdir dist
+          touch dist/node_modules.marker
+          yarn build
+        workingDir: /go/src/github.com/argoproj/argo/ui
+        volumeMounts:
+          - name: argo-build
+            mountPath: /go
+      outputs:
+        artifacts:
+          - name: node_modules
+            path: /go/src/github.com/argoproj/argo/ui/node_modules
+            s3:
+              bucket: argo
               key: node_modules-{{workflow.parameters.revision}}
               endpoint: minio:9000
               insecure: true
@@ -210,19 +164,35 @@ spec:
               secretKeySecret:
                 name: my-minio-cred
                 key: secretkey
-          - name: src
-            path: /go/src/github.com/argoproj/argo
-          - name: ui-dist
-            path: /go/src/github.com/argoproj/argo/ui/dist
+
+    - name: ui-lint
+      script:
+        image: node:14.0.0
+        command:
+          - sh
+          - -eux
+        source: |
+          yarn install --frozen-lockfile
+          yarn lint
+          git diff --exit-code .
+        workingDir: /go/src/github.com/argoproj/argo/ui
+        volumeMounts:
+          - name: argo-build
+            mountPath: /go
+
+    - name: build
       script:
         image: golang:1.13.4
         command:
           - sh
-          - -eux -o pipefail
+          - -eux
         source: |
           find / -maxdepth 2
           make controller cli
         workingDir: /go/src/github.com/argoproj/argo
+        volumeMounts:
+          - name: argo-build
+            mountPath: /go
       outputs:
         artifacts:
           - name: go-build-cache
@@ -253,103 +223,39 @@ spec:
                 key: secretkey
 
     - name: test
-      inputs:
-        artifacts:
-          - name: go-build-cache
-            path: /root/.cache/go-build
-            s3:
-              bucket: argo
-              key: go-build-cache-{{workflow.parameters.revision}}
-              endpoint: minio:9000
-              insecure: true
-              accessKeySecret:
-                name: my-minio-cred
-                key: accesskey
-              secretKeySecret:
-                name: my-minio-cred
-                key: secretkey
-          - name: go-mod
-            path: /go/pkg/mod
-            s3:
-              bucket: argo
-              key: go-mod-{{workflow.parameters.revision}}
-              endpoint: minio:9000
-              insecure: true
-              accessKeySecret:
-                name: my-minio-cred
-                key: accesskey
-              secretKeySecret:
-                name: my-minio-cred
-                key: secretkey
-          - name: src
-            path: /go/src/github.com/argoproj/argo
-          - name: ui-dist
-            path: /go/src/github.com/argoproj/argo/ui/dist
       script:
         image: golang:1.13.4
         command:
           - sh
-          - -eux -o pipefail
+          - -eux
         source: |
           trap 'make test-results/junit.html' EXIT
           make test
         workingDir: /go/src/github.com/argoproj/argo
+        volumeMounts:
+          - name: argo-build
+            mountPath: /go
 
     - name: lint
-      inputs:
-        artifacts:
-          - name: go-mod
-            path: /go/pkg/mod
-            s3:
-              bucket: argo
-              key: go-mod-{{workflow.parameters.revision}}
-              endpoint: minio:9000
-              insecure: true
-              accessKeySecret:
-                name: my-minio-cred
-                key: accesskey
-              secretKeySecret:
-                name: my-minio-cred
-                key: secretkey
-          - name: src
-            path: /go/src/github.com/argoproj/argo
-          - name: ui-dist
-            path: /go/src/github.com/argoproj/argo/ui/dist
       script:
         image: golang:1.13.4
         command:
           - sh
-          - -eux -o pipefail
+          - -eux
         source: |
           go build ./...
           make lint
         workingDir: /go/src/github.com/argoproj/argo
+        volumeMounts:
+          - name: argo-build
+            mountPath: /go
 
     - name: codegen
-      inputs:
-        artifacts:
-          - name: go-mod
-            path: /go/pkg/mod
-            s3:
-              bucket: argo
-              key: go-mod-{{workflow.parameters.revision}}
-              endpoint: minio:9000
-              insecure: true
-              accessKeySecret:
-                name: my-minio-cred
-                key: accesskey
-              secretKeySecret:
-                name: my-minio-cred
-                key: secretkey
-          - name: src
-            path: /go/src/github.com/argoproj/argo
-          - name: ui-dist
-            path: /go/src/github.com/argoproj/argo/ui/dist
       script:
         image: golang:1.13.4
         command:
           - sh
-          - -eux -o pipefail
+          - -eux
         source: |
           PROTOC_ZIP=protoc-3.11.1-linux-x86_64.zip
           curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.11.1/$PROTOC_ZIP
@@ -362,3 +268,6 @@ spec:
           ls /usr/local/include/google/protobuf/
           make codegen
         workingDir: /go/src/github.com/argoproj/argo
+        volumeMounts:
+          - name: argo-build
+            mountPath: /go

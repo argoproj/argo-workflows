@@ -284,6 +284,8 @@ $(HOME)/go/bin/golangci-lint:
 lint: server/static/files.go $(HOME)/go/bin/golangci-lint
 	# Tidy Go modules
 	go mod tidy
+	# Build to find errors that will prevent linting.
+	go build ./...
 	# Lint Go files
 	golangci-lint run --fix --verbose --concurrency 4 --timeout 5m
 	# Lint UI files
