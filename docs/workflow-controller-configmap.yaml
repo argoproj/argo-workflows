@@ -127,6 +127,9 @@ data:
       enabled: true
       path: /metrics
       port: 8080
+      # Switch ignoreError to "true" if you want serve metrics anyway
+      # prometheus http default behaivor is show 'An error has occurred while serving metrics' and exits
+      ignoreError: false
 
     # telemetryConfig controls the path and port for prometheus telemetry
     telemetryConfig:

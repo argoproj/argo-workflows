@@ -225,4 +225,5 @@ type PrometheusConfig struct {
 	MetricsTTL    TTL    `json:"metricsTTL"`
 	Path          string `json:"path,omitempty"`
 	Port          string `json:"port,omitempty"`
+	IgnoreError   bool   `json:"ignoreError,omitempty"`
 }
