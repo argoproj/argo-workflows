@@ -73,7 +73,6 @@ spec:
             template: install-protoc
             dependencies:
               - checkout
-              - install-protoc
 
           - name: codegen
             template: codegen
