@@ -200,16 +200,16 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                             {Array.from(this.graph.nodes).map(([nodeId, v]) => {
                                 const node = this.props.nodes[nodeId];
                                 const phase: DagPhase = node.type === 'Suspend' && node.phase === 'Running' ? 'Suspended' : node.phase;
-                                const hide = this.hiddenNode(nodeId);
+                                const hidden = this.hiddenNode(nodeId);
                                 return (
                                     <g key={`node/${nodeId}`} transform={`translate(${v.x},${v.y})`} onClick={() => this.selectNode(nodeId)} className='node'>
                                         <circle
-                                            r={hide ? 0 : this.nodeSize / 2}
+                                            r={this.nodeSize/(hidden ? 16:2)}
                                             className={classNames('workflow-dag__node', 'workflow-dag__node-status', 'workflow-dag__node-status--' + phase.toLowerCase(), {
                                                 active: nodeId === this.props.selectedNodeId
-                                            })}
+                                            , "hidden": hidden})}
                                         />
-                                        {!hide && (
+                                        {!hidden && (
                                             <>
                                                 {this.icon(phase)}
                                                 <g transform={`translate(0,${this.nodeSize})`}>

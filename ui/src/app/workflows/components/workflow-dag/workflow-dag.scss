@@ -22,7 +22,7 @@
 
   .line {
     fill: transparent;
-    stroke-width: 2px;
+    stroke-width: 2;
     stroke: $argo-color-gray-4;
   }
 
@@ -38,6 +38,10 @@
 
   .node {
     cursor: pointer;
+  }
+
+  .hidden {
+    fill: $argo-color-gray-4;
   }
 
   &__node {
