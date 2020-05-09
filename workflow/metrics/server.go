@@ -15,7 +15,13 @@ import (
 // RunServer starts a metrics server
 func RunServer(ctx context.Context, config config.PrometheusConfig, registry *prometheus.Registry) {
 	mux := http.NewServeMux()
-	mux.Handle(config.Path, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	httpOpts := promhttp.HandlerOpts{}
+
+	if config.IgnoreError {
+		httpOpts.ErrorHandling = promhttp.ContinueOnError
+	}
+
+	mux.Handle(config.Path, promhttp.HandlerFor(registry, httpOpts))
 	srv := &http.Server{Addr: fmt.Sprintf(":%s", config.Port), Handler: mux}
 
 	defer func() {
