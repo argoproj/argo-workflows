@@ -12,16 +12,16 @@ spec:
   # delete all pods as soon as possible
   podGC:
     strategy: OnPodSuccess
-    
+
   entrypoint: main
-  
+
   arguments:
     parameters:
       - name: revision
         value: ci
       - name: org
         value: alexec
-        
+
   volumeClaimTemplates:
     - metadata:
         name: argo-build
@@ -30,7 +30,7 @@ spec:
         resources:
           requests:
             storage: 1Gi
-            
+
   templates:
     - name: main
       dag:
@@ -69,11 +69,18 @@ spec:
               - checkout
               - ui
 
+          - name: install-protoc
+            template: install-protoc
+            dependencies:
+              - checkout
+              - install-protoc
+
           - name: codegen
             template: codegen
             dependencies:
               - build
               - checkout
+              - install-protoc
               - ui
 
     - name: checkout
@@ -172,7 +179,6 @@ spec:
           - sh
           - -eux
         source: |
-          yarn install --frozen-lockfile
           yarn lint
           git diff --exit-code .
         workingDir: /go/src/github.com/argoproj/argo/ui
@@ -181,14 +187,13 @@ spec:
             mountPath: /go
 
     - name: build
-      script:
+      container:
         image: golang:1.13.4
         command:
-          - sh
-          - -eux
-        source: |
-          find / -maxdepth 2
-          make controller cli
+          - make
+        args:
+          - controller
+          - cli
         workingDir: /go/src/github.com/argoproj/argo
         volumeMounts:
           - name: argo-build
@@ -237,20 +242,18 @@ spec:
             mountPath: /go
 
     - name: lint
-      script:
+      container:
         image: golang:1.13.4
         command:
-          - sh
-          - -eux
-        source: |
-          go build ./...
-          make lint
+          - make
+        args:
+          - lint
         workingDir: /go/src/github.com/argoproj/argo
         volumeMounts:
           - name: argo-build
             mountPath: /go
 
-    - name: codegen
+    - name: install-protoc
       script:
         image: golang:1.13.4
         command:
@@ -259,14 +262,25 @@ spec:
         source: |
           PROTOC_ZIP=protoc-3.11.1-linux-x86_64.zip
           curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.11.1/$PROTOC_ZIP
-          sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
-          sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
-          sudo chmod +x /usr/local/bin/protoc
-          sudo find /usr/local/include -type f | xargs sudo chmod a+r
-          sudo find /usr/local/include -type d | xargs sudo chmod a+rx
+          unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
+          unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
+          chmod +x /usr/local/bin/protoc
+          find /usr/local/include -type f | xargs sudo chmod a+r
+          find /usr/local/include -type d | xargs sudo chmod a+rx
           rm -f $PROTOC_ZIP
           ls /usr/local/include/google/protobuf/
-          make codegen
+        workingDir: /go/src/github.com/argoproj/argo
+        volumeMounts:
+          - name: argo-build
+            mountPath: /go
+
+    - name: codegen
+      container:
+        image: golang:1.13.4
+        command:
+          - make
+        args:
+          - codegen
         workingDir: /go/src/github.com/argoproj/argo
         volumeMounts:
           - name: argo-build

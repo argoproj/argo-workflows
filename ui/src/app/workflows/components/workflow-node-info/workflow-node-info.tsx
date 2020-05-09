@@ -164,7 +164,7 @@ export const WorkflowNodeContainer = (props: {
                   title: 'ENV',
                   value: <pre className='workflow-node-info__multi-line'>{(container.env || []).map(e => `${e.name}=${e.value}`).join('\n')}</pre>
               }
-            : {title: 'ENV', value: <pre  className='workflow-node-info__multi-line'/>}
+            : {title: 'ENV', value: <pre className='workflow-node-info__multi-line' />}
     ];
     return (
         <div className='white-box'>
