@@ -1,0 +1,114 @@
+metadata:
+  generateName: build-argo-
+spec:
+  podGC:
+    strategy: OnPodSuccess
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: revision
+        value: master
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: checkout
+            template: checkout
+          - name: ui
+            template: ui
+            dependencies:
+              - checkout
+            arguments:
+              artifacts:
+                - name: src
+                  from: "{{tasks.checkout.outputs.artifacts.src}}"
+          - name: test
+            dependencies:
+              - checkout
+              - ui
+            arguments:
+              artifacts:
+                - name: src
+                  from: "{{tasks.checkout.outputs.artifacts.src}}"
+                - name: ui-app
+                  from: "{{tasks.ui.outputs.artifacts.app}}"
+
+    - name: checkout
+      inputs:
+        artifacts:
+          - name: src
+            path: /go/src/github.com/argoproj/argo
+            git:
+              repo: https://github.com/argoproj/argo.git
+              revision: "{{workflow.parameters.revision}}"
+              depth: 1
+      container:
+        name: noop
+        image: argoproj/argosay:v2
+      outputs:
+        artifacts:
+          - name: src
+            path: /go/src/github.com/argoproj/argo
+            archive:
+              none: {}
+
+    - name: ui
+      inputs:
+        artifacts:
+          - name: src
+            path: /go/src/github.com/argoproj/argo
+          - name: node_modules
+            path: /go/src/github.com/argoproj/argo/ui/node_modules
+            optional: true
+            s3:
+              bucket: argo
+              key: node_modules-{{revision}}
+      script:
+        name: main
+        image: node:14.0.0
+        command:
+          - sh
+          - -eux
+        source: |
+            yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
+            yarn --cwd ui build
+            yarn --cwd ui lint
+            git diff --exit-code ui
+        workingDir: /go/src/github.com/argoproj/argo
+      outputs:
+        artifacts:
+          - name: node_modules
+            path: /go/src/github.com/argoproj/argo/ui/node_modules
+            s3:
+              bucket: argo
+              key: node_modules-{{revision}}
+          - name: app
+            path: /go/src/github.com/argoproj/argo/ui/dist/app
+
+    - name: test
+      inputs:
+        artifacts:
+          - name: src
+            path: /go/src/github.com/argoproj/argo
+          - name: ui-app
+            path: /go/src/github.com/argoproj/argo/ui/dist/app
+      script:
+        name: main
+        image: golang:1.13.4
+        command:
+          - sh
+          - -eux
+        source: |
+          go get -u github.com/ains/go-test-html
+          trap 'make test-results/junit.xml' EXIT
+          make test
+        workingDir: /go/src/github.com/argoproj/argo
+      outputs:
+        artifacts:
+            - name: test-results
+              path: /go/src/github.com/argoproj/argo/test-results
+              s3:
+                bucket: argo
+                key: node_modules-{{revision}}
+                - name: app
+                  path: /go/src/github.com/argoproj/argo/ui/dist/app
