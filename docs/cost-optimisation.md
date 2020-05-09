@@ -6,8 +6,23 @@
 
 The workflow controller memory and CPU needs increase linearly with the number of pods and workflows you are currently running. Limit these using TTL
 
+* Active Deadline - delete running workflow that do not complete in a set time
 * [Workflow TTL Strategy](fields.md#ttlstrategy) - delete completed workflows after a time
 * [Pod GC](fields.md#podgc) - delete completed pods after a time
+
+Example
+
+```
+spec:
+  # must complete in 8h (28,800 seconds)
+  activeDeadlineSeconds: 28800
+  # keep workflows for 1d (86,400 seconds)
+  ttlStrategy:
+    secondsAfterCompletion: 86400
+  # delete all pods as soon as they complete
+  podGC:
+    strategy: OnPodSuccess
+```
 
 You can set these configurations globally using [Default Workflow Spec](default-workflow-specs.md).
 
