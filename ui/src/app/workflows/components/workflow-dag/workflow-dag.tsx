@@ -115,7 +115,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             return (
                 <>
                     <tspan x={0} dy='-0.2em'>
-                        {label.substr(0, label.length / 2 - 1)}
+                        {label.substr(0, label.length / 2)}
                     </tspan>
                     <tspan x={0} dy='1.2em'>
                         {label.substr(label.length / 2)}
@@ -293,8 +293,8 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
             });
         });
         // `h` and `v` move the arrow heads to next to the node, otherwise they would be behind it
-        const h = this.state.horizontal ? this.hgap / 2 : 0;
-        const v = !this.state.horizontal ? this.vgap / 2 : 0;
+        const h = this.state.horizontal ? this.nodeSize / 2 : 0;
+        const v = !this.state.horizontal ? this.nodeSize / 2 : 0;
         this.graph.edges = edges.map(e => ({
             v: e.v,
             w: e.w,
