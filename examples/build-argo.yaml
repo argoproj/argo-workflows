@@ -80,7 +80,6 @@ spec:
               - build
               - checkout
               - install-protoc
-              - ui
 
     - name: checkout
       inputs:
