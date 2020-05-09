@@ -309,6 +309,15 @@ $(HOME)/go/bin/go-junit-report:
 test-results/junit.xml: $(HOME)/go/bin/go-junit-report test-results/test.out
 	cat test-results/test.out | go-junit-report > test-results/junit.xml
 
+
+$(HOME)/go/bin/go-test-html:
+	$(call backup_go_mod)
+	go get github.com/ains/go-test-html
+	$(call restore_go_mod)
+
+test-results/junit.html: $(HOME)/go/bin/go-test-html test-results/test.out
+	go-test-html test-results/test.out /dev/null test-results/junit.html
+
 $(VERSION_FILE):
 	@mkdir -p dist
 	touch $(VERSION_FILE)

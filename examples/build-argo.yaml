@@ -7,7 +7,9 @@ spec:
   arguments:
     parameters:
       - name: revision
-        value: master
+        value: ci
+      - name: org
+        value: alexec
   templates:
     - name: main
       dag:
@@ -39,7 +41,7 @@ spec:
           - name: src
             path: /go/src/github.com/argoproj/argo
             git:
-              repo: https://github.com/argoproj/argo.git
+              repo: https://github.com/{{workflow.parameters.org}}/argo.git
               revision: "{{workflow.parameters.revision}}"
               depth: 1
       container:
