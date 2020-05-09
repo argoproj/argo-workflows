@@ -125,7 +125,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		wfQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		wfArchive:       sqldb.NullWorkflowArchive,
-		metrics:         metrics.New(metrics.ServerConfig{}),
+		metrics:         metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
 	}
 	return cancel, controller
 }

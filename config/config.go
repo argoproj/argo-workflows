@@ -53,14 +53,15 @@ type Config struct {
 	// controller watches workflows and pods that *are not* labeled with an instance id.
 	InstanceID string `json:"instanceID,omitempty"`
 
-	// MetricsConfig specifies configuration for metrics emission
+	// MetricsConfig specifies configuration for metrics emission. Metrics are enabled and emitted on localhost:9090/metrics
+	// by default.
 	MetricsConfig MetricsConfig `json:"metricsConfig,omitempty"`
 
 	// FeatureFlags for general/experimental features
 	FeatureFlags FeatureFlags `json:"featureFlags,omitempty"`
 
-	// TelemetryConfig specifies configuration for telemetry emission
-	// DEPRECATED: Telemetry is emitted under metrics. See "metricsConfig"
+	// TelemetryConfig specifies configuration for telemetry emission. Telemetry is enabled and emitted in the same endpoint
+	// as metrics by default, but can be overridden using this config.
 	TelemetryConfig MetricsConfig `json:"telemetryConfig,omitempty"`
 
 	// Parallelism limits the max total parallel workflows that can execute at the same time

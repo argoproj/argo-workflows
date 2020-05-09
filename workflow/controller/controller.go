@@ -26,8 +26,6 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"upper.io/db.v3/lib/sqlbuilder"
 
-	"github.com/argoproj/pkg/errors"
-
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/persist/sqldb"
@@ -42,6 +40,7 @@ import (
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/ttlcontroller"
 	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/pkg/errors"
 )
 
 // WorkflowController is the controller for workflow resources
@@ -165,10 +164,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.workflowGarbageCollector(ctx.Done())
 	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
 
-	// Metrics are enabled by default
-	if wfc.Config.MetricsConfig.Enabled == nil || *wfc.Config.MetricsConfig.Enabled {
-		go wfc.metrics.RunServer(ctx.Done())
-	}
+	go wfc.metrics.RunServer(ctx.Done())
 
 	wfc.createClusterWorkflowTemplateInformer(ctx)
 
@@ -749,20 +745,38 @@ func (wfc *WorkflowController) GetContainerRuntimeExecutor() string {
 	return wfc.Config.ContainerRuntimeExecutor
 }
 
-func (wfc *WorkflowController) getMetricsServerConfig() metrics.ServerConfig {
+func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, metrics.ServerConfig) {
+	// Metrics config
 	path := wfc.Config.MetricsConfig.Path
 	if path == "" {
 		path = "/metrics"
 	}
-
 	port := wfc.Config.MetricsConfig.Port
 	if port == "" {
 		port = "9090"
 	}
-
-	return metrics.ServerConfig{
-		Path: path,
-		Port: port,
-		TTL:  time.Duration(wfc.Config.MetricsConfig.MetricsTTL),
+	metricsConfig := metrics.ServerConfig{
+		Enabled: wfc.Config.MetricsConfig.Enabled == nil || *wfc.Config.MetricsConfig.Enabled,
+		Path:    path,
+		Port:    port,
+		TTL:     time.Duration(wfc.Config.MetricsConfig.MetricsTTL),
 	}
+
+	// Telemetry config
+	path = metricsConfig.Path
+	if wfc.Config.TelemetryConfig.Path != "" {
+		path = wfc.Config.TelemetryConfig.Path
+	}
+
+	port = metricsConfig.Port
+	if wfc.Config.TelemetryConfig.Port != "" {
+		port = wfc.Config.TelemetryConfig.Port
+	}
+	telemetryConfig := metrics.ServerConfig{
+		Enabled: wfc.Config.TelemetryConfig.Enabled == nil || *wfc.Config.TelemetryConfig.Enabled,
+		Path:    path,
+		Port:    port,
+	}
+
+	return metricsConfig, telemetryConfig
 }

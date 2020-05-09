@@ -15,14 +15,19 @@ const (
 )
 
 type ServerConfig struct {
-	Path string
-	Port string
-	TTL  time.Duration
+	Enabled bool
+	Path    string
+	Port    string
+	TTL     time.Duration
+}
+
+func (s ServerConfig) SameServerAs(other ServerConfig) bool {
+	return s.Port == other.Port && s.Path == other.Path && s.Enabled && other.Enabled
 }
 
 type Metrics struct {
-	registry     *prometheus.Registry
-	serverConfig ServerConfig
+	metricsConfig   ServerConfig
+	telemetryConfig ServerConfig
 
 	workflowsProcessed prometheus.Counter
 	workflowsByPhase   map[v1alpha1.NodePhase]prometheus.Gauge
@@ -31,18 +36,14 @@ type Metrics struct {
 
 var _ prometheus.Collector = Metrics{}
 
-func New(config ServerConfig) Metrics {
+func New(metricsConfig, telemetryConfig ServerConfig) Metrics {
 	metrics := Metrics{
-		serverConfig:       config,
+		metricsConfig:      metricsConfig,
+		telemetryConfig:    telemetryConfig,
 		workflowsProcessed: newCounter("workflows_processed", "Number of workflow updates processed", nil),
 		workflowsByPhase:   getWorkflowPhaseGauges(),
 		customMetrics:      make(map[string]common.Metric),
 	}
-
-	registry := prometheus.NewRegistry()
-	registry.MustRegister(metrics)
-	registry.MustRegister(prometheus.NewGoCollector())
-	metrics.registry = registry
 
 	return metrics
 }

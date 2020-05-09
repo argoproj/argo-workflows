@@ -121,7 +121,8 @@ data:
       - name: ARGO_TRACE
         value: "1"
 
-    # metricsConfig controls the path and port for prometheus metrics
+    # metricsConfig controls the path and port for prometheus metrics. Metrics are enabled and emitted on localhost:9090/metrics
+    # by default.
     metricsConfig:
       # Enabled controls metric emission. Default is true, set "enabled: false" to turn off
       enabled: true
@@ -135,8 +136,8 @@ data:
       # DEPRECATED: Legacy metrics are now removed
       disableLegacy: false
 
-    # telemetryConfig controls the path and port for prometheus telemetry
-    # DEPRECATED: telemetryConfig is deprecated. Telemetry is emitted under metrics. See "metricsConfig".
+    # telemetryConfig controls the path and port for prometheus telemetry. Telemetry is enabled and emitted in the same endpoint
+    # as metrics by default, but can be overridden using this config.
     telemetryConfig:
       enabled: true
       path: /telemetry
