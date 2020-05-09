@@ -28,7 +28,7 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = { editing: false };
+        this.state = {editing: false};
     }
 
     public componentDidMount(): void {
@@ -42,6 +42,20 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
         if (this.state.error !== undefined) {
             throw this.state.error;
         }
+        const suspendButton =
+            this.state.cronWorkflow && !this.state.cronWorkflow.spec.suspend
+                ? {
+                      title: 'Suspend',
+                      iconClassName: 'fa fa-pause',
+                      action: () => this.suspendCronWorkflow(),
+                      disabled: this.state.editing || !this.state.cronWorkflow
+                  }
+                : {
+                      title: 'Resume',
+                      iconClassName: 'fa fa-play',
+                      action: () => this.resumeCronWorkflow(),
+                      disabled: this.state.editing || !this.state.cronWorkflow || !this.state.cronWorkflow.spec.suspend
+                  };
         return (
             <Page
                 title='Cron Workflow Details'
@@ -53,18 +67,7 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
                                 iconClassName: 'fa fa-trash',
                                 action: () => this.deleteWorkflowTemplate()
                             },
-                            {
-                                title: 'Suspend',
-                                iconClassName: 'fa fa-pause',
-                                action: () => this.suspendCronWorkflow(),
-                                disabled: this.state.editing || !this.state.cronWorkflow || this.state.cronWorkflow.spec.suspend
-                            },
-                            {
-                                title: 'Resume',
-                                iconClassName: 'fa fa-play',
-                                action: () => this.resumeCronWorkflow(),
-                                disabled: this.state.editing || !this.state.cronWorkflow || !this.state.cronWorkflow.spec.suspend
-                            }
+                            suspendButton
                         ]
                     },
                     breadcrumbs: [

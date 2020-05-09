@@ -63,8 +63,7 @@ export class YamlEditor<T> extends React.Component<Props<T>, State> {
                             }
                             this.setState({value: jsYaml.dump(this.props.value), editing: true});
                         }}
-                        className='argo-button argo-button--base'
-                    >
+                        className='argo-button argo-button--base'>
                         Edit
                     </button>
                 )}
