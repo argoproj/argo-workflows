@@ -164,6 +164,10 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 		tempArtPath := artPath + ".tmp"
 		err = artDriver.Load(&art, tempArtPath)
 		if err != nil {
+			if art.Optional && errors.IsCode(errors.CodeNotFound, err) {
+				log.Infof("Skipping optional input artifact that was not found: %s", art.Name)
+				continue
+			}
 			return err
 		}
 		if isTarball(tempArtPath) {
