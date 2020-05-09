@@ -41,7 +41,7 @@ export class YamlEditor<T> extends React.Component<Props<T>, State> {
                         autoFocus={true}
                     />
                 ) : (
-                    <YamlViewer value={this.state.value} />
+                    <YamlViewer value={jsYaml.dump(this.props.value)} />
                 )}
             </>
         );
@@ -55,7 +55,7 @@ export class YamlEditor<T> extends React.Component<Props<T>, State> {
                         Submit
                     </button>
                 )) || (
-                    <button onClick={() => this.setState({editing: true})} className='argo-button argo-button--base'>
+                    <button onClick={() => this.setState({editing: true, value: jsYaml.dump(this.props.value)})} className='argo-button argo-button--base'>
                         Edit
                     </button>
                 )}

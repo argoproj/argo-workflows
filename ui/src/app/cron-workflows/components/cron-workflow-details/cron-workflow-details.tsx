@@ -114,16 +114,14 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
         services.cronWorkflows
             .get(this.name, this.namespace)
             .then(latest => jsonMergePatch.apply(latest, patch))
-            .then(patched => services.cronWorkflows
-                .update(patched, this.name, this.namespace)
-            )
+            .then(patched => services.cronWorkflows.update(patched, this.name, this.namespace))
             .catch(e => {
                 this.appContext.apis.notifications.show({
                     content: 'Failed to suspend cron workflow ' + e,
                     type: NotificationType.Error
                 });
             })
-            .then((updated: CronWorkflow) => this.setState({ cronWorkflow: updated }));
+            .then((updated: CronWorkflow) => this.setState({cronWorkflow: updated}));
     }
 
     private resumeCronWorkflow() {
@@ -133,15 +131,13 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
         services.cronWorkflows
             .get(this.name, this.namespace)
             .then(latest => jsonMergePatch.apply(latest, patch))
-            .then(patched => services.cronWorkflows
-                .update(patched, this.name, this.namespace)
-            )
+            .then(patched => services.cronWorkflows.update(patched, this.name, this.namespace))
             .catch(e => {
                 this.appContext.apis.notifications.show({
                     content: 'Failed to resume cron workflow ' + e,
                     type: NotificationType.Error
                 });
             })
-            .then((updated: CronWorkflow) => this.setState({ cronWorkflow: updated }));
+            .then((updated: CronWorkflow) => this.setState({cronWorkflow: updated}));
     }
 }
