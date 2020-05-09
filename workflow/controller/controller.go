@@ -13,7 +13,6 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
@@ -68,9 +67,7 @@ type WorkflowController struct {
 	wfclientset   wfclientset.Interface
 
 	// datastructures to support the processing of workflows and workflow pods
-	incompleteWfInformer cache.SharedIndexInformer
-	// only complete (i.e. not running) workflows
-	completedWfInformer   cache.SharedIndexInformer
+	wfInformer            cache.SharedIndexInformer
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
 	podInformer           cache.SharedIndexInformer
@@ -153,16 +150,14 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Controller")
 	log.Infof("Workers: workflow: %d, pod: %d", wfWorkers, podWorkers)
 
-	wfc.incompleteWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.incompleteWorkflowTweakListOptions)
-	wfc.completedWfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.completedWorkflowTweakListOptions)
+	wfc.wfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.GetManagedNamespace(), workflowResyncPeriod, wfc.tweakListOptions)
 	wfc.wftmplInformer = wfc.newWorkflowTemplateInformer()
 
-	wfc.addWorkflowInformerHandler()
+	wfc.addWorkflowInformerHandlers()
 	wfc.podInformer = wfc.newPodInformer()
 
 	go wfc.configController.Run(ctx.Done(), wfc.updateConfig)
-	go wfc.incompleteWfInformer.Run(ctx.Done())
-	go wfc.completedWfInformer.Run(ctx.Done())
+	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
 	go wfc.podLabeler(ctx.Done())
@@ -178,7 +173,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	wfc.createClusterWorkflowTemplateInformer(ctx)
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
-	for _, informer := range []cache.SharedIndexInformer{wfc.incompleteWfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
+	for _, informer := range []cache.SharedIndexInformer{wfc.wfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
 		if !cache.WaitForCacheSync(ctx.Done(), informer.HasSynced) {
 			log.Error("Timed out waiting for caches to sync")
 			return
@@ -307,17 +302,12 @@ func (wfc *WorkflowController) workflowGarbageCollector(stopCh <-chan struct{}) 
 				}
 				// get every lives workflow (1000s) into a map
 				liveOffloadNodeStatusVersions := make(map[types.UID]string)
-				incomplete, err := util.NewWorkflowLister(wfc.incompleteWfInformer).List()
+				workflows, err := util.NewWorkflowLister(wfc.wfInformer).List()
 				if err != nil {
 					log.WithField("err", err).Error("Failed to list incomplete workflows")
 					continue
 				}
-				completed, err := util.NewWorkflowLister(wfc.completedWfInformer).List()
-				if err != nil {
-					log.WithField("err", err).Error("Failed to list completed workflows")
-					continue
-				}
-				for _, wf := range append(completed, incomplete...) {
+				for _, wf := range workflows {
 					// this could be the empty string - as it is no longer offloaded
 					liveOffloadNodeStatusVersions[wf.UID] = wf.Status.OffloadNodeStatusVersion
 				}
@@ -390,7 +380,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	}
 	defer wfc.wfQueue.Done(key)
 
-	obj, exists, err := wfc.incompleteWfInformer.GetIndexer().GetByKey(key.(string))
+	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key.(string))
 	if err != nil {
 		log.Errorf("Failed to get workflow '%s' from informer index: %+v", key, err)
 		return true
@@ -542,22 +532,8 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 	return true
 }
 
-func (wfc *WorkflowController) incompleteWorkflowTweakListOptions(options *metav1.ListOptions) {
-	wfc.tweakListOptions(selection.NotIn, options)
-}
-
-func (wfc *WorkflowController) completedWorkflowTweakListOptions(options *metav1.ListOptions) {
-	wfc.tweakListOptions(selection.In, options)
-}
-
-func (wfc *WorkflowController) tweakListOptions(completedOp selection.Operator, options *metav1.ListOptions) {
-	options.FieldSelector = fields.Everything().String()
-	requirement, err := labels.NewRequirement(common.LabelKeyCompleted, completedOp, []string{"true"})
-	if err != nil {
-		panic(err)
-	}
+func (wfc *WorkflowController) tweakListOptions(options *metav1.ListOptions) {
 	labelSelector := labels.NewSelector().
-		Add(*requirement).
 		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 	options.LabelSelector = labelSelector.String()
 }
@@ -593,45 +569,58 @@ func getWfPhase(obj interface{}) wfv1.NodePhase {
 	return wfv1.NodePhase(phase)
 }
 
-func (wfc *WorkflowController) addWorkflowInformerHandler() {
-	metricsEventHandler := wfc.getMetricsEventHandler()
-	wfc.completedWfInformer.AddEventHandler(metricsEventHandler)
-	wfc.incompleteWfInformer.AddEventHandler(metricsEventHandler)
-
-	wfc.incompleteWfInformer.AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(obj)
-				if err == nil {
-					wfc.wfQueue.Add(key)
-					priority, creation := getWfPriority(obj)
-					wfc.throttler.Add(key, priority, creation)
-				}
+func (wfc *WorkflowController) addWorkflowInformerHandlers() {
+	wfc.wfInformer.AddEventHandler(
+		cache.FilteringResourceEventHandler{
+			FilterFunc: func(obj interface{}) bool {
+				wf := obj.(*unstructured.Unstructured)
+				return wf.GetLabels()[common.LabelKeyCompleted] != "true"
 			},
-			UpdateFunc: func(old, new interface{}) {
-				oldWf, newWf := old.(*unstructured.Unstructured), new.(*unstructured.Unstructured)
-				if oldWf.GetResourceVersion() == newWf.GetResourceVersion() {
-					return
-				}
-
-				key, err := cache.MetaNamespaceKeyFunc(new)
-				if err == nil {
-					wfc.wfQueue.Add(key)
-					priority, creation := getWfPriority(new)
-					wfc.throttler.Add(key, priority, creation)
-				}
-			},
-			DeleteFunc: func(obj interface{}) {
-				// IndexerInformer uses a delta queue, therefore for deletes we have to use this
-				// key function.
-				key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-				if err == nil {
-					wfc.wfQueue.Add(key)
-					wfc.throttler.Remove(key)
-				}
+			Handler: cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+					key, err := cache.MetaNamespaceKeyFunc(obj)
+					if err == nil {
+						wfc.wfQueue.Add(key)
+						priority, creation := getWfPriority(obj)
+						wfc.throttler.Add(key, priority, creation)
+					}
+				},
+				UpdateFunc: func(old, new interface{}) {
+					oldWf, newWf := old.(*unstructured.Unstructured), new.(*unstructured.Unstructured)
+					if oldWf.GetResourceVersion() == newWf.GetResourceVersion() {
+						return
+					}
+					key, err := cache.MetaNamespaceKeyFunc(new)
+					if err == nil {
+						wfc.wfQueue.Add(key)
+						priority, creation := getWfPriority(new)
+						wfc.throttler.Add(key, priority, creation)
+					}
+				},
+				DeleteFunc: func(obj interface{}) {
+					// IndexerInformer uses a delta queue, therefore for deletes we have to use this
+					// key function.
+					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+					if err == nil {
+						wfc.wfQueue.Add(key)
+						wfc.throttler.Remove(key)
+					}
+				},
 			},
 		},
 	)
+
+	wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			wfc.metrics.WorkflowAdded(getWfPhase(obj))
+		},
+		UpdateFunc: func(old, new interface{}) {
+			wfc.metrics.WorkflowUpdated(getWfPhase(old), getWfPhase(new))
+		},
+		DeleteFunc: func(obj interface{}) {
+			wfc.metrics.WorkflowDeleted(getWfPhase(obj))
+		},
+	})
 }
 
 func (wfc *WorkflowController) getMetricsEventHandler() cache.ResourceEventHandler {
