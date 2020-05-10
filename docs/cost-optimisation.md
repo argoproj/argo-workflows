@@ -94,11 +94,36 @@ The correct values depend on the size of artifacts your workflows download. For 
 
 Smaller requests can be set in the pod spec patch's [resource requirements](fields.md#resourcerequirements). 
 
-## A Node Selector To Use Cheaper Instances
+## Use A Node Selector To Use Cheaper Instances
 
 You can use a [node selector](fields.md#nodeselector) for cheaper instances, e.g. spot instances:
 
 ```
 nodeSelector:
   "node-role.kubernetes.io/argo-spot-worker": "true"
+```
+
+## Use Volume Claims Templates Instead Of Artifacts
+
+> Suitable if you have a workflow that passes a lot of artifacts within itself.
+
+Copying artifacts to and from storage outside of a cluster can be expensive. You can use a volume claim template to mount a volume that is attached to each step within the cluster
+
+```
+spec:
+  volumeClaimTemplates:
+  - metadata:
+      name: workdir
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+  templates:
+  - name: main
+    container:
+      # ...
+      volumeMounts:
+      - name: workdir
+        mountPath: /go
 ```
