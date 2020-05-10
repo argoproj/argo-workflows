@@ -207,7 +207,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                             r={this.nodeSize / (hidden ? 16 : 2)}
                                             className={classNames('workflow-dag__node', 'workflow-dag__node-status', 'workflow-dag__node-status--' + phase.toLowerCase(), {
                                                 active: nodeId === this.props.selectedNodeId,
-                                                hidden: hidden
+                                                hidden
                                             })}
                                         />
                                         {!hidden && (
