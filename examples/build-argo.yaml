@@ -67,6 +67,7 @@ spec:
             dependencies:
               - build
               - checkout
+              - test
               - ui
 
           - name: install-protoc
