@@ -697,6 +697,18 @@ type ArtifactLocation struct {
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 }
 
+// HasLocation whether or not an artifact has a location defined
+func (a *ArtifactLocation) HasLocation() bool {
+	return a.S3.HasLocation() ||
+		a.Git.HasLocation() ||
+		a.HTTP.HasLocation() ||
+		a.Artifactory.HasLocation() ||
+		a.Raw.HasLocation() ||
+		a.HDFS.HasLocation() ||
+		a.OSS.HasLocation() ||
+		a.GCS.HasLocation()
+}
+
 type ArtifactRepositoryRef struct {
 	ConfigMap string `json:"configMap,omitempty" protobuf:"bytes,1,opt,name=configMap"`
 	Key       string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
@@ -1694,18 +1706,6 @@ func (args *Arguments) GetParameterByName(name string) *Parameter {
 		}
 	}
 	return nil
-}
-
-// HasLocation whether or not an artifact has a location defined
-func (a *Artifact) HasLocation() bool {
-	return a.S3.HasLocation() ||
-		a.Git.HasLocation() ||
-		a.HTTP.HasLocation() ||
-		a.Artifactory.HasLocation() ||
-		a.Raw.HasLocation() ||
-		a.HDFS.HasLocation() ||
-		a.OSS.HasLocation() ||
-		a.GCS.HasLocation()
 }
 
 func (a *Artifact) Validate() error {
