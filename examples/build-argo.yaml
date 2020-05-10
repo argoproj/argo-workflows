@@ -185,13 +185,18 @@ spec:
             mountPath: /go
 
     - name: build
-      container:
+      script:
         image: golang:1.13.4
         command:
-          - make
-        args:
-          - controller
-          - cli
+          - sh
+          - -eux
+        source: |
+          make dist/argo-linux-amd64 \
+            dist/argoexec-linux-amd64 \
+            dist/workflow-controller-linux-amd64
+          mv dist/argo-linux-amd64 argoexec
+          mv dist/argoexec-linux-amd64 argo
+          mv dist/workflow-controller-linux-amd64 workflow-controller
         workingDir: /go/src/github.com/argoproj/argo
         volumeMounts:
           - name: argo-build
@@ -238,6 +243,10 @@ spec:
         volumeMounts:
           - name: argo-build
             mountPath: /go
+      outputs:
+        artifacts:
+          - name: test-report
+            path: /go/src/github.com/argoproj/argo/test-result/junit.html
 
     - name: lint
       container:
@@ -258,28 +267,61 @@ spec:
           - sh
           - -eux
         source: |
+          apt-get update
+          apt-get install -y unzip
           PROTOC_ZIP=protoc-3.11.1-linux-x86_64.zip
           curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.11.1/$PROTOC_ZIP
           unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
           unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
           chmod +x /usr/local/bin/protoc
-          find /usr/local/include -type f | xargs sudo chmod a+r
-          find /usr/local/include -type d | xargs sudo chmod a+rx
+          find /usr/local/include -type f | xargs chmod a+r
+          find /usr/local/include -type d | xargs chmod a+rx
           rm -f $PROTOC_ZIP
-          ls /usr/local/include/google/protobuf/
         workingDir: /go/src/github.com/argoproj/argo
         volumeMounts:
           - name: argo-build
             mountPath: /go
 
     - name: codegen
-      container:
+      script:
         image: golang:1.13.4
         command:
-          - make
-        args:
-          - codegen
+          - sh
+          - -eux
+        source: |
+          echo $PATH
+          make codegen
+
         workingDir: /go/src/github.com/argoproj/argo
         volumeMounts:
           - name: argo-build
             mountPath: /go
+
+    - name: argoexec
+      container:
+        image: docker:17.10
+        command:
+          - docker
+        args:
+          - build
+          - .
+          - -f
+          - Dockefile.dev
+          - --target
+          - argoexec
+          - -t
+          - "argoproj/argoexec:{{workflow.parameters.revision}}"
+        env:
+          - name: DOCKER_HOST
+            value: 127.0.0.1
+        workingDir: /go/src/github.com/argoproj/argo
+        volumeMounts:
+          - name: argo-build
+            mountPath: /go
+      sidecars:
+        - name: dind
+          image: docker:18.09.4-dind
+          securityContext:
+            privileged: true
+          mirrorVolumeMounts: true
+
