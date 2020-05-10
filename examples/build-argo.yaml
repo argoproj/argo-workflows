@@ -43,33 +43,31 @@ spec:
             dependencies:
               - checkout
 
-          - name: ui-lint
-            template: ui-lint
-            dependencies:
-              - checkout
-              - test
-              - ui
 
           - name: build
             template: build
             dependencies:
-              - checkout
               - ui
 
           - name: test
             template: test
             dependencies:
               - build
-              - checkout
-              - ui
+
+          - name: argoexec
+            template: argoexec
+            dependencies:
+              - build
 
           - name: lint
             template: lint
             dependencies:
-              - build
-              - checkout
               - test
-              - ui
+
+          - name: ui-lint
+            template: ui-lint
+            dependencies:
+              - test
 
           - name: install-protoc
             template: install-protoc
@@ -79,9 +77,6 @@ spec:
           - name: codegen
             template: codegen
             dependencies:
-              - build
-              - checkout
-              - lint
               - test
               - install-protoc
 
@@ -100,44 +95,25 @@ spec:
             s3:
               bucket: argo
               key: node_modules-{{workflow.parameters.revision}}
-              endpoint: minio:9000
-              insecure: true
-              accessKeySecret:
-                name: my-minio-cred
-                key: accesskey
-              secretKeySecret:
-                name: my-minio-cred
-                key: secretkey
           - name: go-build-cache
             path: /root/.cache/go-build
             optional: true
             s3:
               bucket: argo
               key: go-build-cache-{{workflow.parameters.revision}}
-              endpoint: minio:9000
-              insecure: true
-              accessKeySecret:
-                name: my-minio-cred
-                key: accesskey
-              secretKeySecret:
-                name: my-minio-cred
-                key: secretkey
           - name: go-mod
             path: /go/pkg/mod
             optional: true
             s3:
               bucket: argo
               key: go-mod-{{workflow.parameters.revision}}
-              endpoint: minio:9000
-              insecure: true
-              accessKeySecret:
-                name: my-minio-cred
-                key: accesskey
-              secretKeySecret:
-                name: my-minio-cred
-                key: secretkey
-      container:
-        image: argoproj/argosay:v2
+      script:
+        image: golang:1.13.4
+        source: |
+          go env
+          stat /go/src/github.com/argoproj/argo/ui/node_modules
+          stat /root/.cache/go-build
+          stat /go/pkg/mod
         volumeMounts:
           - name: argo-build
             mountPath: /go
@@ -164,14 +140,6 @@ spec:
             s3:
               bucket: argo
               key: node_modules-{{workflow.parameters.revision}}
-              endpoint: minio:9000
-              insecure: true
-              accessKeySecret:
-                name: my-minio-cred
-                key: accesskey
-              secretKeySecret:
-                name: my-minio-cred
-                key: secretkey
 
     - name: ui-lint
       script:
@@ -194,7 +162,6 @@ spec:
           - sh
           - -eux
         source: |
-          go env
           make dist/argo-linux-amd64 \
             dist/argoexec-linux-amd64 \
             dist/workflow-controller-linux-amd64
@@ -212,27 +179,11 @@ spec:
             s3:
               bucket: argo
               key: go-build-cache-{{workflow.parameters.revision}}
-              endpoint: minio:9000
-              insecure: true
-              accessKeySecret:
-                name: my-minio-cred
-                key: accesskey
-              secretKeySecret:
-                name: my-minio-cred
-                key: secretkey
           - name: go-mod
             path: /go/pkg/mod
             s3:
               bucket: argo
               key: go-mod-{{workflow.parameters.revision}}
-              endpoint: minio:9000
-              insecure: true
-              accessKeySecret:
-                name: my-minio-cred
-                key: accesskey
-              secretKeySecret:
-                name: my-minio-cred
-                key: secretkey
 
     - name: test
       script:
@@ -250,7 +201,17 @@ spec:
       outputs:
         artifacts:
           - name: test-report
-            path: /go/src/github.com/argoproj/argo/test-result/junit.html
+            path: /go/src/github.com/argoproj/argo/test-results/junit.html
+          - name: go-build-cache
+            path: /root/.cache/go-build
+            s3:
+              bucket: argo
+              key: go-build-cache-{{workflow.parameters.revision}}
+          - name: go-mod
+            path: /go/pkg/mod
+            s3:
+              bucket: argo
+              key: go-mod-{{workflow.parameters.revision}}
 
     - name: lint
       container:
@@ -293,9 +254,7 @@ spec:
           - sh
           - -eux
         source: |
-          echo $PATH
           make codegen
-
         workingDir: /go/src/github.com/argoproj/argo
         volumeMounts:
           - name: argo-build

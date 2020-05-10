@@ -195,7 +195,7 @@ argo-server.key:
 .PHONY: cli-image
 cli-image: $(CLI_IMAGE_FILE)
 
-$(CLI_IMAGE_FILE):
+$(CLI_IMAGE_FILE): $(CLI_PKGS)
 	$(call docker_build,argocli,argo,$(CLI_IMAGE_FILE))
 
 .PHONY: clis
@@ -217,7 +217,7 @@ dist/workflow-controller-%: $(CONTROLLER_PKGS)
 .PHONY: controller-image
 controller-image: $(CONTROLLER_IMAGE_FILE)
 
-$(CONTROLLER_IMAGE_FILE):
+$(CONTROLLER_IMAGE_FILE): $(CONTROLLER_PKGS)
 	$(call docker_build,workflow-controller,workflow-controller,$(CONTROLLER_IMAGE_FILE))
 
 # argoexec
@@ -233,7 +233,7 @@ dist/argoexec-%: $(ARGOEXEC_PKGS)
 executor-image: $(EXECUTOR_IMAGE_FILE)
 
 	# Create executor image
-$(EXECUTOR_IMAGE_FILE):
+$(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 	$(call docker_build,argoexec,argoexec,$(EXECUTOR_IMAGE_FILE))
 
 # generation

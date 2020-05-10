@@ -29,6 +29,9 @@ var ErrUnsupportedDriver = fmt.Errorf("unsupported artifact driver")
 
 // NewDriver initializes an instance of an artifact driver
 func NewDriver(art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error) {
+	if err := art.Validate(); err !=nil{
+		return nil,err
+	}
 	if art.S3 != nil {
 		var accessKey string
 		var secretKey string

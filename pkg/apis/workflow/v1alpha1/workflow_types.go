@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"reflect"
@@ -1282,7 +1283,7 @@ type S3Artifact struct {
 }
 
 func (s *S3Artifact) HasLocation() bool {
-	return s != nil && s.Bucket != ""
+	return s != nil && s.Endpoint != "" && s.Bucket != ""
 }
 
 // GitArtifact is the location of an git artifact
@@ -1705,6 +1706,13 @@ func (a *Artifact) HasLocation() bool {
 		a.HDFS.HasLocation() ||
 		a.OSS.HasLocation() ||
 		a.GCS.HasLocation()
+}
+
+func (a *Artifact) Validate() error {
+	if !a.HasLocation() {
+		return errors.New("invalid location")
+	}
+	return nil
 }
 
 // GetTemplateByName retrieves a defined template by its name
