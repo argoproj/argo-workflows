@@ -47,6 +47,7 @@ spec:
             template: ui-lint
             dependencies:
               - checkout
+              - test
               - ui
 
           - name: build
@@ -193,7 +194,8 @@ spec:
           - sh
           - -eux
         source: |
-          make -d dist/argo-linux-amd64 \
+          go env
+          make dist/argo-linux-amd64 \
             dist/argoexec-linux-amd64 \
             dist/workflow-controller-linux-amd64
           mv dist/argo-linux-amd64 argoexec
