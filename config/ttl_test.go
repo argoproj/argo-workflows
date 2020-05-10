@@ -15,27 +15,6 @@ func TestTTL(t *testing.T) {
 			assert.Equal(t, TTL(0), ttl)
 		}
 	})
-	t.Run("1", func(t *testing.T) {
-		ttl := TTL(-1)
-		err := ttl.UnmarshalJSON([]byte(`"1"`))
-		if assert.NoError(t, err) {
-			assert.Equal(t, TTL(1*time.Second), ttl)
-		}
-	})
-	t.Run("1s", func(t *testing.T) {
-		ttl := TTL(-1)
-		err := ttl.UnmarshalJSON([]byte(`"1s"`))
-		if assert.NoError(t, err) {
-			assert.Equal(t, TTL(1*time.Second), ttl)
-		}
-	})
-	t.Run("1m", func(t *testing.T) {
-		ttl := TTL(-1)
-		err := ttl.UnmarshalJSON([]byte(`"1m"`))
-		if assert.NoError(t, err) {
-			assert.Equal(t, TTL(1*time.Minute), ttl)
-		}
-	})
 	t.Run("1h", func(t *testing.T) {
 		ttl := TTL(-1)
 		err := ttl.UnmarshalJSON([]byte(`"1h"`))
