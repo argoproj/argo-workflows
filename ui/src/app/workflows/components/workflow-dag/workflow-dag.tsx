@@ -204,10 +204,11 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                                 return (
                                     <g key={`node/${nodeId}`} transform={`translate(${v.x},${v.y})`} onClick={() => this.selectNode(nodeId)} className='node'>
                                         <circle
-                                            r={this.nodeSize/(hidden ? 16:2)}
+                                            r={this.nodeSize / (hidden ? 16 : 2)}
                                             className={classNames('workflow-dag__node', 'workflow-dag__node-status', 'workflow-dag__node-status--' + phase.toLowerCase(), {
-                                                active: nodeId === this.props.selectedNodeId
-                                            , "hidden": hidden})}
+                                                active: nodeId === this.props.selectedNodeId,
+                                                hidden: hidden
+                                            })}
                                         />
                                         {!hidden && (
                                             <>
