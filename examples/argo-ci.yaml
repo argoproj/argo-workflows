@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: build-argo-
+  generateName: argo-ci-
 spec:
   # must complete in 1h
   activeDeadlineSeconds: 3600
@@ -24,7 +24,7 @@ spec:
 
   volumeClaimTemplates:
     - metadata:
-        name: argo-build
+        name: build
       spec:
         accessModes: [ "ReadWriteOnce" ]
         resources:
@@ -42,7 +42,6 @@ spec:
             template: ui
             dependencies:
               - checkout
-
 
           - name: build
             template: build
@@ -69,16 +68,10 @@ spec:
             dependencies:
               - test
 
-          - name: install-protoc
-            template: install-protoc
-            dependencies:
-              - checkout
-
           - name: codegen
             template: codegen
             dependencies:
               - test
-              - install-protoc
 
     - name: checkout
       inputs:
@@ -109,13 +102,16 @@ spec:
               key: go-mod-{{workflow.parameters.revision}}
       script:
         image: golang:1.13.4
+        command:
+          - sh
+          - -eux
         source: |
-          go env
-          stat /go/src/github.com/argoproj/argo/ui/node_modules
-          stat /root/.cache/go-build
-          stat /go/pkg/mod
+          # let see if the caches have been restored from the artifact storage
+          stat /go/src/github.com/argoproj/argo/ui/node_modules || true
+          stat /root/.cache/go-build || true
+          stat /go/pkg/mod || true
         volumeMounts:
-          - name: argo-build
+          - name: build
             mountPath: /go
 
     - name: ui
@@ -131,7 +127,7 @@ spec:
           yarn build
         workingDir: /go/src/github.com/argoproj/argo/ui
         volumeMounts:
-          - name: argo-build
+          - name: build
             mountPath: /go
       outputs:
         artifacts:
@@ -152,7 +148,7 @@ spec:
           git diff --exit-code .
         workingDir: /go/src/github.com/argoproj/argo/ui
         volumeMounts:
-          - name: argo-build
+          - name: build
             mountPath: /go
 
     - name: build
@@ -170,7 +166,7 @@ spec:
           mv dist/workflow-controller-linux-amd64 workflow-controller
         workingDir: /go/src/github.com/argoproj/argo
         volumeMounts:
-          - name: argo-build
+          - name: build
             mountPath: /go
       outputs:
         artifacts:
@@ -196,7 +192,7 @@ spec:
           make test
         workingDir: /go/src/github.com/argoproj/argo
         volumeMounts:
-          - name: argo-build
+          - name: build
             mountPath: /go
       outputs:
         artifacts:
@@ -222,10 +218,10 @@ spec:
           - lint
         workingDir: /go/src/github.com/argoproj/argo
         volumeMounts:
-          - name: argo-build
+          - name: build
             mountPath: /go
 
-    - name: install-protoc
+    - name: codegen
       script:
         image: golang:1.13.4
         command:
@@ -241,23 +237,12 @@ spec:
           chmod +x /usr/local/bin/protoc
           find /usr/local/include -type f | xargs chmod a+r
           find /usr/local/include -type d | xargs chmod a+rx
+          export PATH=$PATH:/usr/local/bin
           rm -f $PROTOC_ZIP
-        workingDir: /go/src/github.com/argoproj/argo
-        volumeMounts:
-          - name: argo-build
-            mountPath: /go
-
-    - name: codegen
-      script:
-        image: golang:1.13.4
-        command:
-          - sh
-          - -eux
-        source: |
           make codegen
         workingDir: /go/src/github.com/argoproj/argo
         volumeMounts:
-          - name: argo-build
+          - name: build
             mountPath: /go
 
     - name: argoexec
@@ -269,7 +254,7 @@ spec:
           - build
           - .
           - -f
-          - Dockefile.dev
+          - Dockerfile.dev
           - --target
           - argoexec
           - -t
@@ -279,7 +264,7 @@ spec:
             value: 127.0.0.1
         workingDir: /go/src/github.com/argoproj/argo
         volumeMounts:
-          - name: argo-build
+          - name: build
             mountPath: /go
       sidecars:
         - name: dind
@@ -288,3 +273,16 @@ spec:
             privileged: true
           mirrorVolumeMounts: true
 
+    - name: test-e2e
+      steps:
+        - - name: k3s
+            template: k3s
+
+    - name: k3s
+      daemon: true
+      container:
+        image: rancher/k3s:v1.0.1
+        args:
+          - server
+          - --token
+          - ok

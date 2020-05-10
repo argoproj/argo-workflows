@@ -128,6 +128,17 @@ func (a *ArtifactRepository) IsArchiveLogs() bool {
 	return a != nil && a.ArchiveLogs != nil && *a.ArchiveLogs
 }
 
+func (a *ArtifactRepository) ToArtifactLocation() *wfv1.ArtifactLocation {
+	if a == nil {
+		return nil
+	}
+	l := &wfv1.ArtifactLocation{
+		ArchiveLogs: a.ArchiveLogs,
+		S3:          a.S3.ToS3Artifact(),
+	}
+	return l
+}
+
 type PersistConfig struct {
 	NodeStatusOffload bool `json:"nodeStatusOffLoad,omitempty"`
 	// Archive workflows to persistence.
@@ -182,6 +193,24 @@ type S3ArtifactRepository struct {
 	// KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
 	// DEPRECATED. Use KeyFormat instead
 	KeyPrefix string `json:"keyPrefix,omitempty"`
+}
+
+func (r *S3ArtifactRepository) ToS3Artifact() *wfv1.S3Artifact {
+	if r == nil {
+		return nil
+	}
+	return &wfv1.S3Artifact{
+		S3Bucket: wfv1.S3Bucket{
+			Endpoint:        r.Endpoint,
+			Bucket:          r.Bucket,
+			Region:          r.Region,
+			Insecure:        r.Insecure,
+			AccessKeySecret: r.AccessKeySecret,
+			SecretKeySecret: r.SecretKeySecret,
+			RoleARN:         r.RoleARN,
+			UseSDKCreds:     r.UseSDKCreds,
+		},
+	}
 }
 
 // OSSArtifactRepository defines the controller configuration for an OSS artifact repository

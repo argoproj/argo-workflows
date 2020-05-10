@@ -709,6 +709,23 @@ func (a *ArtifactLocation) HasLocation() bool {
 		a.GCS.HasLocation()
 }
 
+func (a *ArtifactLocation) Validate() error {
+	if !a.HasLocation() {
+		return errors.New("invalid location")
+	}
+	return nil
+}
+
+func (a *ArtifactLocation) Merge(b *ArtifactLocation) {
+	if a == nil || b == nil {
+		return
+	}
+	if a.S3 != nil {
+		a.S3.Merge(b.S3)
+	}
+	// TODO - need to do other types
+}
+
 type ArtifactRepositoryRef struct {
 	ConfigMap string `json:"configMap,omitempty" protobuf:"bytes,1,opt,name=configMap"`
 	Key       string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
@@ -1298,6 +1315,20 @@ func (s *S3Artifact) HasLocation() bool {
 	return s != nil && s.Endpoint != "" && s.Bucket != ""
 }
 
+func (s *S3Artifact) Merge(b *S3Artifact) {
+	if s.Endpoint == "" {
+		s.Endpoint = b.Endpoint
+		// this is a property of the endpoint, so we can copy here
+		s.Insecure = b.Insecure
+	}
+	if s.AccessKeySecret.Name == "" {
+		s.AccessKeySecret = b.AccessKeySecret
+	}
+	if s.SecretKeySecret.Name == "" {
+		s.SecretKeySecret = b.SecretKeySecret
+	}
+}
+
 // GitArtifact is the location of an git artifact
 type GitArtifact struct {
 	// Repo is the git repository
@@ -1704,13 +1735,6 @@ func (args *Arguments) GetParameterByName(name string) *Parameter {
 		if param.Name == name {
 			return &param
 		}
-	}
-	return nil
-}
-
-func (a *Artifact) Validate() error {
-	if !a.HasLocation() {
-		return errors.New("invalid location")
 	}
 	return nil
 }

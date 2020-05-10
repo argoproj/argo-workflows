@@ -16,6 +16,7 @@ For a full list of all the fields available in for use in Argo, and a link to ex
 Some use-case specific documentation is available:
 
 * [Contributing](CONTRIBUTING.md)
+* [Argo Workflows As CI](ci.md)
 * [Argo Workflow Architecture](architecture.md)
 * [Argo Server](argo-server.md)
 * [Asynchronous Job Pattern](async-pattern.md)
