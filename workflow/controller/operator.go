@@ -300,7 +300,7 @@ func (woc *wfOperationCtx) operate() {
 
 	workflowStatus := node.Phase
 	var onExitNode *wfv1.NodeStatus
-	if woc.wf.Spec.OnExit != "" && woc.wf.Spec.Shutdown != wfv1.ShutdownStrategyTerminate {
+	if woc.wf.Spec.OnExit != "" && woc.wf.Spec.Shutdown.ShouldExecute(true) {
 		if workflowStatus == wfv1.NodeSkipped {
 			// treat skipped the same as Succeeded for workflow.status
 			woc.globalParams[common.GlobalVarWorkflowStatus] = string(wfv1.NodeSucceeded)
@@ -647,6 +647,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return woc.markNodePhase(node.Name, lastChildNode.Phase, message), true, nil
 	}
 
+	maxDurationDeadline := time.Time{}
 	if retryStrategy.Backoff != nil {
 		// Process max duration limit
 		if retryStrategy.Backoff.MaxDuration != "" && len(node.Children) > 0 {
@@ -658,7 +659,8 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 			if err != nil {
 				return nil, false, fmt.Errorf("Failed to find first child of node " + node.Name)
 			}
-			if time.Now().After(firstChildNode.FinishedAt.Add(maxDuration)) {
+			maxDurationDeadline = firstChildNode.StartedAt.Add(maxDuration)
+			if time.Now().After(maxDurationDeadline) {
 				woc.log.Infoln("Max duration limit exceeded. Failing...")
 				return woc.markNodePhase(node.Name, lastChildNode.Phase, "Max duration limit exceeded"), true, nil
 			}
@@ -668,6 +670,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		if retryStrategy.Backoff.Duration == "" {
 			return nil, false, fmt.Errorf("no base duration specified for retryStrategy")
 		}
+
 		baseDuration, err := parseStringToDuration(retryStrategy.Backoff.Duration)
 		if err != nil {
 			return nil, false, err
@@ -680,9 +683,16 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		}
 		waitingDeadline := lastChildNode.FinishedAt.Add(timeToWait)
 
+		// If the waiting deadline is after the max duration deadline, then it's futile to wait until then. Stop early
+		if !maxDurationDeadline.IsZero() && waitingDeadline.After(maxDurationDeadline) {
+			woc.log.Infoln("Backoff would exceed max duration limit. Failing...")
+			return woc.markNodePhase(node.Name, lastChildNode.Phase, "Backoff would exceed max duration limit"), true, nil
+		}
+
 		// See if we have waited past the deadline
 		if time.Now().Before(waitingDeadline) {
-			retryMessage := fmt.Sprintf("Retrying in %s", humanize.Duration(time.Until(waitingDeadline)))
+			woc.requeue(timeToWait)
+			retryMessage := fmt.Sprintf("Backoff for %s", humanize.Duration(timeToWait))
 			return woc.markNodePhase(node.Name, node.Phase, retryMessage), false, nil
 		}
 		node = woc.markNodePhase(node.Name, node.Phase, "")
@@ -765,7 +775,9 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				if woc.shouldPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
 				}
-				woc.onNodeComplete(&node)
+				if !woc.orig.Status.Nodes[node.ID].Completed() {
+					woc.onNodeComplete(&node)
+				}
 			}
 			if node.Successful() {
 				woc.succeededPods[pod.ObjectMeta.Name] = true
@@ -825,13 +837,16 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			node.Phase = wfv1.NodeError
 			woc.wf.Status.Nodes[nodeID] = node
 			woc.log.Warnf("pod %s deleted", nodeID)
+			woc.updated = true
 		} else {
 			// At this point we are certain that the pod associated with our node is running or has been run;
 			// it is safe to extract the k8s-node information given this knowledge.
-			node.HostNodeName = seenPods[nodeID].Spec.NodeName
-			woc.wf.Status.Nodes[nodeID] = node
+			if node.HostNodeName != seenPods[nodeID].Spec.NodeName {
+				node.HostNodeName = seenPods[nodeID].Spec.NodeName
+				woc.wf.Status.Nodes[nodeID] = node
+				woc.updated = true
+			}
 		}
-		woc.updated = true
 	}
 	return nil
 }
@@ -956,8 +971,8 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 	case apiv1.PodRunning:
 		if pod.DeletionTimestamp != nil {
 			// pod is being terminated
-			newPhase = wfv1.NodeFailed
-			message = "pod termination"
+			newPhase = wfv1.NodeError
+			message = "pod deleted during operation"
 		} else {
 			newPhase = wfv1.NodeRunning
 			tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
@@ -1415,6 +1430,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	if resolvedTmpl.IsPodType() && resolvedTmpl.RetryStrategy == nil {
 		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
 	}
+
 	// Inputs has been processed with arguments already, so pass empty arguments.
 	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false)
 	if err != nil {
@@ -1464,12 +1480,17 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			woc.addChildNode(retryNodeName, nodeName)
 			node = nil
 
+			localParams := make(map[string]string)
 			// Change the `pod.name` variable to the new retry node name
 			if processedTmpl.IsPodType() {
-				processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, map[string]string{common.LocalVarPodName: woc.wf.NodeID(nodeName)})
-				if err != nil {
-					return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, err), err
-				}
+				localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
+			}
+			// Inject the retryAttempt number
+			localParams[common.LocalVarRetries] = strconv.Itoa(len(retryParentNode.Children))
+
+			processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, localParams)
+			if err != nil {
+				return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, err), err
 			}
 		}
 	}
@@ -1717,7 +1738,7 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 		woc.log.Infof("node %s finished: %s", node.ID, node.FinishedAt)
 		woc.updated = true
 	}
-	if woc.updated && node.Completed() {
+	if !woc.orig.Status.Nodes[node.ID].Completed() && node.Completed() {
 		woc.onNodeComplete(node)
 	}
 	woc.wf.Status.Nodes[node.ID] = *node
@@ -2415,7 +2436,7 @@ func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resou
 }
 
 func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID string, tmplCtx *templateresolution.Context) (bool, *wfv1.NodeStatus, error) {
-	if templateRef != "" && woc.wf.Spec.Shutdown != wfv1.ShutdownStrategyTerminate {
+	if templateRef != "" && woc.wf.Spec.Shutdown.ShouldExecute(true) {
 		woc.log.Infof("Running OnExit handler: %s", templateRef)
 		onExitNodeName := parentName + ".onExit"
 		onExitNode, err := woc.executeTemplate(onExitNodeName, &wfv1.WorkflowStep{Template: templateRef}, tmplCtx, woc.wf.Spec.Arguments, &executeTemplateOpts{

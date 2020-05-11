@@ -138,7 +138,9 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 		if unsuccessfulPhase == "" && !(isRetryAttempt(node, nodes) || d.getTaskFromNode(&node).ContinuesOn(node.Phase)) {
 			unsuccessfulPhase = node.Phase
 		}
-		if node.Type == wfv1.NodeTypeRetry && d.hasMoreRetries(&node) {
+		// If the node is a Retry node and has more retry attempts and is not shutting down, do not fail the task as a whole
+		// and allow the remaining retries to be executed
+		if node.Type == wfv1.NodeTypeRetry && d.hasMoreRetries(&node) && d.wf.Spec.Shutdown.ShouldExecute(d.onExitTemplate) {
 			retriesExhausted = false
 		}
 	}

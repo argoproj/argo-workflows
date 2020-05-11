@@ -22,7 +22,7 @@ import * as classNames from 'classnames';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {formatDuration, wfDuration} from '../../../shared/duration';
-import {defaultPaginationLimit, Pagination, parseLimit} from '../../../shared/pagination';
+import {Pagination, parseLimit} from '../../../shared/pagination';
 import {WorkflowFilters} from '../workflow-filters/workflow-filters';
 
 require('./workflows-list.scss');
@@ -188,6 +188,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         } else {
                             if (index > -1) {
                                 workflows[index] = workflowChange.object;
+                            } else if (!this.state.pagination.limit) {
+                                workflows.unshift(workflowChange.object);
                             }
                         }
                         return {workflows, updated: true};
@@ -214,7 +216,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         if (pagination.offset) {
             params.append('offset', pagination.offset);
         }
-        if (pagination.limit !== defaultPaginationLimit) {
+        if (pagination.limit) {
             params.append('limit', pagination.limit.toString());
         }
         const url = 'workflows/' + namespace + '?' + params.toString();
@@ -240,9 +242,10 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                 <div className='argo-table-list'>
                     <div className='row argo-table-list__head'>
                         <div className='columns small-1' />
-                        <div className='columns small-4'>NAME</div>
-                        <div className='columns small-3'>NAMESPACE</div>
+                        <div className='columns small-3'>NAME</div>
+                        <div className='columns small-2'>NAMESPACE</div>
                         <div className='columns small-2'>STARTED</div>
+                        <div className='columns small-2'>FINISHED</div>
                         <div className='columns small-2'>DURATION</div>
                     </div>
                     {this.state.workflows.map(w => (
@@ -253,10 +256,13 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                             <div className='columns small-1'>
                                 <i className={classNames('fa', Utils.statusIconClasses(w.status.phase))} />
                             </div>
-                            <div className='columns small-4'>{w.metadata.name}</div>
-                            <div className='columns small-3'>{w.metadata.namespace}</div>
+                            <div className='columns small-3'>{w.metadata.name}</div>
+                            <div className='columns small-2'>{w.metadata.namespace}</div>
                             <div className='columns small-2'>
                                 <Timestamp date={w.status.startedAt} />
+                            </div>
+                            <div className='columns small-2'>
+                                <Timestamp date={w.status.finishedAt} />
                             </div>
                             <div className='columns small-2'>
                                 <Ticker>{() => formatDuration(wfDuration(w.status))}</Ticker>

@@ -277,6 +277,17 @@ const (
 	ShutdownStrategyStop      ShutdownStrategy = "Stop"
 )
 
+func (s ShutdownStrategy) ShouldExecute(isOnExitPod bool) bool {
+	switch s {
+	case ShutdownStrategyTerminate:
+		return false
+	case ShutdownStrategyStop:
+		return isOnExitPod
+	default:
+		return true
+	}
+}
+
 type ParallelSteps struct {
 	Steps []WorkflowStep `protobuf:"bytes,1,rep,name=steps"`
 }

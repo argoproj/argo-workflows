@@ -30,7 +30,8 @@ message WorkflowTemplateListRequest {
 }
 
 message WorkflowTemplateUpdateRequest {
-    string name = 1;
+    // DEPRECATED: This field is ignored.
+    string name = 1 [deprecated=true];
     string namespace = 2;
     github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate template = 3;
 }
