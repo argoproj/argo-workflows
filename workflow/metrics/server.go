@@ -86,7 +86,7 @@ func (m Metrics) garbageCollector(stopCh <-chan struct{}) {
 			return
 		case <-ticker.C:
 			for key, metric := range m.customMetrics {
-				if time.Since(metric.LastUpdated) > m.metricsConfig.TTL {
+				if time.Since(metric.lastUpdated) > m.metricsConfig.TTL {
 					delete(m.customMetrics, key)
 				}
 			}

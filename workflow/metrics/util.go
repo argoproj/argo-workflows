@@ -4,9 +4,14 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/client_golang/prometheus"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+)
+
+const (
+	invalidMetricNameError = "metric name is invalid: names may only contain alphanumeric characters, '_', or ':'"
 )
 
 type RealTimeMetric struct {
@@ -14,6 +19,10 @@ type RealTimeMetric struct {
 }
 
 func ConstructOrUpdateMetric(metric prometheus.Metric, metricSpec *wfv1.Prometheus) (prometheus.Metric, error) {
+	if !IsValidMetricName(metricSpec.Name) {
+		return nil, fmt.Errorf(invalidMetricNameError)
+	}
+
 	switch metricSpec.GetMetricType() {
 	case wfv1.MetricTypeGauge:
 		return constructOrUpdateGaugeMetric(metric, metricSpec)
@@ -26,7 +35,11 @@ func ConstructOrUpdateMetric(metric prometheus.Metric, metricSpec *wfv1.Promethe
 	}
 }
 
-func ConstructRealTimeGaugeMetric(metricSpec *wfv1.Prometheus, valueFunc func() float64) prometheus.Metric {
+func ConstructRealTimeGaugeMetric(metricSpec *wfv1.Prometheus, valueFunc func() float64) (prometheus.Metric, error) {
+	if !IsValidMetricName(metricSpec.Name) {
+		return nil, fmt.Errorf(invalidMetricNameError)
+	}
+
 	gaugeOpts := prometheus.GaugeOpts{
 		Namespace:   argoNamespace,
 		Subsystem:   workflowsSubsystem,
@@ -35,7 +48,7 @@ func ConstructRealTimeGaugeMetric(metricSpec *wfv1.Prometheus, valueFunc func() 
 		ConstLabels: metricSpec.GetMetricLabels(),
 	}
 
-	return prometheus.NewGaugeFunc(gaugeOpts, valueFunc)
+	return prometheus.NewGaugeFunc(gaugeOpts, valueFunc), nil
 }
 
 func constructOrUpdateCounterMetric(metric prometheus.Metric, metricSpec *wfv1.Prometheus) (prometheus.Metric, error) {
@@ -135,4 +148,8 @@ func getWorkflowPhaseGauges() map[wfv1.NodePhase]prometheus.Gauge {
 		wfv1.NodeFailed:    prometheus.NewGauge(getOptsByPahse(wfv1.NodeFailed)),
 		wfv1.NodeError:     prometheus.NewGauge(getOptsByPahse(wfv1.NodeError)),
 	}
+}
+
+func IsValidMetricName(name string) bool {
+	return model.IsValidMetricName(model.LabelValue(name))
 }

@@ -1,12 +1,12 @@
 package metrics
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
 )
 
 const (
@@ -25,13 +25,21 @@ func (s ServerConfig) SameServerAs(other ServerConfig) bool {
 	return s.Port == other.Port && s.Path == other.Path && s.Enabled && other.Enabled
 }
 
+type metric struct {
+	metric      prometheus.Metric
+	lastUpdated time.Time
+}
+
 type Metrics struct {
 	metricsConfig   ServerConfig
 	telemetryConfig ServerConfig
 
 	workflowsProcessed prometheus.Counter
 	workflowsByPhase   map[v1alpha1.NodePhase]prometheus.Gauge
-	customMetrics      map[string]common.Metric
+	customMetrics      map[string]metric
+
+	// Used to quickly check if a metric desc is already used by the system
+	defaultMetricDescs map[string]bool
 }
 
 var _ prometheus.Collector = Metrics{}
@@ -42,7 +50,12 @@ func New(metricsConfig, telemetryConfig ServerConfig) Metrics {
 		telemetryConfig:    telemetryConfig,
 		workflowsProcessed: newCounter("workflows_processed", "Number of workflow updates processed", nil),
 		workflowsByPhase:   getWorkflowPhaseGauges(),
-		customMetrics:      make(map[string]common.Metric),
+		customMetrics:      make(map[string]metric),
+		defaultMetricDescs: make(map[string]bool),
+	}
+
+	for _, metric := range metrics.allMetrics() {
+		metrics.defaultMetricDescs[metric.Desc().String()] = true
 	}
 
 	return metrics
@@ -56,7 +69,7 @@ func (m Metrics) allMetrics() []prometheus.Metric {
 		allMetrics = append(allMetrics, metric)
 	}
 	for _, metric := range m.customMetrics {
-		allMetrics = append(allMetrics, metric.Metric)
+		allMetrics = append(allMetrics, metric.metric)
 	}
 
 	return allMetrics
@@ -79,11 +92,15 @@ func (m Metrics) WorkflowDeleted(phase v1alpha1.NodePhase) {
 	}
 }
 
-func (m Metrics) GetCustomMetric(key string) common.Metric {
+func (m Metrics) GetCustomMetric(key string) prometheus.Metric {
 	// It's okay to return nil metrics in this function
-	return m.customMetrics[key]
+	return m.customMetrics[key].metric
 }
 
-func (m Metrics) UpsertCustomMetric(key string, metric common.Metric) {
-	m.customMetrics[key] = metric
+func (m Metrics) UpsertCustomMetric(key string, newMetric prometheus.Metric) error {
+	if _, inUse := m.defaultMetricDescs[newMetric.Desc().String()]; inUse {
+		return fmt.Errorf("metric '%s' is already in use by the system, please use a different name", newMetric.Desc())
+	}
+	m.customMetrics[key] = metric{metric: newMetric, lastUpdated: time.Now()}
+	return nil
 }
