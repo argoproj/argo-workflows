@@ -3,6 +3,8 @@ package hydrator
 import (
 	"os"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/packer"
@@ -21,6 +23,12 @@ type Interface interface {
 
 func New(offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) Interface {
 	return &hydrator{offloadNodeStatusRepo}
+}
+
+var alwaysOffloadNodeStatus = os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true"
+
+func init() {
+	log.WithField("alwaysOffloadNodeStatus", alwaysOffloadNodeStatus).Debug("Hydrator config")
 }
 
 type hydrator struct {
@@ -59,12 +67,15 @@ func (h hydrator) Dehydrate(wf *wfv1.Workflow) error {
 	if !h.IsHydrated(wf) {
 		return nil
 	}
-	err := packer.CompressWorkflowIfNeeded(wf)
-	if err == nil {
-		wf.Status.OffloadNodeStatusVersion = ""
-		return nil
+	var err error
+	if !alwaysOffloadNodeStatus {
+		err = packer.CompressWorkflowIfNeeded(wf)
+		if err == nil {
+			wf.Status.OffloadNodeStatusVersion = ""
+			return nil
+		}
 	}
-	if packer.IsTooLargeError(err) || os.Getenv("ALWAYS_OFFLOAD_NODE_STATUS") == "true" {
+	if packer.IsTooLargeError(err) || alwaysOffloadNodeStatus {
 		offloadVersion, err := h.offloadNodeStatusRepo.Save(string(wf.UID), wf.Namespace, wf.Status.Nodes)
 		if err != nil {
 			return err
