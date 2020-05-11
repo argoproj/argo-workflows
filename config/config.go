@@ -137,7 +137,7 @@ type PersistConfig struct {
 	// in days
 	ArchiveTTL     TTL               `json:"archiveTTL,omitempty"`
 	ClusterName    string            `json:"clusterName,omitempty"`
-	ConnectionPool *ConnectionPool   `json:"connectionPool"`
+	ConnectionPool *ConnectionPool   `json:"connectionPool,omitempty"`
 	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
 	MySQL          *MySQLConfig      `json:"mysql,omitempty"`
 }
@@ -150,16 +150,16 @@ func (c PersistConfig) GetClusterName() string {
 }
 
 type ConnectionPool struct {
-	MaxIdleConns int `json:"maxIdleConns"`
-	MaxOpenConns int `json:"maxOpenConns"`
+	MaxIdleConns int `json:"maxIdleConns,omitempty"`
+	MaxOpenConns int `json:"maxOpenConns,omitempty"`
 }
 type PostgreSQLConfig struct {
 	Host           string                  `json:"host"`
 	Port           string                  `json:"port"`
 	Database       string                  `json:"database"`
-	TableName      string                  `json:"tableName"`
-	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret"`
-	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret"`
+	TableName      string                  `json:"tableName,omitempty"`
+	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
+	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
 	SSL            bool                    `json:"ssl,omitempty"`
 	SSLMode        string                  `json:"sslMode,omitempty"`
 }
@@ -168,10 +168,10 @@ type MySQLConfig struct {
 	Host           string                  `json:"host"`
 	Port           string                  `json:"port"`
 	Database       string                  `json:"database"`
-	TableName      string                  `json:"tableName"`
-	Options        map[string]string       `json:"options"`
-	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret"`
-	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret"`
+	TableName      string                  `json:"tableName,omitempty"`
+	Options        map[string]string       `json:"options,omitempty"`
+	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
+	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
 }
 
 // S3ArtifactRepository defines the controller configuration for an S3 artifact repository
@@ -226,9 +226,9 @@ type MetricsConfig struct {
 	Enabled *bool `json:"enabled,omitempty"`
 	// DisableLegacy turns off legacy metrics
 	// DEPRECATED: Legacy metrics are now removed, this field is ignored
-	DisableLegacy bool `json:"disableLegacy"`
+	DisableLegacy bool `json:"disableLegacy,omitempty"`
 	// MetricsTTL sets how often custom metrics are cleared from memory
-	MetricsTTL TTL `json:"metricsTTL"`
+	MetricsTTL TTL `json:"metricsTTL,omitempty"`
 	// Path is the path where metrics are emitted. Must start with a "/". Default is "/metrics"
 	Path string `json:"path,omitempty"`
 	// Port is the port where metrics are emitted. Default is "9090"
