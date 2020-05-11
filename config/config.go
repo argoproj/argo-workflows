@@ -225,7 +225,7 @@ type MetricsConfig struct {
 	// Enabled controls metric emission. Default is true, set "enabled: false" to turn off
 	Enabled *bool `json:"enabled,omitempty"`
 	// DisableLegacy turns off legacy metrics
-	// DEPRECATED: Legacy metrics are now removed
+	// DEPRECATED: Legacy metrics are now removed, this field is ignored
 	DisableLegacy bool `json:"disableLegacy"`
 	// MetricsTTL sets how often custom metrics are cleared from memory
 	MetricsTTL TTL `json:"metricsTTL"`
