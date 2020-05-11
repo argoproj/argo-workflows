@@ -15,10 +15,11 @@ const (
 )
 
 type ServerConfig struct {
-	Enabled bool
-	Path    string
-	Port    string
-	TTL     time.Duration
+	Enabled      bool
+	Path         string
+	Port         string
+	TTL          time.Duration
+	IgnoreErrors bool
 }
 
 func (s ServerConfig) SameServerAs(other ServerConfig) bool {
