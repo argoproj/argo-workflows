@@ -21,7 +21,7 @@ spec:
     secondsAfterCompletion: 86400
   # delete all pods as soon as they complete
   podGC:
-    strategy: OnPodSuccess
+    strategy: OnPodCompletion
 ```
 
 You can set these configurations globally using [Default Workflow Spec](default-workflow-specs.md).
