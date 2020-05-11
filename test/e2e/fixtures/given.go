@@ -76,6 +76,7 @@ func (g *Given) checkImages(templates []wfv1.Template) {
 	imageWhitelist := map[string]bool{
 		"argoexec:" + imageTag: true,
 		"argoproj/argosay:v1":  true,
+		"argoproj/argosay:v2":  true,
 		"python:alpine3.6":     true,
 	}
 	for _, t := range templates {

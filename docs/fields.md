@@ -3002,8 +3002,6 @@ MetricLabel is a single label for a prometheus metric
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
 
-- [`forever.yaml`](../examples/forever.yaml)
-
 - [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)

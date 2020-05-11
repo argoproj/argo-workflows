@@ -9,5 +9,5 @@ spec:
   templates:
     - name: sleep-3s
       container:
-        image: argoproj/argosay:v1
-        command: [sh, -c, "sleep 3"]
+        image: argoproj/argosay:v2
+        args: ["sleep", "3s"]
