@@ -2,7 +2,9 @@ package apiclient
 
 import (
 	"context"
+	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd"
 
 	clusterworkflowtmplpkg "github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
@@ -11,6 +13,7 @@ import (
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	workflowarchivepkg "github.com/argoproj/argo/pkg/apiclient/workflowarchive"
 	workflowtemplatepkg "github.com/argoproj/argo/pkg/apiclient/workflowtemplate"
+	"github.com/argoproj/argo/util/instanceid"
 )
 
 type Client interface {
@@ -22,10 +25,30 @@ type Client interface {
 	NewInfoServiceClient() (infopkg.InfoServiceClient, error)
 }
 
+type Opts struct {
+	ArgoServerOpts ArgoServerOpts
+	InstanceID     string
+	AuthSupplier   func() string
+	ClientConfig   clientcmd.ClientConfig
+}
+
+// DEPRECATED: use NewClientFromOpts
 func NewClient(argoServer string, authSupplier func() string, clientConfig clientcmd.ClientConfig) (context.Context, Client, error) {
-	if argoServer != "" {
-		return newArgoServerClient(argoServer, authSupplier())
+	return NewClientFromOpts(Opts{
+		ArgoServerOpts: ArgoServerOpts{URL: argoServer},
+		AuthSupplier:   authSupplier,
+		ClientConfig:   clientConfig,
+	})
+}
+
+func NewClientFromOpts(opts Opts) (context.Context, Client, error) {
+	log.WithField("opts", opts).Debug("Client options")
+	if opts.ArgoServerOpts.URL != "" && opts.InstanceID != "" {
+		return nil, nil, fmt.Errorf("cannot use instance ID with Argo Server")
+	}
+	if opts.ArgoServerOpts.URL != "" {
+		return newArgoServerClient(opts.ArgoServerOpts, opts.AuthSupplier())
 	} else {
-		return newArgoKubeClient(clientConfig)
+		return newArgoKubeClient(opts.ClientConfig, instanceid.NewService(opts.InstanceID))
 	}
 }

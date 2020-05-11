@@ -17,7 +17,8 @@ spec:
           image: argoproj/argocli:latest
           args: [server]
           ports:
-            - containerPort: 2746
+            - name: web
+              containerPort: 2746
           readinessProbe:
             httpGet:
               port: 2746
@@ -25,3 +26,5 @@ spec:
               path: /
             initialDelaySeconds: 10
             periodSeconds: 20
+      nodeSelector:
+        kubernetes.io/os: linux

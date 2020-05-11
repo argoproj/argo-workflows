@@ -8,6 +8,7 @@ import (
 	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -292,6 +293,10 @@ func (woc *cronWfOperationCtx) deleteOldestWorkflows(jobList []v1alpha1.Workflow
 	for _, wf := range jobList[workflowsToKeep:] {
 		err := woc.wfClient.Delete(wf.Name, &v1.DeleteOptions{})
 		if err != nil {
+			if errors.IsNotFound(err) {
+				log.Infof("Workflow '%s' was already deleted", wf.Name)
+				continue
+			}
 			return fmt.Errorf("error deleting workflow '%s': %e", wf.Name, err)
 		}
 		log.Infof("Deleted Workflow '%s' due to CronWorkflow '%s' history limit", wf.Name, woc.cronWf.Name)

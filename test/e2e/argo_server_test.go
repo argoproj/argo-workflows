@@ -2,15 +2,16 @@ package e2e
 
 import (
 	"bufio"
+	"crypto/tls"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/gavv/httpexpect/v2"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gopkg.in/gavv/httpexpect.v2"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,7 +21,11 @@ import (
 	"github.com/argoproj/argo/test/e2e/fixtures"
 )
 
-const baseUrl = "http://localhost:2746"
+const baseUrl = "https://localhost:2746"
+
+var httpClient = &http.Client{
+	Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
+}
 
 // ensure basic HTTP functionality works,
 // testing behaviour really is a non-goal
@@ -51,6 +56,7 @@ func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 			Printers: []httpexpect.Printer{
 				httpexpect.NewDebugPrinter(&httpLogger{}, true),
 			},
+			Client: httpClient,
 		}).
 		Builder(func(req *httpexpect.Request) {
 			if s.bearerToken != "" {
@@ -214,7 +220,7 @@ func (s *ArgoServerSuite) TestPermission() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "cowsay:v1",
+            "image": "argoproj/argosay:v2",
             "command": ["sh"],
             "args": ["-c", "sleep 1"]
           }
@@ -262,7 +268,7 @@ func (s *ArgoServerSuite) TestPermission() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "cowsay:v1",
+            "image": "argoproj/argosay:v2",
             "imagePullPolicy": "IfNotPresent",
             "command": ["sh"],
             "args": ["-c", "sleep 1"]
@@ -385,7 +391,7 @@ func (s *ArgoServerSuite) TestLintWorkflow() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "cowsay:v1",
+            "image": "argoproj/argosay:v2",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -416,7 +422,7 @@ func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "cowsay:v1",
+            "image": "argoproj/argosay:v2",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -450,7 +456,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "cowsay:v1",
+            "image": "argoproj/argosay:v2",
             "imagePullPolicy": "IfNotPresent",
             "command": ["sh"],
             "args": ["-c", "sleep 10"]
@@ -497,6 +503,8 @@ func (s *ArgoServerSuite) TestWorkflowService() {
 			Expect().
 			Status(200).
 			JSON()
+		j.Path("$.metadata").
+			NotNull()
 		j.
 			Path("$.items").
 			Array().
@@ -604,7 +612,7 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
           {
             "name": "whalesay",
             "container": {
-              "image": "cowsay:v1",
+              "image": "argoproj/argosay:v2",
               "imagePullPolicy": "IfNotPresent"
             }
           }
@@ -642,7 +650,7 @@ spec:
     templates:
       - name: whalesay
         container:
-          image: cowsay:v1
+          image: argoproj/argosay:v2
           imagePullPolicy: IfNotPresent
           command: ["sh", -c]
           args: ["echo hello"]
@@ -694,7 +702,7 @@ spec:
           {
             "name": "whalesay",
             "container": {
-              "image": "cowsay:v1",
+              "image": "argoproj/argosay:v2",
               "imagePullPolicy": "IfNotPresent"
             }
           }
@@ -775,36 +783,37 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 
 	// use the watch to make sure that the workflow has succeeded
 	s.Run("Watch", func() {
+		t := s.T()
 		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflow-events/argo?listOptions.fieldSelector=metadata.name=basic", nil)
-		assert.NoError(s.T(), err)
+		assert.NoError(t, err)
 		req.Header.Set("Accept", "text/event-stream")
 		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
 		req.Close = true
-		resp, err := http.DefaultClient.Do(req)
-		assert.NoError(s.T(), err)
-		assert.NotNil(s.T(), resp)
+		resp, err := httpClient.Do(req)
 		defer func() {
-			if resp != nil {
+			if resp != nil && resp.Body != nil {
 				_ = resp.Body.Close()
 			}
 		}()
-		if assert.Equal(s.T(), 200, resp.StatusCode) {
-			assert.Equal(s.T(), resp.Header.Get("Content-Type"), "text/event-stream")
-			scanner := bufio.NewScanner(resp.Body)
-			for scanner.Scan() {
-				line := scanner.Text()
-				log.WithField("line", line).Debug()
-				// make sure we have this enabled
-				if line == "" {
-					continue
-				}
-				if strings.Contains(line, `status:`) {
-					assert.Contains(s.T(), line, `"offloadNodeStatus":true`)
-					// so that we get this
-					assert.Contains(s.T(), line, `"nodes":`)
-				}
-				if strings.Contains(line, "Succeeded") {
-					break
+		if assert.NoError(t, err) && assert.NotNil(t, resp) {
+			if assert.Equal(t, 200, resp.StatusCode) {
+				assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
+				scanner := bufio.NewScanner(resp.Body)
+				for scanner.Scan() {
+					line := scanner.Text()
+					log.WithField("line", line).Debug()
+					// make sure we have this enabled
+					if line == "" {
+						continue
+					}
+					if strings.Contains(line, `status:`) {
+						assert.Contains(t, line, `"offloadNodeStatus":true`)
+						// so that we get this
+						assert.Contains(t, line, `"nodes":`)
+					}
+					if strings.Contains(line, "Succeeded") {
+						break
+					}
 				}
 			}
 		}
@@ -812,16 +821,21 @@ func (s *ArgoServerSuite) TestWorkflowServiceStream() {
 
 	// then,  lets check the logs
 	s.Run("PodLogs", func() {
+		t := s.T()
 		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflows/argo/basic/basic/log?logOptions.container=main&logOptions.tailLines=3", nil)
-		assert.NoError(s.T(), err)
+		assert.NoError(t, err)
 		req.Header.Set("Accept", "text/event-stream")
 		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
 		req.Close = true
-		resp, err := http.DefaultClient.Do(req)
-		if assert.NoError(s.T(), err) {
-			defer func() { _ = resp.Body.Close() }()
-			if assert.Equal(s.T(), 200, resp.StatusCode) {
-				assert.Equal(s.T(), resp.Header.Get("Content-Type"), "text/event-stream")
+		resp, err := httpClient.Do(req)
+		defer func() {
+			if resp != nil && resp.Body != nil {
+				_ = resp.Body.Close()
+			}
+		}()
+		if assert.NoError(t, err) && assert.NotNil(t, resp) {
+			if assert.Equal(t, 200, resp.StatusCode) {
+				assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
 				s := bufio.NewScanner(resp.Body)
 				for s.Scan() {
 					line := s.Text()
@@ -851,7 +865,7 @@ spec:
   templates:
     - name: run-archie
       container:
-        image: cowsay:v1
+        image: argoproj/argosay:v2
         command: [cowsay, ":) Hello Argo!"]
         imagePullPolicy: IfNotPresent`).
 		When().
@@ -873,7 +887,7 @@ spec:
   templates:
     - name: run-betty
       container:
-        image: cowsay:v1
+        image: argoproj/argosay:v2
         command: [cowsay, ":) Hello Argo!"]
         imagePullPolicy: IfNotPresent`).
 		When().
@@ -1001,7 +1015,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
           "name": "run-workflow",
           "container": {
             "name": "",
-            "image": "cowsay:v1",
+            "image": "argoproj/argosay:v2",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -1030,7 +1044,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
           "name": "run-workflow",
           "container": {
             "name": "",
-            "image": "cowsay:v1",
+            "image": "argoproj/argosay:v2",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -1093,7 +1107,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
           "name": "run-workflow",
           "container": {
             "name": "",
-            "image": "cowsay:v2",
+            "image": "argoproj/argosay:v2",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -1106,7 +1120,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 			Status(200).
 			JSON().
 			Path("$.spec.templates[0].container.image").
-			Equal("cowsay:v2")
+			Equal("argoproj/argosay:v2")
 	})
 
 	s.Run("Delete", func() {
@@ -1116,7 +1130,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
 	})
 }
 
-func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
+func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
 
 	s.Run("CreateWFT", func() {
 		s.e(s.T()).POST("/api/v1/workflow-templates/argo").
@@ -1134,7 +1148,7 @@ func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
           "name": "run-workflow",
           "container": {
             "name": "",
-            "image": "cowsay:v1",
+            "image": "argoproj/argosay:v2",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -1149,7 +1163,10 @@ func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
 		s.e(s.T()).POST("/api/v1/workflows/argo/submit").
 			WithBytes([]byte(`{
 			  "resourceKind": "WorkflowTemplate",
-			  "resourceName": "test"
+			  "resourceName": "test",
+			  "submitOptions": {
+                "labels": "argo-e2e=true"
+              }
 			}`)).
 			Expect().
 			Status(200)
@@ -1173,7 +1190,7 @@ func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
           {
             "name": "whalesay",
             "container": {
-              "image": "cowsay:v1",
+              "image": "argoproj/argosay:v2",
               "imagePullPolicy": "IfNotPresent"
             }
           }
@@ -1189,7 +1206,10 @@ func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
 		s.e(s.T()).POST("/api/v1/workflows/argo/submit").
 			WithBytes([]byte(`{
 			  "resourceKind": "cronworkflow",
-			  "resourceName": "test"
+			  "resourceName": "test",
+			  "submitOptions": {
+                "labels": "argo-e2e=true"
+              }
 			}`)).
 			Expect().
 			Status(200)
@@ -1211,7 +1231,7 @@ func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
           "name": "run-workflow",
           "container": {
             "name": "",
-            "image": "cowsay:v1",
+            "image": "argoproj/argosay:v2",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -1226,7 +1246,10 @@ func (s *ArgoServerSuite) TestSumbitWorkflowFromResource() {
 		s.e(s.T()).POST("/api/v1/workflows/argo/submit").
 			WithBytes([]byte(`{
 			  "resourceKind": "ClusterWorkflowTemplate",
-			  "resourceName": "test"
+			  "resourceName": "test",
+			  "submitOptions": {
+                "labels": "argo-e2e=true"
+              }
 			}`)).
 			Expect().
 			Status(200)

@@ -19,7 +19,16 @@
           "200": {
             "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/x-stream-definitions/workflow.WorkflowWatchEvent"
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/workflow.WorkflowWatchEvent"
+                },
+                "error": {
+                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                }
+              },
+              "title": "Stream result of workflow.WorkflowWatchEvent"
             }
           }
         },
@@ -636,7 +645,16 @@
           "200": {
             "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/x-stream-definitions/workflow.LogEntry"
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/workflow.LogEntry"
+                },
+                "error": {
+                  "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
+                }
+              },
+              "title": "Stream result of workflow.LogEntry"
             }
           }
         },
@@ -1759,10 +1777,6 @@
         "generateName": {
           "type": "string",
           "title": "GenerateName overrides metadata.generateName"
-        },
-        "instanceID": {
-          "type": "string",
-          "title": "InstanceID binds the Resource to the specified instance ID"
         },
         "entrypoint": {
           "type": "string",
@@ -4987,7 +5001,8 @@
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow"
         },
         "instanceID": {
-          "type": "string"
+          "type": "string",
+          "description": "This field is no longer used."
         },
         "serverDryRun": {
           "type": "boolean",
@@ -5050,7 +5065,7 @@
         "namespace": {
           "type": "string"
         },
-        "restartSuccesful": {
+        "restartSuccessful": {
           "type": "boolean",
           "format": "boolean"
         },
@@ -5090,9 +5105,6 @@
         },
         "submitOptions": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SubmitOpts"
-        },
-        "createOptions": {
-          "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions"
         }
       }
     },
@@ -5130,32 +5142,6 @@
           "title": "the workflow"
         }
       }
-    }
-  },
-  "x-stream-definitions": {
-    "workflow.LogEntry": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "$ref": "#/definitions/workflow.LogEntry"
-        },
-        "error": {
-          "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
-        }
-      },
-      "title": "Stream result of workflow.LogEntry"
-    },
-    "workflow.WorkflowWatchEvent": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "$ref": "#/definitions/workflow.WorkflowWatchEvent"
-        },
-        "error": {
-          "$ref": "#/definitions/grpc.gateway.runtime.StreamError"
-        }
-      },
-      "title": "Stream result of workflow.WorkflowWatchEvent"
     }
   }
 }

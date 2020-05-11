@@ -2,6 +2,7 @@ package cron
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	cron "github.com/robfig/cron/v3"
@@ -26,18 +27,19 @@ import (
 
 // Controller is a controller for cron workflows
 type Controller struct {
-	namespace        string
-	managedNamespace string
-	instanceId       string
-	cron             *cron.Cron
-	nameEntryIDMap   map[string]cron.EntryID
-	wfClientset      versioned.Interface
-	wfInformer       cache.SharedIndexInformer
-	wfLister         util.WorkflowLister
-	wfQueue          workqueue.RateLimitingInterface
-	cronWfInformer   extv1alpha1.CronWorkflowInformer
-	cronWfQueue      workqueue.RateLimitingInterface
-	restConfig       *rest.Config
+	namespace          string
+	managedNamespace   string
+	instanceId         string
+	cron               *cron.Cron
+	nameEntryIDMap     map[string]cron.EntryID
+	nameEntryIDMapLock *sync.Mutex
+	wfClientset        versioned.Interface
+	wfInformer         cache.SharedIndexInformer
+	wfLister           util.WorkflowLister
+	wfQueue            workqueue.RateLimitingInterface
+	cronWfInformer     extv1alpha1.CronWorkflowInformer
+	cronWfQueue        workqueue.RateLimitingInterface
+	restConfig         *rest.Config
 }
 
 const (
@@ -54,15 +56,16 @@ func NewCronController(
 	instanceId string,
 ) *Controller {
 	return &Controller{
-		wfClientset:      wfclientset,
-		namespace:        namespace,
-		managedNamespace: managedNamespace,
-		instanceId:       instanceId,
-		cron:             cron.New(),
-		restConfig:       restConfig,
-		nameEntryIDMap:   make(map[string]cron.EntryID),
-		wfQueue:          workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		cronWfQueue:      workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfClientset:        wfclientset,
+		namespace:          namespace,
+		managedNamespace:   managedNamespace,
+		instanceId:         instanceId,
+		cron:               cron.New(),
+		restConfig:         restConfig,
+		nameEntryIDMap:     make(map[string]cron.EntryID),
+		nameEntryIDMapLock: &sync.Mutex{},
+		wfQueue:            workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		cronWfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 	}
 }
 
@@ -122,6 +125,8 @@ func (cc *Controller) processNextCronItem() bool {
 		log.Errorf("Failed to get CronWorkflow '%s' from informer index: %+v", key, err)
 		return true
 	}
+	cc.nameEntryIDMapLock.Lock()
+	defer cc.nameEntryIDMapLock.Unlock()
 	if !exists {
 		if entryId, ok := cc.nameEntryIDMap[key.(string)]; ok {
 			log.Infof("Deleting '%s'", key)
@@ -219,6 +224,8 @@ func (cc *Controller) processNextWorkflowItem() bool {
 	// Workflows are run in the same namespace as CronWorkflow
 	nameEntryIdMapKey := wf.Namespace + "/" + wf.OwnerReferences[0].Name
 	var woc *cronWfOperationCtx
+	cc.nameEntryIDMapLock.Lock()
+	defer cc.nameEntryIDMapLock.Unlock()
 	if entryId, ok := cc.nameEntryIDMap[nameEntryIdMapKey]; ok {
 		woc, ok = cc.cron.Entry(entryId).Job.(*cronWfOperationCtx)
 		if !ok {

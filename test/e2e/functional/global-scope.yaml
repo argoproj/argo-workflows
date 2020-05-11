@@ -1,0 +1,84 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: overwrite-output-parameter-
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: plan
+  templates:
+    - name: plan
+      steps:
+
+        - - name: write-global-parameter
+            template: global-parameter-generation
+            arguments:
+              parameters:
+                - name: parameter
+                  value: initial
+
+        - - name: consume-global-parameter-1
+            template: global-parameter-consumption
+
+        - - name: consume-global-parameter-2
+            template: global-parameter-consumption
+
+        - - name: overwrite-global-parameter
+            template: nested-global-parameter-generation
+            arguments:
+              parameters:
+                - name: parameter
+                  value: final
+
+        - - name: consume-global-parameter-3
+            template: global-parameter-consumption
+
+        - - name: consume-global-parameter-4
+            template: global-parameter-consumption
+      outputs:
+        parameters:
+          - name: output-1
+            valueFrom:
+              parameter: "{{steps.consume-global-parameter-1.outputs.result}}"
+          - name: output-2
+            valueFrom:
+              parameter: "{{steps.consume-global-parameter-2.outputs.result}}"
+          - name: output-3
+            valueFrom:
+              parameter: "{{steps.consume-global-parameter-3.outputs.result}}"
+          - name: output-4
+            valueFrom:
+              parameter: "{{steps.consume-global-parameter-4.outputs.result}}"
+
+    - name: global-parameter-generation
+      inputs:
+        parameters:
+          - name: parameter
+      container:
+        image: argoproj/argosay:v1
+        command: [sh, -c]
+        args: ["echo '{{inputs.parameters.parameter}}' > /tmp/hello_world.txt"]
+      outputs:
+        parameters:
+          - name: parameter
+            valueFrom:
+              path: /tmp/hello_world.txt
+            globalName: global-parameter
+
+    - name: nested-global-parameter-generation
+      inputs:
+        parameters:
+          - name: parameter
+      steps:
+        - - name: generate-parameter
+            template: global-parameter-generation
+            arguments:
+              parameters:
+                - name: parameter
+                  value: "{{inputs.parameters.parameter}}"
+
+    - name: global-parameter-consumption
+      container:
+        image: argoproj/argosay:v1
+        command: [sh, -c]
+        args: ["echo {{workflow.outputs.parameters.global-parameter}}"]

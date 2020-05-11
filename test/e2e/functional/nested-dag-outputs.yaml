@@ -35,7 +35,7 @@ spec:
   # container template which generates an output parameter and artifact
   - name: generate
     container:
-      image: cowsay:v1
+      image: argoproj/argosay:v1
       command: [sh, -c]
       args: ["
         sleep 1;

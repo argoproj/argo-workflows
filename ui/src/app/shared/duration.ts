@@ -1,3 +1,5 @@
+import * as models from '../../models';
+
 /**
  * Format the given number number of seconds in the form _d_h_m_s.
  * @param seconds Number of seconds to format. Will be rounded to the nearest whole number.
@@ -23,4 +25,8 @@ export function formatDuration(seconds: number) {
     }
 
     return formattedDuration;
+}
+
+export function wfDuration(status: models.WorkflowStatus) {
+    return ((status.finishedAt ? new Date(status.finishedAt) : new Date()).getTime() - new Date(status.startedAt).getTime()) / 1000;
 }

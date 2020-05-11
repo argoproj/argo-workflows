@@ -1,0 +1,56 @@
+# massive workflows
+#  DAGs with 9 tasks a piece
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: massive-workflow
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+      - name: limit
+        value: 1000
+
+  podGC:
+    strategy: OnPodCompletion
+
+  templates:
+    - name: main
+      steps:
+        - - name: dag
+            template: dag
+            withSequence:
+              count: "{{workflow.parameters.limit}}"
+    - name: dag
+      dag:
+        tasks:
+          - name: A
+            template: whalesay
+          - name: B
+            template: whalesay
+            dependencies: [A]
+          - name: C
+            template: whalesay
+            dependencies: [A]
+          - name: D
+            template: whalesay
+            dependencies: [B, C]
+          - name: E
+            template: whalesay
+            dependencies: [B, C]
+          - name: F
+            template: whalesay
+            dependencies: [B, C]
+          - name: G
+            template: whalesay
+            dependencies: [D, E, F]
+          - name: H
+            template: whalesay
+            dependencies: [D, E, F]
+          - name: I
+            template: whalesay
+            dependencies: [D, E, F]
+    - name: whalesay
+      container:
+        image: argoproj/argosay:v2
+        args: [sleep, 1s]

@@ -107,6 +107,7 @@ func TestIsBaseImagePath(t *testing.T) {
 }
 
 func TestDefaultParameters(t *testing.T) {
+	defaultValue := "Default Value"
 	fakeClientset := fake.NewSimpleClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 	templateWithOutParam := wfv1.Template{
@@ -115,7 +116,7 @@ func TestDefaultParameters(t *testing.T) {
 				{
 					Name: "my-out",
 					ValueFrom: &wfv1.ValueFrom{
-						Default: "Default Value",
+						Default: &defaultValue,
 						Path:    "/path",
 					},
 				},
@@ -136,4 +137,37 @@ func TestDefaultParameters(t *testing.T) {
 	err := we.SaveParameters()
 	assert.NoError(t, err)
 	assert.Equal(t, "Default Value", *we.Template.Outputs.Parameters[0].Value)
+}
+
+func TestDefaultParametersEmptyString(t *testing.T) {
+	defaultValue := ""
+	fakeClientset := fake.NewSimpleClientset()
+	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
+	templateWithOutParam := wfv1.Template{
+		Outputs: wfv1.Outputs{
+			Parameters: []wfv1.Parameter{
+				{
+					Name: "my-out",
+					ValueFrom: &wfv1.ValueFrom{
+						Default: &defaultValue,
+						Path:    "/path",
+					},
+				},
+			},
+		},
+	}
+	we := WorkflowExecutor{
+		PodName:            fakePodName,
+		Template:           templateWithOutParam,
+		ClientSet:          fakeClientset,
+		Namespace:          fakeNamespace,
+		PodAnnotationsPath: fakeAnnotations,
+		ExecutionControl:   nil,
+		RuntimeExecutor:    &mockRuntimeExecutor,
+		mainContainerID:    fakeContainerID,
+	}
+	mockRuntimeExecutor.On("GetFileContents", fakeContainerID, "/path").Return("", fmt.Errorf("file not found"))
+	err := we.SaveParameters()
+	assert.NoError(t, err)
+	assert.Equal(t, "", *we.Template.Outputs.Parameters[0].Value)
 }

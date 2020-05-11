@@ -53,12 +53,12 @@ spec:
 
   - name: whalesay
     container:
-      image: cowsay:v1
+      image: argoproj/argosay:v2
       imagePullPolicy: IfNotPresent
 
   - name: whalesplosion
     container:
-      image: cowsay:v1
+      image: argoproj/argosay:v2
       imagePullPolicy: IfNotPresent
       command: ["sh", "-c", "sleep 5 ; exit 1"]
 `).
@@ -124,12 +124,12 @@ spec:
     - name: whalesay
       container:
         imagePullPolicy: IfNotPresent
-        image: cowsay:v1
+        image: argoproj/argosay:v2
 
     - name: whalesplosion
       container:
         imagePullPolicy: IfNotPresent
-        image: cowsay:v1
+        image: argoproj/argosay:v2
         command: ["sh", "-c", "sleep 10; exit 1"]
 `).
 		When().
@@ -163,11 +163,11 @@ func (s *FunctionalSuite) TestFastFailOnPodTermination() {
 		WaitForWorkflow(120 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Equal(t, wfv1.NodeError, status.Phase)
 			assert.Len(t, status.Nodes, 4)
 			nodeStatus := status.Nodes.FindByDisplayName("sleep")
-			assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
-			assert.Equal(t, "pod termination", nodeStatus.Message)
+			assert.Equal(t, wfv1.NodeError, nodeStatus.Phase)
+			assert.Equal(t, "pod deleted during operation", nodeStatus.Message)
 		})
 }
 
@@ -262,9 +262,8 @@ spec:
   - name: cowsay
     resubmitPendingPods: true
     container:
-      image: cowsay:v1
-      command: [sh, -c]
-      args: ["cowsay a"]
+      image: argoproj/argosay:v2
+      args: ["echo", "a"]
       resources:
         limits:
           memory: 128M
@@ -314,9 +313,8 @@ spec:
     retryStrategy:
       limit: 1
     container:
-      image: cowsay:v1
-      command: [sh, -c]
-      args: ["cowsay a"]
+      image: argoproj/argosay:v2
+      args: ["echo", "a"]
       resources:
         limits:
           memory: 128M
@@ -360,6 +358,38 @@ func (s *FunctionalSuite) TestParameterAggregation() {
 			nodeStatus := status.Nodes.FindByDisplayName("print(0:res:1)")
 			if assert.NotNil(t, nodeStatus) {
 				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			}
+		})
+}
+
+func (s *FunctionalSuite) TestGlobalScope() {
+	s.Given().
+		Workflow("@functional/global-scope.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(60 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			nodeStatus := status.Nodes.FindByDisplayName("consume-global-parameter-1")
+			if assert.NotNil(t, nodeStatus) {
+				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+				assert.Equal(t, "initial", *nodeStatus.Outputs.Result)
+			}
+			nodeStatus = status.Nodes.FindByDisplayName("consume-global-parameter-2")
+			if assert.NotNil(t, nodeStatus) {
+				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+				assert.Equal(t, "initial", *nodeStatus.Outputs.Result)
+			}
+			nodeStatus = status.Nodes.FindByDisplayName("consume-global-parameter-3")
+			if assert.NotNil(t, nodeStatus) {
+				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+				assert.Equal(t, "final", *nodeStatus.Outputs.Result)
+			}
+			nodeStatus = status.Nodes.FindByDisplayName("consume-global-parameter-4")
+			if assert.NotNil(t, nodeStatus) {
+				assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+				assert.Equal(t, "final", *nodeStatus.Outputs.Result)
 			}
 		})
 }
@@ -471,11 +501,8 @@ spec:
 
   - name: generate
     container:
-      image: cowsay:v1
-      command: [sh, -c]
-      args: ["
-        echo 'my-output-parameter' > /tmp/my-output-parameter.txt
-      "]
+      image: argoproj/argosay:v2
+      args: [echo, my-output-parameter, /tmp/my-output-parameter.txt]
     outputs:
       parameters:
       - name: out-parameter

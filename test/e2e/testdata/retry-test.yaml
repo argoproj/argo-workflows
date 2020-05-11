@@ -26,6 +26,5 @@ spec:
 
     - name: whalesay
       container:
-        image: docker/whalesay:latest
-        command: [cowsay]
-        args: ["hello world"]
+        image: argoproj/argosay:v2
+        args: [echo, "hello world"]

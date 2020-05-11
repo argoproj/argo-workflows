@@ -277,6 +277,17 @@ const (
 	ShutdownStrategyStop      ShutdownStrategy = "Stop"
 )
 
+func (s ShutdownStrategy) ShouldExecute(isOnExitPod bool) bool {
+	switch s {
+	case ShutdownStrategyTerminate:
+		return false
+	case ShutdownStrategyStop:
+		return isOnExitPod
+	default:
+		return true
+	}
+}
+
 type ParallelSteps struct {
 	Steps []WorkflowStep `protobuf:"bytes,1,rep,name=steps"`
 }
@@ -596,7 +607,7 @@ type ValueFrom struct {
 	Parameter string `json:"parameter,omitempty" protobuf:"bytes,4,opt,name=parameter"`
 
 	// Default specifies a value to be used if retrieving the value from the specified source fails
-	Default string `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
+	Default *string `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 }
 
 // Artifact indicates an artifact to place at a specified path
@@ -1666,6 +1677,9 @@ func (out *Outputs) HasOutputs() bool {
 }
 
 func (out *Outputs) GetArtifactByName(name string) *Artifact {
+	if out == nil {
+		return nil
+	}
 	return out.Artifacts.GetArtifactByName(name)
 }
 

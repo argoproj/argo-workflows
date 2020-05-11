@@ -16,3 +16,5 @@ debug.test
 /workflow-controller
 /.scannerwork/
 /test-results/
+/argo-server.crt
+/argo-server.key

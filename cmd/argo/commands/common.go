@@ -13,9 +13,10 @@ import (
 
 // Global variables
 var (
-	jobStatusIconMap map[wfv1.NodePhase]string
-	nodeTypeIconMap  map[wfv1.NodeType]string
-	noColor          bool
+	jobStatusIconMap         map[wfv1.NodePhase]string
+	nodeTypeIconMap          map[wfv1.NodeType]string
+	workflowConditionIconMap map[wfv1.WorkflowConditionType]string
+	noColor                  bool
 )
 
 func init() {
@@ -52,6 +53,10 @@ func initializeSession() {
 	}
 	nodeTypeIconMap = map[wfv1.NodeType]string{
 		wfv1.NodeTypeSuspend: ansiFormat("ǁ", FgCyan),
+	}
+	workflowConditionIconMap = map[wfv1.WorkflowConditionType]string{
+		wfv1.WorkflowConditionMetricsError: ansiFormat("✖", FgRed),
+		wfv1.WorkflowConditionSpecWarning:  ansiFormat("⚠", FgYellow),
 	}
 }
 

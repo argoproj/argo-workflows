@@ -62,15 +62,15 @@ const config = {
         },
         proxy: {
             '/api': {
-                'target': isProd ? '' : 'http://localhost:2746',
+                'target': isProd ? '' : 'https://localhost:2746',
                 'secure': false,
             },
             '/artifacts': {
-                'target': isProd ? '' : 'http://localhost:2746',
+                'target': isProd ? '' : 'https://localhost:2746',
                 'secure': false,
             },
             '/artifacts-by-uid': {
-                'target': isProd ? '' : 'http://localhost:2746',
+                'target': isProd ? '' : 'https://localhost:2746',
                 'secure': false,
             }
         }

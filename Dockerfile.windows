@@ -1,0 +1,72 @@
+####################################################################################################
+# Builder image
+# Initial stage which pulls prepares build dependencies and CLI tooling we need for our final image
+# Also used as the image in CI jobs so needs all dependencies
+####################################################################################################
+# had issues with official golange image for windows so I'm using plain servercore 
+FROM mcr.microsoft.com/windows/servercore:ltsc2019 as builder
+ENV GOLANG_VERSION=1.13.4
+SHELL ["powershell", "-Command"]
+
+ARG IMAGE_OS=windows
+ARG IMAGE_ARCH=amd64
+
+# install chocolatey package manager
+ENV chocolateyUseWindowsCompression=false
+RUN iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1')); \
+    choco feature disable --name showDownloadProgress ; \
+    choco feature enable -n allowGlobalConfirmation
+
+# install golang, dep and other tools
+RUN choco install golang --version=$env:GOLANG_VERSION ; \
+    choco install make dep docker-cli git.portable
+
+####################################################################################################
+# argoexec-base
+# Used as the base for both the release and development version of argoexec
+####################################################################################################
+FROM mcr.microsoft.com/windows/nanoserver:1809 as argoexec-base
+COPY --from=builder /windows/system32/netapi32.dll /windows/system32/netapi32.dll
+
+ARG IMAGE_OS=windows
+ARG IMAGE_ARCH=amd64
+
+# NOTE: keep the version synced with https://storage.googleapis.com/kubernetes-release/release/stable.txt
+ENV KUBECTL_VERSION=1.15.1
+ENV JQ_VERSION=1.6
+
+RUN mkdir C:\app && \
+    curl -L -o C:\app\kubectl.exe "https://storage.googleapis.com/kubernetes-release/release/v%KUBECTL_VERSION%/bin/windows/amd64/kubectl.exe" && \
+    curl -L -o C:\app\jq.exe "https://github.com/stedolan/jq/releases/download/jq-%JQ_VERSION%/jq-win64.exe"
+    
+COPY --from=builder C:/ProgramData/chocolatey/lib/docker-cli/tools/docker.exe C:/app/docker.exe
+COPY --from=builder C:/tools/git C:/app/git
+
+# add binaries to path
+USER Administrator
+RUN SETX /m path C:\app;C:\app\git\bin;%path%
+
+####################################################################################################
+# Argo Build stage which performs the actual build of Argo binaries
+####################################################################################################
+FROM builder as argo-build
+
+ARG IMAGE_OS=windows
+ARG IMAGE_ARCH=amd64
+
+# Perform the build
+WORKDIR C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo
+COPY . .
+# check we can use Git
+RUN git rev-parse HEAD
+# fail the build if we are "dirty"
+RUN git diff --exit-code
+# run in git bash for all the shell commands in Makefile to work
+RUN bash -c 'make dist/argoexec-windows-amd64'
+
+####################################################################################################
+# argoexec
+####################################################################################################
+FROM argoexec-base as argoexec
+COPY --from=argo-build C:/Users/ContainerAdministrator/go/src/github.com/argoproj/argo/dist/argoexec-windows-amd64 C:/app/argoexec.exe
+ENTRYPOINT [ "argoexec" ]

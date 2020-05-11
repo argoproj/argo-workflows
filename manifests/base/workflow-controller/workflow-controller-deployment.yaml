@@ -22,3 +22,5 @@ spec:
         - workflow-controller-configmap
         - --executor-image
         - argoproj/argoexec:latest
+      nodeSelector:
+        kubernetes.io/os: linux

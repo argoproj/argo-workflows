@@ -40,18 +40,16 @@ kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
 data:
-  config: |
-
-    # Default values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
-    workflowDefaults:
-      metadata:
-        annotations:
-          argo: workflows
-        labels:
-          foo: bar
-      spec:
-        ttlStrategy:
-          secondsAfterSuccess: 5
-        parallelism: 3
+  # Default values that will apply to all Workflows from this controller, unless overridden on the Workflow-level
+  workflowDefaults: |
+    metadata:
+      annotations:
+        argo: workflows
+      labels:
+        foo: bar
+    spec:
+      ttlStrategy:
+        secondsAfterSuccess: 5
+      parallelism: 3
 
 ```

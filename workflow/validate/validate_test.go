@@ -2292,3 +2292,119 @@ func TestStepWithItemParam(t *testing.T) {
 	_, err := validate(stepWithItemParam)
 	assert.NoError(t, err)
 }
+
+var invalidMetricName = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    metrics:
+      prometheus:
+        - name: invalid.metric.name
+          help: "invalid"
+          gauge:
+            value: 1
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestInvalidMetricName(t *testing.T) {
+	_, err := validate(invalidMetricName)
+	assert.EqualError(t, err, "templates.whalesay metric name 'invalid.metric.name' is invalid. Metric names must contain alphanumeric characters, '_', or ':'")
+}
+
+var invalidMetricHelp = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    metrics:
+      prometheus:
+        - name: metric_name
+          gauge:
+            value: 1
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestInvalidMetricHelp(t *testing.T) {
+	_, err := validate(invalidMetricHelp)
+	assert.EqualError(t, err, "templates.whalesay metric 'metric_name' must contain a help string under 'help: ' field")
+}
+
+var globalVariables = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: global-variables-
+spec:
+  priority: 100
+  entrypoint: test-workflow
+
+  templates:
+  - name: test-workflow
+    steps:
+    - - name: step1
+        template: whalesay
+        arguments:
+          parameters:
+          - name: name
+            value: "{{workflow.name}}"
+          - name: namespace
+            value: "{{workflow.namespace}}"
+          - name: serviceAccountName
+            value: "{{workflow.serviceAccountName}}"
+          - name: uid
+            value: "{{workflow.uid}}"
+          - name: priority
+            value: "{{workflow.priority}}"    
+
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: name
+      - name: namespace
+      - name: serviceAccountName
+      - name: uid
+      - name: priority
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["name: {{inputs.parameters.name}} namespace: {{inputs.parameters.namespace}} serviceAccountName: {{inputs.parameters.serviceAccountName}} uid: {{inputs.parameters.uid}} priority: {{inputs.parameters.priority}}"]
+`
+
+func TestWorfklowGlobalVariables(t *testing.T) {
+	_, err := validate(globalVariables)
+	assert.NoError(t, err)
+}
+
+var wfTemplateWithEntrypoint = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-with-entrypoint
+spec:
+  entrypoint: whalesay-template
+  templates:
+  - name: whalesay-template
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+`
+
+func TestWorkflowTemplateWithEntrypoint(t *testing.T) {
+	err := validateWorkflowTemplate(wfTemplateWithEntrypoint)
+	assert.NoError(t, err)
+}

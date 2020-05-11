@@ -3,26 +3,4 @@ kind: Deployment
 metadata:
   name: workflow-controller
 spec:
-  template:
-    spec:
-      containers:
-        - name: workflow-controller
-          imagePullPolicy: Never
-          args:
-            - --executor-image
-            - argoproj/argoexec:E2E_TAG
-            - --namespaced
-            - --loglevel
-            - debug
-          env:
-            # these are designed to force offloading on and make GC happen regularly so we shake out any bugs
-            - name: ALWAYS_OFFLOAD_NODE_STATUS
-              value: "true"
-            - name: OFFLOAD_NODE_STATUS_TTL
-              value: 30s
-            - name: WORKFLOW_GC_PERIOD
-              value: 30s
-            - name: UPPERIO_DB_DEBUG
-              value: "1"
-            - name: ARCHIVED_WORKFLOW_GC_PERIOD
-              value: 30s
+  replicas: 0

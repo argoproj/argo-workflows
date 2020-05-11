@@ -20,9 +20,9 @@ kubectl create namespace argo
 kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/manifests/install.yaml
 ```
 
-Namespaced installs as well as installs with MinIO and/or a database built in [are also available](https://github.com/argoproj/argo/tree/stable/manifests). 
+Namespaced installs as well as installs with MinIO and/or a database built in [are also available](https://github.com/argoproj/argo/tree/stable/manifests).
 
-Examples below will assume you've installed argo in the `argo` namespace. If you have not, adjust 
+Examples below will assume you've installed argo in the `argo` namespace. If you have not, adjust
 the commands accordingly.
 
 NOTE: On GKE, you may need to grant your account the ability to create new `clusterrole`s
@@ -128,23 +128,22 @@ kubectl edit cm -n argo workflow-controller-configmap
 Add the following:
 ```yaml
 data:
-  config: |
-    artifactRepository:
-      s3:
-        bucket: my-bucket
-        endpoint: argo-artifacts.default:9000
-        insecure: true
-        # accessKeySecret and secretKeySecret are secret selectors.
-        # It references the k8s secret named 'argo-artifacts'
-        # which was created during the minio helm install. The keys,
-        # 'accesskey' and 'secretkey', inside that secret are where the
-        # actual minio credentials are stored.
-        accessKeySecret:
-          name: argo-artifacts
-          key: accesskey
-        secretKeySecret:
-          name: argo-artifacts
-          key: secretkey
+  artifactRepository: |
+    s3:
+      bucket: my-bucket
+      endpoint: argo-artifacts.default:9000
+      insecure: true
+      # accessKeySecret and secretKeySecret are secret selectors.
+      # It references the k8s secret named 'argo-artifacts'
+      # which was created during the minio helm install. The keys,
+      # 'accesskey' and 'secretkey', inside that secret are where the
+      # actual minio credentials are stored.
+      accessKeySecret:
+        name: argo-artifacts
+        key: accesskey
+      secretKeySecret:
+        name: argo-artifacts
+        key: secretkey
 ```
 
 NOTE: the Minio secret is retrieved from the namespace you use to run Workflows. If Minio is
