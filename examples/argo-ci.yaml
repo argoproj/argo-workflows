@@ -58,20 +58,20 @@ spec:
             dependencies:
               - build
 
-          - name: lint
-            template: lint
-            dependencies:
-              - test
-
-          - name: ui-lint
-            template: ui-lint
-            dependencies:
-              - test
-
           - name: codegen
             template: codegen
             dependencies:
               - test
+
+          - name: lint
+            template: lint
+            dependencies:
+              - codegen
+
+          - name: ui-lint
+            template: ui-lint
+            dependencies:
+              - lint
 
     - name: checkout
       inputs:
