@@ -23,6 +23,14 @@ export class YamlEditor<T> extends React.Component<Props<T>, State> {
         this.state = {editing: this.props.editing, value: jsYaml.dump(this.props.value)};
     }
 
+    public componentDidUpdate(prevProps: Props<T>) {
+        if (prevProps.value !== this.props.value) {
+            this.setState({
+                value: jsYaml.dump(this.props.value)
+            });
+        }
+    }
+
     public render() {
         return (
             <>
@@ -42,7 +50,7 @@ export class YamlEditor<T> extends React.Component<Props<T>, State> {
                         autoFocus={true}
                     />
                 ) : (
-                    <YamlViewer value={jsYaml.dump(this.props.value)} />
+                    <YamlViewer value={this.state.value} />
                 )}
             </>
         );
@@ -56,14 +64,7 @@ export class YamlEditor<T> extends React.Component<Props<T>, State> {
                         Submit
                     </button>
                 )) || (
-                    <button
-                        onClick={() => {
-                            if (this.props.onEdit) {
-                                this.props.onEdit();
-                            }
-                            this.setState({value: jsYaml.dump(this.props.value), editing: true});
-                        }}
-                        className='argo-button argo-button--base'>
+                    <button onClick={() => this.setState({editing: true})} className='argo-button argo-button--base'>
                         Edit
                     </button>
                 )}

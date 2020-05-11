@@ -13,7 +13,6 @@ require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 interface State {
     cronWorkflow?: CronWorkflow;
-    editing: boolean;
     error?: Error;
 }
 
@@ -28,7 +27,7 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = {editing: false};
+        this.state = {};
     }
 
     public componentDidMount(): void {
@@ -48,13 +47,13 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
                       title: 'Suspend',
                       iconClassName: 'fa fa-pause',
                       action: () => this.suspendCronWorkflow(),
-                      disabled: this.state.editing || !this.state.cronWorkflow
+                      disabled: !this.state.cronWorkflow
                   }
                 : {
                       title: 'Resume',
                       iconClassName: 'fa fa-play',
                       action: () => this.resumeCronWorkflow(),
-                      disabled: this.state.editing || !this.state.cronWorkflow || !this.state.cronWorkflow.spec.suspend
+                      disabled: !this.state.cronWorkflow || !this.state.cronWorkflow.spec.suspend
                   };
         return (
             <Page
@@ -90,12 +89,7 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
             return <Loading />;
         }
         return (
-            <CronWorkflowSummaryPanel
-                cronWorkflow={this.state.cronWorkflow}
-                onChange={cronWorkflow => this.setState({cronWorkflow, editing: false})}
-                onError={error => this.setState({error})}
-                onEdit={() => this.setState({editing: true})}
-            />
+            <CronWorkflowSummaryPanel cronWorkflow={this.state.cronWorkflow} onChange={cronWorkflow => this.setState({cronWorkflow})} onError={error => this.setState({error})} />
         );
     }
 
