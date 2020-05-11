@@ -281,8 +281,7 @@ func (p *PNSExecutor) killContainer(containerID string) error {
 	if err != executil.ErrWaitPIDTimeout {
 		return err
 	}
-	log.Warnf("Timed out (%v) waiting for pid %d to complete after SIGTERM. Issing SIGKILL", waitPIDOpts.Timeout, pid)
-	time.Sleep(30 * time.Minute)
+	log.Warnf("Timed out (%v) waiting for pid %d to complete after SIGTERM. Issuing SIGKILL", waitPIDOpts.Timeout, pid)
 	err = proc.Signal(syscall.SIGKILL)
 	if err != nil {
 		log.Warnf("Failed to SIGKILL pid %d: %v", pid, err)
