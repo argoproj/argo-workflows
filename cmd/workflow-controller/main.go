@@ -82,8 +82,6 @@ func NewRootCommand() *cobra.Command {
 			defer cancel()
 
 			go wfController.Run(ctx, workflowWorkers, podWorkers)
-			go wfController.RunTTLController(ctx)
-			go wfController.RunCronController(ctx)
 
 			// Wait forever
 			select {}

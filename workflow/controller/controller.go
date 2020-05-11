@@ -123,20 +123,15 @@ func NewWorkflowController(
 }
 
 // RunTTLController runs the workflow TTL controller
-func (wfc *WorkflowController) RunTTLController(ctx context.Context) {
-	ttlCtrl := ttlcontroller.NewController(
-		wfc.restConfig,
-		wfc.wfclientset,
-		wfc.GetManagedNamespace(),
-		wfc.Config.InstanceID,
-	)
+func (wfc *WorkflowController) runTTLController(ctx context.Context) {
+	ttlCtrl := ttlcontroller.NewController(wfc.wfclientset, wfc.wfInformer)
 	err := ttlCtrl.Run(ctx.Done())
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (wfc *WorkflowController) RunCronController(ctx context.Context) {
+func (wfc *WorkflowController) runCronController(ctx context.Context) {
 	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID)
 	cronController.Run(ctx)
 }
@@ -164,9 +159,9 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.workflowGarbageCollector(ctx.Done())
 	go wfc.archivedWorkflowGarbageCollector(ctx.Done())
 
-	go wfc.metrics.RunServer(ctx.Done())
-
-	wfc.createClusterWorkflowTemplateInformer(ctx)
+	go wfc.runTTLController(ctx)
+	go wfc.runCronController(ctx)
+	go wfc.metrics.RunServer(ctx)
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	for _, informer := range []cache.SharedIndexInformer{wfc.wfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
@@ -175,6 +170,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 			return
 		}
 	}
+
+	wfc.createClusterWorkflowTemplateInformer(ctx)
 
 	for i := 0; i < wfWorkers; i++ {
 		go wait.Until(wfc.runWorker, time.Second, ctx.Done())

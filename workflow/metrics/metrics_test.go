@@ -106,7 +106,7 @@ func TestMetricGC(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go m.garbageCollector(ctx.Done())
+	go m.garbageCollector(ctx)
 
 	// Ensure we get at least one TTL run
 	time.Sleep(1*time.Second + time.Millisecond)

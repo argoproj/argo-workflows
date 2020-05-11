@@ -13,7 +13,7 @@ import (
 )
 
 // RunServer starts a metrics server
-func (m Metrics) RunServer(stopCh <-chan struct{}) {
+func (m Metrics) RunServer(ctx context.Context) {
 	if !m.metricsConfig.Enabled {
 		// If metrics aren't enabled, return
 		return
@@ -29,16 +29,16 @@ func (m Metrics) RunServer(stopCh <-chan struct{}) {
 		// If the telemetry server is different -- and it's enabled -- run each on its own instance
 		telemetryRegistry := prometheus.NewRegistry()
 		telemetryRegistry.MustRegister(prometheus.NewGoCollector())
-		go runServer(m.telemetryConfig, telemetryRegistry, stopCh)
+		go runServer(m.telemetryConfig, telemetryRegistry, ctx)
 	}
 
 	// Run the metrics server
-	go runServer(m.metricsConfig, metricsRegistry, stopCh)
+	go runServer(m.metricsConfig, metricsRegistry, ctx)
 
-	go m.garbageCollector(stopCh)
+	go m.garbageCollector(ctx)
 }
 
-func runServer(config ServerConfig, registry *prometheus.Registry, stopCh <-chan struct{}) {
+func runServer(config ServerConfig, registry *prometheus.Registry, ctx context.Context) {
 	var handlerOpts promhttp.HandlerOpts
 	if config.IgnoreErrors {
 		handlerOpts.ErrorHandling = promhttp.ContinueOnError
@@ -56,7 +56,7 @@ func runServer(config ServerConfig, registry *prometheus.Registry, stopCh <-chan
 	}()
 
 	// Waiting for stop signal
-	<-stopCh
+	<-ctx.Done()
 
 	// Shutdown the server gracefully with a 1 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
@@ -78,7 +78,7 @@ func (m Metrics) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func (m Metrics) garbageCollector(stopCh <-chan struct{}) {
+func (m Metrics) garbageCollector(ctx context.Context) {
 	if m.metricsConfig.TTL == 0 {
 		return
 	}
@@ -87,7 +87,7 @@ func (m Metrics) garbageCollector(stopCh <-chan struct{}) {
 	defer ticker.Stop()
 	for {
 		select {
-		case <-stopCh:
+		case <-ctx.Done():
 			return
 		case <-ticker.C:
 			for key, metric := range m.customMetrics {
