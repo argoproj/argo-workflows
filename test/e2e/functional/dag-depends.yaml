@@ -33,10 +33,9 @@ spec:
 
     - name: pass
       container:
-        image: alpine:3.7
-        command: [sh, -c, "exit 0"]
+        image: argoproj/argosay:v2
 
     - name: fail
       container:
-        image: alpine:3.7
-        command: [sh, -c, "exit 1"]
+        image: argoproj/argosay:v2
+        args: ["exit 1"]
