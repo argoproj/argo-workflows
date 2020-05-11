@@ -7,7 +7,6 @@ interface Props<T> {
     title?: string;
     value: T;
     editing: boolean;
-    onEdit?: () => void;
     onSubmit: (value: T) => void;
 }
 
