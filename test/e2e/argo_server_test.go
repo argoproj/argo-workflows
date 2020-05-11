@@ -220,7 +220,7 @@ func (s *ArgoServerSuite) TestPermission() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "argoproj/argosay:v1",
+            "image": "argoproj/argosay:v2",
             "command": ["sh"],
             "args": ["-c", "sleep 1"]
           }
@@ -268,7 +268,7 @@ func (s *ArgoServerSuite) TestPermission() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "argoproj/argosay:v1",
+            "image": "argoproj/argosay:v2",
             "imagePullPolicy": "IfNotPresent",
             "command": ["sh"],
             "args": ["-c", "sleep 1"]
@@ -391,7 +391,7 @@ func (s *ArgoServerSuite) TestLintWorkflow() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "argoproj/argosay:v1",
+            "image": "argoproj/argosay:v2",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -422,7 +422,7 @@ func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "argoproj/argosay:v1",
+            "image": "argoproj/argosay:v2",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -456,7 +456,7 @@ func (s *ArgoServerSuite) TestWorkflowService() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "argoproj/argosay:v1",
+            "image": "argoproj/argosay:v2",
             "imagePullPolicy": "IfNotPresent",
             "command": ["sh"],
             "args": ["-c", "sleep 10"]
@@ -601,7 +601,7 @@ func (s *ArgoServerSuite) TestCronWorkflowService() {
           {
             "name": "whalesay",
             "container": {
-              "image": "argoproj/argosay:v1",
+              "image": "argoproj/argosay:v2",
               "imagePullPolicy": "IfNotPresent"
             }
           }
@@ -639,7 +639,7 @@ spec:
     templates:
       - name: whalesay
         container:
-          image: argoproj/argosay:v1
+          image: argoproj/argosay:v2
           imagePullPolicy: IfNotPresent
           command: ["sh", -c]
           args: ["echo hello"]
@@ -691,7 +691,7 @@ spec:
           {
             "name": "whalesay",
             "container": {
-              "image": "argoproj/argosay:v1",
+              "image": "argoproj/argosay:v2",
               "imagePullPolicy": "IfNotPresent"
             }
           }
@@ -854,7 +854,7 @@ spec:
   templates:
     - name: run-archie
       container:
-        image: argoproj/argosay:v1
+        image: argoproj/argosay:v2
         command: [cowsay, ":) Hello Argo!"]
         imagePullPolicy: IfNotPresent`).
 		When().
@@ -876,7 +876,7 @@ spec:
   templates:
     - name: run-betty
       container:
-        image: argoproj/argosay:v1
+        image: argoproj/argosay:v2
         command: [cowsay, ":) Hello Argo!"]
         imagePullPolicy: IfNotPresent`).
 		When().
@@ -1004,7 +1004,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
           "name": "run-workflow",
           "container": {
             "name": "",
-            "image": "argoproj/argosay:v1",
+            "image": "argoproj/argosay:v2",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -1033,7 +1033,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplateService() {
           "name": "run-workflow",
           "container": {
             "name": "",
-            "image": "argoproj/argosay:v1",
+            "image": "argoproj/argosay:v2",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -1137,7 +1137,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
           "name": "run-workflow",
           "container": {
             "name": "",
-            "image": "argoproj/argosay:v1",
+            "image": "argoproj/argosay:v2",
             "imagePullPolicy": "IfNotPresent"
           }
         }
@@ -1179,7 +1179,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
           {
             "name": "whalesay",
             "container": {
-              "image": "argoproj/argosay:v1",
+              "image": "argoproj/argosay:v2",
               "imagePullPolicy": "IfNotPresent"
             }
           }
@@ -1220,7 +1220,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
           "name": "run-workflow",
           "container": {
             "name": "",
-            "image": "argoproj/argosay:v1",
+            "image": "argoproj/argosay:v2",
             "imagePullPolicy": "IfNotPresent"
           }
         }
