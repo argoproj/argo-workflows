@@ -28,10 +28,8 @@ spec:
 
     - name: generate-message
       container:
-        image: argoproj/argosay:v1
-        command: [sh, -c]
-        args: ["cowsay hello world | tee /tmp/hello_world.txt"]
-        imagePullPolicy: IfNotPresent
+        image: argoproj/argosay:v2
+        args: ["echo", "hello world", "/tmp/hello_world.txt"]
       outputs:
         artifacts:
           - name: hello-art
@@ -43,10 +41,8 @@ spec:
           - name: message
             path: /tmp/message
       container:
-        image: argoproj/argosay:v1
-        imagePullPolicy: IfNotPresent
-        command: [sh, -c]
-        args: ["cat /tmp/message"]
+        image: argoproj/argosay:v2
+        args: ["cat", "/tmp/message"]
 
     - name: print-message-with-volume
       inputs:
@@ -57,7 +53,5 @@ spec:
         volumeMounts:
         - mountPath: /test-volume
           name: test-volume
-        image: argoproj/argosay:v1
-        imagePullPolicy: IfNotPresent
-        command: [sh, -c]
-        args: ["cat /test-volume/message"]
+        image: argoproj/argosay:v2
+        args: ["cat", "/test-volume/message"]
