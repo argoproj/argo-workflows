@@ -27,6 +27,13 @@ func (s *CLISuite) BeforeTest(suiteName, testName string) {
 	_ = os.Unsetenv("ARGO_TOKEN")
 }
 
+func (s *CLISuite) testNeedsOffloading() {
+	skip := s.Persistence.IsEnabled() && os.Getenv("ARGO_SERVER") == ""
+	if skip {
+		s.T().Skip("test needs offloading, but not Argo Server available")
+	}
+}
+
 func (s *CLISuite) TestCompletion() {
 	s.Given().RunCli([]string{"completion", "bash"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
@@ -214,6 +221,7 @@ func (s *CLISuite) TestRoot() {
 		})
 	})
 	s.Run("List", func() {
+		s.testNeedsOffloading()
 		for i := 0; i < 3; i++ {
 			s.Given().
 				Workflow("@smoke/basic-generate-name.yaml").
@@ -232,6 +240,7 @@ func (s *CLISuite) TestRoot() {
 		})
 	})
 	s.Run("Get", func() {
+		s.testNeedsOffloading()
 		s.Given().RunCli([]string{"get", "basic"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
@@ -267,6 +276,7 @@ func (s *CLISuite) TestRoot() {
 }
 
 func (s *CLISuite) TestWorkflowSuspendResume() {
+	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/sleep-3s.yaml").
 		When().
@@ -290,6 +300,7 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 }
 
 func (s *CLISuite) TestNodeSuspendResume() {
+	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/node-suspend.yaml").
 		When().
@@ -441,6 +452,7 @@ func (s *CLISuite) TestWorkflowLint() {
 }
 
 func (s *CLISuite) TestWorkflowRetry() {
+	s.testNeedsOffloading()
 	var retryTime corev1.Time
 
 	s.Given().
@@ -493,6 +505,7 @@ func (s *CLISuite) TestWorkflowTerminate() {
 }
 
 func (s *CLISuite) TestWorkflowWait() {
+	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
@@ -506,6 +519,7 @@ func (s *CLISuite) TestWorkflowWait() {
 }
 
 func (s *CLISuite) TestWorkflowWatch() {
+	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
@@ -557,6 +571,7 @@ func (s *CLISuite) TestTemplate() {
 		})
 	})
 	s.Run("Submittable-Template", func() {
+		s.testNeedsOffloading()
 		s.Given().RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template", "-l", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")

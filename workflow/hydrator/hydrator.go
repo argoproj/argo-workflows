@@ -36,7 +36,7 @@ type hydrator struct {
 }
 
 func (h hydrator) IsHydrated(wf *wfv1.Workflow) bool {
-	return !(wf.Status.CompressedNodes != "" || wf.Status.IsOffloadNodeStatus())
+	return wf.Status.CompressedNodes == "" && !wf.Status.IsOffloadNodeStatus()
 }
 
 func (h hydrator) HydrateWithNodes(wf *wfv1.Workflow, offloadedNodes wfv1.Nodes) {
@@ -47,10 +47,6 @@ func (h hydrator) HydrateWithNodes(wf *wfv1.Workflow, offloadedNodes wfv1.Nodes)
 }
 
 func (h hydrator) Hydrate(wf *wfv1.Workflow) error {
-	if h.IsHydrated(wf) {
-		log.Debug("already hydrated")
-		return nil
-	}
 	err := packer.DecompressWorkflow(wf)
 	if err != nil {
 		return err
