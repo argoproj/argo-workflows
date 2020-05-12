@@ -99,9 +99,10 @@ RUN touch ui/dist/app/index.html
 # fail the build if we are "dirty"
 RUN git diff --exit-code
 RUN make argo-server.crt argo-server.key
-RUN make dist/argo-linux-${IMAGE_ARCH} dist/workflow-controller-linux-${IMAGE_ARCH} dist/argoexec-linux-${IMAGE_ARCH}
+RUN make dist/argo-linux-${IMAGE_ARCH}
+# RUN make dist/argo-linux-${IMAGE_ARCH} dist/workflow-controller-linux-${IMAGE_ARCH} dist/argoexec-linux-${IMAGE_ARCH}
 # double check dirtiness
-RUN git diff --exit-code
+RUN ./dist/argo-linux-${IMAGE_ARCH} | grep clean
 
 ####################################################################################################
 # argoexec

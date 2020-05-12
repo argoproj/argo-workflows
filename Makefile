@@ -71,7 +71,7 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.$(VERSION)
 STATIC_BUILD          ?= true
 CI                    ?= false
 DB                    ?= postgres
-K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
+K3D                   := $(shell if [ `which kubectl` != '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 # which components to start, useful if you want to disable them to debug
 COMPONENTS            := controller,argo-server
 LOG_LEVEL             := debug
