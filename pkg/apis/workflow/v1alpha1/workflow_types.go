@@ -831,10 +831,10 @@ type WorkflowTemplateRef struct {
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,2,opt,name=clusterScope"`
 }
 
-func (wftRef *WorkflowTemplateRef) ToTemplateRef(entrypoint string) *TemplateRef {
+func (ref *WorkflowTemplateRef) ToTemplateRef(entrypoint string) *TemplateRef {
 	return &TemplateRef{
-		Name:         wftRef.Name,
-		ClusterScope: wftRef.ClusterScope,
+		Name:         ref.Name,
+		ClusterScope: ref.ClusterScope,
 		Template:     entrypoint,
 	}
 }
