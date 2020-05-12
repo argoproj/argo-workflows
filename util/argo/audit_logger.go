@@ -7,8 +7,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -26,13 +24,6 @@ type EventInfo struct {
 	Reason string
 }
 
-type ObjectRef struct {
-	Name            string
-	Namespace       string
-	ResourceVersion string
-	UID             types.UID
-}
-
 const (
 	EventReasonWorkflowRunning       = "WorkflowRunning"
 	EventReasonWorkflowSucceeded     = "WorkflowSucceeded"
@@ -43,35 +34,29 @@ const (
 	EventReasonWorkflowNodeError     = "WorkflowNodeError"
 )
 
-func (l *AuditLogger) logEvent(objMeta ObjectRef, gvk schema.GroupVersionKind, info EventInfo, message string, annotations map[string]string) {
+func (l *AuditLogger) logEvent(workflow *wfv1.Workflow, info EventInfo, message string, annotations map[string]string) {
 	logCtx := log.WithFields(log.Fields{
-		"type":   info.Type,
-		"reason": info.Reason,
+		"type":     info.Type,
+		"reason":   info.Reason,
+		"workflow": workflow.Name,
 	})
-	switch gvk.Kind {
-	case "Workflow":
-		logCtx = logCtx.WithField("workflow", objMeta.Name)
-	default:
-		logCtx = logCtx.WithField("name", objMeta.Name)
-	}
 	t := metav1.Time{Time: time.Now()}
 	event := corev1.Event{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        fmt.Sprintf("%v.%x", objMeta.Name, t.UnixNano()),
+			Name:        fmt.Sprintf("%v.%x", workflow.Name, t.UnixNano()),
 			Annotations: annotations,
 		},
 		Source: corev1.EventSource{
 			Component: l.component,
 		},
 		InvolvedObject: corev1.ObjectReference{
-			Kind:            gvk.Kind,
-			Name:            objMeta.Name,
-			Namespace:       objMeta.Namespace,
-			ResourceVersion: objMeta.ResourceVersion,
-			APIVersion:      gvk.Version,
-			UID:             objMeta.UID,
+			Kind:            wfv1.WorkflowSchemaGroupVersionKind.Kind,
+			APIVersion:      wfv1.SchemeGroupVersion.String(),
+			Name:            workflow.Name,
+			Namespace:       workflow.Namespace,
+			ResourceVersion: workflow.ResourceVersion,
+			UID:             workflow.UID,
 		},
-
 		FirstTimestamp: t,
 		LastTimestamp:  t,
 		Count:          1,
@@ -80,7 +65,7 @@ func (l *AuditLogger) logEvent(objMeta ObjectRef, gvk schema.GroupVersionKind, i
 		Reason:         info.Reason,
 	}
 	logCtx.WithField("event", event).Debug()
-	_, err := l.kIf.CoreV1().Events(objMeta.Namespace).Create(&event)
+	_, err := l.kIf.CoreV1().Events(workflow.Namespace).Create(&event)
 	if err != nil {
 		logCtx.Errorf("Unable to create audit event: %v", err)
 		return
@@ -88,13 +73,7 @@ func (l *AuditLogger) logEvent(objMeta ObjectRef, gvk schema.GroupVersionKind, i
 }
 
 func (l *AuditLogger) logWorkflowEvent(workflow *wfv1.Workflow, info EventInfo, message string, annotations map[string]string) {
-	objectMeta := ObjectRef{
-		Name:            workflow.ObjectMeta.Name,
-		Namespace:       workflow.ObjectMeta.Namespace,
-		ResourceVersion: workflow.ObjectMeta.ResourceVersion,
-		UID:             workflow.ObjectMeta.UID,
-	}
-	l.logEvent(objectMeta, wfv1.WorkflowSchemaGroupVersionKind, info, message, annotations)
+	l.logEvent(workflow, info, message, annotations)
 }
 
 func (l *AuditLogger) LogWorkflowEvent(workflow *wfv1.Workflow, info EventInfo, message string) {
