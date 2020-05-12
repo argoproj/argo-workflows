@@ -7,10 +7,6 @@
 Argo Workflows provides an indication of how much resource your workflow has used and saves this 
 information. This is intended to be an **indicative but not accurate** value.
 
-## Configuration
-
-This is turned on only if [the `resourcesDuration` flag is enabled in config](workflow-controller-configmap.yaml).
-
 ## Calculation
 
 The calculation is always an estimate, and is calculated by [../util/resource/duration.go](../util/resource/duration.go) 
