@@ -10,6 +10,9 @@ spec:
     - name: limit
       value: 1000
 
+  podGC:
+    strategy: OnPodCompletion
+
   templates:
   - name: pod-limits
     steps:
@@ -20,6 +23,5 @@ spec:
 
   - name: run-pod
     container:
-      image: "alpine:3.7"
-      command: [sh, -c]
-      args: ["echo sleeping 1s; sleep 1"]
+      image: argoproj/argosay:v2
+      args: [sleep, 1s]
