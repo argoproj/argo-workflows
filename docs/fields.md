@@ -46,6 +46,8 @@ Workflow is the definition of a workflow resource
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
 
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
 - [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
@@ -326,6 +328,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
 
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
@@ -621,6 +625,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
 
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
 - [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
@@ -880,6 +886,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
 
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
@@ -1334,6 +1342,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
 
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
@@ -2179,6 +2189,8 @@ Pod metdata
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
 
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
 - [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
@@ -2380,6 +2392,8 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+
 - [`k8s-jobs.yaml`](../examples/k8s-jobs.yaml)
 
 - [`k8s-orchestration.yaml`](../examples/k8s-orchestration.yaml)
@@ -2543,6 +2557,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
 
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
@@ -3002,6 +3018,8 @@ MetricLabel is a single label for a prometheus metric
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
 
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+
 - [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
@@ -3249,6 +3267,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
 
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
@@ -3706,6 +3726,8 @@ A single application container that you want to run within a pod.
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
 
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
 - [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
@@ -3952,6 +3974,13 @@ Probe describes a health check to be performed against a container to determine 
 ## ContainerPort
 
 ContainerPort represents a network port in a single container.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -4202,6 +4231,13 @@ IntOrString is a type that can hold an int32 or a string.  When used in JSON or 
 
 A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.
 
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+</details>
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4289,6 +4325,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
 
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
@@ -5243,6 +5281,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
 
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
