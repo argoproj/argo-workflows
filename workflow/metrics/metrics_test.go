@@ -50,32 +50,38 @@ func TestMetrics(t *testing.T) {
 	m.WorkflowAdded(v1alpha1.NodeRunning)
 	var metric dto.Metric
 	err := m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
-	assert.Nil(t, err)
-	assert.Equal(t, float64(1), *metric.Gauge.Value)
+	if assert.NoError(t, err) {
+		assert.Equal(t, float64(1), *metric.Gauge.Value)
+	}
 
 	m.WorkflowUpdated(v1alpha1.NodeRunning, v1alpha1.NodeSucceeded)
 	err = m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
-	assert.Nil(t, err)
-	assert.Equal(t, float64(0), *metric.Gauge.Value)
+	if assert.NoError(t, err) {
+		assert.Equal(t, float64(0), *metric.Gauge.Value)
+	}
 	err = m.workflowsByPhase[v1alpha1.NodeSucceeded].Write(&metric)
-	assert.Nil(t, err)
-	assert.Equal(t, float64(1), *metric.Gauge.Value)
+	if assert.NoError(t, err) {
+		assert.Equal(t, float64(1), *metric.Gauge.Value)
+	}
 
 	m.WorkflowDeleted(v1alpha1.NodeSucceeded)
 	err = m.workflowsByPhase[v1alpha1.NodeRunning].Write(&metric)
-	assert.Nil(t, err)
-	assert.Equal(t, float64(0), *metric.Gauge.Value)
+	if assert.NoError(t, err) {
+		assert.Equal(t, float64(0), *metric.Gauge.Value)
+	}
 
 	m.OperationCompleted(0.05)
 	err = m.operationDurations.Write(&metric)
-	assert.Nil(t, err)
-	assert.Equal(t, uint64(1), *metric.Histogram.Bucket[0].CumulativeCount)
+	if assert.NoError(t, err) {
+		assert.Equal(t, uint64(1), *metric.Histogram.Bucket[0].CumulativeCount)
+	}
 
 	assert.Nil(t, m.GetCustomMetric("does-not-exist"))
 
 	err = m.UpsertCustomMetric("metric", newCounter("test", "test", nil))
-	assert.NoError(t, err)
-	assert.NotNil(t, m.GetCustomMetric("metric"))
+	if assert.NoError(t, err) {
+		assert.NotNil(t, m.GetCustomMetric("metric"))
+	}
 
 	badMetric, err := constructOrUpdateGaugeMetric(nil, &v1alpha1.Prometheus{
 		Name:   "count",
@@ -85,9 +91,10 @@ func TestMetrics(t *testing.T) {
 			Value: "1",
 		},
 	})
-	assert.NoError(t, err)
-	err = m.UpsertCustomMetric("asdf", badMetric)
-	assert.Error(t, err)
+	if assert.NoError(t, err) {
+		err = m.UpsertCustomMetric("asdf", badMetric)
+		assert.Error(t, err)
+	}
 }
 
 func TestErrors(t *testing.T) {
@@ -106,8 +113,9 @@ func TestMetricGC(t *testing.T) {
 	assert.Len(t, m.customMetrics, 0)
 
 	err := m.UpsertCustomMetric("metric", newCounter("test", "test", nil))
-	assert.NoError(t, err)
-	assert.Len(t, m.customMetrics, 1)
+	if assert.NoError(t, err) {
+		assert.Len(t, m.customMetrics, 1)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
