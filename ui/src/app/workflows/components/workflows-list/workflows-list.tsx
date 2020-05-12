@@ -120,6 +120,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     if (!wfValue || !wfValue.metadata) {
                                         return {valid: false, message: 'Invalid Workflow: metadata cannot be blank'};
                                     }
+                                    wfValue.metadata.namespace = wfValue.metadata.namespace || this.state.namespace;
                                     if (!wfValue.metadata.namespace) {
                                         return {valid: false, message: 'Invalid Workflow: metadata.namespace cannot be blank'};
                                     }
