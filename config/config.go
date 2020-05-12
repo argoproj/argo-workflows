@@ -56,9 +56,6 @@ type Config struct {
 	// MetricsConfig specifies configuration for metrics emission
 	MetricsConfig PrometheusConfig `json:"metricsConfig,omitempty"`
 
-	// FeatureFlags for general/experimental features
-	FeatureFlags FeatureFlags `json:"featureFlags,omitempty"`
-
 	// TelemetryConfig specifies configuration for telemetry emission
 	TelemetryConfig PrometheusConfig `json:"telemetryConfig,omitempty"`
 
@@ -85,12 +82,6 @@ type Config struct {
 type PodSpecLogStrategy struct {
 	FailedPod bool `json:"failedPod,omitempty"`
 	AllPods   bool `json:"allPods,omitempty"`
-}
-
-// More general feature flags.
-type FeatureFlags struct {
-	// ResourcesDuration.
-	ResourcesDuration bool `json:"resourcesDuration,omitempty"`
 }
 
 // KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,
