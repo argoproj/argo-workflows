@@ -96,25 +96,21 @@ COPY --from=argo-ui dist/app ui/dist/app
 # stop make from trying to re-build this without yarn installed
 RUN touch ui/dist/node_modules.marker
 RUN touch ui/dist/app/index.html
-# fail the build if we are "dirty"
+# fail the build if we are "dirty" prior to build
 RUN git diff --exit-code
-RUN make argo-server.crt argo-server.key
-# build order in important - we want to build argoexec last because we use it to check for "dirty",
-# because it is the only binary that does not need a Kubernetes cluster to work
-RUN make dist/workflow-controller-linux-${IMAGE_ARCH}
+# order is important, must build the CLI first, as building can make the build dirty
+RUN make \
+    argo-server.crt \
+    argo-server.key \
+    dist/argo-linux-${IMAGE_ARCH} \
+    dist/workflow-controller-linux-${IMAGE_ARCH} \
+    dist/argoexec-linux-${IMAGE_ARCH}
+# double check "dirty"
 RUN git diff --exit-code
-RUN git status --porcelain
-RUN ["sh", "-c", "./dist/workflow-controller-linux-${IMAGE_ARCH} version"]
-
-RUN make dist/argo-linux-${IMAGE_ARCH}
-RUN git diff --exit-code
-RUN git status --porcelain
-RUN ["sh", "-c", "./dist/argo-linux-${IMAGE_ARCH} version"]
-
-RUN make dist/argoexec-linux-${IMAGE_ARCH}
-RUN git diff --exit-code
-RUN git status --porcelain
-RUN ["sh", "-c", "./dist/argoexec-linux-${IMAGE_ARCH} version"]
+# triple check "dirty"
+RUN ["sh", "-c", "./dist/workflow-controller-linux-${IMAGE_ARCH} version | grep clean"]
+# we can't check the argo cli, it must have a Kubernetes cluster to work
+RUN ["sh", "-c", "./dist/argoexec-linux-${IMAGE_ARCH} version | grep clean"]
 
 ####################################################################################################
 # argoexec
