@@ -1,4 +1,5 @@
-SHELL=/bin/bash -o pipefail
+# must be "sh" for building in Docker
+SHELL=/bin/sh -eu
 
 OUTPUT_IMAGE_OS ?= linux
 OUTPUT_IMAGE_ARCH ?= amd64

@@ -99,13 +99,13 @@ RUN touch ui/dist/app/index.html
 # fail the build if we are "dirty"
 RUN git diff --exit-code
 RUN make argo-server.crt argo-server.key
-RUN make dist/argoexec-linux-${IMAGE_ARCH} status
-RUN ["sh", "-c", "./dist/argoexec-linux-${IMAGE_ARCH} version"]
-RUN make dist/workflow-controller-linux-${IMAGE_ARCH} status
-RUN ["sh", "-c", "./dist/argoexec-linux-${IMAGE_ARCH} version"]
+# build order in important - we want to build argoexec last because we use it to check for "dirty",
+# because it is the only binary that does not need a Kubernetes cluster to work
+RUN make dist/workflow-controller-linux-${IMAGE_ARCH}
 RUN make dist/argo-linux-${IMAGE_ARCH} status
+RUN make dist/argoexec-linux-${IMAGE_ARCH} status
 # double check dirtiness
-RUN ["sh", "-c", "./dist/argoexec-linux-${IMAGE_ARCH} version"]
+RUN ["sh", "-c", "./dist/argoexec-linux-${IMAGE_ARCH} version | grep clean"]
 
 ####################################################################################################
 # argoexec
