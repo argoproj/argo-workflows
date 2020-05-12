@@ -39,9 +39,9 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                         <form onSubmit={formikApi.handleSubmit}>
                             <div className='white-box editable-panel'>
                                 <h4>Submit New {this.props.resourceName}</h4>
-                                <button type='submit' className='argo-button argo-button--base' disabled={formikApi.isSubmitting || this.state.invalid}>
-                                    Submit
-                                </button>
+                                <button type='button' className='argo-button argo-button--base' id='uploadWf' onClick={() => document.getElementById('file').click()}>
+                                    <i className='fa fa-upload' /> Upload File
+                                </button>{' '}
                                 {this.state.error ? (
                                     <p>
                                         <i className='fa fa-exclamation-triangle status-icon--failed' />
@@ -52,7 +52,6 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                 ) : (
                                     <p />
                                 )}
-
                                 {/* Workflow-level parameters*/}
                                 {this.props.resourceName === 'Workflow' &&
                                     formikApi.values.resource &&
@@ -60,10 +59,6 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                     formikApi.values.resource.spec.arguments &&
                                     formikApi.values.resource.spec.arguments.parameters &&
                                     this.renderParameterFields('Workflow Parameters', 'resource.spec.arguments', formikApi.values.resource.spec.arguments.parameters, formikApi)}
-
-                                <button type='button' className='argo-button argo-button--sm' id='uploadWf' onClick={() => document.getElementById('file').click()}>
-                                    Upload {this.props.resourceName}{' '}
-                                </button>
                                 <input
                                     type='file'
                                     style={{display: 'none'}}
@@ -72,10 +67,10 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                     onChange={e => {
                                         try {
                                             this.readFile(e.target.files, (newResource: string) => {
-                                                const resource: T = jsYaml.load(e.currentTarget.value);
+                                                const resource: T = jsYaml.load(newResource);
                                                 this.validate(resource);
                                                 formikApi.setFieldValue('resource', resource);
-                                                formikApi.setFieldValue('resourceString', newResource);
+                                                formikApi.setFieldValue('resourceString', jsYaml.dump(resource));
                                             });
                                         } catch (e) {
                                             this.setState({
@@ -114,6 +109,9 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                     onFocus={e => (e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px')}
                                     autoFocus={true}
                                 />
+                                <button type='submit' className='argo-button argo-button--base' disabled={formikApi.isSubmitting || this.state.invalid}>
+                                    <i className='fa fa-plus' /> Submit New Workflow
+                                </button>
                             </div>
                         </form>
                     )}

@@ -8,6 +8,12 @@ const randomSillyName = () => {
 };
 
 // TODO - remove "name: 'main'" - we should not have it in these examples
+const container = {
+    name: 'main',
+    image: 'argoproj/argosay:v2',
+    command: ['/argosay'],
+    args: ['echo', 'hello argo!']
+};
 
 export const exampleWorkflow = (namespace: string): Workflow => ({
     metadata: {
@@ -15,16 +21,11 @@ export const exampleWorkflow = (namespace: string): Workflow => ({
         namespace: namespace || 'default'
     },
     spec: {
-        entrypoint: 'whalesay',
+        entrypoint: 'argosay',
         templates: [
             {
-                name: 'whalesay',
-                container: {
-                    name: 'main',
-                    image: 'docker/whalesay:latest',
-                    command: ['cowsay'],
-                    args: ['hello world']
-                }
+                name: 'argosay',
+                container
             }
         ]
     }
@@ -36,12 +37,12 @@ export const exampleClusterWorkflowTemplate = (): ClusterWorkflowTemplate => ({
     spec: {
         templates: [
             {
-                name: 'whalesay',
+                name: 'argosay',
                 container: {
                     name: 'main',
-                    image: 'docker/whalesay:latest',
-                    command: ['cowsay'],
-                    args: ['hello world']
+                    image: 'argoproj/argosay:v2',
+                    command: ['argosay'],
+                    args: ['echo', 'hello world']
                 }
             }
         ]
@@ -56,13 +57,8 @@ export const exampleWorkflowTemplate = (namespace: string): WorkflowTemplate => 
     spec: {
         templates: [
             {
-                name: 'whalesay',
-                container: {
-                    name: 'main',
-                    image: 'docker/whalesay:latest',
-                    command: ['cowsay'],
-                    args: ['hello world']
-                }
+                name: 'argosay',
+                container
             }
         ]
     }
@@ -76,16 +72,11 @@ export const exampleCronWorkflow = (namespace: string): CronWorkflow => ({
     spec: {
         schedule: '* * * * *',
         workflowSpec: {
-            entrypoint: 'whalesay',
+            entrypoint: 'argosay',
             templates: [
                 {
-                    name: 'whalesay',
-                    container: {
-                        name: 'main',
-                        image: 'docker/whalesay:latest',
-                        command: ['cowsay'],
-                        args: ['hello world']
-                    }
+                    name: 'argosay',
+                    container
                 }
             ]
         }
