@@ -480,7 +480,7 @@ func SplitWorkflowYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
 			if wf.Name != "" {
 				name = fmt.Sprintf("%s '%s'", name, wf.Name)
 			}
-			log.Warnf("%s is not of kind Workflow. Ignoring...",name)
+			log.Warnf("%s is not of kind Workflow. Ignoring...", name)
 			// If we get here, it was a k8s manifest which was not of type 'Workflow'
 			// We ignore these since we only care about Workflow manifests.
 			continue
