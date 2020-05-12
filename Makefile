@@ -160,8 +160,9 @@ else
 endif
 
 $(HOME)/go/bin/staticfiles:
-	# Install the "staticfiles" tool
+	$(call backup_go_mod)
 	go get bou.ke/staticfiles
+	$(call restore_go_mod)
 
 server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
