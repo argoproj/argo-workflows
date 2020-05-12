@@ -86,6 +86,16 @@ var (
 	placeholderGenerator = common.NewPlaceholderGenerator()
 )
 
+// Allowed WfSpec fields if workflow referred WorkflowTemplate reference.
+var wfTmplRefAllowedWfSpecValidFields = map[string]bool{
+"Entrypoint":            true,
+"Suspend":               true,
+"ActiveDeadlineSeconds": true,
+"Priority":              true,
+"Arguments":             true,
+"WorkflowTemplateRef":   true,
+}
+
 type FakeArguments struct{}
 
 func (args *FakeArguments) GetParameterByName(name string) *wfv1.Parameter {
@@ -113,7 +123,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	hasWorkflowTemplateRef := wf.Spec.WorkflowTemplateRef != nil
 
 	if hasWorkflowTemplateRef {
-		err := ValidateFieldsWithWFTRef(wf.Spec)
+		err := ValidateWorkflowSpecFields(wf.Spec, wfTmplRefAllowedWfSpecValidFields)
 		if err != nil {
 			return nil, err
 		}
@@ -254,22 +264,14 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	return wfConditions, nil
 }
 
-func ValidateFieldsWithWFTRef(v interface{}) error {
+func ValidateWorkflowSpecFields(v interface{}, validFieldMap map[string]bool) error {
 	val := reflect.ValueOf(v)
-	// Acceptable fields if workflow referred WorkflowTemplate reference.
-	validFields := map[string]bool{
-		"Entrypoint":            true,
-		"Suspend":               true,
-		"ActiveDeadlineSeconds": true,
-		"Priority":              true,
-		"Arguments":             true,
-		"WorkflowTemplateRef":   true,
-	}
+
 	for i := 0; i < val.NumField(); i++ {
 		// Lookup the validate tag
 		field := val.Type().Field(i)
 		fieldVal := val.Field(i).IsZero()
-		_, ok := validFields[field.Name]
+		_, ok := validFieldMap[field.Name]
 		if !ok && !fieldVal {
 			return errors.Errorf(errors.CodeBadRequest, "%s is invalid field in spec if workflow referred WorkflowTemplate reference", field.Name)
 		}
