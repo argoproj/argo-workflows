@@ -35,14 +35,7 @@ VERSION := latest
 endif
 
 ifneq ($(findstring release,$(GIT_BRANCH)),)
-# this will be something like "v2.5" or "v3.7"
-MAJOR_MINOR := v$(word 2,$(subst -, ,$(GIT_BRANCH)))
-# if GIT_TAG is on HEAD, then this will be the same
-GIT_LATEST_TAG := $(shell git tag --merged | tail -n1)
-# only use the latest tag if it matches the correct major/minor version
-ifneq ($(findstring $(MAJOR_MINOR),$(GIT_LATEST_TAG)),)
-VERSION := $(GIT_LATEST_TAG)
-endif
+VERSION := $(shell git git tag --points-at=HEAD|grep ^v|head -n1)
 endif
 
 # MANIFESTS_VERSION is the version to be used for files in manifests and should always be latests unles we are releasing
