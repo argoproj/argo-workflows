@@ -75,7 +75,7 @@ FROM node:14.0.0 as argo-ui
 
 ADD ["ui", "."]
 
-RUN yarn install --frozen-lockfile --ignore-optional --non-interactive
+RUN yarn install
 RUN yarn build
 
 ####################################################################################################
@@ -91,7 +91,6 @@ WORKDIR /go/src/github.com/argoproj/argo
 COPY . .
 # check we can use Git
 RUN git rev-parse HEAD
-COPY --from=argo-ui node_modules ui/node_modules
 RUN mkdir -p ui/dist
 COPY --from=argo-ui dist/app ui/dist/app
 # stop make from trying to re-build this without yarn installed
@@ -100,11 +99,9 @@ RUN touch ui/dist/app/index.html
 # fail the build if we are "dirty"
 RUN git diff --exit-code
 RUN make argo-server.crt argo-server.key
-RUN if [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "amd64" ]; then \
-	make dist/argo-linux-amd64 dist/workflow-controller-linux-amd64 dist/argoexec-linux-amd64; \
-    elif [ "${IMAGE_OS}" = "linux" -a "${IMAGE_ARCH}" = "arm64" ]; then \
-	make dist/argo-linux-arm64 dist/workflow-controller-linux-arm64 dist/argoexec-linux-arm64; \
-    fi 
+RUN make dist/argo-linux-${IMAGE_ARCH} dist/workflow-controller-linux-${IMAGE_ARCH} dist/argoexec-linux-${IMAGE_ARCH}
+# double check dirtiness
+RUN git diff --exit-code
 
 ####################################################################################################
 # argoexec
