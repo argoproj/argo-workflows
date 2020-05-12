@@ -1,5 +1,4 @@
-# must be "sh" for building in Docker
-SHELL=/bin/sh -eu
+SHELL=/bin/bash -o pipefail
 
 OUTPUT_IMAGE_OS ?= linux
 OUTPUT_IMAGE_ARCH ?= amd64
@@ -36,7 +35,7 @@ VERSION := latest
 endif
 
 ifneq ($(findstring release,$(GIT_BRANCH)),)
-VERSION := $(shell git git tag --points-at=HEAD|grep ^v|head -n1)
+VERSION := $(shell git tag --points-at=HEAD|grep ^v|head -n1)
 endif
 
 # MANIFESTS_VERSION is the version to be used for files in manifests and should always be latests unles we are releasing
