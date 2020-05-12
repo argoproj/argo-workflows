@@ -88,12 +88,12 @@ var (
 
 // Allowed WfSpec fields if workflow referred WorkflowTemplate reference.
 var wfTmplRefAllowedWfSpecValidFields = map[string]bool{
-"Entrypoint":            true,
-"Suspend":               true,
-"ActiveDeadlineSeconds": true,
-"Priority":              true,
-"Arguments":             true,
-"WorkflowTemplateRef":   true,
+	"Entrypoint":            true,
+	"Suspend":               true,
+	"ActiveDeadlineSeconds": true,
+	"Priority":              true,
+	"Arguments":             true,
+	"WorkflowTemplateRef":   true,
 }
 
 type FakeArguments struct{}
