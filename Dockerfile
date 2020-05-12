@@ -102,7 +102,7 @@ RUN make argo-server.crt argo-server.key
 RUN make dist/argo-linux-${IMAGE_ARCH}
 # RUN make dist/argo-linux-${IMAGE_ARCH} dist/workflow-controller-linux-${IMAGE_ARCH} dist/argoexec-linux-${IMAGE_ARCH}
 # double check dirtiness
-RUN ./dist/argo-linux-${IMAGE_ARCH} | grep clean
+RUN [sh, -c, './dist/argo-linux-${IMAGE_ARCH} | grep clean']
 
 ####################################################################################################
 # argoexec
