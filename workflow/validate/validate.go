@@ -387,6 +387,10 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 		localParams[common.LocalVarPodName] = placeholderGenerator.NextPlaceholder()
 		scope[common.LocalVarPodName] = placeholderGenerator.NextPlaceholder()
 	}
+	if tmpl.RetryStrategy != nil {
+		localParams[common.LocalVarRetries] = placeholderGenerator.NextPlaceholder()
+		scope[common.LocalVarRetries] = placeholderGenerator.NextPlaceholder()
+	}
 	if tmpl.IsLeaf() {
 		for _, art := range tmpl.Outputs.Artifacts {
 			if art.Path != "" {

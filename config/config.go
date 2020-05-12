@@ -56,9 +56,6 @@ type Config struct {
 	// MetricsConfig specifies configuration for metrics emission
 	MetricsConfig PrometheusConfig `json:"metricsConfig,omitempty"`
 
-	// FeatureFlags for general/experimental features
-	FeatureFlags FeatureFlags `json:"featureFlags,omitempty"`
-
 	// TelemetryConfig specifies configuration for telemetry emission
 	TelemetryConfig PrometheusConfig `json:"telemetryConfig,omitempty"`
 
@@ -85,12 +82,6 @@ type Config struct {
 type PodSpecLogStrategy struct {
 	FailedPod bool `json:"failedPod,omitempty"`
 	AllPods   bool `json:"allPods,omitempty"`
-}
-
-// More general feature flags.
-type FeatureFlags struct {
-	// ResourcesDuration.
-	ResourcesDuration bool `json:"resourcesDuration,omitempty"`
 }
 
 // KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,
@@ -135,7 +126,7 @@ type PersistConfig struct {
 	// in days
 	ArchiveTTL     TTL               `json:"archiveTTL,omitempty"`
 	ClusterName    string            `json:"clusterName,omitempty"`
-	ConnectionPool *ConnectionPool   `json:"connectionPool"`
+	ConnectionPool *ConnectionPool   `json:"connectionPool,omitempty"`
 	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
 	MySQL          *MySQLConfig      `json:"mysql,omitempty"`
 }
@@ -148,16 +139,16 @@ func (c PersistConfig) GetClusterName() string {
 }
 
 type ConnectionPool struct {
-	MaxIdleConns int `json:"maxIdleConns"`
-	MaxOpenConns int `json:"maxOpenConns"`
+	MaxIdleConns int `json:"maxIdleConns,omitempty"`
+	MaxOpenConns int `json:"maxOpenConns,omitempty"`
 }
 type PostgreSQLConfig struct {
 	Host           string                  `json:"host"`
 	Port           string                  `json:"port"`
 	Database       string                  `json:"database"`
-	TableName      string                  `json:"tableName"`
-	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret"`
-	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret"`
+	TableName      string                  `json:"tableName,omitempty"`
+	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
+	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
 	SSL            bool                    `json:"ssl,omitempty"`
 	SSLMode        string                  `json:"sslMode,omitempty"`
 }
@@ -166,10 +157,10 @@ type MySQLConfig struct {
 	Host           string                  `json:"host"`
 	Port           string                  `json:"port"`
 	Database       string                  `json:"database"`
-	TableName      string                  `json:"tableName"`
-	Options        map[string]string       `json:"options"`
-	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret"`
-	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret"`
+	TableName      string                  `json:"tableName,omitempty"`
+	Options        map[string]string       `json:"options,omitempty"`
+	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret,omitempty"`
+	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
 }
 
 // S3ArtifactRepository defines the controller configuration for an S3 artifact repository
@@ -220,9 +211,9 @@ type HDFSArtifactRepository struct {
 
 // PrometheusConfig defines a config for a metrics server
 type PrometheusConfig struct {
-	Enabled       bool   `json:"enabled,omitempty"`
-	DisableLegacy bool   `json:"disableLegacy"`
-	MetricsTTL    TTL    `json:"metricsTTL"`
+	Enabled       bool   `json:"enabled"`
+	DisableLegacy bool   `json:"disableLegacy,omitempty"`
+	MetricsTTL    TTL    `json:"metricsTTL,omitempty"`
 	Path          string `json:"path,omitempty"`
 	Port          string `json:"port,omitempty"`
 }

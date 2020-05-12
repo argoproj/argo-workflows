@@ -157,7 +157,7 @@ endif
 	@mkdir -p ui/dist
 	touch ui/dist/node_modules.marker
 
-ui/dist/app/index.html: ui/dist/node_modules.marker ui/src
+ui/dist/app/index.html: ui/dist/node_modules.marker $(UI_FILES)
 	# Build UI
 	@mkdir -p ui/dist/app
 ifeq ($(CI),false)
@@ -166,11 +166,11 @@ else
 	echo "Built without static files" > ui/dist/app/index.html
 endif
 
-$(HOME)/go/bin/staticfiles:
+$(GOPATH)/bin/staticfiles:
 	# Install the "staticfiles" tool
 	go get bou.ke/staticfiles
 
-server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/app/index.html
+server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
 	staticfiles -o server/static/files.go ui/dist/app
 
@@ -195,7 +195,7 @@ argo-server.key:
 .PHONY: cli-image
 cli-image: $(CLI_IMAGE_FILE)
 
-$(CLI_IMAGE_FILE):
+$(CLI_IMAGE_FILE): $(CLI_PKGS)
 	$(call docker_build,argocli,argo,$(CLI_IMAGE_FILE))
 
 .PHONY: clis
@@ -217,7 +217,7 @@ dist/workflow-controller-%: $(CONTROLLER_PKGS)
 .PHONY: controller-image
 controller-image: $(CONTROLLER_IMAGE_FILE)
 
-$(CONTROLLER_IMAGE_FILE):
+$(CONTROLLER_IMAGE_FILE): $(CONTROLLER_PKGS)
 	$(call docker_build,workflow-controller,workflow-controller,$(CONTROLLER_IMAGE_FILE))
 
 # argoexec
@@ -233,18 +233,21 @@ dist/argoexec-%: $(ARGOEXEC_PKGS)
 executor-image: $(EXECUTOR_IMAGE_FILE)
 
 	# Create executor image
-$(EXECUTOR_IMAGE_FILE):
+$(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 	$(call docker_build,argoexec,argoexec,$(EXECUTOR_IMAGE_FILE))
 
 # generation
 
-$(HOME)/go/bin/mockery:
-	$(call backup_go_mod)
-	go get github.com/vektra/mockery/.../
-	$(call restore_go_mod)
+$(GOPATH)/bin/mockery:
+	./hack/recurl.sh dist/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v1.1.1/mockery_1.1.1_$(shell uname -s)_$(shell uname -m).tar.gz
+	tar zxvf dist/mockery.tar.gz mockery
+	chmod +x mockery
+	mkdir -p $(GOPATH)/bin
+	mv mockery $(GOPATH)/bin/mockery
+	mockery -version
 
 .PHONY: mocks
-mocks: $(HOME)/go/bin/mockery
+mocks: $(GOPATH)/bin/mockery
 	./hack/update-mocks.sh $(MOCK_FILES)
 
 .PHONY: codegen
@@ -277,11 +280,11 @@ manifests:
 
 # lint/test/etc
 
-$(HOME)/go/bin/golangci-lint:
+$(GOPATH)/bin/golangci-lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.23.8
 
 .PHONY: lint
-lint: server/static/files.go $(HOME)/go/bin/golangci-lint
+lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
@@ -300,13 +303,13 @@ test: server/static/files.go
 test-results/test-report.json: test-results/test.out
 	cat test-results/test.out | go tool test2json > test-results/test-report.json
 
-$(HOME)/go/bin/go-junit-report:
+$(GOPATH)/bin/go-junit-report:
 	$(call backup_go_mod)
 	go get github.com/jstemmer/go-junit-report
 	$(call restore_go_mod)
 
 # note that we do not have a dependency on test.out, we assume you did correctly create this
-test-results/junit.xml: $(HOME)/go/bin/go-junit-report test-results/test.out
+test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
 	cat test-results/test.out | go-junit-report > test-results/junit.xml
 
 $(VERSION_FILE):
@@ -344,9 +347,21 @@ endif
 pull-build-images:
 	./hack/pull-build-images.sh
 
+.PHONY: argosay
+argosay: test/e2e/images/argosay/v2/argosay
+	cd test/e2e/images/argosay/v2 && docker build . -t argoproj/argosay:v2
+ifeq ($(K3D),true)
+	k3d import-images argoproj/argosay:v2
+endif
+	docker push argoproj/argosay:v2
+
+test/e2e/images/argosay/v2/argosay: $(shell find test/e2e/images/argosay/v2/main -type f)
+	cd test/e2e/images/argosay/v2 && GOOS=linux CGO_ENABLED=0 go build -ldflags '-w -s' -o argosay ./main
+
 .PHONY: test-images
 test-images:
 	docker pull argoproj/argosay:v1
+	docker pull argoproj/argosay:v2
 	docker pull python:alpine3.6
 
 .PHONY: stop
@@ -448,7 +463,7 @@ clean:
 
 # swagger
 
-$(HOME)/go/bin/swagger:
+$(GOPATH)/bin/swagger:
 	$(call backup_go_mod)
 	go get github.com/go-swagger/go-swagger/cmd/swagger@v0.23.0
 	$(call restore_go_mod)
