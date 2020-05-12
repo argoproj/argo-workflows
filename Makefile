@@ -135,6 +135,9 @@ build: status clis executor-image controller-image manifests/install.yaml manife
 .PHONY: status
 status:
 	# GIT_TAG=$(GIT_TAG), GIT_BRANCH=$(GIT_BRANCH), GIT_TREE_STATE=$(GIT_TREE_STATE), MANIFESTS_VERSION=$(MANIFESTS_VERSION), VERSION=$(VERSION), DEV_IMAGE=$(DEV_IMAGE), K3D=$(K3D)
+ifeq ($(findstring release,$(GIT_BRANCH)),release)
+	git diff
+else
 
 # cli
 
