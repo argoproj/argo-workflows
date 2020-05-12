@@ -1307,7 +1307,7 @@ type S3Artifact struct {
 }
 
 func (s *S3Artifact) HasLocation() bool {
-	return s != nil && s.Endpoint != "" && s.Bucket != ""
+	return s != nil && s.Endpoint != "" && s.Bucket != "" && s.Key != ""
 }
 
 func (s *S3Artifact) Merge(b *S3Artifact) {
