@@ -38,7 +38,7 @@ Set a resource quota for the namespace you install Argo in to limit its total us
 apiVersion: v1
 kind: ResourceQuota
 metadata:
-  name: resource-quota
+  name: argo
 spec:
   hard:
     pods: "4"
@@ -54,7 +54,7 @@ Use limit range to set default container requests and limits, e.g.
 apiVersion: v1
 kind: LimitRange
 metadata:
-  name: limit-range
+  name: argo
 spec:
   limits:
     - type: Container
