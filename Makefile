@@ -166,11 +166,11 @@ else
 	echo "Built without static files" > ui/dist/app/index.html
 endif
 
-$(HOME)/go/bin/staticfiles:
+$(GOPATH)/bin/staticfiles:
 	# Install the "staticfiles" tool
 	go get bou.ke/staticfiles
 
-server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/app/index.html
+server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
 	staticfiles -o server/static/files.go ui/dist/app
 
@@ -238,16 +238,16 @@ $(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 
 # generation
 
-$(HOME)/go/bin/mockery:
+$(GOPATH)/bin/mockery:
 	./hack/recurl.sh dist/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v1.1.1/mockery_1.1.1_$(shell uname -s)_$(shell uname -m).tar.gz
 	tar zxvf dist/mockery.tar.gz mockery
 	chmod +x mockery
-	mkdir -p $(HOME)/go/bin
-	mv mockery $(HOME)/go/bin/mockery
+	mkdir -p $(GOPATH)/bin
+	mv mockery $(GOPATH)/bin/mockery
 	mockery -version
 
 .PHONY: mocks
-mocks: $(HOME)/go/bin/mockery
+mocks: $(GOPATH)/bin/mockery
 	./hack/update-mocks.sh $(MOCK_FILES)
 
 .PHONY: codegen
@@ -280,11 +280,11 @@ manifests:
 
 # lint/test/etc
 
-$(HOME)/go/bin/golangci-lint:
+$(GOPATH)/bin/golangci-lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.23.8
 
 .PHONY: lint
-lint: server/static/files.go $(HOME)/go/bin/golangci-lint
+lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	# Tidy Go modules
 	go mod tidy
 	# Build to find errors that will prevent linting.
@@ -305,13 +305,13 @@ test: server/static/files.go
 test-results/test-report.json: test-results/test.out
 	cat test-results/test.out | go tool test2json > test-results/test-report.json
 
-$(HOME)/go/bin/go-junit-report:
+$(GOPATH)/bin/go-junit-report:
 	$(call backup_go_mod)
 	go get github.com/jstemmer/go-junit-report
 	$(call restore_go_mod)
 
 # note that we do not have a dependency on test.out, we assume you did correctly create this
-test-results/junit.xml: $(HOME)/go/bin/go-junit-report test-results/test.out
+test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
 	cat test-results/test.out | go-junit-report > test-results/junit.xml
 
 $(VERSION_FILE):
@@ -465,7 +465,7 @@ clean:
 
 # swagger
 
-$(HOME)/go/bin/swagger:
+$(GOPATH)/bin/swagger:
 	$(call backup_go_mod)
 	go get github.com/go-swagger/go-swagger/cmd/swagger@v0.23.0
 	$(call restore_go_mod)
@@ -486,7 +486,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go:
 pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	go run ./hack secondaryswaggergen
 
-dist/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
+dist/swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
 	swagger mixin -c 680 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > dist/swagger.json
 
 dist/kubernetes.swagger.json:
