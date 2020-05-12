@@ -934,8 +934,8 @@ type WorkflowStatus struct {
 	// ResourcesDuration is the total for the workflow
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
 
-	// StoredWorkflowTemplateSpec stores the top level WorkflowTemplate spec
-	StoredWorkflowTemplateSpec *WorkflowSpec `json:"storedWorkflowTemplateSpec,omitempty" protobuf:"bytes,14,opt,name=storedWorkflowTemplateSpec"`
+	// StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.
+	StoredWorkflowSpec *WorkflowSpec `json:"storedWorkflowTemplateSpec,omitempty" protobuf:"bytes,14,opt,name=storedWorkflowTemplateSpec"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {

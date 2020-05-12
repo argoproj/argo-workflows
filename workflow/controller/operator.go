@@ -2684,8 +2684,8 @@ func (woc *wfOperationCtx) setWorkflowSpecAndEntrypoint() error {
 		woc.wfSpec = woc.wf.Spec.DeepCopy()
 		return nil
 	}
-	if woc.wf.Status.StoredWorkflowTemplateSpec != nil {
-		woc.wfSpec = woc.wf.Status.StoredWorkflowTemplateSpec.DeepCopy()
+	if woc.wf.Status.StoredWorkflowSpec != nil {
+		woc.wfSpec = woc.wf.Status.StoredWorkflowSpec.DeepCopy()
 	} else {
 		wftSpec, err := woc.getTopLevelWorkflowTemplate()
 		if err != nil {
@@ -2700,7 +2700,7 @@ func (woc *wfOperationCtx) setWorkflowSpecAndEntrypoint() error {
 	if len(woc.wfSpec.Arguments.Parameters) > 0 {
 		woc.arguments.Parameters = util.MergeParameters(woc.arguments.Parameters, woc.wfSpec.Arguments.Parameters)
 	}
-	woc.wf.Status.StoredWorkflowTemplateSpec = woc.wfSpec
+	woc.wf.Status.StoredWorkflowSpec = woc.wfSpec
 	woc.updated = true
 	return nil
 }
