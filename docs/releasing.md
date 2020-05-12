@@ -18,6 +18,14 @@ Publish the images and local Git changes (disabling K3D as this is faster and mo
 
     make publish-release K3D=false VERSION=v2.7.2
 
+* [ ] Check the images were pushed successfully.
+
+```
+docker pull argoproj/workflow-controller:v2.7.2
+docker pull argoproj/argoexec:v2.7.2
+docker pull argoproj/argocli:v2.7.2
+```
+
 * [ ] Check the correct versions are printed:
 
 ```
