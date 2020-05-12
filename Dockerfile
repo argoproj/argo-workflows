@@ -103,9 +103,16 @@ RUN make argo-server.crt argo-server.key
 # because it is the only binary that does not need a Kubernetes cluster to work
 RUN make dist/workflow-controller-linux-${IMAGE_ARCH}
 RUN ["sh", "-c", "./dist/workflow-controller-linux-${IMAGE_ARCH} version"]
+RUN git diff --exit-code
+RUN git status --porcelain
 RUN make dist/argo-linux-${IMAGE_ARCH}
+RUN ["sh", "-c", "./dist/argo-linux-${IMAGE_ARCH} version"]
+RUN git diff --exit-code
+RUN git status --porcelain
 RUN make dist/argoexec-linux-${IMAGE_ARCH}
 RUN ["sh", "-c", "./dist/argo-linux-${IMAGE_ARCH} version"]
+RUN git diff --exit-code
+RUN git status --porcelain
 
 ####################################################################################################
 # argoexec
