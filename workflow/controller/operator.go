@@ -463,7 +463,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	nodes := woc.wf.Status.Nodes
 	err := woc.controller.hydrator.Dehydrate(woc.wf)
 	if err != nil {
-		woc.log.Warnf("Failed to dehydrateub: %v", err)
+		woc.log.Warnf("Failed to dehydrate: %v", err)
 		woc.markWorkflowError(err, true)
 	}
 	wf, err := wfClient.Update(woc.wf)
