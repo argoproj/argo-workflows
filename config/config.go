@@ -123,10 +123,7 @@ func (a *ArtifactRepository) ToArtifactLocation() *wfv1.ArtifactLocation {
 	if a == nil {
 		return nil
 	}
-	l := &wfv1.ArtifactLocation{
-		ArchiveLogs: a.ArchiveLogs,
-		S3:          a.S3.ToS3Artifact(),
-	}
+	l := &wfv1.ArtifactLocation{ArchiveLogs: a.ArchiveLogs, S3: a.S3.ToS3Artifact()}
 	return l
 }
 
