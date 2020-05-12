@@ -1,5 +1,5 @@
-#!/bin/sh
-set -eux
+#!/bin/bash
+set -eux -o pipefail
 
 file=$1
 url=$2
