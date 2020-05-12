@@ -45,7 +45,7 @@ spec:
     limits.cpu: 1000m
     limits.memory: 1Gi
     requests.cpu: 500m
-    requests.memory: 515Mi
+    requests.memory: 128Mi
 ```
 
 Use limit range to set default container requests and limits, e.g.
@@ -74,7 +74,7 @@ This above limit is suitable for the Argo Server, as this is stateless. The Work
 
 Configure [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) to set the `executorResources`
 
-```cgo
+```
     executorResources:
       requests:
         cpu: 100m
