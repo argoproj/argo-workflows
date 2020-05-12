@@ -171,3 +171,28 @@ func TestDefaultParametersEmptyString(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "", *we.Template.Outputs.Parameters[0].Value)
 }
+
+func TestIsTarball(t *testing.T) {
+	tests := []struct {
+		path      string
+		expectOK  bool
+		expectErr bool
+	}{
+		{"testdata/istarball.tar", true, false},
+		{"testdata/istarball_small.csv", false, false},
+		{"testdata/istarball_small.csv.gz", false, false},
+		{"testdata/istarball_big.csv", false, false},
+		{"testdata/istarball_big.csv.gz", false, false},
+		{"testdata/istarball_notfound.csv", false, true},
+	}
+
+	for _, test := range tests {
+		ok, err := isTarball(test.path)
+		if test.expectErr {
+			assert.Error(t, err)
+		} else {
+			assert.NoError(t, err)
+		}
+		assert.Equal(t, test.expectOK, ok)
+	}
+}
