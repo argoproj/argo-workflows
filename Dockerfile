@@ -98,9 +98,12 @@ RUN touch ui/dist/node_modules.marker
 RUN touch ui/dist/app/index.html
 # fail the build if we are "dirty"
 RUN git diff --exit-code
-RUN make status argo-server.crt argo-server.key
-RUN make status dist/argoexec-linux-${IMAGE_ARCH} status
-# RUN make dist/argo-linux-${IMAGE_ARCH} dist/workflow-controller-linux-${IMAGE_ARCH} dist/argoexec-linux-${IMAGE_ARCH}
+RUN make argo-server.crt argo-server.key
+RUN make dist/argoexec-linux-${IMAGE_ARCH} status
+RUN ["sh", "-c", "./dist/argoexec-linux-${IMAGE_ARCH} version"]
+RUN make dist/workflow-controller-linux-${IMAGE_ARCH} status
+RUN ["sh", "-c", "./dist/argoexec-linux-${IMAGE_ARCH} version"]
+RUN make dist/argo-linux-${IMAGE_ARCH} status
 # double check dirtiness
 RUN ["sh", "-c", "./dist/argoexec-linux-${IMAGE_ARCH} version"]
 
