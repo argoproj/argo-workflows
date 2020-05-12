@@ -28,5 +28,8 @@ export function formatDuration(seconds: number) {
 }
 
 export function wfDuration(status: models.WorkflowStatus) {
+    if (!status.startedAt) {
+        return 0;
+    }
     return ((status.finishedAt ? new Date(status.finishedAt) : new Date()).getTime() - new Date(status.startedAt).getTime()) / 1000;
 }
