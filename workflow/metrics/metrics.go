@@ -37,6 +37,7 @@ type Metrics struct {
 
 	workflowsProcessed prometheus.Counter
 	workflowsByPhase   map[v1alpha1.NodePhase]prometheus.Gauge
+	operationDurations prometheus.Histogram
 	customMetrics      map[string]metric
 
 	// Used to quickly check if a metric desc is already used by the system
@@ -49,8 +50,9 @@ func New(metricsConfig, telemetryConfig ServerConfig) Metrics {
 	metrics := Metrics{
 		metricsConfig:      metricsConfig,
 		telemetryConfig:    telemetryConfig,
-		workflowsProcessed: newCounter("workflows_processed", "Number of workflow updates processed", nil),
+		workflowsProcessed: newCounter("workflows_processed_count", "Number of workflow updates processed", nil),
 		workflowsByPhase:   getWorkflowPhaseGauges(),
+		operationDurations: newHistogram("operation_duration_seconds", "Histogram of durations of operations", nil, []float64{0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0}),
 		customMetrics:      make(map[string]metric),
 		defaultMetricDescs: make(map[string]bool),
 	}
@@ -65,6 +67,7 @@ func New(metricsConfig, telemetryConfig ServerConfig) Metrics {
 func (m Metrics) allMetrics() []prometheus.Metric {
 	allMetrics := []prometheus.Metric{
 		m.workflowsProcessed,
+		m.operationDurations,
 	}
 	for _, metric := range m.workflowsByPhase {
 		allMetrics = append(allMetrics, metric)
@@ -91,6 +94,10 @@ func (m Metrics) WorkflowDeleted(phase v1alpha1.NodePhase) {
 	if _, ok := m.workflowsByPhase[phase]; ok {
 		m.workflowsByPhase[phase].Dec()
 	}
+}
+
+func (m Metrics) OperationCompleted(durationSeconds float64) {
+	m.operationDurations.Observe(durationSeconds)
 }
 
 func (m Metrics) GetCustomMetric(key string) prometheus.Metric {

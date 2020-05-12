@@ -66,6 +66,11 @@ func TestMetrics(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, float64(0), *metric.Gauge.Value)
 
+	m.OperationCompleted(0.05)
+	err = m.operationDurations.Write(&metric)
+	assert.Nil(t, err)
+	assert.Equal(t, uint64(1), *metric.Histogram.Bucket[0].CumulativeCount)
+
 	assert.Nil(t, m.GetCustomMetric("does-not-exist"))
 
 	err = m.UpsertCustomMetric("metric", newCounter("test", "test", nil))
