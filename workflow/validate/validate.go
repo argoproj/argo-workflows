@@ -105,7 +105,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	ctx := newTemplateValidationCtx(wf, opts)
 	tmplCtx := templateresolution.NewContext(wftmplGetter, cwftmplGetter, wf, wf)
 
-	var wftmpl wfv1.WorkflowSpecHolder
+	var wfSpecHolder wfv1.WorkflowSpecHolder
 	var entrypoint = wf.Spec.Entrypoint
 	var topLevelTmplRef *wfv1.TemplateRef
 	var err error
@@ -121,24 +121,24 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 
 	if hasWorkflowTemplateRef {
 		if wf.Spec.WorkflowTemplateRef.ClusterScope {
-			wftmpl, err = cwftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
+			wfSpecHolder, err = cwftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
 		} else {
-			wftmpl, err = wftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
+			wfSpecHolder, err = wftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
 		}
 		if err != nil {
 			return nil, err
 		}
 		if entrypoint == "" {
-			entrypoint = wftmpl.GetSpec().Entrypoint
+			entrypoint = wfSpecHolder.GetWorkflowSpec().Entrypoint
 		}
-		topLevelTmplRef = wf.Spec.WorkflowTemplateRef.ConvertTemplateRef(entrypoint)
+		topLevelTmplRef = wf.Spec.WorkflowTemplateRef.ToTemplateRef(entrypoint)
 	}
 	err = validateWorkflowFieldNames(wf.Spec.Templates)
 
 	wfArgs := wf.Spec.Arguments
 
 	if wf.Spec.WorkflowTemplateRef != nil {
-		wfArgs.Parameters = util.MergeParameters(wftmpl.GetSpec().Arguments.Parameters, wfArgs.Parameters)
+		wfArgs.Parameters = util.MergeParameters(wfSpecHolder.GetWorkflowSpec().Arguments.Parameters, wfArgs.Parameters)
 	}
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
@@ -256,7 +256,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 
 func ValidateFieldsWithWFTRef(v interface{}) error {
 	val := reflect.ValueOf(v)
-	// Acceptable fields if workflow has top level workflow template reference.
+	// Acceptable fields if workflow referred WorkflowTemplate reference.
 	validFields := map[string]bool{
 		"Entrypoint":            true,
 		"Suspend":               true,
@@ -271,7 +271,7 @@ func ValidateFieldsWithWFTRef(v interface{}) error {
 		fieldVal := val.Field(i).IsZero()
 		_, ok := validFields[field.Name]
 		if !ok && !fieldVal {
-			return errors.Errorf(errors.CodeBadRequest, "%s is invalid field in spec if workflow has top level template reference", field.Name)
+			return errors.Errorf(errors.CodeBadRequest, "%s is invalid field in spec if workflow referred WorkflowTemplate reference", field.Name)
 		}
 	}
 	return nil

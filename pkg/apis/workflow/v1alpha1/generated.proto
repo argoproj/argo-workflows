@@ -1335,7 +1335,7 @@ message WorkflowTemplateList {
   repeated WorkflowTemplate items = 2;
 }
 
-// WorkflowTemplateRef is a reference of workflow template resource on top level workflow.
+// WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 message WorkflowTemplateRef {
   // Name is the resource name of the workflow template.
   optional string name = 1;

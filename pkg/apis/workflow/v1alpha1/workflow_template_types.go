@@ -60,7 +60,7 @@ func (wftmpl *WorkflowTemplate) GetResourceScope() ResourceScope {
 	return ResourceScopeNamespaced
 }
 
-// GetSpec returns the WorkflowSpec of workflow template.
-func (wftmpl *WorkflowTemplate) GetSpec() *WorkflowSpec {
+// GetWorkflowSpec returns the WorkflowSpec of workflow template.
+func (wftmpl *WorkflowTemplate) GetWorkflowSpec() *WorkflowSpec {
 	return &wftmpl.Spec.WorkflowSpec
 }

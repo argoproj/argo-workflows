@@ -823,7 +823,7 @@ type TemplateRef struct {
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
 }
 
-// WorkflowTemplateRef is a reference of workflow template resource on top level workflow.
+// WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 type WorkflowTemplateRef struct {
 	// Name is the resource name of the workflow template.
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
@@ -831,7 +831,7 @@ type WorkflowTemplateRef struct {
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,2,opt,name=clusterScope"`
 }
 
-func (wftRef *WorkflowTemplateRef) ConvertTemplateRef(entrypoint string) *TemplateRef {
+func (wftRef *WorkflowTemplateRef) ToTemplateRef(entrypoint string) *TemplateRef {
 	return &TemplateRef{
 		Name:         wftRef.Name,
 		ClusterScope: wftRef.ClusterScope,
@@ -1744,7 +1744,7 @@ func (wf *Workflow) GetResourceScope() ResourceScope {
 	return ResourceScopeLocal
 }
 
-// GetSpec returns the WorkflowSpec of workflow.
+// GetWorkflowSpec returns the WorkflowSpec of workflow.
 func (wf *Workflow) GetSpec() WorkflowSpec {
 	return wf.Spec
 }

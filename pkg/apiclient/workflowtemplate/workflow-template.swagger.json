@@ -1751,7 +1751,7 @@
           "description": "ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate)."
         }
       },
-      "description": "WorkflowTemplateRef is a reference of workflow template resource on top level workflow."
+      "description": "WorkflowTemplateRef is a reference to a WorkflowTemplate resource."
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateSpec": {
       "type": "object",

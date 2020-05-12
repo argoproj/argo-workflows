@@ -1777,7 +1777,7 @@
           "description": "ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate)."
         }
       },
-      "description": "WorkflowTemplateRef is a reference of workflow template resource on top level workflow."
+      "description": "WorkflowTemplateRef is a reference to a WorkflowTemplate resource."
     },
     "k8s.io.api.core.v1.AWSElasticBlockStoreVolumeSource": {
       "type": "object",

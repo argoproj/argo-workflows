@@ -2650,7 +2650,7 @@ func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (boo
 func (woc *wfOperationCtx) getTopLevelWorkflowTemplate() (*wfv1.WorkflowSpec, error) {
 	var wftmpl wfv1.WorkflowSpecHolder
 	var err error
-	// Logic for Top level Workflow template reference
+	// Logic for workflow refers Workflow template
 	if woc.wf.Spec.WorkflowTemplateRef != nil {
 		if woc.wf.Spec.WorkflowTemplateRef.ClusterScope {
 			wftmpl, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)
@@ -2662,7 +2662,7 @@ func (woc *wfOperationCtx) getTopLevelWorkflowTemplate() (*wfv1.WorkflowSpec, er
 			return nil, err
 		}
 	}
-	return wftmpl.GetSpec().DeepCopy(), nil
+	return wftmpl.GetWorkflowSpec().DeepCopy(), nil
 }
 
 func (woc *wfOperationCtx) convertWFTmplRefToTmplRef() *wfv1.TemplateRef {
@@ -2672,7 +2672,7 @@ func (woc *wfOperationCtx) convertWFTmplRefToTmplRef() *wfv1.TemplateRef {
 	if entrypoint == "" {
 		entrypoint = woc.wfSpec.Entrypoint
 	}
-	return woc.wf.Spec.WorkflowTemplateRef.ConvertTemplateRef(entrypoint)
+	return woc.wf.Spec.WorkflowTemplateRef.ToTemplateRef(entrypoint)
 }
 
 func (woc *wfOperationCtx) setWorkflowSpecAndEntrypoint() error {
@@ -2701,5 +2701,6 @@ func (woc *wfOperationCtx) setWorkflowSpecAndEntrypoint() error {
 		woc.arguments.Parameters = util.MergeParameters(woc.arguments.Parameters, woc.wfSpec.Arguments.Parameters)
 	}
 	woc.wf.Status.StoredWorkflowTemplateSpec = woc.wfSpec
+	woc.updated = true
 	return nil
 }
