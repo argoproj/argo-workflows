@@ -40,7 +40,6 @@ func (h hydrator) IsHydrated(wf *wfv1.Workflow) bool {
 }
 
 func (h hydrator) HydrateWithNodes(wf *wfv1.Workflow, offloadedNodes wfv1.Nodes) {
-	log.Debug("hydrating using nodes")
 	wf.Status.Nodes = offloadedNodes
 	wf.Status.CompressedNodes = ""
 	wf.Status.OffloadNodeStatusVersion = ""
@@ -52,7 +51,6 @@ func (h hydrator) Hydrate(wf *wfv1.Workflow) error {
 		return err
 	}
 	if wf.Status.IsOffloadNodeStatus() {
-		log.Debug("hydrating offloaded data")
 		offloadedNodes, err := h.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
 		if err != nil {
 			return err
@@ -64,14 +62,12 @@ func (h hydrator) Hydrate(wf *wfv1.Workflow) error {
 
 func (h hydrator) Dehydrate(wf *wfv1.Workflow) error {
 	if !h.IsHydrated(wf) {
-		log.Debug("already dehydrated")
 		return nil
 	}
 	var err error
 	if !alwaysOffloadNodeStatus {
 		err = packer.CompressWorkflowIfNeeded(wf)
 		if err == nil {
-			log.Debug("dehydrated by compressing")
 			wf.Status.OffloadNodeStatusVersion = ""
 			return nil
 		}
@@ -84,7 +80,6 @@ func (h hydrator) Dehydrate(wf *wfv1.Workflow) error {
 		wf.Status.Nodes = nil
 		wf.Status.CompressedNodes = ""
 		wf.Status.OffloadNodeStatusVersion = offloadVersion
-		log.Debug("dehydrated by offloading")
 		return nil
 	} else {
 		return err

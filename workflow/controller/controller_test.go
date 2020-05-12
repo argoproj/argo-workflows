@@ -23,7 +23,7 @@ import (
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/hydrator"
+	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 )
 
 var helloWorldWf = `
@@ -126,7 +126,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		wfQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		wfArchive:       sqldb.NullWorkflowArchive,
-		hydrator:        hydrator.New(sqldb.ExplosiveOffloadNodeStatusRepo),
+		hydrator:        hydratorfake.Noop,
 		Metrics:         make(map[string]common.Metric),
 	}
 	return cancel, controller

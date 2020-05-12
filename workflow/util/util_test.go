@@ -9,13 +9,12 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakeClientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	hydratormocks "github.com/argoproj/argo/workflow/hydrator/mocks"
+	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 )
 
 // TestSubmitDryRun
@@ -283,11 +282,8 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 	_, err := wfIf.Create(origWf)
 	assert.NoError(t, err)
 
-	hydrator := &hydratormocks.Interface{}
-	hydrator.On("Dehydrate", mock.Anything).Return(nil)
-	hydrator.On("Hydrate", mock.Anything).Return(nil)
 	//will return error as displayName does not match any nodes
-	err = ResumeWorkflow(wfIf, hydrator, "suspend", "displayName=nonexistant")
+	err = ResumeWorkflow(wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant")
 	assert.Error(t, err)
 
 	//displayName didn't match suspend node so should still be running
@@ -295,13 +291,14 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
-	err = ResumeWorkflow(wfIf, hydrator, "suspend", "displayName=approve")
+	err = ResumeWorkflow(wfIf, hydratorfake.Noop, "suspend", "displayName=approve")
 	assert.NoError(t, err)
 
 	//displayName matched node so has succeeded
 	wf, err = wfIf.Get("suspend", metav1.GetOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+	if assert.NoError(t, err) {
+		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+	}
 }
 
 func TestStopWorkflowByNodeName(t *testing.T) {
@@ -311,11 +308,8 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	_, err := wfIf.Create(origWf)
 	assert.NoError(t, err)
 
-	hydrator := &hydratormocks.Interface{}
-	hydrator.On("Dehydrate", mock.Anything).Return(nil)
-	hydrator.On("Hydrate", mock.Anything).Return(nil)
 	//will return error as displayName does not match any nodes
-	err = StopWorkflow(wfIf, hydrator, "suspend", "displayName=nonexistant", "error occurred")
+	err = StopWorkflow(wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant", "error occurred")
 	assert.Error(t, err)
 
 	//displayName didn't match suspend node so should still be running
@@ -323,7 +317,7 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
-	err = StopWorkflow(wfIf, hydrator, "suspend", "displayName=approve", "error occurred")
+	err = StopWorkflow(wfIf, hydratorfake.Noop, "suspend", "displayName=approve", "error occurred")
 	assert.NoError(t, err)
 
 	//displayName matched node so has succeeded

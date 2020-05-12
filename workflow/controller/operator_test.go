@@ -18,6 +18,7 @@ import (
 	"github.com/argoproj/argo/test"
 	"github.com/argoproj/argo/util/argo"
 	"github.com/argoproj/argo/workflow/common"
+	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -37,6 +38,31 @@ func TestOperateWorkflowPanicRecover(t *testing.T) {
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
+}
+
+func Test_wfOperationCtx_reapplyUpdate(t *testing.T) {
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "my-wf"},
+		Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{Name: "my-foo"}}},
+	}
+	cancel, controller := newController(wf)
+	defer cancel()
+	controller.hydrator = hydratorfake.Always
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	// fake the behaviour woc.operate()
+	assert.NoError(t, controller.hydrator.Hydrate(wf))
+	nodes := wfv1.Nodes{"foo": wfv1.NodeStatus{Name: "my-foo", Phase: wfv1.NodeSucceeded}}
+
+	// now force a re-apply update
+	updatedWf, err := woc.reapplyUpdate(controller.wfclientset.ArgoprojV1alpha1().Workflows(""), nodes)
+	if assert.NoError(t, err) && assert.NotNil(t, updatedWf) {
+		assert.True(t, woc.controller.hydrator.IsHydrated(updatedWf))
+		if assert.Contains(t, updatedWf.Status.Nodes, "foo") {
+			assert.Equal(t, "my-foo", updatedWf.Status.Nodes["foo"].Name)
+			assert.Equal(t, wfv1.NodeSucceeded, updatedWf.Status.Nodes["foo"].Phase, "phase is merged")
+		}
+	}
 }
 
 var sidecarWithVol = `
@@ -583,26 +609,25 @@ func TestRetriesVariable(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(retriesVariableTemplate)
 	wf, err := wfcset.Create(wf)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.Nil(t, err)
-
+	assert.NoError(t, err)
 	iterations := 5
 	for i := 1; i <= iterations; i++ {
 		if i != 1 {
 			makePodsPhase(t, apiv1.PodFailed, controller.kubeclientset, wf.ObjectMeta.Namespace)
 			wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		}
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate()
 	}
 
 	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
-	assert.Nil(t, err)
-	assert.Equal(t, iterations, len(pods.Items))
-	for i := 0; i < iterations; i++ {
-		assert.Equal(t, fmt.Sprintf("cowsay %d", i), pods.Items[i].Spec.Containers[1].Args[0])
+	if assert.NoError(t, err) && assert.Len(t, pods.Items, iterations) {
+		for i := 0; i < iterations; i++ {
+			assert.Equal(t, fmt.Sprintf("cowsay %d", i), pods.Items[i].Spec.Containers[1].Args[0])
+		}
 	}
 }
 
