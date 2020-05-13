@@ -669,6 +669,10 @@ type NoneStrategy struct{}
 // It is also used to describe the location of multiple artifacts such as the archive location
 // of a single workflow step, which the executor will use as a default location to store its files.
 type ArtifactLocation struct {
+
+	// CredentialName is the name of a credential to use with this.
+	CredentialName string `json:"credentialName,omitempty" protobuf:"bytes,10,opt,name=credentialName"`
+
 	// ArchiveLogs indicates if the container logs should be archived
 	ArchiveLogs *bool `json:"archiveLogs,omitempty" protobuf:"varint,1,opt,name=archiveLogs"`
 
@@ -1262,10 +1266,10 @@ func (n *NodeStatus) IsActiveSuspendNode() bool {
 // S3Bucket contains the access information required for interfacing with an S3 bucket
 type S3Bucket struct {
 	// Endpoint is the hostname of the bucket endpoint
-	Endpoint string `json:"endpoint" protobuf:"bytes,1,opt,name=endpoint"`
+	Endpoint string `json:"endpoint,omitempty" protobuf:"bytes,1,opt,name=endpoint"`
 
 	// Bucket is the name of the bucket
-	Bucket string `json:"bucket" protobuf:"bytes,2,opt,name=bucket"`
+	Bucket string `json:"bucket,omitempty" protobuf:"bytes,2,opt,name=bucket"`
 
 	// Region contains the optional bucket region
 	Region string `json:"region,omitempty" protobuf:"bytes,3,opt,name=region"`
@@ -1274,16 +1278,46 @@ type S3Bucket struct {
 	Insecure *bool `json:"insecure,omitempty" protobuf:"varint,4,opt,name=insecure"`
 
 	// AccessKeySecret is the secret selector to the bucket's access key
-	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret" protobuf:"bytes,5,opt,name=accessKeySecret"`
+	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret,omitempty" protobuf:"bytes,5,opt,name=accessKeySecret"`
 
 	// SecretKeySecret is the secret selector to the bucket's secret key
-	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret" protobuf:"bytes,6,opt,name=secretKeySecret"`
+	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret,omitempty" protobuf:"bytes,6,opt,name=secretKeySecret"`
 
 	// RoleARN is the Amazon Resource Name (ARN) of the role to assume.
 	RoleARN string `json:"roleARN,omitempty" protobuf:"bytes,7,opt,name=roleARN"`
 
 	// UseSDKCreds tells the driver to figure out credentials based on sdk defaults.
 	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
+}
+
+func (in *S3Bucket) MergeInto(o *S3Artifact) {
+	if in == nil || o == nil {
+		return
+	}
+	if o.Endpoint == "" {
+		o.Endpoint = in.Endpoint
+	}
+	if o.Bucket == "" {
+		o.Bucket = in.Bucket
+	}
+	if o.Region == "" {
+		o.Region = in.Region
+	}
+	if o.Insecure == nil {
+		o.Insecure = in.Insecure
+	}
+	if o.AccessKeySecret.Size() > 0 {
+		o.AccessKeySecret = in.AccessKeySecret
+	}
+	if o.SecretKeySecret.Size() > 0 {
+		o.SecretKeySecret = in.SecretKeySecret
+	}
+	if o.RoleARN == "" {
+		o.RoleARN = in.RoleARN
+	}
+	if !o.UseSDKCreds {
+		o.UseSDKCreds = in.UseSDKCreds
+	}
 }
 
 // S3Artifact is the location of an S3 artifact

@@ -230,6 +230,18 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 		})
 }
 
+func (s *FunctionalSuite) TestArtifactRepositoryCredentials() {
+	s.Given().
+		Workflow("@testdata/artifact-repository-credentials.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
 func (s *FunctionalSuite) TestLoopEmptyParam() {
 	s.Given().
 		Workflow("@functional/loops-empty-param.yaml").

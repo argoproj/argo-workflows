@@ -40,6 +40,9 @@ type Config struct {
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	ArtifactRepository ArtifactRepository `json:"artifactRepository,omitempty"`
 
+	// ArtifactRepositoryCredentials contains credentials that can be use by workflows
+	ArtifactRepositoryCredentials ArtifactRepositoryCredentials `json:"artifactRepositoryCredentials,omitempty"`
+
 	// Namespace is a label selector filter to limit the controller's watch to a specific namespace
 	// DEPRECATED: support will be remove in a future release
 	Namespace string `json:"namespace,omitempty"`

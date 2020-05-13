@@ -161,8 +161,23 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	if woc.controller.GetContainerRuntimeExecutor() == common.ContainerRuntimeExecutorPNS {
 		pod.Spec.ShareProcessNamespace = pointer.BoolPtr(true)
 	}
-
-	err := woc.addArchiveLocation(pod, tmpl)
+	// merge input artifacts
+	{
+		artifacts, err := woc.artifactRepositoryCredentials.Merge(tmpl.Inputs.Artifacts)
+		if err != nil {
+			return nil, err
+		}
+		tmpl.Inputs.Artifacts = artifacts
+	}
+	// merge output artifacts
+	{
+		artifacts, err := woc.artifactRepositoryCredentials.Merge(tmpl.Outputs.Artifacts)
+		if err != nil {
+			return nil, err
+		}
+		tmpl.Outputs.Artifacts = artifacts
+	}
+	err := woc.addArchiveLocation(tmpl)
 	if err != nil {
 		return nil, err
 	}
@@ -844,7 +859,7 @@ func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
 // information configured in the controller, for the purposes of archiving outputs. This is skipped
 // for templates which do not need to archive anything, or have explicitly set an archive location
 // in the template.
-func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Template) error {
+func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 	// needLocation keeps track if the workflow needs to have an archive location set.
 	// If so, and one was not supplied (or defaulted), we will return error
 	var needLocation bool

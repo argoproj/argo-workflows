@@ -12,6 +12,18 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
+  artifactRepositoryCredentials: |
+    - name: my-artifactory-repository-credentials
+      s3:
+        bucket: my-bucket
+        endpoint: minio:9000
+        insecure: true
+        accessKeySecret:
+          name: my-minio-cred
+          key: accesskey
+        secretKeySecret:
+          name: my-minio-cred
+          key: secretkey
   metricsConfig: |
     disableLegacy: true
     enabled: true

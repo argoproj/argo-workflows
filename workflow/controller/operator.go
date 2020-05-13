@@ -66,7 +66,8 @@ type wfOperationCtx struct {
 	// It is then used in addVolumeReferences() when creating a pod.
 	volumes []apiv1.Volume
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
-	artifactRepository *config.ArtifactRepository
+	artifactRepository            *config.ArtifactRepository
+	artifactRepositoryCredentials config.ArtifactRepositoryCredentials
 	// map of pods which need to be labeled with completed=true
 	completedPods map[string]bool
 	// map of pods which is identified as succeeded=true
@@ -123,15 +124,16 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 			"workflow":  wf.ObjectMeta.Name,
 			"namespace": wf.ObjectMeta.Namespace,
 		}),
-		controller:             wfc,
-		globalParams:           make(map[string]string),
-		volumes:                wf.Spec.DeepCopy().Volumes,
-		artifactRepository:     &wfc.Config.ArtifactRepository,
-		completedPods:          make(map[string]bool),
-		succeededPods:          make(map[string]bool),
-		deadline:               time.Now().UTC().Add(maxOperationTime),
-		auditLogger:            argo.NewAuditLogger(wf.ObjectMeta.Namespace, wfc.kubeclientset, wf.ObjectMeta.Name),
-		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
+		controller:                    wfc,
+		globalParams:                  make(map[string]string),
+		volumes:                       wf.Spec.DeepCopy().Volumes,
+		artifactRepository:            &wfc.Config.ArtifactRepository,
+		artifactRepositoryCredentials: wfc.Config.ArtifactRepositoryCredentials,
+		completedPods:                 make(map[string]bool),
+		succeededPods:                 make(map[string]bool),
+		deadline:                      time.Now().UTC().Add(maxOperationTime),
+		auditLogger:                   argo.NewAuditLogger(wf.ObjectMeta.Namespace, wfc.kubeclientset, wf.ObjectMeta.Name),
+		preExecutionNodePhases:        make(map[string]wfv1.NodePhase),
 	}
 
 	if woc.wf.Status.Nodes == nil {

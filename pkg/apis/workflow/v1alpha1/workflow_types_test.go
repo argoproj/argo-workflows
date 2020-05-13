@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 )
 
 func TestWorkflows(t *testing.T) {
@@ -22,6 +23,53 @@ func TestWorkflows(t *testing.T) {
 	assert.Equal(t, "1", wfs[1].Name)
 	assert.Equal(t, "2", wfs[2].Name)
 	assert.Equal(t, "3", wfs[3].Name)
+}
+
+func TestS3Bucket_MergeInto(t *testing.T) {
+	t.Run("Nil", func(t *testing.T) {
+		(&S3Bucket{}).MergeInto(nil)
+	})
+	t.Run("Endpoint", func(t *testing.T) {
+		b := &S3Artifact{}
+		(&S3Bucket{Endpoint: "my-endpoint"}).MergeInto(b)
+		assert.Equal(t, "my-endpoint", b.Endpoint)
+	})
+	t.Run("Bucket", func(t *testing.T) {
+		b := &S3Artifact{}
+		(&S3Bucket{Bucket: "my-bucket"}).MergeInto(b)
+		assert.Equal(t, "my-bucket", b.Bucket)
+	})
+	t.Run("Region", func(t *testing.T) {
+		b := &S3Artifact{}
+		(&S3Bucket{Region: "my-region"}).MergeInto(b)
+		assert.Equal(t, "my-region", b.Region)
+	})
+	t.Run("Insecure", func(t *testing.T) {
+		b := &S3Artifact{}
+		(&S3Bucket{Insecure: pointer.BoolPtr(false)}).MergeInto(b)
+		assert.NotNil(t, b.Insecure)
+	})
+	t.Run("AccessKeySecret", func(t *testing.T) {
+		b := &S3Artifact{}
+		assert.Empty(t, b.AccessKeySecret)
+		(&S3Bucket{AccessKeySecret: corev1.SecretKeySelector{Key: "my-key"}}).MergeInto(b)
+		assert.NotEmpty(t, b.AccessKeySecret)
+	})
+	t.Run("SecretKeySecret", func(t *testing.T) {
+		b := &S3Artifact{}
+		(&S3Bucket{SecretKeySecret: corev1.SecretKeySelector{Key: "my-key"}}).MergeInto(b)
+		assert.NotEmpty(t, b.SecretKeySecret)
+	})
+	t.Run("RoleARN", func(t *testing.T) {
+		b := &S3Artifact{}
+		(&S3Bucket{RoleARN: "my-role-arn"}).MergeInto(b)
+		assert.Equal(t, "my-role-arn", b.RoleARN)
+	})
+	t.Run("UseSDKCreds", func(t *testing.T) {
+		b := &S3Artifact{}
+		(&S3Bucket{UseSDKCreds: true}).MergeInto(b)
+		assert.True(t, b.UseSDKCreds)
+	})
 }
 
 func TestNodes_FindByDisplayName(t *testing.T) {
