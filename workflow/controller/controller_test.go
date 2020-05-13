@@ -22,7 +22,6 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
-	"github.com/argoproj/argo/workflow/common"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 )
 
@@ -127,7 +126,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		podQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		wfArchive:       sqldb.NullWorkflowArchive,
 		hydrator:        hydratorfake.Noop,
-		Metrics:         make(map[string]common.Metric),
+		metrics:         metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
 	}
 	return cancel, controller
 }
@@ -327,22 +326,4 @@ func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
 	defer cancel()
 
 	controller.archivedWorkflowGarbageCollector(make(chan struct{}))
-}
-
-func TestWorkflowControllerMetricsGarbageCollector(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
-
-	controller.Metrics["metric-1"] = common.Metric{Metric: nil, LastUpdated: time.Now().Add(-1 * time.Minute)}
-	controller.Metrics["metric-2"] = common.Metric{Metric: nil, LastUpdated: time.Now().Add(3 * time.Second)}
-
-	controller.Config.MetricsConfig.Enabled = true
-	controller.Config.MetricsConfig.MetricsTTL = config.TTL(1 * time.Second)
-
-	stop := make(chan struct{})
-	go func() { time.Sleep(2 * time.Second); stop <- struct{}{} }()
-	controller.metricsGarbageCollector(stop)
-
-	assert.Contains(t, controller.Metrics, "metric-2")
-	assert.NotContains(t, controller.Metrics, "metric-1")
 }

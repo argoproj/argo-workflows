@@ -8,12 +8,9 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/clock"
 	runtimeutil "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
@@ -36,20 +33,7 @@ type Controller struct {
 }
 
 // NewController returns a new workflow ttl controller
-func NewController(config *rest.Config, wfClientset wfclientset.Interface, namespace, instanceID string) *Controller {
-	filterCompletedWithTTL := func(options *metav1.ListOptions) {
-		// completed equals (true)
-		completedReq, err := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"true"})
-		if err != nil {
-			panic(err)
-		}
-		labelSelector := labels.NewSelector().
-			Add(*completedReq).
-			Add(util.InstanceIDRequirement(instanceID))
-		options.LabelSelector = labelSelector.String()
-	}
-	wfInformer := util.NewWorkflowInformer(config, namespace, workflowTTLResyncPeriod, filterCompletedWithTTL)
-
+func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedIndexInformer) *Controller {
 	controller := &Controller{
 		wfclientset:  wfClientset,
 		wfInformer:   wfInformer,
@@ -58,12 +42,15 @@ func NewController(config *rest.Config, wfClientset wfclientset.Interface, names
 		clock:        clock.RealClock{},
 	}
 
-	wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: controller.enqueueWF,
-		UpdateFunc: func(old, new interface{}) {
-			controller.enqueueWF(new)
+	wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: common.UnstructuredHasCompletedLabel,
+		Handler: cache.ResourceEventHandlerFuncs{
+			AddFunc: controller.enqueueWF,
+			UpdateFunc: func(old, new interface{}) {
+				controller.enqueueWF(new)
+			},
+			DeleteFunc: controller.enqueueWF,
 		},
-		DeleteFunc: controller.enqueueWF,
 	})
 	return controller
 }

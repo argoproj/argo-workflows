@@ -35,14 +35,7 @@ VERSION := latest
 endif
 
 ifneq ($(findstring release,$(GIT_BRANCH)),)
-# this will be something like "v2.5" or "v3.7"
-MAJOR_MINOR := v$(word 2,$(subst -, ,$(GIT_BRANCH)))
-# if GIT_TAG is on HEAD, then this will be the same
-GIT_LATEST_TAG := $(shell git tag --merged | tail -n1)
-# only use the latest tag if it matches the correct major/minor version
-ifneq ($(findstring $(MAJOR_MINOR),$(GIT_LATEST_TAG)),)
-VERSION := $(GIT_LATEST_TAG)
-endif
+VERSION := $(shell git tag --points-at=HEAD|grep ^v|head -n1)
 endif
 
 # MANIFESTS_VERSION is the version to be used for files in manifests and should always be latests unles we are releasing
@@ -78,7 +71,7 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.$(VERSION)
 STATIC_BUILD          ?= true
 CI                    ?= false
 DB                    ?= postgres
-K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
+K3D                   := $(shell if [ `which kubectl` <> '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 # which components to start, useful if you want to disable them to debug
 COMPONENTS            := controller,argo-server
 LOG_LEVEL             := debug
@@ -132,8 +125,8 @@ endef
 # docker_build,image_name,binary_name,marker_file_name
 define docker_build
 	# If we're making a dev build, we build this locally (this will be faster due to existing Go build caches).
-	if [ $(DEV_IMAGE) = true ]; then mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) $(2); fi
-	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
+	if [ $(DEV_IMAGE) = true ]; then $(MAKE) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) $(2); fi
+	docker build --progress plain $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	if [ $(DEV_IMAGE) = true ]; then mv $(2) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH); fi
 	if [ $(K3D) = true ]; then k3d import-images $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
 	touch $(3)
@@ -158,7 +151,7 @@ ui/dist/node_modules.marker: ui/package.json ui/yarn.lock
 	# Get UI dependencies
 	@mkdir -p ui/node_modules
 ifeq ($(CI),false)
-	yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
+	yarn --cwd ui install
 endif
 	@mkdir -p ui/dist
 	touch ui/dist/node_modules.marker
@@ -172,11 +165,12 @@ else
 	echo "Built without static files" > ui/dist/app/index.html
 endif
 
-$(HOME)/go/bin/staticfiles:
-	# Install the "staticfiles" tool
+$(GOPATH)/bin/staticfiles:
+	$(call backup_go_mod)
 	go get bou.ke/staticfiles
+	$(call restore_go_mod)
 
-server/static/files.go: $(HOME)/go/bin/staticfiles ui/dist/app/index.html
+server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
 	staticfiles -o server/static/files.go ui/dist/app
 
@@ -201,7 +195,7 @@ argo-server.key:
 .PHONY: cli-image
 cli-image: $(CLI_IMAGE_FILE)
 
-$(CLI_IMAGE_FILE): dist/argo-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
+$(CLI_IMAGE_FILE): $(CLI_PKGS)
 	$(call docker_build,argocli,argo,$(CLI_IMAGE_FILE))
 
 .PHONY: clis
@@ -223,7 +217,7 @@ dist/workflow-controller-%: $(CONTROLLER_PKGS)
 .PHONY: controller-image
 controller-image: $(CONTROLLER_IMAGE_FILE)
 
-$(CONTROLLER_IMAGE_FILE): dist/workflow-controller-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
+$(CONTROLLER_IMAGE_FILE): $(CONTROLLER_PKGS)
 	$(call docker_build,workflow-controller,workflow-controller,$(CONTROLLER_IMAGE_FILE))
 
 # argoexec
@@ -239,18 +233,21 @@ dist/argoexec-%: $(ARGOEXEC_PKGS)
 executor-image: $(EXECUTOR_IMAGE_FILE)
 
 	# Create executor image
-$(EXECUTOR_IMAGE_FILE): dist/argoexec-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH)
+$(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 	$(call docker_build,argoexec,argoexec,$(EXECUTOR_IMAGE_FILE))
 
 # generation
 
-$(HOME)/go/bin/mockery:
-	$(call backup_go_mod)
-	go get github.com/vektra/mockery/.../
-	$(call restore_go_mod)
+$(GOPATH)/bin/mockery:
+	./hack/recurl.sh dist/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v1.1.1/mockery_1.1.1_$(shell uname -s)_$(shell uname -m).tar.gz
+	tar zxvf dist/mockery.tar.gz mockery
+	chmod +x mockery
+	mkdir -p $(GOPATH)/bin
+	mv mockery $(GOPATH)/bin/mockery
+	mockery -version
 
 .PHONY: mocks
-mocks: $(HOME)/go/bin/mockery
+mocks: $(GOPATH)/bin/mockery
 	./hack/update-mocks.sh $(MOCK_FILES)
 
 .PHONY: codegen
@@ -283,11 +280,11 @@ manifests:
 
 # lint/test/etc
 
-$(HOME)/go/bin/golangci-lint:
+$(GOPATH)/bin/golangci-lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b `go env GOPATH`/bin v1.23.8
 
 .PHONY: lint
-lint: server/static/files.go $(HOME)/go/bin/golangci-lint
+lint: server/static/files.go $(GOPATH)/bin/golangci-lint
 	# Tidy Go modules
 	go mod tidy
 	# Lint Go files
@@ -306,13 +303,13 @@ test: server/static/files.go
 test-results/test-report.json: test-results/test.out
 	cat test-results/test.out | go tool test2json > test-results/test-report.json
 
-$(HOME)/go/bin/go-junit-report:
+$(GOPATH)/bin/go-junit-report:
 	$(call backup_go_mod)
 	go get github.com/jstemmer/go-junit-report
 	$(call restore_go_mod)
 
 # note that we do not have a dependency on test.out, we assume you did correctly create this
-test-results/junit.xml: $(HOME)/go/bin/go-junit-report test-results/test.out
+test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
 	cat test-results/test.out | go-junit-report > test-results/junit.xml
 
 $(VERSION_FILE):
@@ -380,7 +377,7 @@ start-aux:
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
 ifneq ($(findstring controller,$(COMPONENTS)),)
-	ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) OFFLOAD_NODE_STATUS_TTL=30s WORKFLOW_GC_PERIOD=30s UPPERIO_DB_DEBUG=1 ARCHIVED_WORKFLOW_GC_PERIOD=30s ./dist/workflow-controller --executor-image argoproj/argoexec:$(VERSION) --namespaced --loglevel $(LOG_LEVEL) &
+	ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS)  OFFLOAD_NODE_STATUS_TTL=30s WORKFLOW_GC_PERIOD=30s UPPERIO_DB_DEBUG=1 ARCHIVED_WORKFLOW_GC_PERIOD=30s ./dist/workflow-controller --executor-image argoproj/argoexec:$(VERSION) --namespaced --loglevel $(LOG_LEVEL) &
 endif
 ifneq ($(findstring argo-server,$(COMPONENTS)),)
 	UPPERIO_DB_DEBUG=1 ./dist/argo --loglevel $(LOG_LEVEL) server --namespaced --auth-mode client --secure &
@@ -465,7 +462,7 @@ clean:
 
 # swagger
 
-$(HOME)/go/bin/swagger:
+$(GOPATH)/bin/swagger:
 	$(call backup_go_mod)
 	go get github.com/go-swagger/go-swagger/cmd/swagger@v0.23.0
 	$(call restore_go_mod)
@@ -486,7 +483,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go:
 pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	go run ./hack secondaryswaggergen
 
-dist/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
+dist/swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
 	swagger mixin -c 680 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > dist/swagger.json
 
 dist/kubernetes.swagger.json:

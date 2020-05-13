@@ -60,11 +60,11 @@ func TestBasicMetric(t *testing.T) {
 	woc.operate()
 
 	metricDesc := wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
-	assert.Contains(t, controller.Metrics, metricDesc)
-	metric := controller.Metrics[metricDesc].Metric.(prometheus.Gauge)
-	metrtcString, err := getMetricStringValue(metric)
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricDesc))
+	metric := controller.metrics.GetCustomMetric(metricDesc).(prometheus.Gauge)
+	metricString, err := getMetricStringValue(metric)
 	assert.NoError(t, err)
-	assert.Contains(t, metrtcString, `label:<name:"name" value:"random-int" > gauge:<value:`)
+	assert.Contains(t, metricString, `label:<name:"name" value:"random-int" > gauge:<value:`)
 }
 
 var counterMetric = `
@@ -116,16 +116,16 @@ func TestCounterMetric(t *testing.T) {
 	woc.operate()
 
 	metricTotalDesc := wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
-	assert.Contains(t, controller.Metrics, metricTotalDesc)
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricTotalDesc))
 	metricErrorDesc := wf.Spec.Templates[0].Metrics.Prometheus[1].GetDesc()
-	assert.Contains(t, controller.Metrics, metricErrorDesc)
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
 
-	metricTotalCounter := controller.Metrics[metricTotalDesc].Metric.(prometheus.Counter)
+	metricTotalCounter := controller.metrics.GetCustomMetric(metricTotalDesc).(prometheus.Counter)
 	metricTotalCounterString, err := getMetricStringValue(metricTotalCounter)
 	assert.NoError(t, err)
 	assert.Contains(t, metricTotalCounterString, `label:<name:"name" value:"flakey" > counter:<value:1 >`)
 
-	metricErrorCounter := controller.Metrics[metricErrorDesc].Metric.(prometheus.Counter)
+	metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
 	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
 	assert.NoError(t, err)
 	assert.Contains(t, metricErrorCounterString, `label:<name:"name" value:"flakey" > counter:<value:1 >`)
