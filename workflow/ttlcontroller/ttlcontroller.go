@@ -43,10 +43,7 @@ func NewController(wfClientset wfclientset.Interface, wfInformer cache.SharedInd
 	}
 
 	wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: func(obj interface{}) bool {
-			wf := obj.(*unstructured.Unstructured)
-			return wf.GetLabels()[common.LabelKeyCompleted] == "true"
-		},
+		FilterFunc: common.UnstructuredHasCompletedLabel,
 		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc: controller.enqueueWF,
 			UpdateFunc: func(old, new interface{}) {

@@ -568,8 +568,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 	wfc.wfInformer.AddEventHandler(
 		cache.FilteringResourceEventHandler{
 			FilterFunc: func(obj interface{}) bool {
-				wf := obj.(*unstructured.Unstructured)
-				return wf.GetLabels()[common.LabelKeyCompleted] != "true"
+				return !common.UnstructuredHasCompletedLabel(obj)
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {
