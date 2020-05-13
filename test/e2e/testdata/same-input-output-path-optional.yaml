@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: optional-input-output-artifact-same-location-
+  labels:
+    argo-e2e: true
+spec:
+  entrypoint: plan
+  templates:
+    - name: plan
+      steps:
+        - - name: write
+            template: file
+        - - name: read
+            template: file
+            arguments:
+              artifacts:
+                - name: file
+                  from: "{{steps.write.outputs.artifacts.file}}"
+    - name: file
+      inputs:
+        artifacts:
+          - name: file
+            path: /tmp/file1.txt
+            optional: true
+      container:
+        image: argoproj/argosay:v2
+        args: ["echo", "test", "/tmp/file1.txt"]
+      outputs:
+        artifacts:
+          - name: file
+            path: /tmp/file1.txt
+
