@@ -14,3 +14,7 @@ debug.test
 .envrc
 /.vendor-new
 /workflow-controller
+/.scannerwork/
+/test-results/
+/argo-server.crt
+/argo-server.key

@@ -59,7 +59,7 @@ func IsTooLargeError(err error) bool {
 	return err != nil && strings.HasPrefix(err.Error(), tooLarge)
 }
 
-func CompressWorkflow(wf *wfv1.Workflow) error {
+func CompressWorkflowIfNeeded(wf *wfv1.Workflow) error {
 	large, err := IsLargeWorkflow(wf)
 	if err != nil {
 		return err
@@ -67,6 +67,10 @@ func CompressWorkflow(wf *wfv1.Workflow) error {
 	if !large {
 		return nil
 	}
+	return compressWorkflow(wf)
+}
+
+func compressWorkflow(wf *wfv1.Workflow) error {
 	nodeContent, err := json.Marshal(wf.Status.Nodes)
 	if err != nil {
 		return err
@@ -74,7 +78,7 @@ func CompressWorkflow(wf *wfv1.Workflow) error {
 	wf.Status.CompressedNodes = file.CompressEncodeString(string(nodeContent))
 	wf.Status.Nodes = nil
 	// still too large?
-	large, err = IsLargeWorkflow(wf)
+	large, err := IsLargeWorkflow(wf)
 	if err != nil {
 		return err
 	}

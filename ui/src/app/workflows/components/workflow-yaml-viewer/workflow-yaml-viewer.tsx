@@ -3,7 +3,7 @@ import * as React from 'react';
 
 import * as jsYaml from 'js-yaml';
 import * as models from '../../../../models';
-import {Utils} from '../../../shared/utils';
+import {getResolvedTemplates} from '../../../shared/template-resolution';
 
 require('./workflow-yaml-viewer.scss');
 
@@ -29,7 +29,7 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
         if (this.props.selectedNode) {
             const parentNode = this.props.workflow.status.nodes[this.props.selectedNode.boundaryID];
             if (parentNode) {
-                const parentTemplate = Utils.getResolvedTemplates(this.props.workflow, parentNode);
+                const parentTemplate = getResolvedTemplates(this.props.workflow, parentNode);
 
                 let nodeName = '';
                 if (this.props.selectedNode) {
@@ -47,7 +47,7 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
                 );
             }
 
-            const template = Utils.getResolvedTemplates(this.props.workflow, this.props.selectedNode);
+            const template = getResolvedTemplates(this.props.workflow, this.props.selectedNode);
             const templateStr = jsYaml.dump(template);
             contents.push(
                 <div className='workflow-yaml-section' key='current-node'>

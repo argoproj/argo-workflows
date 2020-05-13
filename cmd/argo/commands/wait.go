@@ -3,10 +3,12 @@ package commands
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"sync"
 
 	"github.com/argoproj/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -58,15 +60,16 @@ func WaitWorkflows(workflowNames []string, ignoreNotFound, quiet bool) {
 	}
 }
 
-func waitOnOne(client workflowpkg.WorkflowServiceClient, ctx context.Context, wfName, namespace string, ignoreNotFound, quiet bool) bool {
+func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Context, wfName, namespace string, ignoreNotFound, quiet bool) bool {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	stream, err := client.WatchWorkflows(ctx, &workflowpkg.WatchWorkflowsRequest{
+	req := &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{
 			FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", wfName)).String(),
 		},
-	})
+	}
+	stream, err := serviceClient.WatchWorkflows(ctx, req)
 	if err != nil {
 		if apierr.IsNotFound(err) && ignoreNotFound {
 			return true
@@ -76,14 +79,13 @@ func waitOnOne(client workflowpkg.WorkflowServiceClient, ctx context.Context, wf
 	}
 	for {
 		event, err := stream.Recv()
-		if err != nil {
+		if err == io.EOF {
+			log.Debug("Re-establishing workflow watch")
+			stream, err = serviceClient.WatchWorkflows(ctx, req)
 			errors.CheckError(err)
-			break
 		}
+		errors.CheckError(err)
 		wf := event.Object
-		if wf == nil {
-			continue
-		}
 		if !wf.Status.FinishedAt.IsZero() {
 			if !quiet {
 				fmt.Printf("%s %s at %v\n", wfName, wf.Status.Phase, wf.Status.FinishedAt)
@@ -94,5 +96,4 @@ func waitOnOne(client workflowpkg.WorkflowServiceClient, ctx context.Context, wf
 			return true
 		}
 	}
-	return true
 }

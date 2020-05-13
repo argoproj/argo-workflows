@@ -35,6 +35,10 @@ type dagContext struct {
 
 	// tmplCtx is the context of template search.
 	tmplCtx *templateresolution.Context
+
+	// onExitTemplate is a flag denoting this template as part of an onExit handler. This is necessary to ensure that
+	// further nodes stemming from this template are allowed to run when using "ShutdownStrategy: Stop"
+	onExitTemplate bool
 }
 
 func (d *dagContext) getTask(taskName string) *wfv1.DAGTask {
@@ -51,13 +55,20 @@ func (d *dagContext) taskNodeName(taskName string) string {
 	return fmt.Sprintf("%s.%s", d.boundaryName, taskName)
 }
 
-func (d *dagContext) getTaskFromNode(node *wfv1.NodeStatus) *wfv1.DAGTask {
-	for _, task := range d.tasks {
-		if node.Name == d.taskNodeName(task.Name) {
-			return &task
-		}
+// nodeTaskName formulates the corresponding task name for a dag node. Note that this is not simply the inverse of
+// taskNodeName. A task name might be from an expanded task, in which case it will not have an explicit task defined for it.
+// When that is the case, we formulate the name of the original expanded task by removing the fields after "("
+func (d *dagContext) taskNameFromNodeName(nodeName string) string {
+	nodeName = strings.TrimPrefix(nodeName, fmt.Sprintf("%s.", d.boundaryName))
+	// Check if this nodeName comes from an expanded task. If it does, return the original parent task
+	if index := strings.Index(nodeName, "("); index != -1 {
+		nodeName = nodeName[:index]
 	}
-	panic("task from node " + node.Name + " does not exist")
+	return nodeName
+}
+
+func (d *dagContext) getTaskFromNode(node *wfv1.NodeStatus) *wfv1.DAGTask {
+	return d.getTask(d.taskNameFromNodeName(node.Name))
 }
 
 // taskNodeID formulates the node ID for a dag task
@@ -127,7 +138,9 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 		if unsuccessfulPhase == "" && !(isRetryAttempt(node, nodes) || d.getTaskFromNode(&node).ContinuesOn(node.Phase)) {
 			unsuccessfulPhase = node.Phase
 		}
-		if node.Type == wfv1.NodeTypeRetry && d.hasMoreRetries(&node) {
+		// If the node is a Retry node and has more retry attempts and is not shutting down, do not fail the task as a whole
+		// and allow the remaining retries to be executed
+		if node.Type == wfv1.NodeTypeRetry && d.hasMoreRetries(&node) && d.wf.Spec.Shutdown.ShouldExecute(d.onExitTemplate) {
 			retriesExhausted = false
 		}
 	}
@@ -165,10 +178,11 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 	// There are no currently running tasks. Now check if our dependencies were met
 	for _, depName := range targetTasks {
 		depNode := d.GetTaskNode(depName)
+		depTask := d.getTask(depName)
 		if depNode == nil {
 			return wfv1.NodeRunning
 		}
-		if !depNode.Successful() {
+		if !depNode.Successful() && !depTask.ContinuesOn(depNode.Phase) {
 			// we should theoretically never get here since it would have been caught in first loop
 			return depNode.Phase
 		}
@@ -227,13 +241,14 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	}()
 
 	dagCtx := &dagContext{
-		boundaryName: nodeName,
-		boundaryID:   node.ID,
-		tasks:        tmpl.DAG.Tasks,
-		visited:      make(map[string]bool),
-		tmpl:         tmpl,
-		wf:           woc.wf,
-		tmplCtx:      tmplCtx,
+		boundaryName:   nodeName,
+		boundaryID:     node.ID,
+		tasks:          tmpl.DAG.Tasks,
+		visited:        make(map[string]bool),
+		tmpl:           tmpl,
+		wf:             woc.wf,
+		tmplCtx:        tmplCtx,
+		onExitTemplate: opts.onExitTemplate,
 	}
 
 	// Identify our target tasks. If user did not specify any, then we choose all tasks which have
@@ -330,6 +345,10 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	dependenciesCompleted := true
 	dependenciesSuccessful := true
 	nodeName := dagCtx.taskNodeName(taskName)
+	// Ensure that the generated taskNodeName can be reversed into the original (not expanded) task name
+	if dagCtx.taskNameFromNodeName(nodeName) != task.Name {
+		panic("unreachable: node name cannot be reversed into task name; please file a bug on GitHub")
+	}
 	for _, depName := range task.Dependencies {
 		depNode := dagCtx.GetTaskNode(depName)
 		if depNode != nil && depNode.Completed() {
@@ -377,7 +396,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			for _, depName := range task.Dependencies {
 				depNode := dagCtx.GetTaskNode(depName)
 				outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
-				woc.log.Infof("DAG outbound nodes of %s are %s", depNode, outboundNodeIDs)
+				woc.log.Infof("DAG outbound nodes of %s are %s", depNode.ID, outboundNodeIDs)
 				for _, outNodeID := range outboundNodeIDs {
 					woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, taskNodeName)
 				}
@@ -398,7 +417,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 
 	// Next, expand the DAG's withItems/withParams/withSequence (if any). If there was none, then
 	// expandedTasks will be a single element list of the same task
-	expandedTasks, err := woc.expandTask(*newTask)
+	expandedTasks, err := expandTask(*newTask)
 	if err != nil {
 		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
 		connectDependencies(nodeName)
@@ -408,7 +427,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	// If DAG task has withParam of with withSequence then we need to create virtual node of type TaskGroup.
 	// For example, if we had task A with withItems of ['foo', 'bar'] which expanded to ['A(0:foo)', 'A(1:bar)'], we still
 	// need to create a node for A.
-	if len(task.WithItems) > 0 || task.WithParam != "" || task.WithSequence != nil {
+	if task.ShouldExpand() {
 		if taskGroupNode == nil {
 			connectDependencies(nodeName)
 			taskGroupNode = woc.initializeNode(nodeName, wfv1.NodeTypeTaskGroup, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeRunning, "")
@@ -416,8 +435,14 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 
 	for _, t := range expandedTasks {
-		node = dagCtx.GetTaskNode(t.Name)
+
 		taskNodeName := dagCtx.taskNodeName(t.Name)
+		// Ensure that the generated taskNodeName can be reversed into the original (not expanded) task name
+		if dagCtx.taskNameFromNodeName(taskNodeName) != task.Name {
+			panic("unreachable: task node name cannot be reversed into tag name; please file a bug on GitHub")
+		}
+
+		node = dagCtx.GetTaskNode(t.Name)
 		if node == nil {
 			woc.log.Infof("All of node %s dependencies %s completed", taskNodeName, task.Dependencies)
 			// Add the child relationship from our dependency's outbound nodes to this node.
@@ -437,7 +462,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		}
 
 		// Finally execute the template
-		_, _ = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID})
+		_, _ = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, &executeTemplateOpts{boundaryID: dagCtx.boundaryID, onExitTemplate: dagCtx.onExitTemplate})
 	}
 
 	if taskGroupNode != nil {
@@ -509,7 +534,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 
 	// Perform replacement
 	// Replace woc.volumes
-	err = woc.substituteParamsInVolumes(scope.replaceMap())
+	err = woc.substituteParamsInVolumes(scope.getParameters())
 	if err != nil {
 		return nil, err
 	}
@@ -520,7 +545,8 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 		return nil, errors.InternalWrapError(err)
 	}
 	fstTmpl := fasttemplate.New(string(taskBytes), "{{", "}}")
-	newTaskStr, err := common.Replace(fstTmpl, scope.replaceMap(), true)
+
+	newTaskStr, err := common.Replace(fstTmpl, woc.globalParams.Merge(scope.getParameters()), true)
 	if err != nil {
 		return nil, err
 	}
@@ -585,7 +611,7 @@ func findLeafTaskNames(tasks []wfv1.DAGTask) []string {
 }
 
 // expandTask expands a single DAG task containing withItems, withParams, withSequence into multiple parallel tasks
-func (woc *wfOperationCtx) expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
+func expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 	taskBytes, err := json.Marshal(task)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)

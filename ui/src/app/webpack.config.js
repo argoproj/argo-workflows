@@ -8,23 +8,24 @@ const path = require('path');
 const isProd = process.env.NODE_ENV === 'production';
 
 const config = {
-    entry: './src/app/index.tsx',
+    mode: isProd ? "production" : "development",
+    entry: "./src/app/index.tsx",
     output: {
-        filename: '[name].[chunkhash].js',
-        path: __dirname + '/../../dist/app'
+        filename: "[name].[chunkhash].js",
+        path: __dirname + "/../../dist/app"
     },
 
-    devtool: 'source-map',
+    devtool: "source-map",
 
     resolve: {
-        extensions: ['.ts', '.tsx', '.js', '.json']
+        extensions: [".ts", ".tsx", ".js", ".json"]
     },
 
     module: {
         rules: [
             {
                 test: /\.tsx?$/,
-                loaders: [...(isProd ? [] : ['react-hot-loader/webpack']), `ts-loader?allowTsInNodeModules=true&configFile=${path.resolve('./src/app/tsconfig.json')}`]
+                loaders: [...(isProd ? [] : ["react-hot-loader/webpack"]), `ts-loader?allowTsInNodeModules=true&configFile=${path.resolve("./src/app/tsconfig.json")}`]
             }, {
                 enforce: 'pre',
                 test: /\.js$/,
@@ -53,6 +54,8 @@ const config = {
             from: 'node_modules/argo-ui/src/assets', to: 'assets'
         }, {
             from: 'node_modules/@fortawesome/fontawesome-free/webfonts', to: 'assets/fonts'
+        }, {
+            from: 'src/app/assets', to: 'assets'
         }]),
     ],
     devServer: {
@@ -61,15 +64,15 @@ const config = {
         },
         proxy: {
             '/api': {
-                'target': isProd ? '' : 'http://localhost:2746',
+                'target': isProd ? '' : 'https://localhost:2746',
                 'secure': false,
             },
             '/artifacts': {
-                'target': isProd ? '' : 'http://localhost:2746',
+                'target': isProd ? '' : 'https://localhost:2746',
                 'secure': false,
             },
             '/artifacts-by-uid': {
-                'target': isProd ? '' : 'http://localhost:2746',
+                'target': isProd ? '' : 'https://localhost:2746',
                 'secure': false,
             }
         }

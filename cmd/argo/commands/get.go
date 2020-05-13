@@ -17,6 +17,7 @@ import (
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/printer"
 )
 
 const onExitSuffix = "onExit"
@@ -91,9 +92,20 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 		serviceAccount = "default"
 	}
 	fmt.Printf(fmtStr, "ServiceAccount:", serviceAccount)
-	fmt.Printf(fmtStr, "Status:", workflowStatus(wf))
+	fmt.Printf(fmtStr, "Status:", printer.WorkflowStatus(wf))
 	if wf.Status.Message != "" {
 		fmt.Printf(fmtStr, "Message:", wf.Status.Message)
+	}
+	if len(wf.Status.Conditions) > 0 {
+		fmt.Printf(fmtStr, "Conditions:", "")
+		for _, condition := range wf.Status.Conditions {
+			conditionMessage := condition.Message
+			if conditionMessage == "" {
+				conditionMessage = string(condition.Status)
+			}
+			conditionPrefix := fmt.Sprintf("%s %s", workflowConditionIconMap[condition.Type], string(condition.Type))
+			fmt.Printf(fmtStr, conditionPrefix, conditionMessage)
+		}
 	}
 	fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
 	if !wf.Status.StartedAt.IsZero() {
@@ -148,7 +160,7 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 		fmt.Println()
 		// apply a dummy FgDefault format to align tab writer with the rest of the columns
 		if getArgs.output == "wide" {
-			_, _ = fmt.Fprintf(w, "%s\tTEMPLATE\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\tRESOURCESDURATION\n", ansiFormat("STEP", FgDefault))
+			_, _ = fmt.Fprintf(w, "%s\tTEMPLATE\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\tRESOURCESDURATION\tNODENAME\n", ansiFormat("STEP", FgDefault))
 		} else {
 			_, _ = fmt.Fprintf(w, "%s\tTEMPLATE\tPODNAME\tDURATION\tMESSAGE\n", ansiFormat("STEP", FgDefault))
 		}
@@ -448,17 +460,21 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, get
 	var args []interface{}
 	duration := humanize.RelativeDurationShort(node.StartedAt.Time, node.FinishedAt.Time)
 	if node.Type == wfv1.NodeTypePod {
-		args = []interface{}{nodePrefix, nodeName, templateName, node.ID, duration, node.Message}
+		args = []interface{}{nodePrefix, nodeName, templateName, node.ID, duration, node.Message, ""}
 	} else {
-		args = []interface{}{nodePrefix, nodeName, templateName, "", "", node.Message}
+		args = []interface{}{nodePrefix, nodeName, templateName, "", "", node.Message, ""}
 	}
 	if getArgs.output == "wide" {
-		msg := args[len(args)-1]
-		args[len(args)-1] = getArtifactsString(node)
-		args = append(args, msg, node.ResourcesDuration)
-		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\t%s\n", args...)
+		msg := args[len(args)-2]
+		args[len(args)-2] = getArtifactsString(node)
+		args[len(args)-1] = msg
+		args = append(args, node.ResourcesDuration, "")
+		if node.Type == wfv1.NodeTypePod {
+			args[len(args)-1] = node.HostNodeName
+		}
+		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", args...)
 	} else {
-		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\n", args...)
+		_, _ = fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\t%s\n", args...)
 	}
 }
 

@@ -15,24 +15,24 @@ const getToken = () => {
 
 const maybeLoggedIn = () => !!getToken();
 const logout = () => {
-    document.cookie = 'authorization=;';
+    document.cookie = 'authorization=;Max-Age=0';
     document.location.reload(true);
 };
 const login = (token: string) => {
-    document.cookie = 'authorization=' + token + ';';
+    document.cookie = 'authorization=' + token + ';SameSite=Strict';
     document.location.href = uiUrl('');
 };
 export const Login = () => (
     <Page title='Login' toolbar={{breadcrumbs: [{title: 'Login'}]}}>
         <div className='argo-container'>
             <p>
-                <i className='fa fa-info-circle' /> You appear to be logged {maybeLoggedIn() ? 'in' : 'out'}. It may not be necessary to login to use Argo, it depends on how it is
-                configured.
+                <i className='fa fa-info-circle' /> You appear to be <b>logged {maybeLoggedIn() ? 'in' : 'out'}</b>. It may not be necessary to login to use Argo, it depends on how
+                it is configured.
             </p>
             <p>
                 Get your token using <code>argo auth token</code> and paste in this box.
             </p>
-            <textarea id='token' cols={100} rows={20} defaultValue={getToken()} />
+            <textarea id='token' cols={100} rows={20} />
             <div>
                 {maybeLoggedIn() && (
                     <button className='argo-button argo-button--base-o' onClick={() => logout()}>

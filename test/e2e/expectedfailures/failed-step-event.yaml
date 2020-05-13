@@ -12,5 +12,5 @@ spec:
   templates:
     - name: exit
       container:
-        image: cowsay:v1
-        command: [sh, -c, exit 1]
+        image: argoproj/argosay:v2
+        args: [exit, 1]

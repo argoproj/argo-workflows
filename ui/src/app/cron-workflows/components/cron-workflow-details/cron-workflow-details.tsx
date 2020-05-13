@@ -8,6 +8,7 @@ import {Loading} from '../../../shared/components/loading';
 import {services} from '../../../shared/services';
 import {CronWorkflowSummaryPanel} from '../cron-workflow-summary-panel';
 
+const jsonMergePatch = require('json-merge-patch');
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 interface State {
@@ -40,6 +41,20 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
         if (this.state.error !== undefined) {
             throw this.state.error;
         }
+        const suspendButton =
+            this.state.cronWorkflow && !this.state.cronWorkflow.spec.suspend
+                ? {
+                      title: 'Suspend',
+                      iconClassName: 'fa fa-pause',
+                      action: () => this.suspendCronWorkflow(),
+                      disabled: !this.state.cronWorkflow
+                  }
+                : {
+                      title: 'Resume',
+                      iconClassName: 'fa fa-play',
+                      action: () => this.resumeCronWorkflow(),
+                      disabled: !this.state.cronWorkflow || !this.state.cronWorkflow.spec.suspend
+                  };
         return (
             <Page
                 title='Cron Workflow Details'
@@ -50,7 +65,8 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
                                 title: 'Delete',
                                 iconClassName: 'fa fa-trash',
                                 action: () => this.deleteWorkflowTemplate()
-                            }
+                            },
+                            suspendButton
                         ]
                     },
                     breadcrumbs: [
@@ -92,5 +108,39 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
             .then(() => {
                 document.location.href = uiUrl('cron-workflows');
             });
+    }
+
+    private suspendCronWorkflow() {
+        const wf = JSON.parse(JSON.stringify(this.state.cronWorkflow));
+        wf.spec.suspend = true;
+        const patch = jsonMergePatch.generate(this.state.cronWorkflow, wf) || {};
+        services.cronWorkflows
+            .get(this.name, this.namespace)
+            .then(latest => jsonMergePatch.apply(latest, patch))
+            .then(patched => services.cronWorkflows.update(patched, this.name, this.namespace))
+            .catch(e => {
+                this.appContext.apis.notifications.show({
+                    content: 'Failed to suspend cron workflow ' + e,
+                    type: NotificationType.Error
+                });
+            })
+            .then((updated: CronWorkflow) => this.setState({cronWorkflow: updated}));
+    }
+
+    private resumeCronWorkflow() {
+        const wf = JSON.parse(JSON.stringify(this.state.cronWorkflow));
+        wf.spec.suspend = undefined;
+        const patch = jsonMergePatch.generate(this.state.cronWorkflow, wf) || {};
+        services.cronWorkflows
+            .get(this.name, this.namespace)
+            .then(latest => jsonMergePatch.apply(latest, patch))
+            .then(patched => services.cronWorkflows.update(patched, this.name, this.namespace))
+            .catch(e => {
+                this.appContext.apis.notifications.show({
+                    content: 'Failed to resume cron workflow ' + e,
+                    type: NotificationType.Error
+                });
+            })
+            .then((updated: CronWorkflow) => this.setState({cronWorkflow: updated}));
     }
 }

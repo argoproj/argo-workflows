@@ -7,12 +7,14 @@ import {Layout, NavigationManager, Notifications, NotificationsManager, Popup, P
 import {uiUrl} from './shared/base';
 import {ContextApis, Provider} from './shared/context';
 
+import {Version} from '../models';
 import archivedWorkflows from './archived-workflows';
 import clusterWorkflowTemplates from './cluster-workflow-templates';
 import cronWorkflows from './cron-workflows';
 import help from './help';
 import login from './login';
 import ErrorBoundary from './shared/components/error-boundary';
+import {services} from './shared/services';
 import workflowTemplates from './workflow-templates';
 import workflows from './workflows';
 
@@ -77,7 +79,7 @@ const navItems = [
     }
 ];
 
-export class App extends React.Component<{}, {popupProps: PopupProps}> {
+export class App extends React.Component<{}, {version?: Version; popupProps: PopupProps}> {
     public static childContextTypes = {
         history: PropTypes.object,
         apis: PropTypes.object
@@ -97,6 +99,7 @@ export class App extends React.Component<{}, {popupProps: PopupProps}> {
 
     public componentDidMount() {
         this.popupManager.popupProps.subscribe(popupProps => this.setState({popupProps}));
+        services.info.getVersion().then(version => this.setState({version}));
     }
 
     public render() {
@@ -114,7 +117,7 @@ export class App extends React.Component<{}, {popupProps: PopupProps}> {
                         <Redirect exact={true} path={uiUrl('')} to={workflowsUrl} />
                         <Redirect from={timelineUrl} to={uiUrl('workflows')} />
                         <ErrorBoundary>
-                            <Layout navItems={navItems}>
+                            <Layout navItems={navItems} version={() => <>{this.state.version ? this.state.version.version : 'unknown'}</>}>
                                 <Notifications notifications={this.notificationsManager.notifications} />
                                 {Object.keys(routes).map(path => {
                                     const route = routes[path];

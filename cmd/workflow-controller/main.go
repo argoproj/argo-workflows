@@ -81,13 +81,7 @@ func NewRootCommand() *cobra.Command {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			wfController.UpdateConfig()
-
 			go wfController.Run(ctx, workflowWorkers, podWorkers)
-			go wfController.MetricsServer(ctx)
-			go wfController.TelemetryServer(ctx)
-			go wfController.RunTTLController(ctx)
-			go wfController.RunCronController(ctx)
 
 			// Wait forever
 			select {}
@@ -102,8 +96,8 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().StringVar(&containerRuntimeExecutor, "container-runtime-executor", "", "Container runtime executor to use (overrides value in configmap)")
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.Flags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
-	command.Flags().IntVar(&workflowWorkers, "workflow-workers", 8, "Number of workflow workers")
-	command.Flags().IntVar(&podWorkers, "pod-workers", 8, "Number of pod workers")
+	command.Flags().IntVar(&workflowWorkers, "workflow-workers", 32, "Number of workflow workers")
+	command.Flags().IntVar(&podWorkers, "pod-workers", 32, "Number of pod workers")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that workflow-controller watches, default to the installation namespace")
 	return &command

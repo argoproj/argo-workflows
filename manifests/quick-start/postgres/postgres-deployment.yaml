@@ -27,3 +27,5 @@ spec:
               command: ["psql", "-U", "postgres", "-c", "SELECT 1"]
             initialDelaySeconds: 15
             timeoutSeconds: 2
+      nodeSelector:
+        kubernetes.io/os: linux

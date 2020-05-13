@@ -136,7 +136,7 @@ export class ClusterWorkflowTemplateDetails extends BasePage<RouteComponentProps
                     templateRef: {
                         name: template.metadata.name,
                         template: t.name,
-                        clusterscope: true
+                        clusterScope: true
                     }
                 }))
             }

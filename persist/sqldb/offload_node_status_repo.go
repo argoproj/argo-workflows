@@ -15,7 +15,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-const OffloadNodeStatusDisabledWarning = "Workflow has offloaded nodes, but offloading has been disabled"
+const OffloadNodeStatusDisabled = "Workflow has offloaded nodes, but offloading has been disabled"
 
 type UUIDVersion struct {
 	UID     string `db:"uid"`

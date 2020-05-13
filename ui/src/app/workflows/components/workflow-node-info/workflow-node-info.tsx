@@ -7,6 +7,7 @@ import * as models from '../../../../models';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
+import {getResolvedTemplates} from '../../../shared/template-resolution';
 import {Utils} from '../../../shared/utils';
 
 require('./workflow-node-info.scss');
@@ -27,8 +28,8 @@ interface Props {
 
 const AttributeRow = (attr: {title: string; value: any}) => (
     <div className='row white-box__details-row' key={attr.title}>
-        <div className='columns small-3'>{attr.title}</div>
-        <div className='columns small-9'>{attr.value}</div>
+        <div className='columns small-4'>{attr.title}</div>
+        <div className='columns small-8'>{attr.value}</div>
     </div>
 );
 const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
@@ -71,7 +72,7 @@ export const WorkflowNodeSummary = (props: Props) => {
         }
     ];
     if (props.node.type === 'Pod') {
-        attributes.splice(2, 0, {title: 'POD NAME', value: props.node.id});
+        attributes.splice(2, 0, {title: 'POD NAME', value: props.node.id}, {title: 'HOST NODE NAME', value: props.node.hostNodeName});
     }
     if (props.node.resourcesDuration) {
         attributes.push({
@@ -150,20 +151,20 @@ export const WorkflowNodeContainer = (props: {
         {title: 'IMAGE', value: container.image},
         {
             title: 'COMMAND',
-            value: <span className='workflow-node-info__multi-line'>{(container.command || []).join(' ')}</span>
+            value: <pre className='workflow-node-info__multi-line'>{(container.command || []).join(' ')}</pre>
         },
         container.source
-            ? {title: 'SOURCE', value: <span className='workflow-node-info__multi-line'>{container.source}</span>}
+            ? {title: 'SOURCE', value: <pre className='workflow-node-info__multi-line'>{container.source}</pre>}
             : {
                   title: 'ARGS',
-                  value: <span className='workflow-node-info__multi-line'>{(container.args || []).join(' ')}</span>
+                  value: <pre className='workflow-node-info__multi-line'>{(container.args || []).join(' ')}</pre>
               },
         hasEnv(container)
             ? {
                   title: 'ENV',
-                  value: <span className='workflow-node-info__multi-line'>{(container.env || []).map(e => `${e.name}=${e.value}`).join('\n')}</span>
+                  value: <pre className='workflow-node-info__multi-line'>{(container.env || []).map(e => `${e.name}=${e.value}`).join('\n')}</pre>
               }
-            : {title: 'ENV', value: <span className='workflow-node-info__multi-line' />}
+            : {title: 'ENV', value: <pre className='workflow-node-info__multi-line' />}
     ];
     return (
         <div className='white-box'>
@@ -184,7 +185,7 @@ export class WorkflowNodeContainers extends React.Component<Props, {selectedSide
     }
 
     public render() {
-        const template = Utils.getResolvedTemplates(this.props.workflow, this.props.node);
+        const template = getResolvedTemplates(this.props.workflow, this.props.node);
         if (!template || (!template.container && !template.script)) {
             return (
                 <div className='white-box'>

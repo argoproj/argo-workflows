@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"archive/tar"
 	"bufio"
 	"bytes"
 	"compress/gzip"
@@ -11,13 +12,11 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path"
 	"path/filepath"
 	"runtime/debug"
 	"strings"
-	"syscall"
 	"time"
 
 	argofile "github.com/argoproj/pkg/file"
@@ -36,6 +35,7 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/common"
+	os_specific "github.com/argoproj/argo/workflow/executor/os-specific"
 )
 
 const (
@@ -75,6 +75,10 @@ type ContainerRuntimeExecutor interface {
 	// GetOutputStream returns the entirety of the container output as a io.Reader
 	// Used to capture script results as an output parameter, and to archive container logs
 	GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error)
+
+	// GetExitCode returns the exit code of the container
+	// Used to capture script exit code as an output parameter
+	GetExitCode(containerID string) (string, error)
 
 	// WaitInit is called before Wait() to signal the executor about an impending Wait call.
 	// For most executors this is a noop, and is only used by the the PNS executor
@@ -162,7 +166,12 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 		if err != nil {
 			return err
 		}
-		if isTarball(tempArtPath) {
+
+		ok, err := isTarball(tempArtPath)
+		if err != nil {
+			return err
+		}
+		if ok {
 			err = untar(tempArtPath, artPath)
 			_ = os.Remove(tempArtPath)
 		} else {
@@ -439,8 +448,8 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			output, err = we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
 			if err != nil {
 				// We have a default value to use instead of returning an error
-				if param.ValueFrom.Default != "" {
-					output = param.ValueFrom.Default
+				if param.ValueFrom.Default != nil {
+					output = *param.ValueFrom.Default
 				} else {
 					return err
 				}
@@ -451,8 +460,8 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			out, err := ioutil.ReadFile(mountedPath)
 			if err != nil {
 				// We have a default value to use instead of returning an error
-				if param.ValueFrom.Default != "" {
-					output = param.ValueFrom.Default
+				if param.ValueFrom.Default != nil {
+					output = *param.ValueFrom.Default
 				} else {
 					return err
 				}
@@ -735,6 +744,28 @@ func (we *WorkflowExecutor) CaptureScriptResult() error {
 	return nil
 }
 
+// CaptureScriptExitCode will add the exit code of a script template as output exit code
+func (we *WorkflowExecutor) CaptureScriptExitCode() error {
+	if we.Template.Script == nil && we.Template.Container == nil {
+		log.Infof("Template type is neither of Script or Container. Capturing exit code ignored")
+		return nil
+	}
+	log.Infof("Capturing script exit code")
+	mainContainerID, err := we.GetMainContainerID()
+	if err != nil {
+		return err
+	}
+	exitCode, err := we.RuntimeExecutor.GetExitCode(mainContainerID)
+	if err != nil {
+		return err
+	}
+
+	if exitCode != "" {
+		we.Template.Outputs.ExitCode = &exitCode
+	}
+	return nil
+}
+
 // AnnotateOutputs annotation to the pod indicating all the outputs.
 func (we *WorkflowExecutor) AnnotateOutputs(logArt *wfv1.Artifact) error {
 	outputs := we.Template.Outputs.DeepCopy()
@@ -765,11 +796,18 @@ func (we *WorkflowExecutor) AddAnnotation(key, value string) error {
 }
 
 // isTarball returns whether or not the file is a tarball
-func isTarball(filePath string) bool {
-	cmd := exec.Command("tar", "-tf", filePath)
-	log.Info(cmd.Args)
-	err := cmd.Run()
-	return err == nil
+func isTarball(filePath string) (bool, error) {
+	log.Info("Checking if the file is a tarball: ", filePath)
+
+	f, err := os.Open(filePath)
+	if err != nil {
+		return false, errors.InternalWrapError(err)
+	}
+	defer f.Close()
+
+	tr := tar.NewReader(f)
+	_, err = tr.Next()
+	return err == nil, nil
 }
 
 // untar extracts a tarball to a temporary directory,
@@ -937,7 +975,7 @@ func (we *WorkflowExecutor) monitorAnnotations(ctx context.Context) <-chan struc
 	// directly from kubernetes API. The controller uses this to fast-track notification of annotations
 	// instead of waiting for the volume file to get updated (which can take minutes)
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGUSR2)
+	signal.Notify(sigs, os_specific.GetOsSignal())
 
 	we.setExecutionControl()
 

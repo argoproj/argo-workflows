@@ -21,7 +21,7 @@ spec:
     retryStrategy:
       limit: 4
     container:
-      image: cowsay:v1
+      image: argoproj/argosay:v1
       command: [sh, -c]
       args: ["sleep 1; cowsay hello world | tee /tmp/hello_world.txt"]
     outputs:

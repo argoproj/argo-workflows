@@ -22,6 +22,7 @@ import (
 	"github.com/argoproj/argo/util/help"
 	"github.com/argoproj/argo/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/templateresolution"
 )
 
@@ -35,6 +36,13 @@ type ValidateOpts struct {
 	// types of executors. For example, the inability of kubelet/k8s executors to copy artifacts
 	// out of the base image layer. If unspecified, will use docker executor validation
 	ContainerRuntimeExecutor string
+
+	// IgnoreEntrypoint indicates to skip/ignore the EntryPoint validation on workflow spec.
+	// Entrypoint is optional for WorkflowTemplate and ClusterWorkflowTemplate
+	IgnoreEntrypoint bool
+
+	// WorkflowTemplateValidation indicates that the current context is validating a WorkflowTemplate or ClusterWorkflowTemplate
+	WorkflowTemplateValidation bool
 }
 
 // templateValidationCtx is the context for validating a workflow spec
@@ -55,6 +63,7 @@ func newTemplateValidationCtx(wf *wfv1.Workflow, opts ValidateOpts) *templateVal
 	globalParams := make(map[string]string)
 	globalParams[common.GlobalVarWorkflowName] = placeholderGenerator.NextPlaceholder()
 	globalParams[common.GlobalVarWorkflowNamespace] = placeholderGenerator.NextPlaceholder()
+	globalParams[common.GlobalVarWorkflowServiceAccountName] = placeholderGenerator.NextPlaceholder()
 	globalParams[common.GlobalVarWorkflowUID] = placeholderGenerator.NextPlaceholder()
 	return &templateValidationCtx{
 		ValidateOpts: opts,
@@ -134,7 +143,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		ctx.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*wf.Spec.Priority))
 	}
 
-	if wf.Spec.Entrypoint == "" {
+	if !opts.IgnoreEntrypoint && wf.Spec.Entrypoint == "" {
 		return nil, errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
 	}
 
@@ -166,9 +175,17 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		}
 	}
 
-	_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.Entrypoint}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
-	if err != nil {
-		return nil, err
+	if !opts.IgnoreEntrypoint {
+		var args wfv1.ArgumentsProvider
+		args = &wf.Spec.Arguments
+
+		if opts.WorkflowTemplateValidation {
+			args = &FakeArguments{}
+		}
+		_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.Entrypoint}, tmplCtx, args, map[string]interface{}{})
+		if err != nil {
+			return nil, err
+		}
 	}
 	if wf.Spec.OnExit != "" {
 		// now when validating onExit, {{workflow.status}} is now available as a global
@@ -198,19 +215,16 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	return wfConditions, nil
 }
 
-// ValidateWorkflow accepts a workflow template and performs validation against it.
-func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl wfv1.TemplateHolder) error {
-	ctx := newTemplateValidationCtx(nil, ValidateOpts{})
-	tmplCtx := templateresolution.NewContext(wftmplGetter, cwftmplGetter, wftmpl, nil)
+// ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
+func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate) (*wfv1.WorkflowConditions, error) {
+	wf := common.ConvertWorkflowTemplateToWorkflow(wftmpl)
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
+}
 
-	// Check if all templates can be resolved.
-	for _, template := range wftmpl.GetTemplates() {
-		_, err := ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
-		}
-	}
-	return nil
+// ValidateClusterWorkflowTemplate accepts a cluster workflow template and performs validation against it.
+func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate) (*wfv1.WorkflowConditions, error) {
+	wf := common.ConvertClusterWorkflowTemplateToWorkflow(cwftmpl)
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
 }
 
 // ValidateCronWorkflow validates a CronWorkflow
@@ -299,10 +313,15 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 	if err != nil {
 		return err
 	}
+
 	localParams := make(map[string]string)
 	if tmpl.IsPodType() {
 		localParams[common.LocalVarPodName] = placeholderGenerator.NextPlaceholder()
 		scope[common.LocalVarPodName] = placeholderGenerator.NextPlaceholder()
+	}
+	if tmpl.RetryStrategy != nil {
+		localParams[common.LocalVarRetries] = placeholderGenerator.NextPlaceholder()
+		scope[common.LocalVarRetries] = placeholderGenerator.NextPlaceholder()
 	}
 	if tmpl.IsLeaf() {
 		for _, art := range tmpl.Outputs.Artifacts {
@@ -357,6 +376,16 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 		err = validateArtifactLocation(errPrefix, *newTmpl.ArchiveLocation)
 		if err != nil {
 			return err
+		}
+	}
+	if newTmpl.Metrics != nil {
+		for _, metric := range newTmpl.Metrics.Prometheus {
+			if !metrics.IsValidMetricName(metric.Name) {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s metric name '%s' is invalid. Metric names must contain alphanumeric characters, '_', or ':'", tmpl.Name, metric.Name)
+			}
+			if metric.Help == "" {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s metric '%s' must contain a help string under 'help: ' field", tmpl.Name, metric.Name)
+			}
 		}
 	}
 	return nil
@@ -770,6 +799,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 	}
 	if tmpl.Script != nil || tmpl.Container != nil {
 		scope[fmt.Sprintf("%s.outputs.result", prefix)] = true
+		scope[fmt.Sprintf("%s.exitCode", prefix)] = true
 	}
 	for _, param := range tmpl.Outputs.Parameters {
 		scope[fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)] = true
@@ -803,6 +833,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 		// `outputs.parameters` as its aggregator.
 		case wfv1.TemplateTypeScript:
 			scope[fmt.Sprintf("%s.outputs.result", prefix)] = true
+			scope[fmt.Sprintf("%s.exitCode", prefix)] = true
 		default:
 			scope[fmt.Sprintf("%s.outputs.parameters", prefix)] = true
 		}
@@ -918,8 +949,13 @@ func (ctx *templateValidationCtx) validateBaseImageOutputs(tmpl *wfv1.Template) 
 			}
 		}
 		for _, out := range tmpl.Outputs.Parameters {
-			if out.ValueFrom != nil && common.FindOverlappingVolume(tmpl, out.ValueFrom.Path) == nil {
-				return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.parameters.%s: %s", tmpl.Name, out.Name, errMsg)
+			if out.ValueFrom == nil {
+				continue
+			}
+			if out.ValueFrom.Path != "" {
+				if common.FindOverlappingVolume(tmpl, out.ValueFrom.Path) == nil {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.parameters.%s: %s", tmpl.Name, out.Name, errMsg)
+				}
 			}
 		}
 	}
@@ -1157,6 +1193,7 @@ var (
 	// paramRegex matches a parameter. e.g. {{inputs.parameters.blah}}
 	paramRegex               = regexp.MustCompile(`{{[-a-zA-Z0-9]+(\.[-a-zA-Z0-9_]+)*}}`)
 	paramOrArtifactNameRegex = regexp.MustCompile(`^[-a-zA-Z0-9_]+[-a-zA-Z0-9_]*$`)
+	workflowFieldNameRegex   = regexp.MustCompile("^" + workflowFieldNameFmt + "$")
 )
 
 func isParameter(p string) bool {
@@ -1177,15 +1214,13 @@ const (
 	workflowFieldMaxLength  int    = 128
 )
 
-var workflowFieldNameRegexp = regexp.MustCompile("^" + workflowFieldNameFmt + "$")
-
 // isValidWorkflowFieldName : workflow field name must consist of alpha-numeric characters or '-', and must start with an alpha-numeric character
 func isValidWorkflowFieldName(name string) []string {
 	var errs []string
 	if len(name) > workflowFieldMaxLength {
 		errs = append(errs, apivalidation.MaxLenError(workflowFieldMaxLength))
 	}
-	if !workflowFieldNameRegexp.MatchString(name) {
+	if !workflowFieldNameRegex.MatchString(name) {
 		msg := workflowFieldNameErrMsg + " (e.g. My-name1-2, 123-NAME)"
 		errs = append(errs, msg)
 	}

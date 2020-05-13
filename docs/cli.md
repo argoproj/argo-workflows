@@ -8,7 +8,7 @@ argo --help
 
 # Argo Server
 
-![alpha](assets/alpha.svg)
+![GA](assets/ga.svg)
 
 > v2.5 and after
 
@@ -19,3 +19,5 @@ To do so, set the ARGO_SERVER environment variable, e.g.:
 ```
 export ARGO_SERVER=localhost:2746
 ```
+
+See [TLS](tls.md).

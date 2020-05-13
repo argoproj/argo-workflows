@@ -314,11 +314,8 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 }
 
 // substitutePodParams returns a pod spec with parameter references substituted as well as pod.name
-func substitutePodParams(pod *apiv1.Pod, globalParams map[string]string, tmpl *wfv1.Template) (*apiv1.Pod, error) {
-	podParams := make(map[string]string)
-	for k, v := range globalParams {
-		podParams[k] = v
-	}
+func substitutePodParams(pod *apiv1.Pod, globalParams common.Parameters, tmpl *wfv1.Template) (*apiv1.Pod, error) {
+	podParams := globalParams.DeepCopy()
 	for _, inParam := range tmpl.Inputs.Parameters {
 		podParams["inputs.parameters."+inParam.Name] = *inParam.Value
 	}

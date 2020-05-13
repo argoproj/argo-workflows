@@ -3,6 +3,8 @@ package common
 import (
 	"time"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"github.com/argoproj/argo/pkg/apis/workflow"
 )
 
@@ -30,6 +32,8 @@ const (
 
 	// AnnotationKeyNodeName is the pod metadata annotation key containing the workflow node name
 	AnnotationKeyNodeName = workflow.WorkflowFullName + "/node-name"
+	// AnnotationKeyNodeName is the node's type
+	AnnotationKeyNodeType = workflow.WorkflowFullName + "/node-type"
 
 	// AnnotationKeyNodeMessage is the pod metadata annotation key the executor will use to
 	// communicate errors encountered by the executor during artifact load/save, etc...
@@ -112,6 +116,8 @@ const (
 	GlobalVarWorkflowName = "workflow.name"
 	// GlobalVarWorkflowNamespace is a global workflow variable referencing the workflow's metadata.namespace field
 	GlobalVarWorkflowNamespace = "workflow.namespace"
+	// GlobalVarWorkflowServiceAccountName is a global workflow variable referencing the workflow's spec.serviceAccountName field
+	GlobalVarWorkflowServiceAccountName = "workflow.serviceAccountName"
 	// GlobalVarWorkflowUID is a global workflow variable referencing the workflow's metadata.uid field
 	GlobalVarWorkflowUID = "workflow.uid"
 	// GlobalVarWorkflowStatus is a global workflow variable referencing the workflow's status.phase field
@@ -128,6 +134,8 @@ const (
 	GlobalVarWorkflowParameters = "workflow.parameters"
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"
+	// LocalVarRetries is a step level variable that references the retries number if retryStrategy is specified
+	LocalVarRetries = "retries"
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"
@@ -147,4 +155,11 @@ type ExecutionControl struct {
 	Deadline *time.Time `json:"deadline,omitempty"`
 	// IncludeScriptOutput is containing flag to include script output
 	IncludeScriptOutput bool `json:"includeScriptOutput,omitempty"`
+}
+
+func UnstructuredHasCompletedLabel(obj interface{}) bool {
+	if wf, ok := obj.(*unstructured.Unstructured); ok {
+		return wf.GetLabels()[LabelKeyCompleted] == "true"
+	}
+	panic("obj passed is not an Unstructured")
 }

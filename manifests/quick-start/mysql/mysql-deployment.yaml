@@ -33,3 +33,5 @@ spec:
               command: ["mysql", "-u", "mysql", "-ppassword", "argo", "-e", "SELECT 1"]
             initialDelaySeconds: 15
             timeoutSeconds: 2
+      nodeSelector:
+        kubernetes.io/os: linux

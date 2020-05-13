@@ -12,3 +12,13 @@ Several sets of manifests are provided:
 
 If installing with `kubectl install -f https://...`, remember to use the link to the file's raw version.
 Otherwise you will get `mapping values are not allowed in this context`.
+
+## Kustomize 
+
+> v2.8 and after
+
+You can use `./cluster-install` and `./namespace-install` as Kustomize remote bases.
+
+## Helm
+
+See [argo-helm](https://github.com/argoproj/argo-helm).

@@ -127,7 +127,7 @@ spec:
         parameters:
           - name: message
       container:
-        image: cowsay:v1
+        image: argoproj/argosay:v1
         command: [cowsay]
         args: ["{{inputs.parameters.message}}"]
         imagePullPolicy: IfNotPresent

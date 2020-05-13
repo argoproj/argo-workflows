@@ -9,10 +9,8 @@ import {Loading} from '../../../shared/components/loading';
 import {YamlEditor} from '../../../shared/components/yaml/yaml-editor';
 import {services} from '../../../shared/services';
 import {
-    defaultWorkflowDagRenderOptions,
     WorkflowArtifacts,
     WorkflowDag,
-    WorkflowDagRenderOptions,
     WorkflowLogsViewer,
     WorkflowNodeInfo,
     WorkflowParametersPanel,
@@ -20,12 +18,11 @@ import {
     WorkflowTimeline,
     WorkflowYamlViewer
 } from '../../../workflows/components';
-import {WorkflowDagRenderOptionsPanel} from '../../../workflows/components/workflow-dag/workflow-dag-render-options-panel';
+import {WorkflowYamlPanel} from '../../../workflows/components/workflow-details/workflow-yaml-panel';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 interface State {
-    workflowDagRenderOptions: WorkflowDagRenderOptions;
     workflow?: Workflow;
     links?: Link[];
     error?: Error;
@@ -66,7 +63,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = {workflowDagRenderOptions: defaultWorkflowDagRenderOptions};
+        this.state = {};
     }
 
     public componentDidMount(): void {
@@ -74,7 +71,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
             .get(this.uid)
             .then(workflow => this.setState({workflow}))
             .catch(error => this.setState({error}));
-        services.info.get().then(info => this.setState({links: info.links}));
+        services.info.getInfo().then(info => this.setState({links: info.links}));
     }
 
     public render() {
@@ -120,12 +117,6 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                     ],
                     tools: (
                         <div className='workflow-details__topbar-buttons'>
-                            {this.tab === 'workflow' && (
-                                <WorkflowDagRenderOptionsPanel
-                                    {...this.state.workflowDagRenderOptions}
-                                    onChange={workflowDagRenderOptions => this.setState({workflowDagRenderOptions})}
-                                />
-                            )}
                             <a className={classNames({active: this.tab === 'summary'})} onClick={() => (this.tab = 'summary')}>
                                 <i className='fa fa-columns' />
                             </a>
@@ -161,6 +152,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                             )}
                             <h6>Artifacts</h6>
                             <WorkflowArtifacts workflow={this.state.workflow} archived={true} />
+                            <WorkflowYamlPanel workflow={this.state.workflow} />
                         </div>
                     </div>
                 ) : (
@@ -168,10 +160,10 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                         <div className='workflow-details__graph-container'>
                             {this.tab === 'workflow' ? (
                                 <WorkflowDag
-                                    renderOptions={this.state.workflowDagRenderOptions}
-                                    workflow={this.state.workflow}
+                                    nodes={this.state.workflow.status.nodes}
+                                    workflowName={this.state.workflow.metadata.name}
                                     selectedNodeId={this.nodeId}
-                                    nodeClicked={node => (this.nodeId = node.id)}
+                                    nodeClicked={nodeId => (this.nodeId = nodeId)}
                                 />
                             ) : (
                                 <WorkflowTimeline workflow={this.state.workflow} selectedNodeId={this.nodeId} nodeClicked={node => (this.nodeId = node.id)} />

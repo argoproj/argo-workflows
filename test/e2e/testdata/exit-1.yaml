@@ -9,6 +9,6 @@ spec:
   templates:
     - name: exit
       container:
-        image: cowsay:v1
+        image: argoproj/argosay:v2
         command: [sh, -c, "exit 1"]
         imagePullPolicy: IfNotPresent

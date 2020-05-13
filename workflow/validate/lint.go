@@ -127,7 +127,7 @@ func LintWorkflowTemplateFile(wftmplGetter templateresolution.WorkflowTemplateNa
 		return errors.Errorf(errors.CodeBadRequest, "%s failed to parse: %v", filePath, err)
 	}
 	for _, wftmpl := range workflowTemplates {
-		err = ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, &wftmpl)
+		_, err = ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, &wftmpl)
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "%s: %s", filePath, err.Error())
 		}

@@ -43,7 +43,8 @@ spec:
 `
 
 func TestBasicMetric(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(basicMetric)
 	_, err := wfcset.Create(wf)
@@ -59,11 +60,11 @@ func TestBasicMetric(t *testing.T) {
 	woc.operate()
 
 	metricDesc := wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
-	assert.Contains(t, controller.Metrics, metricDesc)
-	metric := controller.Metrics[metricDesc].(prometheus.Gauge)
-	metrtcString, err := getMetricStringValue(metric)
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricDesc))
+	metric := controller.metrics.GetCustomMetric(metricDesc).(prometheus.Gauge)
+	metricString, err := getMetricStringValue(metric)
 	assert.NoError(t, err)
-	assert.Contains(t, metrtcString, `label:<name:"name" value:"random-int" > gauge:<value:`)
+	assert.Contains(t, metricString, `label:<name:"name" value:"random-int" > gauge:<value:`)
 }
 
 var counterMetric = `
@@ -98,7 +99,8 @@ spec:
 `
 
 func TestCounterMetric(t *testing.T) {
-	controller := newController()
+	cancel, controller := newController()
+	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(counterMetric)
 	_, err := wfcset.Create(wf)
@@ -114,16 +116,16 @@ func TestCounterMetric(t *testing.T) {
 	woc.operate()
 
 	metricTotalDesc := wf.Spec.Templates[0].Metrics.Prometheus[0].GetDesc()
-	assert.Contains(t, controller.Metrics, metricTotalDesc)
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricTotalDesc))
 	metricErrorDesc := wf.Spec.Templates[0].Metrics.Prometheus[1].GetDesc()
-	assert.Contains(t, controller.Metrics, metricErrorDesc)
+	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
 
-	metricTotalCounter := controller.Metrics[metricTotalDesc].(prometheus.Counter)
+	metricTotalCounter := controller.metrics.GetCustomMetric(metricTotalDesc).(prometheus.Counter)
 	metricTotalCounterString, err := getMetricStringValue(metricTotalCounter)
 	assert.NoError(t, err)
 	assert.Contains(t, metricTotalCounterString, `label:<name:"name" value:"flakey" > counter:<value:1 >`)
 
-	metricErrorCounter := controller.Metrics[metricErrorDesc].(prometheus.Counter)
+	metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
 	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
 	assert.NoError(t, err)
 	assert.Contains(t, metricErrorCounterString, `label:<name:"name" value:"flakey" > counter:<value:1 >`)

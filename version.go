@@ -3,36 +3,22 @@ package argo
 import (
 	"fmt"
 	"runtime"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 // Version information set by link flags during build. We fall back to these sane
 // default values when we build outside the Makefile context (e.g. go build or go test).
 var (
-	version      = "0.0.0"                // value from VERSION file
+	version      = "v0.0.0"               // value from VERSION file
 	buildDate    = "1970-01-01T00:00:00Z" // output from `date -u +'%Y-%m-%dT%H:%M:%SZ'`
 	gitCommit    = ""                     // output from `git rev-parse HEAD`
 	gitTag       = ""                     // output from `git describe --exact-match --tags HEAD` (if clean tree state)
 	gitTreeState = ""                     // determined from `git status --porcelain`. either 'clean' or 'dirty'
 )
 
-// Version contains Argo version information
-type Version struct {
-	Version      string
-	BuildDate    string
-	GitCommit    string
-	GitTag       string
-	GitTreeState string
-	GoVersion    string
-	Compiler     string
-	Platform     string
-}
-
-func (v Version) String() string {
-	return v.Version
-}
-
 // GetVersion returns the version information
-func GetVersion() Version {
+func GetVersion() wfv1.Version {
 	var versionStr string
 	if gitCommit != "" && gitTag != "" && gitTreeState == "clean" {
 		// if we have a clean tree state and the current commit is tagged,
@@ -41,7 +27,7 @@ func GetVersion() Version {
 	} else {
 		// otherwise formulate a version string based on as much metadata
 		// information we have available.
-		versionStr = "v" + version
+		versionStr = version
 		if len(gitCommit) >= 7 {
 			versionStr += "+" + gitCommit[0:7]
 			if gitTreeState != "clean" {
@@ -51,7 +37,7 @@ func GetVersion() Version {
 			versionStr += "+unknown"
 		}
 	}
-	return Version{
+	return wfv1.Version{
 		Version:      versionStr,
 		BuildDate:    buildDate,
 		GitCommit:    gitCommit,

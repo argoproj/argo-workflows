@@ -19,7 +19,7 @@ spec:
         templateRef:
           name: cluster-workflow-template-inner-steps
           template: inner-steps
-          clusterscope: true
+          clusterScope: true
         arguments:
           parameters:
           - name: message

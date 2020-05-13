@@ -9,5 +9,5 @@ spec:
   templates:
     - name: run-workflow
       container:
-        image: cowsay:v1
+        image: argoproj/argosay:v2
         imagePullPolicy: IfNotPresent

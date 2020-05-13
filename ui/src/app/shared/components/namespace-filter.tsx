@@ -25,7 +25,7 @@ export class NamespaceFilter extends React.Component<Props, State> {
 
     public componentDidMount(): void {
         services.info
-            .get()
+            .getInfo()
             .then(info => {
                 if (info.managedNamespace) {
                     const namespaceChanged = info.managedNamespace !== this.state.namespace;

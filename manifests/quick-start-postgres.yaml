@@ -270,6 +270,9 @@ rules:
   - clusterworkflowtemplates
   - clusterworkflowtemplates/finalizers
   verbs:
+  - create
+  - delete
+  - watch
   - get
   - list
   - watch
@@ -350,8 +353,6 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  featureFlags: |
-    resourcesDuration: true
   links: |
     - name: Example Workflow Link
       scope: workflow
@@ -360,6 +361,7 @@ data:
       scope: pod
       url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
   metricsConfig: |
+    disableLegacy: true
     enabled: true
     path: /metrics
     port: 9090
@@ -369,6 +371,7 @@ data:
       maxOpenConns: 0
     nodeStatusOffLoad: true
     archive: true
+    archiveTTL: 7d
     postgresql:
       host: postgres
       port: 5432
@@ -412,7 +415,8 @@ metadata:
   name: argo-server
 spec:
   ports:
-  - port: 2746
+  - name: web
+    port: 2746
     targetPort: 2746
   selector:
     app: argo-server
@@ -451,7 +455,8 @@ metadata:
   name: workflow-controller-metrics
 spec:
   ports:
-  - port: 9090
+  - name: metrics
+    port: 9090
     protocol: TCP
     targetPort: 9090
   selector:
@@ -478,6 +483,7 @@ spec:
         name: argo-server
         ports:
         - containerPort: 2746
+          name: web
         readinessProbe:
           httpGet:
             path: /
@@ -485,6 +491,8 @@ spec:
             scheme: HTTP
           initialDelaySeconds: 10
           periodSeconds: 20
+      nodeSelector:
+        kubernetes.io/os: linux
       serviceAccountName: argo-server
 ---
 apiVersion: apps/v1
@@ -521,6 +529,8 @@ spec:
             - SELECT 1
           initialDelaySeconds: 15
           timeoutSeconds: 2
+      nodeSelector:
+        kubernetes.io/os: linux
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -546,6 +556,8 @@ spec:
         - workflow-controller
         image: argoproj/workflow-controller:latest
         name: workflow-controller
+      nodeSelector:
+        kubernetes.io/os: linux
       serviceAccountName: argo
 ---
 apiVersion: v1

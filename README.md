@@ -1,25 +1,8 @@
 [![slack](https://img.shields.io/badge/slack-argoproj-brightgreen.svg?logo=slack)](https://argoproj.github.io/community/join-slack)
-
-# Argoproj - Get stuff done with Kubernetes
+[![CircleCI](https://circleci.com/gh/argoproj/argo.svg?style=svg)](https://circleci.com/gh/argoproj/argo)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=argoproj_argo&metric=alert_status)](https://sonarcloud.io/dashboard?id=argoproj_argo)
 
 ![Argo Image](docs/assets/argo.png)
-
-## Quickstart
-```bash
-kubectl create namespace argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/manifests/install.yaml
-```
-
-## What is Argoproj?
-
-Argoproj is a collection of tools for getting work done with Kubernetes.
-* [Argo Workflows](https://github.com/argoproj/argo) - Container-native Workflow Engine
-* [Argo CD](https://github.com/argoproj/argo-cd) - Declarative GitOps Continuous Delivery
-* [Argo Events](https://github.com/argoproj/argo-events) - Event-based Dependency Manager
-* [Argo Rollouts](https://github.com/argoproj/argo-rollouts) - Progressive Delivery with support for Canary and Blue Green deployment strategies
-
-Also argoproj-labs is a separate GitHub org that we setup for community contributions related to the Argoproj ecosystem. Repos in argoproj-labs are administered by the owners of each project. Please reach out to us on the Argo slack channel if you have a project that you would like to add to the org to make it easier to others in the Argo community to find, use, and contribute back.
-* https://github.com/argoproj-labs
 
 ## What is Argo Workflows?
 Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes. Argo Workflows is implemented as a Kubernetes CRD (Custom Resource Definition).
@@ -29,11 +12,19 @@ Argo Workflows is an open source container-native workflow engine for orchestrat
 * Easily run compute intensive jobs for machine learning or data processing in a fraction of the time using Argo Workflows on Kubernetes.
 * Run CI/CD pipelines natively on Kubernetes without configuring complex software development products.
 
+Argo is a [Cloud Native Computing Foundation (CNCF)](https://cncf.io/) hosted project.
+
 ## Why Argo Workflows?
 * Designed from the ground up for containers without the overhead and limitations of legacy VM and server-based environments.
 * Cloud agnostic and can run on any Kubernetes cluster.
 * Easily orchestrate highly parallel jobs on Kubernetes.
 * Argo Workflows puts a cloud-scale supercomputer at your fingertips!
+
+## Quickstart
+```bash
+kubectl create namespace argo
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/manifests/install.yaml
+```
 
 ## Who uses Argo Workflows?
 [Official Argo Workflows user list](USERS.md)
@@ -44,8 +35,13 @@ Argo Workflows is an open source container-native workflow engine for orchestrat
 * [How to configure your artifact repository](docs/configure-artifact-repository.md)
 
 ## Features
+* UI to visualize and manage Workflows
+* Artifact support (S3, Artifactory, HTTP, Git, GCS, raw)
+* Workflow templating to store commonly used Workflows in the cluster
+* Archiving Workflows after executing for later access
+* Scheduled workflows
+* Server interface with REST API
 * DAG or Steps based declaration of workflows
-* Artifact support (S3, Artifactory, HTTP, Git, raw)
 * Step level input & outputs (artifacts/parameters)
 * Loops
 * Parameterization
@@ -64,6 +60,12 @@ Argo Workflows is an open source container-native workflow engine for orchestrat
 * Daemoned steps
 * DinD (docker-in-docker)
 * Script steps
+* Event emission
+* Prometheus metrics
+* Multiple executors
+* Multiple pod and workflow garbage collection strategies
+* Automatically calculated resource usage per step
+* Pod Disruption Budget support
 
 ## Community Blogs and Presentations
 * [Argo Ansible role: Provisioning Argo Workflows on OpenShift](https://medium.com/@marekermk/provisioning-argo-on-openshift-with-ansible-and-kustomize-340a1fda8b50)
@@ -78,5 +80,5 @@ Argo Workflows is an open source container-native workflow engine for orchestrat
 
 ## Project Resources
 * Argo GitHub:  https://github.com/argoproj
-* Argo website: https://argoproj.github.io/
+* Argo Website: https://argoproj.github.io/
 * Argo Slack:   [click here to join](https://argoproj.github.io/community/join-slack)

@@ -6,8 +6,8 @@
         "src"
     ],
     "scripts": {
-        "build": "webpack --config ./src/app/webpack.config.js",
-        "start": "NODE_OPTIONS='--max-http-header-size 15000' webpack-dev-server --config ./src/app/webpack.config.js",
+        "build": "webpack -p --config ./src/app/webpack.config.js",
+        "start": "webpack-dev-server --config ./src/app/webpack.config.js",
         "lint": "tslint --fix -p ./src/app"
     },
     "dependencies": {

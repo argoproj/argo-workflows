@@ -67,7 +67,7 @@ func NewRootCommand() *cobra.Command {
 }
 
 func initExecutor() *executor.WorkflowExecutor {
-	log.WithField("version", argo.GetVersion()).Info("Starting Workflow Executor")
+	log.WithField("version", argo.GetVersion().Version).Info("Starting Workflow Executor")
 	config, err := clientConfig.ClientConfig()
 	checkErr(err)
 
@@ -101,7 +101,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	wfExecutor := executor.NewExecutor(clientset, podName, namespace, podAnnotationsPath, cre, *tmpl)
 	yamlBytes, _ := json.Marshal(&wfExecutor.Template)
 	vers := argo.GetVersion()
-	log.Infof("Executor (version: %s, build_date: %s) initialized (pod: %s/%s) with template:\n%s", vers, vers.BuildDate, namespace, podName, string(yamlBytes))
+	log.Infof("Executor (version: %s, build_date: %s) initialized (pod: %s/%s) with template:\n%s", vers.Version, vers.BuildDate, namespace, podName, string(yamlBytes))
 	return &wfExecutor
 }
 

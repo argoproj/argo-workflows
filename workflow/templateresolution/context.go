@@ -51,6 +51,13 @@ func WrapClusterWorkflowTemplateInterface(clusterClientset v1alpha1.ClusterWorkf
 	return &clusterWorkflowTemplateInterfaceWrapper{clientset: clusterClientset}
 }
 
+type NullClusterWorkflowTemplateGetter struct{}
+
+func (n *NullClusterWorkflowTemplateGetter) Get(name string) (*wfv1.ClusterWorkflowTemplate, error) {
+	return nil, errors.Errorf("", "invalid spec: clusterworkflowtemplates.argoproj.io `%s` is "+
+		"forbidden: User cannot get resource 'clusterworkflowtemplates' in API group argoproj.io at the cluster scope", name)
+}
+
 // Get retrieves the WorkflowTemplate of a given name.
 func (wrapper *clusterWorkflowTemplateInterfaceWrapper) Get(name string) (*wfv1.ClusterWorkflowTemplate, error) {
 	return wrapper.clientset.Get(name, metav1.GetOptions{})

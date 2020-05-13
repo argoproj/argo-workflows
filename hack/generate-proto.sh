@@ -1,8 +1,8 @@
 #!/bin/bash
 set -eux -o pipefail
 go get k8s.io/code-generator/cmd/go-to-protobuf@v0.16.7-beta.0
-go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v1.12.1
-go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.12.1
+go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v1.12.2
+go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.12.2
 go get github.com/gogo/protobuf/protoc-gen-gogo@v1.3.1
 go get github.com/gogo/protobuf/protoc-gen-gogofast@v1.3.1
 go get github.com/gogo/protobuf/gogoproto@v1.3.1
@@ -21,7 +21,7 @@ for f in $(find pkg -name '*.proto'); do
         -I ./vendor \
         -I ${GOPATH}/src \
         -I ${GOPATH}/pkg/mod/github.com/gogo/protobuf@v1.3.1/gogoproto \
-        -I ${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.12.1/third_party/googleapis \
+        -I ${GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.12.2/third_party/googleapis \
         --include_imports \
         --gogofast_out=plugins=grpc:${GOPATH}/src \
         --grpc-gateway_out=logtostderr=true:${GOPATH}/src \

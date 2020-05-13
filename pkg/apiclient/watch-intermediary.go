@@ -11,18 +11,18 @@ type watchIntermediary struct {
 	events chan *workflowpkg.WorkflowWatchEvent
 }
 
+func (w watchIntermediary) Send(e *workflowpkg.WorkflowWatchEvent) error {
+	w.events <- e
+	return nil
+}
+
 func (w watchIntermediary) Recv() (*workflowpkg.WorkflowWatchEvent, error) {
 	select {
 	case e := <-w.error:
 		return nil, e
-	default:
-		return <-w.events, nil
+	case event := <-w.events:
+		return event, nil
 	}
-}
-
-func (w watchIntermediary) Send(e *workflowpkg.WorkflowWatchEvent) error {
-	w.events <- e
-	return nil
 }
 
 func newWatchIntermediary(ctx context.Context) *watchIntermediary {

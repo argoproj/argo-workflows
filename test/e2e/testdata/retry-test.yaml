@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: retry-test
+  labels:
+    argo-e2e: "true"
+spec:
+  entrypoint: steps-outer
+  templates:
+    - name: steps-outer
+      steps:
+        - - name: steps-outer-step1
+            template: whalesay
+        - - name: steps-outer-step2
+            template: steps-inner
+
+    - name: steps-inner
+      steps:
+        - - name: steps-inner-step1
+            template: whalesay
+        - - name: steps-inner-step2
+            template: approve
+
+    - name: approve
+      suspend: {}
+
+    - name: whalesay
+      container:
+        image: argoproj/argosay:v2
+        args: [echo, "hello world"]

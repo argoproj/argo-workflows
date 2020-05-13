@@ -27,14 +27,6 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                 <Formik
                     initialValues={{resource: this.props.defaultResource, resourceString: jsYaml.dump(this.props.defaultResource)}}
                     onSubmit={(values, {setSubmitting}) => {
-                        if (!this.props.validate) {
-                            const validateResult = this.props.validate(values.resource);
-                            if (!validateResult.valid) {
-                                this.setState({invalid: true, error: {message: validateResult.message}});
-                                setSubmitting(false);
-                                return;
-                            }
-                        }
                         this.props
                             .onSubmit(values.resource)
                             .then(_ => setSubmitting(false))
@@ -47,9 +39,9 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                         <form onSubmit={formikApi.handleSubmit}>
                             <div className='white-box editable-panel'>
                                 <h4>Submit New {this.props.resourceName}</h4>
-                                <button type='submit' className='argo-button argo-button--base' disabled={formikApi.isSubmitting || this.state.invalid}>
-                                    Submit
-                                </button>
+                                <button type='button' className='argo-button argo-button--base' id='uploadWf' onClick={() => document.getElementById('file').click()}>
+                                    <i className='fa fa-upload' /> Upload File
+                                </button>{' '}
                                 {this.state.error ? (
                                     <p>
                                         <i className='fa fa-exclamation-triangle status-icon--failed' />
@@ -60,7 +52,6 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                 ) : (
                                     <p />
                                 )}
-
                                 {/* Workflow-level parameters*/}
                                 {this.props.resourceName === 'Workflow' &&
                                     formikApi.values.resource &&
@@ -68,10 +59,6 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                     formikApi.values.resource.spec.arguments &&
                                     formikApi.values.resource.spec.arguments.parameters &&
                                     this.renderParameterFields('Workflow Parameters', 'resource.spec.arguments', formikApi.values.resource.spec.arguments.parameters, formikApi)}
-
-                                <button type='button' className='argo-button argo-button--sm' id='uploadWf' onClick={() => document.getElementById('file').click()}>
-                                    Upload {this.props.resourceName}{' '}
-                                </button>
                                 <input
                                     type='file'
                                     style={{display: 'none'}}
@@ -80,12 +67,10 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                     onChange={e => {
                                         try {
                                             this.readFile(e.target.files, (newResource: string) => {
-                                                formikApi.setFieldValue('resource', jsYaml.load(e.currentTarget.value));
-                                                this.setState({
-                                                    error: undefined,
-                                                    invalid: false
-                                                });
-                                                formikApi.setFieldValue('resourceString', newResource);
+                                                const resource: T = jsYaml.load(newResource);
+                                                this.validate(resource);
+                                                formikApi.setFieldValue('resource', resource);
+                                                formikApi.setFieldValue('resourceString', jsYaml.dump(resource));
                                             });
                                         } catch (e) {
                                             this.setState({
@@ -108,11 +93,9 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                     onBlur={e => {
                                         formikApi.handleBlur(e);
                                         try {
-                                            formikApi.setFieldValue('resource', jsYaml.load(e.currentTarget.value));
-                                            this.setState({
-                                                error: undefined,
-                                                invalid: false
-                                            });
+                                            const resource: T = jsYaml.load(e.currentTarget.value);
+                                            this.validate(resource);
+                                            formikApi.setFieldValue('resource', resource);
                                         } catch (e) {
                                             this.setState({
                                                 error: {
@@ -126,12 +109,29 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                     onFocus={e => (e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px')}
                                     autoFocus={true}
                                 />
+                                <button type='submit' className='argo-button argo-button--base' disabled={formikApi.isSubmitting || this.state.invalid}>
+                                    <i className='fa fa-plus' /> Submit New Workflow
+                                </button>
                             </div>
                         </form>
                     )}
                 </Formik>
             </div>
         );
+    }
+
+    private validate(resource: T) {
+        if (this.props.validate) {
+            const validateResult = this.props.validate(resource);
+            if (!validateResult.valid) {
+                this.setState({invalid: true, error: {message: validateResult.message}});
+                return;
+            }
+        }
+        this.setState({
+            error: undefined,
+            invalid: false
+        });
     }
 
     private readFile(files: FileList, handleRead: (newResource: string) => void) {

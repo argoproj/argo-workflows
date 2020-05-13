@@ -10,6 +10,7 @@ import (
 
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -276,6 +277,17 @@ const (
 	ShutdownStrategyTerminate ShutdownStrategy = "Terminate"
 	ShutdownStrategyStop      ShutdownStrategy = "Stop"
 )
+
+func (s ShutdownStrategy) ShouldExecute(isOnExitPod bool) bool {
+	switch s {
+	case ShutdownStrategyTerminate:
+		return false
+	case ShutdownStrategyStop:
+		return isOnExitPod
+	default:
+		return true
+	}
+}
 
 type ParallelSteps struct {
 	Steps []WorkflowStep `protobuf:"bytes,1,rep,name=steps"`
@@ -596,7 +608,7 @@ type ValueFrom struct {
 	Parameter string `json:"parameter,omitempty" protobuf:"bytes,4,opt,name=parameter"`
 
 	// Default specifies a value to be used if retrieving the value from the specified source fails
-	Default string `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
+	Default *string `json:"default,omitempty" protobuf:"bytes,5,opt,name=default"`
 }
 
 // Artifact indicates an artifact to place at a specified path
@@ -704,6 +716,9 @@ type Outputs struct {
 
 	// Result holds the result (stdout) of a script template
 	Result *string `json:"result,omitempty" protobuf:"bytes,3,opt,name=result"`
+
+	// ExitCode holds the exit code of a script template
+	ExitCode *string `json:"exitCode,omitempty" protobuf:"bytes,4,opt,name=exitCode"`
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step
@@ -803,7 +818,7 @@ type TemplateRef struct {
 	// By enabling this option, you can create the referred workflow template before the actual runtime.
 	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
 	// ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
-	ClusterScope bool `json:"clusterscope,omitempty" protobuf:"varint,4,opt,name=clusterscope"`
+	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
 }
 
 type ArgumentsProvider interface {
@@ -975,13 +990,25 @@ func (in ResourcesDuration) Add(o ResourcesDuration) ResourcesDuration {
 func (in ResourcesDuration) String() string {
 	var parts []string
 	for n, d := range in {
-		parts = append(parts, fmt.Sprintf("%v*%s", d, n))
+		parts = append(parts, fmt.Sprintf("%v*(%s %s)", d, ResourceQuantityDenominator(n).String(), n))
 	}
 	return strings.Join(parts, ",")
 }
 
 func (in ResourcesDuration) IsZero() bool {
 	return len(in) == 0
+}
+
+func ResourceQuantityDenominator(r apiv1.ResourceName) *resource.Quantity {
+	q, ok := map[apiv1.ResourceName]resource.Quantity{
+		apiv1.ResourceMemory:           resource.MustParse("100Mi"),
+		apiv1.ResourceStorage:          resource.MustParse("10Gi"),
+		apiv1.ResourceEphemeralStorage: resource.MustParse("10Gi"),
+	}[r]
+	if !ok {
+		q = resource.MustParse("1")
+	}
+	return &q
 }
 
 type WorkflowConditions []WorkflowCondition
@@ -1019,6 +1046,8 @@ const (
 	WorkflowConditionCompleted WorkflowConditionType = "Completed"
 	// WorkflowConditionSpecWarning is a warning on the current application spec
 	WorkflowConditionSpecWarning WorkflowConditionType = "SpecWarning"
+	// WorkflowConditionMetricsError is an error during metric emission
+	WorkflowConditionMetricsError WorkflowConditionType = "MetricsError"
 )
 
 type WorkflowCondition struct {
@@ -1113,6 +1142,9 @@ type NodeStatus struct {
 	// a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
 	// a template, will be a superset of the outbound nodes of its last children.
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
+
+	// HostNodeName name of the Kubernetes node on which the Pod is running, if applicable
+	HostNodeName string `json:"hostNodeName,omitempty" protobuf:"bytes,22,rep,name=hostNodeName"`
 }
 
 func (n Nodes) GetResourcesDuration() ResourcesDuration {
@@ -1482,6 +1514,13 @@ type ResourceTemplate struct {
 	// FailureCondition is a label selector expression which describes the conditions
 	// of the k8s resource in which the step was considered failed
 	FailureCondition string `json:"failureCondition,omitempty" protobuf:"bytes,6,opt,name=failureCondition"`
+
+	// Flags is a set of additional options passed to kubectl before submitting a resource
+	// I.e. to disable resource validation:
+	// flags: [
+	// 	"--validate=false"  # disable resource validation
+	// ]
+	Flags []string `json:"flags,omitempty" protobuf:"varint,7,opt,name=flags"`
 }
 
 // GetType returns the type of this template
@@ -1635,6 +1674,9 @@ func (out *Outputs) HasOutputs() bool {
 	if out.Result != nil {
 		return true
 	}
+	if out.ExitCode != nil {
+		return true
+	}
 	if len(out.Artifacts) > 0 {
 		return true
 	}
@@ -1645,6 +1687,9 @@ func (out *Outputs) HasOutputs() bool {
 }
 
 func (out *Outputs) GetArtifactByName(name string) *Artifact {
+	if out == nil {
+		return nil
+	}
 	return out.Artifacts.GetArtifactByName(name)
 }
 
@@ -1688,11 +1733,6 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 // GetResourceScope returns the template scope of workflow.
 func (wf *Workflow) GetResourceScope() ResourceScope {
 	return ResourceScopeLocal
-}
-
-// GetTemplates returns the list of templates of workflow.
-func (wf *Workflow) GetTemplates() []Template {
-	return wf.Spec.Templates
 }
 
 // NodeID creates a deterministic node ID based on a node name

@@ -1,3 +1,5 @@
+import * as models from '../../models';
+
 /**
  * Format the given number number of seconds in the form _d_h_m_s.
  * @param seconds Number of seconds to format. Will be rounded to the nearest whole number.
@@ -23,4 +25,24 @@ export function formatDuration(seconds: number) {
     }
 
     return formattedDuration;
+}
+
+export function denominator(resource: string) {
+    switch (resource) {
+        case 'memory':
+            return '100Mi';
+        case 'storage':
+            return '10Gi';
+        case 'ephemeral-storage':
+            return '10Gi';
+        default:
+            return '1';
+    }
+}
+
+export function wfDuration(status: models.WorkflowStatus) {
+    if (!status.startedAt) {
+        return 0;
+    }
+    return ((status.finishedAt ? new Date(status.finishedAt) : new Date()).getTime() - new Date(status.startedAt).getTime()) / 1000;
 }

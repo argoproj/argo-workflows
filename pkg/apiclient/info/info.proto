@@ -17,8 +17,15 @@ message InfoResponse {
     repeated github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Link links = 2;
 }
 
+message GetVersionRequest {
+}
+
+
 service InfoService {
     rpc GetInfo (GetInfoRequest) returns (InfoResponse) {
         option (google.api.http).get = "/api/v1/info";
+    }
+    rpc GetVersion (GetVersionRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Version) {
+        option (google.api.http).get = "/api/v1/version";
     }
 }
