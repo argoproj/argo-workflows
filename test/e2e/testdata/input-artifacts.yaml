@@ -8,12 +8,22 @@ spec:
   entrypoint: main
   templates:
     - name: main
-      container:
-        image: argoproj/argosay:v2
+      script:
+        image: argoproj/argosay:v1
+      source:
       inputs:
         artifacts:
-          - name: my-artifact
-            path: /my-artifact
+          - name: my-http-artifact
+            path: /my-http-artifact
+            http:
+              url: http://localhost:666
+          - name: my-git-artifact
+            path: /my-git-artifact
+            git:
+              repo: https://github.com/argoproj/argo.git
+              revision: does-not-exist
+          - name: my-s3-artifact
+            path: /my-s3-artifact
             optional: true
             s3:
               bucket: my-bucket
