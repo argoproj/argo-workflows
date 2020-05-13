@@ -51,10 +51,10 @@ func TestPrintNode(t *testing.T) {
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, "", nodeID, "0s", nodeMessage, ""), node, nodePrefix, getArgs)
 
 	getArgs.status = []string{"Running"}
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
 
 	getArgs.hide = []string{"foobar"}
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
 
 	getArgs.hide = []string{"Running"}
 	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
