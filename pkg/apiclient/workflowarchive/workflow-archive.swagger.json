@@ -214,7 +214,7 @@
       "properties": {
         "credentialName": {
           "type": "string",
-          "description": "CredentialName is the name of a credential to use."
+          "description": "CredentialName is the name of a credential to use with this."
         },
         "archiveLogs": {
           "type": "boolean",
