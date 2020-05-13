@@ -2,10 +2,12 @@ package http
 
 import (
 	"os/exec"
+	"strings"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
 )
 
 // HTTPArtifactDriver is the artifact driver for a HTTP URL
@@ -14,10 +16,17 @@ type HTTPArtifactDriver struct{}
 // Load download artifacts from an HTTP URL
 func (h *HTTPArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	// Download the file to a local file path
-	err := common.RunCommand("curl", "-fsS", "-L", "-o", path, inputArtifact.HTTP.URL)
+	args := []string{"-fsS", "-L", "-o", path, inputArtifact.HTTP.URL}
+	log.Info(strings.Join(append([]string{"curl"}, args...), " "))
+	cmd := exec.Command("curl", args...)
+	output, err := cmd.CombinedOutput()
+	log.Info(string(output))
 	if err != nil {
+		log.WithError(err).Error()
 		if exitErr, ok := err.(*exec.ExitError); ok {
-			if exitErr.ExitCode() == 6 || exitErr.ExitCode() == 22 {
+			// https://ec.haxx.se/usingcurl/usingcurl-returns
+			// 22 - HTTP page not retrieved.
+			if exitErr.ExitCode() == 22 {
 				return errors.New(errors.CodeNotFound, exitErr.Error())
 			}
 		}
@@ -26,6 +35,6 @@ func (h *HTTPArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) err
 	return nil
 }
 
-func (h *HTTPArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
+func (h *HTTPArtifactDriver) Save(string, *wfv1.Artifact) error {
 	return errors.Errorf(errors.CodeBadRequest, "HTTP output artifacts unsupported")
 }

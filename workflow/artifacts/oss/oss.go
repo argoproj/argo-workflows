@@ -44,7 +44,6 @@ func (ossDriver *OSSArtifactDriver) Load(inputArtifact *wfv1.Artifact, path stri
 			objectName := inputArtifact.OSS.Key
 			err = bucket.GetObjectToFile(objectName, path)
 			if err != nil {
-				// TODO - convert to 404
 				return false, err
 			}
 			return true, nil

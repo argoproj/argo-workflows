@@ -93,9 +93,6 @@ func gitClone(path string, inputArtifact *wfv1.Artifact, auth transport.AuthMeth
 
 	repo, err := git.PlainClone(path, false, &cloneOptions)
 	if err != nil {
-		if err == git.ErrRemoteNotFound || err == git.ErrRepositoryNotExists || err == git.ErrBranchNotFound || err == git.ErrTagNotFound {
-			return errors.New(errors.CodeNotFound, err.Error())
-		}
 		return errors.InternalWrapError(err)
 	}
 
