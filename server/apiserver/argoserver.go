@@ -54,6 +54,7 @@ type argoServer struct {
 	baseHRef string
 	// https://itnext.io/practical-guide-to-securing-grpc-connections-with-go-and-tls-part-1-f63058e9d6d1
 	tlsConfig        *tls.Config
+	hsts             bool
 	namespace        string
 	managedNamespace string
 	kubeClientset    *kubernetes.Clientset
@@ -73,12 +74,14 @@ type ArgoServerOpts struct {
 	// config map name
 	ConfigName       string
 	ManagedNamespace string
+	HSTS             bool
 }
 
 func NewArgoServer(opts ArgoServerOpts) *argoServer {
 	return &argoServer{
 		baseHRef:         opts.BaseHRef,
 		tlsConfig:        opts.TLSConfig,
+		hsts:             opts.HSTS,
 		namespace:        opts.Namespace,
 		managedNamespace: opts.ManagedNamespace,
 		kubeClientset:    opts.KubeClientset,
@@ -257,7 +260,8 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.Handle("/api/", gwmux)
 	mux.HandleFunc("/artifacts/", artifactServer.GetArtifact)
 	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetArtifactByUID)
-	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef).ServerFiles)
+	// we only enable HTST if we are insecure mode, otherwise you would never be able access the UI
+	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts).ServerFiles)
 	return &httpServer
 }
 
