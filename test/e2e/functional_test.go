@@ -497,7 +497,7 @@ spec:
 
 func (s *FunctionalSuite) TestSameInputOutputPathOptionalArtifact() {
 	s.Given().
-		Workflow("@functional/same-input-output-path-optional.yaml").
+		Workflow("@testdata/same-input-output-path-optional.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(30 * time.Second).
