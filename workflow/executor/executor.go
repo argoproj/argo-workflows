@@ -167,11 +167,19 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 			return err
 		}
 
-		ok, err := isTarball(tempArtPath)
-		if err != nil {
-			return err
+		var isTar bool
+		if art.Archive.None != nil {
+			isTar = false
+		} else if art.Archive.Tar != nil {
+			isTar = true
+		} else {
+			isTar, err = isTarball(tempArtPath)
+			if err != nil {
+				return err
+			}
 		}
-		if archiveStrategy.None == nil &&  ok {
+
+		if isTar {
 			err = untar(tempArtPath, artPath)
 			_ = os.Remove(tempArtPath)
 		} else {
