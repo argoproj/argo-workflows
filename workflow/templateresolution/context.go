@@ -249,7 +249,7 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateReferenceHolder,
 		templateStored = true
 	}
 
-	// merge the referred template into the original.
+	// Merge the referred template into the original.
 	mergedTmpl, err := common.MergeReferredTemplate(tmpl, resolvedTmpl)
 	if err != nil {
 		return nil, nil, false, err

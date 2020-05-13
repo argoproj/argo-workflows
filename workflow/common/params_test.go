@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestParamsMerge ensures merge of Parameters works correctly.
+// TestParamsMerge ensures Merge of Parameters works correctly.
 func TestParamsMerge(t *testing.T) {
 	params := Parameters{"foo": "1"}
 	newParams := params.Merge(Parameters{"foo": "2", "bar": "1"}, Parameters{"wow": "1"})

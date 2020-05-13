@@ -3,7 +3,7 @@ package common
 // Parameters extends string map with useful methods.
 type Parameters map[string]string
 
-// merge merges given parameteres.
+// Merge merges given parameteres.
 func (ps Parameters) Merge(args ...Parameters) Parameters {
 	newParams := ps.DeepCopy()
 	for _, params := range args {
