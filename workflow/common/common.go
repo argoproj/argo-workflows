@@ -3,6 +3,8 @@ package common
 import (
 	"time"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"github.com/argoproj/argo/pkg/apis/workflow"
 )
 
@@ -153,4 +155,11 @@ type ExecutionControl struct {
 	Deadline *time.Time `json:"deadline,omitempty"`
 	// IncludeScriptOutput is containing flag to include script output
 	IncludeScriptOutput bool `json:"includeScriptOutput,omitempty"`
+}
+
+func UnstructuredHasCompletedLabel(obj interface{}) bool {
+	if wf, ok := obj.(*unstructured.Unstructured); ok {
+		return wf.GetLabels()[LabelKeyCompleted] == "true"
+	}
+	panic("obj passed is not an Unstructured")
 }
