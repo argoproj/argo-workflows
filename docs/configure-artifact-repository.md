@@ -6,7 +6,7 @@ and Minio. This section shows how to configure the artifact repository.
 Subsequent sections will show how to use it.
 
 | Name | Inputs | Outputs | Usage (Feb 2020) |
-|---|---|---|---
+|---|---|---|---|
 | Artifactory | Yes | Yes | 11% |
 | GCS | Yes | Yes | - |
 | Git | Yes | No | - |
