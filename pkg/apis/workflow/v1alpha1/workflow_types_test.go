@@ -24,6 +24,11 @@ func TestWorkflows(t *testing.T) {
 	assert.Equal(t, "3", wfs[3].Name)
 }
 
+func TestArtifact_GetArchive(t *testing.T) {
+	assert.NotNil(t, (&Artifact{}).GetArchive())
+	assert.Equal(t, &ArchiveStrategy{None: &NoneStrategy{}}, (&Artifact{Archive: &ArchiveStrategy{None: &NoneStrategy{}}}).GetArchive())
+}
+
 func TestNodes_FindByDisplayName(t *testing.T) {
 	assert.Nil(t, Nodes{}.FindByDisplayName(""))
 	assert.NotNil(t, Nodes{"": NodeStatus{DisplayName: "foo"}}.FindByDisplayName("foo"))
