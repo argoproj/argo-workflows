@@ -67,7 +67,7 @@ func (s3Driver *S3ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string
 			}
 			if !isDir {
 				// It's neither a file, nor a directory. Return the original NoSuchKey error
-				return false, errors.Errorf(errors.CodeNotFound, origErr.Error())
+				return false, errors.New(errors.CodeNotFound, origErr.Error())
 			}
 
 			if err = s3cli.GetDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path); err != nil {
