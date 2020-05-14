@@ -291,7 +291,7 @@ func (woc *wfOperationCtx) operate() {
 	var node *wfv1.NodeStatus
 
 	tmpl := &wfv1.WorkflowStep{Template: woc.wfSpec.Entrypoint}
-
+	args := woc.wfSpec.Arguments
 	if woc.wf.Spec.WorkflowTemplateRef != nil {
 		entrypoint := woc.wf.Spec.Entrypoint
 
@@ -300,10 +300,7 @@ func (woc *wfOperationCtx) operate() {
 		}
 		tmpl.Template = ""
 		tmpl.TemplateRef = woc.wf.Spec.WorkflowTemplateRef.ToTemplateRef(entrypoint)
-	}
-
-	args := wfv1.Arguments{
-		Parameters: woc.submissionParameters,
+		args.Parameters = woc.submissionParameters
 	}
 
 	node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, tmpl, tmplCtx, args, &executeTemplateOpts{})

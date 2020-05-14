@@ -86,6 +86,7 @@ func TestGlobalParams(t *testing.T) {
 	cancel, controller := newController(wf)
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
+	woc.loadWorkflowSpec()
 	woc.operate()
 	if assert.Contains(t, woc.globalParams, "workflow.creationTimestamp") {
 		assert.NotContains(t, woc.globalParams["workflow.creationTimestamp"], "UTC")
@@ -625,6 +626,7 @@ func TestRetriesVariable(t *testing.T) {
 			assert.Nil(t, err)
 		}
 		woc := newWorkflowOperationCtx(wf, controller)
+		woc.loadWorkflowSpec()
 		woc.operate()
 	}
 
@@ -684,6 +686,7 @@ func TestStepsRetriesVariable(t *testing.T) {
 		}
 		// move to next retry step
 		woc := newWorkflowOperationCtx(wf, controller)
+		woc.loadWorkflowSpec()
 		woc.operate()
 	}
 
