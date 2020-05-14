@@ -26,10 +26,8 @@ spec:
 
   - name: locate-faces
     container:
-      image: alpine:latest
-      command: [sh, -c]
-      args:
-      - echo '[1, 2, 3]' > /workdir/result.json
+      image: argoproj/argosay:v2
+      args: [echo, "[1, 2, 3]", /workdir/result.json]
       volumeMounts:
       - name: workdir
         mountPath: /workdir
@@ -48,6 +46,5 @@ spec:
 
   - name: noop
     container:
-      image: alpine:latest
-      command: ["sh", "-c"]
-      args: ["sleep 1"]
+      image: argoproj/argosay:v2
+      args: ["sleep", "1s"]

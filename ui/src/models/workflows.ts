@@ -640,7 +640,7 @@ export interface NodeStatus {
     finishedAt: kubernetes.Time;
 
     /**
-     * How much resource was used.
+     * How much resource was requested.
      */
     resourcesDuration?: {[resource: string]: number};
 
@@ -758,7 +758,7 @@ export interface WorkflowStatus {
     storedTemplates: {[name: string]: Template};
 
     /**
-     * ResourcesDuration tracks how much resources were used.
+     * ResourcesDuration tracks how much resources were requested.
      */
     resourcesDuration?: {[resource: string]: number};
 

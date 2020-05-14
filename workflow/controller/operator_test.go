@@ -81,6 +81,24 @@ spec:
         mountPath: /mnt/existing-vol
 `
 
+func TestGlobalParams(t *testing.T) {
+	wf := unmarshalWF(helloWorldWf)
+	cancel, controller := newController(wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	if assert.Contains(t, woc.globalParams, "workflow.creationTimestamp") {
+		assert.NotContains(t, woc.globalParams["workflow.creationTimestamp"], "UTC")
+	}
+	assert.Contains(t, woc.globalParams, "workflow.duration")
+	assert.Contains(t, woc.globalParams, "workflow.labels.workflows.argoproj.io/phase")
+	assert.Contains(t, woc.globalParams, "workflow.name")
+	assert.Contains(t, woc.globalParams, "workflow.namespace")
+	assert.Contains(t, woc.globalParams, "workflow.parameters")
+	assert.Contains(t, woc.globalParams, "workflow.serviceAccountName")
+	assert.Contains(t, woc.globalParams, "workflow.uid")
+}
+
 // TestSidecarWithVolume verifies ia sidecar can have a volumeMount reference to both existing or volumeClaimTemplate volumes
 func TestSidecarWithVolume(t *testing.T) {
 	cancel, controller := newController()
@@ -570,6 +588,111 @@ func TestBackoffMessage(t *testing.T) {
 	assert.True(t, proceed)
 	// New node is started, message should be clear
 	assert.Equal(t, "", newRetryNode.Message)
+}
+
+var retriesVariableTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: whalesay
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    retryStrategy:
+      limit: 10
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay {{retries}}"]
+`
+
+func TestRetriesVariable(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(retriesVariableTemplate)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+
+	iterations := 5
+	for i := 1; i <= iterations; i++ {
+		if i != 1 {
+			makePodsPhase(t, apiv1.PodFailed, controller.kubeclientset, wf.ObjectMeta.Namespace)
+			wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+			assert.Nil(t, err)
+		}
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+	}
+
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, iterations, len(pods.Items))
+	for i := 0; i < iterations; i++ {
+		assert.Equal(t, fmt.Sprintf("cowsay %d", i), pods.Items[i].Spec.Containers[1].Args[0])
+	}
+}
+
+var stepsRetriesVariableTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: whalesay
+spec:
+  entrypoint: step-retry
+  templates:
+  - name: step-retry
+    retryStrategy:
+      limit: 10
+    steps:
+      - - name: whalesay-success
+          arguments:
+            parameters:
+            - name: retries
+              value: "{{retries}}"
+          template: whalesay
+
+  - name: whalesay
+    inputs:
+      parameters:
+        - name: retries
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay {{inputs.parameters.retries}}"]
+`
+
+func TestStepsRetriesVariable(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(stepsRetriesVariableTemplate)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+
+	iterations := 5
+	for i := 1; i <= iterations; i++ {
+		if i != 1 {
+			makePodsPhase(t, apiv1.PodFailed, controller.kubeclientset, wf.ObjectMeta.Namespace)
+			wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+			assert.Nil(t, err)
+		}
+		// move to next retry step
+		woc := newWorkflowOperationCtx(wf, controller)
+		woc.operate()
+	}
+
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, iterations, len(pods.Items))
+	for i := 0; i < iterations; i++ {
+		assert.Equal(t, fmt.Sprintf("cowsay %d", i), pods.Items[i].Spec.Containers[1].Args[0])
+	}
 }
 
 func TestAssessNodeStatus(t *testing.T) {
@@ -2801,7 +2924,7 @@ metadata:
   name: artifact-repo-config-ref
 spec:
   entrypoint: whalesay
-  poddisruptionbudget: 
+  poddisruptionbudget:
     minavailable: 100%
   templates:
   - name: whalesay
@@ -3324,4 +3447,185 @@ func TestResolvePlaceholdersInGlobalVariables(t *testing.T) {
 	assert.NotNil(t, serviceAccountNameValue)
 	assert.NotEmpty(t, *serviceAccountNameValue)
 	assert.Equal(t, "testServiceAccountName", *serviceAccountNameValue)
+}
+
+var maxDurationOnErroredFirstNode = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: "2020-05-07T17:40:57Z"
+  generateName: echo-
+  generation: 4
+  labels:
+    workflows.argoproj.io/phase: Running
+  name: echo-wngc4
+  namespace: argo
+  resourceVersion: "6339"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/argo/workflows/echo-wngc4
+  uid: bed2749b-2971-4172-a61e-455ef02c4379
+spec:
+  arguments: {}
+  entrypoint: echo
+  templates:
+  - arguments: {}
+    container:
+      args:
+      - sleep 10 && exit 1
+      command:
+      - sh
+      - -c
+      image: alpine:3.7
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: echo
+    outputs: {}
+    retryStrategy:
+      retryPolicy: "Always"
+      backoff:
+        duration: "10"
+        factor: 1
+        maxDuration: 20m
+      limit: 4
+status:
+  finishedAt: null
+  nodes:
+    echo-wngc4:
+      children:
+      - echo-wngc4-1641470511
+      displayName: echo-wngc4
+      finishedAt: null
+      id: echo-wngc4
+      name: echo-wngc4
+      phase: Running
+      startedAt: "2020-05-07T17:40:57Z"
+      templateName: echo
+      templateScope: local/echo-wngc4
+      type: Retry
+    echo-wngc4-1641470511:
+      displayName: echo-wngc4(0)
+      finishedAt: null
+      hostNodeName: minikube
+      id: echo-wngc4-1641470511
+      name: echo-wngc4(0)
+      phase: Error
+      startedAt: "2020-05-07T17:40:57Z"
+      templateName: echo
+      templateScope: local/echo-wngc4
+      type: Pod
+  phase: Running
+  startedAt: "2020-05-07T17:40:57Z"
+`
+
+// This tests that retryStrategy.backoff.maxDuration works correctly even if the first child node was deleted without a
+// proper finishedTime tag.
+func TestMaxDurationOnErroredFirstNode(t *testing.T) {
+	wf := unmarshalWF(maxDurationOnErroredFirstNode)
+
+	// Simulate node failed just now
+	node := wf.Status.Nodes["echo-wngc4-1641470511"]
+	node.StartedAt = metav1.Time{Time: time.Now().Add(-1 * time.Second)}
+	wf.Status.Nodes["echo-wngc4-1641470511"] = node
+
+	woc := newWoc(*wf)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+}
+
+var backoffExceedsMaxDuration = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: echo-r6v49
+spec:
+  arguments: {}
+  entrypoint: echo
+  templates:
+  - arguments: {}
+    container:
+      args:
+      - exit 1
+      command:
+      - sh
+      - -c
+      image: alpine:3.7
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: echo
+    outputs: {}
+    retryStrategy:
+      backoff:
+        duration: "120"
+        factor: 1
+        maxDuration: "60"
+      limit: 4
+status:
+  nodes:
+    echo-r6v49:
+      children:
+      - echo-r6v49-3721138751
+      displayName: echo-r6v49
+      id: echo-r6v49
+      name: echo-r6v49
+      phase: Running
+      startedAt: "2020-05-07T18:10:34Z"
+      templateName: echo
+      templateScope: local/echo-r6v49
+      type: Retry
+    echo-r6v49-3721138751:
+      displayName: echo-r6v49(0)
+      finishedAt: "2020-05-07T18:10:35Z"
+      hostNodeName: minikube
+      id: echo-r6v49-3721138751
+      message: failed with exit code 1
+      name: echo-r6v49(0)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: echo-r6v49/echo-r6v49-3721138751/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 1
+        memory: 0
+      startedAt: "2020-05-07T18:10:34Z"
+      templateName: echo
+      templateScope: local/echo-r6v49
+      type: Pod
+  phase: Running
+  resourcesDuration:
+    cpu: 1
+    memory: 0
+  startedAt: "2020-05-07T18:10:34Z"
+`
+
+// This tests that we don't wait a backoff if it would exceed the maxDuration anyway.
+func TestBackoffExceedsMaxDuration(t *testing.T) {
+	wf := unmarshalWF(backoffExceedsMaxDuration)
+
+	// Simulate node failed just now
+	node := wf.Status.Nodes["echo-r6v49-3721138751"]
+	node.StartedAt = metav1.Time{Time: time.Now().Add(-1 * time.Second)}
+	node.FinishedAt = metav1.Time{Time: time.Now()}
+	wf.Status.Nodes["echo-r6v49-3721138751"] = node
+
+	woc := newWoc(*wf)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+	assert.Equal(t, "Backoff would exceed max duration limit", woc.wf.Status.Nodes["echo-r6v49"].Message)
+	assert.Equal(t, "Backoff would exceed max duration limit", woc.wf.Status.Message)
 }

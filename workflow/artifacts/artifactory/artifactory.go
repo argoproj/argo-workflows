@@ -37,6 +37,9 @@ func (a *ArtifactoryArtifactDriver) Load(artifact *wfv1.Artifact, path string) e
 	defer func() {
 		_ = res.Body.Close()
 	}()
+	if res.StatusCode == 404 {
+		return errors.New(errors.CodeNotFound, res.Status)
+	}
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		return errors.InternalErrorf("loading file from artifactory failed with reason:%s", res.Status)
 	}

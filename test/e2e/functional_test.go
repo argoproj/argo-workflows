@@ -53,12 +53,12 @@ spec:
 
   - name: whalesay
     container:
-      image: argoproj/argosay:v1
+      image: argoproj/argosay:v2
       imagePullPolicy: IfNotPresent
 
   - name: whalesplosion
     container:
-      image: argoproj/argosay:v1
+      image: argoproj/argosay:v2
       imagePullPolicy: IfNotPresent
       command: ["sh", "-c", "sleep 5 ; exit 1"]
 `).
@@ -124,12 +124,12 @@ spec:
     - name: whalesay
       container:
         imagePullPolicy: IfNotPresent
-        image: argoproj/argosay:v1
+        image: argoproj/argosay:v2
 
     - name: whalesplosion
       container:
         imagePullPolicy: IfNotPresent
-        image: argoproj/argosay:v1
+        image: argoproj/argosay:v2
         command: ["sh", "-c", "sleep 10; exit 1"]
 `).
 		When().
@@ -262,9 +262,8 @@ spec:
   - name: cowsay
     resubmitPendingPods: true
     container:
-      image: argoproj/argosay:v1
-      command: [sh, -c]
-      args: ["cowsay a"]
+      image: argoproj/argosay:v2
+      args: ["echo", "a"]
       resources:
         limits:
           memory: 128M
@@ -314,9 +313,8 @@ spec:
     retryStrategy:
       limit: 1
     container:
-      image: argoproj/argosay:v1
-      command: [sh, -c]
-      args: ["cowsay a"]
+      image: argoproj/argosay:v2
+      args: ["echo", "a"]
       resources:
         limits:
           memory: 128M
@@ -406,7 +404,7 @@ func (s *FunctionalSuite) TestStopBehavior() {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow stop-terminate stopped")
 		}).
-		WaitForWorkflow(30 * time.Second).
+		WaitForWorkflow(45 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeFailed, status.Phase)
@@ -470,11 +468,8 @@ spec:
 
   - name: generate
     container:
-      image: argoproj/argosay:v1
-      command: [sh, -c]
-      args: ["
-        echo 'my-output-parameter' > /tmp/my-output-parameter.txt
-      "]
+      image: argoproj/argosay:v2
+      args: [echo, my-output-parameter, /tmp/my-output-parameter.txt]
     outputs:
       parameters:
       - name: out-parameter
@@ -497,6 +492,30 @@ spec:
 				}
 				return false
 			}))
+		})
+}
+
+func (s *FunctionalSuite) TestSameInputOutputPathOptionalArtifact() {
+	s.Given().
+		Workflow("@testdata/same-input-output-path-optional.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestOptionalInputArtifacts() {
+	s.Given().
+		Workflow("@testdata/input-artifacts.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})
 }
 

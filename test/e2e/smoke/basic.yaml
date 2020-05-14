@@ -9,6 +9,6 @@ spec:
   templates:
     - name: run-workflow
       container:
-        image: argoproj/argosay:v1
-        command: [cowsay, ":) Hello Argo!"]
+        image: argoproj/argosay:v2
+        args: [echo, ":) Hello Argo!"]
         imagePullPolicy: IfNotPresent
