@@ -741,10 +741,7 @@ spec:
                           when:
                             type: string
                         required:
-                        - counter
-                        - gauge
                         - help
-                        - histogram
                         - labels
                         - name
                         - when
@@ -3617,10 +3614,7 @@ spec:
                                 when:
                                   type: string
                               required:
-                              - counter
-                              - gauge
                               - help
-                              - histogram
                               - labels
                               - name
                               - when
