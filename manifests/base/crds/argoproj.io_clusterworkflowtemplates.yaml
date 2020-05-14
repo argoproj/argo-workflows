@@ -2657,7 +2657,6 @@ spec:
                               type: object
                           required:
                           - name
-                          - template
                           type: object
                         type: array
                     required:

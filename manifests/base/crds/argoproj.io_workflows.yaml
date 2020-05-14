@@ -2657,7 +2657,6 @@ spec:
                               type: object
                           required:
                           - name
-                          - template
                           type: object
                         type: array
                     required:
@@ -10366,7 +10365,6 @@ spec:
                               type: object
                           required:
                           - name
-                          - template
                           type: object
                         type: array
                     required:
@@ -13880,7 +13878,6 @@ spec:
       required:
       - metadata
       - spec
-      - status
       type: object
   version: v1alpha1
   versions:

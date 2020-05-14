@@ -594,6 +594,12 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s: %s", tmpl.Name, err.Error())
 	}
 	if tmpl.Container != nil {
+		if tmpl.Container.Name == "" {
+			tmpl.Container.Name = common.MainContainerName
+		}
+		if tmpl.Container.Name != common.MainContainerName {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.container '%s' must be named '%s', not '%s'", common.MainContainerName, tmpl.Container.Name)
+		}
 		// Ensure there are no collisions with volume mountPaths and artifact load paths
 		mountPaths := make(map[string]string)
 		for i, volMount := range tmpl.Container.VolumeMounts {
@@ -607,6 +613,14 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.inputs.artifacts[%d].path '%s' already mounted in %s", tmpl.Name, i, art.Path, prev)
 			}
 			mountPaths[art.Path] = fmt.Sprintf("inputs.artifacts.%s", art.Name)
+		}
+	}
+	if tmpl.Script != nil {
+		if tmpl.Script.Name == "" {
+			tmpl.Container.Name = common.MainContainerName
+		}
+		if tmpl.Script.Name != common.MainContainerName {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.script '%s' must be named '%s', not '%s'", common.MainContainerName, tmpl.Container.Name)
 		}
 	}
 	if tmpl.Resource != nil {

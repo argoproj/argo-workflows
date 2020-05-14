@@ -266,11 +266,8 @@ $(MANIFESTS_VERSION_FILE):
 .PHONY: manifests
 manifests:
 	$(call backup_go_mod)
-	controller-gen crd paths=./pkg/apis/workflow/v1alpha1/cluster_workflow_template_types.go crd:maxDescLen=0,trivialVersions=true output:crd:dir=./manifests/base/crds/
-	controller-gen crd paths=./pkg/apis/workflow/v1alpha1/workflow_template_types.go crd:maxDescLen=0,trivialVersions=true output:crd:dir=./manifests/base/crds/
-	controller-gen crd paths=./pkg/apis/workflow/v1alpha1/cron_workflow_types.go crd:maxDescLen=0,trivialVersions=true output:crd:dir=./manifests/base/crds/
-	controller-gen crd paths=./pkg/apis/workflow/v1alpha1/workflow_types.go crd:maxDescLen=0,trivialVersions=true output:crd:dir=./manifests/base/crds/
-	find . -maxdepth 4 -name _.yaml -exec rm {} ';'
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.8
+	controller-gen paths=./pkg/apis/workflow/v1alpha1/... crd:maxDescLen=0,trivialVersions=true output:crd:dir=./manifests/base/crds || true
 	$(call restore_go_mod)
 	./hack/update-image-tags.sh manifests/base $(MANIFESTS_VERSION)
 	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml

@@ -1865,11 +1865,11 @@ type Prometheus struct {
 	// When is a conditional statement that decides when to emit the metric
 	When string `json:"when" protobuf:"bytes,4,opt,name=when"`
 	// Gauge is a gauge metric
-	Gauge *Gauge `json:"gauge" protobuf:"bytes,5,opt,name=gauge"`
+	Gauge *Gauge `json:"gauge,omitempty" protobuf:"bytes,5,opt,name=gauge"`
 	// Histogram is a histogram metric
-	Histogram *Histogram `json:"histogram" protobuf:"bytes,6,opt,name=histogram"`
+	Histogram *Histogram `json:"histogram,omitempty" protobuf:"bytes,6,opt,name=histogram"`
 	// Counter is a counter metric
-	Counter *Counter `json:"counter" protobuf:"bytes,7,opt,name=counter"`
+	Counter *Counter `json:"counter,omitempty" protobuf:"bytes,7,opt,name=counter"`
 }
 
 func (p *Prometheus) GetMetricLabels() map[string]string {

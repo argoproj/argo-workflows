@@ -12,5 +12,5 @@ spec:
   - name: sleep
     container:
       image: debian:9.5-slim
-      command: [sleep, 1d]
+      command: [sleep, "1d"]
     activeDeadlineSeconds: 10
