@@ -1422,6 +1422,18 @@ type HDFSConfig struct {
 	HDFSUser string `json:"hdfsUser,omitempty" protobuf:"bytes,3,opt,name=hdfsUser"`
 }
 
+func (in *HDFSConfig) MergeInto(b *HDFSConfig) {
+	if in == nil || b == nil {
+		return
+	}
+	if b.Addresses == nil {
+		b.Addresses = in.Addresses
+	}
+	if b.HDFSUser == "" {
+		b.HDFSUser = in.HDFSUser
+	}
+}
+
 // HDFSKrbConfig is auth configurations for Kerberos
 type HDFSKrbConfig struct {
 	// KrbCCacheSecret is the secret selector for Kerberos ccache

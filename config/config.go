@@ -126,12 +126,16 @@ func (c ArtifactRepository) MergeInto(b *wfv1.Artifact) {
 		return
 	}
 	if c.S3 != nil {
-		c.S3.MergeInto(b.S3)
+		c.S3.S3Bucket.MergeInto(&b.S3.S3Bucket)
 	}
 	if c.GCS != nil {
-		c.GCS.MergeInto(b.GCS)
+		c.GCS.GCSBucket.MergeInto(&b.GCS.GCSBucket)
 	}
-	// TODO
+	if c.HDFS != nil {
+		c.HDFS.HDFSConfig.MergeInto(&b.HDFS.HDFSConfig)
+	}
+	// TODO OSS
+	// TODO Artifactory
 }
 
 type PersistConfig struct {

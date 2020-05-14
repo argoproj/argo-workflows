@@ -88,6 +88,24 @@ func TestGCSBucket_MergeInto(t *testing.T) {
 	})
 }
 
+func TestHDFSConfig_MergeInto(t *testing.T) {
+	t.Run("Nil", func(t *testing.T) {
+		(&HDFSConfig{}).MergeInto(nil)
+	})
+	t.Run("Addresses", func(t *testing.T) {
+		b := &HDFSConfig{}
+		(&HDFSConfig{Addresses: []string{"my-address"}}).MergeInto(b)
+		if assert.Len(t, b.Addresses, 1) {
+			assert.Equal(t, "my-address", b.Addresses[0])
+		}
+	})
+	t.Run("User", func(t *testing.T) {
+		b := &HDFSConfig{}
+		(&HDFSConfig{HDFSUser: "my-user"}).MergeInto(b)
+		assert.Equal(t, "my-user", b.HDFSUser)
+	})
+}
+
 func TestArtifactRepositoryRef_GetConfigMap(t *testing.T) {
 	assert.Equal(t, "artifact-repositories", ArtifactRepositoryRef{}.GetConfigMap())
 }
@@ -148,4 +166,3 @@ func TestShutdownStrategy_ShouldExecute(t *testing.T) {
 	assert.False(t, ShutdownStrategyStop.ShouldExecute(false))
 	assert.True(t, ShutdownStrategyStop.ShouldExecute(true))
 }
-
