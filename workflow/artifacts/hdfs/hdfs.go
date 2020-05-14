@@ -131,7 +131,7 @@ func CreateDriver(ci resource.Interface, art *wfv1.HDFSArtifact) (*ArtifactDrive
 }
 
 // Load downloads artifacts from HDFS compliant storage
-func (driver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
+func (driver *ArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
 	hdfscli, err := createHDFSClient(driver.Addresses, driver.HDFSUser, driver.KrbOptions)
 	if err != nil {
 		return err
@@ -169,7 +169,14 @@ func (driver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) er
 		}
 	}
 
-	return hdfscli.CopyToLocal(driver.Path, path)
+	err = hdfscli.CopyToLocal(driver.Path, path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return errors.New(errors.CodeNotFound, err.Error())
+		}
+		return err
+	}
+	return nil
 }
 
 // Save saves an artifact to HDFS compliant storage
