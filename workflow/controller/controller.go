@@ -456,7 +456,9 @@ func (wfc *WorkflowController) processNextItem() bool {
 		wfc.throttler.Remove(key)
 	}
 
+
 	startTime := time.Now()
+
 	woc.operate()
 	wfc.metrics.OperationCompleted(time.Since(startTime).Seconds())
 	if woc.wf.Status.Completed() {
