@@ -14,6 +14,13 @@ spec:
           - echo
           - "hello credentials"
           - /tmp/file
+      inputs:
+        artifacts:
+          - name: file
+            path: /tmp/file
+            optional: true
+            artifactRepositoryRef:
+              key: minio
       outputs:
         artifacts:
           - name: file

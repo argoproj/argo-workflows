@@ -1325,10 +1325,10 @@ func (in *S3Bucket) MergeInto(b *S3Bucket) {
 	if b.Insecure == nil {
 		b.Insecure = in.Insecure
 	}
-	if b.AccessKeySecret.Size() > 0 {
+	if b.AccessKeySecret.Key == "" {
 		b.AccessKeySecret = in.AccessKeySecret
 	}
-	if b.SecretKeySecret.Size() > 0 {
+	if b.SecretKeySecret.Key == "" {
 		b.SecretKeySecret = in.SecretKeySecret
 	}
 	if b.RoleARN == "" {
