@@ -670,8 +670,8 @@ type NoneStrategy struct{}
 // of a single workflow step, which the executor will use as a default location to store its files.
 type ArtifactLocation struct {
 
-	// CredentialName is the name of a credential to use with this.
-	CredentialName string `json:"credentialName,omitempty" protobuf:"bytes,10,opt,name=credentialName"`
+	// ArtifactRepositoryRef is the name of a repository to use
+	ArtifactRepositoryRef *ArtifactRepositoryRef `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,10,opt,name=artifactRepositoryRef"`
 
 	// ArchiveLogs indicates if the container logs should be archived
 	ArchiveLogs *bool `json:"archiveLogs,omitempty" protobuf:"varint,1,opt,name=archiveLogs"`
@@ -704,6 +704,13 @@ type ArtifactLocation struct {
 type ArtifactRepositoryRef struct {
 	ConfigMap string `json:"configMap,omitempty" protobuf:"bytes,1,opt,name=configMap"`
 	Key       string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
+}
+
+func (r ArtifactRepositoryRef) GetConfigMap() string {
+	if r.ConfigMap == "" {
+		return "artifact-repositories"
+	}
+	return r.ConfigMap
 }
 
 // Outputs hold parameters, artifacts, and results from a step

@@ -212,9 +212,9 @@
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactLocation": {
       "type": "object",
       "properties": {
-        "credentialName": {
-          "type": "string",
-          "description": "CredentialName is the name of a credential to use with this."
+        "artifactRepositoryRef": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactRepositoryRef",
+          "title": "ArtifactRepositoryRef is the name of a repository to use"
         },
         "archiveLogs": {
           "type": "boolean",

@@ -79,20 +79,6 @@ data:
           name: my-s3-credentials
           key: secretKey
 
-    # Specifies repository credentials that can be used by workflows. See ./artifact-repository-credentials.md
-    artifactRepositoryCredentials:
-      - name: my-artifactory-repository-credentials
-        s3:
-          bucket: my-bucket
-          endpoint: minio:9000
-          insecure: true
-          accessKeySecret:
-            name: my-minio-cred
-            key: accesskey
-          secretKeySecret:
-            name: my-minio-cred
-            key: secretkey
-
     # Specifies the container runtime interface to use (default: docker)
     # must be one of: docker, kubelet, k8sapi, pns
     containerRuntimeExecutor: docker

@@ -66,8 +66,7 @@ type wfOperationCtx struct {
 	// It is then used in addVolumeReferences() when creating a pod.
 	volumes []apiv1.Volume
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
-	artifactRepository            *config.ArtifactRepository
-	artifactRepositoryCredentials config.ArtifactRepositoryCredentials
+	artifactRepository *config.ArtifactRepository
 	// map of pods which need to be labeled with completed=true
 	completedPods map[string]bool
 	// map of pods which is identified as succeeded=true
@@ -124,16 +123,15 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 			"workflow":  wf.ObjectMeta.Name,
 			"namespace": wf.ObjectMeta.Namespace,
 		}),
-		controller:                    wfc,
-		globalParams:                  make(map[string]string),
-		volumes:                       wf.Spec.DeepCopy().Volumes,
-		artifactRepository:            &wfc.Config.ArtifactRepository,
-		artifactRepositoryCredentials: wfc.Config.ArtifactRepositoryCredentials,
-		completedPods:                 make(map[string]bool),
-		succeededPods:                 make(map[string]bool),
-		deadline:                      time.Now().UTC().Add(maxOperationTime),
-		auditLogger:                   argo.NewAuditLogger(wf.ObjectMeta.Namespace, wfc.kubeclientset, wf.ObjectMeta.Name),
-		preExecutionNodePhases:        make(map[string]wfv1.NodePhase),
+		controller:             wfc,
+		globalParams:           make(map[string]string),
+		volumes:                wf.Spec.DeepCopy().Volumes,
+		artifactRepository:     &wfc.Config.ArtifactRepository,
+		completedPods:          make(map[string]bool),
+		succeededPods:          make(map[string]bool),
+		deadline:               time.Now().UTC().Add(maxOperationTime),
+		auditLogger:            argo.NewAuditLogger(wf.ObjectMeta.Namespace, wfc.kubeclientset, wf.ObjectMeta.Name),
+		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
 	}
 
 	if woc.wf.Status.Nodes == nil {
@@ -240,9 +238,9 @@ func (woc *wfOperationCtx) operate() {
 
 	woc.setGlobalParameters()
 
-	if woc.wf.Spec.ArtifactRepositoryRef != nil {
-		repoReference := woc.wf.Spec.ArtifactRepositoryRef
-		repo, err := getArtifactRepositoryRef(woc.controller, repoReference.ConfigMap, repoReference.Key, woc.wf.ObjectMeta.Namespace)
+	arRef := woc.wf.Spec.ArtifactRepositoryRef
+	if arRef != nil {
+		repo, err := woc.getArtifactRepositoryByRef(arRef)
 		if err == nil {
 			woc.artifactRepository = repo
 		} else {
@@ -2646,4 +2644,30 @@ func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (boo
 		return hasOutputResultRef(name, parentTemplate), nil
 	}
 	return false, nil
+}
+
+func (woc *wfOperationCtx) getArtifactRepositoryByRef(arRef *wfv1.ArtifactRepositoryRef) (*config.ArtifactRepository, error) {
+	namespaces := []string{woc.wf.ObjectMeta.Namespace, woc.controller.namespace}
+	for _, namespace := range namespaces {
+		cm, err := woc.controller.kubeclientset.CoreV1().ConfigMaps(namespace).Get(arRef.GetConfigMap(), metav1.GetOptions{})
+		if err != nil {
+			if apierr.IsNotFound(err) {
+				continue
+			}
+			return nil, err
+		}
+		value, ok := cm.Data[arRef.Key]
+		if !ok {
+			continue
+		}
+		woc.log.WithFields(log.Fields{"namespace": namespace, "name": cm.Name}).Debug("Found artifact repository by ref")
+		ar := &config.ArtifactRepository{}
+		err = yaml.Unmarshal([]byte(value), ar)
+		if err != nil {
+			return nil, err
+		}
+		return ar, nil
+
+	}
+	return nil, errors.InternalErrorf("failed to find artifactory ref {%s}/%s#%s", strings.Join(namespaces, ","), arRef.GetConfigMap(), arRef.Key)
 }

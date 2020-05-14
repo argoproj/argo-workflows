@@ -163,19 +163,27 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	}
 	// merge input artifacts
 	{
-		artifacts, err := woc.artifactRepositoryCredentials.Merge(tmpl.Inputs.Artifacts)
-		if err != nil {
-			return nil, err
+		for _, a := range tmpl.Inputs.Artifacts {
+			if a.ArtifactRepositoryRef != nil {
+				ar, err := woc.getArtifactRepositoryByRef(a.ArtifactRepositoryRef)
+				if err != nil {
+					return nil, err
+				}
+				ar.MergeInto(&a)
+			}
 		}
-		tmpl.Inputs.Artifacts = artifacts
 	}
 	// merge output artifacts
 	{
-		artifacts, err := woc.artifactRepositoryCredentials.Merge(tmpl.Outputs.Artifacts)
-		if err != nil {
-			return nil, err
+		for _, a := range tmpl.Outputs.Artifacts {
+			if a.ArtifactRepositoryRef != nil {
+				ar, err := woc.getArtifactRepositoryByRef(a.ArtifactRepositoryRef)
+				if err != nil {
+					return nil, err
+				}
+				ar.MergeInto(&a)
+			}
 		}
-		tmpl.Outputs.Artifacts = artifacts
 	}
 	err := woc.addArchiveLocation(tmpl)
 	if err != nil {

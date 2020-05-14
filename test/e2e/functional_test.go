@@ -230,9 +230,9 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 		})
 }
 
-func (s *FunctionalSuite) TestArtifactRepositoryCredentials() {
+func (s *FunctionalSuite) TestArtifactRepositoryRef() {
 	s.Given().
-		Workflow("@testdata/artifact-repository-credentials.yaml").
+		Workflow("@testdata/artifact-repository-ref.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(30 * time.Second).

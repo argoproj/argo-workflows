@@ -2309,10 +2309,10 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: artifact-repo-config-ref-
+  namespace: my-ns
 spec:
   entrypoint: whalesay
   artifactRepositoryRef:
-    configMap: artifact-repository
     key: config
   templates:
   - name: whalesay
@@ -2326,41 +2326,36 @@ spec:
         path: /tmp/hello_world.txt
 `
 
-var artifactRepositoryConfigMapData = `
-s3:
-  bucket: my-bucket
-  keyPrefix: prefix/in/bucket
-  endpoint: my-minio-endpoint.default:9000
-  insecure: true
-  accessKeySecret:
-    name: my-minio-cred
-    key: accesskey
-  secretKeySecret:
-    name: my-minio-cred
-    key: secretkey
-`
-
 func TestArtifactRepositoryRef(t *testing.T) {
 	wf := unmarshalWF(artifactRepositoryRef)
 	woc := newWoc(*wf)
-	_, err := woc.controller.kubeclientset.CoreV1().ConfigMaps(wf.ObjectMeta.Namespace).Create(
-		&apiv1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "artifact-repository",
-			},
-			Data: map[string]string{
-				"config": artifactRepositoryConfigMapData,
-			},
-		},
-	)
+	_, err := woc.controller.kubeclientset.CoreV1().ConfigMaps(woc.controller.namespace).Create(&apiv1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: "artifact-repositories"},
+		Data: map[string]string{"config": `
+s3:
+  bucket: my-bucket
+`}})
 	assert.NoError(t, err)
 	woc.operate()
-	assert.Equal(t, woc.artifactRepository.S3.Bucket, "my-bucket")
-	assert.Equal(t, woc.artifactRepository.S3.Endpoint, "my-minio-endpoint.default:9000")
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
-	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
+	if assert.NotNil(t, woc.artifactRepository.S3) {
+		assert.Equal(t, woc.artifactRepository.S3.Bucket, "my-bucket")
+	}
+}
+
+func TestArtifactRepositoryRefNamespace(t *testing.T) {
+	wf := unmarshalWF(artifactRepositoryRef)
+	woc := newWoc(*wf)
+	_, err := woc.controller.kubeclientset.CoreV1().ConfigMaps(woc.wf.Namespace).Create(&apiv1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: "artifact-repositories"},
+		Data: map[string]string{"config": `
+s3:
+  bucket: my-bucket
+`}})
 	assert.NoError(t, err)
-	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+	woc.operate()
+	if assert.NotNil(t, woc.artifactRepository.S3) {
+		assert.Equal(t, woc.artifactRepository.S3.Bucket, "my-bucket")
+	}
 }
 
 var stepScriptTmpl = `

@@ -1,9 +1,11 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: artifactory-repository-credentials-
+  generateName: artifactory-repository-ref-
 spec:
   entrypoint: main
+  artifactRepositoryRef:
+    key: minio
   templates:
     - name: main
       container:
@@ -14,4 +16,5 @@ spec:
         artifacts:
           - name: hello_world
             path: /tmp/hello_world.txt
-            credentialName: my-artifactory-repository-credentials
+            artifactRepositoryRef:
+              key: minio

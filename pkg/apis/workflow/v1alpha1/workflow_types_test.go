@@ -72,6 +72,10 @@ func TestS3Bucket_MergeInto(t *testing.T) {
 	})
 }
 
+func TestArtifactRepositoryRef_GetConfigMap(t *testing.T) {
+	assert.Equal(t, "artifact-repositories", ArtifactRepositoryRef{}.GetConfigMap())
+}
+
 func TestNodes_FindByDisplayName(t *testing.T) {
 	assert.Nil(t, Nodes{}.FindByDisplayName(""))
 	assert.NotNil(t, Nodes{"": NodeStatus{DisplayName: "foo"}}.FindByDisplayName("foo"))

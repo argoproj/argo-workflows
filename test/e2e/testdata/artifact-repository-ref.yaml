@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: artifactory-repository-credentials
+  name: artifact-repository-ref
   labels:
     argo-e2e: true
 spec:
@@ -18,4 +18,5 @@ spec:
         artifacts:
           - name: file
             path: /tmp/file
-            credentialName: my-artifactory-repository-credentials
+            artifactRepositoryRef:
+              key: minio

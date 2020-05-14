@@ -40,9 +40,6 @@ type Config struct {
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	ArtifactRepository ArtifactRepository `json:"artifactRepository,omitempty"`
 
-	// ArtifactRepositoryCredentials contains credentials that can be use by workflows
-	ArtifactRepositoryCredentials ArtifactRepositoryCredentials `json:"artifactRepositoryCredentials,omitempty"`
-
 	// Namespace is a label selector filter to limit the controller's watch to a specific namespace
 	// DEPRECATED: support will be remove in a future release
 	Namespace string `json:"namespace,omitempty"`
@@ -122,6 +119,16 @@ type ArtifactRepository struct {
 
 func (a *ArtifactRepository) IsArchiveLogs() bool {
 	return a != nil && a.ArchiveLogs != nil && *a.ArchiveLogs
+}
+
+func (c ArtifactRepository) MergeInto(a *wfv1.Artifact) {
+	if a == nil {
+		return
+	}
+	if c.S3 != nil {
+		c.S3.MergeInto(a.S3)
+	}
+	// TODO
 }
 
 type PersistConfig struct {
