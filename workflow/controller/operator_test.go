@@ -79,6 +79,24 @@ spec:
         mountPath: /mnt/existing-vol
 `
 
+func TestGlobalParams(t *testing.T) {
+	wf := unmarshalWF(helloWorldWf)
+	cancel, controller := newController(wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	if assert.Contains(t, woc.globalParams, "workflow.creationTimestamp") {
+		assert.NotContains(t, woc.globalParams["workflow.creationTimestamp"], "UTC")
+	}
+	assert.Contains(t, woc.globalParams, "workflow.duration")
+	assert.Contains(t, woc.globalParams, "workflow.labels.workflows.argoproj.io/phase")
+	assert.Contains(t, woc.globalParams, "workflow.name")
+	assert.Contains(t, woc.globalParams, "workflow.namespace")
+	assert.Contains(t, woc.globalParams, "workflow.parameters")
+	assert.Contains(t, woc.globalParams, "workflow.serviceAccountName")
+	assert.Contains(t, woc.globalParams, "workflow.uid")
+}
+
 // TestSidecarWithVolume verifies ia sidecar can have a volumeMount reference to both existing or volumeClaimTemplate volumes
 func TestSidecarWithVolume(t *testing.T) {
 	cancel, controller := newController()
