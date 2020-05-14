@@ -2669,5 +2669,5 @@ func (woc *wfOperationCtx) getArtifactRepositoryByRef(arRef *wfv1.ArtifactReposi
 		return ar, nil
 
 	}
-	return nil, errors.InternalErrorf("failed to find artifactory ref {%s}/%s#%s", strings.Join(namespaces, ","), arRef.GetConfigMap(), arRef.Key)
+	return nil, fmt.Errorf("failed to find artifactory ref {%s}/%s#%s", strings.Join(namespaces, ","), arRef.GetConfigMap(), arRef.Key)
 }

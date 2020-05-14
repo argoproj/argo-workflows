@@ -26,12 +26,12 @@ func TestArtifactRepository_MergeInto(t *testing.T) {
 	})
 	t.Run("GCS", func(t *testing.T) {
 		b := &wfv1.Artifact{ArtifactLocation: wfv1.ArtifactLocation{GCS: &wfv1.GCSArtifact{}}}
-		(&ArtifactRepository{GCS: &GCSArtifactRepository{GCSBucket: wfv1.GCSBucket{Bucket: "my-bucket¬"}}}).MergeInto(b)
+		(&ArtifactRepository{GCS: &GCSArtifactRepository{GCSBucket: wfv1.GCSBucket{Bucket: "my-bucket"}}}).MergeInto(b)
 		assert.Equal(t, "my-bucket", b.GCS.Bucket)
 	})
-	t.Run("GCS", func(t *testing.T) {
-		b := &wfv1.Artifact{ArtifactLocation: wfv1.ArtifactLocation{GCS: &wfv1.GCSArtifact{}}}
-		(&ArtifactRepository{GCS: &GCSArtifactRepository{GCSBucket: wfv1.GCSBucket{Bucket: "my-bucket¬"}}}).MergeInto(b)
-		assert.Equal(t, "my-bucket", b.GCS.Bucket)
+	t.Run("HDFS", func(t *testing.T) {
+		b := &wfv1.Artifact{ArtifactLocation: wfv1.ArtifactLocation{HDFS: &wfv1.HDFSArtifact{}}}
+		(&ArtifactRepository{HDFS: &HDFSArtifactRepository{HDFSConfig: wfv1.HDFSConfig{HDFSUser: "my-user"}}}).MergeInto(b)
+		assert.Equal(t, "my-user", b.HDFS.HDFSUser)
 	})
 }

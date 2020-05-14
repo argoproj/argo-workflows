@@ -2776,7 +2776,7 @@ func TestEventFailArtifactRepoCm(t *testing.T) {
 	assert.Equal(t, argo.EventReasonWorkflowRunning, runningEvent.Reason)
 	failEvent := events.Items[1]
 	assert.Equal(t, argo.EventReasonWorkflowFailed, failEvent.Reason)
-	assert.Equal(t, "Failed to load artifact repository configMap: configmaps \"artifact-repository\" not found", failEvent.Message)
+	assert.Equal(t, "Failed to load artifact repository configMap: failed to find artifactory ref {,}/artifact-repository#config", failEvent.Message)
 }
 
 var pdbwf = `
