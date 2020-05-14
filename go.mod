@@ -5,7 +5,6 @@ go 1.13
 require (
 	cloud.google.com/go v0.55.0 // indirect
 	cloud.google.com/go/storage v1.6.0
-	github.com/Azure/go-autorest v11.1.2+incompatible // indirect
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
 	github.com/aliyun/aliyun-oss-go-sdk v2.0.6+incompatible
 	github.com/argoproj/pkg v0.0.0-20200318225345-d3be5f29b1a8
@@ -13,7 +12,10 @@ require (
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/colinmarc/hdfs v1.1.4-0.20180805212432-9746310a4d31
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
+	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
 	github.com/evanphx/json-patch v4.2.0+incompatible
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
@@ -35,6 +37,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/imkira/go-interpol v1.1.0 // indirect
+	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jcmturner/gofork v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.9 // indirect
 	github.com/klauspost/compress v1.9.7 // indirect
@@ -59,7 +62,7 @@ require (
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/soheilhy/cmux v0.1.4
-	github.com/spf13/cobra v0.0.5
+	github.com/spf13/cobra v0.0.4-0.20181021141114-fe5e611709b0
 	github.com/stretchr/testify v1.5.1
 	github.com/tidwall/gjson v1.3.5
 	github.com/valyala/fasttemplate v1.1.0
@@ -78,12 +81,11 @@ require (
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.2.8
-	k8s.io/api v0.17.0
-	k8s.io/apimachinery v0.17.0
-	k8s.io/client-go v0.17.0
+	k8s.io/api v0.0.0-20191219150132-17cfeff5d095
+	k8s.io/apimachinery v0.16.7-beta.0
+	k8s.io/client-go v0.0.0-20191225075139-73fd2ddc9180
 	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
 	k8s.io/utils v0.0.0-20191218082557-f07c713de883
-	sigs.k8s.io/controller-tools v0.2.8 // indirect
 	sigs.k8s.io/yaml v1.1.0
 	upper.io/db.v3 v3.6.3+incompatible
 )
