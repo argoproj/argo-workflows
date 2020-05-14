@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -71,11 +72,12 @@ const (
 // +genclient
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:resource:shortName=wf
 type Workflow struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 	Spec              WorkflowSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec "`
-	Status            WorkflowStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
+	Status            WorkflowStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
 // Workflows is a sort interface which sorts running jobs earlier before considering FinishedAt
@@ -290,7 +292,7 @@ func (s ShutdownStrategy) ShouldExecute(isOnExitPod bool) bool {
 }
 
 type ParallelSteps struct {
-	Steps []WorkflowStep `protobuf:"bytes,1,rep,name=steps"`
+	Steps []WorkflowStep `json:",inline" protobuf:"bytes,1,rep,name=steps"`
 }
 
 // WorkflowStep is an anonymous list inside of ParallelSteps (i.e. it does not have a key), so it needs its own
@@ -338,6 +340,11 @@ func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 	return wfs.PodSpecPatch != ""
 }
 
+type Container struct {
+	Name            string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+	apiv1.Container `json:",inline" protobuf:"bytes,2,opt,name=container"`
+}
+
 // Template is a reusable and composable unit of execution in a workflow
 type Template struct {
 	// Name is the name of the template
@@ -379,7 +386,7 @@ type Template struct {
 	Steps []ParallelSteps `json:"steps,omitempty" protobuf:"bytes,11,opt,name=steps"`
 
 	// Container is the main container image to run in the pod
-	Container *apiv1.Container `json:"container,omitempty" protobuf:"bytes,12,opt,name=container"`
+	Container *Container `json:"container,omitempty" protobuf:"bytes,12,opt,name=container"`
 
 	// Script runs a portion of code against an interpreter
 	Script *ScriptTemplate `json:"script,omitempty" protobuf:"bytes,13,opt,name=script"`
@@ -891,9 +898,11 @@ type UserContainer struct {
 // WorkflowStatus contains overall status information about a workflow
 type WorkflowStatus struct {
 	// Phase a simple, high-level summary of where the workflow is in its lifecycle.
+	// +kubebuilder:printcolumn
 	Phase NodePhase `json:"phase,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=NodePhase"`
 
 	// Time at which this workflow started
+	// +kubebuilder:printcolumn
 	StartedAt metav1.Time `json:"startedAt,omitempty" protobuf:"bytes,2,opt,name=startedAt"`
 
 	// Time at which this workflow completed
@@ -1952,7 +1961,19 @@ type Histogram struct {
 	// Value is the value of the metric
 	Value string `json:"value" protobuf:"bytes,3,opt,name=value"`
 	// Buckets is a list of bucket divisors for the histogram
-	Buckets []float64 `json:"buckets" protobuf:"fixed64,4,rep,name=buckets"`
+	Buckets []string `json:"buckets" protobuf:"fixed64,4,rep,name=buckets"`
+}
+
+func (in *Histogram) GetBuckets() ([]float64, error) {
+	buckets := make([]float64, len(in.Buckets))
+	for i, text := range in.Buckets {
+		val, err := strconv.ParseFloat(text, 10)
+		if err != nil {
+			return nil, err
+		}
+		buckets[i] = val
+	}
+	return buckets, nil
 }
 
 // Counter is a Counter prometheus metric

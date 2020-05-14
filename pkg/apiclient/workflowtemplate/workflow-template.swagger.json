@@ -482,6 +482,17 @@
       },
       "title": "Backoff is a backoff strategy to use within retryStrategy"
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Container": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "container": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.Container"
+        }
+      }
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ContinueOn": {
       "type": "object",
       "properties": {
@@ -769,8 +780,7 @@
         "buckets": {
           "type": "array",
           "items": {
-            "type": "number",
-            "format": "double"
+            "type": "string"
           },
           "title": "Buckets is a list of bucket divisors for the histogram"
         }
@@ -1309,7 +1319,7 @@
           "title": "Steps define a series of sequential/parallel workflow steps"
         },
         "container": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.Container",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Container",
           "title": "Container is the main container image to run in the pod"
         },
         "script": {
@@ -1717,7 +1727,7 @@
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateSpec"
         }
       },
-      "title": "WorkflowTemplate is the definition of a workflow template resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
+      "title": "WorkflowTemplate is the definition of a workflow template resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object\n+kubebuilder:resource:shortName=wftmpl"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateList": {
       "type": "object",

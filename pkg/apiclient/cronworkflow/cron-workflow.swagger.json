@@ -524,6 +524,17 @@
       },
       "title": "Backoff is a backoff strategy to use within retryStrategy"
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Container": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "container": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.Container"
+        }
+      }
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ContinueOn": {
       "type": "object",
       "properties": {
@@ -563,7 +574,7 @@
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.CronWorkflowStatus"
         }
       },
-      "title": "CronWorkflow is the definition of a scheduled workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
+      "title": "CronWorkflow is the definition of a scheduled workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object\n+kubebuilder:resource:shortName=cwf,shortName=cronwf"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.CronWorkflowList": {
       "type": "object",
@@ -904,8 +915,7 @@
         "buckets": {
           "type": "array",
           "items": {
-            "type": "number",
-            "format": "double"
+            "type": "string"
           },
           "title": "Buckets is a list of bucket divisors for the histogram"
         }
@@ -1444,7 +1454,7 @@
           "title": "Steps define a series of sequential/parallel workflow steps"
         },
         "container": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.Container",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Container",
           "title": "Container is the main container image to run in the pod"
         },
         "script": {

@@ -265,6 +265,12 @@ $(MANIFESTS_VERSION_FILE):
 
 .PHONY: manifests
 manifests:
+	$(call backup_go_mod)
+	controller-gen crd paths=./pkg/apis/workflow/v1alpha1/cluster_workflow_template_types.go crd:maxDescLen=0,trivialVersions=true output:crd:dir=./manifests/base/crds/
+	controller-gen crd paths=./pkg/apis/workflow/v1alpha1/workflow_template_types.go crd:maxDescLen=0,trivialVersions=true output:crd:dir=./manifests/base/crds/
+	controller-gen crd paths=./pkg/apis/workflow/v1alpha1/cron_workflow_types.go crd:maxDescLen=0,trivialVersions=true output:crd:dir=./manifests/base/crds/
+	controller-gen crd paths=./pkg/apis/workflow/v1alpha1/workflow_types.go crd:maxDescLen=0,trivialVersions=true output:crd:dir=./manifests/base/crds/
+	$(call restore_go_mod)
 	./hack/update-image-tags.sh manifests/base $(MANIFESTS_VERSION)
 	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
 	kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
@@ -321,21 +327,13 @@ dist/mysql.yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
 	kustomize build --load_restrictor=none test/e2e/manifests/mysql | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/mysql.yaml
 
 .PHONY: install
-install: dist/postgres.yaml dist/mysql.yaml dist/no-db.yaml
+install: dist/$(DB).yaml
 ifeq ($(K3D),true)
 	k3d start
 endif
 	# Install quick-start
 	kubectl apply -f test/e2e/manifests/argo-ns.yaml
-ifeq ($(DB),postgres)
-	kubectl -n argo apply -f dist/postgres.yaml
-else
-ifeq ($(DB),mysql)
-	kubectl -n argo apply -f dist/mysql.yaml
-else
-	kubectl -n argo apply -f dist/no-db.yaml
-endif
-endif
+	kubectl -n argo apply -f dist/$(DB).yaml
 
 .PHONY: pull-build-images
 pull-build-images:

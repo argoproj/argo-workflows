@@ -928,6 +928,17 @@
       },
       "title": "Backoff is a backoff strategy to use within retryStrategy"
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Container": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "container": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.Container"
+        }
+      }
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ContinueOn": {
       "type": "object",
       "properties": {
@@ -1215,8 +1226,7 @@
         "buckets": {
           "type": "array",
           "items": {
-            "type": "number",
-            "format": "double"
+            "type": "string"
           },
           "title": "Buckets is a list of bucket divisors for the histogram"
         }
@@ -1911,7 +1921,7 @@
           "title": "Steps define a series of sequential/parallel workflow steps"
         },
         "container": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.Container",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Container",
           "title": "Container is the main container image to run in the pod"
         },
         "script": {
@@ -2106,7 +2116,7 @@
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowStatus"
         }
       },
-      "title": "Workflow is the definition of a workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
+      "title": "Workflow is the definition of a workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object\n+kubebuilder:resource:shortName=wf"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowCondition": {
       "type": "object",
@@ -2312,11 +2322,11 @@
       "properties": {
         "phase": {
           "type": "string",
-          "description": "Phase a simple, high-level summary of where the workflow is in its lifecycle."
+          "title": "Phase a simple, high-level summary of where the workflow is in its lifecycle.\n+kubebuilder:printcolumn"
         },
         "startedAt": {
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",
-          "title": "Time at which this workflow started"
+          "title": "Time at which this workflow started\n+kubebuilder:printcolumn"
         },
         "finishedAt": {
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Time",

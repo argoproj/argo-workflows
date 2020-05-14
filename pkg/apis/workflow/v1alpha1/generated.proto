@@ -136,6 +136,7 @@ message Backoff {
 // +genclient:noStatus
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:resource:scope=Cluster,shortName=cwft,shortName=clusterwftmpl
 message ClusterWorkflowTemplate {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
@@ -148,6 +149,12 @@ message ClusterWorkflowTemplateList {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   repeated ClusterWorkflowTemplate items = 2;
+}
+
+message Container {
+  optional string name = 1;
+
+  optional k8s.io.api.core.v1.Container container = 2;
 }
 
 // ContinueOn defines if a workflow should continue even if a task or step fails/errors.
@@ -170,6 +177,7 @@ message Counter {
 // +genclient
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:resource:shortName=cwf,shortName=cronwf
 message CronWorkflow {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
@@ -407,7 +415,7 @@ message Histogram {
   optional string value = 3;
 
   // Buckets is a list of bucket divisors for the histogram
-  repeated double buckets = 4;
+  repeated string buckets = 4;
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
@@ -890,7 +898,7 @@ message Template {
   repeated ParallelSteps steps = 11;
 
   // Container is the main container image to run in the pod
-  optional k8s.io.api.core.v1.Container container = 12;
+  optional Container container = 12;
 
   // Script runs a portion of code against an interpreter
   optional ScriptTemplate script = 13;
@@ -1055,6 +1063,7 @@ message Version {
 // +genclient
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:resource:shortName=wf
 message Workflow {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
@@ -1236,9 +1245,11 @@ message WorkflowSpec {
 // WorkflowStatus contains overall status information about a workflow
 message WorkflowStatus {
   // Phase a simple, high-level summary of where the workflow is in its lifecycle.
+  // +kubebuilder:printcolumn
   optional string phase = 1;
 
   // Time at which this workflow started
+  // +kubebuilder:printcolumn
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time startedAt = 2;
 
   // Time at which this workflow completed
@@ -1315,6 +1326,7 @@ message WorkflowStep {
 // +genclient
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:resource:shortName=wftmpl
 message WorkflowTemplate {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
