@@ -1310,20 +1310,6 @@ func (s *S3Artifact) HasLocation() bool {
 	return s != nil && s.Endpoint != "" && s.Bucket != "" && s.Key != ""
 }
 
-func (s *S3Artifact) Merge(b *S3Artifact) {
-	if s.Endpoint == "" {
-		s.Endpoint = b.Endpoint
-		// this is a property of the endpoint, so we can copy here
-		s.Insecure = b.Insecure
-	}
-	if s.AccessKeySecret.Name == "" {
-		s.AccessKeySecret = b.AccessKeySecret
-	}
-	if s.SecretKeySecret.Name == "" {
-		s.SecretKeySecret = b.SecretKeySecret
-	}
-}
-
 // GitArtifact is the location of an git artifact
 type GitArtifact struct {
 	// Repo is the git repository
