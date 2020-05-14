@@ -1529,10 +1529,16 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			woc.computeMetrics(resolvedTmpl.Metrics.Prometheus, localScope, realTimeScope, true)
 		}
 		// Check if the node completed during this execution, if it did emit metrics
+		//
 		// This check is necessary because sometimes a node will be marked completed during the current execution and will
 		// not be considered again. The best example of this is the entrypoint steps/dag template (once completed, the
 		// workflow ends and it's not reconsidered). This checks makes sure that its metrics also get emitted.
-		if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Completed() && node.Completed() {
+		//
+		// In this check, a completed node may or may not have existed prior to this execution. If it did exist, ensure that it wasn't
+		// completed before this execution. If it did not exist prior, then we can infer that it was completed during this execution.
+		// The statement "(!ok || prevNodeStatus.Completed())" checks for this behavior and represents the material conditional
+		// "ok -> prevNodeStatus.Completed()" (https://en.wikipedia.org/wiki/Material_conditional)
+		if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; (!ok || prevNodeStatus.Completed()) && node.Completed() {
 			localScope, realTimeScope := woc.prepareMetricScope(node)
 			woc.computeMetrics(resolvedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 		}
