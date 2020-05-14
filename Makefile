@@ -270,6 +270,7 @@ manifests:
 	controller-gen crd paths=./pkg/apis/workflow/v1alpha1/workflow_template_types.go crd:maxDescLen=0,trivialVersions=true output:crd:dir=./manifests/base/crds/
 	controller-gen crd paths=./pkg/apis/workflow/v1alpha1/cron_workflow_types.go crd:maxDescLen=0,trivialVersions=true output:crd:dir=./manifests/base/crds/
 	controller-gen crd paths=./pkg/apis/workflow/v1alpha1/workflow_types.go crd:maxDescLen=0,trivialVersions=true output:crd:dir=./manifests/base/crds/
+	find . -maxdepth 4 -name _.yaml -exec rm {} ';'
 	$(call restore_go_mod)
 	./hack/update-image-tags.sh manifests/base $(MANIFESTS_VERSION)
 	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
