@@ -507,6 +507,18 @@ func (s *FunctionalSuite) TestSameInputOutputPathOptionalArtifact() {
 		})
 }
 
+func (s *FunctionalSuite) TestOptionalInputArtifacts() {
+	s.Given().
+		Workflow("@testdata/input-artifacts.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }
