@@ -505,7 +505,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	err = woc.setWorkflowSpecAndEntrypoint()
+	err = woc.loadWorkflowSpec()
 	if err != nil {
 		woc.log.Errorf("Unable to get Workflow Template Reference for workflow, %s error: %s", woc.wf.Name, err)
 		woc.markWorkflowError(err, true)

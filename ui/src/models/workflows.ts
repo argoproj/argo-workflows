@@ -768,9 +768,9 @@ export interface WorkflowStatus {
     conditions?: WorkflowCondition[];
 
     /**
-     * StoredWorkflowTemplateSpec is a Workflow Spec of top level WorkflowTemplate.
+     * StoredWorkflowSpec is a Workflow Spec of top level WorkflowTemplate.
      */
-    storedWorkflowTemplateSpec?: WorkflowSpec;
+    storedWorkflowSpec?: WorkflowSpec;
 }
 
 export interface WorkflowCondition {

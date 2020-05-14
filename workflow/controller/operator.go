@@ -14,8 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/argoproj/argo/util"
-
 	"github.com/argoproj/pkg/humanize"
 	"github.com/argoproj/pkg/strftime"
 	jsonpatch "github.com/evanphx/json-patch"
@@ -36,6 +34,7 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/argo"
 	"github.com/argoproj/argo/util/resource"
 	"github.com/argoproj/argo/util/retry"
@@ -50,7 +49,6 @@ import (
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
 type wfOperationCtx struct {
-
 	// wf is the workflow object
 	// wf.spec should not be used for execution logic.
 	// All execution logic should refer the wfSpec.
@@ -96,10 +94,9 @@ type wfOperationCtx struct {
 
 	// wfSpec holds the WorkflowSpec for execution
 	wfSpec *wfv1.WorkflowSpec
-	// entrypoint is the starting point for workflow execution
-	entrypoint string
-	// arguments holds all global argument for workflow.
-	arguments wfv1.Arguments
+
+	// submissionParameters holds all submission parameters for workflow.
+	submissionParameters []wfv1.Parameter
 }
 
 var (
@@ -145,7 +142,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		deadline:               time.Now().UTC().Add(maxOperationTime),
 		auditLogger:            argo.NewAuditLogger(wf.ObjectMeta.Namespace, wfc.kubeclientset, wf.ObjectMeta.Name),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
-		arguments:              wf.Spec.DeepCopy().Arguments,
+		submissionParameters:   wf.Spec.DeepCopy().Arguments.Parameters,
 	}
 
 	if woc.wf.Status.Nodes == nil {
@@ -162,7 +159,6 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 // and its pods and decides how to proceed down the execution path.
 // TODO: an error returned by this method should result in requeuing the workflow to be retried at a
 // later time
-
 func (woc *wfOperationCtx) operate() {
 	defer func() {
 		if woc.wf.Status.Completed() {
@@ -294,11 +290,24 @@ func (woc *wfOperationCtx) operate() {
 
 	var node *wfv1.NodeStatus
 
+	tmpl := &wfv1.WorkflowStep{Template: woc.wfSpec.Entrypoint}
+
 	if woc.wf.Spec.WorkflowTemplateRef != nil {
-		node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{TemplateRef: woc.convertWFTmplRefToTmplRef()}, tmplCtx, woc.arguments, &executeTemplateOpts{})
-	} else {
-		node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.WorkflowStep{Template: woc.wfSpec.Entrypoint}, tmplCtx, woc.arguments, &executeTemplateOpts{})
+		entrypoint := woc.wf.Spec.Entrypoint
+
+		if entrypoint == "" {
+			entrypoint = woc.wfSpec.Entrypoint
+		}
+		tmpl.Template = ""
+		tmpl.TemplateRef = woc.wf.Spec.WorkflowTemplateRef.ToTemplateRef(entrypoint)
 	}
+
+	args := wfv1.Arguments{
+		Parameters: woc.submissionParameters,
+	}
+
+	node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, tmpl, tmplCtx, args, &executeTemplateOpts{})
+
 	if err != nil {
 		msg := fmt.Sprintf("%s error in entry template execution: %+v", woc.wf.Name, err)
 		// the error are handled in the callee so just log it.
@@ -447,7 +456,7 @@ func (woc *wfOperationCtx) setGlobalParameters() {
 		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
 	}
 
-	for _, param := range woc.arguments.Parameters {
+	for _, param := range woc.submissionParameters {
 		woc.globalParams["workflow.parameters."+param.Name] = *param.Value
 	}
 
@@ -2647,7 +2656,7 @@ func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (boo
 	return false, nil
 }
 
-func (woc *wfOperationCtx) getTopLevelWorkflowTemplate() (*wfv1.WorkflowSpec, error) {
+func (woc *wfOperationCtx) fetchWorkflowTemplate() (*wfv1.WorkflowSpec, error) {
 	var wftmpl wfv1.WorkflowSpecHolder
 	var err error
 	// Logic for workflow refers Workflow template
@@ -2665,40 +2674,27 @@ func (woc *wfOperationCtx) getTopLevelWorkflowTemplate() (*wfv1.WorkflowSpec, er
 	return wftmpl.GetWorkflowSpec().DeepCopy(), nil
 }
 
-func (woc *wfOperationCtx) convertWFTmplRefToTmplRef() *wfv1.TemplateRef {
+func (woc *wfOperationCtx) loadWorkflowSpec() error {
 
-	entrypoint := woc.wf.Spec.Entrypoint
-
-	if entrypoint == "" {
-		entrypoint = woc.wfSpec.Entrypoint
-	}
-	return woc.wf.Spec.WorkflowTemplateRef.ToTemplateRef(entrypoint)
-}
-
-func (woc *wfOperationCtx) setWorkflowSpecAndEntrypoint() error {
-
-	woc.arguments.Parameters = woc.wf.Spec.Arguments.Parameters
-	woc.entrypoint = woc.wf.Spec.Entrypoint
+	woc.submissionParameters = woc.wf.Spec.Arguments.Parameters
 
 	if woc.wf.Spec.WorkflowTemplateRef == nil {
-		woc.wfSpec = woc.wf.Spec.DeepCopy()
+		woc.wfSpec = &woc.wf.Spec
 		return nil
 	}
+
 	if woc.wf.Status.StoredWorkflowSpec != nil {
 		woc.wfSpec = woc.wf.Status.StoredWorkflowSpec.DeepCopy()
 	} else {
-		wftSpec, err := woc.getTopLevelWorkflowTemplate()
+		wftSpec, err := woc.fetchWorkflowTemplate()
 		if err != nil {
 			return err
 		}
 		woc.wfSpec = wftSpec
 	}
-	if woc.entrypoint == "" {
-		woc.entrypoint = woc.wfSpec.Entrypoint
-	}
 
 	if len(woc.wfSpec.Arguments.Parameters) > 0 {
-		woc.arguments.Parameters = util.MergeParameters(woc.arguments.Parameters, woc.wfSpec.Arguments.Parameters)
+		woc.submissionParameters = util.MergeParameters(woc.submissionParameters, woc.wfSpec.Arguments.Parameters)
 	}
 	woc.wf.Status.StoredWorkflowSpec = woc.wfSpec
 	woc.updated = true

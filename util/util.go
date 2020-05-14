@@ -61,7 +61,7 @@ func WriteTeriminateMessage(message string) {
 
 // Merge the two parameters Slice and overwriting duplicate keys,
 func MergeParameters(params ...[]wfv1.Parameter) []wfv1.Parameter {
-	resultParams := make([]wfv1.Parameter, 0)
+	var resultParams []wfv1.Parameter
 	passedParams := make(map[string]bool)
 	for _, param := range params {
 		for _, item := range param {

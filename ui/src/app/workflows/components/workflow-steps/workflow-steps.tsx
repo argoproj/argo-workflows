@@ -10,14 +10,7 @@ export interface WorkflowStepsProps {
 }
 
 export const WorkflowSteps = (props: WorkflowStepsProps) => {
-    let templates = props.workflow.spec.templates;
-    if (props.workflow.spec.workflowTemplateRef && props.workflow.status.storedWorkflowTemplateSpec) {
-        templates = props.workflow.status.storedWorkflowTemplateSpec.templates;
-    }
-    let entryPointTemplate: models.Template | {steps: models.WorkflowStep[][]} = {steps: []};
-    if (templates) {
-        entryPointTemplate = templates.find(template => template.name === props.workflow.spec.entrypoint) || {steps: [] as models.WorkflowStep[][]};
-    }
+    const entryPointTemplate = props.workflow.spec.templates.find(template => template.name === props.workflow.spec.entrypoint) || {steps: [] as models.WorkflowStep[][]};
     const phase = props.workflow.status.phase;
     let isSucceeded = false;
     let isFailed = false;

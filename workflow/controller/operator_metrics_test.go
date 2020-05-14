@@ -50,7 +50,7 @@ func TestBasicMetric(t *testing.T) {
 	_, err := wfcset.Create(wf)
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	err = woc.setWorkflowSpecAndEntrypoint()
+	err = woc.loadWorkflowSpec()
 	assert.NoError(t, err)
 	woc.operate()
 
@@ -108,7 +108,7 @@ func TestCounterMetric(t *testing.T) {
 	_, err := wfcset.Create(wf)
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	err = woc.setWorkflowSpecAndEntrypoint()
+	err = woc.loadWorkflowSpec()
 	assert.NoError(t, err)
 	woc.operate()
 

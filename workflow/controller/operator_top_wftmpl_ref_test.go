@@ -17,7 +17,7 @@ func TestTopLevelWFTmplRef(t *testing.T) {
 	t.Run("ExecuteWorkflowWithTmplRef", func(t *testing.T) {
 		_, controller := newController(wf, wftmpl)
 		woc := newWorkflowOperationCtx(wf, controller)
-		err := woc.setWorkflowSpecAndEntrypoint()
+		err := woc.loadWorkflowSpec()
 		assert.NoError(t, err)
 		woc.operate()
 		assert.Equal(t, &wftmpl.Spec.WorkflowSpec, woc.wfSpec)
@@ -40,7 +40,7 @@ func TestTopLevelWFTmplRefWithArgs(t *testing.T) {
 		wf.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
 		_, controller := newController(wf, wftmpl)
 		woc := newWorkflowOperationCtx(wf, controller)
-		err := woc.setWorkflowSpecAndEntrypoint()
+		err := woc.loadWorkflowSpec()
 		assert.NoError(t, err)
 		woc.operate()
 		assert.Equal(t, "test", woc.globalParams["workflow.parameters.param1"])
@@ -63,7 +63,7 @@ func TestTopLevelWFTmplRefWithWFTArgs(t *testing.T) {
 		wftmpl.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
 		_, controller := newController(wf, wftmpl)
 		woc := newWorkflowOperationCtx(wf, controller)
-		err := woc.setWorkflowSpecAndEntrypoint()
+		err := woc.loadWorkflowSpec()
 		assert.NoError(t, err)
 		woc.operate()
 		assert.Equal(t, "test", woc.globalParams["workflow.parameters.param1"])
@@ -132,10 +132,10 @@ func TestTopLevelWFTmplRefGetFromStored(t *testing.T) {
 	t.Run("ProcessWFWithStoredWFT", func(t *testing.T) {
 		_, controller := newController(wf)
 		woc := newWorkflowOperationCtx(wf, controller)
-		err := woc.setWorkflowSpecAndEntrypoint()
+		err := woc.loadWorkflowSpec()
 		assert.NoError(t, err)
 
-		assert.Equal(t, "test", *woc.arguments.Parameters[0].Value)
-		assert.Equal(t, "hello", *woc.arguments.Parameters[1].Value)
+		assert.Equal(t, "test", *woc.submissionParameters[0].Value)
+		assert.Equal(t, "hello", *woc.submissionParameters[1].Value)
 	})
 }
