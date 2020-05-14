@@ -121,12 +121,15 @@ func (a *ArtifactRepository) IsArchiveLogs() bool {
 	return a != nil && a.ArchiveLogs != nil && *a.ArchiveLogs
 }
 
-func (c ArtifactRepository) MergeInto(a *wfv1.Artifact) {
-	if a == nil {
+func (c ArtifactRepository) MergeInto(b *wfv1.Artifact) {
+	if b == nil {
 		return
 	}
 	if c.S3 != nil {
-		c.S3.MergeInto(a.S3)
+		c.S3.MergeInto(b.S3)
+	}
+	if c.GCS != nil {
+		c.GCS.MergeInto(b.GCS)
 	}
 	// TODO
 }

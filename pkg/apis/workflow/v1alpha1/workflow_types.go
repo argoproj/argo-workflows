@@ -1297,33 +1297,33 @@ type S3Bucket struct {
 	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
 }
 
-func (in *S3Bucket) MergeInto(o *S3Artifact) {
-	if in == nil || o == nil {
+func (in *S3Bucket) MergeInto(b *S3Bucket) {
+	if in == nil || b == nil {
 		return
 	}
-	if o.Endpoint == "" {
-		o.Endpoint = in.Endpoint
+	if b.Endpoint == "" {
+		b.Endpoint = in.Endpoint
 	}
-	if o.Bucket == "" {
-		o.Bucket = in.Bucket
+	if b.Bucket == "" {
+		b.Bucket = in.Bucket
 	}
-	if o.Region == "" {
-		o.Region = in.Region
+	if b.Region == "" {
+		b.Region = in.Region
 	}
-	if o.Insecure == nil {
-		o.Insecure = in.Insecure
+	if b.Insecure == nil {
+		b.Insecure = in.Insecure
 	}
-	if o.AccessKeySecret.Size() > 0 {
-		o.AccessKeySecret = in.AccessKeySecret
+	if b.AccessKeySecret.Size() > 0 {
+		b.AccessKeySecret = in.AccessKeySecret
 	}
-	if o.SecretKeySecret.Size() > 0 {
-		o.SecretKeySecret = in.SecretKeySecret
+	if b.SecretKeySecret.Size() > 0 {
+		b.SecretKeySecret = in.SecretKeySecret
 	}
-	if o.RoleARN == "" {
-		o.RoleARN = in.RoleARN
+	if b.RoleARN == "" {
+		b.RoleARN = in.RoleARN
 	}
-	if !o.UseSDKCreds {
-		o.UseSDKCreds = in.UseSDKCreds
+	if !b.UseSDKCreds {
+		b.UseSDKCreds = in.UseSDKCreds
 	}
 }
 
@@ -1477,6 +1477,18 @@ type GCSBucket struct {
 
 	// ServiceAccountKeySecret is the secret selector to the bucket's service account key
 	ServiceAccountKeySecret apiv1.SecretKeySelector `json:"serviceAccountKeySecret,omitempty" protobuf:"bytes,2,opt,name=serviceAccountKeySecret"`
+}
+
+func (r *GCSBucket) MergeInto(b *GCSBucket) {
+	if r == nil || b == nil {
+		return
+	}
+	if b.Bucket == "" {
+		b.Bucket = r.Bucket
+	}
+	if b.ServiceAccountKeySecret.Key == "" {
+		b.ServiceAccountKeySecret = r.ServiceAccountKeySecret
+	}
 }
 
 // GCSArtifact is the location of a GCS artifact
