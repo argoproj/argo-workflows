@@ -34,8 +34,7 @@ func (ossDriver *OSSArtifactDriver) Load(inputArtifact *wfv1.Artifact, path stri
 			log.Infof("OSS Load path: %s, key: %s", path, inputArtifact.OSS.Key)
 			osscli, err := ossDriver.newOSSClient()
 			if err != nil {
-				log.Warnf("Failed to create new OSS client: %v", err)
-				return false, nil
+				return false, err
 			}
 			bucketName := inputArtifact.OSS.Bucket
 			bucket, err := osscli.Bucket(bucketName)

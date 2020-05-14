@@ -1,4 +1,4 @@
-package artifactory
+package http
 
 import (
 	"os"
@@ -10,12 +10,12 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-func TestArtifactoryArtifactDriver_Load(t *testing.T) {
-	driver := &ArtifactoryArtifactDriver{}
+func TestHTTPArtifactDriver_Load(t *testing.T) {
+	driver := &HTTPArtifactDriver{}
 	t.Run("NotFound", func(t *testing.T) {
 		err := driver.Load(&wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{
-				Artifactory: &wfv1.ArtifactoryArtifact{URL: "https://github.com/argoproj/argo/not-found"},
+				HTTP: &wfv1.HTTPArtifact{URL: "https://github.com/argoproj/argo/not-found"},
 			},
 		}, "/tmp/not-found")
 		if assert.Error(t, err) {
@@ -28,7 +28,7 @@ func TestArtifactoryArtifactDriver_Load(t *testing.T) {
 	t.Run("Found", func(t *testing.T) {
 		err := driver.Load(&wfv1.Artifact{
 			ArtifactLocation: wfv1.ArtifactLocation{
-				Artifactory: &wfv1.ArtifactoryArtifact{URL: "https://github.com/argoproj/argo"},
+				HTTP: &wfv1.HTTPArtifact{URL: "https://github.com/argoproj/argo"},
 			},
 		}, "/tmp/found")
 		if assert.NoError(t, err) {
@@ -36,4 +36,9 @@ func TestArtifactoryArtifactDriver_Load(t *testing.T) {
 			assert.NoError(t, err)
 		}
 	})
+}
+
+func TestHTTPArtifactDriver_Save(t *testing.T) {
+	driver := &HTTPArtifactDriver{}
+	assert.Error(t, driver.Save("", nil))
 }
