@@ -418,6 +418,12 @@ func (we *WorkflowExecutor) isBaseImagePath(path string) bool {
 	// next check if path overlaps with a shared input-artifact emptyDir mounted by argo
 	for _, inArt := range we.Template.Inputs.Artifacts {
 		if path == inArt.Path {
+			// The input artifact may have been optional and not supplied. If this is the case, the file won't exist on
+			// the input artifact volume. Since this function was called, we know that we want to use this path as an
+			// ourput artifact, so we should look for it in the base image path.
+			if inArt.Optional && !inArt.HasLocation() {
+				return true
+			}
 			return false
 		}
 		if strings.HasPrefix(path, inArt.Path+"/") {
