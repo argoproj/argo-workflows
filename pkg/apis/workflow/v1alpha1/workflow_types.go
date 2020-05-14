@@ -340,11 +340,6 @@ func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 	return wfs.PodSpecPatch != ""
 }
 
-type Container struct {
-	Name            string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
-	apiv1.Container `json:",inline" protobuf:"bytes,2,opt,name=container"`
-}
-
 // Template is a reusable and composable unit of execution in a workflow
 type Template struct {
 	// Name is the name of the template
@@ -386,7 +381,7 @@ type Template struct {
 	Steps []ParallelSteps `json:"steps,omitempty" protobuf:"bytes,11,opt,name=steps"`
 
 	// Container is the main container image to run in the pod
-	Container *Container `json:"container,omitempty" protobuf:"bytes,12,opt,name=container"`
+	Container *apiv1.Container `json:"container,omitempty" protobuf:"bytes,12,opt,name=container"`
 
 	// Script runs a portion of code against an interpreter
 	Script *ScriptTemplate `json:"script,omitempty" protobuf:"bytes,13,opt,name=script"`
@@ -1610,7 +1605,7 @@ type DAGTask struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Name of template to execute
-	Template string `json:"template" protobuf:"bytes,2,opt,name=template"`
+	Template string `json:"template,omitempty" protobuf:"bytes,2,opt,name=template"`
 
 	// Arguments are the parameter and artifact arguments to the template
 	Arguments Arguments `json:"arguments,omitempty" protobuf:"bytes,3,opt,name=arguments"`

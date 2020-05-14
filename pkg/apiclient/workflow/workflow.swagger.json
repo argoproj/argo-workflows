@@ -928,17 +928,6 @@
       },
       "title": "Backoff is a backoff strategy to use within retryStrategy"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Container": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "container": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.Container"
-        }
-      }
-    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ContinueOn": {
       "type": "object",
       "properties": {
@@ -1921,7 +1910,7 @@
           "title": "Steps define a series of sequential/parallel workflow steps"
         },
         "container": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Container",
+          "$ref": "#/definitions/k8s.io.api.core.v1.Container",
           "title": "Container is the main container image to run in the pod"
         },
         "script": {

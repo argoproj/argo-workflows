@@ -14,7 +14,7 @@ type CronWorkflow struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 	Spec              CronWorkflowSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec"`
-	Status            CronWorkflowStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
+	Status            CronWorkflowStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
 // CronWorkflowList is list of CronWorkflow resources
