@@ -12,6 +12,9 @@ import (
 	"github.com/coreos/go-oidc"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
+	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
@@ -35,32 +38,43 @@ type sso struct {
 	secure          bool
 }
 
-func New(issuer, clientID, clientSecret, redirectURL, baseHRef string, secure bool) (Interface, error) {
-	if issuer == "" {
+type Config struct {
+	Issuer       string                  `json:"issuer"`
+	ClientID     string                  `json:"clientId"`
+	ClientSecret apiv1.SecretKeySelector `json:"clientSecret"`
+	RedirectURL  string                  `json:"redirectUrl"`
+}
+
+func New(c Config, secretsIf corev1.SecretInterface, baseHRef string, secure bool) (Interface, error) {
+	if c.Issuer == "" {
 		return nil, fmt.Errorf("issuer empty")
 	}
-	if clientID == "" {
+	if c.ClientID == "" {
 		return nil, fmt.Errorf("clientId empty")
 	}
-	if clientSecret == "" {
+	if c.ClientSecret.Key == "" {
 		return nil, fmt.Errorf("clientSecret empty")
 	}
-	if redirectURL == "" {
+	if c.RedirectURL == "" {
 		return nil, fmt.Errorf("redirectUrl empty")
 	}
-	provider, err := oidc.NewProvider(context.Background(), issuer)
+	secrets, err := secretsIf.Get(c.ClientSecret.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	provider, err := oidc.NewProvider(context.Background(), c.Issuer)
 	if err != nil {
 		return nil, err
 	}
 	config := &oauth2.Config{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-		RedirectURL:  redirectURL,
+		ClientID:     c.ClientID,
+		ClientSecret: string(secrets.Data[c.ClientSecret.Name]),
+		RedirectURL:  c.RedirectURL,
 		Endpoint:     provider.Endpoint(),
 		Scopes:       []string{oidc.ScopeOpenID, "groups"},
 	}
-	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: clientID})
-	log.WithFields(log.Fields{"redirectURL": config.RedirectURL, "issuer": issuer, "clientId": clientID}).Info("SSO configuration")
+	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: config.ClientID})
+	log.WithFields(log.Fields{"redirectUrl": config.RedirectURL, "issuer": c.Issuer, "clientId": c.ClientID}).Info("SSO configuration")
 	return &sso{config, idTokenVerifier, baseHRef, secure}, nil
 }
 

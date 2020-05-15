@@ -33,13 +33,15 @@ export const Login = () => (
                     You appear to be <b>logged {maybeLoggedIn() ? 'in' : 'out'}</b>. It may not be necessary to login to use Argo, it depends on how it is configured.
                 </p>
                 <p>
-                    <a href='https://github.com/argoproj/argo/blob/master/docs/auth.md'>Learn more</a>.
+                    <a href='https://github.com/argoproj/argo/blob/master/docs/argo-server-auth.md'>Learn more</a>.
                 </p>
             </div>
 
             <div className='row'>
                 <div className='columns small-4'>
-                    <p>If you're using single sign-on:</p>
+                    <p>
+                        If your organisation has configured <b>single sign-on</b>:
+                    </p>
                     <div>
                         <button className='argo-button argo-button--base-o' onClick={() => (document.location.href = uiUrl('oauth2/redirect'))}>
                             <i className='fa fa-sign-in-alt' /> Login
@@ -48,7 +50,7 @@ export const Login = () => (
                 </div>
                 <div className='columns small-4'>
                     <p>
-                        Otherwise, get your token using <code>argo auth token</code> and paste in this box:
+                        If your organisation has configured <b>client authentication</b>, get your token using <code>argo auth token</code> and paste in this box:
                     </p>
                     <div>
                         <textarea id='token' cols={32} rows={8} />

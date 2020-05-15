@@ -15,7 +15,6 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -80,14 +79,14 @@ type ArgoServerOpts struct {
 }
 
 func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
+	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset)
 	ssoIf := sso.NullSSO
 	if opts.AuthModes[auth.SSO] {
-		secrets, err := opts.KubeClientset.CoreV1().Secrets(opts.Namespace).Get("argo-server-sso", metav1.GetOptions{})
+		c, err := configController.Get()
 		if err != nil {
 			return nil, err
 		}
-		d := secrets.Data
-		ssoIf, err = sso.New(string(d["issuer"]), string(d["clientId"]), string(d["clientSecret"]), string(d["redirectUrl"]), opts.BaseHRef, opts.TLSConfig != nil)
+		ssoIf, err = sso.New(c.SSO, opts.KubeClientset.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
 		if err != nil {
 			return nil, err
 		}
@@ -108,7 +107,7 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 		kubeClientset:    opts.KubeClientset,
 		authenticator:    gatekeeper,
 		oAuth2Service:    ssoIf,
-		configController: config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset),
+		configController: configController,
 		stopCh:           make(chan struct{}),
 	}, nil
 }

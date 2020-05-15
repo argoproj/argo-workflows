@@ -6,9 +6,9 @@
 
 ## To start Argo Server with SSO.
 
-First, create a [secret](../manifests/quick-start/base/argo-server-sso-secret.yaml) with the correct OAuth 2 values.
+Firstly, configure the settings [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) with the correct OAuth 2 values.
 
-Finally, start using the SSO [auth mode](argo-server-auth-mode.md):
+Then, start the Argo Server using the SSO [auth mode](argo-server-auth-mode.md):
 
 ```
 argo server --auth-mode sso --auth-mode ...
