@@ -105,7 +105,7 @@ func getTaskDependsLogic(dagTask *wfv1.DAGTask, ctx DagContext) string {
 		return dagTask.Depends
 	}
 
-	// For backwards compatibility, "dependencies: [A, B]" is equivalent to "depends: (A.Successful || A.Skipped) && B.Successful"
+	// For backwards compatibility, "dependencies: [A, B]" is equivalent to "depends: (A.Successful || A.Skipped || A.Daemoned)) && (B.Successful || B.Skipped || B.Daemoned)"
 	var dependencies []string
 	for _, dependency := range dagTask.Dependencies {
 		depTask := ctx.GetTask(dependency)

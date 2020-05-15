@@ -47,8 +47,8 @@ type dagContext struct {
 	dependencies map[string][]string
 
 	// dependsLogic is the resolved "depends" string of a particular task. A resolved "depends" simply contains
-	// task with their explicit results since we allow "Succeeded" to be omitted for convenience
-	// (i.e., "A || B.Completed" -> "A.Succeeded || B.Completed").
+	// task with their explicit results since we allow them to be omitted for convinience
+	// (i.e., "A || B.Completed" -> "(A.Succeeded || A.Skipped || A.Daemoned) || B.Completed").
 	// Because this resolved "depends" is computed using regex and regex is expensive, we cache the results so that they
 	// are only computed once per operation
 	dependsLogic map[string]string

@@ -2,7 +2,7 @@
 
 ![alpha](assets/alpha.svg)
 
-> v2.8 and after
+> v2.9 and after
 
 ## Introduction
 
