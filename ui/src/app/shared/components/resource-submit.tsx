@@ -2,6 +2,7 @@ import {Formik} from 'formik';
 import * as jsYaml from 'js-yaml';
 import * as React from 'react';
 import * as models from '../../../models';
+import {YamlEditor} from './yaml/yaml-editor';
 
 interface ResourceSubmitProps<T> {
     defaultResource: T;
@@ -83,17 +84,12 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                         }
                                     }}
                                 />
-                                <textarea
-                                    name={'resourceString'}
-                                    className='yaml'
+                                <YamlEditor
+                                    editing={true}
                                     value={formikApi.values.resourceString}
-                                    onChange={e => {
-                                        formikApi.handleChange(e);
-                                    }}
-                                    onBlur={e => {
-                                        formikApi.handleBlur(e);
+                                    onSubmit={e => {
                                         try {
-                                            const resource: T = jsYaml.load(e.currentTarget.value);
+                                            const resource: T = jsYaml.load(e);
                                             this.validate(resource);
                                             formikApi.setFieldValue('resource', resource);
                                         } catch (e) {
@@ -105,13 +101,9 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
                                                 invalid: true
                                             });
                                         }
+                                        formikApi.handleChange(e);
                                     }}
-                                    onFocus={e => (e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px')}
-                                    autoFocus={true}
                                 />
-                                <button type='submit' className='argo-button argo-button--base' disabled={formikApi.isSubmitting || this.state.invalid}>
-                                    <i className='fa fa-plus' /> Submit New Workflow
-                                </button>
                             </div>
                         </form>
                     )}
@@ -144,9 +136,6 @@ export class ResourceSubmit<T> extends React.Component<ResourceSubmitProps<T>, R
             });
         }
         const fileReader = new FileReader();
-        fileReader.onload = () => {
-            handleRead(fileReader.result);
-        };
         fileReader.readAsText(files.item(0));
     }
 

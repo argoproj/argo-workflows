@@ -1,8 +1,12 @@
 import * as jsYaml from 'js-yaml';
 import * as React from 'react';
-
+import MonacoEditor from 'react-monaco-editor';
 import {YamlViewer} from './yaml-viewer';
+// @ts-ignore
+import { uiUrl } from "../../base";
+
 require('./yaml.scss');
+
 interface Props<T> {
     title?: string;
     value: T;
@@ -21,6 +25,12 @@ export class YamlEditor<T> extends React.Component<Props<T>, State> {
         super(props);
         this.state = {editing: this.props.editing, value: jsYaml.dump(this.props.value)};
     }
+
+    componentDidMount() {
+        // const uri = uiUrl('schemas/workflows.json');
+    }
+
+
 
     public componentDidUpdate(prevProps: Props<T>) {
         if (prevProps.value !== this.props.value) {
@@ -41,15 +51,10 @@ export class YamlEditor<T> extends React.Component<Props<T>, State> {
                     </p>
                 )}
                 {this.state.editing ? (
-                    <textarea
-                        className='yaml'
-                        value={this.state.value}
-                        onChange={e => this.setState({value: e.currentTarget.value})}
-                        onFocus={e => (e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px')}
-                        autoFocus={true}
-                    />
+                        <MonacoEditor value={this.state.value} language='yaml' height={"600px"} onChange={value => this.setState({value})} />
+
                 ) : (
-                    <YamlViewer value={this.state.value} />
+                    <YamlViewer value={this.state.value}/>
                 )}
             </>
         );
@@ -60,11 +65,11 @@ export class YamlEditor<T> extends React.Component<Props<T>, State> {
             <div>
                 {(this.state.editing && (
                     <button onClick={() => this.submit()} className='argo-button argo-button--base'>
-                        Submit
+                        <i className='fa fa-plus' /> Submit
                     </button>
                 )) || (
                     <button onClick={() => this.setState({editing: true})} className='argo-button argo-button--base'>
-                        Edit
+                        <i className='fa fa-edit' /> Edit
                     </button>
                 )}
             </div>
