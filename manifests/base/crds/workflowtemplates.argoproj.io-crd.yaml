@@ -4457,7 +4457,6 @@ spec:
                       workingDir:
                         type: string
                     required:
-                    - name
                     - source
                     type: object
                   securityContext:

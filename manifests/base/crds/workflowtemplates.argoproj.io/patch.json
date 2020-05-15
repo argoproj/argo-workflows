@@ -8,7 +8,7 @@
     "path": "/spec/validation/openAPIV3Schema/properties/spec/properties/templates/items/properties/container/required"
   },
   {
-    "op": "replaces",
+    "op": "replace",
     "path": "/spec/validation/openAPIV3Schema/properties/spec/properties/templates/items/properties/script/required",
     "value": [
       "source"
