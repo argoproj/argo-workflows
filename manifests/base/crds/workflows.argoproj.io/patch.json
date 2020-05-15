@@ -18,28 +18,28 @@
     "op": "replace",
     "path": "/spec/validation/openAPIV3Schema/properties/spec/properties/templates/items/properties/steps/items/items/properties/withItems/items",
     "value": {
-      "x-kubernetes-int-or-string": true
+      "x-kubernetes-preserve-unknown-fields": true
     }
   },
   {
     "op": "replace",
     "path": "/spec/validation/openAPIV3Schema/properties/status/properties/storedTemplates/additionalProperties/properties/steps/items/items/properties/withItems/items",
     "value": {
-      "x-kubernetes-int-or-string": true
+      "x-kubernetes-preserve-unknown-fields": true
     }
   },
   {
     "op": "replace",
     "path": "/spec/validation/openAPIV3Schema/properties/spec/properties/templates/items/properties/dag/properties/tasks/items/properties/withItems/items",
     "value": {
-      "x-kubernetes-int-or-string": true
+      "x-kubernetes-preserve-unknown-fields": true
     }
   },
   {
     "op": "replace",
     "path": "/spec/validation/openAPIV3Schema/properties/status/properties/storedTemplates/additionalProperties/properties/dag/properties/tasks/items/properties/withItems/items",
     "value": {
-      "x-kubernetes-int-or-string": true
+      "x-kubernetes-preserve-unknown-fields": true
     }
   },
   {

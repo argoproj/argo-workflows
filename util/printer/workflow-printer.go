@@ -61,7 +61,6 @@ func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
 	}
 	for _, wf := range wfList {
 		ageStr := humanize.RelativeDurationShort(wf.ObjectMeta.CreationTimestamp.Time, time.Now())
-		durationStr := humanize.TruncatedDuration(wf.Status.Duration())
 		if opts.Namespace {
 			_, _ = fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Namespace)
 		}
@@ -69,7 +68,7 @@ func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
 		if wf.Spec.Priority != nil {
 			priority = int(*wf.Spec.Priority)
 		}
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d", wf.ObjectMeta.Name, WorkflowStatus(&wf), ageStr, durationStr, priority)
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d", wf.ObjectMeta.Name, WorkflowStatus(&wf), ageStr, wf.Status.Duration(), priority)
 		if opts.Output == "wide" {
 			pending, running, completed := countPendingRunningCompleted(&wf)
 			_, _ = fmt.Fprintf(w, "\t%d/%d/%d", pending, running, completed)

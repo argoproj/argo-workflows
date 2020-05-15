@@ -64,9 +64,7 @@ spec:
     metadata: {}
     name: whalesay
     outputs: {}
-status:
-  finishedAt: null
-  startedAt: null
+status: {}
 `
 
 	var cronWf v1alpha1.CronWorkflow

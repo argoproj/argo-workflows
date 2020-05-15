@@ -2578,7 +2578,7 @@ spec:
                               type: string
                             withItems:
                               items:
-                                x-kubernetes-int-or-string: true
+                                x-kubernetes-preserve-unknown-fields: true
                               type: array
                             withParam:
                               type: string
@@ -5398,7 +5398,7 @@ spec:
                             type: string
                           withItems:
                             items:
-                              x-kubernetes-int-or-string: true
+                              x-kubernetes-preserve-unknown-fields: true
                             type: array
                           withParam:
                             type: string
@@ -9400,7 +9400,7 @@ spec:
                                   type: string
                                 withItems:
                                   items:
-                                    x-kubernetes-int-or-string: true
+                                    x-kubernetes-preserve-unknown-fields: true
                                   type: array
                                 withParam:
                                   type: string
@@ -12220,7 +12220,7 @@ spec:
                                 type: string
                               withItems:
                                 items:
-                                  x-kubernetes-int-or-string: true
+                                  x-kubernetes-preserve-unknown-fields: true
                                 type: array
                               withParam:
                                 type: string
@@ -16230,7 +16230,7 @@ spec:
                               type: string
                             withItems:
                               items:
-                                x-kubernetes-int-or-string: true
+                                x-kubernetes-preserve-unknown-fields: true
                               type: array
                             withParam:
                               type: string
@@ -19050,7 +19050,7 @@ spec:
                             type: string
                           withItems:
                             items:
-                              x-kubernetes-int-or-string: true
+                              x-kubernetes-preserve-unknown-fields: true
                             type: array
                           withParam:
                             type: string
@@ -23828,7 +23828,7 @@ spec:
                               type: string
                             withItems:
                               items:
-                                x-kubernetes-int-or-string: true
+                                x-kubernetes-preserve-unknown-fields: true
                               type: array
                             withParam:
                               type: string
@@ -26649,7 +26649,7 @@ spec:
                             type: string
                           withItems:
                             items:
-                              x-kubernetes-int-or-string: true
+                              x-kubernetes-preserve-unknown-fields: true
                             type: array
                           withParam:
                             type: string
@@ -29888,7 +29888,7 @@ spec:
                               type: string
                             withItems:
                               items:
-                                x-kubernetes-int-or-string: true
+                                x-kubernetes-preserve-unknown-fields: true
                               type: array
                             withParam:
                               type: string
@@ -32708,7 +32708,7 @@ spec:
                             type: string
                           withItems:
                             items:
-                              x-kubernetes-int-or-string: true
+                              x-kubernetes-preserve-unknown-fields: true
                             type: array
                           withParam:
                             type: string
