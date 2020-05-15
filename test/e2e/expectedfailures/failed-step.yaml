@@ -18,14 +18,14 @@ spec:
               parameters:
                 - name: code
                   value: "{{item}}"
-        withItems:
-        - 0
-        - 1
-  - name: exit
-    inputs:
-      parameters:
-      - name: code
-    container:
-      image: alpine:latest
-      command: [sh, -c]
-      args: ["echo 'exiting with exit code {{inputs.parameters.code}}'; exit {{inputs.parameters.code}}"]
+            withItems:
+              - 0
+              - 1
+    - name: exit
+      inputs:
+        parameters:
+          - name: code
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["echo 'exiting with exit code {{inputs.parameters.code}}'; exit {{inputs.parameters.code}}"]
