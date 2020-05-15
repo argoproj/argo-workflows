@@ -404,7 +404,7 @@ func (s *FunctionalSuite) TestStopBehavior() {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow stop-terminate stopped")
 		}).
-		WaitForWorkflow(30 * time.Second).
+		WaitForWorkflow(45 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeFailed, status.Phase)
@@ -525,6 +525,30 @@ spec:
 				}
 				return false
 			}))
+		})
+}
+
+func (s *FunctionalSuite) TestSameInputOutputPathOptionalArtifact() {
+	s.Given().
+		Workflow("@testdata/same-input-output-path-optional.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestOptionalInputArtifacts() {
+	s.Given().
+		Workflow("@testdata/input-artifacts.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})
 }
 

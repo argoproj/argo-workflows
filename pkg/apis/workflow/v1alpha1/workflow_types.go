@@ -10,6 +10,7 @@ import (
 
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -696,6 +697,18 @@ type ArtifactLocation struct {
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 }
 
+// HasLocation whether or not an artifact has a location defined
+func (a *ArtifactLocation) HasLocation() bool {
+	return a.S3.HasLocation() ||
+		a.Git.HasLocation() ||
+		a.HTTP.HasLocation() ||
+		a.Artifactory.HasLocation() ||
+		a.Raw.HasLocation() ||
+		a.HDFS.HasLocation() ||
+		a.OSS.HasLocation() ||
+		a.GCS.HasLocation()
+}
+
 type ArtifactRepositoryRef struct {
 	ConfigMap string `json:"configMap,omitempty" protobuf:"bytes,1,opt,name=configMap"`
 	Key       string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
@@ -989,13 +1002,25 @@ func (in ResourcesDuration) Add(o ResourcesDuration) ResourcesDuration {
 func (in ResourcesDuration) String() string {
 	var parts []string
 	for n, d := range in {
-		parts = append(parts, fmt.Sprintf("%v*%s", d, n))
+		parts = append(parts, fmt.Sprintf("%v*(%s %s)", d, ResourceQuantityDenominator(n).String(), n))
 	}
 	return strings.Join(parts, ",")
 }
 
 func (in ResourcesDuration) IsZero() bool {
 	return len(in) == 0
+}
+
+func ResourceQuantityDenominator(r apiv1.ResourceName) *resource.Quantity {
+	q, ok := map[apiv1.ResourceName]resource.Quantity{
+		apiv1.ResourceMemory:           resource.MustParse("100Mi"),
+		apiv1.ResourceStorage:          resource.MustParse("10Gi"),
+		apiv1.ResourceEphemeralStorage: resource.MustParse("10Gi"),
+	}[r]
+	if !ok {
+		q = resource.MustParse("1")
+	}
+	return &q
 }
 
 type WorkflowConditions []WorkflowCondition
@@ -1282,7 +1307,7 @@ type S3Artifact struct {
 }
 
 func (s *S3Artifact) HasLocation() bool {
-	return s != nil && s.Bucket != ""
+	return s != nil && s.Endpoint != "" && s.Bucket != "" && s.Key != ""
 }
 
 // GitArtifact is the location of an git artifact
@@ -1698,16 +1723,11 @@ func (args *Arguments) GetParameterByName(name string) *Parameter {
 	return nil
 }
 
-// HasLocation whether or not an artifact has a location defined
-func (a *Artifact) HasLocation() bool {
-	return a.S3.HasLocation() ||
-		a.Git.HasLocation() ||
-		a.HTTP.HasLocation() ||
-		a.Artifactory.HasLocation() ||
-		a.Raw.HasLocation() ||
-		a.HDFS.HasLocation() ||
-		a.OSS.HasLocation() ||
-		a.GCS.HasLocation()
+func (a *Artifact) GetArchive() *ArchiveStrategy {
+	if a == nil || a.Archive == nil {
+		return &ArchiveStrategy{}
+	}
+	return a.Archive
 }
 
 // GetTemplateByName retrieves a defined template by its name

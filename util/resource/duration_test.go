@@ -21,7 +21,7 @@ func TestDurationForPod(t *testing.T) {
 		want wfv1.ResourcesDuration
 	}{
 		{"Empty", &corev1.Pod{}, wfv1.ResourcesDuration{}},
-		{"RunningContainerWithCPURequest", &corev1.Pod{
+		{"ContainerWithCPURequest", &corev1.Pod{
 			Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "main", Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceCPU: resource.MustParse("2000m"),
@@ -32,10 +32,9 @@ func TestDurationForPod(t *testing.T) {
 					{
 						Name: "main",
 						State: corev1.ContainerState{
-							Running: &corev1.ContainerStateRunning{
-								StartedAt: metav1.Time{
-									Time: now.Add(-1 * time.Minute),
-								},
+							Terminated: &corev1.ContainerStateTerminated{
+								StartedAt:  metav1.Time{Time: now.Add(-1 * time.Minute)},
+								FinishedAt: metav1.Time{Time: now},
 							},
 						},
 					},
@@ -43,9 +42,9 @@ func TestDurationForPod(t *testing.T) {
 			},
 		}, wfv1.ResourcesDuration{
 			corev1.ResourceCPU:    wfv1.NewResourceDuration(2 * time.Minute),
-			corev1.ResourceMemory: wfv1.NewResourceDuration(5 * time.Second),
+			corev1.ResourceMemory: wfv1.NewResourceDuration(1 * time.Minute),
 		}},
-		{"TerminatedContainerWithCPURequest", &corev1.Pod{
+		{"ContainerWithCPURequest", &corev1.Pod{
 			Spec: corev1.PodSpec{Containers: []corev1.Container{{Name: "main", Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceCPU: resource.MustParse("2000m"),
@@ -59,10 +58,9 @@ func TestDurationForPod(t *testing.T) {
 					{
 						Name: "main",
 						State: corev1.ContainerState{
-							Running: &corev1.ContainerStateRunning{
-								StartedAt: metav1.Time{
-									Time: now.Add(-3 * time.Minute),
-								},
+							Terminated: &corev1.ContainerStateTerminated{
+								StartedAt:  metav1.Time{Time: now.Add(-3 * time.Minute)},
+								FinishedAt: metav1.Time{Time: now},
 							},
 						},
 					},
@@ -70,13 +68,13 @@ func TestDurationForPod(t *testing.T) {
 			},
 		}, wfv1.ResourcesDuration{
 			corev1.ResourceCPU:                    wfv1.NewResourceDuration(6 * time.Minute),
-			corev1.ResourceMemory:                 wfv1.NewResourceDuration(0 * time.Second),
+			corev1.ResourceMemory:                 wfv1.NewResourceDuration(3 * time.Minute),
 			corev1.ResourceName("nvidia.com/gpu"): wfv1.NewResourceDuration(3 * time.Minute),
 		}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := DurationForPod(tt.pod, now)
+			got := DurationForPod(tt.pod)
 			assert.Equal(t, tt.want, got)
 		})
 	}
