@@ -594,10 +594,7 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s: %s", tmpl.Name, err.Error())
 	}
 	if tmpl.Container != nil {
-		if tmpl.Container.Name == "" {
-			tmpl.Container.Name = common.MainContainerName
-		}
-		if tmpl.Container.Name != common.MainContainerName {
+		if tmpl.Container.Name !="" && tmpl.Container.Name != common.MainContainerName {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.container '%s' must be named '%s', not '%s'", common.MainContainerName, tmpl.Container.Name)
 		}
 		// Ensure there are no collisions with volume mountPaths and artifact load paths
@@ -616,10 +613,7 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		}
 	}
 	if tmpl.Script != nil {
-		if tmpl.Script.Name == "" {
-			tmpl.Container.Name = common.MainContainerName
-		}
-		if tmpl.Script.Name != common.MainContainerName {
+		if tmpl.Script.Name != "" && tmpl.Script.Name != common.MainContainerName {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.script '%s' must be named '%s', not '%s'", common.MainContainerName, tmpl.Container.Name)
 		}
 	}

@@ -7,7 +7,11 @@
     "op": "remove",
     "path": "/spec/validation/openAPIV3Schema/properties/spec/properties/workflowSpec/properties/templates/items/properties/container/required"
   },
-
+  {
+    "op": "replaces",
+    "path": "/spec/validation/openAPIV3Schema/properties/spec/properties/workflowSpec/properties/templates/items/properties/script/required",
+    "value": ["source"]
+  },
   {
     "op": "replace",
     "path": "/spec/validation/openAPIV3Schema/properties/spec/properties/workflowSpec/properties/templates/items/properties/steps/items/items/properties/withItems/items",
