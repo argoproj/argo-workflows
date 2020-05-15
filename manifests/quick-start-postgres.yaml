@@ -353,8 +353,6 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  featureFlags: |
-    resourcesDuration: true
   links: |
     - name: Example Workflow Link
       scope: workflow
@@ -371,6 +369,7 @@ data:
     connectionPool:
       maxIdleConns: 100
       maxOpenConns: 0
+      connMaxLifetime: 0s
     nodeStatusOffLoad: true
     archive: true
     archiveTTL: 7d

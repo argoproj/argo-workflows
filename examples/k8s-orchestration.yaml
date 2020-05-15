@@ -69,7 +69,7 @@ spec:
       image: argoproj/argoexec:latest
       command: [sh, -c]
       args: ["
-        for i in `kubectl get pods -l controller-uid={{inputs.parameters.job-uid}} -o name --show-all`; do 
+        for i in `kubectl get pods -l controller-uid={{inputs.parameters.job-uid}} -o name`; do 
           kubectl logs $i;
         done
       "]

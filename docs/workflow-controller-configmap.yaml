@@ -39,10 +39,6 @@ data:
         scope: pod
         url: http://logging-facility?namespace=${metadata.namespace}&podName=${metadata.name}
 
-    featureFlags:
-      # Enable resource duration
-      resourcesDuration: false
-
     # artifactRepository defines the default location to be used as the artifact repository for
     # container artifacts.
     artifactRepository:
@@ -121,14 +117,25 @@ data:
       - name: ARGO_TRACE
         value: "1"
 
-    # metricsConfig controls the path and port for prometheus metrics
+    # metricsConfig controls the path and port for prometheus metrics. Metrics are enabled and emitted on localhost:9090/metrics
+    # by default.
     metricsConfig:
-      disableLegacy: false  # Switch to "true" to disable legacy metrics. "false" by default
+      # Enabled controls metric emission. Default is true, set "enabled: false" to turn off
       enabled: true
+      # Path is the path where metrics are emitted. Must start with a "/". Default is "/metrics"
       path: /metrics
+      # Port is the port where metrics are emitted. Default is "9090"
       port: 8080
+      # MetricsTTL sets how often custom metrics are cleared from memory. Default is "0", metrics are never cleared
+      metricsTTL: "10m"
+      # IgnoreErrors is a flag that instructs prometheus to ignore metric emission errors. Default is "false"
+      ignoreErrors: false
 
-    # telemetryConfig controls the path and port for prometheus telemetry
+      # DEPRECATED: Legacy metrics are now removed, this field is ignored
+      disableLegacy: false
+
+    # telemetryConfig controls the path and port for prometheus telemetry. Telemetry is enabled and emitted in the same endpoint
+    # as metrics by default, but can be overridden using this config.
     telemetryConfig:
       enabled: true
       path: /telemetry
@@ -139,6 +146,7 @@ data:
       connectionPool:
         maxIdleConns: 100
         maxOpenConns: 0
+        connMaxLifetime: 0s # 0 means connections don't have a max lifetime
       #  if true node status is only saved to the persistence DB to avoid the 1MB limit in etcd
       nodeStatusOffLoad: false
       # save completed workloads to the workflow archive

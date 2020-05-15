@@ -223,7 +223,7 @@ jobs:
       - run: DOCKER_BUILDKIT=1 docker build .
   ui:
     docker:
-      - image: circleci/node:11.15.0
+      - image: circleci/node:14.0.0
     steps:
       - checkout
       - maybe_skip_job
@@ -233,7 +233,7 @@ jobs:
             - yarn-packages-v3-{{ checksum "ui/yarn.lock" }}
       - run:
           name: Download dependencies
-          command: yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
+          command: yarn --cwd ui install
       # - run: yarn test
       - run: yarn --cwd ui build
       - run: yarn --cwd ui lint

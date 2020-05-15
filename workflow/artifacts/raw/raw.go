@@ -25,6 +25,6 @@ func (a *RawArtifactDriver) Load(artifact *wfv1.Artifact, path string) error {
 }
 
 // Save is unsupported for raw output artifacts
-func (g *RawArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
+func (g *RawArtifactDriver) Save(string, *wfv1.Artifact) error {
 	return errors.Errorf(errors.CodeBadRequest, "Raw output artifacts unsupported")
 }
