@@ -57,5 +57,5 @@ func (s *service) Validate(obj metav1.Object) error {
 		return nil
 
 	}
-	return fmt.Errorf("'%s' is forbidden", obj.GetName())
+	return fmt.Errorf("'%s' is not managed by the current Argo Server", obj.GetName())
 }

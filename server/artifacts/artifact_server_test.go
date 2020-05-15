@@ -83,7 +83,6 @@ func TestArtifactServer_GetArtifactWithoutInstanceID(t *testing.T) {
 	w := &testhttp.TestResponseWriter{}
 	s.GetArtifact(w, r)
 	assert.NotEqual(t, 200, w.StatusCode)
-	assert.Equal(t, "'your-wf' is forbidden", w.Output)
 }
 
 func TestArtifactServer_GetArtifactByUID(t *testing.T) {
