@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
@@ -64,12 +65,17 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *workflowpkg.Wo
 		return util.CreateServerDryRun(req.Workflow, wfClient)
 	}
 
+	indent, err := json.MarshalIndent(req.Workflow, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+
+	log.Debug(string(indent))
+
 	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(req.Workflow)
 
 	if err != nil {
-		log.Errorf("Create request is failed. Error: %s", err)
 		return nil, err
-
 	}
 	return wf, nil
 }
