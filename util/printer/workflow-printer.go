@@ -61,7 +61,7 @@ func printTable(wfList []wfv1.Workflow, out io.Writer, opts PrintOpts) {
 	}
 	for _, wf := range wfList {
 		ageStr := humanize.RelativeDurationShort(wf.ObjectMeta.CreationTimestamp.Time, time.Now())
-		durationStr := humanize.RelativeDurationShort(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time)
+		durationStr := humanize.TruncatedDuration(wf.Status.Duration())
 		if opts.Namespace {
 			_, _ = fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Namespace)
 		}

@@ -13,16 +13,21 @@ import (
 
 func TestWorkflows(t *testing.T) {
 	wfs := Workflows{
-		{ObjectMeta: v1.ObjectMeta{Name: "3"}, Status: WorkflowStatus{FinishedAt: v1.NewTime(time.Time{}.Add(1))}},
-		{ObjectMeta: v1.ObjectMeta{Name: "2"}, Status: WorkflowStatus{FinishedAt: v1.NewTime(time.Time{}.Add(0))}},
-		{ObjectMeta: v1.ObjectMeta{Name: "1"}, Status: WorkflowStatus{StartedAt: v1.NewTime(time.Time{}.Add(0))}},
-		{ObjectMeta: v1.ObjectMeta{Name: "0"}, Status: WorkflowStatus{StartedAt: v1.NewTime(time.Time{}.Add(1))}},
+		{ObjectMeta: v1.ObjectMeta{Name: "3"}, Status: WorkflowStatus{FinishedAt: newTime(time.Time{}.Add(1))}},
+		{ObjectMeta: v1.ObjectMeta{Name: "2"}, Status: WorkflowStatus{FinishedAt: newTime(time.Time{}.Add(0))}},
+		{ObjectMeta: v1.ObjectMeta{Name: "1"}, Status: WorkflowStatus{StartedAt: newTime(time.Time{}.Add(0))}},
+		{ObjectMeta: v1.ObjectMeta{Name: "0"}, Status: WorkflowStatus{StartedAt: newTime(time.Time{}.Add(1))}},
 	}
 	sort.Sort(wfs)
 	assert.Equal(t, "0", wfs[0].Name)
 	assert.Equal(t, "1", wfs[1].Name)
 	assert.Equal(t, "2", wfs[2].Name)
 	assert.Equal(t, "3", wfs[3].Name)
+}
+
+func newTime(add time.Time) *v1.Time {
+	t := v1.NewTime(add)
+	return &t
 }
 
 func TestArtifactLocation_HasLocation(t *testing.T) {

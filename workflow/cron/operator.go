@@ -287,7 +287,7 @@ func (woc *cronWfOperationCtx) deleteOldestWorkflows(jobList []v1alpha1.Workflow
 	}
 
 	sort.SliceStable(jobList, func(i, j int) bool {
-		return jobList[i].Status.FinishedAt.Time.After(jobList[j].Status.FinishedAt.Time)
+		return jobList[i].Status.FinishTime().Time.After(jobList[j].Status.FinishTime().Time)
 	})
 
 	for _, wf := range jobList[workflowsToKeep:] {

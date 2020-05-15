@@ -117,7 +117,7 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 		fmt.Printf(fmtStr, "Finished:", humanize.Timestamp(wf.Status.FinishedAt.Time))
 	}
 	if !wf.Status.StartedAt.IsZero() {
-		fmt.Printf(fmtStr, "Duration:", humanize.RelativeDuration(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time))
+		fmt.Printf(fmtStr, "Duration:", humanize.Duration(wf.Status.Duration()))
 	}
 	if !wf.Status.ResourcesDuration.IsZero() {
 		fmt.Printf(fmtStr, "ResourcesDuration:", wf.Status.ResourcesDuration)

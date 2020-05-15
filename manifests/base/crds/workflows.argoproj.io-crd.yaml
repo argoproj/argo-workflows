@@ -6807,6 +6807,7 @@ spec:
                 type: object
               type: array
             finishedAt:
+              format: date-time
               type: string
             message:
               type: string
@@ -8437,6 +8438,7 @@ spec:
                 type: integer
               type: object
             startedAt:
+              format: date-time
               type: string
             storedTemplates:
               additionalProperties:

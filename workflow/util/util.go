@@ -656,7 +656,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, repo sqldb.OffloadNodeStatus
 	newWF.ObjectMeta.Labels[common.LabelKeyPhase] = string(wfv1.NodeRunning)
 	newWF.Status.Phase = wfv1.NodeRunning
 	newWF.Status.Message = ""
-	newWF.Status.FinishedAt = metav1.Time{}
+	newWF.Status.FinishedAt = &metav1.Time{}
 	newWF.Spec.Shutdown = ""
 	if newWF.Spec.ActiveDeadlineSeconds != nil && *newWF.Spec.ActiveDeadlineSeconds == 0 {
 		// if it was terminated, unset the deadline

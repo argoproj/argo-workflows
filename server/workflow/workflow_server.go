@@ -259,7 +259,6 @@ func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.Wo
 
 	err = util.ResumeWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), s.offloadNodeStatusRepo, req.Name, req.NodeFieldSelector)
 	if err != nil {
-		log.Warnf("Failed to resume %s: %+v", req.Name, err)
 		return nil, err
 	}
 

@@ -99,7 +99,7 @@ func (w Workflows) Less(i, j int) bool {
 	if !iFinish.IsZero() && jFinish.IsZero() {
 		return false
 	}
-	return jFinish.Before(&iFinish)
+	return jFinish.Before(iFinish)
 }
 
 // WorkflowList is list of Workflow resources
@@ -898,10 +898,10 @@ type WorkflowStatus struct {
 
 	// Time at which this workflow started
 	// +kubebuilder:printcolumn
-	StartedAt metav1.Time `json:"startedAt,omitempty" protobuf:"bytes,2,opt,name=startedAt"`
+	StartedAt *metav1.Time `json:"startedAt,omitempty" protobuf:"bytes,2,opt,name=startedAt"`
 
 	// Time at which this workflow completed
-	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,3,opt,name=finishedAt"`
+	FinishedAt *metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,3,opt,name=finishedAt"`
 
 	// A human readable message indicating details about why the workflow is in this condition.
 	Message string `json:"message,omitempty" protobuf:"bytes,4,opt,name=message"`
@@ -1194,11 +1194,17 @@ func (ws WorkflowStatus) Failed() bool {
 }
 
 func (ws WorkflowStatus) StartTime() *metav1.Time {
-	return &ws.StartedAt
+	if ws.StartedAt == nil {
+		return &metav1.Time{}
+	}
+	return ws.StartedAt
 }
 
 func (ws WorkflowStatus) FinishTime() *metav1.Time {
-	return &ws.FinishedAt
+	if ws.FinishedAt == nil {
+		return &metav1.Time{}
+	}
+	return ws.FinishedAt
 }
 
 // Completed returns whether or not the node has completed execution
@@ -1208,6 +1214,16 @@ func (n NodeStatus) Completed() bool {
 
 func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
 	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
+}
+
+func (ws *WorkflowStatus) Duration() time.Duration {
+	if ws.StartedAt.IsZero() {
+		return 0
+	}
+	if ws.FinishedAt.IsZero() {
+		return time.Since(ws.StartedAt.Time)
+	}
+	return ws.FinishedAt.Time.Sub(ws.StartedAt.Time)
 }
 
 // Pending returns whether or not the node is in pending state

@@ -29,8 +29,8 @@ func TestPrintWorkflows(t *testing.T) {
 			},
 			Status: wfv1.WorkflowStatus{
 				Phase:      wfv1.NodeRunning,
-				StartedAt:  metav1.Time{Time: now},
-				FinishedAt: metav1.Time{Time: now.Add(3 * time.Second)},
+				StartedAt:  &metav1.Time{Time: now},
+				FinishedAt: &metav1.Time{Time: now.Add(3 * time.Second)},
 				Nodes: wfv1.Nodes{
 					"n0": {Phase: wfv1.NodePending, Type: wfv1.NodeTypePod, TemplateName: "t0"},
 					"n1": {Phase: wfv1.NodeRunning, Type: wfv1.NodeTypePod, TemplateName: "t0"},

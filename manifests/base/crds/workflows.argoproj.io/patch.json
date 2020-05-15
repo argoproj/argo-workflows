@@ -44,14 +44,6 @@
   },
   {
     "op": "remove",
-    "path": "/spec/validation/openAPIV3Schema/properties/status/properties/finishedAt/format"
-  },
-  {
-    "op": "remove",
-    "path": "/spec/validation/openAPIV3Schema/properties/status/properties/startedAt/format"
-  },
-  {
-    "op": "remove",
     "path": "/metadata/creationTimestamp"
   },
   {

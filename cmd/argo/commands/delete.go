@@ -63,7 +63,7 @@ func NewDeleteCommand() *cobra.Command {
 				})
 				errors.CheckError(err)
 				for _, wf := range list.Items {
-					if olderTime != nil && (wf.Status.FinishedAt.IsZero() || wf.Status.FinishedAt.After(*olderTime)) {
+					if olderTime != nil && (wf.Status.FinishTime().IsZero() || wf.Status.FinishTime().After(*olderTime)) {
 						continue
 					}
 					workflowsToDelete = append(workflowsToDelete, wf.ObjectMeta)

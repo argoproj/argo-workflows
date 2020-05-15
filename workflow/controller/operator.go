@@ -170,7 +170,7 @@ func (woc *wfOperationCtx) operate() {
 	woc.log.Infof("Processing workflow")
 
 	// Update workflow duration variable
-	woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
+	woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartTime().Time).Seconds())
 
 	// Populate the phase of all the nodes prior to execution
 	for _, node := range woc.wf.Status.Nodes {
@@ -210,7 +210,7 @@ func (woc *wfOperationCtx) operate() {
 
 		if woc.wf.Spec.Metrics != nil {
 			realTimeScope := map[string]func() float64{common.GlobalVarWorkflowDuration: func() float64 {
-				return time.Since(woc.wf.Status.StartedAt.Time).Seconds()
+				return time.Since(woc.wf.Status.StartTime().Time).Seconds()
 			}}
 			woc.computeMetrics(woc.wf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
 		}
@@ -1575,7 +1575,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 	}
 	if woc.wf.Status.StartedAt.IsZero() {
 		woc.updated = true
-		woc.wf.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
+		woc.wf.Status.StartedAt = &metav1.Time{Time: time.Now().UTC()}
 	}
 	if len(message) > 0 && woc.wf.Status.Message != message[0] {
 		woc.log.Infof("Updated message %s -> %s", woc.wf.Status.Message, message[0])
@@ -1598,8 +1598,8 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 		// wait for all daemon nodes to get terminated before marking workflow completed
 		if markCompleted && !woc.hasDaemonNodes() {
 			woc.log.Infof("Marking workflow completed")
-			woc.wf.Status.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-			woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", woc.wf.Status.FinishedAt.Sub(woc.wf.Status.StartedAt.Time).Seconds())
+			woc.wf.Status.FinishedAt = &metav1.Time{Time: time.Now().UTC()}
+			woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", woc.wf.Status.Duration().Seconds())
 			if woc.wf.ObjectMeta.Labels == nil {
 				woc.wf.ObjectMeta.Labels = make(map[string]string)
 			}

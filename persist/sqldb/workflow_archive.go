@@ -90,8 +90,8 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 					Name:        wf.Name,
 					Namespace:   wf.Namespace,
 					Phase:       wf.Status.Phase,
-					StartedAt:   wf.Status.StartedAt.Time,
-					FinishedAt:  wf.Status.FinishedAt.Time,
+					StartedAt:   wf.Status.StartTime().Time,
+					FinishedAt:  wf.Status.FinishTime().Time,
 				},
 				Workflow: string(workflow),
 			})
@@ -147,8 +147,8 @@ func (r *workflowArchive) ListWorkflows(namespace string, minStartedAt, maxStart
 			},
 			Status: wfv1.WorkflowStatus{
 				Phase:      md.Phase,
-				StartedAt:  v1.Time{Time: md.StartedAt},
-				FinishedAt: v1.Time{Time: md.FinishedAt},
+				StartedAt:  &v1.Time{Time: md.StartedAt},
+				FinishedAt: &v1.Time{Time: md.FinishedAt},
 			},
 		}
 	}
