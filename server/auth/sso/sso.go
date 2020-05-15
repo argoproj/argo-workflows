@@ -52,7 +52,7 @@ func New(c Config, secretsIf corev1.SecretInterface, baseHRef string, secure boo
 	if c.ClientID == "" {
 		return nil, fmt.Errorf("clientId empty")
 	}
-	if c.ClientSecret.Key == "" {
+	if c.ClientSecret.Name == "" || c.ClientSecret.Key == "" {
 		return nil, fmt.Errorf("clientSecret empty")
 	}
 	if c.RedirectURL == "" {
@@ -68,7 +68,7 @@ func New(c Config, secretsIf corev1.SecretInterface, baseHRef string, secure boo
 	}
 	config := &oauth2.Config{
 		ClientID:     c.ClientID,
-		ClientSecret: string(secrets.Data[c.ClientSecret.Name]),
+		ClientSecret: string(secrets.Data[c.ClientSecret.Key]),
 		RedirectURL:  c.RedirectURL,
 		Endpoint:     provider.Endpoint(),
 		Scopes:       []string{oidc.ScopeOpenID, "groups"},

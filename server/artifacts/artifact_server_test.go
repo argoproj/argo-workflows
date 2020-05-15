@@ -18,6 +18,8 @@ import (
 	fakewfv1 "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/server/auth"
 	authmocks "github.com/argoproj/argo/server/auth/mocks"
+	"github.com/argoproj/argo/util/instanceid"
+	"github.com/argoproj/argo/workflow/common"
 )
 
 func mustParse(text string) *url.URL {
@@ -31,8 +33,11 @@ func mustParse(text string) *url.URL {
 func newServer() *ArtifactServer {
 	gatekeeper := &authmocks.Gatekeeper{}
 	kube := kubefake.NewSimpleClientset()
+	instanceId := "my-instanceid"
 	wf := &wfv1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "my-wf"},
+		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "my-wf", Labels: map[string]string{
+			common.LabelKeyControllerInstanceID: instanceId,
+		}},
 		Status: wfv1.WorkflowStatus{
 			Nodes: wfv1.Nodes{
 				"my-node": wfv1.NodeStatus{
@@ -51,12 +56,13 @@ func newServer() *ArtifactServer {
 				},
 			},
 		}}
-	argo := fakewfv1.NewSimpleClientset(wf)
+	argo := fakewfv1.NewSimpleClientset(wf, &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "your-wf"}})
 	ctx := context.WithValue(context.WithValue(context.Background(), auth.KubeKey, kube), auth.WfKey, argo)
 	gatekeeper.On("Context", mock.Anything).Return(ctx, nil)
 	a := &mocks.WorkflowArchive{}
 	a.On("GetWorkflow", "my-uuid").Return(wf, nil)
-	return NewArtifactServer(gatekeeper, sqldb.ExplosiveOffloadNodeStatusRepo, a)
+	return NewArtifactServer(gatekeeper, sqldb.ExplosiveOffloadNodeStatusRepo, a, instanceid.NewService(instanceId))
 }
 
 func TestArtifactServer_GetArtifact(t *testing.T) {
@@ -68,6 +74,16 @@ func TestArtifactServer_GetArtifact(t *testing.T) {
 	assert.Equal(t, 200, w.StatusCode)
 	assert.Equal(t, "filename=\"my-artifact.tgz\"", w.Header().Get("Content-Disposition"))
 	assert.Equal(t, "my-data", w.Output)
+}
+
+func TestArtifactServer_GetArtifactWithoutInstanceID(t *testing.T) {
+	s := newServer()
+	r := &http.Request{}
+	r.URL = mustParse("/artifacts/my-ns/your-wf/my-node/my-artifact")
+	w := &testhttp.TestResponseWriter{}
+	s.GetArtifact(w, r)
+	assert.NotEqual(t, 200, w.StatusCode)
+	assert.Equal(t, "'your-wf' is forbidden", w.Output)
 }
 
 func TestArtifactServer_GetArtifactByUID(t *testing.T) {
