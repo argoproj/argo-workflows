@@ -10,6 +10,7 @@ import (
 	"github.com/argoproj/pkg/file"
 	argos3 "github.com/argoproj/pkg/s3"
 
+	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 )
@@ -66,7 +67,7 @@ func (s3Driver *S3ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string
 			}
 			if !isDir {
 				// It's neither a file, nor a directory. Return the original NoSuchKey error
-				return false, origErr
+				return false, errors.New(errors.CodeNotFound, origErr.Error())
 			}
 
 			if err = s3cli.GetDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path); err != nil {

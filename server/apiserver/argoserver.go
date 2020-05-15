@@ -42,6 +42,7 @@ import (
 	"github.com/argoproj/argo/server/workflowarchive"
 	"github.com/argoproj/argo/server/workflowtemplate"
 	grpcutil "github.com/argoproj/argo/util/grpc"
+	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/util/json"
 )
 
@@ -54,6 +55,7 @@ type argoServer struct {
 	baseHRef string
 	// https://itnext.io/practical-guide-to-securing-grpc-connections-with-go-and-tls-part-1-f63058e9d6d1
 	tlsConfig        *tls.Config
+	hsts             bool
 	namespace        string
 	managedNamespace string
 	kubeClientset    *kubernetes.Clientset
@@ -74,6 +76,7 @@ type ArgoServerOpts struct {
 	// config map name
 	ConfigName       string
 	ManagedNamespace string
+	HSTS             bool
 }
 
 func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
@@ -99,6 +102,7 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 	return &argoServer{
 		baseHRef:         opts.BaseHRef,
 		tlsConfig:        opts.TLSConfig,
+		hsts:             opts.HSTS,
 		namespace:        opts.Namespace,
 		managedNamespace: opts.ManagedNamespace,
 		kubeClientset:    opts.KubeClientset,
@@ -123,6 +127,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	if err != nil {
 		log.Fatal(err)
 	}
+	instanceIDService := instanceid.NewService(configMap.InstanceID)
 	var offloadRepo = sqldb.ExplosiveOffloadNodeStatusRepo
 	var wfArchive = sqldb.NullWorkflowArchive
 	persistence := configMap.Persistence
@@ -139,10 +144,10 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		}
 		// we always enable the archive for the Argo Server, as the Argo Server does not write records, so you can
 		// disable the archiving - and still read old records
-		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, configMap.InstanceID)
+		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
 	}
-	artifactServer := artifacts.NewArtifactServer(as.authenticator, offloadRepo, wfArchive)
-	grpcServer := as.newGRPCServer(configMap.InstanceID, offloadRepo, wfArchive, configMap.Links)
+	artifactServer := artifacts.NewArtifactServer(as.authenticator, offloadRepo, wfArchive, instanceIDService)
+	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, configMap.Links)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
 	// Start listener
@@ -185,7 +190,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 	<-as.stopCh
 }
 
-func (as *argoServer) newGRPCServer(instanceID string, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, links []*v1alpha1.Link) *grpc.Server {
+func (as *argoServer) newGRPCServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, links []*v1alpha1.Link) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
 
 	sOpts := []grpc.ServerOption{
@@ -212,11 +217,11 @@ func (as *argoServer) newGRPCServer(instanceID string, offloadNodeStatusRepo sql
 	grpcServer := grpc.NewServer(sOpts...)
 
 	infopkg.RegisterInfoServiceServer(grpcServer, info.NewInfoServer(as.managedNamespace, links))
-	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(instanceID, offloadNodeStatusRepo))
-	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer())
-	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer(instanceID))
+	workflowpkg.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(instanceIDService, offloadNodeStatusRepo))
+	workflowtemplatepkg.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer(instanceIDService))
+	cronworkflowpkg.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer(instanceIDService))
 	workflowarchivepkg.RegisterArchivedWorkflowServiceServer(grpcServer, workflowarchive.NewWorkflowArchiveServer(wfArchive))
-	clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceServer(grpcServer, clusterworkflowtemplate.NewClusterWorkflowTemplateServer())
+	clusterwftemplatepkg.RegisterClusterWorkflowTemplateServiceServer(grpcServer, clusterworkflowtemplate.NewClusterWorkflowTemplateServer(instanceIDService))
 	return grpcServer
 }
 
@@ -261,7 +266,8 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetArtifactByUID)
 	mux.HandleFunc("/oauth2/redirect", as.oAuth2Service.HandleRedirect)
 	mux.HandleFunc("/oauth2/callback", as.oAuth2Service.HandleCallback)
-	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef).ServerFiles)
+	// we only enable HTST if we are insecure mode, otherwise you would never be able access the UI
+	mux.HandleFunc("/", static.NewFilesServer(as.baseHRef, as.tlsConfig != nil && as.hsts).ServerFiles)
 	return &httpServer
 }
 

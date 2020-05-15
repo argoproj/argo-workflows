@@ -20,7 +20,7 @@ info() {
     echo '[INFO] ' "$@"
 }
 
-pf MinoIO pod/minio 9000
+pf MinIO pod/minio 9000
 pf DEX svc/dex 5556
 
 postgres=$(kubectl -n argo get pod -l app=postgres -o name)

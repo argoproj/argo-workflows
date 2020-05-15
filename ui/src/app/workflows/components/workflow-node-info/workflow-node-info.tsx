@@ -28,8 +28,8 @@ interface Props {
 
 const AttributeRow = (attr: {title: string; value: any}) => (
     <div className='row white-box__details-row' key={attr.title}>
-        <div className='columns small-3'>{attr.title}</div>
-        <div className='columns small-9'>{attr.value}</div>
+        <div className='columns small-4'>{attr.title}</div>
+        <div className='columns small-8'>{attr.value}</div>
     </div>
 );
 const AttributeRows = (props: {attributes: {title: string; value: any}[]}) => (
@@ -151,20 +151,20 @@ export const WorkflowNodeContainer = (props: {
         {title: 'IMAGE', value: container.image},
         {
             title: 'COMMAND',
-            value: <span className='workflow-node-info__multi-line'>{(container.command || []).join(' ')}</span>
+            value: <pre className='workflow-node-info__multi-line'>{(container.command || []).join(' ')}</pre>
         },
         container.source
-            ? {title: 'SOURCE', value: <span className='workflow-node-info__multi-line'>{container.source}</span>}
+            ? {title: 'SOURCE', value: <pre className='workflow-node-info__multi-line'>{container.source}</pre>}
             : {
                   title: 'ARGS',
-                  value: <span className='workflow-node-info__multi-line'>{(container.args || []).join(' ')}</span>
+                  value: <pre className='workflow-node-info__multi-line'>{(container.args || []).join(' ')}</pre>
               },
         hasEnv(container)
             ? {
                   title: 'ENV',
-                  value: <span className='workflow-node-info__multi-line'>{(container.env || []).map(e => `${e.name}=${e.value}`).join('\n')}</span>
+                  value: <pre className='workflow-node-info__multi-line'>{(container.env || []).map(e => `${e.name}=${e.value}`).join('\n')}</pre>
               }
-            : {title: 'ENV', value: <span className='workflow-node-info__multi-line' />}
+            : {title: 'ENV', value: <pre className='workflow-node-info__multi-line' />}
     ];
     return (
         <div className='white-box'>

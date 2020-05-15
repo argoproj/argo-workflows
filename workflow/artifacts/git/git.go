@@ -49,7 +49,7 @@ func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) erro
 }
 
 // Save is unsupported for git output artifacts
-func (g *GitArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
+func (g *GitArtifactDriver) Save(string, *wfv1.Artifact) error {
 	return errors.Errorf(errors.CodeBadRequest, "Git output artifacts unsupported")
 }
 

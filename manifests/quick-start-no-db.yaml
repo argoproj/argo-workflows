@@ -417,8 +417,6 @@ data:
       secretKeySecret:
         name: my-minio-cred
         key: secretkey
-  featureFlags: |
-    resourcesDuration: true
   links: |
     - name: Example Workflow Link
       scope: workflow

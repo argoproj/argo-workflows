@@ -54,6 +54,8 @@ const config = {
             from: 'node_modules/argo-ui/src/assets', to: 'assets'
         }, {
             from: 'node_modules/@fortawesome/fontawesome-free/webfonts', to: 'assets/fonts'
+        }, {
+            from: 'src/app/assets', to: 'assets'
         }]),
     ],
     devServer: {
