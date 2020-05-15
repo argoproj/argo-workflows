@@ -44,7 +44,7 @@ spec:
         arguments:
           parameters:
           - {name: message, value: "{{inputs.parameters.message}}{{item}}"}
-        withItems: [1,2,3, "whatever",{}]
+        withItems: [1,2,3]
   - name: diamond
     dag:
       tasks:
