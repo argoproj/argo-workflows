@@ -2,9 +2,6 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.2.8
-  creationTimestamp: null
   name: clusterworkflowtemplates.argoproj.io
 spec:
   group: argoproj.io
@@ -2221,8 +2218,6 @@ spec:
                         type: array
                       workingDir:
                         type: string
-                    required:
-                    - name
                     type: object
                   daemon:
                     type: boolean
@@ -2583,60 +2578,7 @@ spec:
                               type: string
                             withItems:
                               items:
-                                properties:
-                                  boolVal:
-                                    type: boolean
-                                  listVal:
-                                    items:
-                                      properties:
-                                        boolVal:
-                                          type: boolean
-                                        listVal:
-                                          items:
-                                            format: byte
-                                            type: string
-                                          type: array
-                                        mapVal:
-                                          additionalProperties:
-                                            type: string
-                                          type: object
-                                        numVal:
-                                          type: string
-                                        strVal:
-                                          type: string
-                                        type:
-                                          type: integer
-                                      type: object
-                                    type: array
-                                  mapVal:
-                                    additionalProperties:
-                                      properties:
-                                        boolVal:
-                                          type: boolean
-                                        listVal:
-                                          items:
-                                            format: byte
-                                            type: string
-                                          type: array
-                                        mapVal:
-                                          additionalProperties:
-                                            type: string
-                                          type: object
-                                        numVal:
-                                          type: string
-                                        strVal:
-                                          type: string
-                                        type:
-                                          type: integer
-                                      type: object
-                                    type: object
-                                  numVal:
-                                    type: string
-                                  strVal:
-                                    type: string
-                                  type:
-                                    type: integer
-                                type: object
+                                x-kubernetes-int-or-string: true
                               type: array
                             withParam:
                               type: string
@@ -5457,60 +5399,7 @@ spec:
                             type: string
                           withItems:
                             items:
-                              properties:
-                                boolVal:
-                                  type: boolean
-                                listVal:
-                                  items:
-                                    properties:
-                                      boolVal:
-                                        type: boolean
-                                      listVal:
-                                        items:
-                                          format: byte
-                                          type: string
-                                        type: array
-                                      mapVal:
-                                        additionalProperties:
-                                          type: string
-                                        type: object
-                                      numVal:
-                                        type: string
-                                      strVal:
-                                        type: string
-                                      type:
-                                        type: integer
-                                    type: object
-                                  type: array
-                                mapVal:
-                                  additionalProperties:
-                                    properties:
-                                      boolVal:
-                                        type: boolean
-                                      listVal:
-                                        items:
-                                          format: byte
-                                          type: string
-                                        type: array
-                                      mapVal:
-                                        additionalProperties:
-                                          type: string
-                                        type: object
-                                      numVal:
-                                        type: string
-                                      strVal:
-                                        type: string
-                                      type:
-                                        type: integer
-                                    type: object
-                                  type: object
-                                numVal:
-                                  type: string
-                                strVal:
-                                  type: string
-                                type:
-                                  type: integer
-                              type: object
+                              x-kubernetes-int-or-string: true
                             type: array
                           withParam:
                             type: string
@@ -6911,19 +6800,10 @@ spec:
   - name: v1alpha1
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.2.8
-  creationTimestamp: null
   name: cronworkflows.argoproj.io
 spec:
   group: argoproj.io
@@ -9161,8 +9041,6 @@ spec:
                             type: array
                           workingDir:
                             type: string
-                        required:
-                        - name
                         type: object
                       daemon:
                         type: boolean
@@ -13880,19 +13758,10 @@ spec:
   - name: v1alpha1
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.2.8
-  creationTimestamp: null
   name: workflows.argoproj.io
 spec:
   group: argoproj.io
@@ -16109,8 +15978,6 @@ spec:
                         type: array
                       workingDir:
                         type: string
-                    required:
-                    - name
                     type: object
                   daemon:
                     type: boolean
@@ -16471,60 +16338,7 @@ spec:
                               type: string
                             withItems:
                               items:
-                                properties:
-                                  boolVal:
-                                    type: boolean
-                                  listVal:
-                                    items:
-                                      properties:
-                                        boolVal:
-                                          type: boolean
-                                        listVal:
-                                          items:
-                                            format: byte
-                                            type: string
-                                          type: array
-                                        mapVal:
-                                          additionalProperties:
-                                            type: string
-                                          type: object
-                                        numVal:
-                                          type: string
-                                        strVal:
-                                          type: string
-                                        type:
-                                          type: integer
-                                      type: object
-                                    type: array
-                                  mapVal:
-                                    additionalProperties:
-                                      properties:
-                                        boolVal:
-                                          type: boolean
-                                        listVal:
-                                          items:
-                                            format: byte
-                                            type: string
-                                          type: array
-                                        mapVal:
-                                          additionalProperties:
-                                            type: string
-                                          type: object
-                                        numVal:
-                                          type: string
-                                        strVal:
-                                          type: string
-                                        type:
-                                          type: integer
-                                      type: object
-                                    type: object
-                                  numVal:
-                                    type: string
-                                  strVal:
-                                    type: string
-                                  type:
-                                    type: integer
-                                type: object
+                                x-kubernetes-int-or-string: true
                               type: array
                             withParam:
                               type: string
@@ -19345,60 +19159,7 @@ spec:
                             type: string
                           withItems:
                             items:
-                              properties:
-                                boolVal:
-                                  type: boolean
-                                listVal:
-                                  items:
-                                    properties:
-                                      boolVal:
-                                        type: boolean
-                                      listVal:
-                                        items:
-                                          format: byte
-                                          type: string
-                                        type: array
-                                      mapVal:
-                                        additionalProperties:
-                                          type: string
-                                        type: object
-                                      numVal:
-                                        type: string
-                                      strVal:
-                                        type: string
-                                      type:
-                                        type: integer
-                                    type: object
-                                  type: array
-                                mapVal:
-                                  additionalProperties:
-                                    properties:
-                                      boolVal:
-                                        type: boolean
-                                      listVal:
-                                        items:
-                                          format: byte
-                                          type: string
-                                        type: array
-                                      mapVal:
-                                        additionalProperties:
-                                          type: string
-                                        type: object
-                                      numVal:
-                                        type: string
-                                      strVal:
-                                        type: string
-                                      type:
-                                        type: integer
-                                    type: object
-                                  type: object
-                                numVal:
-                                  type: string
-                                strVal:
-                                  type: string
-                                type:
-                                  type: integer
-                              type: object
+                              x-kubernetes-int-or-string: true
                             type: array
                           withParam:
                             type: string
@@ -20807,7 +20568,6 @@ spec:
                 type: object
               type: array
             finishedAt:
-              format: date-time
               type: string
             message:
               type: string
@@ -22438,7 +22198,6 @@ spec:
                 type: integer
               type: object
             startedAt:
-              format: date-time
               type: string
             storedTemplates:
               additionalProperties:
@@ -24176,60 +23935,7 @@ spec:
                               type: string
                             withItems:
                               items:
-                                properties:
-                                  boolVal:
-                                    type: boolean
-                                  listVal:
-                                    items:
-                                      properties:
-                                        boolVal:
-                                          type: boolean
-                                        listVal:
-                                          items:
-                                            format: byte
-                                            type: string
-                                          type: array
-                                        mapVal:
-                                          additionalProperties:
-                                            type: string
-                                          type: object
-                                        numVal:
-                                          type: string
-                                        strVal:
-                                          type: string
-                                        type:
-                                          type: integer
-                                      type: object
-                                    type: array
-                                  mapVal:
-                                    additionalProperties:
-                                      properties:
-                                        boolVal:
-                                          type: boolean
-                                        listVal:
-                                          items:
-                                            format: byte
-                                            type: string
-                                          type: array
-                                        mapVal:
-                                          additionalProperties:
-                                            type: string
-                                          type: object
-                                        numVal:
-                                          type: string
-                                        strVal:
-                                          type: string
-                                        type:
-                                          type: integer
-                                      type: object
-                                    type: object
-                                  numVal:
-                                    type: string
-                                  strVal:
-                                    type: string
-                                  type:
-                                    type: integer
-                                type: object
+                                x-kubernetes-int-or-string: true
                               type: array
                             withParam:
                               type: string
@@ -27050,60 +26756,7 @@ spec:
                             type: string
                           withItems:
                             items:
-                              properties:
-                                boolVal:
-                                  type: boolean
-                                listVal:
-                                  items:
-                                    properties:
-                                      boolVal:
-                                        type: boolean
-                                      listVal:
-                                        items:
-                                          format: byte
-                                          type: string
-                                        type: array
-                                      mapVal:
-                                        additionalProperties:
-                                          type: string
-                                        type: object
-                                      numVal:
-                                        type: string
-                                      strVal:
-                                        type: string
-                                      type:
-                                        type: integer
-                                    type: object
-                                  type: array
-                                mapVal:
-                                  additionalProperties:
-                                    properties:
-                                      boolVal:
-                                        type: boolean
-                                      listVal:
-                                        items:
-                                          format: byte
-                                          type: string
-                                        type: array
-                                      mapVal:
-                                        additionalProperties:
-                                          type: string
-                                        type: object
-                                      numVal:
-                                        type: string
-                                      strVal:
-                                        type: string
-                                      type:
-                                        type: integer
-                                    type: object
-                                  type: object
-                                numVal:
-                                  type: string
-                                strVal:
-                                  type: string
-                                type:
-                                  type: integer
-                              type: object
+                              x-kubernetes-int-or-string: true
                             type: array
                           withParam:
                             type: string
@@ -27762,19 +27415,10 @@ spec:
   - name: v1alpha1
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.2.8
-  creationTimestamp: null
   name: workflowtemplates.argoproj.io
 spec:
   group: argoproj.io
@@ -29991,8 +29635,6 @@ spec:
                         type: array
                       workingDir:
                         type: string
-                    required:
-                    - name
                     type: object
                   daemon:
                     type: boolean
@@ -30353,60 +29995,7 @@ spec:
                               type: string
                             withItems:
                               items:
-                                properties:
-                                  boolVal:
-                                    type: boolean
-                                  listVal:
-                                    items:
-                                      properties:
-                                        boolVal:
-                                          type: boolean
-                                        listVal:
-                                          items:
-                                            format: byte
-                                            type: string
-                                          type: array
-                                        mapVal:
-                                          additionalProperties:
-                                            type: string
-                                          type: object
-                                        numVal:
-                                          type: string
-                                        strVal:
-                                          type: string
-                                        type:
-                                          type: integer
-                                      type: object
-                                    type: array
-                                  mapVal:
-                                    additionalProperties:
-                                      properties:
-                                        boolVal:
-                                          type: boolean
-                                        listVal:
-                                          items:
-                                            format: byte
-                                            type: string
-                                          type: array
-                                        mapVal:
-                                          additionalProperties:
-                                            type: string
-                                          type: object
-                                        numVal:
-                                          type: string
-                                        strVal:
-                                          type: string
-                                        type:
-                                          type: integer
-                                      type: object
-                                    type: object
-                                  numVal:
-                                    type: string
-                                  strVal:
-                                    type: string
-                                  type:
-                                    type: integer
-                                type: object
+                                x-kubernetes-int-or-string: true
                               type: array
                             withParam:
                               type: string
@@ -33227,60 +32816,7 @@ spec:
                             type: string
                           withItems:
                             items:
-                              properties:
-                                boolVal:
-                                  type: boolean
-                                listVal:
-                                  items:
-                                    properties:
-                                      boolVal:
-                                        type: boolean
-                                      listVal:
-                                        items:
-                                          format: byte
-                                          type: string
-                                        type: array
-                                      mapVal:
-                                        additionalProperties:
-                                          type: string
-                                        type: object
-                                      numVal:
-                                        type: string
-                                      strVal:
-                                        type: string
-                                      type:
-                                        type: integer
-                                    type: object
-                                  type: array
-                                mapVal:
-                                  additionalProperties:
-                                    properties:
-                                      boolVal:
-                                        type: boolean
-                                      listVal:
-                                        items:
-                                          format: byte
-                                          type: string
-                                        type: array
-                                      mapVal:
-                                        additionalProperties:
-                                          type: string
-                                        type: object
-                                      numVal:
-                                        type: string
-                                      strVal:
-                                        type: string
-                                      type:
-                                        type: integer
-                                    type: object
-                                  type: object
-                                numVal:
-                                  type: string
-                                strVal:
-                                  type: string
-                                type:
-                                  type: integer
-                              type: object
+                              x-kubernetes-int-or-string: true
                             type: array
                           withParam:
                             type: string
@@ -34681,12 +34217,6 @@ spec:
   - name: v1alpha1
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
 ---
 apiVersion: v1
 kind: ServiceAccount

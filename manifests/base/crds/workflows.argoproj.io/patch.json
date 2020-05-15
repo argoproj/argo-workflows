@@ -1,0 +1,54 @@
+[
+  {
+    "op": "remove",
+    "path": "/status"
+  },
+  {
+    "op": "remove",
+    "path": "/spec/validation/openAPIV3Schema/properties/spec/properties/templates/items/properties/container/required"
+  },
+  {
+    "op": "replace",
+    "path": "/spec/validation/openAPIV3Schema/properties/spec/properties/templates/items/properties/steps/items/items/properties/withItems/items",
+    "value": {
+      "x-kubernetes-int-or-string": true
+    }
+  },
+  {
+    "op": "replace",
+    "path": "/spec/validation/openAPIV3Schema/properties/status/properties/storedTemplates/additionalProperties/properties/steps/items/items/properties/withItems/items",
+    "value": {
+      "x-kubernetes-int-or-string": true
+    }
+  },
+  {
+    "op": "replace",
+    "path": "/spec/validation/openAPIV3Schema/properties/spec/properties/templates/items/properties/dag/properties/tasks/items/properties/withItems/items",
+    "value": {
+      "x-kubernetes-int-or-string": true
+    }
+  },
+  {
+    "op": "replace",
+    "path": "/spec/validation/openAPIV3Schema/properties/status/properties/storedTemplates/additionalProperties/properties/dag/properties/tasks/items/properties/withItems/items",
+    "value": {
+      "x-kubernetes-int-or-string": true
+    }
+  },
+  {
+    "op": "remove",
+    "path": "/spec/validation/openAPIV3Schema/properties/status/properties/finishedAt/format"
+  },
+  {
+    "op": "remove",
+    "path": "/spec/validation/openAPIV3Schema/properties/status/properties/startedAt/format"
+  },
+  {
+    "op": "remove",
+    "path": "/metadata/creationTimestamp"
+  },
+  {
+    "op": "remove",
+    "path": "/metadata/annotations"
+  }
+]

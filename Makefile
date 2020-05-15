@@ -267,8 +267,12 @@ $(MANIFESTS_VERSION_FILE):
 manifests:
 	$(call backup_go_mod)
 	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.8
-	controller-gen paths=./pkg/apis/workflow/v1alpha1/... crd:maxDescLen=0,trivialVersions=true output:crd:dir=./manifests/base/crds || true
+	controller-gen paths=./pkg/apis/workflow/v1alpha1/... crd:maxDescLen=0,trivialVersions=true output:crd:dir=./manifests/base/crds/src || true
 	$(call restore_go_mod)
+	kustomize build --load_restrictor=none manifests/base/crds/cronworkflows.argoproj.io | ./hack/auto-gen-msg.sh > manifests/base/crds/cronworkflows.argoproj.io-crd.yaml
+	kustomize build --load_restrictor=none manifests/base/crds/clusterworkflowtemplates.argoproj.io | ./hack/auto-gen-msg.sh > manifests/base/crds/clusterworkflowtemplates.argoproj.io-crd.yaml
+	kustomize build --load_restrictor=none manifests/base/crds/workflows.argoproj.io | ./hack/auto-gen-msg.sh > manifests/base/crds/workflows.argoproj.io-crd.yaml
+	kustomize build --load_restrictor=none manifests/base/crds/workflowtemplates.argoproj.io | ./hack/auto-gen-msg.sh > manifests/base/crds/workflowtemplates.argoproj.io-crd.yaml
 	./hack/update-image-tags.sh manifests/base $(MANIFESTS_VERSION)
 	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
 	kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
