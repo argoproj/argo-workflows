@@ -144,7 +144,10 @@ func listByPrefix(client *storage.Client, bucket, prefix, delim string) ([]strin
 		if err != nil {
 			return nil, err
 		}
-		results = append(results, attrs.Name)
+		// ignore gcs objects that end with "/" as they point to directory names
+		if !strings.HasSuffix(attrs.Name, "/") {
+			results = append(results, attrs.Name)
+		}
 	}
 	return results, nil
 }
