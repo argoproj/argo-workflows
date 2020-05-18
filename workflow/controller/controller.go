@@ -663,8 +663,7 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 
 				key, err := cache.MetaNamespaceKeyFunc(new)
 				if err == nil {
-					significant := oldPod.Status.Phase != newPod.Status.Phase
-					if !significant {
+					if !significantPodChange(oldPod, newPod) {
 						return
 					}
 					wfc.podQueue.Add(key)
