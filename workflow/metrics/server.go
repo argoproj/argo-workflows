@@ -4,30 +4,97 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-
-	"github.com/argoproj/argo/config"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 )
 
 // RunServer starts a metrics server
-func RunServer(ctx context.Context, config config.PrometheusConfig, registry *prometheus.Registry) {
+func (m Metrics) RunServer(ctx context.Context) {
+	if !m.metricsConfig.Enabled {
+		// If metrics aren't enabled, return
+		return
+	}
+
+	metricsRegistry := prometheus.NewRegistry()
+	metricsRegistry.MustRegister(m)
+
+	if m.metricsConfig.SameServerAs(m.telemetryConfig) {
+		// If the metrics and telemetry servers are the same, run both of them in the same instance
+		metricsRegistry.MustRegister(prometheus.NewGoCollector())
+	} else if m.telemetryConfig.Enabled {
+		// If the telemetry server is different -- and it's enabled -- run each on its own instance
+		telemetryRegistry := prometheus.NewRegistry()
+		telemetryRegistry.MustRegister(prometheus.NewGoCollector())
+		go runServer(m.telemetryConfig, telemetryRegistry, ctx)
+	}
+
+	// Run the metrics server
+	go runServer(m.metricsConfig, metricsRegistry, ctx)
+
+	go m.garbageCollector(ctx)
+}
+
+func runServer(config ServerConfig, registry *prometheus.Registry, ctx context.Context) {
+	var handlerOpts promhttp.HandlerOpts
+	if config.IgnoreErrors {
+		handlerOpts.ErrorHandling = promhttp.ContinueOnError
+	}
+
 	mux := http.NewServeMux()
-	mux.Handle(config.Path, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	mux.Handle(config.Path, promhttp.HandlerFor(registry, handlerOpts))
 	srv := &http.Server{Addr: fmt.Sprintf(":%s", config.Port), Handler: mux}
 
-	defer func() {
-		if cerr := srv.Close(); cerr != nil {
-			log.Fatalf("Encountered an '%s' error when tried to close the metrics server running on '%s'", cerr, config.Port)
+	go func() {
+		log.Infof("Starting prometheus metrics server at localhost:%s%s", config.Port, config.Path)
+		if err := srv.ListenAndServe(); err != nil {
+			panic(err)
 		}
 	}()
 
-	log.Infof("Starting prometheus metrics server at 0.0.0.0:%s%s", config.Port, config.Path)
-	if err := srv.ListenAndServe(); err != nil {
-		panic(err)
+	// Waiting for stop signal
+	<-ctx.Done()
+
+	// Shutdown the server gracefully with a 1 second timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Infof("Unable to shutdown metrics server at localhost:%s%s", config.Port, config.Path)
+	}
+}
+
+func (m Metrics) Describe(ch chan<- *prometheus.Desc) {
+	for _, metric := range m.allMetrics() {
+		ch <- metric.Desc()
+	}
+}
+
+func (m Metrics) Collect(ch chan<- prometheus.Metric) {
+	for _, metric := range m.allMetrics() {
+		ch <- metric
+	}
+}
+
+func (m Metrics) garbageCollector(ctx context.Context) {
+	if m.metricsConfig.TTL == 0 {
+		return
 	}
 
-	<-ctx.Done()
+	ticker := time.NewTicker(m.metricsConfig.TTL)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			for key, metric := range m.customMetrics {
+				if time.Since(metric.lastUpdated) > m.metricsConfig.TTL {
+					delete(m.customMetrics, key)
+				}
+			}
+		}
+	}
 }

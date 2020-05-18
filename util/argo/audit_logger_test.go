@@ -33,7 +33,7 @@ func TestAuditLogger_logEvent(t *testing.T) {
 			Namespace:       "my-ns",
 			Name:            "my-wf",
 			UID:             "my-uid",
-			APIVersion:      "v1alpha1",
+			APIVersion:      "argoproj.io/v1alpha1",
 			ResourceVersion: "1234",
 		}, e.InvolvedObject)
 		assert.NotEmpty(t, e.FirstTimestamp)

@@ -38,7 +38,7 @@ spec:
       parameters:
       - name: message
     script:
-      image: alpine:latest
+      image: argoproj/argosay:v1
       command: [sh, -x]
       source: |
         #!/bin/sh

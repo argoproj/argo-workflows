@@ -22,6 +22,14 @@ export class YamlEditor<T> extends React.Component<Props<T>, State> {
         this.state = {editing: this.props.editing, value: jsYaml.dump(this.props.value)};
     }
 
+    public componentDidUpdate(prevProps: Props<T>) {
+        if (prevProps.value !== this.props.value) {
+            this.setState({
+                value: jsYaml.dump(this.props.value)
+            });
+        }
+    }
+
     public render() {
         return (
             <>

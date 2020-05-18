@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"archive/tar"
 	"bufio"
 	"bytes"
 	"compress/gzip"
@@ -11,7 +12,6 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path"
 	"path/filepath"
@@ -164,9 +164,18 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 		tempArtPath := artPath + ".tmp"
 		err = artDriver.Load(&art, tempArtPath)
 		if err != nil {
+			if art.Optional && errors.IsCode(errors.CodeNotFound, err) {
+				log.Infof("Skipping optional input artifact that was not found: %s", art.Name)
+				continue
+			}
 			return err
 		}
-		if isTarball(tempArtPath) {
+
+		ok, err := isTarball(tempArtPath)
+		if err != nil {
+			return err
+		}
+		if ok {
 			err = untar(tempArtPath, artPath)
 			_ = os.Remove(tempArtPath)
 		} else {
@@ -409,6 +418,12 @@ func (we *WorkflowExecutor) isBaseImagePath(path string) bool {
 	// next check if path overlaps with a shared input-artifact emptyDir mounted by argo
 	for _, inArt := range we.Template.Inputs.Artifacts {
 		if path == inArt.Path {
+			// The input artifact may have been optional and not supplied. If this is the case, the file won't exist on
+			// the input artifact volume. Since this function was called, we know that we want to use this path as an
+			// ourput artifact, so we should look for it in the base image path.
+			if inArt.Optional && !inArt.HasLocation() {
+				return true
+			}
 			return false
 		}
 		if strings.HasPrefix(path, inArt.Path+"/") {
@@ -791,11 +806,18 @@ func (we *WorkflowExecutor) AddAnnotation(key, value string) error {
 }
 
 // isTarball returns whether or not the file is a tarball
-func isTarball(filePath string) bool {
-	cmd := exec.Command("tar", "-tf", filePath)
-	log.Info(cmd.Args)
-	err := cmd.Run()
-	return err == nil
+func isTarball(filePath string) (bool, error) {
+	log.Info("Checking if the file is a tarball: ", filePath)
+
+	f, err := os.Open(filePath)
+	if err != nil {
+		return false, errors.InternalWrapError(err)
+	}
+	defer f.Close()
+
+	tr := tar.NewReader(f)
+	_, err = tr.Next()
+	return err == nil, nil
 }
 
 // untar extracts a tarball to a temporary directory,
