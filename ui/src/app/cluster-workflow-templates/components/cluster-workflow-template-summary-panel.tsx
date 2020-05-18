@@ -1,8 +1,8 @@
 import * as React from 'react';
 
 import {WorkflowTemplate} from '../../../models';
+import {ResourceEditor} from '../../shared/components/resource-editor/resource-editor';
 import {Timestamp} from '../../shared/components/timestamp';
-import {YamlEditor} from '../../shared/components/yaml/yaml-editor';
 import {services} from '../../shared/services';
 
 interface Props {
@@ -31,8 +31,9 @@ export const ClusterWorkflowTemplateSummaryPanel = (props: Props) => {
 
             <div className='white-box'>
                 <div className='white-box__details'>
-                    <YamlEditor
-                        editing={false}
+                    <ResourceEditor
+                        kind='clusterworkflowtemplates'
+                        title='Update Cluster Workflow Template'
                         value={props.template}
                         onSubmit={(value: WorkflowTemplate) => {
                             return services.clusterWorkflowTemplate

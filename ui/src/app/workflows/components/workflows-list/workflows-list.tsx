@@ -12,7 +12,6 @@ import {services} from '../../../shared/services';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
 import {Query} from '../../../shared/components/query';
-import {ResourceSubmit} from '../../../shared/components/resource-submit';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
@@ -20,6 +19,7 @@ import {Utils} from '../../../shared/utils';
 import {Ticker} from 'argo-ui/src/index';
 import * as classNames from 'classnames';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
+import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {formatDuration, wfDuration} from '../../../shared/duration';
 import {Pagination, parseLimit} from '../../../shared/pagination';
@@ -113,19 +113,12 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                             <div className='columns small-12 xlarge-10'>{this.renderWorkflows()}</div>
                         </div>
                         <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
-                            <ResourceSubmit<models.Workflow>
-                                resourceName={'Workflow'}
-                                defaultResource={exampleWorkflow(this.state.namespace)}
-                                validate={wfValue => {
-                                    if (!wfValue || !wfValue.metadata) {
-                                        return {valid: false, message: 'Invalid Workflow: metadata cannot be blank'};
-                                    }
-                                    wfValue.metadata.namespace = wfValue.metadata.namespace || this.state.namespace;
-                                    if (!wfValue.metadata.namespace) {
-                                        return {valid: false, message: 'Invalid Workflow: metadata.namespace cannot be blank'};
-                                    }
-                                    return {valid: true};
-                                }}
+                            <ResourceEditor
+                                title={'Submit Workflow'}
+                                kind={'workflows'}
+                                upload={true}
+                                editing={true}
+                                value={exampleWorkflow(this.state.namespace)}
                                 onSubmit={wfValue => {
                                     return services.workflows
                                         .create(wfValue, wfValue.metadata.namespace || this.state.namespace)

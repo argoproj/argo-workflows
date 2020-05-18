@@ -1,8 +1,8 @@
 import * as React from 'react';
 
 import {CronWorkflow} from '../../../models';
+import {ResourceEditor} from '../../shared/components/resource-editor/resource-editor';
 import {Timestamp} from '../../shared/components/timestamp';
-import {YamlEditor} from '../../shared/components/yaml/yaml-editor';
 import {services} from '../../shared/services';
 
 const jsonMergePatch = require('json-merge-patch');
@@ -44,8 +44,8 @@ export const CronWorkflowSummaryPanel = (props: Props) => {
 
             <div className='white-box'>
                 <div className='white-box__details'>
-                    <YamlEditor
-                        editing={false}
+                    <ResourceEditor
+                        kind='cronworkflows'
                         value={props.cronWorkflow}
                         onSubmit={(value: CronWorkflow) => {
                             // magic - we get the latest from the server and then apply the changes from the rendered version to this

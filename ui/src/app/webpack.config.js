@@ -64,7 +64,7 @@ const config = {
     }, {
       from: "src/app/assets", to: "assets"
     }]),
-    new MonacoWebpackPlugin({"languages":["yaml"]})
+    new MonacoWebpackPlugin({"languages":["json","yaml"]})
   ],
   devServer: {
     historyApiFallback: {

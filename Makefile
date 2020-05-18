@@ -273,6 +273,7 @@ manifests:
 	kustomize build --load_restrictor=none manifests/base/crds/clusterworkflowtemplates.argoproj.io | ./hack/auto-gen-msg.sh > manifests/base/crds/clusterworkflowtemplates.argoproj.io-crd.yaml
 	kustomize build --load_restrictor=none manifests/base/crds/workflows.argoproj.io | ./hack/auto-gen-msg.sh > manifests/base/crds/workflows.argoproj.io-crd.yaml
 	kustomize build --load_restrictor=none manifests/base/crds/workflowtemplates.argoproj.io | ./hack/auto-gen-msg.sh > manifests/base/crds/workflowtemplates.argoproj.io-crd.yaml
+	go run ./hack genschemaassets
 	./hack/update-image-tags.sh manifests/base $(MANIFESTS_VERSION)
 	kustomize build --load_restrictor=none manifests/cluster-install | ./hack/auto-gen-msg.sh > manifests/install.yaml
 	kustomize build --load_restrictor=none manifests/namespace-install | ./hack/auto-gen-msg.sh > manifests/namespace-install.yaml
