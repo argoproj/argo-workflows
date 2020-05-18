@@ -19,6 +19,7 @@ interface Props<T> {
 
 interface State {
     editing: boolean;
+    type: string;
     value: string;
     error?: Error;
 }
@@ -26,7 +27,12 @@ interface State {
 export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     constructor(props: Readonly<Props<T>>) {
         super(props);
-        this.state = {editing: this.props.editing, value: stringify(this.props.value)};
+        this.state = {editing: this.props.editing, type: 'json', value: stringify(this.props.value, 'json')};
+    }
+
+    private set type(type: string) {
+        const value = stringify(parse(this.state.value), type);
+        this.setState({type, value});
     }
 
     public componentDidMount() {
@@ -34,15 +40,10 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
         fetch(uri)
             .then(res => res.json())
             .then(schema => {
+                // adds auto-completion to JSON only
                 languages.json.jsonDefaults.setDiagnosticsOptions({
                     validate: true,
-                    schemas: [
-                        {
-                            uri,
-                            fileMatch: ['*'], // associate with our model
-                            schema
-                        }
-                    ]
+                    schemas: [{uri, fileMatch: ['*'], schema}]
                 });
             })
             .catch(error => this.setState({error}));
@@ -50,7 +51,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
 
     public componentDidUpdate(prevProps: Props<T>) {
         if (prevProps.value !== this.props.value) {
-            this.setState({value: stringify(this.props.value)});
+            this.setState({value: stringify(this.props.value, this.state.type)});
         }
     }
 
@@ -58,7 +59,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
         files[0]
             .text()
             .then(value => {
-                this.setState({value: stringify(parse(value))});
+                this.setState({value: stringify(parse(value), this.state.type)});
             })
             .catch(error => this.setState(error));
     }
@@ -76,7 +77,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
                 {this.state.editing ? (
                     <MonacoEditor
                         value={this.state.value}
-                        language='json'
+                        language={this.state.type}
                         height={'600px'}
                         onChange={value => this.setState({value})}
                         options={{extraEditorClassName: 'resource', minimap: {enabled: false}, lineNumbers: 'off', renderIndentGuides: false}}
@@ -93,14 +94,21 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
             <div>
                 {(this.state.editing && (
                     <>
+                        <label className='argo-button argo-button--base-o'>
+                            <input type={'checkbox'} checked={this.state.type === 'yaml'} onChange={e => (this.type = e.target.checked ? 'yaml' : 'json')} /> YAML
+                        </label>{' '}
                         {this.props.upload && (
-                            <input
-                                type='file'
-                                onChange={e => {
-                                    this.handleFiles(e.target.files);
-                                }}
-                            />
-                        )}
+                            <label className='argo-button argo-button--base-o'>
+                                <input
+                                    type='file'
+                                    onChange={e => {
+                                        this.handleFiles(e.target.files);
+                                    }}
+                                    style={{display: 'none'}}
+                                />
+                                <i className='fa fa-upload' /> Upload file
+                            </label>
+                        )}{' '}
                         <button onClick={() => this.submit()} className='argo-button argo-button--base'>
                             <i className='fa fa-plus' /> Submit
                         </button>

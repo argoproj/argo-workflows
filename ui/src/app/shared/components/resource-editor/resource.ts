@@ -7,6 +7,6 @@ export function parse<T>(value: string) {
     return jsyaml.load(value);
 }
 
-export function stringify<T>(value: T) {
-    return JSON.stringify(value, null, '  ');
+export function stringify<T>(value: T, type: string) {
+    return type === 'yaml' ? jsyaml.dump(value) : JSON.stringify(value, null, '  ');
 }

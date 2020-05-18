@@ -35,7 +35,6 @@
     },
     "devDependencies": {
         "@types/classnames": "^2.2.3",
-        "@types/dagre": "^0.7.39",
         "@types/deep-equal": "^1.0.1",
         "@types/history": "^4.6.2",
         "@types/js-yaml": "^3.12.1",
