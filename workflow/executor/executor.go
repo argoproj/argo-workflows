@@ -133,7 +133,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 				log.Warnf("Ignoring optional artifact '%s' which was not supplied", art.Name)
 				continue
 			} else {
-				return errors.Errorf("", "required artifact %s not supplied", art.Name)
+				return errors.Errorf("required artifact %s not supplied", art.Name)
 			}
 		}
 		artDriver, err := we.InitDriver(&art)
@@ -171,11 +171,22 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 			return err
 		}
 
-		ok, err := isTarball(tempArtPath)
-		if err != nil {
-			return err
+		isTar := false
+		if art.GetArchive().None != nil {
+			// explicitly not a tar
+			isTar = false
+		} else if art.GetArchive().Tar != nil {
+			// explicitly a tar
+			isTar = true
+		} else {
+			// auto-detect
+			isTar, err = isTarball(tempArtPath)
+			if err != nil {
+				return err
+			}
 		}
-		if ok {
+
+		if isTar {
 			err = untar(tempArtPath, artPath)
 			_ = os.Remove(tempArtPath)
 		} else {
