@@ -39,7 +39,7 @@ $ minikube service --url argo-artifacts
 ```
 
 NOTE: When minio is installed via Helm, it uses the following hard-wired default
-credentials, which you will use to user to the UI:
+credentials, which you will use to login to the UI:
 
 - AccessKey: AKIAIOSFODNN7EXAMPLE
 - SecretKey: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
