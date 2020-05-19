@@ -11,7 +11,9 @@ commands:
     steps:
       - run:
           name: Install Kustomize
-          command: cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
+          command: |
+            cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
+            kustomize version
   restore_go_mod:
     steps:
       - restore_cache:
