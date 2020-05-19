@@ -68,7 +68,7 @@ type CronWorkflowStatus struct {
 type CronWorkflowConditionType string
 
 const (
-	// CronWorkflowConditionSubmissionError signifies that there was an error submitting the CronWorkflow's Workflow
+	// CronWorkflowConditionSubmissionError signifies that there was an error when submitting the CronWorkflow as a Workflow
 	CronWorkflowConditionSubmissionError CronWorkflowConditionType = "SubmissionError"
 )
 

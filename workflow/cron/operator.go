@@ -45,13 +45,13 @@ func (woc *cronWfOperationCtx) Run() {
 
 	err := woc.reconcileDeletedWfs()
 	if err != nil {
-		log.Errorf("could not remove deleted Workflows: %s", err)
+		woc.reportCronWorkflowError(fmt.Sprintf("Could not remove deleted Workflow: %s", err))
 		return
 	}
 
 	proceed, err := woc.enforceRuntimePolicy()
 	if err != nil {
-		log.Errorf("Concurrency policy error: %s", err)
+		woc.reportCronWorkflowError(fmt.Sprintf("Concurrency policy error: %s", err))
 		return
 	} else if !proceed {
 		return
@@ -61,20 +61,13 @@ func (woc *cronWfOperationCtx) Run() {
 
 	runWf, err := util.SubmitWorkflow(woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, &v1alpha1.SubmitOpts{})
 	if err != nil {
-		log.Errorf("Failed to run CronWorkflow: %v", err)
-		woc.cronWf.Status.Conditions.UpsertCondition(v1alpha1.CronWorkflowCondition{
-			Type:    v1alpha1.CronWorkflowConditionSubmissionError,
-			Message: fmt.Sprintf("Failed to submit Workflow: %s", err),
-			Status:  v1.ConditionTrue,
-		})
-		woc.persistUpdate()
+		woc.reportCronWorkflowError(fmt.Sprintf("Failed to submit Workflow: %s", err))
 		return
-	} else {
-		woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.CronWorkflowConditionSubmissionError)
 	}
 
 	woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, getWorkflowObjectReference(wf, runWf))
 	woc.cronWf.Status.LastScheduledTime = &v1.Time{Time: time.Now()}
+	woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.CronWorkflowConditionSubmissionError)
 	woc.persistUpdate()
 }
 
@@ -303,4 +296,14 @@ func (woc *cronWfOperationCtx) deleteOldestWorkflows(jobList []v1alpha1.Workflow
 		log.Infof("Deleted Workflow '%s' due to CronWorkflow '%s' history limit", wf.Name, woc.cronWf.Name)
 	}
 	return nil
+}
+
+func (woc *cronWfOperationCtx) reportCronWorkflowError(errString string) {
+	log.Errorf(errString)
+	woc.cronWf.Status.Conditions.UpsertCondition(v1alpha1.CronWorkflowCondition{
+		Type:    v1alpha1.CronWorkflowConditionSubmissionError,
+		Message: errString,
+		Status:  v1.ConditionTrue,
+	})
+	woc.persistUpdate()
 }
