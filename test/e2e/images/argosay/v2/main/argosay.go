@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -25,6 +26,8 @@ func argosay(args ...string) error {
 		args = []string{"echo"}
 	}
 	switch args[0] {
+	case "assert_contains":
+		return assertContains(args[1:])
 	case "cat":
 		return cat(args[1:])
 	case "echo":
@@ -34,7 +37,24 @@ func argosay(args ...string) error {
 	case "sleep":
 		return sleep(args[1:])
 	}
-	return errors.New("usage: argosay [cat [file...]|echo [string] [file]|sleep duration|exit [code]]")
+	return errors.New("usage: argosay [assert_contains file string|cat [file...]|echo [string] [file]|sleep duration|exit [code]]")
+}
+
+func assertContains(args []string) error {
+	switch len(args) {
+	case 2:
+		filename := args[0]
+		substr := args[1]
+		data, err := ioutil.ReadFile(filename)
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(string(data), substr) {
+			return fmt.Errorf(`expected "%s" to contain "%s", but was "%s"`, filename, substr, string(data))
+		}
+		return nil
+	}
+	return errors.New("usage: assert_contains data string")
 }
 
 func cat(args []string) error {
