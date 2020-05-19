@@ -14,8 +14,8 @@ import (
 
 // DefaultRetry is a default retry backoff settings when retrying API calls
 var DefaultRetry = wait.Backoff{
-	Steps:    5,
-	Duration: 10 * time.Millisecond,
+	Steps:    8,
+	Duration: 1 * time.Second,
 	Factor:   1.0,
 	Jitter:   0.1,
 }

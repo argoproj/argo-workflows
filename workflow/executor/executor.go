@@ -922,16 +922,32 @@ func (we *WorkflowExecutor) Wait() error {
 
 // waitMainContainerStart waits for the main container to start and returns its container ID.
 func (we *WorkflowExecutor) waitMainContainerStart() (string, error) {
+
 	for {
 		podsIf := we.ClientSet.CoreV1().Pods(we.Namespace)
 		fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", we.PodName))
 		opts := metav1.ListOptions{
 			FieldSelector: fieldSelector.String(),
 		}
-		watchIf, err := podsIf.Watch(opts)
+		log.Infof("Try to start watching")
+
+		var err error
+		var watchIf watch.Interface
+
+		err = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+			watchIf, err = podsIf.Watch(opts)
+			if err != nil {
+				log.Debugf("Error retry watching: %v", err)
+				return false, nil
+			}
+			return true, nil
+		})
+
 		if err != nil {
+			log.Warnf("Exponential retry reached: %v", err)
 			return "", errors.InternalWrapErrorf(err, "Failed to establish pod watch: %v", err)
 		}
+
 		for watchEv := range watchIf.ResultChan() {
 			if watchEv.Type == watch.Error {
 				return "", errors.InternalErrorf("Pod watch error waiting for main to start: %v", watchEv.Object)
