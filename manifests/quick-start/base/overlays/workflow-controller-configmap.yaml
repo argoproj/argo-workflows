@@ -7,6 +7,11 @@ data:
       name: argo-server-sso
       key: clientSecret
     redirectUrl: https://localhost:2746/oauth2/callback
+  rbac: |
+    rules:
+      - groups:
+        - authors
+        serviceAccount: argo-server-read-only
   artifactRepository: |
     archiveLogs: true
     s3:

@@ -3,6 +3,7 @@ kind: Kustomization
 
 bases:
   - ../../namespace-install
+  - ../../namespace-install/argo-server-read-only
   - minio
   - dex
 

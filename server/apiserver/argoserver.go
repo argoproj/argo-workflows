@@ -81,11 +81,11 @@ type ArgoServerOpts struct {
 func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset)
 	ssoIf := sso.NullSSO
+	c, err := configController.Get()
+	if err != nil {
+		return nil, err
+	}
 	if opts.AuthModes[auth.SSO] {
-		c, err := configController.Get()
-		if err != nil {
-			return nil, err
-		}
 		ssoIf, err = sso.New(c.SSO, opts.KubeClientset.CoreV1().Secrets(opts.Namespace), opts.BaseHRef, opts.TLSConfig != nil)
 		if err != nil {
 			return nil, err
@@ -94,7 +94,7 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 	} else {
 		log.Info("SSO disabled")
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, ssoIf)
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Namespace, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, ssoIf, c.RBAC)
 	if err != nil {
 		return nil, err
 	}

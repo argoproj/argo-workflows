@@ -10,11 +10,13 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/server/auth/rbac"
 	"github.com/argoproj/argo/server/auth/sso"
 	"github.com/argoproj/argo/util/kubeconfig"
 )
@@ -34,19 +36,21 @@ type Gatekeeper interface {
 }
 
 type gatekeeper struct {
-	Modes Modes
+	modes     Modes
+	namespace string
 	// global clients, not to be used if there are better ones
 	wfClient   versioned.Interface
 	kubeClient kubernetes.Interface
 	restConfig *rest.Config
 	ssoIf      sso.Interface
+	rbacIf     rbac.Interface
 }
 
-func NewGatekeeper(modes Modes, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, ssoIf sso.Interface) (Gatekeeper, error) {
+func NewGatekeeper(modes Modes, namespace string, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, ssoIf sso.Interface, rbacIf rbac.Interface) (Gatekeeper, error) {
 	if len(modes) == 0 {
 		return nil, fmt.Errorf("must specify at least one auth mode")
 	}
-	return &gatekeeper{modes, wfClient, kubeClient, restConfig, ssoIf}, nil
+	return &gatekeeper{modes, namespace, wfClient, kubeClient, restConfig, ssoIf, rbacIf}, nil
 }
 
 func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
@@ -116,7 +120,7 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 	if err != nil {
 		return nil, nil, wfv1.NullUser, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if !s.Modes[mode] {
+	if !s.modes[mode] {
 		return nil, nil, wfv1.NullUser, status.Errorf(codes.Unauthenticated, "no valid authentication methods found for mode %v", mode)
 	}
 	switch mode {
@@ -145,8 +149,46 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		if err != nil {
 			return nil, nil, wfv1.NullUser, status.Error(codes.Unauthenticated, err.Error())
 		}
-		return s.wfClient, s.kubeClient, user, nil
+		wfClient, kubeClient, err := s.getClientsFromRBAC(user)
+		if err != nil {
+			return nil, nil, wfv1.NullUser, err
+		}
+		return wfClient, kubeClient, user, nil
 	default:
 		panic("this should never happen")
 	}
+}
+
+func (s gatekeeper) getClientsFromRBAC(user wfv1.User) (versioned.Interface, kubernetes.Interface, error) {
+	serviceAccount, err := s.rbacIf.ServiceAccount(user.Groups)
+	if err != nil {
+		return nil, nil, status.Errorf(codes.PermissionDenied, "failed to determine RBAC service account: %v", err.Error())
+	}
+	account, err := s.kubeClient.CoreV1().ServiceAccounts(s.namespace).Get(serviceAccount, metav1.GetOptions{})
+	if err != nil {
+		return nil, nil, status.Errorf(codes.Internal, "failed to get service account: %v", err.Error())
+	}
+	for _, secret := range account.Secrets {
+		secret, err := s.kubeClient.CoreV1().Secrets(s.namespace).Get(secret.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, nil, status.Errorf(codes.Internal, "failed to get secret: %v", err.Error())
+		}
+		token, ok := secret.Data["token"]
+		if ok {
+			restConfig, err := kubeconfig.GetBearerRestConfig(string(token))
+			if err != nil {
+				return nil, nil, status.Errorf(codes.Internal, "failed to create REST config: %v", err)
+			}
+			wfClient, err := versioned.NewForConfig(restConfig)
+			if err != nil {
+				return nil, nil, status.Errorf(codes.Internal, "failed to create workflow client: %v", err)
+			}
+			kubeClient, err := kubernetes.NewForConfig(restConfig)
+			if err != nil {
+				return nil, nil, status.Errorf(codes.Internal, "failed to create kube client: %v", err)
+			}
+			return wfClient, kubeClient, nil
+		}
+	}
+	return nil, nil, status.Errorf(codes.Internal, `could not find secret for service account named "%s"`, account.Name)
 }
