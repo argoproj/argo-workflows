@@ -1,0 +1,69 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: sample-dag-
+spec:
+  entrypoint: sample-dag
+  templates:
+  - name: sample-dag
+    dag:
+      tasks:
+      - name: model1-runner 
+        template: model1
+        arguments:
+          artifacts: 
+            - name: model1
+              s3:
+                bucket: my-bucket
+                key: model1.py
+                endpoint: argo-artifacts-minio.default:9000
+                insecure: true
+                accessKeySecret:
+                  name: argo-artifacts-minio
+                  key: accesskey
+                secretKeySecret:
+                  name: argo-artifacts-minio
+                  key: secretkey
+            - name: model1-input1
+              s3:
+                bucket: my-bucket
+                key: model1_input1.csv
+                endpoint: argo-artifacts-minio.default:9000
+                insecure: true
+                accessKeySecret:
+                  name: argo-artifacts-minio
+                  key: accesskey
+                secretKeySecret:
+                  name: argo-artifacts-minio
+                  key: secretkey
+            - name: model1-input2
+              path: model1_input2.csv
+              s3:
+                bucket: my-bucket
+                key: model1_input2.csv
+                endpoint: argo-artifacts-minio.default:9000
+                insecure: true
+                accessKeySecret:
+                  name: argo-artifacts-minio
+                  key: accesskey
+                secretKeySecret:
+                  name: argo-artifacts-minio
+                  key: secretkey
+ - name: model1
+    container:
+      image: python-generic 
+      imagePullPolicy: Never
+      command: [sh, -c]
+      args: ["python /model1.py --input1 /model1_input1.csv --input2 /model1_input2.csv --output1 /model1_output1.csv"]
+    inputs:
+      artifacts:
+      - name: model1
+        path: /model1.py
+      - name: model1-input1
+        path: /model1_input1.csv
+      - name: model1-input2
+        path: /model1_input2.csv
+    outputs:
+      artifacts:
+      - name: model1-output1 
+        path: /model1_output1.csv
