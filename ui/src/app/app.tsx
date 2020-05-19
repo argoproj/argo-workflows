@@ -15,6 +15,7 @@ import help from './help';
 import login from './login';
 import ErrorBoundary from './shared/components/error-boundary';
 import {services} from './shared/services';
+import user from './user';
 import workflowTemplates from './workflow-templates';
 import workflows from './workflows';
 
@@ -26,6 +27,7 @@ const cronWorkflowUrl = uiUrl('cron-workflows');
 const archivedWorkflowUrl = uiUrl('archived-workflows');
 const helpUrl = uiUrl('help');
 const loginUrl = uiUrl('login');
+const userUrl = uiUrl('user');
 const timelineUrl = uiUrl('timeline');
 const routes: {
     [path: string]: {component: React.ComponentType<RouteComponentProps<any>>};
@@ -36,7 +38,8 @@ const routes: {
     [cronWorkflowUrl]: {component: cronWorkflows.component},
     [archivedWorkflowUrl]: {component: archivedWorkflows.component},
     [helpUrl]: {component: help.component},
-    [loginUrl]: {component: login.component}
+    [loginUrl]: {component: login.component},
+    [userUrl]: {component: user.component}
 };
 
 export const history = createBrowserHistory();
@@ -68,8 +71,8 @@ const navItems = [
         iconClassName: 'fa fa-archive'
     },
     {
-        title: 'Login',
-        path: loginUrl,
+        title: 'User',
+        path: userUrl,
         iconClassName: 'fa fa-user-circle'
     },
     {

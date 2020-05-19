@@ -18,9 +18,10 @@ const logout = () => {
     document.cookie = 'authorization=;Max-Age=0';
     document.location.reload(true);
 };
-const login = (token: string) => {
-    document.cookie = 'authorization=' + token + ';SameSite=Strict';
-    document.location.href = uiUrl('');
+const user = (token: string) => {
+    const path = uiUrl('');
+    document.cookie = 'authorization=' + token + ';SameSite=Strict;path=' + path;
+    document.location.href = path;
 };
 export const Login = () => (
     <Page title='Login' toolbar={{breadcrumbs: [{title: 'Login'}]}}>
@@ -30,7 +31,7 @@ export const Login = () => (
                     <i className='fa fa-shield-alt' /> Login
                 </h3>
                 <p>
-                    You appear to be <b>logged {maybeLoggedIn() ? 'in' : 'out'}</b>. It may not be necessary to login to use Argo, it depends on how it is configured.
+                    You appear to be <b>logged {maybeLoggedIn() ? 'in' : 'out'}</b>. It may not be necessary to user to use Argo, it depends on how it is configured.
                 </p>
                 <p>
                     <a href='https://github.com/argoproj/argo/blob/master/docs/argo-server-auth.md'>Learn more</a>.
@@ -56,7 +57,7 @@ export const Login = () => (
                         <textarea id='token' cols={32} rows={8} />
                     </div>
                     <div>
-                        <button className='argo-button argo-button--base-o' onClick={() => login((document.getElementById('token') as HTMLInputElement).value)}>
+                        <button className='argo-button argo-button--base-o' onClick={() => user((document.getElementById('token') as HTMLInputElement).value)}>
                             <i className='fa fa-sign-in-alt' /> Login
                         </button>
                     </div>

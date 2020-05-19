@@ -192,7 +192,7 @@ and may be removed/ignored in a future release.
 + Support for workflow level timeouts (issue #848)
 + Introduce `argo terminate` to terminate a workflow without deleting it (issue #527)
 + Introduce `withSequence` to iterate a range of numbers in a loop (issue #945)
-+ Github login using go-git, with support for ssh keys (issue #793) (@andreimc)
++ Github user using go-git, with support for ssh keys (issue #793) (@andreimc)
 + Add TTLSecondsAfterFinished field and controller to garbage collect completed workflows (issue #911)
 + Add `argo delete --older` flag to delete completed workflows older than a duration
 + Support referencing of global workflow artifacts (issue #900)
