@@ -1,12 +1,13 @@
 import * as React from 'react';
-import {WorkflowCondition, WorkflowConditionType} from '../../models';
+import {CronWorkflowCondition, CronWorkflowConditionType, WorkflowCondition, WorkflowConditionType} from '../../models';
 
 interface Props {
-    conditions: WorkflowCondition[];
+    conditions: WorkflowCondition[] | CronWorkflowCondition[];
 }
 
 const WarningWorkflowConditions: WorkflowConditionType[] = ['SpecWarning'];
 const ErrorWorkflowConditions: WorkflowConditionType[] = ['MetricsError'];
+const ErrorCronWorkflowConditions: CronWorkflowConditionType[] = ['SubmissionError'];
 
 export function hasWarningConditionBadge(conditions: WorkflowCondition[]): boolean {
     if (conditions.length === 0) {
@@ -25,12 +26,19 @@ export function hasWarningConditionBadge(conditions: WorkflowCondition[]): boole
     return false;
 }
 
-function getConditionIcon(condition: WorkflowConditionType): JSX.Element {
-    if (WarningWorkflowConditions.includes(condition)) {
-        return <span className={'fa fa-exclamation-triangle'} style={{color: '#d7b700'}} />;
+function getConditionIcon(condition: WorkflowConditionType | CronWorkflowConditionType): JSX.Element {
+    if (condition as WorkflowConditionType) {
+        if (WarningWorkflowConditions.includes(condition as WorkflowConditionType)) {
+            return <span className={'fa fa-exclamation-triangle'} style={{color: '#d7b700'}} />;
+        }
+        if (ErrorWorkflowConditions.includes(condition as WorkflowConditionType)) {
+            return <span className={'fa fa-exclamation-circle'} style={{color: '#d70022'}} />;
+        }
     }
-    if (ErrorWorkflowConditions.includes(condition)) {
-        return <span className={'fa fa-exclamation-circle'} style={{color: '#d70022'}} />;
+    if (condition as CronWorkflowConditionType) {
+        if (ErrorCronWorkflowConditions.includes(condition as CronWorkflowConditionType)) {
+            return <span className={'fa fa-exclamation-circle'} style={{color: '#d70022'}} />;
+        }
     }
     return <span />;
 }
