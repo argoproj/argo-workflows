@@ -35,18 +35,4 @@ spec:
     key: minio
 ```
 
-Or for a single template:
-
-```
-spec:
-  templates:
-    - name: main
-      outputs:
-        artifacts:
-          - name: hello_world
-            path: /tmp/hello_world.txt
-            artifactRepositoryRef:
-              key: minio
-```
-
 Reference: [fields.md#artifactrepositoryref](fields.md#artifactrepositoryref).

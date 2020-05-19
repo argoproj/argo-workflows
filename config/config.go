@@ -121,32 +121,6 @@ func (a *ArtifactRepository) IsArchiveLogs() bool {
 	return a != nil && a.ArchiveLogs != nil && *a.ArchiveLogs
 }
 
-func (c ArtifactRepository) MergeInto(b *wfv1.Artifact) {
-	if b == nil {
-		return
-	}
-	if c.S3 != nil {
-		if b.S3 == nil {
-			b.S3 = &wfv1.S3Artifact{}
-		}
-		c.S3.S3Bucket.MergeInto(&b.S3.S3Bucket)
-	}
-	if c.GCS != nil {
-		if b.GCS == nil {
-			b.GCS = &wfv1.GCSArtifact{}
-		}
-		c.GCS.GCSBucket.MergeInto(&b.GCS.GCSBucket)
-	}
-	if c.HDFS != nil {
-		if b.HDFS == nil {
-			b.HDFS = &wfv1.HDFSArtifact{}
-		}
-		c.HDFS.HDFSConfig.MergeInto(&b.HDFS.HDFSConfig)
-	}
-	// TODO OSS
-	// TODO Artifactory
-}
-
 type PersistConfig struct {
 	NodeStatusOffload bool `json:"nodeStatusOffLoad,omitempty"`
 	// Archive workflows to persistence.

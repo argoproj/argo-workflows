@@ -669,10 +669,6 @@ type NoneStrategy struct{}
 // It is also used to describe the location of multiple artifacts such as the archive location
 // of a single workflow step, which the executor will use as a default location to store its files.
 type ArtifactLocation struct {
-
-	// ArtifactRepositoryRef is the name of a repository to use
-	ArtifactRepositoryRef *ArtifactRepositoryRef `json:"artifactRepositoryRef,omitempty" protobuf:"bytes,10,opt,name=artifactRepositoryRef"`
-
 	// ArchiveLogs indicates if the container logs should be archived
 	ArchiveLogs *bool `json:"archiveLogs,omitempty" protobuf:"varint,1,opt,name=archiveLogs"`
 
@@ -703,14 +699,14 @@ type ArtifactLocation struct {
 
 // HasLocation whether or not an artifact has a location defined
 func (a *ArtifactLocation) HasLocation() bool {
-	return a.S3.HasLocation() ||
+	return a != nil && (a.S3.HasLocation() ||
 		a.Git.HasLocation() ||
 		a.HTTP.HasLocation() ||
 		a.Artifactory.HasLocation() ||
 		a.Raw.HasLocation() ||
 		a.HDFS.HasLocation() ||
 		a.OSS.HasLocation() ||
-		a.GCS.HasLocation()
+		a.GCS.HasLocation())
 }
 
 type ArtifactRepositoryRef struct {
@@ -1309,36 +1305,6 @@ type S3Bucket struct {
 	UseSDKCreds bool `json:"useSDKCreds,omitempty" protobuf:"varint,8,opt,name=useSDKCreds"`
 }
 
-func (in *S3Bucket) MergeInto(b *S3Bucket) {
-	if in == nil || b == nil {
-		return
-	}
-	if b.Endpoint == "" {
-		b.Endpoint = in.Endpoint
-	}
-	if b.Bucket == "" {
-		b.Bucket = in.Bucket
-	}
-	if b.Region == "" {
-		b.Region = in.Region
-	}
-	if b.Insecure == nil {
-		b.Insecure = in.Insecure
-	}
-	if b.AccessKeySecret.Key == "" {
-		b.AccessKeySecret = in.AccessKeySecret
-	}
-	if b.SecretKeySecret.Key == "" {
-		b.SecretKeySecret = in.SecretKeySecret
-	}
-	if b.RoleARN == "" {
-		b.RoleARN = in.RoleARN
-	}
-	if !b.UseSDKCreds {
-		b.UseSDKCreds = in.UseSDKCreds
-	}
-}
-
 // S3Artifact is the location of an S3 artifact
 type S3Artifact struct {
 	S3Bucket `json:",inline" protobuf:"bytes,1,opt,name=s3Bucket"`
@@ -1434,18 +1400,6 @@ type HDFSConfig struct {
 	HDFSUser string `json:"hdfsUser,omitempty" protobuf:"bytes,3,opt,name=hdfsUser"`
 }
 
-func (in *HDFSConfig) MergeInto(b *HDFSConfig) {
-	if in == nil || b == nil {
-		return
-	}
-	if b.Addresses == nil {
-		b.Addresses = in.Addresses
-	}
-	if b.HDFSUser == "" {
-		b.HDFSUser = in.HDFSUser
-	}
-}
-
 // HDFSKrbConfig is auth configurations for Kerberos
 type HDFSKrbConfig struct {
 	// KrbCCacheSecret is the secret selector for Kerberos ccache
@@ -1501,18 +1455,6 @@ type GCSBucket struct {
 
 	// ServiceAccountKeySecret is the secret selector to the bucket's service account key
 	ServiceAccountKeySecret apiv1.SecretKeySelector `json:"serviceAccountKeySecret,omitempty" protobuf:"bytes,2,opt,name=serviceAccountKeySecret"`
-}
-
-func (r *GCSBucket) MergeInto(b *GCSBucket) {
-	if r == nil || b == nil {
-		return
-	}
-	if b.Bucket == "" {
-		b.Bucket = r.Bucket
-	}
-	if b.ServiceAccountKeySecret.Key == "" {
-		b.ServiceAccountKeySecret = r.ServiceAccountKeySecret
-	}
 }
 
 // GCSArtifact is the location of a GCS artifact

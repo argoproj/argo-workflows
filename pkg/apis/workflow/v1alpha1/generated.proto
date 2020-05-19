@@ -68,9 +68,6 @@ message Artifact {
 // It is also used to describe the location of multiple artifacts such as the archive location
 // of a single workflow step, which the executor will use as a default location to store its files.
 message ArtifactLocation {
-  // ArtifactRepositoryRef is the name of a repository to use
-  optional ArtifactRepositoryRef artifactRepositoryRef = 10;
-
   // ArchiveLogs indicates if the container logs should be archived
   optional bool archiveLogs = 1;
 

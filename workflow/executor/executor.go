@@ -277,12 +277,8 @@ func (we *WorkflowExecutor) saveArtifact(mainCtrID string, art *wfv1.Artifact) e
 			return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. No archive location", art.Name)
 		}
 		if we.Template.ArchiveLocation.S3 != nil {
-			shallowCopy := *we.Template.ArchiveLocation.S3
-			art.S3 = &shallowCopy
 			art.S3.Key = path.Join(art.S3.Key, fileName)
 		} else if we.Template.ArchiveLocation.Artifactory != nil {
-			shallowCopy := *we.Template.ArchiveLocation.Artifactory
-			art.Artifactory = &shallowCopy
 			artifactoryURL, urlParseErr := url.Parse(art.Artifactory.URL)
 			if urlParseErr != nil {
 				return urlParseErr
@@ -290,16 +286,10 @@ func (we *WorkflowExecutor) saveArtifact(mainCtrID string, art *wfv1.Artifact) e
 			artifactoryURL.Path = path.Join(artifactoryURL.Path, fileName)
 			art.Artifactory.URL = artifactoryURL.String()
 		} else if we.Template.ArchiveLocation.HDFS != nil {
-			shallowCopy := *we.Template.ArchiveLocation.HDFS
-			art.HDFS = &shallowCopy
 			art.HDFS.Path = path.Join(art.HDFS.Path, fileName)
 		} else if we.Template.ArchiveLocation.OSS != nil {
-			shallowCopy := *we.Template.ArchiveLocation.OSS
-			art.OSS = &shallowCopy
 			art.OSS.Key = path.Join(art.OSS.Key, fileName)
 		} else if we.Template.ArchiveLocation.GCS != nil {
-			shallowCopy := *we.Template.ArchiveLocation.GCS
-			art.GCS = &shallowCopy
 			art.GCS.Key = path.Join(art.GCS.Key, fileName)
 		} else {
 			return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
@@ -503,7 +493,8 @@ func (we *WorkflowExecutor) SaveParameters() error {
 
 // SaveLogs saves logs
 func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
-	if we.Template.ArchiveLocation == nil || we.Template.ArchiveLocation.ArchiveLogs == nil || !*we.Template.ArchiveLocation.ArchiveLogs {
+	al := we.Template.ArchiveLocation
+	if al == nil || al.ArchiveLogs == nil || !*al.ArchiveLogs {
 		return nil, nil
 	}
 	log.Infof("Saving logs")
@@ -522,44 +513,36 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 	if err != nil {
 		return nil, err
 	}
-	art := wfv1.Artifact{
+	art := &wfv1.Artifact{
 		Name:             "main-logs",
-		ArtifactLocation: *we.Template.ArchiveLocation,
+		ArtifactLocation: *al,
 	}
-	if we.Template.ArchiveLocation.S3 != nil {
-		shallowCopy := *we.Template.ArchiveLocation.S3
-		art.S3 = &shallowCopy
+	if al.S3 != nil {
 		art.S3.Key = path.Join(art.S3.Key, fileName)
-	} else if we.Template.ArchiveLocation.Artifactory != nil {
-		shallowCopy := *we.Template.ArchiveLocation.Artifactory
-		art.Artifactory = &shallowCopy
+	} else if al.Artifactory != nil {
 		artifactoryURL, urlParseErr := url.Parse(art.Artifactory.URL)
 		if urlParseErr != nil {
 			return nil, urlParseErr
 		}
 		artifactoryURL.Path = path.Join(artifactoryURL.Path, fileName)
 		art.Artifactory.URL = artifactoryURL.String()
-	} else if we.Template.ArchiveLocation.HDFS != nil {
-		shallowCopy := *we.Template.ArchiveLocation.HDFS
-		art.HDFS = &shallowCopy
+	} else if al.HDFS != nil {
 		art.HDFS.Path = path.Join(art.HDFS.Path, fileName)
-	} else if we.Template.ArchiveLocation.GCS != nil {
-		shallowCopy := *we.Template.ArchiveLocation.GCS
-		art.GCS = &shallowCopy
+	} else if al.GCS != nil {
 		art.GCS.Key = path.Join(art.GCS.Key, fileName)
 	} else {
 		return nil, errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
 	}
-	artDriver, err := we.InitDriver(&art)
+	artDriver, err := we.InitDriver(art)
 	if err != nil {
 		return nil, err
 	}
-	err = artDriver.Save(mainLog, &art)
+	err = artDriver.Save(mainLog, art)
 	if err != nil {
 		return nil, err
 	}
 
-	return &art, nil
+	return art, nil
 }
 
 // GetSecret will retrieve the Secrets from VolumeMount

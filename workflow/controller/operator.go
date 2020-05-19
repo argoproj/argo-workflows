@@ -238,17 +238,20 @@ func (woc *wfOperationCtx) operate() {
 
 	woc.setGlobalParameters()
 
-	arRef := woc.wf.Spec.ArtifactRepositoryRef
-	if arRef != nil {
-		repo, err := woc.getArtifactRepositoryByRef(arRef)
-		if err == nil {
+	if woc.artifactRepository == nil {
+		arRef := woc.wf.Spec.ArtifactRepositoryRef
+		if arRef != nil {
+			repo, err := woc.getArtifactRepositoryByRef(arRef)
+			if err != nil {
+				msg := fmt.Sprintf("Failed to load artifact repository configMap: %+v", err)
+				woc.log.Errorf(msg)
+				woc.markWorkflowError(err, true)
+				woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg)
+				return
+			}
 			woc.artifactRepository = repo
 		} else {
-			msg := fmt.Sprintf("Failed to load artifact repository configMap: %+v", err)
-			woc.log.Errorf(msg)
-			woc.markWorkflowError(err, true)
-			woc.auditLogger.LogWorkflowEvent(woc.wf, argo.EventInfo{Type: apiv1.EventTypeWarning, Reason: argo.EventReasonWorkflowFailed}, msg)
-			return
+			woc.artifactRepository = &woc.controller.Config.ArtifactRepository
 		}
 	}
 

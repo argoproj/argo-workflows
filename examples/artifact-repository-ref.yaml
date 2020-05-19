@@ -16,5 +16,3 @@ spec:
         artifacts:
           - name: hello_world
             path: /tmp/hello_world.txt
-            artifactRepositoryRef:
-              key: minio

@@ -6,6 +6,8 @@ metadata:
     argo-e2e: true
 spec:
   entrypoint: main
+  artifactRepositoryRef:
+    key: minio
   templates:
     - name: main
       container:
@@ -19,11 +21,7 @@ spec:
           - name: file
             path: /tmp/file
             optional: true
-            artifactRepositoryRef:
-              key: minio
       outputs:
         artifacts:
           - name: file
             path: /tmp/file
-            artifactRepositoryRef:
-              key: minio
