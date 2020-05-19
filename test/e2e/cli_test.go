@@ -258,7 +258,7 @@ func (s *CLISuite) TestRoot() {
 
 	var createdWorkflowName string
 	s.Run("From", func() {
-		s.Given().CronWorkflow("@testdata/basic.yaml").
+		s.Given().CronWorkflow("@cron/basic.yaml").
 			When().
 			CreateCronWorkflow().
 			RunCli([]string{"submit", "--from", "cronwf/test-cron-wf-basic", "-l", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
@@ -467,6 +467,50 @@ func (s *CLISuite) TestWorkflowLint() {
 				}
 			})
 	})
+
+	s.Run("Different Kind", func() {
+		s.Given().
+			RunCli([]string{"lint", "testdata/workflow-template-nested-template.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.Error(t, err) {
+					assert.Contains(t, output, "WorkflowTemplate 'workflow-template-nested-template' is not of kind Workflow. Ignoring...")
+					assert.Contains(t, output, "Error in file testdata/workflow-template-nested-template.yaml: there was nothing to validate")
+				}
+			})
+	})
+	s.Run("Valid", func() {
+		s.Given().
+			RunCli([]string{"lint", "testdata/exit-1.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "exit-1.yaml is valid")
+				}
+			})
+	})
+	s.Run("Invalid", func() {
+		s.Given().
+			RunCli([]string{"lint", "expectedfailures/empty-parameter-dag.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.Error(t, err) {
+					assert.Contains(t, output, "Error in file expectedfailures/empty-parameter-dag.yaml:")
+				}
+			})
+	})
+	// Not all files in this directory are Workflows, expect failure
+	s.Run("NotAllWorkflows", func() {
+		s.Given().
+			RunCli([]string{"lint", "testdata"}, func(t *testing.T, output string, err error) {
+				if assert.Error(t, err) {
+					assert.Contains(t, output, "WorkflowTemplate 'workflow-template-nested-template' is not of kind Workflow. Ignoring...")
+					assert.Contains(t, output, "Error in file testdata/workflow-template-nested-template.yaml: there was nothing to validate")
+				}
+			})
+	})
+
+	// All files in this directory are Workflows, expect success
+	s.Run("AllWorkflows", func() {
+		s.Given().
+			RunCli([]string{"lint", "stress"}, func(t *testing.T, output string, err error) {
+				assert.NoError(t, err)
+			})
+	})
 }
 
 func (s *CLISuite) TestWorkflowRetryNoPersistence() {
@@ -643,15 +687,43 @@ func (s *CLISuite) TestWorkflowResubmit() {
 
 func (s *CLISuite) TestCron() {
 	s.Run("Lint", func() {
-		s.Given().RunCli([]string{"cron", "lint", "testdata/basic.yaml"}, func(t *testing.T, output string, err error) {
+		s.Given().RunCli([]string{"cron", "lint", "cron/basic.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				assert.Contains(t, output, "testdata/basic.yaml is valid")
+				assert.Contains(t, output, "cron/basic.yaml is valid")
 				assert.Contains(t, output, "Cron workflow manifests validated")
 			}
 		})
 	})
+	s.Run("Different Kind", func() {
+		s.Given().
+			RunCli([]string{"cron", "lint", "testdata/workflow-template-nested-template.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.Error(t, err) {
+					assert.Contains(t, output, "WorkflowTemplate 'workflow-template-nested-template' is not of kind CronWorkflow. Ignoring...")
+					assert.Contains(t, output, "Error in file testdata/workflow-template-nested-template.yaml: there was nothing to validate")
+				}
+			})
+	})
+	// Not all files in this directory are CronWorkflows, expect failure
+	s.Run("NotAllWorkflows", func() {
+		s.Given().
+			RunCli([]string{"cron", "lint", "testdata"}, func(t *testing.T, output string, err error) {
+				if assert.Error(t, err) {
+					assert.Contains(t, output, "WorkflowTemplate 'workflow-template-nested-template' is not of kind CronWorkflow. Ignoring...")
+					assert.Contains(t, output, "Error in file testdata/workflow-template-nested-template.yaml: there was nothing to validate")
+				}
+			})
+	})
+
+	// All files in this directory are CronWorkflows, expect success
+	s.Run("AllCron", func() {
+		s.Given().
+			RunCli([]string{"cron", "lint", "cron"}, func(t *testing.T, output string, err error) {
+				assert.NoError(t, err)
+			})
+	})
+
 	s.Run("Create", func() {
-		s.Given().RunCli([]string{"cron", "create", "testdata/basic.yaml"}, func(t *testing.T, output string, err error) {
+		s.Given().RunCli([]string{"cron", "create", "cron/basic.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
