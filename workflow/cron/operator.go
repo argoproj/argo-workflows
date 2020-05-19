@@ -62,15 +62,20 @@ func (woc *cronWfOperationCtx) Run() {
 	runWf, err := util.SubmitWorkflow(woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, &v1alpha1.SubmitOpts{})
 	if err != nil {
 		log.Errorf("Failed to run CronWorkflow: %v", err)
+		woc.cronWf.Status.Conditions.UpsertCondition(v1alpha1.CronWorkflowCondition{
+			Type:    v1alpha1.CronWorkflowConditionSubmissionError,
+			Message: fmt.Sprintf("Failed to submit Workflow: %s", err),
+			Status:  v1.ConditionTrue,
+		})
+		woc.persistUpdate()
 		return
+	} else {
+		woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.CronWorkflowConditionSubmissionError)
 	}
 
 	woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, getWorkflowObjectReference(wf, runWf))
-	woc.cronWf.Status.LastScheduledTime = &v1.Time{Time: time.Now().UTC()}
-	err = woc.persistUpdate()
-	if err != nil {
-		log.Error(err)
-	}
+	woc.cronWf.Status.LastScheduledTime = &v1.Time{Time: time.Now()}
+	woc.persistUpdate()
 }
 
 func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow) corev1.ObjectReference {
@@ -86,12 +91,11 @@ func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow)
 	}
 }
 
-func (woc *cronWfOperationCtx) persistUpdate() error {
+func (woc *cronWfOperationCtx) persistUpdate() {
 	_, err := woc.cronWfIf.Update(woc.cronWf)
 	if err != nil {
-		return fmt.Errorf("failed to update CronWorkflow: %s", err)
+		log.Error(fmt.Sprintf("failed to update CronWorkflow: %s", err))
 	}
-	return nil
 }
 
 func (woc *cronWfOperationCtx) enforceRuntimePolicy() (bool, error) {
@@ -217,10 +221,7 @@ func (woc *cronWfOperationCtx) removeActiveWf(wf *v1alpha1.Workflow) {
 		return
 	}
 	woc.removeFromActiveList(wf.ObjectMeta.UID)
-	err := woc.persistUpdate()
-	if err != nil {
-		log.Errorf("Unable to update CronWorkflow '%s': %s", woc.cronWf.Name, err)
-	}
+	woc.persistUpdate()
 }
 
 func (woc *cronWfOperationCtx) removeFromActiveList(uid types.UID) {

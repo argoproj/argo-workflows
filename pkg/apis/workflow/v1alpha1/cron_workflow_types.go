@@ -24,6 +24,14 @@ type CronWorkflowList struct {
 	Items           []CronWorkflow `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
+type ConcurrencyPolicy string
+
+const (
+	AllowConcurrent   ConcurrencyPolicy = "Allow"
+	ForbidConcurrent  ConcurrencyPolicy = "Forbid"
+	ReplaceConcurrent ConcurrencyPolicy = "Replace"
+)
+
 // CronWorkflowSpec is the specification of a CronWorkflow
 type CronWorkflowSpec struct {
 	// WorkflowSpec is the spec of the workflow to be run
@@ -53,12 +61,43 @@ type CronWorkflowStatus struct {
 	Active []v1.ObjectReference `json:"active,omitempty" protobuf:"bytes,1,rep,name=active"`
 	// LastScheduleTime is the last time the CronWorkflow was scheduled
 	LastScheduledTime *metav1.Time `json:"lastScheduledTime,omitempty" protobuf:"bytes,2,opt,name=lastScheduledTime"`
+	// Conditions is a list of conditions the CronWorkflow may have
+	Conditions CronWorkflowConditions `json:"conditions,omitempty" protobuf:"bytes,3,rep,name=conditions"`
 }
 
-type ConcurrencyPolicy string
+type CronWorkflowConditionType string
 
 const (
-	AllowConcurrent   ConcurrencyPolicy = "Allow"
-	ForbidConcurrent  ConcurrencyPolicy = "Forbid"
-	ReplaceConcurrent ConcurrencyPolicy = "Replace"
+	// CronWorkflowConditionSubmissionError signifies that there was an error submitting the CronWorkflow's Workflow
+	CronWorkflowConditionSubmissionError CronWorkflowConditionType = "SubmissionError"
 )
+
+type CronWorkflowCondition struct {
+	// Type is the type of condition
+	Type CronWorkflowConditionType `json:"type,omitempty" protobuf:"bytes,1,opt,name=type,casttype=CronWorkflowConditionType"`
+	// Status is the status of the condition
+	Status metav1.ConditionStatus `json:"status,omitempty" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/apimachinery/pkg/apis/meta/v1.ConditionStatus"`
+	// Message is the condition message
+	Message string `json:"message,omitempty" protobuf:"bytes,3,opt,name=message"`
+}
+
+type CronWorkflowConditions []CronWorkflowCondition
+
+func (wc *CronWorkflowConditions) UpsertCondition(condition CronWorkflowCondition) {
+	for index, wfCondition := range *wc {
+		if wfCondition.Type == condition.Type {
+			(*wc)[index] = condition
+			return
+		}
+	}
+	*wc = append(*wc, condition)
+}
+
+func (wc *CronWorkflowConditions) RemoveCondition(conditionType CronWorkflowConditionType) {
+	for index, wfCondition := range *wc {
+		if wfCondition.Type == conditionType {
+			*wc = append((*wc)[:index], (*wc)[index+1:]...)
+			return
+		}
+	}
+}

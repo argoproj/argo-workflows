@@ -178,6 +178,17 @@ message CronWorkflow {
   optional CronWorkflowStatus status = 3;
 }
 
+message CronWorkflowCondition {
+  // Type is the type of condition
+  optional string type = 1;
+
+  // Status is the status of the condition
+  optional string status = 2;
+
+  // Message is the condition message
+  optional string message = 3;
+}
+
 // CronWorkflowList is list of CronWorkflow resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 message CronWorkflowList {
@@ -224,6 +235,9 @@ message CronWorkflowStatus {
 
   // LastScheduleTime is the last time the CronWorkflow was scheduled
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastScheduledTime = 2;
+
+  // Conditions is a list of conditions the CronWorkflow may have
+  repeated CronWorkflowCondition conditions = 3;
 }
 
 // DAGTask represents a node in the graph during DAG execution
