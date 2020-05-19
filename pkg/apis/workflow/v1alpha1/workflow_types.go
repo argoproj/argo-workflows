@@ -1720,6 +1720,13 @@ func (args *Arguments) GetParameterByName(name string) *Parameter {
 	return nil
 }
 
+func (a *Artifact) GetArchive() *ArchiveStrategy {
+	if a == nil || a.Archive == nil {
+		return &ArchiveStrategy{}
+	}
+	return a.Archive
+}
+
 // GetTemplateByName retrieves a defined template by its name
 func (wf *Workflow) GetTemplateByName(name string) *Template {
 	for _, t := range wf.Spec.Templates {
