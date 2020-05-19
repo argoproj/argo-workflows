@@ -2790,13 +2790,6 @@ func schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
-					"instanceID": {
-						SchemaProps: spec.SchemaProps{
-							Description: "InstanceID binds the Resource to the specified instance ID",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"entryPoint": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Entrypoint overrides spec.entrypoint",

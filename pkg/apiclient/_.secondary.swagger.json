@@ -1561,10 +1561,6 @@
           "description": "GenerateName overrides metadata.generateName",
           "type": "string"
         },
-        "instanceID": {
-          "description": "InstanceID binds the Resource to the specified instance ID",
-          "type": "string"
-        },
         "labels": {
           "description": "Labels adds to metadata.labels",
           "type": "string"

@@ -103,19 +103,8 @@ MANIFESTS        := $(shell find manifests          -mindepth 2 -type f)
 E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
 # The sort puts _.primary first in the list. 'env LC_COLLATE=C' makes sure underscore comes first in both Mac and Linux.
-SWAGGER_FILES    := $(shell find pkg/apiclient -name '*.swagger.json' | env LC_COLLATE=C sort)
-MOCK_FILES       := $(shell find persist workflow -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
 UI_FILES         := $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 
-define backup_go_mod
-	# Back-up go.*, but only if we have not already done this (because that would suggest we failed mid-codegen and the currenty go.* files are borked).
-	@mkdir -p dist
-	[ -e dist/go.mod ] || cp go.mod go.sum dist/
-endef
-define restore_go_mod
-	# Restore the back-ups.
-	mv dist/go.mod dist/go.sum .
-endef
 # docker_build,image_name,binary_name,marker_file_name
 define docker_build
 	# If we're making a dev build, we build this locally (this will be faster due to existing Go build caches).
@@ -159,14 +148,12 @@ else
 	echo "Built without static files" > ui/dist/app/index.html
 endif
 
-$(GOPATH)/bin/staticfiles:
-	$(call backup_go_mod)
-	go get bou.ke/staticfiles
-	$(call restore_go_mod)
+vendor/bou.ke/staticfiles/:
+	go mod vendor
 
-server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
+server/static/files.go: vendor/bou.ke/staticfiles/ ui/dist/app/index.html
 	# Pack UI into a Go file.
-	staticfiles -o server/static/files.go ui/dist/app
+	go run ./vendor/bou.ke/staticfiles -o server/static/files.go ui/dist/app
 
 dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
@@ -232,31 +219,18 @@ $(EXECUTOR_IMAGE_FILE): $(ARGOEXEC_PKGS)
 
 # generation
 
-$(GOPATH)/bin/mockery:
-	./hack/recurl.sh dist/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v1.1.1/mockery_1.1.1_$(shell uname -s)_$(shell uname -m).tar.gz
-	tar zxvf dist/mockery.tar.gz mockery
-	chmod +x mockery
-	mkdir -p $(GOPATH)/bin
-	mv mockery $(GOPATH)/bin/mockery
-	mockery -version
-
 .PHONY: mocks
-mocks: $(GOPATH)/bin/mockery
-	./hack/update-mocks.sh $(MOCK_FILES)
+mocks:
+	./hack/update-mocks.sh
 
 .PHONY: codegen
 codegen: status proto swagger mocks docs
 
 .PHONY: proto
 proto:
-	$(call backup_go_mod)
-	# We need the folder for compatibility
 	go mod vendor
-	# Generate proto
 	./hack/generate-proto.sh
-	# Updated codegen
 	./hack/update-codegen.sh
-	$(call restore_go_mod)
 
 # we use a different file to ./VERSION to force updating manifests after a `make clean`
 $(MANIFESTS_VERSION_FILE):
@@ -297,14 +271,12 @@ test: server/static/files.go
 test-results/test-report.json: test-results/test.out
 	cat test-results/test.out | go tool test2json > test-results/test-report.json
 
-$(GOPATH)/bin/go-junit-report:
-	$(call backup_go_mod)
-	go get github.com/jstemmer/go-junit-report
-	$(call restore_go_mod)
+vendor/github.com/jstemmer/go-junit-report:
+	go mod vendor
 
 # note that we do not have a dependency on test.out, we assume you did correctly create this
-test-results/junit.xml: $(GOPATH)/bin/go-junit-report test-results/test.out
-	cat test-results/test.out | go-junit-report > test-results/junit.xml
+test-results/junit.xml: vendor/github.com/jstemmer/go-junit-report test-results/test.out
+	cat test-results/test.out | go run ./vendor/github.com/jstemmer/go-junit-report > test-results/junit.xml
 
 $(VERSION_FILE):
 	@mkdir -p dist
@@ -457,40 +429,10 @@ clean:
 
 # swagger
 
-$(GOPATH)/bin/swagger:
-	$(call backup_go_mod)
-	go get github.com/go-swagger/go-swagger/cmd/swagger@v0.23.0
-	$(call restore_go_mod)
-
 .PHONY: swagger
-swagger: api/openapi-spec/swagger.json
-
-pkg/apis/workflow/v1alpha1/openapi_generated.go:
-	$(call backup_go_mod)
-	go install k8s.io/kube-openapi/cmd/openapi-gen
-	openapi-gen \
-	  --go-header-file ./hack/custom-boilerplate.go.txt \
-	  --input-dirs github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
-	  --output-package github.com/argoproj/argo/pkg/apis/workflow/v1alpha1 \
-	  --report-filename pkg/apis/api-rules/violation_exceptions.list
-	$(call restore_go_mod)
-
-pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
-	go run ./hack secondaryswaggergen
-
-dist/swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
-	swagger mixin -c 680 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > dist/swagger.json
-
-dist/kubernetes.swagger.json:
-	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.15/api/openapi-spec/swagger.json
-
-dist/kubeified.swagger.json: dist/swagger.json dist/kubernetes.swagger.json hack/kubeifyswagger.go
-	go run ./hack kubeifyswagger dist/swagger.json dist/kubeified.swagger.json
-
-api/openapi-spec/swagger.json: dist/kubeified.swagger.json
-	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json > api/openapi-spec/swagger.json
-	swagger validate api/openapi-spec/swagger.json
-	go test ./api/openapi-spec
+swagger: 
+	go mod vendor
+	./hack/update-swagger.sh $(MANIFESTS_VERSION)
 
 .PHONY: docs
 docs: swagger

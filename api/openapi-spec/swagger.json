@@ -12,7 +12,7 @@
   "info": {
     "description": "Argo",
     "title": "Argo",
-    "version": "latest"
+    "version": "$(MANIFESTS_VERSION)"
   },
   "host": "localhost:2746",
   "paths": {
@@ -3146,10 +3146,6 @@
         },
         "generateName": {
           "description": "GenerateName overrides metadata.generateName",
-          "type": "string"
-        },
-        "instanceID": {
-          "description": "InstanceID binds the Resource to the specified instance ID",
           "type": "string"
         },
         "labels": {
