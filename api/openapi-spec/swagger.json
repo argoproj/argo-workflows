@@ -674,6 +674,22 @@
         }
       }
     },
+    "/api/v1/user": {
+      "get": {
+        "tags": [
+          "InfoService"
+        ],
+        "operationId": "GetUser",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.User"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/version": {
       "get": {
         "tags": [
@@ -3443,6 +3459,20 @@
           "type": "string"
         },
         "namespace": {
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.User": {
+      "type": "object",
+      "properties": {
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "name": {
           "type": "string"
         }
       }

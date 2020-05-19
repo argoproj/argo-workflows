@@ -6,6 +6,7 @@ import (
 	"github.com/argoproj/argo"
 	infopkg "github.com/argoproj/argo/pkg/apiclient/info"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/server/auth"
 )
 
 type infoServer struct {
@@ -15,6 +16,11 @@ type infoServer struct {
 
 func (i *infoServer) GetInfo(context.Context, *infopkg.GetInfoRequest) (*infopkg.InfoResponse, error) {
 	return &infopkg.InfoResponse{ManagedNamespace: i.managedNamespace, Links: i.links}, nil
+}
+
+func (i *infoServer) GetUser(ctx context.Context, _ *infopkg.GetUserRequest) (*wfv1.User, error) {
+	user := auth.GetUser(ctx)
+	return &user, nil
 }
 
 func (i *infoServer) GetVersion(context.Context, *infopkg.GetVersionRequest) (*wfv1.Version, error) {
