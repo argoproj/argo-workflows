@@ -146,6 +146,7 @@ data:
       connectionPool:
         maxIdleConns: 100
         maxOpenConns: 0
+        connMaxLifetime: 0s # 0 means connections don't have a max lifetime
       #  if true node status is only saved to the persistence DB to avoid the 1MB limit in etcd
       nodeStatusOffLoad: false
       # save completed workloads to the workflow archive
