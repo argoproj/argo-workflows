@@ -162,21 +162,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.Spec.ShareProcessNamespace = pointer.BoolPtr(true)
 	}
 
-	al := tmpl.ArchiveLocation
-	if !al.HasLocation() {
-		if al.S3 != nil {
-			al.S3.Bucket = woc.artifactRepository.S3.Bucket
-		} else if al.Artifactory != nil {
-			al.Artifactory.ArtifactoryAuth = woc.artifactRepository.Artifactory.ArtifactoryAuth
-		} else if al.HDFS != nil {
-			al.HDFS.HDFSConfig = woc.artifactRepository.HDFS.HDFSConfig
-		} else if al.GCS != nil {
-			al.GCS.GCSBucket = woc.artifactRepository.GCS.GCSBucket
-		} else {
-			return nil, errors.InternalErrorf("Unable to determine path to store %s. Archive location provided no information", tmpl.Name)
-		}
-	}
-
 	err := woc.addArchiveLocation(tmpl)
 	if err != nil {
 		return nil, err
@@ -263,7 +248,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	if err != nil {
 		return nil, err
 	}
-	for _, obj := range []interface{}{al} {
+	for _, obj := range []interface{}{tmpl.ArchiveLocation} {
 		err = verifyResolvedVariables(obj)
 		if err != nil {
 			return nil, err
@@ -860,70 +845,77 @@ func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
 // for templates which do not need to archive anything, or have explicitly set an archive location
 // in the template.
 func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
+
+	if tmpl.ArchiveLocation.HasLocation() {
+		// User explicitly set the location. nothing else to do.
+		return nil
+	}
+
 	// needLocation keeps track if the workflow needs to have an archive location set.
 	// If so, and one was not supplied (or defaulted), we will return error
-	var needLocation bool
+	needLocation := tmpl.ArchiveLocation.IsArchiveLogs() ||
+		woc.artifactRepository.IsArchiveLogs() ||
+		tmpl.Inputs.Artifacts.Find(func(art wfv1.Artifact) bool { return !art.HasLocation() }) != nil ||
+		tmpl.Outputs.Artifacts.Find(func(art wfv1.Artifact) bool { return !art.HasLocation() }) != nil
 
-	if tmpl.ArchiveLocation != nil {
-		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil || tmpl.ArchiveLocation.OSS != nil || tmpl.ArchiveLocation.GCS != nil {
-			// User explicitly set the location. nothing else to do.
-			return nil
-		}
-		if tmpl.ArchiveLocation.ArchiveLogs != nil && *tmpl.ArchiveLocation.ArchiveLogs {
-			needLocation = true
-		}
-	}
-	for _, art := range tmpl.Outputs.Artifacts {
-		if !art.HasLocation() {
-			needLocation = true
-			break
-		}
-	}
-	ar := woc.artifactRepository
-	if ar.IsArchiveLogs() {
-		needLocation = true
-	}
 	if !needLocation {
 		woc.log.Debugf("archive location unnecessary")
 		return nil
 	}
-	tmpl.ArchiveLocation = &wfv1.ArtifactLocation{}
+	if woc.artifactRepository == nil {
+		return fmt.Errorf("artifact location needed, but not available")
+	}
+	tmpl.ArchiveLocation = &wfv1.ArtifactLocation{
+		ArchiveLogs: woc.artifactRepository.ArchiveLogs,
+	}
 	// artifact location is defaulted using the following formula:
 	// <worflow_name>/<pod_name>/<artifact_name>.tgz
 	// (e.g. myworkflowartifacts/argo-wf-fhljp/argo-wf-fhljp-123291312382/src.tgz)
-	if s3Location := ar.S3; s3Location != nil {
+	if woc.artifactRepository.S3 != nil {
 		woc.log.Debugf("Setting s3 artifact repository information")
-		artLocationKey := s3Location.KeyFormat
+		artLocationKey := woc.artifactRepository.S3.KeyFormat
 		// NOTE: we use unresolved variables, will get substituted later
 		if artLocationKey == "" {
-			artLocationKey = path.Join(s3Location.KeyPrefix, common.DefaultArchivePattern)
+			artLocationKey = path.Join(woc.artifactRepository.S3.KeyPrefix, common.DefaultArchivePattern)
 		}
-		tmpl.ArchiveLocation.S3 = &wfv1.S3Artifact{Key: artLocationKey}
-	} else if ar.Artifactory != nil {
+		tmpl.ArchiveLocation.S3 = &wfv1.S3Artifact{
+			S3Bucket: woc.artifactRepository.S3.S3Bucket,
+			Key:      artLocationKey,
+		}
+	} else if woc.artifactRepository.Artifactory != nil {
 		woc.log.Debugf("Setting artifactory artifact repository information")
 		repoURL := ""
-		if ar.Artifactory.RepoURL != "" {
-			repoURL = ar.Artifactory.RepoURL + "/"
+		if woc.artifactRepository.Artifactory.RepoURL != "" {
+			repoURL = woc.artifactRepository.Artifactory.RepoURL + "/"
 		}
 		artURL := fmt.Sprintf("%s%s", repoURL, common.DefaultArchivePattern)
-		tmpl.ArchiveLocation.Artifactory = &wfv1.ArtifactoryArtifact{URL: artURL}
-	} else if hdfsLocation := ar.HDFS; hdfsLocation != nil {
+		tmpl.ArchiveLocation.Artifactory = &wfv1.ArtifactoryArtifact{
+			ArtifactoryAuth: woc.artifactRepository.Artifactory.ArtifactoryAuth,
+			URL:             artURL,
+		}
+	} else if woc.artifactRepository.HDFS != nil {
 		woc.log.Debugf("Setting HDFS artifact repository information")
 		tmpl.ArchiveLocation.HDFS = &wfv1.HDFSArtifact{
-			Path:  hdfsLocation.PathFormat,
-			Force: hdfsLocation.Force,
+			HDFSConfig: woc.artifactRepository.HDFS.HDFSConfig,
+			Path:       woc.artifactRepository.HDFS.PathFormat,
+			Force:      woc.artifactRepository.HDFS.Force,
 		}
-	} else if ossLocation := ar.OSS; ossLocation != nil {
+	} else if woc.artifactRepository.OSS != nil {
 		woc.log.Debugf("Setting OSS artifact repository information")
-		artLocationKey := ossLocation.KeyFormat
-		tmpl.ArchiveLocation.OSS = &wfv1.OSSArtifact{Key: artLocationKey}
-	} else if gcsLocation := ar.GCS; gcsLocation != nil {
+		tmpl.ArchiveLocation.OSS = &wfv1.OSSArtifact{
+			OSSBucket: woc.artifactRepository.OSS.OSSBucket,
+			Key:       woc.artifactRepository.OSS.KeyFormat,
+		}
+	} else if woc.artifactRepository.GCS != nil {
 		woc.log.Debugf("Setting GCS artifact repository information")
-		artLocationKey := gcsLocation.KeyFormat
+		artLocationKey := woc.artifactRepository.GCS.KeyFormat
 		if artLocationKey == "" {
 			artLocationKey = common.DefaultArchivePattern
 		}
-		tmpl.ArchiveLocation.GCS = &wfv1.GCSArtifact{Key: artLocationKey}
+		tmpl.ArchiveLocation.GCS = &wfv1.GCSArtifact{
+			GCSBucket: tmpl.ArchiveLocation.GCS.GCSBucket,
+			Key:       artLocationKey,
+		}
 	} else {
 		return errors.Errorf(errors.CodeBadRequest, "controller is not configured with a default archive location")
 	}

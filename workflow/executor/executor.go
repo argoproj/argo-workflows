@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/url"
 	"os"
 	"os/signal"
 	"path"
@@ -270,32 +269,15 @@ func (we *WorkflowExecutor) saveArtifact(mainCtrID string, art *wfv1.Artifact) e
 		}
 		return err
 	}
-	if !art.HasLocation() {
-		// If user did not explicitly set an artifact destination location in the template,
-		// use the default archive location (appended with the filename).
-		if we.Template.ArchiveLocation == nil {
-			return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. No archive location", art.Name)
-		}
-		if we.Template.ArchiveLocation.S3 != nil {
-			art.S3.Key = path.Join(art.S3.Key, fileName)
-		} else if we.Template.ArchiveLocation.Artifactory != nil {
-			artifactoryURL, urlParseErr := url.Parse(art.Artifactory.URL)
-			if urlParseErr != nil {
-				return urlParseErr
-			}
-			artifactoryURL.Path = path.Join(artifactoryURL.Path, fileName)
-			art.Artifactory.URL = artifactoryURL.String()
-		} else if we.Template.ArchiveLocation.HDFS != nil {
-			art.HDFS.Path = path.Join(art.HDFS.Path, fileName)
-		} else if we.Template.ArchiveLocation.OSS != nil {
-			art.OSS.Key = path.Join(art.OSS.Key, fileName)
-		} else if we.Template.ArchiveLocation.GCS != nil {
-			art.GCS.Key = path.Join(art.GCS.Key, fileName)
-		} else {
-			return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
-		}
+	art.BeLike(we.Template.ArchiveLocation)
+	err = art.SetFilename(fileName)
+	if err != nil {
+		return err
 	}
-
+	art, err = art.WithArtifactLocation(we.Template.ArchiveLocation)
+	if err != nil {
+		return err
+	}
 	artDriver, err := we.InitDriver(art)
 	if err != nil {
 		return err
@@ -513,35 +495,24 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 	if err != nil {
 		return nil, err
 	}
-	art := &wfv1.Artifact{
-		Name:             "main-logs",
-		ArtifactLocation: *al,
-	}
-	if al.S3 != nil {
-		art.S3.Key = path.Join(art.S3.Key, fileName)
-	} else if al.Artifactory != nil {
-		artifactoryURL, urlParseErr := url.Parse(art.Artifactory.URL)
-		if urlParseErr != nil {
-			return nil, urlParseErr
-		}
-		artifactoryURL.Path = path.Join(artifactoryURL.Path, fileName)
-		art.Artifactory.URL = artifactoryURL.String()
-	} else if al.HDFS != nil {
-		art.HDFS.Path = path.Join(art.HDFS.Path, fileName)
-	} else if al.GCS != nil {
-		art.GCS.Key = path.Join(art.GCS.Key, fileName)
-	} else {
-		return nil, errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
-	}
-	artDriver, err := we.InitDriver(art)
+	art := &wfv1.Artifact{Name: "main-logs"}
+	art.BeLike(we.Template.ArchiveLocation)
+	err = art.SetFilename(fileName)
 	if err != nil {
 		return nil, err
 	}
-	err = artDriver.Save(mainLog, art)
+	fatArt, err := art.WithArtifactLocation(al)
 	if err != nil {
 		return nil, err
 	}
-
+	artDriver, err := we.InitDriver(fatArt)
+	if err != nil {
+		return nil, err
+	}
+	err = artDriver.Save(mainLog, fatArt)
+	if err != nil {
+		return nil, err
+	}
 	return art, nil
 }
 

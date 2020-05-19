@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"net/url"
+	"path"
 	"reflect"
 	"strings"
 	"time"
@@ -12,6 +14,8 @@ import (
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/argoproj/argo/errors"
 )
 
 // TemplateType is the type of a template
@@ -507,8 +511,12 @@ func (tmpl *Template) HasPodSpecPatch() bool {
 type Artifacts []Artifact
 
 func (a Artifacts) GetArtifactByName(name string) *Artifact {
+	return a.Find(func(art Artifact) bool { return art.Name == name })
+}
+
+func (a Artifacts) Find(test func(art Artifact) bool) *Artifact {
 	for _, art := range a {
-		if art.Name == name {
+		if test(art) {
 			return &art
 		}
 	}
@@ -707,6 +715,10 @@ func (a *ArtifactLocation) HasLocation() bool {
 		a.HDFS.HasLocation() ||
 		a.OSS.HasLocation() ||
 		a.GCS.HasLocation())
+}
+
+func (a *ArtifactLocation) IsArchiveLogs() bool {
+	return a != nil && a.ArchiveLogs != nil && *a.ArchiveLogs
 }
 
 type ArtifactRepositoryRef struct {
@@ -1393,7 +1405,7 @@ type HDFSConfig struct {
 	HDFSKrbConfig `json:",inline" protobuf:"bytes,1,opt,name=hDFSKrbConfig"`
 
 	// Addresses is accessible addresses of HDFS name nodes
-	Addresses []string `json:"addresses" protobuf:"bytes,2,rep,name=addresses"`
+	Addresses []string `json:"addresses,omitempty" protobuf:"bytes,2,rep,name=addresses"`
 
 	// HDFSUser is the user to access HDFS file system.
 	// It is ignored if either ccache or keytab is used.
@@ -1451,7 +1463,7 @@ func (h *HTTPArtifact) HasLocation() bool {
 type GCSBucket struct {
 
 	// Bucket is the name of the bucket
-	Bucket string `json:"bucket" protobuf:"bytes,1,opt,name=bucket"`
+	Bucket string `json:"bucket,omitempty" protobuf:"bytes,1,opt,name=bucket"`
 
 	// ServiceAccountKeySecret is the secret selector to the bucket's service account key
 	ServiceAccountKeySecret apiv1.SecretKeySelector `json:"serviceAccountKeySecret,omitempty" protobuf:"bytes,2,opt,name=serviceAccountKeySecret"`
@@ -1472,16 +1484,16 @@ func (g *GCSArtifact) HasLocation() bool {
 // OSSBucket contains the access information required for interfacing with an OSS bucket
 type OSSBucket struct {
 	// Endpoint is the hostname of the bucket endpoint
-	Endpoint string `json:"endpoint" protobuf:"bytes,1,opt,name=endpoint"`
+	Endpoint string `json:"endpoint,omitempty" protobuf:"bytes,1,opt,name=endpoint"`
 
 	// Bucket is the name of the bucket
-	Bucket string `json:"bucket" protobuf:"bytes,2,opt,name=bucket"`
+	Bucket string `json:"bucket,omitempty" protobuf:"bytes,2,opt,name=bucket"`
 
 	// AccessKeySecret is the secret selector to the bucket's access key
-	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret" protobuf:"bytes,3,opt,name=accessKeySecret"`
+	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret,omitempty" protobuf:"bytes,3,opt,name=accessKeySecret"`
 
 	// SecretKeySecret is the secret selector to the bucket's secret key
-	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret" protobuf:"bytes,4,opt,name=secretKeySecret"`
+	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret,omitempty" protobuf:"bytes,4,opt,name=secretKeySecret"`
 }
 
 // OSSArtifact is the location of an OSS artifact
@@ -1732,6 +1744,66 @@ func (a *Artifact) GetArchive() *ArchiveStrategy {
 		return &ArchiveStrategy{}
 	}
 	return a.Archive
+}
+
+func (a *Artifact) BeLike(al *ArtifactLocation) {
+	if a == nil {
+	} else if al.S3 != nil && a.S3 == nil {
+		a.S3 = &S3Artifact{}
+	} else if al.Artifactory != nil && a.Artifactory == nil {
+		a.Artifactory = &ArtifactoryArtifact{}
+	} else if al.HDFS != nil && a.HDFS == nil {
+		a.HDFS = &HDFSArtifact{}
+	} else if al.GCS != nil && a.GCS == nil {
+		a.GCS = &GCSArtifact{}
+	} else if al.OSS != nil && a.OSS == nil {
+		a.OSS = &OSSArtifact{}
+	}
+}
+
+func (a *Artifact) WithArtifactLocation(al *ArtifactLocation) (*Artifact, error) {
+	if a == nil {
+		return nil, nil
+	}
+	a = a.DeepCopy()
+	if !a.HasLocation() {
+		if al.S3 != nil {
+			a.S3.S3Bucket = al.S3.S3Bucket
+		} else if al.Artifactory != nil {
+			a.Artifactory.ArtifactoryAuth = al.Artifactory.ArtifactoryAuth
+		} else if al.HDFS != nil {
+			a.HDFS.HDFSConfig = al.HDFS.HDFSConfig
+		} else if al.GCS != nil {
+			a.GCS.GCSBucket = al.GCS.GCSBucket
+		} else if al.OSS != nil {
+			a.OSS.OSSBucket = al.OSS.OSSBucket
+		} else {
+			return nil, errors.InternalError("artifact not supported")
+		}
+	}
+	return a, nil
+}
+
+func (a *Artifact) SetFilename(fileName string) error {
+	if a.S3 != nil {
+		a.S3.Key = path.Join(a.S3.Key, fileName)
+	} else if a.Artifactory != nil {
+		artifactoryURL, err := url.Parse(a.Artifactory.URL)
+		if err != nil {
+			return err
+		}
+		artifactoryURL.Path = path.Join(artifactoryURL.Path, fileName)
+		a.Artifactory.URL = artifactoryURL.String()
+	} else if a.HDFS != nil {
+		a.HDFS.Path = path.Join(a.HDFS.Path, fileName)
+	} else if a.GCS != nil {
+		a.GCS.Key = path.Join(a.GCS.Key, fileName)
+	} else if a.OSS != nil {
+		a.OSS.Key = path.Join(a.OSS.Key, fileName)
+	} else {
+		return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", a.Name)
+	}
+	return nil
 }
 
 // GetTemplateByName retrieves a defined template by its name
