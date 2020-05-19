@@ -42,6 +42,7 @@ func ServerSideLint(args []string, strict bool) error {
 	serviceClient := apiClient.NewWorkflowTemplateServiceClient()
 	namespace := client.Namespace()
 
+	invalid := false
 	if validateDir {
 		if len(args) > 1 {
 			fmt.Printf("Validation of a single directory supported")
@@ -63,11 +64,13 @@ func ServerSideLint(args []string, strict bool) error {
 			wfTmpls, err := validate.ParseWfTmplFromFile(path, strict)
 			if err != nil {
 				log.Error(err)
+				invalid = true
 			}
 			for _, wfTmpl := range wfTmpls {
 				err := ServerLintValidation(ctx, serviceClient, wfTmpl, namespace)
 				if err != nil {
 					log.Error(err)
+					invalid = true
 				}
 			}
 			return nil
@@ -78,15 +81,21 @@ func ServerSideLint(args []string, strict bool) error {
 			wfTmpls, err := validate.ParseWfTmplFromFile(arg, strict)
 			if err != nil {
 				log.Error(err)
+				invalid = true
 			}
 			for _, wfTmpl := range wfTmpls {
 				err := ServerLintValidation(ctx, serviceClient, wfTmpl, namespace)
 				if err != nil {
 					log.Error(err)
+					invalid = true
 				}
 			}
 		}
 	}
+	if invalid {
+		log.Fatalf("Errors encountered in validation")
+	}
+	fmt.Printf("WorkflowTemplate manifests validated\n")
 	return nil
 }
 

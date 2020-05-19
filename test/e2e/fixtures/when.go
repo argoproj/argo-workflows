@@ -120,6 +120,7 @@ func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow)
 		time.Sleep(timeout)
 		timeoutCh <- true
 	}()
+	start := time.Now()
 	for {
 		select {
 		case event := <-watch.ResultChan():
@@ -128,7 +129,7 @@ func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow)
 				logCtx.WithFields(log.Fields{"type": event.Type, "phase": wf.Status.Phase, "message": wf.Status.Message}).Info("...")
 				w.hydrateWorkflow(wf)
 				if test(wf) {
-					logCtx.Infof("Condition met")
+					logCtx.Infof("Condition met after %v", time.Since(start))
 					return w
 				}
 			} else {
