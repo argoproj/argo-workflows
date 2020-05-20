@@ -59,7 +59,8 @@ func WriteTeriminateMessage(message string) {
 	}
 }
 
-// Merge the two parameters Slice and overwriting duplicate keys,
+// Merge the two parameters Slice
+// Merge the slices based on arguments order (first is high priority).
 func MergeParameters(params ...[]wfv1.Parameter) []wfv1.Parameter {
 	var resultParams []wfv1.Parameter
 	passedParams := make(map[string]bool)

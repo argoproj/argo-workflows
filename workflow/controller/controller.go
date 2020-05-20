@@ -448,15 +448,6 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	err = woc.loadWorkflowSpec()
-	if err != nil {
-		woc.log.Errorf("Unable to get Workflow Template Reference for workflow, %s error: %s", woc.wf.Name, err)
-		woc.markWorkflowError(err, true)
-		woc.persistUpdates()
-		wfc.throttler.Remove(key)
-	}
-
-
 	startTime := time.Now()
 
 	woc.operate()

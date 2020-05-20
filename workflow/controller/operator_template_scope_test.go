@@ -78,11 +78,9 @@ func TestTemplateScope(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 
 	woc := newWorkflowOperationCtx(wf, controller)
-	err := woc.loadWorkflowSpec()
-	assert.NoError(t, err)
 	woc.operate()
 
-	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
+	wf, err := wfcset.Get(wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 
 	node := findNodeByName(wf.Status.Nodes, "test-template-scope")
@@ -173,11 +171,9 @@ func TestTemplateScopeWithParam(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 
 	woc := newWorkflowOperationCtx(wf, controller)
-	err := woc.loadWorkflowSpec()
-	assert.NoError(t, err)
 	woc.operate()
 
-	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
+	wf, err := wfcset.Get(wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 
 	node := findNodeByName(wf.Status.Nodes, "test-template-scope-with-param")
@@ -266,11 +262,9 @@ func TestTemplateScopeNestedStepsWithParams(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 
 	woc := newWorkflowOperationCtx(wf, controller)
-	err := woc.loadWorkflowSpec()
-	assert.NoError(t, err)
 	woc.operate()
 
-	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
+	wf, err := wfcset.Get(wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 
 	node := findNodeByName(wf.Status.Nodes, "test-template-scope-nested-steps-with-params")
@@ -374,11 +368,9 @@ func TestTemplateScopeDAG(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 
 	woc := newWorkflowOperationCtx(wf, controller)
-	err := woc.loadWorkflowSpec()
-	assert.NoError(t, err)
 	woc.operate()
 
-	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
+	wf, err := wfcset.Get(wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 
 	node := findNodeByName(wf.Status.Nodes, "test-template-scope-dag")
@@ -476,10 +468,8 @@ func TestTemplateClusterScope(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 
 	woc := newWorkflowOperationCtx(wf, controller)
-	err := woc.loadWorkflowSpec()
-	assert.NoError(t, err)
 	woc.operate()
-	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
+	wf, err := wfcset.Get(wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 
 	node := findNodeByName(wf.Status.Nodes, "test-template-scope")

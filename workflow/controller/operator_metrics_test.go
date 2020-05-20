@@ -50,8 +50,6 @@ func TestBasicMetric(t *testing.T) {
 	_, err := wfcset.Create(wf)
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	err = woc.loadWorkflowSpec()
-	assert.NoError(t, err)
 	woc.operate()
 
 	// Schedule first pod and mark completed
@@ -108,8 +106,6 @@ func TestCounterMetric(t *testing.T) {
 	_, err := wfcset.Create(wf)
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	err = woc.loadWorkflowSpec()
-	assert.NoError(t, err)
 	woc.operate()
 
 	// Schedule first pod and mark completed
@@ -210,7 +206,7 @@ func TestMetricEmissionSameOperationCreationAndFailure(t *testing.T) {
 	_, err := wfcset.Create(wf)
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.loadWorkflowSpec()
+
 	woc.operate()
 
 	metricErrorDesc := wf.Spec.Templates[1].Metrics.Prometheus[0].GetDesc()
