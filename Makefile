@@ -35,14 +35,7 @@ VERSION := latest
 endif
 
 ifneq ($(findstring release,$(GIT_BRANCH)),)
-# this will be something like "v2.5" or "v3.7"
-MAJOR_MINOR := v$(word 2,$(subst -, ,$(GIT_BRANCH)))
-# if GIT_TAG is on HEAD, then this will be the same
-GIT_LATEST_TAG := $(shell git tag --merged | tail -n1)
-# only use the latest tag if it matches the correct major/minor version
-ifneq ($(findstring $(MAJOR_MINOR),$(GIT_LATEST_TAG)),)
-VERSION := $(GIT_LATEST_TAG)
-endif
+VERSION := $(shell git tag --points-at=HEAD|grep ^v|head -n1)
 endif
 
 # MANIFESTS_VERSION is the version to be used for files in manifests and should always be latests unles we are releasing
@@ -78,7 +71,7 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.$(VERSION)
 STATIC_BUILD          ?= true
 CI                    ?= false
 DB                    ?= postgres
-K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
+K3D                   := $(shell if [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 # which components to start, useful if you want to disable them to debug
 COMPONENTS            := controller,argo-server
 LOG_LEVEL             := debug
@@ -127,7 +120,7 @@ endef
 define docker_build
 	# If we're making a dev build, we build this locally (this will be faster due to existing Go build caches).
 	if [ $(DEV_IMAGE) = true ]; then $(MAKE) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) $(2); fi
-	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
+	docker build --progress plain $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	if [ $(DEV_IMAGE) = true ]; then mv $(2) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH); fi
 	if [ $(K3D) = true ]; then k3d import-images $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
 	touch $(3)
@@ -152,7 +145,7 @@ ui/dist/node_modules.marker: ui/package.json ui/yarn.lock
 	# Get UI dependencies
 	@mkdir -p ui/node_modules
 ifeq ($(CI),false)
-	yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
+	yarn --cwd ui install
 endif
 	@mkdir -p ui/dist
 	touch ui/dist/node_modules.marker
@@ -167,8 +160,9 @@ else
 endif
 
 $(GOPATH)/bin/staticfiles:
-	# Install the "staticfiles" tool
+	$(call backup_go_mod)
 	go get bou.ke/staticfiles
+	$(call restore_go_mod)
 
 server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
