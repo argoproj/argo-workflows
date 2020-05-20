@@ -1934,10 +1934,6 @@
         "s3": {
           "description": "S3 contains S3 artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Artifact"
-        },
-        "fromSubpath": {
-          "type": "string",
-          "title": "FromSubPath allows an artifact to reference a subpath from a previous step"
         }
       }
     },
