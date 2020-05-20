@@ -37,7 +37,7 @@ func NewWatchCommand() *cobra.Command {
 		},
 	}
 	command.Flags().StringArrayVarP(&getArgs.status, "status", "", []string{}, "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
-	command.Flags().StringArrayVarP(&getArgs.hide, "hide", "", []string{}, "Hide statuses from being shown (Pending, Running, Succeeded, Skipped, Failed, Error)")
+	command.Flags().StringVar(&getArgs.nodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
 	return command
 }
 

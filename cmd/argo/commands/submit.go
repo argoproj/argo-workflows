@@ -51,8 +51,8 @@ func NewSubmitCommand() *cobra.Command {
 				cliSubmitOpts.priority = &priority
 			}
 
-			if !cliSubmitOpts.watch && (len(cliSubmitOpts.getArgs.hide) > 0 || len(cliSubmitOpts.getArgs.status) > 0) {
-				logrus.Warn("--hide and --status should only be used with --watch")
+			if !cliSubmitOpts.watch && len(cliSubmitOpts.getArgs.status) > 0 {
+				logrus.Warn("--status should only be used with --watch")
 			}
 
 			if from != "" {
@@ -82,7 +82,7 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringVarP(&submitOpts.Labels, "labels", "l", "", "Comma separated labels to apply to the workflow. Will override previous values.")
 	command.Flags().StringVar(&from, "from", "", "Submit from an existing `kind/name` E.g., --from=cronwf/hello-world-cwf")
 	command.Flags().StringArrayVarP(&cliSubmitOpts.getArgs.status, "status", "", []string{}, "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error). Should only be used with --watch.")
-	command.Flags().StringArrayVarP(&cliSubmitOpts.getArgs.hide, "hide", "", []string{}, "Hide statuses from being shown (Pending, Running, Succeeded, Skipped, Failed, Error). Should only be used with --watch.")
+	command.Flags().StringVar(&cliSubmitOpts.getArgs.nodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
 	// Only complete files with appropriate extension.
 	err := command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})
 	if err != nil {
@@ -212,7 +212,7 @@ func submitWorkflows(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cli
 			log.Fatalf("Failed to submit workflow: %v", err)
 		}
 
-		printWorkflow(created, getFlags{output: cliOpts.output, status: cliOpts.getArgs.status, hide: cliOpts.getArgs.hide})
+		printWorkflow(created, getFlags{output: cliOpts.output, status: cliOpts.getArgs.status})
 		workflowNames = append(workflowNames, created.Name)
 	}
 

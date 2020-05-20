@@ -12,20 +12,25 @@ import (
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+
+	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/util/printer"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 const onExitSuffix = "onExit"
 
 type getFlags struct {
-	output string
+	output                  string
+	nodeFieldSelectorString string
+
+	// Only used for backwards compatibility
 	status []string
-	hide   []string
 }
 
 func NewGetCommand() *cobra.Command {
@@ -50,7 +55,7 @@ func NewGetCommand() *cobra.Command {
 					Namespace: namespace,
 				})
 				errors.CheckError(err)
-				outputWorkflow(wf, getArgs)
+				printWorkflow(wf, getArgs)
 			}
 		},
 	}
@@ -58,12 +63,16 @@ func NewGetCommand() *cobra.Command {
 	command.Flags().StringVarP(&getArgs.output, "output", "o", "", "Output format. One of: json|yaml|wide")
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
 	command.Flags().StringArrayVarP(&getArgs.status, "status", "", []string{}, "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
-	command.Flags().StringArrayVarP(&getArgs.hide, "hide", "", []string{}, "Hide statuses from being shown (Pending, Running, Succeeded, Skipped, Failed, Error)")
+	command.Flags().StringVar(&getArgs.nodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
 	return command
 }
 
-func outputWorkflow(wf *wfv1.Workflow, getArgs getFlags) {
-	printWorkflow(wf, getArgs)
+func statusToNodeFieldSelector(statuses []string) string {
+	var selectors []string
+	for _, status := range statuses {
+		selectors = append(selectors, fmt.Sprintf("phase=%s", status))
+	}
+	return strings.Join(selectors, ",")
 }
 
 func printWorkflow(wf *wfv1.Workflow, getArgs getFlags) {
@@ -441,11 +450,21 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 
 // Main method to print information of node in get
 func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, getArgs getFlags) {
-	if len(getArgs.status) > 0 && !contains(getArgs.status, string(node.Phase)) {
-		return
+	if len(getArgs.status) > 0 {
+		// Adapt --status to a node field selector for compatibility
+		if getArgs.nodeFieldSelectorString != "" {
+			log.Fatalf("cannot use both --status and --node-field-selector")
+		}
+		getArgs.nodeFieldSelectorString = statusToNodeFieldSelector(getArgs.status)
 	}
-	if len(getArgs.hide) > 0 && contains(getArgs.hide, string(node.Phase)) {
-		return
+	if getArgs.nodeFieldSelectorString != "" {
+		selector, err := fields.ParseSelector(getArgs.nodeFieldSelectorString)
+		if err != nil {
+			log.Fatalf("selector is invalid: %s", err)
+		}
+		if !util.SelectorMatchesNode(selector, node) {
+			return
+		}
 	}
 	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], node.DisplayName)
 	if node.IsActiveSuspendNode() {
@@ -522,13 +541,4 @@ func getArtifactsString(node wfv1.NodeStatus) string {
 		artNames = append(artNames, art.Name)
 	}
 	return strings.Join(artNames, ",")
-}
-
-func contains(list []string, val string) bool {
-	for _, str := range list {
-		if str == val {
-			return true
-		}
-	}
-	return false
 }

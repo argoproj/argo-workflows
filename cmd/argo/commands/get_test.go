@@ -50,16 +50,30 @@ func TestPrintNode(t *testing.T) {
 	node.HostNodeName = kubernetesNodeName
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, "", nodeID, "0s", nodeMessage, ""), node, nodePrefix, getArgs)
 
+	// Compatibility test
 	getArgs.status = []string{"Running"}
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
 
-	getArgs.hide = []string{"foobar"}
+	getArgs.status = nil
+	getArgs.nodeFieldSelectorString = "phase=Running"
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
 
-	getArgs.hide = []string{"Running"}
+	getArgs.nodeFieldSelectorString = "phase!=foobar"
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
+
+	getArgs.nodeFieldSelectorString = "phase!=Running"
 	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
 
+	// Compatibility test
+	getArgs.nodeFieldSelectorString = ""
 	getArgs.status = []string{"foobar"}
+	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
+
+	getArgs.status = []string{"foobar", "Running"}
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
+
+	getArgs.status = nil
+	getArgs.nodeFieldSelectorString = "phase=foobar"
 	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
 
 	getArgs = getFlags{
@@ -86,4 +100,11 @@ func TestPrintNode(t *testing.T) {
 
 	getArgs.status = []string{"foobar"}
 	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
+}
+
+func TestStatusToNodeFieldSelector(t *testing.T) {
+	one := statusToNodeFieldSelector([]string{"Running"})
+	assert.Equal(t, "phase=Running", one)
+	multiple := statusToNodeFieldSelector([]string{"Running", "Skipped"})
+	assert.Equal(t, "phase=Running,phase=Skipped", multiple)
 }
