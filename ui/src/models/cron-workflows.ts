@@ -1,5 +1,5 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
-import {ConditionStatus, WorkflowSpec} from './workflows';
+import {Condition, WorkflowSpec} from './workflows';
 
 export interface CronWorkflow {
     apiVersion?: string;
@@ -23,15 +23,8 @@ export interface CronWorkflowSpec {
 export interface CronWorkflowStatus {
     active: kubernetes.ObjectReference[];
     lastScheduledTime: kubernetes.Time;
-    conditions?: CronWorkflowCondition[];
+    conditions?: Condition[];
 }
-
-export interface CronWorkflowCondition {
-    type: CronWorkflowConditionType;
-    status: ConditionStatus;
-    message: string;
-}
-export type CronWorkflowConditionType = 'SubmissionError';
 
 export interface CronWorkflowList {
     apiVersion?: string;
