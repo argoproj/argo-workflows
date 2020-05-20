@@ -47,7 +47,7 @@ func TestServer_GetWFClient(t *testing.T) {
 	})
 	t.Run("SSO", func(t *testing.T) {
 		ssoIf := &mocks.Interface{}
-		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(wfv1.User{Name: "my-name"}, nil)
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(&wfv1.User{Name: "my-name"}, nil)
 		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf)
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer id_token:whatever"))
