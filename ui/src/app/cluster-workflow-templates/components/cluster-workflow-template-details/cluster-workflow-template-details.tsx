@@ -90,7 +90,8 @@ export class ClusterWorkflowTemplateDetails extends BasePage<RouteComponentProps
                                     onSubmit={wfValue => {
                                         return services.workflows
                                             .create(wfValue, wfValue.metadata.namespace)
-                                            .then(workflow => ctx.navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)));
+                                            .then(workflow => ctx.navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)))
+                                            .catch(error => this.setState({error}));
                                     }}
                                 />
                             </SlidingPanel>

@@ -93,7 +93,8 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
                                     onSubmit={wfValue => {
                                         return services.workflows
                                             .create(wfValue, wfValue.metadata.namespace)
-                                            .then(workflow => ctx.navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)));
+                                            .then(workflow => ctx.navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)))
+                                            .catch(error => this.setState({error}));
                                     }}
                                     editing={true}
                                 />

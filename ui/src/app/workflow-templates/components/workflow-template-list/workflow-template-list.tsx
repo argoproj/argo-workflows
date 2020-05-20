@@ -87,7 +87,8 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                                 onSubmit={wfTmpl => {
                                     return services.workflowTemplate
                                         .create(wfTmpl, wfTmpl.metadata.namespace)
-                                        .then(wf => ctx.navigation.goto(uiUrl(`workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`)));
+                                        .then(wf => ctx.navigation.goto(uiUrl(`workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`)))
+                                        .catch(error => this.setState({error}));
                                 }}
                                 editing={true}
                             />
