@@ -148,10 +148,10 @@ else
 	echo "Built without static files" > ui/dist/app/index.html
 endif
 
-vendor/bou.ke/staticfiles/:
+vendor/bou.ke/staticfiles:
 	go mod vendor
 
-server/static/files.go: vendor/bou.ke/staticfiles/ ui/dist/app/index.html
+server/static/files.go: vendor/bou.ke/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
 	go run ./vendor/bou.ke/staticfiles -o server/static/files.go ui/dist/app
 
@@ -278,8 +278,10 @@ vendor/github.com/jstemmer/go-junit-report:
 test-results/junit.xml: vendor/github.com/jstemmer/go-junit-report test-results/test.out
 	cat test-results/test.out | go run ./vendor/github.com/jstemmer/go-junit-report > test-results/junit.xml
 
-$(VERSION_FILE):
+dist:
 	@mkdir -p dist
+
+$(VERSION_FILE): dist
 	touch $(VERSION_FILE)
 
 dist/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
@@ -430,7 +432,7 @@ clean:
 # swagger
 
 .PHONY: swagger
-swagger: 
+swagger: dist
 	go mod vendor
 	./hack/update-swagger.sh $(MANIFESTS_VERSION)
 
