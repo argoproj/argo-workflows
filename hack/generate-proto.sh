@@ -25,6 +25,11 @@ if [ "`command -v protoc-gen-swagger`" = "" ]; then
   go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.12.2
 fi
 
+if [ "`command -v goimports`" = "" ]; then
+  export GO111MODULE="off"
+  go get golang.org/x/tools/cmd/goimports
+fi
+
 make_fake_paths
 
 export GOPATH="${FAKE_GOPATH}"
@@ -40,8 +45,8 @@ go run ${FAKE_REPOPATH}/vendor/k8s.io/code-generator/cmd/go-to-protobuf \
 
 # Following 2 proto files are needed
 mkdir -p ${GOPATH}/src/google/api    
-curl -Ls https://raw.githubusercontent.com/grpc-ecosystem/grpc-gateway/v1.14.5/third_party/googleapis/google/api/annotations.proto -o ${GOPATH}/src/google/api/annotations.proto
-curl -Ls https://raw.githubusercontent.com/grpc-ecosystem/grpc-gateway/v1.14.5/third_party/googleapis/google/api/http.proto -o ${GOPATH}/src/google/api/http.proto
+curl -Ls https://raw.githubusercontent.com/grpc-ecosystem/grpc-gateway/v1.12.2/third_party/googleapis/google/api/annotations.proto -o ${GOPATH}/src/google/api/annotations.proto
+curl -Ls https://raw.githubusercontent.com/grpc-ecosystem/grpc-gateway/v1.12.2/third_party/googleapis/google/api/http.proto -o ${GOPATH}/src/google/api/http.proto
 
 for f in $(find pkg -name '*.proto'); do
     protoc \
