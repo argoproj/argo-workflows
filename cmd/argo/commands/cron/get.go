@@ -61,13 +61,13 @@ func printCronWorkflow(wf *wfv1.CronWorkflow, outFmt string) {
 		outBytes, _ := yaml.Marshal(wf)
 		fmt.Print(string(outBytes))
 	case "wide", "":
-		fmt.Print(printCronWorkflowTemplate(wf))
+		fmt.Print(getCronWorkflowGet(wf))
 	default:
 		log.Fatalf("Unknown output format: %s", outFmt)
 	}
 }
 
-func printCronWorkflowTemplate(wf *wfv1.CronWorkflow) string {
+func getCronWorkflowGet(wf *wfv1.CronWorkflow) string {
 	const fmtStr = "%-30s %v\n"
 
 	out := ""

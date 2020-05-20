@@ -58,7 +58,7 @@ func TestPrintCronWorkflow(t *testing.T) {
 	var cronWf v1alpha1.CronWorkflow
 	err := yaml.Unmarshal([]byte(invalidCwf), &cronWf)
 	if assert.NoError(t, err) {
-		out := printCronWorkflowTemplate(&cronWf)
+		out := getCronWorkflowGet(&cronWf)
 		assert.Contains(t, out, expectedOut)
 	}
 }
