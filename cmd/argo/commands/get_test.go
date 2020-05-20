@@ -69,9 +69,6 @@ func TestPrintNode(t *testing.T) {
 	getArgs.status = []string{"foobar"}
 	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
 
-	getArgs.status = []string{"foobar", "Running"}
-	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
-
 	getArgs.status = nil
 	getArgs.nodeFieldSelectorString = "phase=foobar"
 	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
