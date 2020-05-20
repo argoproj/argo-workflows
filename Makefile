@@ -478,7 +478,7 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go:
 pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
 	go run ./hack secondaryswaggergen
 
-dist/swagger.json: $(HOME)/go/bin/swagger $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
+dist/swagger.json: $(GOPATH)/go/bin/swagger $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
 	swagger mixin -c 684 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > dist/swagger.json
 
 dist/kubernetes.swagger.json:
