@@ -6,7 +6,6 @@ source $(dirname $0)/library.sh
 header "running code generator"
 
 if [ ! -d "${REPO_ROOT}/vendor" ]; then
-  export GO111MODULE="on"
   go mod vendor
 fi
 

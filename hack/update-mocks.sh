@@ -9,13 +9,11 @@ source $(dirname $0)/library.sh
 header "updating mock files"
 
 if [ ! -d "${REPO_ROOT}/vendor" ]; then
-  export GO111MODULE="on"
   go mod vendor
 fi
 
 cd ${REPO_ROOT}
 if [ ! -e "${GOPATH}/bin/mockery" ]; then
-  export GO111MODULE="off"
   ./hack/recurl.sh dist/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v1.1.1/mockery_1.1.1_$(uname -s)_$(uname -m).tar.gz
   tar zxvf dist/mockery.tar.gz mockery
   chmod +x mockery

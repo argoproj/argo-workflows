@@ -6,8 +6,23 @@ source $(dirname $0)/library.sh
 header "generating proto files"
 
 if [ ! -d "${REPO_ROOT}/vendor" ]; then
-  export GO111MODULE="on"
   go mod vendor
+fi
+
+if [ "`command -v protoc-gen-gogo`" = "" ]; then
+  go get github.com/gogo/protobuf/protoc-gen-gogo@v1.3.1
+fi
+
+if [ "`command -v protoc-gen-gogofast`" = "" ]; then
+  go get github.com/gogo/protobuf/protoc-gen-gogofast@v1.3.1
+fi
+
+if [ "`command -v protoc-gen-grpc-gateway`" = "" ]; then
+  go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v1.12.2
+fi
+
+if [ "`command -v protoc-gen-swagger`" = "" ]; then
+  go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.12.2
 fi
 
 make_fake_paths

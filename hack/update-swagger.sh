@@ -8,7 +8,6 @@ source $(dirname $0)/library.sh
 header "running swagger generator"
 
 if [ ! -d "${REPO_ROOT}/vendor" ]; then
-  export GO111MODULE="on"
   go mod vendor
 fi
 
@@ -34,7 +33,7 @@ go run ${FAKE_REPOPATH}/vendor/k8s.io/kube-openapi/cmd/openapi-gen \
 
 go run ./hack secondaryswaggergen
 
-${SWAGGER_CMD} mixin -c 680 ${SWAGGER_FILES} | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > dist/swagger.json
+${SWAGGER_CMD} mixin -c 680 ${SWAGGER_FILES} | sed "s/VERSION/$MANIFESTS_VERSION/g" | ./hack/swaggify.sh > dist/swagger.json
 
 go run ./hack kubeifyswagger dist/swagger.json dist/kubeified.swagger.json
 
