@@ -57,15 +57,15 @@ commands:
       - maybe_skip_job
       - install_kustomize
       - run:
-          name: Preemptively pull images
-          command: make pull-build-images test-images
-          background: true
-      - run:
           name: Install and start K3S v1.0.1
           command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.1 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
           background: true
       - restore_go_cache
       - install_golang
+      - run:
+          name: Preemptively pull images
+          command: make pull-build-images test-images
+          background: true
       - restore_go_mod
       - run: go mod download
       - run:
