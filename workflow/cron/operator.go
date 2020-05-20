@@ -67,7 +67,7 @@ func (woc *cronWfOperationCtx) Run() {
 
 	woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, getWorkflowObjectReference(wf, runWf))
 	woc.cronWf.Status.LastScheduledTime = &v1.Time{Time: time.Now()}
-	woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.CronWorkflowConditionSubmissionError)
+	woc.cronWf.Status.Conditions.RemoveCondition(v1alpha1.ConditionTypeSubmissionError)
 	woc.persistUpdate()
 }
 
@@ -300,8 +300,8 @@ func (woc *cronWfOperationCtx) deleteOldestWorkflows(jobList []v1alpha1.Workflow
 
 func (woc *cronWfOperationCtx) reportCronWorkflowError(errString string) {
 	log.Errorf(errString)
-	woc.cronWf.Status.Conditions.UpsertCondition(v1alpha1.CronWorkflowCondition{
-		Type:    v1alpha1.CronWorkflowConditionSubmissionError,
+	woc.cronWf.Status.Conditions.UpsertCondition(v1alpha1.Condition{
+		Type:    v1alpha1.ConditionTypeSubmissionError,
 		Message: errString,
 		Status:  v1.ConditionTrue,
 	})

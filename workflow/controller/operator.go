@@ -1605,7 +1605,7 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 			}
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
 			woc.wf.Status.ResourcesDuration = woc.wf.Status.Nodes.GetResourcesDuration()
-			woc.wf.Status.Conditions.UpsertCondition(wfv1.WorkflowCondition{Status: metav1.ConditionTrue, Type: wfv1.WorkflowConditionCompleted})
+			woc.wf.Status.Conditions.UpsertCondition(wfv1.Condition{Status: metav1.ConditionTrue, Type: wfv1.ConditionTypeCompleted})
 			err := woc.deletePDBResource()
 			if err != nil {
 				woc.wf.Status.Phase = wfv1.NodeError
@@ -2556,9 +2556,9 @@ func (woc *wfOperationCtx) computeMetrics(metricList []*wfv1.Prometheus, localSc
 
 func (woc *wfOperationCtx) reportMetricEmissionError(errorString string) {
 	woc.wf.Status.Conditions.UpsertConditionMessage(
-		wfv1.WorkflowCondition{
+		wfv1.Condition{
 			Status:  metav1.ConditionTrue,
-			Type:    wfv1.WorkflowConditionMetricsError,
+			Type:    wfv1.ConditionTypeMetricsError,
 			Message: errorString,
 		})
 	woc.updated = true

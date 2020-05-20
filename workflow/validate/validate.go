@@ -100,8 +100,8 @@ func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
 var _ wfv1.ArgumentsProvider = &FakeArguments{}
 
 // ValidateWorkflow accepts a workflow and performs validation against it.
-func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wf *wfv1.Workflow, opts ValidateOpts) (*wfv1.WorkflowConditions, error) {
-	wfConditions := &wfv1.WorkflowConditions{}
+func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wf *wfv1.Workflow, opts ValidateOpts) (*wfv1.Conditions, error) {
+	wfConditions := &wfv1.Conditions{}
 	ctx := newTemplateValidationCtx(wf, opts)
 	tmplCtx := templateresolution.NewContext(wftmplGetter, cwftmplGetter, wf, wf)
 
@@ -151,24 +151,24 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	for _, template := range wf.Spec.Templates {
 		if !template.Arguments.IsEmpty() {
 			logrus.Warn("template.arguments is deprecated and its contents are ignored")
-			wfConditions.UpsertConditionMessage(wfv1.WorkflowCondition{
-				Type:    wfv1.WorkflowConditionSpecWarning,
+			wfConditions.UpsertConditionMessage(wfv1.Condition{
+				Type:    wfv1.ConditionTypeSpecWarning,
 				Status:  v1.ConditionTrue,
 				Message: fmt.Sprintf(`template.arguments is deprecated and its contents are ignored. See more: %s`, help.WorkflowTemplatesReferencingOtherTemplates),
 			})
 		}
 		if template.TemplateRef != nil {
 			logrus.Warn(getTemplateRefHelpString(&template))
-			wfConditions.UpsertConditionMessage(wfv1.WorkflowCondition{
-				Type:    wfv1.WorkflowConditionSpecWarning,
+			wfConditions.UpsertConditionMessage(wfv1.Condition{
+				Type:    wfv1.ConditionTypeSpecWarning,
 				Status:  v1.ConditionTrue,
 				Message: fmt.Sprintf(`Referencing/calling other templates directly on a "template" is deprecated; they should be referenced in a "steps" or a "dag" template. See more: %s`, help.WorkflowTemplatesReferencingOtherTemplates),
 			})
 		}
 		if template.Template != "" {
 			logrus.Warn(getTemplateRefHelpString(&template))
-			wfConditions.UpsertConditionMessage(wfv1.WorkflowCondition{
-				Type:    wfv1.WorkflowConditionSpecWarning,
+			wfConditions.UpsertConditionMessage(wfv1.Condition{
+				Type:    wfv1.ConditionTypeSpecWarning,
 				Status:  v1.ConditionTrue,
 				Message: fmt.Sprintf(`Referencing/calling other templates directly on a "template" is deprecated; they should be referenced in a "steps" or a "dag" template. See more: %s`, help.WorkflowTemplatesReferencingOtherTemplates),
 			})
@@ -216,13 +216,13 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 }
 
 // ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
-func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate) (*wfv1.WorkflowConditions, error) {
+func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate) (*wfv1.Conditions, error) {
 	wf := common.ConvertWorkflowTemplateToWorkflow(wftmpl)
 	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
 }
 
 // ValidateClusterWorkflowTemplate accepts a cluster workflow template and performs validation against it.
-func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate) (*wfv1.WorkflowConditions, error) {
+func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate) (*wfv1.Conditions, error) {
 	wf := common.ConvertClusterWorkflowTemplateToWorkflow(cwftmpl)
 	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
 }

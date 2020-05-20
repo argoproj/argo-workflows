@@ -62,42 +62,10 @@ type CronWorkflowStatus struct {
 	// LastScheduleTime is the last time the CronWorkflow was scheduled
 	LastScheduledTime *metav1.Time `json:"lastScheduledTime,omitempty" protobuf:"bytes,2,opt,name=lastScheduledTime"`
 	// Conditions is a list of conditions the CronWorkflow may have
-	Conditions CronWorkflowConditions `json:"conditions,omitempty" protobuf:"bytes,3,rep,name=conditions"`
+	Conditions Conditions `json:"conditions,omitempty" protobuf:"bytes,3,rep,name=conditions"`
 }
-
-type CronWorkflowConditionType string
 
 const (
-	// CronWorkflowConditionSubmissionError signifies that there was an error when submitting the CronWorkflow as a Workflow
-	CronWorkflowConditionSubmissionError CronWorkflowConditionType = "SubmissionError"
+	// ConditionTypeSubmissionError signifies that there was an error when submitting the CronWorkflow as a Workflow
+	ConditionTypeSubmissionError ConditionType = "SubmissionError"
 )
-
-type CronWorkflowCondition struct {
-	// Type is the type of condition
-	Type CronWorkflowConditionType `json:"type,omitempty" protobuf:"bytes,1,opt,name=type,casttype=CronWorkflowConditionType"`
-	// Status is the status of the condition
-	Status metav1.ConditionStatus `json:"status,omitempty" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/apimachinery/pkg/apis/meta/v1.ConditionStatus"`
-	// Message is the condition message
-	Message string `json:"message,omitempty" protobuf:"bytes,3,opt,name=message"`
-}
-
-type CronWorkflowConditions []CronWorkflowCondition
-
-func (wc *CronWorkflowConditions) UpsertCondition(condition CronWorkflowCondition) {
-	for index, wfCondition := range *wc {
-		if wfCondition.Type == condition.Type {
-			(*wc)[index] = condition
-			return
-		}
-	}
-	*wc = append(*wc, condition)
-}
-
-func (wc *CronWorkflowConditions) RemoveCondition(conditionType CronWorkflowConditionType) {
-	for index, wfCondition := range *wc {
-		if wfCondition.Type == conditionType {
-			*wc = append((*wc)[:index], (*wc)[index+1:]...)
-			return
-		}
-	}
-}

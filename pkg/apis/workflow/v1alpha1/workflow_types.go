@@ -923,7 +923,7 @@ type WorkflowStatus struct {
 	Outputs *Outputs `json:"outputs,omitempty" protobuf:"bytes,8,opt,name=outputs"`
 
 	// Conditions is a list of conditions the Workflow may have
-	Conditions WorkflowConditions `json:"conditions,omitempty" protobuf:"bytes,13,rep,name=conditions"`
+	Conditions Conditions `json:"conditions,omitempty" protobuf:"bytes,13,rep,name=conditions"`
 
 	// ResourcesDuration is the total for the workflow
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
@@ -1023,9 +1023,9 @@ func ResourceQuantityDenominator(r apiv1.ResourceName) *resource.Quantity {
 	return &q
 }
 
-type WorkflowConditions []WorkflowCondition
+type Conditions []Condition
 
-func (wc *WorkflowConditions) UpsertCondition(condition WorkflowCondition) {
+func (wc *Conditions) UpsertCondition(condition Condition) {
 	for index, wfCondition := range *wc {
 		if wfCondition.Type == condition.Type {
 			(*wc)[index] = condition
@@ -1035,7 +1035,7 @@ func (wc *WorkflowConditions) UpsertCondition(condition WorkflowCondition) {
 	*wc = append(*wc, condition)
 }
 
-func (wc *WorkflowConditions) UpsertConditionMessage(condition WorkflowCondition) {
+func (wc *Conditions) UpsertConditionMessage(condition Condition) {
 	for index, wfCondition := range *wc {
 		if wfCondition.Type == condition.Type {
 			(*wc)[index].Message += ", " + condition.Message
@@ -1045,26 +1045,35 @@ func (wc *WorkflowConditions) UpsertConditionMessage(condition WorkflowCondition
 	*wc = append(*wc, condition)
 }
 
-func (wc *WorkflowConditions) JoinConditions(conditions *WorkflowConditions) {
+func (wc *Conditions) JoinConditions(conditions *Conditions) {
 	for _, condition := range *conditions {
 		wc.UpsertCondition(condition)
 	}
 }
 
-type WorkflowConditionType string
+func (wc *Conditions) RemoveCondition(conditionType ConditionType) {
+	for index, wfCondition := range *wc {
+		if wfCondition.Type == conditionType {
+			*wc = append((*wc)[:index], (*wc)[index+1:]...)
+			return
+		}
+	}
+}
+
+type ConditionType string
 
 const (
-	// WorkflowConditionCompleted is a signifies the workflow has completed
-	WorkflowConditionCompleted WorkflowConditionType = "Completed"
-	// WorkflowConditionSpecWarning is a warning on the current application spec
-	WorkflowConditionSpecWarning WorkflowConditionType = "SpecWarning"
-	// WorkflowConditionMetricsError is an error during metric emission
-	WorkflowConditionMetricsError WorkflowConditionType = "MetricsError"
+	// ConditionTypeCompleted is a signifies the workflow has completed
+	ConditionTypeCompleted ConditionType = "Completed"
+	// ConditionTypeSpecWarning is a warning on the current application spec
+	ConditionTypeSpecWarning ConditionType = "SpecWarning"
+	// ConditionTypeMetricsError is an error during metric emission
+	ConditionTypeMetricsError ConditionType = "MetricsError"
 )
 
-type WorkflowCondition struct {
+type Condition struct {
 	// Type is the type of condition
-	Type WorkflowConditionType `json:"type,omitempty" protobuf:"bytes,1,opt,name=type,casttype=WorkflowConditionType"`
+	Type ConditionType `json:"type,omitempty" protobuf:"bytes,1,opt,name=type,casttype=ConditionType"`
 
 	// Status is the status of the condition
 	Status metav1.ConditionStatus `json:"status,omitempty" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/apimachinery/pkg/apis/meta/v1.ConditionStatus"`

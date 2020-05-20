@@ -175,6 +175,6 @@ func TestCronWorkflowConditionSubmissionError(t *testing.T) {
 	assert.Len(t, woc.cronWf.Status.Conditions, 1)
 	submissionErrorCond := woc.cronWf.Status.Conditions[0]
 	assert.Equal(t, v1.ConditionTrue, submissionErrorCond.Status)
-	assert.Equal(t, v1alpha1.CronWorkflowConditionSubmissionError, submissionErrorCond.Type)
+	assert.Equal(t, v1alpha1.ConditionTypeSubmissionError, submissionErrorCond.Type)
 	assert.Contains(t, submissionErrorCond.Message, "'bad template name' is invalid")
 }
