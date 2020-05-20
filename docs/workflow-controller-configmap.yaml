@@ -185,7 +185,11 @@ data:
         - groups:
           - authors
           # Then use this service account.
-          serviceAccount: argo-server
+          serviceAccount:
+            name: argo-server
+      # The account to use if no rule matches
+      defaultServiceAccount:
+        name: argo-server-read-only
 
       # Optional config for mysql:
       # mysql:

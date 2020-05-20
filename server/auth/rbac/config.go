@@ -1,17 +1,22 @@
 package rbac
 
-import "errors"
+import (
+	"errors"
+
+	corev1 "k8s.io/api/core/v1"
+)
 
 type Rule struct {
-	Groups         []string `json:"groups"`
-	ServiceAccount string   `json:"serviceAccount"`
+	Groups         []string                     `json:"groups"`
+	ServiceAccount *corev1.LocalObjectReference `json:"serviceAccount"`
 }
 
 type Config struct {
-	Rules []Rule `json:"rules"`
+	Rules                 []Rule                       `json:"rules"`
+	DefaultServiceAccount *corev1.LocalObjectReference `json:"defaultServiceAccount"`
 }
 
-func (c Config) ServiceAccount(groups []string) (string, error) {
+func (c Config) ServiceAccount(groups []string) (*corev1.LocalObjectReference, error) {
 	hasGroup := make(map[string]bool)
 	for _, group := range groups {
 		hasGroup[group] = true
@@ -19,15 +24,17 @@ func (c Config) ServiceAccount(groups []string) (string, error) {
 	for _, rule := range c.Rules {
 		for _, g := range rule.Groups {
 			if hasGroup[g] {
-				if rule.ServiceAccount == "" {
-					return "", errors.New("RBAC misconfigured: service account is empty")
+				if rule.ServiceAccount == nil {
+					return nil, errors.New("RBAC misconfigured: service account is empty")
 				}
 				return rule.ServiceAccount, nil
 			}
 		}
-
 	}
-	return "", errors.New("no RBAC rule matches the provided groups")
+	if c.DefaultServiceAccount != nil {
+		return c.DefaultServiceAccount, nil
+	}
+	return nil, errors.New("no RBAC rule matches the provided groups")
 }
 
 var _ Interface = Config{}

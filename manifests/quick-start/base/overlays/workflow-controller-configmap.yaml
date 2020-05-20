@@ -11,7 +11,10 @@ data:
     rules:
       - groups:
         - authors
-        serviceAccount: argo-server-read-only
+        serviceAccount:
+          name: argo-server
+    defaultServiceAccount:
+      name: argo-server-read-only
   artifactRepository: |
     archiveLogs: true
     s3:

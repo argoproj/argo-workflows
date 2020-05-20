@@ -58,10 +58,7 @@ func TestServer_GetWFClient(t *testing.T) {
 	t.Run("SSO", func(t *testing.T) {
 		ssoIf := &mocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(wfv1.User{Name: "my-name", Groups: []string{"my-group"}}, nil)
-		g, err := NewGatekeeper(Modes{SSO: true}, "my-ns", nil, kubeClient, nil, ssoIf, rbac.Config{Rules: []rbac.Rule{{
-			Groups:         []string{"my-group"},
-			ServiceAccount: "my-sa",
-		}}})
+		g, err := NewGatekeeper(Modes{SSO: true}, "my-ns", nil, kubeClient, nil, ssoIf, rbac.Config{DefaultServiceAccount: &corev1.LocalObjectReference{Name: "my-sa"}})
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer id_token:whatever"))
 			if assert.NoError(t, err) {

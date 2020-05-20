@@ -164,7 +164,7 @@ func (s gatekeeper) getClientsFromRBAC(user wfv1.User) (versioned.Interface, kub
 	if err != nil {
 		return nil, nil, status.Errorf(codes.PermissionDenied, "failed to determine RBAC service account: %v", err.Error())
 	}
-	account, err := s.kubeClient.CoreV1().ServiceAccounts(s.namespace).Get(serviceAccount, metav1.GetOptions{})
+	account, err := s.kubeClient.CoreV1().ServiceAccounts(s.namespace).Get(serviceAccount.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, nil, status.Errorf(codes.Internal, "failed to get service account: %v", err.Error())
 	}
