@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"path"
 	"strings"
 
 	"github.com/argoproj/argo/errors"
@@ -67,7 +68,7 @@ func (s *wfScope) resolveParameter(v string) (string, error) {
 	return valStr, nil
 }
 
-func (s *wfScope) resolveArtifact(v string) (*wfv1.Artifact, error) {
+func (s *wfScope) resolveArtifact(v string, subPath string) (*wfv1.Artifact, error) {
 	val, err := s.resolveVar(v)
 	if err != nil {
 		return nil, err
@@ -76,5 +77,25 @@ func (s *wfScope) resolveArtifact(v string) (*wfv1.Artifact, error) {
 	if !ok {
 		return nil, errors.Errorf(errors.CodeBadRequest, "Variable {{%s}} is not an artifact", v)
 	}
+
+	if subPath != "" {
+		// Copy resolved artifact pointer before adding subpath
+		copyArt := valArt.DeepCopy()
+
+		if copyArt.S3 != nil {
+			copyArt.S3.Key = path.Join(copyArt.S3.Key, subPath)
+		}
+
+		if copyArt.Artifactory != nil {
+			copyArt.Artifactory.URL = path.Join(copyArt.Artifactory.URL, subPath)
+		}
+
+		if copyArt.GCS != nil {
+			copyArt.GCS.Key = path.Join(copyArt.GCS.Key, subPath)
+		}
+
+		return copyArt, nil
+	}
+
 	return &valArt, nil
 }

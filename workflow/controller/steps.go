@@ -387,7 +387,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			if art.From == "" {
 				continue
 			}
-			resolvedArt, err := scope.resolveArtifact(art.From)
+			resolvedArt, err := scope.resolveArtifact(art.From, art.FromSubpath)
 			if err != nil {
 				return nil, fmt.Errorf("unable to resolve references: %s", err)
 			}
