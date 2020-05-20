@@ -19,8 +19,7 @@ func (i *infoServer) GetInfo(context.Context, *infopkg.GetInfoRequest) (*infopkg
 }
 
 func (i *infoServer) GetUser(ctx context.Context, _ *infopkg.GetUserRequest) (*wfv1.User, error) {
-	user := auth.GetUser(ctx)
-	return &user, nil
+	return auth.GetUser(ctx), nil
 }
 
 func (i *infoServer) GetVersion(context.Context, *infopkg.GetVersionRequest) (*wfv1.Version, error) {

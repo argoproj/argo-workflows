@@ -87,8 +87,8 @@ func GetKubeClient(ctx context.Context) kubernetes.Interface {
 	return ctx.Value(KubeKey).(kubernetes.Interface)
 }
 
-func GetUser(ctx context.Context) wfv1.User {
-	return ctx.Value(UserKey).(wfv1.User)
+func GetUser(ctx context.Context) *wfv1.User {
+	return ctx.Value(UserKey).(*wfv1.User)
 }
 
 func getAuthHeader(md metadata.MD) string {

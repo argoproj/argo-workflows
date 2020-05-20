@@ -12,7 +12,7 @@ import (
 func Test_nullSSO_Authorize(t *testing.T) {
 	user, err := NullSSO.Authorize(context.Background(), "")
 	if assert.Error(t, err) {
-		assert.Nil(t,user)
+		assert.Nil(t, user)
 	}
 }
 
