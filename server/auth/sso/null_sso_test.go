@@ -7,12 +7,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	testhttp "github.com/stretchr/testify/http"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 func Test_nullSSO_Authorize(t *testing.T) {
 	user, err := NullSSO.Authorize(context.Background(), "")
 	if assert.Error(t, err) {
-		assert.Nil(t, user)
+		assert.Equal(t, wfv1.NullUser, user)
 	}
 }
 

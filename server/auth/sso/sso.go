@@ -26,7 +26,7 @@ type claims struct {
 }
 
 type Interface interface {
-	Authorize(ctx context.Context, authorization string) (*wfv1.User, error)
+	Authorize(ctx context.Context, authorization string) (wfv1.User, error)
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
 }
@@ -152,18 +152,18 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 // authorize verifies a bearer token and pulls user information form the claims.
-func (s *sso) Authorize(ctx context.Context, authorisation string) (*wfv1.User, error) {
+func (s *sso) Authorize(ctx context.Context, authorisation string) (wfv1.User, error) {
 	rawIDToken, err := zjwt.JWT(strings.TrimPrefix(authorisation, Prefix))
 	if err != nil {
-		return nil, fmt.Errorf("failed to decompress token %v", err)
+		return wfv1.NullUser, fmt.Errorf("failed to decompress token %v", err)
 	}
 	idToken, err := s.idTokenVerifier.Verify(ctx, rawIDToken)
 	if err != nil {
-		return nil, fmt.Errorf("failed to verify id_token %v", err)
+		return wfv1.NullUser, fmt.Errorf("failed to verify id_token %v", err)
 	}
 	c := &claims{}
 	if err := idToken.Claims(c); err != nil {
-		return nil, fmt.Errorf("failed to parse claims: %v", err)
+		return wfv1.NullUser, fmt.Errorf("failed to parse claims: %v", err)
 	}
-	return &wfv1.User{Name: idToken.Subject, Groups: c.Groups}, nil
+	return wfv1.User{Name: idToken.Subject, Groups: c.Groups}, nil
 }
