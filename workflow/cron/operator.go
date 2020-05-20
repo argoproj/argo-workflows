@@ -281,14 +281,12 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit() {
 
 }
 
-func (woc *cronWfOperationCtx) deleteOldestWorkflows(jobList []v1alpha1.Workflow, workflowsToKeep int) error {
+func (woc *cronWfOperationCtx) deleteOldestWorkflows(jobList v1alpha1.Workflows, workflowsToKeep int) error {
 	if workflowsToKeep >= len(jobList) {
 		return nil
 	}
 
-	sort.SliceStable(jobList, func(i, j int) bool {
-		return jobList[i].Status.FinishTime().Time.After(jobList[j].Status.FinishTime().Time)
-	})
+	sort.Sort(jobList)
 
 	for _, wf := range jobList[workflowsToKeep:] {
 		err := woc.wfClient.Delete(wf.Name, &v1.DeleteOptions{})

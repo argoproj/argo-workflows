@@ -1193,20 +1193,6 @@ func (ws WorkflowStatus) Failed() bool {
 	return ws.Phase == NodeFailed
 }
 
-func (ws WorkflowStatus) StartTime() *metav1.Time {
-	if ws.StartedAt == nil {
-		return &metav1.Time{}
-	}
-	return ws.StartedAt
-}
-
-func (ws WorkflowStatus) FinishTime() *metav1.Time {
-	if ws.FinishedAt == nil {
-		return &metav1.Time{}
-	}
-	return ws.FinishedAt
-}
-
 // Completed returns whether or not the node has completed execution
 func (n NodeStatus) Completed() bool {
 	return n.Phase.Completed() || n.IsDaemoned() && n.Phase != NodePending

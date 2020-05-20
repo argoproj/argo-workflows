@@ -125,6 +125,10 @@ define docker_build
 	if [ $(K3D) = true ]; then k3d import-images $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
 	touch $(3)
 endef
+define docker_pull
+	docker pull $(1)
+	if [ $(K3D) = true ]; then k3d import-images $(1); fi
+endef
 
 .PHONY: build
 build: status clis executor-image controller-image manifests/install.yaml manifests/namespace-install.yaml manifests/quick-start-postgres.yaml manifests/quick-start-mysql.yaml
@@ -355,9 +359,9 @@ test/e2e/images/argosay/v2/argosay: $(shell find test/e2e/images/argosay/v2/main
 
 .PHONY: test-images
 test-images:
-	docker pull argoproj/argosay:v1
-	docker pull argoproj/argosay:v2
-	docker pull python:alpine3.6
+	$(call docker_pull,argoproj/argosay:v1)
+	$(call docker_pull,argoproj/argosay:v2)
+	$(call docker_pull,python:alpine3.6)
 
 .PHONY: stop
 stop:

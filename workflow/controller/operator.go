@@ -170,7 +170,7 @@ func (woc *wfOperationCtx) operate() {
 	woc.log.Infof("Processing workflow")
 
 	// Update workflow duration variable
-	woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartTime().Time).Seconds())
+	woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", woc.wf.Status.Duration().Seconds())
 
 	// Populate the phase of all the nodes prior to execution
 	for _, node := range woc.wf.Status.Nodes {
@@ -210,7 +210,7 @@ func (woc *wfOperationCtx) operate() {
 
 		if woc.wf.Spec.Metrics != nil {
 			realTimeScope := map[string]func() float64{common.GlobalVarWorkflowDuration: func() float64 {
-				return time.Since(woc.wf.Status.StartTime().Time).Seconds()
+				return time.Since(woc.wf.Status.StartedAt.Time).Seconds()
 			}}
 			woc.computeMetrics(woc.wf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, true)
 		}

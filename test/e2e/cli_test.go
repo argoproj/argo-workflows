@@ -520,7 +520,7 @@ func (s *CLISuite) TestWorkflowRetryNoPersistence() {
 			}
 		}).
 		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
-			retryTime = *wf.Status.FinishTime()
+			retryTime = *wf.Status.FinishedAt
 			return wf.Status.Phase == wfv1.NodeFailed
 		}, "terminated", 20*time.Second).
 		RunCli([]string{"retry", "retry-test", "--restart-successful", "--node-field-selector", "templateName==steps-inner"}, func(t *testing.T, output string, err error) {

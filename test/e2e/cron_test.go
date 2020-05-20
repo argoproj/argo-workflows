@@ -323,7 +323,7 @@ spec:
 			Then().
 			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
 				assert.Equal(t, 1, len(wfList.Items))
-				assert.True(t, wfList.Items[0].Status.FinishTime().After(time.Now().Add(-1*time.Minute)))
+				assert.True(t, wfList.Items[0].Status.FinishedAt.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 	s.Run("TestFailedJobHistoryLimit", func() {
@@ -360,7 +360,7 @@ spec:
 			Then().
 			ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
 				assert.Equal(t, 1, len(wfList.Items))
-				assert.True(t, wfList.Items[0].Status.FinishTime().After(time.Now().Add(-1*time.Minute)))
+				assert.True(t, wfList.Items[0].Status.FinishedAt.After(time.Now().Add(-1*time.Minute)))
 			})
 	})
 }
