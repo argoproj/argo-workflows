@@ -8,15 +8,14 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/pkg/errors"
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"sigs.k8s.io/yaml"
-
-	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/util/printer"
@@ -31,6 +30,24 @@ type getFlags struct {
 
 	// Only used for backwards compatibility
 	status string
+}
+
+func (g getFlags) shouldPrint(node wfv1.NodeStatus) bool {
+	if g.status != "" {
+		// Adapt --status to a node field selector for compatibility
+		if g.nodeFieldSelectorString != "" {
+			log.Fatalf("cannot use both --status and --node-field-selector")
+		}
+		g.nodeFieldSelectorString = statusToNodeFieldSelector(g.status)
+	}
+	if g.nodeFieldSelectorString != "" {
+		selector, err := fields.ParseSelector(g.nodeFieldSelectorString)
+		if err != nil {
+			log.Fatalf("selector is invalid: %s", err)
+		}
+		return util.SelectorMatchesNode(selector, node)
+	}
+	return true
 }
 
 func NewGetCommand() *cobra.Command {
@@ -446,21 +463,8 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 
 // Main method to print information of node in get
 func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, getArgs getFlags) {
-	if getArgs.status != "" {
-		// Adapt --status to a node field selector for compatibility
-		if getArgs.nodeFieldSelectorString != "" {
-			log.Fatalf("cannot use both --status and --node-field-selector")
-		}
-		getArgs.nodeFieldSelectorString = statusToNodeFieldSelector(getArgs.status)
-	}
-	if getArgs.nodeFieldSelectorString != "" {
-		selector, err := fields.ParseSelector(getArgs.nodeFieldSelectorString)
-		if err != nil {
-			log.Fatalf("selector is invalid: %s", err)
-		}
-		if !util.SelectorMatchesNode(selector, node) {
-			return
-		}
+	if !getArgs.shouldPrint(node) {
+		return
 	}
 	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], node.DisplayName)
 	if node.IsActiveSuspendNode() {
