@@ -366,21 +366,17 @@ start-aux: $(GOPATH)/bin/goreman
 	grep '127.0.0.1 *minio' /etc/hosts
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
-	env ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) goreman -set-ports=false start
+	env ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) goreman -set-ports=false -logtime=false start
 
 .PHONY: start
 start: status stop install controller cli executor-image start-aux wait env
 
 .PHONY: wait
 wait:
-ifneq ($(findstring controller,$(COMPONENTS)),)
 	# Wait for workflow controller
 	until lsof -i :9090 > /dev/null ; do sleep 10s ; done
-endif
-ifneq ($(findstring argo-server,$(COMPONENTS)),)
 	# Wait for Argo Server
 	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
-endif
 
 define print_env
 	export ARGO_SERVER=localhost:2746
