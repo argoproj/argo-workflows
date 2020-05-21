@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"net/url"
 	"path"
 	"strings"
 
@@ -87,7 +88,12 @@ func (s *wfScope) resolveArtifact(v string, subPath string) (*wfv1.Artifact, err
 		}
 
 		if copyArt.Artifactory != nil {
-			copyArt.Artifactory.URL = path.Join(copyArt.Artifactory.URL, subPath)
+			u, err := url.Parse(copyArt.Artifactory.URL)
+			if err != nil {
+				return nil, err
+			}
+			u.Path = path.Join(u.Path, subPath)
+			copyArt.Artifactory.URL = u.String()
 		}
 
 		if copyArt.GCS != nil {
