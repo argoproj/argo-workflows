@@ -7,10 +7,7 @@ source $(dirname $0)/library.sh
 
 header "running swagger generator"
 
-if [ ! -d "${REPO_ROOT}/vendor" ]; then
-  go mod vendor
-fi
-
+ensure_vendor
 make_fake_paths
 
 export GOPATH="${FAKE_GOPATH}"

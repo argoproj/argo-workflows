@@ -14,7 +14,7 @@ function make_banner() {
 # Simple header for logging purposes.
 function header() {
   local upper="$(echo $1 | tr a-z A-Z)"
-  make_banner "=" "${upper}"
+  make_banner "+" "${upper}"
 }
 
 # Simple subheader for logging purposes.
@@ -35,10 +35,9 @@ function make_fake_paths() {
   mkdir -p "$(dirname "${FAKE_REPOPATH}")" && ln -s "${REPO_ROOT}" "${FAKE_REPOPATH}"
 }
 
-function ensure_kustomize() {
-  if [ "`command -v kustomize`" = "" ]; then
-    warning "Please install kustomize with - brew install kustomize"
-    exit 1
+ensure_vendor() {
+  if [ ! -d "${REPO_ROOT}/vendor" ]; then
+    go mod vendor
   fi
 }
 

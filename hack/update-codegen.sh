@@ -5,10 +5,7 @@ source $(dirname $0)/library.sh
 
 header "running code generator"
 
-if [ ! -d "${REPO_ROOT}/vendor" ]; then
-  go mod vendor
-fi
-
+ensure_vendor
 make_fake_paths
 
 export GOPATH="${FAKE_GOPATH}"

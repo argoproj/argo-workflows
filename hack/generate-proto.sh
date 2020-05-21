@@ -5,9 +5,7 @@ source $(dirname $0)/library.sh
 
 header "generating proto files"
 
-if [ ! -d "${REPO_ROOT}/vendor" ]; then
-  go mod vendor
-fi
+ensure_vendor
 
 if [ "`command -v protoc-gen-gogo`" = "" ]; then
   go get github.com/gogo/protobuf/protoc-gen-gogo@v1.3.1
