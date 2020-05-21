@@ -142,7 +142,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		deadline:               time.Now().UTC().Add(maxOperationTime),
 		auditLogger:            argo.NewAuditLogger(wf.ObjectMeta.Namespace, wfc.kubeclientset, wf.ObjectMeta.Name),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
-		submissionParameters:   wf.Spec.DeepCopy().Arguments.Parameters,
+		submissionParameters:   wf.Spec.Arguments.DeepCopy().Parameters,
 	}
 
 	if woc.wf.Status.Nodes == nil {
@@ -178,6 +178,14 @@ func (woc *wfOperationCtx) operate() {
 	}()
 
 	woc.log.Infof("Processing workflow")
+
+	// Loading WorkflowSpec for execution.
+	err := woc.loadWorkflowSpec()
+	if err != nil {
+		woc.log.Errorf("Unable to get Workflow Template Reference for workflow, %s error: %s", woc.wf.Name, err)
+		woc.markWorkflowError(err, true)
+		return
+	}
 
 	// Update workflow duration variable
 	woc.globalParams[common.GlobalVarWorkflowDuration] = fmt.Sprintf("%f", time.Since(woc.wf.Status.StartedAt.Time).Seconds())
@@ -289,7 +297,6 @@ func (woc *wfOperationCtx) operate() {
 	}
 
 	var node *wfv1.NodeStatus
-
 	tmpl := &wfv1.WorkflowStep{Template: woc.wfSpec.Entrypoint}
 	args := woc.wfSpec.Arguments
 	if woc.wf.Spec.WorkflowTemplateRef != nil {
@@ -304,7 +311,6 @@ func (woc *wfOperationCtx) operate() {
 	}
 
 	node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, tmpl, tmplCtx, args, &executeTemplateOpts{})
-
 	if err != nil {
 		msg := fmt.Sprintf("%s error in entry template execution: %+v", woc.wf.Name, err)
 		// the error are handled in the callee so just log it.
@@ -2682,7 +2688,7 @@ func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (boo
 	return false, nil
 }
 
-func (woc *wfOperationCtx) fetchWorkflowTemplate() (*wfv1.WorkflowSpec, error) {
+func (woc *wfOperationCtx) fetchWorkflowSpec() (*wfv1.WorkflowSpec, error) {
 	var wftmpl wfv1.WorkflowSpecHolder
 	var err error
 	// Logic for workflow refers Workflow template
@@ -2691,7 +2697,6 @@ func (woc *wfOperationCtx) fetchWorkflowTemplate() (*wfv1.WorkflowSpec, error) {
 			wftmpl, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)
 		} else {
 			wftmpl, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name)
-
 		}
 		if err != nil {
 			return nil, err
@@ -2703,7 +2708,6 @@ func (woc *wfOperationCtx) fetchWorkflowTemplate() (*wfv1.WorkflowSpec, error) {
 func (woc *wfOperationCtx) loadWorkflowSpec() error {
 
 	woc.submissionParameters = woc.wf.Spec.Arguments.Parameters
-
 	if woc.wf.Spec.WorkflowTemplateRef == nil {
 		woc.wfSpec = &woc.wf.Spec
 		return nil
@@ -2712,7 +2716,7 @@ func (woc *wfOperationCtx) loadWorkflowSpec() error {
 	if woc.wf.Status.StoredWorkflowSpec != nil {
 		woc.wfSpec = woc.wf.Status.StoredWorkflowSpec.DeepCopy()
 	} else {
-		wftSpec, err := woc.fetchWorkflowTemplate()
+		wftSpec, err := woc.fetchWorkflowSpec()
 		if err != nil {
 			return err
 		}

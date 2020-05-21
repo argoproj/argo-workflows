@@ -148,7 +148,8 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	assert.NotNil(t, wf)
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
-
+	err := woc.loadWorkflowSpec()
+	assert.NoError(t, err)
 	// Verify that there are no nodes in the wf status.
 	assert.Zero(t, len(woc.wf.Status.Nodes))
 
@@ -222,7 +223,8 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	assert.NotNil(t, wf)
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
-
+	err := woc.loadWorkflowSpec()
+	assert.NoError(t, err)
 	// Verify that there are no nodes in the wf status.
 	assert.Zero(t, len(woc.wf.Status.Nodes))
 
@@ -296,7 +298,8 @@ func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
 	assert.NotNil(t, wf)
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
-
+	err := woc.loadWorkflowSpec()
+	assert.NoError(t, err)
 	// Verify that there are no nodes in the wf status.
 	assert.Zero(t, len(woc.wf.Status.Nodes))
 
@@ -356,7 +359,6 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	assert.NotNil(t, woc)
 	err := woc.loadWorkflowSpec()
 	assert.NoError(t, err)
-
 	// Verify that there are no nodes in the wf status.
 	assert.Zero(t, len(woc.wf.Status.Nodes))
 
@@ -2968,7 +2970,7 @@ func TestStatusConditions(t *testing.T) {
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	//woc.operate()
+	woc.operate()
 	assert.Equal(t, len(woc.wf.Status.Conditions), 0)
 	err = woc.loadWorkflowSpec()
 	assert.NoError(t, err)

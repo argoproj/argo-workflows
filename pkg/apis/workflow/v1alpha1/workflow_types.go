@@ -1768,7 +1768,7 @@ func (wf *Workflow) GetResourceScope() ResourceScope {
 }
 
 // GetWorkflowSpec returns the Spec of a workflow.
-func (wf *Workflow) GetSpec() WorkflowSpec {
+func (wf *Workflow) GetWorkflowSpec() WorkflowSpec {
 	return wf.Spec
 }
 
