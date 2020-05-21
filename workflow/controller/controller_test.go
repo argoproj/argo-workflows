@@ -208,6 +208,15 @@ func unmarshalCWFTmpl(yamlStr string) *wfv1.ClusterWorkflowTemplate {
 	return test.LoadClusterWorkflowTemplateFromBytes([]byte(yamlStr))
 }
 
+func unmarshalArtifact(yamlStr string) *wfv1.Artifact {
+	var artifact wfv1.Artifact
+	err := yaml.Unmarshal([]byte(yamlStr), &artifact)
+	if err != nil {
+		panic(err)
+	}
+	return &artifact
+}
+
 // makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
 func makePodsPhase(t *testing.T, phase apiv1.PodPhase, kubeclientset kubernetes.Interface, namespace string) {
 	podcs := kubeclientset.CoreV1().Pods(namespace)
