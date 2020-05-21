@@ -9,7 +9,7 @@ import (
 
 func genSchemaAssets() {
 	for _, kind := range []string{"clusterworkflowtemplates", "cronworkflows", "workflows", "workflowtemplates"} {
-		data, err := ioutil.ReadFile("manifests/base/crds/" + kind + ".argoproj.io-crd.yaml")
+		data, err := ioutil.ReadFile("manifests/base/crds/" + kind + "-crd.yaml")
 		if err != nil {
 			panic(err)
 		}
@@ -18,7 +18,7 @@ func genSchemaAssets() {
 		if err != nil {
 			panic(err)
 		}
-		openAPIV3Schema := crd["spec"].(map[string]interface{})["validation"].(map[string]interface{})["openAPIV3Schema"]
+		openAPIV3Schema := crd["spec"].(obj)["versions"].(array)[0].(obj)["openAPIV3Schema"]
 		data, err = json.MarshalIndent(openAPIV3Schema, "", "  ")
 		if err != nil {
 			panic(err)

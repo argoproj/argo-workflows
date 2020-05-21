@@ -9,6 +9,7 @@ import (
 )
 
 type obj = map[string]interface{}
+type array = []interface{}
 
 func kubeifySwagger(in, out string) {
 	data, err := ioutil.ReadFile(in)
