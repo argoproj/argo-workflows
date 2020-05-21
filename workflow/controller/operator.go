@@ -49,10 +49,7 @@ import (
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
 type wfOperationCtx struct {
-	// wf is the workflow object
-	// wf.spec should not be used for execution logic.
-	// All execution logic should refer the wfSpec.
-
+	// wf is the workflow object. It should not be used in execution logic. woc.wfSpec should be used instead
 	wf *wfv1.Workflow
 	// orig is the original workflow object for purposes of creating a patch
 	orig *wfv1.Workflow
@@ -91,10 +88,8 @@ type wfOperationCtx struct {
 	// preExecutionNodePhases contains the phases of all the nodes before the current operation. Necessary to infer
 	// changes in phase for metric emission
 	preExecutionNodePhases map[string]wfv1.NodePhase
-
 	// wfSpec holds the WorkflowSpec for execution
 	wfSpec *wfv1.WorkflowSpec
-
 	// submissionParameters holds all submission parameters for workflow.
 	submissionParameters []wfv1.Parameter
 }
@@ -179,7 +174,7 @@ func (woc *wfOperationCtx) operate() {
 
 	woc.log.Infof("Processing workflow")
 
-	// Loading WorkflowSpec for execution.
+	// Load the WorkflowSpec for execution.
 	err := woc.loadWorkflowSpec()
 	if err != nil {
 		woc.log.Errorf("Unable to get Workflow Template Reference for workflow, %s error: %s", woc.wf.Name, err)
@@ -296,21 +291,19 @@ func (woc *wfOperationCtx) operate() {
 		return
 	}
 
-	var node *wfv1.NodeStatus
-	tmpl := &wfv1.WorkflowStep{Template: woc.wfSpec.Entrypoint}
+	tmplRef := &wfv1.WorkflowStep{Template: woc.wfSpec.Entrypoint}
 	args := woc.wfSpec.Arguments
 	if woc.wf.Spec.WorkflowTemplateRef != nil {
 		entrypoint := woc.wf.Spec.Entrypoint
-
 		if entrypoint == "" {
 			entrypoint = woc.wfSpec.Entrypoint
 		}
-		tmpl.Template = ""
-		tmpl.TemplateRef = woc.wf.Spec.WorkflowTemplateRef.ToTemplateRef(entrypoint)
+		tmplRef.Template = ""
+		tmplRef.TemplateRef = woc.wf.Spec.WorkflowTemplateRef.ToTemplateRef(entrypoint)
 		args.Parameters = woc.submissionParameters
 	}
 
-	node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, tmpl, tmplCtx, args, &executeTemplateOpts{})
+	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, tmplRef, tmplCtx, args, &executeTemplateOpts{})
 	if err != nil {
 		msg := fmt.Sprintf("%s error in entry template execution: %+v", woc.wf.Name, err)
 		// the error are handled in the callee so just log it.
@@ -458,11 +451,9 @@ func (woc *wfOperationCtx) setGlobalParameters() {
 	if workflowParameters, err := json.Marshal(woc.wfSpec.Arguments.Parameters); err == nil {
 		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
 	}
-
 	for _, param := range woc.submissionParameters {
 		woc.globalParams["workflow.parameters."+param.Name] = *param.Value
 	}
-
 	for k, v := range woc.wf.ObjectMeta.Annotations {
 		woc.globalParams["workflow.annotations."+k] = v
 	}
@@ -1260,7 +1251,6 @@ func (woc *wfOperationCtx) createPVCs() error {
 		// (e.g. passed validation, or didn't already complete)
 		return nil
 	}
-
 	if len(woc.wfSpec.VolumeClaimTemplates) == len(woc.wf.Status.PersistentVolumeClaims) {
 		// If we have already created the PVCs, then there is nothing to do.
 		// This will also handle the case where workflow has no volumeClaimTemplates.
@@ -2704,7 +2694,6 @@ func (woc *wfOperationCtx) fetchWorkflowSpec() (*wfv1.WorkflowSpec, error) {
 }
 
 func (woc *wfOperationCtx) loadWorkflowSpec() error {
-
 	woc.submissionParameters = woc.wf.Spec.Arguments.Parameters
 	if woc.wf.Spec.WorkflowTemplateRef == nil {
 		woc.wfSpec = &woc.wf.Spec
@@ -2719,12 +2708,13 @@ func (woc *wfOperationCtx) loadWorkflowSpec() error {
 			return err
 		}
 		woc.wfSpec = wftSpec
+		woc.wf.Status.StoredWorkflowSpec = woc.wfSpec
 	}
 
 	if len(woc.wfSpec.Arguments.Parameters) > 0 {
 		woc.submissionParameters = util.MergeParameters(woc.submissionParameters, woc.wfSpec.Arguments.Parameters)
 	}
-	woc.wf.Status.StoredWorkflowSpec = woc.wfSpec
+
 	woc.updated = true
 	return nil
 }
