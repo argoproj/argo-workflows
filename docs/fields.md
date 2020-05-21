@@ -60,6 +60,8 @@ Workflow is the definition of a workflow resource
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
 
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
+
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](../examples/dag-nested.yaml)
@@ -346,6 +348,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -647,6 +651,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
 
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
+
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](../examples/dag-nested.yaml)
@@ -912,6 +918,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -1374,6 +1382,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -1970,6 +1980,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
 
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
+
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](../examples/dag-nested.yaml)
@@ -2222,6 +2234,8 @@ Pod metdata
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -3044,6 +3058,8 @@ MetricLabel is a single label for a prometheus metric
 
 - [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
 
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
+
 - [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
@@ -3078,6 +3094,8 @@ DAGTask represents a node in the graph during DAG execution
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -3305,6 +3323,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -3767,6 +3787,8 @@ A single application container that you want to run within a pod.
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -4367,6 +4389,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -5327,6 +5351,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 

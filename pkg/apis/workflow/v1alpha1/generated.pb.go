@@ -3358,6 +3358,11 @@ func (m *DAGTask) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.Depends)
+	copy(dAtA[i:], m.Depends)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Depends)))
+	i--
+	dAtA[i] = 0x62
 	i -= len(m.OnExit)
 	copy(dAtA[i:], m.OnExit)
 	i = encodeVarintGenerated(dAtA, i, uint64(len(m.OnExit)))
@@ -7471,6 +7476,8 @@ func (m *DAGTask) Size() (n int) {
 	}
 	l = len(m.OnExit)
 	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Depends)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -9042,6 +9049,7 @@ func (this *DAGTask) String() string {
 		`When:` + fmt.Sprintf("%v", this.When) + `,`,
 		`ContinueOn:` + strings.Replace(this.ContinueOn.String(), "ContinueOn", "ContinueOn", 1) + `,`,
 		`OnExit:` + fmt.Sprintf("%v", this.OnExit) + `,`,
+		`Depends:` + fmt.Sprintf("%v", this.Depends) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -12874,6 +12882,38 @@ func (m *DAGTask) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.OnExit = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Depends", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Depends = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
