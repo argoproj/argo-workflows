@@ -387,6 +387,10 @@
         "onExit": {
           "type": "string",
           "description": "OnExit is a template reference which is invoked at the end of the\ntemplate, irrespective of the success, failure, or error of the\nprimary template."
+        },
+        "depends": {
+          "type": "string",
+          "title": "Depends are name of other targets which this depends on"
         }
       },
       "title": "DAGTask represents a node in the graph during DAG execution"
