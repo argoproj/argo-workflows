@@ -96,15 +96,7 @@ func getCronWorkflowGet(wf *wfv1.CronWorkflow) string {
 		out += fmt.Sprintf(fmtStr, "Active Workflows:", strings.Join(activeWfNames, ", "))
 	}
 	if len(wf.Status.Conditions) > 0 {
-		out += fmt.Sprintf(fmtStr, "Conditions:", "")
-		for _, condition := range wf.Status.Conditions {
-			conditionMessage := condition.Message
-			if conditionMessage == "" {
-				conditionMessage = string(condition.Status)
-			}
-			conditionPrefix := fmt.Sprintf("✖ %s", string(condition.Type))
-			out += fmt.Sprintf(fmtStr, conditionPrefix, conditionMessage)
-		}
+		fmt.Print(wf.Status.Conditions.DisplayString(fmtStr, map[wfv1.ConditionType]string{wfv1.ConditionTypeSubmissionError: "✖"}))
 	}
 	return out
 }

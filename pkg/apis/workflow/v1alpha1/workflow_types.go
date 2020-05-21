@@ -1025,39 +1025,55 @@ func ResourceQuantityDenominator(r apiv1.ResourceName) *resource.Quantity {
 
 type Conditions []Condition
 
-func (wc *Conditions) UpsertCondition(condition Condition) {
-	for index, wfCondition := range *wc {
+func (cs *Conditions) UpsertCondition(condition Condition) {
+	for index, wfCondition := range *cs {
 		if wfCondition.Type == condition.Type {
-			(*wc)[index] = condition
+			(*cs)[index] = condition
 			return
 		}
 	}
-	*wc = append(*wc, condition)
+	*cs = append(*cs, condition)
 }
 
-func (wc *Conditions) UpsertConditionMessage(condition Condition) {
-	for index, wfCondition := range *wc {
+func (cs *Conditions) UpsertConditionMessage(condition Condition) {
+	for index, wfCondition := range *cs {
 		if wfCondition.Type == condition.Type {
-			(*wc)[index].Message += ", " + condition.Message
+			(*cs)[index].Message += ", " + condition.Message
 			return
 		}
 	}
-	*wc = append(*wc, condition)
+	*cs = append(*cs, condition)
 }
 
-func (wc *Conditions) JoinConditions(conditions *Conditions) {
+func (cs *Conditions) JoinConditions(conditions *Conditions) {
 	for _, condition := range *conditions {
-		wc.UpsertCondition(condition)
+		cs.UpsertCondition(condition)
 	}
 }
 
-func (wc *Conditions) RemoveCondition(conditionType ConditionType) {
-	for index, wfCondition := range *wc {
+func (cs *Conditions) RemoveCondition(conditionType ConditionType) {
+	for index, wfCondition := range *cs {
 		if wfCondition.Type == conditionType {
-			*wc = append((*wc)[:index], (*wc)[index+1:]...)
+			*cs = append((*cs)[:index], (*cs)[index+1:]...)
 			return
 		}
 	}
+}
+
+func (cs *Conditions) DisplayString(fmtStr string, iconMap map[ConditionType]string) string {
+	if len(*cs) == 0 {
+		return fmt.Sprintf(fmtStr, "Conditions:", "None")
+	}
+	out := fmt.Sprintf(fmtStr, "Conditions:", "")
+	for _, condition := range *cs {
+		conditionMessage := condition.Message
+		if conditionMessage == "" {
+			conditionMessage = string(condition.Status)
+		}
+		conditionPrefix := fmt.Sprintf("%s %s", iconMap[condition.Type], string(condition.Type))
+		out += fmt.Sprintf(fmtStr, conditionPrefix, conditionMessage)
+	}
+	return out
 }
 
 type ConditionType string

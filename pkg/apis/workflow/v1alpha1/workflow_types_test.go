@@ -114,3 +114,22 @@ func TestCronWorkflowConditions(t *testing.T) {
 	cwfCond.RemoveCondition(ConditionTypeSubmissionError)
 	assert.Len(t, cwfCond, 0)
 }
+
+func TestDisplayConditions(t *testing.T) {
+	const fmtStr = "%-20s %v\n"
+	cwfCond := Conditions{}
+
+	assert.Equal(t, "Conditions:          None\n", cwfCond.DisplayString(fmtStr, nil))
+
+	cond := Condition{
+		Type:    ConditionTypeSubmissionError,
+		Message: "Failed to submit Workflow",
+		Status:  v1.ConditionTrue,
+	}
+	cwfCond.UpsertCondition(cond)
+
+	expected := `Conditions:          
+✖ SubmissionError    Failed to submit Workflow
+`
+	assert.Equal(t, expected, cwfCond.DisplayString(fmtStr, map[ConditionType]string{ConditionTypeSubmissionError: "✖"}))
+}
