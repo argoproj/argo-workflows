@@ -6,7 +6,7 @@ kind: Workflow
 metadata:
   generateName: sleeptest-
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   entrypoint: entry
   templates:

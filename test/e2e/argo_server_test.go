@@ -633,7 +633,7 @@ kind: CronWorkflow
 metadata:
   name: test-cron-wf-basic
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   schedule: "* * * * *"
   concurrencyPolicy: "Allow"
@@ -642,7 +642,7 @@ spec:
   failedJobsHistoryLimit: 2
   workflowMetadata:
     labels:
-      argo-e2e: true
+      argo-e2e: "true"
   workflowSpec:
     podGC:
       strategy: OnPodCompletion
@@ -858,7 +858,7 @@ func (s *ArgoServerSuite) TestArchivedWorkflowService() {
 metadata:
   name: archie
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
     foo: 1
 spec:
   entrypoint: run-archie
@@ -880,7 +880,7 @@ spec:
 metadata:
   name: betty
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
     foo: 2
 spec:
   entrypoint: run-betty

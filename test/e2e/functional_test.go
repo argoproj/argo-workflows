@@ -41,7 +41,7 @@ kind: Workflow
 metadata:
   name: continue-on-fail
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   entrypoint: workflow-ignore
   parallelism: 2
@@ -100,7 +100,7 @@ kind: Workflow
 metadata:
   name: continue-on-failed-dag
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   entrypoint: workflow-ignore
   parallelism: 2
@@ -267,7 +267,7 @@ kind: Workflow
 metadata:
   name: dag-limited-1
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   entrypoint: dag
   templates:
@@ -316,7 +316,7 @@ kind: Workflow
 metadata:
   name: dag-limited-2
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   entrypoint: dag
   templates:
@@ -493,7 +493,7 @@ kind: Workflow
 metadata:
   name: default-params
   labels:
-    argo-e2e: true
+    argo-e2e: "true"
 spec:
   entrypoint: start
   templates:
