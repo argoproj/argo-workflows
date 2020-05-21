@@ -1,8 +1,8 @@
 import * as React from 'react';
 
 import {WorkflowTemplate} from '../../../models';
+import {ResourceEditor} from '../../shared/components/resource-editor/resource-editor';
 import {Timestamp} from '../../shared/components/timestamp';
-import {YamlEditor} from '../../shared/components/yaml/yaml-editor';
 import {services} from '../../shared/services';
 
 interface Props {
@@ -32,7 +32,7 @@ export const WorkflowTemplateSummaryPanel = (props: Props) => {
 
             <div className='white-box'>
                 <div className='white-box__details'>
-                    <YamlEditor
+                    <ResourceEditor
                         editing={false}
                         value={props.template}
                         onSubmit={(value: WorkflowTemplate) => {
@@ -41,6 +41,8 @@ export const WorkflowTemplateSummaryPanel = (props: Props) => {
                                 .then(workflowTemplate => props.onChange(workflowTemplate))
                                 .catch(err => props.onError(err));
                         }}
+                        kind='workflowtemplates'
+                        title='Update Workflow Template'
                     />
                 </div>
             </div>

@@ -2,4 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-- workflow-crd.yaml
+- clusterworkflowtemplates-crd.yaml
+- cronworkflows-crd.yaml
+- workflows-crd.yaml
+- workflowtemplates-crd.yaml
