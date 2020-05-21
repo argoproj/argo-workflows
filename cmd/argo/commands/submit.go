@@ -81,7 +81,7 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringVarP(&submitOpts.ParameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
 	command.Flags().StringVarP(&submitOpts.Labels, "labels", "l", "", "Comma separated labels to apply to the workflow. Will override previous values.")
 	command.Flags().StringVar(&from, "from", "", "Submit from an existing `kind/name` E.g., --from=cronwf/hello-world-cwf")
-	command.Flags().StringArrayVarP(&cliSubmitOpts.getArgs.status, "status", "", []string{}, "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error). Should only be used with --watch.")
+	command.Flags().StringVar(&cliSubmitOpts.getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error). Should only be used with --watch.")
 	command.Flags().StringVar(&cliSubmitOpts.getArgs.nodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
 	// Only complete files with appropriate extension.
 	err := command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})

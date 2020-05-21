@@ -51,10 +51,10 @@ func TestPrintNode(t *testing.T) {
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, "", nodeID, "0s", nodeMessage, ""), node, nodePrefix, getArgs)
 
 	// Compatibility test
-	getArgs.status = []string{"Running"}
+	getArgs.status = "Running"
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
 
-	getArgs.status = nil
+	getArgs.status = ""
 	getArgs.nodeFieldSelectorString = "phase=Running"
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
 
@@ -66,10 +66,10 @@ func TestPrintNode(t *testing.T) {
 
 	// Compatibility test
 	getArgs.nodeFieldSelectorString = ""
-	getArgs.status = []string{"foobar"}
+	getArgs.status = "foobar"
 	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
 
-	getArgs.status = nil
+	getArgs.status = ""
 	getArgs.nodeFieldSelectorString = "phase=foobar"
 	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
 
@@ -95,13 +95,11 @@ func TestPrintNode(t *testing.T) {
 	node.Type = wfv1.NodeTypePod
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s/%s\t%s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateRefName, nodeTemplateRefName, nodeID, "0s", getArtifactsString(node), nodeMessage, "", kubernetesNodeName), node, nodePrefix, getArgs)
 
-	getArgs.status = []string{"foobar"}
+	getArgs.status = "foobar"
 	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
 }
 
 func TestStatusToNodeFieldSelector(t *testing.T) {
-	one := statusToNodeFieldSelector([]string{"Running"})
+	one := statusToNodeFieldSelector("Running")
 	assert.Equal(t, "phase=Running", one)
-	multiple := statusToNodeFieldSelector([]string{"Running", "Skipped"})
-	assert.Equal(t, "phase=Running,phase=Skipped", multiple)
 }

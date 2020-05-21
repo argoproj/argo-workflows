@@ -30,7 +30,7 @@ type getFlags struct {
 	nodeFieldSelectorString string
 
 	// Only used for backwards compatibility
-	status []string
+	status string
 }
 
 func NewGetCommand() *cobra.Command {
@@ -62,17 +62,13 @@ func NewGetCommand() *cobra.Command {
 
 	command.Flags().StringVarP(&getArgs.output, "output", "o", "", "Output format. One of: json|yaml|wide")
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
-	command.Flags().StringArrayVarP(&getArgs.status, "status", "", []string{}, "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
+	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
 	command.Flags().StringVar(&getArgs.nodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
 	return command
 }
 
-func statusToNodeFieldSelector(statuses []string) string {
-	var selectors []string
-	for _, status := range statuses {
-		selectors = append(selectors, fmt.Sprintf("phase=%s", status))
-	}
-	return strings.Join(selectors, ",")
+func statusToNodeFieldSelector(status string) string {
+	return fmt.Sprintf("phase=%s", status)
 }
 
 func printWorkflow(wf *wfv1.Workflow, getArgs getFlags) {
@@ -450,7 +446,7 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 
 // Main method to print information of node in get
 func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, getArgs getFlags) {
-	if len(getArgs.status) > 0 {
+	if getArgs.status != "" {
 		// Adapt --status to a node field selector for compatibility
 		if getArgs.nodeFieldSelectorString != "" {
 			log.Fatalf("cannot use both --status and --node-field-selector")
