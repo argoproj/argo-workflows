@@ -141,8 +141,9 @@ func (c PersistConfig) GetClusterName() string {
 }
 
 type ConnectionPool struct {
-	MaxIdleConns int `json:"maxIdleConns,omitempty"`
-	MaxOpenConns int `json:"maxOpenConns,omitempty"`
+	MaxIdleConns    int `json:"maxIdleConns,omitempty"`
+	MaxOpenConns    int `json:"maxOpenConns,omitempty"`
+	ConnMaxLifetime TTL `json:"connMaxLifetime,omitempty"`
 }
 type PostgreSQLConfig struct {
 	Host           string                  `json:"host"`
