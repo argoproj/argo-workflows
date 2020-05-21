@@ -71,7 +71,7 @@ func TestValidateTaskResults(t *testing.T) {
 	err := ValidateTaskResults(task)
 	assert.NoError(t, err)
 
-	task = &wfv1.DAGTask{Depends: "(task-1.Completed || task-2.Succeeded) && !task-3.Skipped && task-2.Failed || task-6.Any"}
+	task = &wfv1.DAGTask{Depends: "(task-1.Completed || task-2.Succeeded) && !task-3.Skipped && task-2.Failed || task-6.Succeeded"}
 	err = ValidateTaskResults(task)
 	assert.NoError(t, err)
 

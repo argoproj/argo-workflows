@@ -24,7 +24,6 @@ const (
 	TaskResultErrored   TaskResult = "Errored"
 	TaskResultSkipped   TaskResult = "Skipped"
 	TaskResultCompleted TaskResult = "Completed"
-	TaskResultAny       TaskResult = "Any"
 	TaskResultDaemoned  TaskResult = "Daemoned"
 )
 
@@ -90,8 +89,7 @@ func ValidateTaskResults(dagTask *wfv1.DAGTask) error {
 		split := strings.Split(matchGroup[1], ".")
 		taskName, taskResult := split[0], TaskResult(split[1])
 		switch taskResult {
-		case TaskResultSucceeded, TaskResultFailed, TaskResultSkipped, TaskResultCompleted, TaskResultAny,
-			TaskResultErrored, TaskResultDaemoned:
+		case TaskResultSucceeded, TaskResultFailed, TaskResultSkipped, TaskResultCompleted, TaskResultErrored, TaskResultDaemoned:
 			// Do nothing
 		default:
 			return fmt.Errorf("task result '%s' for task '%s' is invalid", taskResult, taskName)
