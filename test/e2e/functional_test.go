@@ -21,6 +21,18 @@ type FunctionalSuite struct {
 	fixtures.E2ESuite
 }
 
+func (s *FunctionalSuite) TestArchiveStrategies() {
+	s.Given().
+		Workflow(`@testdata/archive-strategies.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
 func (s *FunctionalSuite) TestContinueOnFail() {
 	s.Given().
 		Workflow(`
@@ -437,6 +449,39 @@ func (s *FunctionalSuite) TestTerminateBehavior() {
 			assert.Nil(t, nodeStatus)
 			nodeStatus = status.Nodes.FindByDisplayName("stop-terminate.onExit")
 			assert.Nil(t, nodeStatus)
+		})
+}
+
+func (s *FunctionalSuite) TestDAGDepends() {
+	s.Given().
+		Workflow("@functional/dag-depends.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			nodeStatus := status.Nodes.FindByDisplayName("A")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			nodeStatus = status.Nodes.FindByDisplayName("B")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			nodeStatus = status.Nodes.FindByDisplayName("C")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
+			nodeStatus = status.Nodes.FindByDisplayName("should-execute-1")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			nodeStatus = status.Nodes.FindByDisplayName("should-execute-2")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			nodeStatus = status.Nodes.FindByDisplayName("should-not-execute")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
+			nodeStatus = status.Nodes.FindByDisplayName("should-execute-3")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
 		})
 }
 

@@ -38,6 +38,11 @@ func TestArtifactLocation_HasLocation(t *testing.T) {
 	assert.True(t, (&ArtifactLocation{GCS: &GCSArtifact{Key: "my-key", GCSBucket: GCSBucket{Bucket: "my-bucket"}}}).HasLocation())
 }
 
+func TestArtifact_GetArchive(t *testing.T) {
+	assert.NotNil(t, (&Artifact{}).GetArchive())
+	assert.Equal(t, &ArchiveStrategy{None: &NoneStrategy{}}, (&Artifact{Archive: &ArchiveStrategy{None: &NoneStrategy{}}}).GetArchive())
+}
+
 func TestNodes_FindByDisplayName(t *testing.T) {
 	assert.Nil(t, Nodes{}.FindByDisplayName(""))
 	assert.NotNil(t, Nodes{"": NodeStatus{DisplayName: "foo"}}.FindByDisplayName("foo"))
