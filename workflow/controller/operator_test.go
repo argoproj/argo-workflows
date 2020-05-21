@@ -86,7 +86,8 @@ func TestGlobalParams(t *testing.T) {
 	cancel, controller := newController(wf)
 	defer cancel()
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.loadWorkflowSpec()
+	err := woc.loadWorkflowSpec()
+	assert.NoError(t, err)
 	woc.operate()
 	if assert.Contains(t, woc.globalParams, "workflow.creationTimestamp") {
 		assert.NotContains(t, woc.globalParams["workflow.creationTimestamp"], "UTC")
@@ -626,7 +627,8 @@ func TestRetriesVariable(t *testing.T) {
 			assert.Nil(t, err)
 		}
 		woc := newWorkflowOperationCtx(wf, controller)
-		woc.loadWorkflowSpec()
+		err = woc.loadWorkflowSpec()
+		assert.NoError(t, err)
 		woc.operate()
 	}
 
@@ -686,7 +688,8 @@ func TestStepsRetriesVariable(t *testing.T) {
 		}
 		// move to next retry step
 		woc := newWorkflowOperationCtx(wf, controller)
-		woc.loadWorkflowSpec()
+		err = woc.loadWorkflowSpec()
+		assert.NoError(t, err)
 		woc.operate()
 	}
 
@@ -2873,7 +2876,7 @@ func TestEventTimeout(t *testing.T) {
 	runningEvent := events.Items[0]
 	assert.Equal(t, argo.EventReasonWorkflowRunning, runningEvent.Reason)
 	timeoutEvent := events.Items[1]
-	assert.Equal(t, argo.EventReasonWorkflowFailed, timeoutEvent.Reason)
+	assert.Equal(t, argo.EventReasonWorkflowTimedOut, timeoutEvent.Reason)
 }
 
 var failLoadArtifactRepoCm = `

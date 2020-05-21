@@ -24,11 +24,11 @@ func TestCanI(t *testing.T) {
 		}, nil
 	})
 
-	allowed, err := CanI(kubeClient, "get", "workflow", "", "")
+	allowed, err := CanI(kubeClient, "get", "argoproj.io", "workflow", "", "")
 	if assert.NoError(t, err) {
 		assert.True(t, allowed)
 	}
-	notAllowed, err := CanI(kubeClient, "list", "workflow", "", "")
+	notAllowed, err := CanI(kubeClient, "list", "argoproj.io", "workflow", "", "")
 	if assert.NoError(t, err) {
 		assert.False(t, notAllowed)
 	}

@@ -12,7 +12,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/utils/pointer"
@@ -20,6 +19,7 @@ import (
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	authutil "github.com/argoproj/argo/util/auth"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -294,23 +294,22 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")
 		}
 	}
-	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(pod)
+	podCreateAllowed, err := authutil.CanI(woc.controller.kubeclientset, "create", "v1", "pods", woc.wf.Namespace, "")
+
 	if err != nil {
-		if apierr.IsAlreadyExists(err) {
-			// workflow pod names are deterministic. We can get here if the
-			// controller fails to persist the workflow after creating the pod.
-			woc.log.Infof("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
-			return created, nil
-		}
-		if apierr.IsForbidden(err) {
-			return nil, err
-		}
-		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
-		return nil, errors.InternalWrapError(err)
+		return nil, errors.Wrap(err, "", "Controller doesn't have permission to create pod resource on namespace "+woc.wf.Namespace)
 	}
-	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
+
+	if podCreateAllowed {
+		podItem := &PodItem{pod: pod.DeepCopy(), namespace: woc.wf.Namespace, nodeName: nodeName, nodeID: nodeID}
+		woc.controller.podManager.podCreateQueue.Add(podItem)
+	} else {
+		woc.log.Warn("Controller doesn't have permission to create pod resource on namespace " + woc.wf.Namespace)
+		return nil, errors.Wrap(err, "", "Controller doesn't have permission to create pod resource on namespace "+woc.wf.Namespace)
+	}
+	woc.log.Infof("Pod queued for creation: %s", nodeName)
 	woc.activePods++
-	return created, nil
+	return pod, nil
 }
 
 // substitutePodParams returns a pod spec with parameter references substituted as well as pod.name

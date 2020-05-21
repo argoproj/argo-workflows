@@ -104,6 +104,25 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 	wftmplInformer := informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 	cwftmplInformer := informerFactory.Argoproj().V1alpha1().ClusterWorkflowTemplates()
 	ctx, cancel := context.WithCancel(context.Background())
+	kube := fake.NewSimpleClientset()
+
+	kube.AddReactor("*", "selfsubjectaccessreviews", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		return true, &authorizationv1.SelfSubjectAccessReview{
+			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: true},
+		}, nil
+	})
+
+	// Move the default Reactor to last position, so Customize Reactor will take priority
+	defaultReactor := kube.ReactionChain[0]
+	lastActor := kube.ReactionChain[len(kube.ReactionChain)-1]
+	kube.ReactionChain[0] = lastActor
+	kube.ReactionChain[len(kube.ReactionChain)-1] = defaultReactor
+
+	podManager := &PodManager{
+		podCreateQueue: workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		kubeClient:     kube,
+	}
+	go podManager.run(ctx, 10)
 	go wftmplInformer.Informer().Run(ctx.Done())
 	go cwftmplInformer.Informer().Run(ctx.Done())
 	if !cache.WaitForCacheSync(ctx.Done(), wftmplInformer.Informer().HasSynced) {
@@ -112,7 +131,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 	if !cache.WaitForCacheSync(ctx.Done(), cwftmplInformer.Informer().HasSynced) {
 		panic("Timed out waiting for caches to sync")
 	}
-	kube := fake.NewSimpleClientset()
+
 	controller := &WorkflowController{
 		Config: config.Config{
 			ExecutorImage: "executor:latest",
@@ -126,6 +145,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		podQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		wfArchive:       sqldb.NullWorkflowArchive,
 		metrics:         metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
+		podManager:      podManager,
 	}
 	return cancel, controller
 }

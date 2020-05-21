@@ -105,7 +105,8 @@ func TestSingleDependency(t *testing.T) {
 		wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 		assert.Nil(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
-
+		err = woc.loadWorkflowSpec()
+		assert.NoError(t, err)
 		woc.operate()
 		// Mark the status of the pod according to the test
 		if _, ok := statusMap[status]; ok {

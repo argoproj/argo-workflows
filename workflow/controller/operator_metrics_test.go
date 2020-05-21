@@ -210,7 +210,8 @@ func TestMetricEmissionSameOperationCreationAndFailure(t *testing.T) {
 	_, err := wfcset.Create(wf)
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.loadWorkflowSpec()
+	err = woc.loadWorkflowSpec()
+	assert.NoError(t, err)
 	woc.operate()
 
 	metricErrorDesc := wf.Spec.Templates[1].Metrics.Prometheus[0].GetDesc()
