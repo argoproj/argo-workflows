@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/robfig/cron"
 	"github.com/sirupsen/logrus"
@@ -1042,39 +1043,86 @@ func validateWorkflowFieldNames(slice interface{}) error {
 	return nil
 }
 
+type dagValidationContext struct {
+	tasks        map[string]wfv1.DAGTask
+	dependencies map[string][]string
+}
+
+func (d *dagValidationContext) GetTask(taskName string) *wfv1.DAGTask {
+	task := d.tasks[taskName]
+	return &task
+}
+
+func (d *dagValidationContext) GetTaskDependencies(taskName string) []string {
+	if dependencies, ok := d.dependencies[taskName]; ok {
+		return dependencies
+	}
+	task := d.GetTask(taskName)
+	dependencies, _ := common.GetTaskDependencies(task, d)
+	d.dependencies[taskName] = dependencies
+	return d.dependencies[taskName]
+}
+
+func (d *dagValidationContext) GetTaskFinishedAtTime(taskName string) time.Time {
+	return time.Now()
+}
+
 func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmplCtx *templateresolution.Context, tmpl *wfv1.Template) error {
 	err := validateNonLeaf(tmpl)
 	if err != nil {
 		return err
 	}
+	if len(tmpl.DAG.Tasks) == 0 {
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s must have at least one task", tmpl.Name)
+	}
 	err = validateWorkflowFieldNames(tmpl.DAG.Tasks)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks%s", tmpl.Name, err.Error())
 	}
+	usingDepends := false
 	nameToTask := make(map[string]wfv1.DAGTask)
 	for _, task := range tmpl.DAG.Tasks {
+		if task.Depends != "" {
+			usingDepends = true
+		}
 		nameToTask[task.Name] = task
 	}
+
+	dagValidationCtx := &dagValidationContext{
+		tasks:        nameToTask,
+		dependencies: make(map[string][]string),
+	}
+
 	resolvedTemplates := make(map[string]*wfv1.Template)
 
 	// Verify dependencies for all tasks can be resolved as well as template names
 	for _, task := range tmpl.DAG.Tasks {
+
+		if usingDepends && len(task.Dependencies) > 0 {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s cannot use both 'depends' and 'dependencies' in the same DAG template", tmpl.Name)
+		}
+
+		if usingDepends && task.ContinueOn != nil {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s cannot use 'continueOn' when using 'depends'. Instead use 'dep-task.Failed'/'dep-task.Errored'", tmpl.Name)
+		}
+
 		resolvedTmpl, err := ctx.validateTemplateHolder(&task, tmplCtx, &FakeArguments{}, map[string]interface{}{})
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
+
+		resolvedTemplates[task.Name] = resolvedTmpl
+
 		prefix := fmt.Sprintf("tasks.%s", task.Name)
 		ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false, false)
-		resolvedTemplates[task.Name] = resolvedTmpl
-		dupDependencies := make(map[string]bool)
-		for j, depName := range task.Dependencies {
-			if _, ok := dupDependencies[depName]; ok {
-				return errors.Errorf(errors.CodeBadRequest,
-					"templates.%s.tasks.%s.dependencies[%d] dependency '%s' duplicated",
-					tmpl.Name, task.Name, j, depName)
-			}
-			dupDependencies[depName] = true
-			if _, ok := nameToTask[depName]; !ok {
+
+		err = common.ValidateTaskResults(&task)
+		if err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
+		}
+
+		for j, depName := range dagValidationCtx.GetTaskDependencies(task.Name) {
+			if _, ok := dagValidationCtx.tasks[depName]; !ok {
 				return errors.Errorf(errors.CodeBadRequest,
 					"templates.%s.tasks.%s.dependencies[%d] dependency '%s' not defined",
 					tmpl.Name, task.Name, j, depName)
@@ -1082,7 +1130,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		}
 	}
 
-	if err = verifyNoCycles(tmpl, nameToTask); err != nil {
+	if err = verifyNoCycles(tmpl, dagValidationCtx); err != nil {
 		return err
 	}
 
@@ -1090,7 +1138,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.targets %s", tmpl.Name, err.Error())
 	}
-	if err = validateDAGTargets(tmpl, nameToTask); err != nil {
+	if err = validateDAGTargets(tmpl, dagValidationCtx.tasks); err != nil {
 		return err
 	}
 
@@ -1107,9 +1155,9 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		for k, v := range scope {
 			taskScope[k] = v
 		}
-		ancestry := common.GetTaskAncestry(nil, task.Name, tmpl.DAG.Tasks)
+		ancestry := common.GetTaskAncestry(dagValidationCtx, task.Name)
 		for _, ancestor := range ancestry {
-			ancestorTask := nameToTask[ancestor]
+			ancestorTask := dagValidationCtx.GetTask(ancestor)
 			resolvedTmpl := resolvedTemplates[ancestor]
 			ancestorPrefix := fmt.Sprintf("tasks.%s", ancestor)
 			aggregate := len(ancestorTask.WithItems) > 0 || ancestorTask.WithParam != ""
@@ -1153,15 +1201,15 @@ func validateDAGTargets(tmpl *wfv1.Template, nameToTask map[string]wfv1.DAGTask)
 }
 
 // verifyNoCycles verifies there are no cycles in the DAG graph
-func verifyNoCycles(tmpl *wfv1.Template, nameToTask map[string]wfv1.DAGTask) error {
+func verifyNoCycles(tmpl *wfv1.Template, ctx *dagValidationContext) error {
 	visited := make(map[string]bool)
 	var noCyclesHelper func(taskName string, cycle []string) error
 	noCyclesHelper = func(taskName string, cycle []string) error {
 		if _, ok := visited[taskName]; ok {
 			return nil
 		}
-		task := nameToTask[taskName]
-		for _, depName := range task.Dependencies {
+		task := ctx.GetTask(taskName)
+		for _, depName := range ctx.GetTaskDependencies(task.Name) {
 			for _, name := range cycle {
 				if name == depName {
 					return errors.Errorf(errors.CodeBadRequest,

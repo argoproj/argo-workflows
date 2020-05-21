@@ -1642,6 +1642,9 @@ type DAGTask struct {
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
+
+	// Depends are name of other targets which this depends on
+	Depends string `json:"depends,omitempty" protobuf:"bytes,12,opt,name=depends"`
 }
 
 var _ TemplateReferenceHolder = &DAGTask{}
