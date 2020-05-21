@@ -45,7 +45,7 @@ func NewRetryCommand() *cobra.Command {
 					errors.CheckError(err)
 					return
 				}
-				printWorkflow(wf, cliSubmitOpts.output, DefaultStatus)
+				printWorkflow(wf, getFlags{output: cliSubmitOpts.output})
 				waitOrWatch([]string{name}, cliSubmitOpts)
 			}
 		},

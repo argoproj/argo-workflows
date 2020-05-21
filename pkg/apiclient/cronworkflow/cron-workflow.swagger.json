@@ -1609,7 +1609,7 @@
         "clusterScope": {
           "type": "boolean",
           "format": "boolean",
-          "description": "ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate)."
+          "description": "ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate)."
         }
       },
       "description": "TemplateRef is a reference of template resource."
@@ -1817,6 +1817,10 @@
         "shutdown": {
           "type": "string",
           "title": "Shutdown will shutdown the workflow according to its ShutdownStrategy"
+        },
+        "workflowTemplateRef": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateRef",
+          "description": "WorkflowTemplateRef holds top level WorkflowTemplate reference to execute it."
         }
       },
       "description": "WorkflowSpec is the specification of a Workflow."
@@ -1869,6 +1873,21 @@
         }
       },
       "title": "WorkflowStep is a reference to a template to execute in a series of step"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateRef": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name is the resource name of the workflow template."
+        },
+        "clusterScope": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate)."
+        }
+      },
+      "description": "WorkflowTemplateRef is a reference to a WorkflowTemplate resource."
     },
     "k8s.io.api.core.v1.AWSElasticBlockStoreVolumeSource": {
       "type": "object",

@@ -26,9 +26,10 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 		return nil
 	case apiv1.PodPending:
 		// Check if we are currently shutting down
-		if woc.wf.Spec.Shutdown != "" {
+		if woc.wfSpec.Shutdown != "" {
 			// Only delete pods that are not part of an onExit handler if we are "Stopping" or all pods if we are "Terminating"
 			_, onExitPod := pod.Labels[common.LabelKeyOnExit]
+
 			if !woc.wf.Spec.Shutdown.ShouldExecute(onExitPod) {
 				woc.log.Infof("Deleting Pending pod %s/%s as part of workflow shutdown with strategy: %s", pod.Namespace, pod.Name, woc.wf.Spec.Shutdown)
 				err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
@@ -36,7 +37,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 					wfNodesLock.Lock()
 					defer wfNodesLock.Unlock()
 					node := woc.wf.Status.Nodes[pod.Name]
-					woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("workflow shutdown with strategy:  %s", woc.wf.Spec.Shutdown))
+					woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("workflow shutdown with strategy:  %s", woc.wfSpec.Shutdown))
 					return nil
 				}
 				// If we fail to delete the pod, fall back to setting the annotation
@@ -73,6 +74,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 	}
 
 	var newDeadline *time.Time
+
 	if woc.wf.Spec.Shutdown != "" {
 		_, onExitPod := pod.Labels[common.LabelKeyOnExit]
 		if !woc.wf.Spec.Shutdown.ShouldExecute(onExitPod) {
