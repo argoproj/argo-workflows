@@ -10,7 +10,6 @@ import (
 )
 
 func TestTopLevelWFTmplRef(t *testing.T) {
-	//_, controller := newController()
 	wf := unmarshalWF(wfWithTmplRef)
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
@@ -23,7 +22,6 @@ func TestTopLevelWFTmplRef(t *testing.T) {
 }
 
 func TestTopLevelWFTmplRefWithArgs(t *testing.T) {
-	//_, controller := newController()
 	wf := unmarshalWF(wfWithTmplRef)
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
@@ -44,7 +42,6 @@ func TestTopLevelWFTmplRefWithArgs(t *testing.T) {
 
 }
 func TestTopLevelWFTmplRefWithWFTArgs(t *testing.T) {
-	//_, controller := newController()
 	wf := unmarshalWF(wfWithTmplRef)
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 

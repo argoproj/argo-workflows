@@ -184,7 +184,6 @@ func (woc *wfOperationCtx) operate() {
 	if err != nil {
 		woc.log.Errorf("Unable to get Workflow Template Reference for workflow, %s error: %s", woc.wf.Name, err)
 		woc.markWorkflowError(err, true)
-		woc.persistUpdates()
 		return
 	}
 
@@ -312,7 +311,6 @@ func (woc *wfOperationCtx) operate() {
 	}
 
 	node, err = woc.executeTemplate(woc.wf.ObjectMeta.Name, tmpl, tmplCtx, args, &executeTemplateOpts{})
-
 	if err != nil {
 		msg := fmt.Sprintf("%s error in entry template execution: %+v", woc.wf.Name, err)
 		// the error are handled in the callee so just log it.
@@ -2697,7 +2695,6 @@ func (woc *wfOperationCtx) fetchWorkflowSpec() (*wfv1.WorkflowSpec, error) {
 			wftmpl, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)
 		} else {
 			wftmpl, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name)
-
 		}
 		if err != nil {
 			return nil, err
@@ -2709,7 +2706,6 @@ func (woc *wfOperationCtx) fetchWorkflowSpec() (*wfv1.WorkflowSpec, error) {
 func (woc *wfOperationCtx) loadWorkflowSpec() error {
 
 	woc.submissionParameters = woc.wf.Spec.Arguments.Parameters
-
 	if woc.wf.Spec.WorkflowTemplateRef == nil {
 		woc.wfSpec = &woc.wf.Spec
 		return nil
