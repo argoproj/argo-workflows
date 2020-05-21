@@ -102,12 +102,12 @@ const maxOperationTime = 10 * time.Second
 
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
 type failedNodeStatus struct {
-	DisplayName  string      `json:"displayName"`
-	Message      string      `json:"message"`
-	TemplateName string      `json:"templateName"`
-	Phase        string      `json:"phase"`
-	PodName      string      `json:"podName"`
-	FinishedAt   metav1.Time `json:"finishedAt"`
+	DisplayName  string       `json:"displayName"`
+	Message      string       `json:"message"`
+	TemplateName string       `json:"templateName"`
+	Phase        string       `json:"phase"`
+	PodName      string       `json:"podName"`
+	FinishedAt   *metav1.Time `json:"finishedAt"`
 }
 
 // newWorkflowOperationCtx creates and initializes a new wfOperationCtx object.
@@ -391,7 +391,7 @@ func (woc *wfOperationCtx) operate() {
 
 	if woc.wf.Spec.Metrics != nil {
 		realTimeScope := map[string]func() float64{common.GlobalVarWorkflowDuration: func() float64 {
-			return node.FinishedAt.Sub(node.StartedAt.Time).Seconds()
+			return node.Duration().Seconds()
 		}}
 		woc.computeMetrics(woc.wf.Spec.Metrics.Prometheus, woc.globalParams, realTimeScope, false)
 	}
@@ -681,7 +681,10 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 			// Formula: timeToWait = duration * factor^retry_number
 			timeToWait = baseDuration * time.Duration(math.Pow(float64(retryStrategy.Backoff.Factor), float64(len(node.Children))))
 		}
-		waitingDeadline := lastChildNode.FinishedAt.Add(timeToWait)
+		waitingDeadline := lastChildNode.StartedAt.Add(timeToWait)
+		if !lastChildNode.FinishedAt.IsZero() {
+			waitingDeadline = lastChildNode.FinishedAt.Add(timeToWait)
+		}
 
 		// If the waiting deadline is after the max duration deadline, then it's futile to wait until then. Stop early
 		if !maxDurationDeadline.IsZero() && waitingDeadline.After(maxDurationDeadline) {
@@ -1058,7 +1061,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		if node.FinishedAt.IsZero() {
 			// If we get here, the container is daemoned so the
 			// finishedAt might not have been set.
-			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+			node.FinishedAt = &metav1.Time{Time: time.Now().UTC()}
 		}
 		node.ResourcesDuration = resource.DurationForPod(pod)
 	}
@@ -1070,7 +1073,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 
 // getLatestFinishedAt returns the latest finishAt timestamp from all the
 // containers of this pod.
-func getLatestFinishedAt(pod *apiv1.Pod) metav1.Time {
+func getLatestFinishedAt(pod *apiv1.Pod) *metav1.Time {
 	var latest metav1.Time
 	for _, ctr := range pod.Status.InitContainerStatuses {
 		if ctr.State.Terminated != nil && ctr.State.Terminated.FinishedAt.After(latest.Time) {
@@ -1082,7 +1085,7 @@ func getLatestFinishedAt(pod *apiv1.Pod) metav1.Time {
 			latest = ctr.State.Terminated.FinishedAt
 		}
 	}
-	return latest
+	return &latest
 }
 
 func getPendingReason(pod *apiv1.Pod) string {
@@ -1706,7 +1709,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 	}
 
 	if node.Completed() && node.FinishedAt.IsZero() {
-		node.FinishedAt = node.StartedAt
+		node.FinishedAt = &node.StartedAt
 	}
 	var message string
 	if len(messages) > 0 {
@@ -1738,7 +1741,7 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 		}
 	}
 	if node.Completed() && node.FinishedAt.IsZero() {
-		node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+		node.FinishedAt = &metav1.Time{Time: time.Now().UTC()}
 		woc.log.Infof("node %s finished: %s", node.ID, node.FinishedAt)
 		woc.updated = true
 	}

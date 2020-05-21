@@ -537,12 +537,12 @@ func TestBackoffMessage(t *testing.T) {
 	firstNode, err := woc.getFirstChildNode(retryNode)
 	assert.NoError(t, err)
 	firstNode.StartedAt = metav1.Time{Time: time.Now().Add(-8 * time.Second)}
-	firstNode.FinishedAt = metav1.Time{Time: time.Now().Add(-6 * time.Second)}
+	firstNode.FinishedAt = &metav1.Time{Time: time.Now().Add(-6 * time.Second)}
 	woc.wf.Status.Nodes[firstNode.ID] = *firstNode
 	lastNode, err := woc.getLastChildNode(retryNode)
 	assert.NoError(t, err)
 	lastNode.StartedAt = metav1.Time{Time: time.Now().Add(-3 * time.Second)}
-	lastNode.FinishedAt = metav1.Time{Time: time.Now().Add(-1 * time.Second)}
+	lastNode.FinishedAt = &metav1.Time{Time: time.Now().Add(-1 * time.Second)}
 	woc.wf.Status.Nodes[lastNode.ID] = *lastNode
 
 	newRetryNode, proceed, err := woc.processNodeRetries(retryNode, *woc.wf.Spec.Templates[0].RetryStrategy)
@@ -552,10 +552,10 @@ func TestBackoffMessage(t *testing.T) {
 
 	// Advance time one second
 	firstNode.StartedAt = metav1.Time{Time: time.Now().Add(-9 * time.Second)}
-	firstNode.FinishedAt = metav1.Time{Time: time.Now().Add(-7 * time.Second)}
+	firstNode.FinishedAt = &metav1.Time{Time: time.Now().Add(-7 * time.Second)}
 	woc.wf.Status.Nodes[firstNode.ID] = *firstNode
 	lastNode.StartedAt = metav1.Time{Time: time.Now().Add(-4 * time.Second)}
-	lastNode.FinishedAt = metav1.Time{Time: time.Now().Add(-2 * time.Second)}
+	lastNode.FinishedAt = &metav1.Time{Time: time.Now().Add(-2 * time.Second)}
 	woc.wf.Status.Nodes[lastNode.ID] = *lastNode
 
 	newRetryNode, proceed, err = woc.processNodeRetries(retryNode, *woc.wf.Spec.Templates[0].RetryStrategy)
@@ -566,10 +566,10 @@ func TestBackoffMessage(t *testing.T) {
 
 	// Advance time 3 seconds
 	firstNode.StartedAt = metav1.Time{Time: time.Now().Add(-12 * time.Second)}
-	firstNode.FinishedAt = metav1.Time{Time: time.Now().Add(-10 * time.Second)}
+	firstNode.FinishedAt = &metav1.Time{Time: time.Now().Add(-10 * time.Second)}
 	woc.wf.Status.Nodes[firstNode.ID] = *firstNode
 	lastNode.StartedAt = metav1.Time{Time: time.Now().Add(-7 * time.Second)}
-	lastNode.FinishedAt = metav1.Time{Time: time.Now().Add(-5 * time.Second)}
+	lastNode.FinishedAt = &metav1.Time{Time: time.Now().Add(-5 * time.Second)}
 	woc.wf.Status.Nodes[lastNode.ID] = *lastNode
 
 	newRetryNode, proceed, err = woc.processNodeRetries(retryNode, *woc.wf.Spec.Templates[0].RetryStrategy)
@@ -3489,7 +3489,7 @@ func TestBackoffExceedsMaxDuration(t *testing.T) {
 	// Simulate node failed just now
 	node := wf.Status.Nodes["echo-r6v49-3721138751"]
 	node.StartedAt = metav1.Time{Time: time.Now().Add(-1 * time.Second)}
-	node.FinishedAt = metav1.Time{Time: time.Now()}
+	node.FinishedAt = &metav1.Time{Time: time.Now()}
 	wf.Status.Nodes["echo-r6v49-3721138751"] = node
 
 	woc := newWoc(*wf)

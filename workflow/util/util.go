@@ -351,7 +351,7 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, repo sqldb.OffloadNodeStatu
 			for nodeID, node := range wf.Status.Nodes {
 				if node.IsActiveSuspendNode() {
 					node.Phase = wfv1.NodeSucceeded
-					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+					node.FinishedAt = &metav1.Time{Time: time.Now().UTC()}
 					newNodes[nodeID] = node
 					workflowUpdated = true
 				}
@@ -470,7 +470,7 @@ func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, repo sqldb.Offload
 			if node.IsActiveSuspendNode() {
 				if selectorMatchesNode(selector, node) {
 					node.Phase = phase
-					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+					node.FinishedAt = &metav1.Time{Time: time.Now().UTC()}
 					if len(message) > 0 {
 						node.Message = message
 					}
@@ -590,10 +590,10 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 		}
 		if !newNode.Successful() && newNode.Type == wfv1.NodeTypePod {
 			newNode.StartedAt = metav1.Time{}
-			newNode.FinishedAt = metav1.Time{}
+			newNode.FinishedAt = &metav1.Time{}
 		} else {
 			newNode.StartedAt = metav1.Time{Time: time.Now().UTC()}
-			newNode.FinishedAt = newNode.StartedAt
+			newNode.FinishedAt = &newNode.StartedAt
 		}
 		newChildren := make([]string, len(node.Children))
 		for i, childID := range node.Children {
@@ -691,7 +691,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, repo sqldb.OffloadNodeStatus
 				newNode := node.DeepCopy()
 				newNode.Phase = wfv1.NodeRunning
 				newNode.Message = ""
-				newNode.FinishedAt = metav1.Time{}
+				newNode.FinishedAt = nil
 				newNodes[newNode.ID] = *newNode
 				continue
 			}
@@ -710,7 +710,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, repo sqldb.OffloadNodeStatus
 			newNode := node.DeepCopy()
 			newNode.Phase = wfv1.NodeRunning
 			newNode.Message = ""
-			newNode.FinishedAt = metav1.Time{}
+			newNode.FinishedAt = nil
 			newNodes[newNode.ID] = *newNode
 			continue
 		}

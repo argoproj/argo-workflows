@@ -13,7 +13,7 @@ func TestDefault(t *testing.T) {
 }
 
 func TestDecompressWorkflow(t *testing.T) {
-	defer SetMaxWorkflowSize(250)()
+	defer SetMaxWorkflowSize(230)()
 
 	t.Run("SmallWorkflow", func(t *testing.T) {
 		wf := &wfv1.Workflow{

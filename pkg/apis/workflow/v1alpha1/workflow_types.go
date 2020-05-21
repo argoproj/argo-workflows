@@ -1125,7 +1125,7 @@ type NodeStatus struct {
 	StartedAt metav1.Time `json:"startedAt,omitempty" protobuf:"bytes,10,opt,name=startedAt"`
 
 	// Time at which this node completed
-	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,11,opt,name=finishedAt"`
+	FinishedAt *metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,11,opt,name=finishedAt"`
 
 	// ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,21,opt,name=resourcesDuration"`
@@ -1238,10 +1238,6 @@ func (n NodeStatus) StartTime() *metav1.Time {
 	return &n.StartedAt
 }
 
-func (n NodeStatus) FinishTime() *metav1.Time {
-	return &n.FinishedAt
-}
-
 // CanRetry returns whether the node should be retried or not.
 func (n NodeStatus) CanRetry() bool {
 	// TODO(shri): Check if there are some 'unretryable' errors.
@@ -1275,6 +1271,16 @@ func (n *NodeStatus) GetTemplateRef() *TemplateRef {
 // IsActiveSuspendNode returns whether this node is an active suspend node
 func (n *NodeStatus) IsActiveSuspendNode() bool {
 	return n.Type == NodeTypeSuspend && n.Phase == NodeRunning
+}
+
+func (n NodeStatus) Duration() time.Duration {
+	if n.StartedAt.IsZero() {
+		return 0
+	}
+	if n.FinishedAt.IsZero() {
+		return time.Since(n.StartedAt.Time)
+	}
+	return n.FinishedAt.Time.Sub(n.StartedAt.Time)
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket

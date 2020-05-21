@@ -73,6 +73,11 @@ CI                    ?= false
 DB                    ?= postgres
 K3D                   := $(shell if [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 LOG_LEVEL             := debug
+ALWAYS_OFFLOAD_NODE_STATUS := true
+
+ifeq ($(DB),no-db)
+ALWAYS_OFFLOAD_NODE_STATUS := false
+endif
 
 ifeq ($(CI),true)
 TEST_OPTS := -coverprofile=coverage.out

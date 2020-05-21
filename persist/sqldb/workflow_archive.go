@@ -147,11 +147,7 @@ func (r *workflowArchive) ListWorkflows(namespace string, minStartedAt, maxStart
 			},
 			Status: wfv1.WorkflowStatus{
 				Phase:      md.Phase,
-<<<<<<< Updated upstream
 				StartedAt:  &v1.Time{Time: md.StartedAt},
-=======
-				StartedAt:  v1.Time{Time: md.StartedAt},
->>>>>>> Stashed changes
 				FinishedAt: &v1.Time{Time: md.FinishedAt},
 			},
 		}

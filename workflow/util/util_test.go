@@ -527,7 +527,7 @@ func TestRetryWorkflowCompressed(t *testing.T) {
 	_, err = wfIf.Create(origWf)
 	assert.NoError(t, err)
 
-	clearFunc = packer.SetMaxWorkflowSize(1527)
+	clearFunc = packer.SetMaxWorkflowSize(1500)
 	defer clearFunc()
 	wf, err := RetryWorkflow(kubeCs, sqldb.ExplosiveOffloadNodeStatusRepo, wfIf, origWf, false, "")
 	assert.NoError(t, err)

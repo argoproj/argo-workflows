@@ -538,7 +538,7 @@ func (s *CLISuite) TestWorkflowRetryNoPersistence() {
 			innerStepsPodNode := status.Nodes.FindByDisplayName("steps-inner-step1")
 
 			assert.True(t, outerStepsPodNode.FinishedAt.Before(&retryTime))
-			assert.True(t, retryTime.Before(&innerStepsPodNode.FinishedAt))
+			assert.True(t, retryTime.Before(innerStepsPodNode.FinishedAt))
 		})
 }
 

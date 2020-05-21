@@ -469,9 +469,9 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 	localScope := woc.globalParams.DeepCopy()
 
 	if node.Completed() {
-		localScope["duration"] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())
+		localScope["duration"] = fmt.Sprintf("%f", node.Duration().Seconds())
 		realTimeScope["duration"] = func() float64 {
-			return node.FinishedAt.Sub(node.StartedAt.Time).Seconds()
+			return node.Duration().Seconds()
 		}
 	} else {
 		localScope["duration"] = fmt.Sprintf("%f", time.Since(node.StartedAt.Time).Seconds())

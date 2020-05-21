@@ -45,7 +45,7 @@ func TestPrintNode(t *testing.T) {
 		Type:        wfv1.NodeTypePod,
 		ID:          nodeID,
 		StartedAt:   timestamp,
-		FinishedAt:  timestamp,
+		FinishedAt:  &timestamp,
 		Message:     nodeMessage,
 	}
 	node.HostNodeName = kubernetesNodeName
