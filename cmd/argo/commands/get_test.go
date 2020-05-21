@@ -33,7 +33,6 @@ func TestPrintNode(t *testing.T) {
 	nodeMessage := "test"
 	getArgs := getFlags{
 		output: "",
-		status: "",
 	}
 	timestamp := metav1.Time{
 		Time: time.Now(),
@@ -50,6 +49,33 @@ func TestPrintNode(t *testing.T) {
 	}
 	node.HostNodeName = kubernetesNodeName
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, "", nodeID, "0s", nodeMessage, ""), node, nodePrefix, getArgs)
+
+	// Compatibility test
+	getArgs.status = "Running"
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
+
+	getArgs.status = ""
+	getArgs.nodeFieldSelectorString = "phase=Running"
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
+
+	getArgs.nodeFieldSelectorString = "phase!=foobar"
+	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t\t%s\t%s\t%s\t\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeID, "0s", nodeMessage), node, nodePrefix, getArgs)
+
+	getArgs.nodeFieldSelectorString = "phase!=Running"
+	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
+
+	// Compatibility test
+	getArgs.nodeFieldSelectorString = ""
+	getArgs.status = "foobar"
+	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
+
+	getArgs.status = ""
+	getArgs.nodeFieldSelectorString = "phase=foobar"
+	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
+
+	getArgs = getFlags{
+		output: "",
+	}
 
 	node.TemplateName = nodeTemplateName
 	testPrintNodeImpl(t, fmt.Sprintf("%s %s\t%s\t%s\t%s\t%s\t%s\n", jobStatusIconMap[wfv1.NodeRunning], nodeName, nodeTemplateName, nodeID, "0s", nodeMessage, ""), node, nodePrefix, getArgs)
@@ -71,4 +97,9 @@ func TestPrintNode(t *testing.T) {
 
 	getArgs.status = "foobar"
 	testPrintNodeImpl(t, "", node, nodePrefix, getArgs)
+}
+
+func TestStatusToNodeFieldSelector(t *testing.T) {
+	one := statusToNodeFieldSelector("Running")
+	assert.Equal(t, "phase=Running", one)
 }
