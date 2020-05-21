@@ -766,6 +766,11 @@ export interface WorkflowStatus {
      * Conditions is a list of WorkflowConditions
      */
     conditions?: WorkflowCondition[];
+
+    /**
+     * StoredWorkflowSpec is a Workflow Spec of top level WorkflowTemplate.
+     */
+    storedWorkflowSpec?: WorkflowSpec;
 }
 
 export interface WorkflowCondition {
@@ -848,6 +853,23 @@ export interface WorkflowSpec {
      * Suspend will suspend the workflow and prevent execution of any future steps in the workflow
      */
     suspend?: boolean;
+
+    /**
+     * workflowTemplateRef is the reference to the workflow template resource to execute.
+     */
+    workflowTemplateRef?: WorkflowTemplateRef;
+}
+
+export interface WorkflowTemplateRef {
+    /**
+     * Name is the resource name of the template.
+     */
+    name: string;
+
+    /**
+     * ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+     */
+    clusterScope?: boolean;
 }
 
 export interface DAGTemplate {

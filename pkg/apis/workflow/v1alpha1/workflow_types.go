@@ -269,6 +269,9 @@ type WorkflowSpec struct {
 
 	// Shutdown will shutdown the workflow according to its ShutdownStrategy
 	Shutdown ShutdownStrategy `json:"shutdown,omitempty" protobuf:"bytes,33,opt,name=shutdown,casttype=ShutdownStrategy"`
+
+	// WorkflowTemplateRef holds top level WorkflowTemplate reference to execute it.
+	WorkflowTemplateRef *WorkflowTemplateRef `json:"workflowTemplateRef,omitempty" protobuf:"bytes,34,opt,name=workflowTemplateRef"`
 }
 
 type ShutdownStrategy string
@@ -829,8 +832,24 @@ type TemplateRef struct {
 	// RuntimeResolution skips validation at creation time.
 	// By enabling this option, you can create the referred workflow template before the actual runtime.
 	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
-	// ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+	// ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
+}
+
+// WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
+type WorkflowTemplateRef struct {
+	// Name is the resource name of the workflow template.
+	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+	// ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
+	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,2,opt,name=clusterScope"`
+}
+
+func (ref *WorkflowTemplateRef) ToTemplateRef(entrypoint string) *TemplateRef {
+	return &TemplateRef{
+		Name:         ref.Name,
+		ClusterScope: ref.ClusterScope,
+		Template:     entrypoint,
+	}
 }
 
 type ArgumentsProvider interface {
@@ -927,6 +946,9 @@ type WorkflowStatus struct {
 
 	// ResourcesDuration is the total for the workflow
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
+
+	// StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.
+	StoredWorkflowSpec *WorkflowSpec `json:"storedWorkflowTemplateSpec,omitempty" protobuf:"bytes,14,opt,name=storedWorkflowTemplateSpec"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -1743,6 +1765,11 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 // GetResourceScope returns the template scope of workflow.
 func (wf *Workflow) GetResourceScope() ResourceScope {
 	return ResourceScopeLocal
+}
+
+// GetWorkflowSpec returns the Spec of a workflow.
+func (wf *Workflow) GetWorkflowSpec() WorkflowSpec {
+	return wf.Spec
 }
 
 // NodeID creates a deterministic node ID based on a node name
