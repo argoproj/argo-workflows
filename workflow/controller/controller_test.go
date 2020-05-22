@@ -326,3 +326,53 @@ func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
 
 	controller.archivedWorkflowGarbageCollector(make(chan struct{}))
 }
+
+const wfWithTmplRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-hello-world-
+  namespace: default
+spec:
+  entrypoint: whalesay-template
+  arguments:
+    parameters:
+    - name: message
+      value: "test"
+  workflowTemplateRef:
+    name: workflow-template-whalesay-template
+`
+const wfTmpl = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-whalesay-template
+  namespace: default
+spec:
+  templates:
+  - name: whalesay-template
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+`
+
+func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
+	//_, controller := newController()
+	wf := unmarshalWF(wfWithTmplRef)
+	wftmpl := unmarshalWFTmpl(wfTmpl)
+	_, controller := newController(wf, wftmpl)
+	//_, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("default").Create(wftmpl)
+	//assert.NoError(t, err)
+	woc := wfOperationCtx{controller: controller,
+		wf: wf}
+	t.Run("WithWorkflowTmplRef", func(t *testing.T) {
+		_, _, err := woc.loadExecutionSpec()
+		assert.NoError(t, err)
+		assert.Equal(t, &wftmpl.Spec.WorkflowSpec, woc.wfSpec)
+
+	})
+}

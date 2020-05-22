@@ -264,6 +264,9 @@ message DAGTask {
   // template, irrespective of the success, failure, or error of the
   // primary template.
   optional string onExit = 11;
+
+  // Depends are name of other targets which this depends on
+  optional string depends = 12;
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -999,7 +1002,7 @@ message TemplateRef {
   // By enabling this option, you can create the referred workflow template before the actual runtime.
   optional bool runtimeResolution = 3;
 
-  // ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+  // ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
   optional bool clusterScope = 4;
 }
 
@@ -1237,6 +1240,9 @@ message WorkflowSpec {
 
   // Shutdown will shutdown the workflow according to its ShutdownStrategy
   optional string shutdown = 33;
+
+  // WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution
+  optional WorkflowTemplateRef workflowTemplateRef = 34;
 }
 
 // WorkflowStatus contains overall status information about a workflow
@@ -1278,6 +1284,9 @@ message WorkflowStatus {
 
   // ResourcesDuration is the total for the workflow
   map<string, int64> resourcesDuration = 12;
+
+  // StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.
+  optional WorkflowSpec storedWorkflowTemplateSpec = 14;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step
@@ -1333,6 +1342,15 @@ message WorkflowTemplateList {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   repeated WorkflowTemplate items = 2;
+}
+
+// WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
+message WorkflowTemplateRef {
+  // Name is the resource name of the workflow template.
+  optional string name = 1;
+
+  // ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
+  optional bool clusterScope = 2;
 }
 
 // WorkflowTemplateSpec is a spec of WorkflowTemplate.
