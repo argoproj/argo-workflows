@@ -270,7 +270,7 @@ type WorkflowSpec struct {
 	// Shutdown will shutdown the workflow according to its ShutdownStrategy
 	Shutdown ShutdownStrategy `json:"shutdown,omitempty" protobuf:"bytes,33,opt,name=shutdown,casttype=ShutdownStrategy"`
 
-	// WorkflowTemplateRef holds top level WorkflowTemplate reference to execute it.
+	// WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution
 	WorkflowTemplateRef *WorkflowTemplateRef `json:"workflowTemplateRef,omitempty" protobuf:"bytes,34,opt,name=workflowTemplateRef"`
 }
 
