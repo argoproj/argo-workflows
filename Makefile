@@ -70,7 +70,12 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.$(VERSION)
 # perform static compilation
 STATIC_BUILD          ?= true
 CI                    ?= false
-DB                    ?= postgres
+DB                    ?= no-db
+ifeq ($(CI),false)
+AUTH_MODE             := hybrid
+else
+AUTH_MODE             := client
+endif
 K3D                   := $(shell if [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 LOG_LEVEL             := debug
 ALWAYS_OFFLOAD_NODE_STATUS := true
@@ -373,7 +378,7 @@ start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
 	grep '127.0.0.1 *minio' /etc/hosts
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
-	env ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) goreman -set-ports=false -logtime=false start
+	env ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) goreman -set-ports=false -logtime=false start
 
 
 .PHONY: wait
@@ -468,7 +473,7 @@ $(GOPATH)/bin/swagger:
 .PHONY: swagger
 swagger: api/openapi-spec/swagger.json
 
-pkg/apis/workflow/v1alpha1/openapi_generated.go: $(shell find pkg/apis/workflow/v1alpha1 -type f -name '*.go' -not -name openapi_generated.go)
+pkg/apis/workflow/v1alpha1/openapi_generated.go: $(shell find pkg/apis/workflow/v1alpha1 -type f -not -name openapi_generated.go)
 	$(call backup_go_mod)
 	go install k8s.io/kube-openapi/cmd/openapi-gen
 	openapi-gen \
@@ -478,20 +483,29 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go: $(shell find pkg/apis/workflow/
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
 	$(call restore_go_mod)
 
-pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
-	go run ./hack secondaryswaggergen
-
-dist/swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
-	swagger mixin -c 685 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > dist/swagger.json
-
 dist/kubernetes.swagger.json:
 	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.15/api/openapi-spec/swagger.json
 
-dist/kubeified.swagger.json: dist/swagger.json dist/kubernetes.swagger.json hack/kubeifyswagger.go
-	go run ./hack kubeifyswagger dist/swagger.json dist/kubeified.swagger.json
+pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
+	go run ./hack secondaryswaggergen
+
+# we always ignore the conflicts, so lets automated figuring out how many there will be and just use that
+dist/swagger-conflicts: $(GOPATH)/bin/swagger $(SWAGGER_FILES)
+	swagger mixin $(SWAGGER_FILES) 2>&1 | grep -c skipping > dist/swagger-conflicts || true
+
+dist/mixed.swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) dist/swagger-conflicts
+	swagger mixin -c $(shell cat dist/swagger-conflicts) $(SWAGGER_FILES) > dist/mixed.swagger.json.tmp
+	mv dist/mixed.swagger.json.tmp dist/mixed.swagger.json
+
+dist/swaggifed.swagger.json: dist/mixed.swagger.json $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
+	cat dist/mixed.swagger.json | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > dist/swaggifed.swagger.json
+
+dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json hack/kubeifyswagger.go
+	go run ./hack kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
 
 api/openapi-spec/swagger.json: dist/kubeified.swagger.json
-	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json > api/openapi-spec/swagger.json
+	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json > dist/swagger.json
+	mv dist/swagger.json api/openapi-spec/swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 
