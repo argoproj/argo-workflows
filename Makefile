@@ -70,7 +70,12 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.$(VERSION)
 # perform static compilation
 STATIC_BUILD          ?= true
 CI                    ?= false
-DB                    ?= postgres
+DB                    ?= no-db
+ifeq ($(CI),false)
+AUTH_MODE             := hybrid
+else
+AUTH_MODE             := client
+endif
 K3D                   := $(shell if [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 LOG_LEVEL             := debug
 ALWAYS_OFFLOAD_NODE_STATUS := true
@@ -365,7 +370,7 @@ start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
 	grep '127.0.0.1 *minio' /etc/hosts
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
-	env ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) goreman -set-ports=false -logtime=false start
+	env ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) goreman -set-ports=false -logtime=false start
 
 
 .PHONY: wait
