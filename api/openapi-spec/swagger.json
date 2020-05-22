@@ -3804,9 +3804,6 @@
     "io.argoproj.workflow.v1alpha1.WorkflowSpec": {
       "description": "WorkflowSpec is the specification of a Workflow.",
       "type": "object",
-      "required": [
-        "templates"
-      ],
       "properties": {
         "activeDeadlineSeconds": {
           "description": "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow",
@@ -4250,9 +4247,6 @@
     "io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec": {
       "description": "WorkflowTemplateSpec is a spec of WorkflowTemplate.",
       "type": "object",
-      "required": [
-        "templates"
-      ],
       "properties": {
         "activeDeadlineSeconds": {
           "description": "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the io.argoproj.workflow.v1alpha1. A value of zero is used to terminate a Running workflow",

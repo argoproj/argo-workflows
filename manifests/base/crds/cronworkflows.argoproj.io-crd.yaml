@@ -6549,8 +6549,6 @@ spec:
                       name:
                         type: string
                     type: object
-                required:
-                - templates
                 type: object
             required:
             - workflowSpec

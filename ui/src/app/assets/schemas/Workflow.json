@@ -2219,9 +2219,6 @@
           "description": "WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution"
         }
       },
-      "required": [
-        "templates"
-      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.WorkflowStatus": {
@@ -2665,9 +2662,6 @@
           "description": "WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution"
         }
       },
-      "required": [
-        "templates"
-      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.WorkflowTemplateUpdateRequest": {
