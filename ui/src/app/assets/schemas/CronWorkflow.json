@@ -460,6 +460,10 @@
           },
           "type": "array"
         },
+        "depends": {
+          "description": "Depends are name of other targets which this depends on",
+          "type": "string"
+        },
         "name": {
           "description": "Name is the name of the target",
           "type": "string"
@@ -1415,10 +1419,6 @@
           "description": "GenerateName overrides metadata.generateName",
           "type": "string"
         },
-        "instanceID": {
-          "description": "InstanceID binds the Resource to the specified instance ID",
-          "type": "string"
-        },
         "labels": {
           "description": "Labels adds to metadata.labels",
           "type": "string"
@@ -1682,7 +1682,7 @@
       "description": "TemplateRef is a reference of template resource.",
       "properties": {
         "clusterScope": {
-          "description": "ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).",
+          "description": "ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).",
           "type": "boolean"
         },
         "name": {
@@ -2240,6 +2240,10 @@
           "type": "array",
           "x-kubernetes-patch-merge-key": "name",
           "x-kubernetes-patch-strategy": "merge"
+        },
+        "workflowTemplateRef": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateRef",
+          "description": "WorkflowTemplateRef holds top level WorkflowTemplate reference to execute it."
         }
       },
       "required": [
@@ -2313,6 +2317,10 @@
           },
           "description": "StoredTemplates is a mapping between a template ref and the node's status.",
           "type": "object"
+        },
+        "storedWorkflowTemplateSpec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec",
+          "description": "StoredWorkflowSpec stores the WorkflowTemplate spec for future execution."
         }
       },
       "type": "object"
@@ -2430,6 +2438,7 @@
         }
       },
       "required": [
+        "metadata",
         "spec"
       ],
       "type": "object"
@@ -2490,6 +2499,20 @@
         "metadata",
         "items"
       ],
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTemplateRef": {
+      "description": "WorkflowTemplateRef is a reference to a WorkflowTemplate resource.",
+      "properties": {
+        "clusterScope": {
+          "description": "ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).",
+          "type": "boolean"
+        },
+        "name": {
+          "description": "Name is the resource name of the workflow template.",
+          "type": "string"
+        }
+      },
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec": {
@@ -2663,6 +2686,10 @@
           "type": "array",
           "x-kubernetes-patch-merge-key": "name",
           "x-kubernetes-patch-strategy": "merge"
+        },
+        "workflowTemplateRef": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateRef",
+          "description": "WorkflowTemplateRef holds top level WorkflowTemplate reference to execute it."
         }
       },
       "required": [

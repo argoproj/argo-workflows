@@ -221,6 +221,7 @@
       "description": "ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope",
       "type": "object",
       "required": [
+        "metadata",
         "spec"
       ],
       "properties": {
@@ -296,8 +297,8 @@
       "description": "CronWorkflow is the definition of a scheduled workflow resource",
       "type": "object",
       "required": [
-        "spec",
-        "status"
+        "metadata",
+        "spec"
       ],
       "properties": {
         "apiVersion": {
@@ -434,6 +435,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "depends": {
+          "description": "Depends are name of other targets which this depends on",
+          "type": "string"
         },
         "name": {
           "description": "Name is the name of the target",
@@ -1561,10 +1566,6 @@
           "description": "GenerateName overrides metadata.generateName",
           "type": "string"
         },
-        "instanceID": {
-          "description": "InstanceID binds the Resource to the specified instance ID",
-          "type": "string"
-        },
         "labels": {
           "description": "Labels adds to metadata.labels",
           "type": "string"
@@ -1828,7 +1829,7 @@
       "type": "object",
       "properties": {
         "clusterScope": {
-          "description": "ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).",
+          "description": "ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).",
           "type": "boolean"
         },
         "name": {
@@ -2050,8 +2051,7 @@
       "type": "object",
       "required": [
         "metadata",
-        "spec",
-        "status"
+        "spec"
       ],
       "properties": {
         "apiVersion": {
@@ -2292,6 +2292,10 @@
           },
           "x-kubernetes-patch-merge-key": "name",
           "x-kubernetes-patch-strategy": "merge"
+        },
+        "workflowTemplateRef": {
+          "description": "WorkflowTemplateRef holds top level WorkflowTemplate reference to execute it.",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateRef"
         }
       }
     },
@@ -2362,6 +2366,10 @@
           "additionalProperties": {
             "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Template"
           }
+        },
+        "storedWorkflowTemplateSpec": {
+          "description": "StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowSpec"
         }
       }
     },
@@ -2418,6 +2426,7 @@
       "description": "WorkflowTemplate is the definition of a workflow template resource",
       "type": "object",
       "required": [
+        "metadata",
         "spec"
       ],
       "properties": {
@@ -2461,6 +2470,20 @@
         },
         "metadata": {
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta"
+        }
+      }
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateRef": {
+      "description": "WorkflowTemplateRef is a reference to a WorkflowTemplate resource.",
+      "type": "object",
+      "properties": {
+        "clusterScope": {
+          "description": "ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).",
+          "type": "boolean"
+        },
+        "name": {
+          "description": "Name is the resource name of the workflow template.",
+          "type": "string"
         }
       }
     },
@@ -2639,6 +2662,10 @@
           },
           "x-kubernetes-patch-merge-key": "name",
           "x-kubernetes-patch-strategy": "merge"
+        },
+        "workflowTemplateRef": {
+          "description": "WorkflowTemplateRef holds top level WorkflowTemplate reference to execute it.",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateRef"
         }
       }
     }

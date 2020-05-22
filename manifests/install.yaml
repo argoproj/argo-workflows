@@ -2454,6 +2454,8 @@ spec:
                                 items:
                                   type: string
                                 type: array
+                              depends:
+                                type: string
                               name:
                                 type: string
                               onExit:
@@ -6520,6 +6522,13 @@ spec:
                   - name
                   type: object
                 type: array
+              workflowTemplateRef:
+                properties:
+                  clusterScope:
+                    type: boolean
+                  name:
+                    type: string
+                type: object
             required:
             - templates
             type: object
@@ -9008,6 +9017,8 @@ spec:
                                     items:
                                       type: string
                                     type: array
+                                  depends:
+                                    type: string
                                   name:
                                     type: string
                                   onExit:
@@ -13074,6 +13085,13 @@ spec:
                       - name
                       type: object
                     type: array
+                  workflowTemplateRef:
+                    properties:
+                      clusterScope:
+                        type: boolean
+                      name:
+                        type: string
+                    type: object
                 required:
                 - templates
                 type: object
@@ -15545,6 +15563,8 @@ spec:
                                 items:
                                   type: string
                                 type: array
+                              depends:
+                                type: string
                               name:
                                 type: string
                               onExit:
@@ -19611,6 +19631,13 @@ spec:
                   - name
                   type: object
                 type: array
+              workflowTemplateRef:
+                properties:
+                  clusterScope:
+                    type: boolean
+                  name:
+                    type: string
+                type: object
             required:
             - templates
             type: object
@@ -22078,6 +22105,8 @@ spec:
                                 items:
                                   type: string
                                 type: array
+                              depends:
+                                type: string
                               name:
                                 type: string
                               onExit:
@@ -26144,6 +26173,13 @@ spec:
                   - name
                   type: object
                 type: array
+              workflowTemplateRef:
+                properties:
+                  clusterScope:
+                    type: boolean
+                  name:
+                    type: string
+                type: object
             required:
             - templates
             type: object
