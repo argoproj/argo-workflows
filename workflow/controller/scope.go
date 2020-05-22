@@ -100,6 +100,14 @@ func (s *wfScope) resolveArtifact(v string, subPath string) (*wfv1.Artifact, err
 			copyArt.GCS.Key = path.Join(copyArt.GCS.Key, subPath)
 		}
 
+		if copyArt.HDFS != nil {
+			copyArt.HDFS.Path = path.Join(copyArt.HDFS.Path, subPath)
+		}
+
+		if copyArt.OSS != nil {
+			copyArt.OSS.Key = path.Join(copyArt.OSS.Key, subPath)
+		}
+
 		return copyArt, nil
 	}
 

@@ -84,6 +84,56 @@ s3:
     name: my-gcs-cred
 `
 
+var HDFSArtifact = `
+name: hdfs-artifact
+path: some/local/path
+hdfs:
+  addresses:
+  - my-hdfs-namenode-0.my-hdfs-namenode.default.svc.cluster.local:8020
+  - my-hdfs-namenode-1.my-hdfs-namenode.default.svc.cluster.local:8020
+  path: /path/to/some/key
+  hdfsUser: root
+`
+var HDFSArtifactWithSubpath = `
+name: hdfs-artifact
+path: some/local/path
+hdfs:
+  addresses:
+  - my-hdfs-namenode-0.my-hdfs-namenode.default.svc.cluster.local:8020
+  - my-hdfs-namenode-1.my-hdfs-namenode.default.svc.cluster.local:8020
+  path: /path/to/some/key/some/subkey
+  hdfsUser: root
+`
+
+var OSSArtifact = `
+name: oss-artifact
+path: some/local/path
+oss:
+  endpoint: http://oss-cn-hangzhou-zmf.aliyuncs.com
+  bucket: test-bucket-name
+  key: path/to/some/key
+  accessKeySecret:
+    name: my-oss-credentials
+    key: accessKey
+  secretKeySecret:
+    name: my-oss-credentials
+    key: secretKey
+`
+var OSSArtifactWithSubpath = `
+name: oss-artifact
+path: some/local/path
+oss:
+  endpoint: http://oss-cn-hangzhou-zmf.aliyuncs.com
+  bucket: test-bucket-name
+  key: path/to/some/key/some/subkey
+  accessKeySecret:
+    name: my-oss-credentials
+    key: accessKey
+  secretKeySecret:
+    name: my-oss-credentials
+    key: secretKey
+`
+
 func artifactSubPathResolution(t *testing.T, artifactString string, subPathArtifactString string) {
 	scope := wfScope{
 		tmpl:  nil,
@@ -122,5 +172,11 @@ func TestSubPathResolution(t *testing.T) {
 	})
 	t.Run("GCS Artifact SubPath Resolution", func(t *testing.T) {
 		artifactSubPathResolution(t, GCSArtifact, GCSArtifactWithSubpath)
+	})
+	t.Run("HDFS Artifact SubPath Resolution", func(t *testing.T) {
+		artifactSubPathResolution(t, HDFSArtifact, HDFSArtifactWithSubpath)
+	})
+	t.Run("OSS Artifact SubPath Resolution", func(t *testing.T) {
+		artifactSubPathResolution(t, OSSArtifact, OSSArtifactWithSubpath)
 	})
 }
