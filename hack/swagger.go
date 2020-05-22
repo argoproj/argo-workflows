@@ -8,60 +8,53 @@ var kinds = []string{"ClusterWorkflowTemplate", "CronWorkflow", "Workflow", "Wor
 
 type swagger obj
 
+var intOrString = obj{"x-kubernetes-int-or-string": true}
+var any = obj{"x-kubernetes-preserve-unknown-fields": true}
+
 func (s swagger) definitionByName(name string) obj {
 	switch name {
-	case "io.k8s.apimachinery.pkg.api.resource.Quantity",
-		"io.argoproj.workflow.v1alpha1.Item":
-		return obj{
-			"x-kubernetes-int-or-string": true,
-		}
+	case "io.argoproj.workflow.v1alpha1.Item":
+		return any
+	case "io.k8s.apimachinery.pkg.api.resource.Quantity":
+		return intOrString
+	case "io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta":
+		return obj{"type": "object"}
 	}
 	return s["definitions"].(obj)[name].(obj)
 }
 
 func (s swagger) expand(definition obj) obj {
-	ref, ok := definition["$ref"]
-	if ok {
+	if ref, ok := definition["$ref"]; ok {
 		delete(definition, "$ref")
 		return s.expand(s.definitionByName(strings.TrimPrefix(ref.(string), "#/definitions/")))
 	}
+	if _, ok := definition["anyOf"]; ok {
+		return any
+	}
 	s.scrub(definition)
-	delete(definition, "anyOf")
-	items, ok := definition["items"].(obj)
-	if ok {
-		delete(items, "anyOf")
-		ref, ok := items["$ref"]
-		if ok {
+
+	if items, ok := definition["items"].(obj); ok {
+		if _, ok := items["anyOf"]; ok {
+			definition["items"] = any
+		} else if ref, ok := items["$ref"]; ok {
 			delete(items, "$ref")
 			definition["items"] = s.expand(s.definitionByName(strings.TrimPrefix(ref.(string), "#/definitions/")))
 		}
 	}
-	properties, ok := definition["properties"].(obj)
-	if ok {
+	if properties, ok := definition["properties"].(obj); ok {
 		for name, value := range properties {
-			delete(properties, "anyOf")
-			if name == "metadata" {
-				properties[name] = obj{"type": "object"}
+			if _, ok := value.(obj)["anyOf"]; ok {
+				definition[name] = any
 			} else {
 				properties[name] = s.expand(value.(obj))
 			}
 		}
 	}
-	properties, ok = definition["additionalProperties"].(obj)
-	if ok {
+	if properties, ok := definition["additionalProperties"].(obj); ok {
 		definition["additionalProperties"] = s.expand(properties)
 	}
-	format, ok := definition["format"]
-	if ok {
-		if format == "int-or-string" {
-			delete(definition, "format")
-			delete(definition, "type")
-			definition["anyOf"] = array{
-				obj{"type": "integer"},
-				obj{"type": "string"},
-			}
-			definition["x-kubernetes-int-or-string"] = true
-		}
+	if format, ok := definition["format"]; ok && format == "int-or-string" {
+		return intOrString
 	}
 	return definition
 }
