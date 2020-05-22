@@ -126,7 +126,7 @@ func TestTopLevelWFTmplRefGetFromStored(t *testing.T) {
 		_, execArgs, err := woc.loadExecutionSpec()
 		assert.NoError(t, err)
 
-		assert.Equal(t, "test", execArgs.Parameters[0].Value)
-		assert.Equal(t, "hello", execArgs.Parameters[1].Value)
+		assert.Equal(t, "test", *execArgs.Parameters[0].Value)
+		assert.Equal(t, "hello", *execArgs.Parameters[1].Value)
 	})
 }
