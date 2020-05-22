@@ -39,35 +39,6 @@ func TestDAGCycle(t *testing.T) {
 	}
 }
 
-var duplicateDependencies = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: dag-dup-depends-
-spec:
-  entrypoint: cycle
-  templates:
-  - name: echo
-    container:
-      image: alpine:3.7
-      command: [echo, hello]
-  - name: cycle
-    dag:
-      tasks:
-      - name: A
-        template: echo
-      - name: B
-        dependencies: [A, A]
-        template: echo
-`
-
-func TestDuplicateDependencies(t *testing.T) {
-	_, err := validate(duplicateDependencies)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "duplicate")
-	}
-}
-
 var dagUndefinedTemplate = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -654,4 +625,67 @@ spec:
 func TestDAGTargetMissingInputParam(t *testing.T) {
 	_, err := validate(dagTargetMissingInputParam)
 	assert.NotNil(t, err)
+}
+
+var dagDependsAndDependencies = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-target-
+spec:
+  entrypoint: dag-target
+  templates:
+  - name: dag-target
+    dag:
+      tasks:
+      - name: A
+        template: echo
+      - name: B
+        dependencies: [A]
+        template: echo
+      - name: C
+        depends: "B"
+        template: echo
+
+  - name: echo
+    container:
+      image: alpine:3.7
+      command: [echo, "hello"]
+`
+
+func TestDependsAndDependencies(t *testing.T) {
+	_, err := validate(dagDependsAndDependencies)
+	assert.Error(t, err, "templates.dag-target cannot use both 'depends' and 'dependencies' in the same DAG template")
+}
+
+var dagDependsAndContinueOn = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-target-
+spec:
+  entrypoint: dag-target
+  templates:
+  - name: dag-target
+    dag:
+      tasks:
+      - name: A
+        template: echo
+      - name: B
+        continueOn:
+          failed: true
+        template: echo
+      - name: C
+        depends: "B"
+        template: echo
+
+  - name: echo
+    container:
+      image: alpine:3.7
+      command: [echo, "hello"]
+`
+
+func TestDependsAndContinueOn(t *testing.T) {
+	_, err := validate(dagDependsAndContinueOn)
+	assert.Error(t, err, "templates.dag-target cannot use 'continueOn' when using 'depends'. Instead use 'dep-task.Failed'/'dep-task.Errored'")
 }
