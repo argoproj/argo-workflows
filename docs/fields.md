@@ -570,6 +570,7 @@ WorkflowSpec is the specification of a Workflow.
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
+|`workflowTemplateRef`|[`WorkflowTemplateRef`](#workflowtemplateref)|WorkflowTemplateRef holds top level WorkflowTemplate reference to execute it.|
 
 ## WorkflowStatus
 
@@ -590,6 +591,7 @@ WorkflowStatus contains overall status information about a workflow
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is the total for the workflow|
 |`startedAt`|[`Time`](#time)|Time at which this workflow started|
 |`storedTemplates`|[`Template`](#template)|StoredTemplates is a mapping between a template ref and the node's status.|
+|`storedWorkflowTemplateSpec`|[`WorkflowSpec`](#workflowspec)|StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.|
 
 ## CronWorkflowSpec
 
@@ -1144,6 +1146,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
+|`workflowTemplateRef`|[`WorkflowTemplateRef`](#workflowtemplateref)|WorkflowTemplateRef holds top level WorkflowTemplate reference to execute it.|
 
 ## Arguments
 
@@ -1626,6 +1629,25 @@ TTLStrategy is the strategy for the time to live depending on if the workflow su
 |`secondsAfterCompletion`|`int32`|SecondsAfterCompletion is the number of seconds to live after completion|
 |`secondsAfterFailure`|`int32`|SecondsAfterFailure is the number of seconds to live after failure|
 |`secondsAfterSuccess`|`int32`|SecondsAfterSuccess is the number of seconds to live after success|
+
+## WorkflowTemplateRef
+
+WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
+
+- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).|
+|`name`|`string`|Name is the resource name of the workflow template.|
 
 ## WorkflowCondition
 
@@ -2775,7 +2797,7 @@ TemplateRef is a reference of template resource.
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).|
+|`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).|
 |`name`|`string`|Name is the resource name of the template.|
 |`runtimeResolution`|`boolean`|RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime.|
 |`template`|`string`|Template is the name of referred template in the resource.|
@@ -3150,6 +3172,7 @@ DAGTask represents a node in the graph during DAG execution
 |`arguments`|[`Arguments`](#arguments)|Arguments are the parameter and artifact arguments to the template|
 |`continueOn`|[`ContinueOn`](#continueon)|ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified|
 |`dependencies`|`Array< string >`|Dependencies are name of other targets which this depends on|
+|`depends`|`string`|Depends are name of other targets which this depends on|
 |`name`|`string`|Name is the name of the target|
 |`onExit`|`string`|OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.|
 |`template`|`string`|Name of template to execute|
