@@ -318,7 +318,6 @@ $(VERSION_FILE):
 	touch $(VERSION_FILE)
 
 dist/$(DB).yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
-	# We additionally disable ALWAYS_OFFLOAD_NODE_STATUS
 	kustomize build --load_restrictor=none test/e2e/manifests/$(DB) | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(DB).yaml
 
 .PHONY: install
@@ -357,8 +356,8 @@ stop:
 $(GOPATH)/bin/goreman:
 	go get github.com/mattn/goreman
 
-.PHONY: start-aux
-start-aux: $(GOPATH)/bin/goreman
+.PHONY: start
+start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
 	kubectl config set-context --current --namespace=argo
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
 	./hack/port-forward.sh
@@ -368,8 +367,6 @@ start-aux: $(GOPATH)/bin/goreman
 	grep '127.0.0.1 *mysql' /etc/hosts
 	env ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) goreman -set-ports=false -logtime=false start
 
-.PHONY: start
-start: status stop install controller cli executor-image start-aux wait env
 
 .PHONY: wait
 wait:
@@ -451,7 +448,7 @@ $(GOPATH)/bin/swagger:
 .PHONY: swagger
 swagger: api/openapi-spec/swagger.json
 
-pkg/apis/workflow/v1alpha1/openapi_generated.go:
+pkg/apis/workflow/v1alpha1/openapi_generated.go: $(shell find pkg/apis/workflow/v1alpha1 -type f -not -name openapi_generated.go)
 	$(call backup_go_mod)
 	go install k8s.io/kube-openapi/cmd/openapi-gen
 	openapi-gen \
@@ -461,20 +458,29 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go:
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
 	$(call restore_go_mod)
 
-pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
-	go run ./hack secondaryswaggergen
-
-dist/swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
-	swagger mixin -c 684 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > dist/swagger.json
-
 dist/kubernetes.swagger.json:
 	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.15/api/openapi-spec/swagger.json
 
-dist/kubeified.swagger.json: dist/swagger.json dist/kubernetes.swagger.json hack/kubeifyswagger.go
-	go run ./hack kubeifyswagger dist/swagger.json dist/kubeified.swagger.json
+pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
+	go run ./hack secondaryswaggergen
+
+# we always ignore the conflicts, so lets automated figuring out how many there will be and just use that
+dist/swagger-conflicts: $(GOPATH)/bin/swagger $(SWAGGER_FILES)
+	swagger mixin $(SWAGGER_FILES) 2>&1 | grep -c skipping > dist/swagger-conflicts || true
+
+dist/mixed.swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) dist/swagger-conflicts
+	swagger mixin -c $(shell cat dist/swagger-conflicts) $(SWAGGER_FILES) > dist/mixed.swagger.json.tmp
+	mv dist/mixed.swagger.json.tmp dist/mixed.swagger.json
+
+dist/swaggifed.swagger.json: dist/mixed.swagger.json $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
+	cat dist/mixed.swagger.json | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > dist/swaggifed.swagger.json
+
+dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json hack/kubeifyswagger.go
+	go run ./hack kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
 
 api/openapi-spec/swagger.json: dist/kubeified.swagger.json
-	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json > api/openapi-spec/swagger.json
+	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json > dist/swagger.json
+	mv dist/swagger.json api/openapi-spec/swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 
