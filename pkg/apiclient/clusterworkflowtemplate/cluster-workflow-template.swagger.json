@@ -1689,7 +1689,7 @@
         },
         "workflowTemplateRef": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateRef",
-          "description": "WorkflowTemplateRef holds top level WorkflowTemplate reference to execute it."
+          "title": "WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution"
         }
       },
       "description": "WorkflowSpec is the specification of a Workflow."

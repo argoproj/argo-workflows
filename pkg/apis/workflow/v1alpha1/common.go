@@ -22,6 +22,7 @@ type TemplateHolder interface {
 	GetResourceScope() ResourceScope
 }
 
+// WorkflowSpecHolder is an object that holds a WorkflowSpec; e.g., WorkflowTemplate, and ClusterWorkflowTemplate
 type WorkflowSpecHolder interface {
 	GetWorkflowSpec() *WorkflowSpec
 }
