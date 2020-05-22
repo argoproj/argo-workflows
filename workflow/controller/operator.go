@@ -492,28 +492,19 @@ func (woc *wfOperationCtx) persistUpdates() {
 			return
 		}
 		woc.log.Info("Re-applying updates on latest version and retrying update")
-		wf, err := woc.reapplyUpdate(wfClient)
+		wf, err = woc.reapplyUpdate(wfClient)
 		if err != nil {
 			woc.log.Infof("Failed to re-apply update: %+v", err)
 			return
 		}
-		woc.wf = wf
-	} else {
-		woc.wf = wf
 	}
 
+	woc.controller.latch.Update(wf.UID, wf.ResourceVersion)
+	woc.wf = wf
 	// restore to pre-compressed state
 	woc.wf.Status.Nodes = nodes
 	woc.wf.Status.CompressedNodes = ""
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
-
-	// HACK(jessesuen) after we successfully persist an update to the workflow, the informer's
-	// cache is now invalid. It's very common that we will need to immediately re-operate on a
-	// workflow due to queuing by the pod workers. The following sleep gives a *chance* for the
-	// informer's cache to catch up to the version of the workflow we just persisted. Without
-	// this sleep, the next worker to work on this workflow will very likely operate on a stale
-	// object and redo work.
-	time.Sleep(1 * time.Second)
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
@@ -545,10 +536,12 @@ func (woc *wfOperationCtx) persistUpdates() {
 func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.WorkflowInterface, err error) {
 	woc.wf = woc.orig.DeepCopy()
 	woc.markWorkflowError(err, true)
-	_, err = wfClient.Update(woc.wf)
+	wf, err := wfClient.Update(woc.wf)
 	if err != nil {
 		woc.log.Warnf("Error updating workflow: %v", err)
 	}
+
+	woc.controller.latch.Update(wf.UID, wf.ResourceVersion)
 }
 
 // reapplyUpdate GETs the latest version of the workflow, re-applies the updates and

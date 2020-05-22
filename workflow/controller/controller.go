@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"os"
 	"strings"
 	"time"
@@ -66,6 +67,7 @@ type WorkflowController struct {
 	wfclientset   wfclientset.Interface
 
 	// datastructures to support the processing of workflows and workflow pods
+	latch                 *ResourceVersionLatch
 	wfInformer            cache.SharedIndexInformer
 	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
 	cwftmplInformer       wfextvv1alpha1.ClusterWorkflowTemplateInformer
@@ -109,6 +111,7 @@ func NewWorkflowController(
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		containerRuntimeExecutor:   containerRuntimeExecutor,
+		latch:                      NewResourceVersionLatch(),
 		wfQueue:                    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:                   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		configController:           config.NewController(namespace, configMap, kubeclientset),
@@ -373,6 +376,11 @@ func (wfc *WorkflowController) processNextItem() bool {
 	}
 	defer wfc.wfQueue.Done(key)
 
+	if key, ok := wfc.throttler.Next(key); !ok {
+		log.Warnf("Workflow %s processing has been postponed due to max parallelism limit", key)
+		return true
+	}
+
 	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key.(string))
 	if err != nil {
 		log.Errorf("Failed to get workflow '%s' from informer index: %+v", key, err)
@@ -391,8 +399,8 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	if key, ok = wfc.throttler.Next(key); !ok {
-		log.Warnf("Workflow %s processing has been postponed due to max parallelism limit", key)
+	if !wfc.latch.Pass(un.GetUID(), un.GetResourceVersion()) {
+		log.Warnf("Object by key '%s' is stale in cache", key)
 		return true
 	}
 
@@ -574,18 +582,25 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 				AddFunc: func(obj interface{}) {
 					key, err := cache.MetaNamespaceKeyFunc(obj)
 					if err == nil {
+						accessor := meta.NewAccessor()
+						rv, _ := accessor.ResourceVersion(obj.(runtime.Object))
+						uid, _ := accessor.UID(obj.(runtime.Object))
+						wfc.latch.Set(uid, rv)
 						wfc.wfQueue.Add(key)
 						priority, creation := getWfPriority(obj)
 						wfc.throttler.Add(key, priority, creation)
 					}
 				},
 				UpdateFunc: func(old, new interface{}) {
-					oldWf, newWf := old.(*unstructured.Unstructured), new.(*unstructured.Unstructured)
-					if oldWf.GetResourceVersion() == newWf.GetResourceVersion() {
-						return
-					}
 					key, err := cache.MetaNamespaceKeyFunc(new)
 					if err == nil {
+						accessor := meta.NewAccessor()
+						rv, _ := accessor.ResourceVersion(new.(runtime.Object))
+						uid, _ := accessor.UID(new.(runtime.Object))
+						if ok := wfc.latch.Update(uid, rv); !ok {
+							log.Warnf("Object %s with uid %s staled event received, receiving: %s, local: %s", key, uid, rv, wfc.latch.Get(uid))
+						}
+
 						wfc.wfQueue.Add(key)
 						priority, creation := getWfPriority(new)
 						wfc.throttler.Add(key, priority, creation)
@@ -594,10 +609,19 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 				DeleteFunc: func(obj interface{}) {
 					// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 					// key function.
+					var o runtime.Object
+					if d, ok := obj.(cache.DeletedFinalStateUnknown); ok {
+						o = d.Obj.(runtime.Object)
+					} else {
+						o = obj.(runtime.Object)
+					}
+
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
 						wfc.wfQueue.Add(key)
 						wfc.throttler.Remove(key)
+						uid, _ := meta.NewAccessor().UID(o)
+						wfc.latch.Delete(uid)
 					}
 				},
 			},
