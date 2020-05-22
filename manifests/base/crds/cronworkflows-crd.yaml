@@ -6695,6 +6695,8 @@ spec:
             - workflowSpec
             - schedule
             type: object
+          status:
+            x-kubernetes-preserve-unknown-fields: true
         required:
         - metadata
         - spec

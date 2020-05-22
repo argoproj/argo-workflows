@@ -39,7 +39,9 @@ func genCRDs() {
 		schema := swagger.expand(swagger.definitionByName("io.argoproj.workflow.v1alpha1." + kind))
 
 		schema["required"] = []string{"metadata", "spec"}
-		delete(schema["properties"].(obj), "status")
+		schema["properties"].(obj)["status"] = obj{
+			"x-kubernetes-preserve-unknown-fields": true,
+		}
 
 		crd := obj{
 			"apiVersion": "apiextensions.k8s.io/v1",

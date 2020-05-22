@@ -6536,6 +6536,8 @@ spec:
             required:
             - templates
             type: object
+          status:
+            x-kubernetes-preserve-unknown-fields: true
         required:
         - metadata
         - spec
