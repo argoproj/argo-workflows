@@ -80,8 +80,8 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                         {this.renderTemplates()}
                         <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
                             <ResourceEditor
-                                title={'New Workflow Template'}
-                                kind={'workflowtemplates'}
+                                title='New Workflow Template'
+                                kind='WorkflowTemplate'
                                 upload={true}
                                 value={exampleWorkflowTemplate(this.namespace || 'default')}
                                 onSubmit={wfTmpl => {

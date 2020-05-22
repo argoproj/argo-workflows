@@ -87,8 +87,8 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
                         {this.state.template && (
                             <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
                                 <ResourceEditor
-                                    title={'Submit New Workflow'}
-                                    kind={'workflows'}
+                                    title='Submit New Workflow'
+                                    kind='Workflow'
                                     value={this.getWorkflow(this.state.template)}
                                     onSubmit={wfValue => {
                                         return services.workflows

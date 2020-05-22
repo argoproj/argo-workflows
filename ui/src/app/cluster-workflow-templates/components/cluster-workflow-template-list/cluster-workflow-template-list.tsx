@@ -70,7 +70,7 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
                                 upload={true}
                                 editing={true}
                                 title={'New Cluster Workflow Template'}
-                                kind='clusterworkflowtemplates'
+                                kind='ClusterWorkflowTemplate'
                                 value={exampleClusterWorkflowTemplate()}
                                 onSubmit={wfTmpl => {
                                     return services.clusterWorkflowTemplate

@@ -8,9 +8,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type obj = map[string]interface{}
-type array = []interface{}
-
 func kubeifySwagger(in, out string) {
 	data, err := ioutil.ReadFile(in)
 	if err != nil {
@@ -37,6 +34,11 @@ func kubeifySwagger(in, out string) {
 			definitions[n] = kd
 		}
 	}
+	// "omitempty" does not work for non-nil structs, so we must change it here
+	definitions["io.argoproj.workflow.v1alpha1.CronWorkflow"].(obj)["required"] = array{"metadata", "spec"}
+	definitions["io.argoproj.workflow.v1alpha1.Workflow"].(obj)["required"] = array{"metadata", "spec"}
+	definitions["io.argoproj.workflow.v1alpha1.ScriptTemplate"].(obj)["required"] = array{"source"}
+	delete(definitions["io.k8s.api.core.v1.Container"].(obj), "required")
 	data, err = json.MarshalIndent(swagger, "", "  ")
 	if err != nil {
 		panic(err)

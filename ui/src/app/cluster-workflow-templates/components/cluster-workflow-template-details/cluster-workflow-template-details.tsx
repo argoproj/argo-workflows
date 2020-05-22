@@ -83,7 +83,7 @@ export class ClusterWorkflowTemplateDetails extends BasePage<RouteComponentProps
                         {this.state.template && (
                             <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
                                 <ResourceEditor
-                                    kind={'workflows'}
+                                    kind='Workflow'
                                     title={'Submit Workflow'}
                                     editing={true}
                                     value={this.getWorkflow(this.state.template)}

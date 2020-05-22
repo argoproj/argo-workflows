@@ -45,7 +45,7 @@ export const CronWorkflowSummaryPanel = (props: Props) => {
             <div className='white-box'>
                 <div className='white-box__details'>
                     <ResourceEditor
-                        kind='cronworkflows'
+                        kind='CronWorkflow'
                         value={props.cronWorkflow}
                         onSubmit={(value: CronWorkflow) => {
                             // magic - we get the latest from the server and then apply the changes from the rendered version to this

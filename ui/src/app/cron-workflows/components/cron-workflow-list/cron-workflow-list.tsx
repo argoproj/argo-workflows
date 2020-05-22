@@ -90,7 +90,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                                         .catch(error => this.setState({error}));
                                 }}
                                 editing={true}
-                                kind='cronworkflows'
+                                kind='CronWorkflow'
                             />
                         </SlidingPanel>
                     </Page>

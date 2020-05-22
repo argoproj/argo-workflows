@@ -32,7 +32,7 @@ export const ClusterWorkflowTemplateSummaryPanel = (props: Props) => {
             <div className='white-box'>
                 <div className='white-box__details'>
                     <ResourceEditor
-                        kind='clusterworkflowtemplates'
+                        kind='ClusterWorkflowTemplate'
                         title='Update Cluster Workflow Template'
                         value={props.template}
                         onSubmit={(value: WorkflowTemplate) => {

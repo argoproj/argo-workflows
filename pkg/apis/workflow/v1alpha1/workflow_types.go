@@ -75,7 +75,7 @@ type Workflow struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 	Spec              WorkflowSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec "`
-	Status            WorkflowStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
+	Status            WorkflowStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
 // Workflows is a sort interface which sorts running jobs earlier before considering FinishedAt

@@ -41,7 +41,7 @@ export const WorkflowTemplateSummaryPanel = (props: Props) => {
                                 .then(workflowTemplate => props.onChange(workflowTemplate))
                                 .catch(err => props.onError(err));
                         }}
-                        kind='workflowtemplates'
+                        kind='WorkflowTemplate'
                         title='Update Workflow Template'
                     />
                 </div>

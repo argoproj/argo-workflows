@@ -204,7 +204,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                         <ResourceEditor<Workflow>
                             editing={true}
                             title='Resubmit Archived Workflow'
-                            kind='workflows'
+                            kind='Workflow'
                             value={{
                                 metadata: {
                                     namespace: this.state.workflow.metadata.namespace,

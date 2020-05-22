@@ -252,7 +252,14 @@ mocks: $(GOPATH)/bin/mockery
 	./hack/update-mocks.sh $(MOCK_FILES)
 
 .PHONY: codegen
-codegen: status proto swagger mocks docs
+codegen: status proto swagger crds schemas mocks docs
+
+.PHONY: crds
+crds:
+	go run ./hack gencrds
+
+.PHONY: schemaassets
+schemaassets:
 	go run ./hack genschemaassets
 
 .PHONY: proto
@@ -319,7 +326,6 @@ $(VERSION_FILE):
 	touch $(VERSION_FILE)
 
 dist/$(DB).yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
-	# We additionally disable ALWAYS_OFFLOAD_NODE_STATUS
 	kustomize build --load_restrictor=none test/e2e/manifests/$(DB) | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(DB).yaml
 
 .PHONY: install
@@ -358,8 +364,8 @@ stop:
 $(GOPATH)/bin/goreman:
 	go get github.com/mattn/goreman
 
-.PHONY: start-aux
-start-aux: $(GOPATH)/bin/goreman
+.PHONY: start
+start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
 	kubectl config set-context --current --namespace=argo
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
 	./hack/port-forward.sh
@@ -369,8 +375,6 @@ start-aux: $(GOPATH)/bin/goreman
 	grep '127.0.0.1 *mysql' /etc/hosts
 	env ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) goreman -set-ports=false -logtime=false start
 
-.PHONY: start
-start: status stop install controller cli executor-image start-aux wait env
 
 .PHONY: wait
 wait:

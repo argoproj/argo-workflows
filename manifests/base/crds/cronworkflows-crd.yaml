@@ -13,7 +13,6 @@ spec:
     shortNames:
     - cronwf
     singular: cronworkflow
-  preserveUnknownFields: true
   scope: Namespaced
   versions:
   - name: v1alpha1
@@ -46,6 +45,140 @@ spec:
               timezone:
                 type: string
               workflowMetadata:
+                properties:
+                  annotations:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  clusterName:
+                    type: string
+                  creationTimestamp:
+                    format: date-time
+                    type: string
+                  deletionGracePeriodSeconds:
+                    format: int64
+                    type: integer
+                  deletionTimestamp:
+                    format: date-time
+                    type: string
+                  finalizers:
+                    items:
+                      type: string
+                    type: array
+                  generateName:
+                    type: string
+                  generation:
+                    format: int64
+                    type: integer
+                  initializers:
+                    properties:
+                      pending:
+                        items:
+                          properties:
+                            name:
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        type: array
+                      result:
+                        properties:
+                          apiVersion:
+                            type: string
+                          code:
+                            format: int32
+                            type: integer
+                          details:
+                            properties:
+                              causes:
+                                items:
+                                  properties:
+                                    field:
+                                      type: string
+                                    message:
+                                      type: string
+                                    reason:
+                                      type: string
+                                  type: object
+                                type: array
+                              group:
+                                type: string
+                              kind:
+                                type: string
+                              name:
+                                type: string
+                              retryAfterSeconds:
+                                format: int32
+                                type: integer
+                              uid:
+                                type: string
+                            type: object
+                          kind:
+                            type: string
+                          message:
+                            type: string
+                          metadata:
+                            type: object
+                          reason:
+                            type: string
+                          status:
+                            type: string
+                        type: object
+                    required:
+                    - pending
+                    type: object
+                  labels:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  managedFields:
+                    items:
+                      properties:
+                        apiVersion:
+                          type: string
+                        fields:
+                          type: object
+                        manager:
+                          type: string
+                        operation:
+                          type: string
+                        time:
+                          format: date-time
+                          type: string
+                      type: object
+                    type: array
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  ownerReferences:
+                    items:
+                      properties:
+                        apiVersion:
+                          type: string
+                        blockOwnerDeletion:
+                          type: boolean
+                        controller:
+                          type: boolean
+                        kind:
+                          type: string
+                        name:
+                          type: string
+                        uid:
+                          type: string
+                      required:
+                      - apiVersion
+                      - kind
+                      - name
+                      - uid
+                      type: object
+                    type: array
+                  resourceVersion:
+                    type: string
+                  selfLink:
+                    type: string
+                  uid:
+                    type: string
                 type: object
               workflowSpec:
                 properties:
@@ -98,8 +231,8 @@ spec:
                                   format: int32
                                   type: integer
                               required:
-                              - preference
                               - weight
+                              - preference
                               type: object
                             type: array
                           requiredDuringSchedulingIgnoredDuringExecution:
@@ -188,8 +321,8 @@ spec:
                                   format: int32
                                   type: integer
                               required:
-                              - podAffinityTerm
                               - weight
+                              - podAffinityTerm
                               type: object
                             type: array
                           requiredDuringSchedulingIgnoredDuringExecution:
@@ -272,8 +405,8 @@ spec:
                                   format: int32
                                   type: integer
                               required:
-                              - podAffinityTerm
                               - weight
+                              - podAffinityTerm
                               type: object
                             type: array
                           requiredDuringSchedulingIgnoredDuringExecution:
@@ -537,11 +670,11 @@ spec:
                                   - key
                                   type: object
                               required:
-                              - accessKeySecret
-                              - bucket
                               - endpoint
-                              - key
+                              - bucket
+                              - accessKeySecret
                               - secretKeySecret
+                              - key
                               type: object
                             path:
                               type: string
@@ -591,11 +724,11 @@ spec:
                                 useSDKCreds:
                                   type: boolean
                               required:
-                              - accessKeySecret
-                              - bucket
                               - endpoint
-                              - key
+                              - bucket
+                              - accessKeySecret
                               - secretKeySecret
+                              - key
                               type: object
                           required:
                           - name
@@ -707,8 +840,8 @@ spec:
                                 value:
                                   type: string
                               required:
-                              - realtime
                               - value
+                              - realtime
                               type: object
                             help:
                               type: string
@@ -716,13 +849,14 @@ spec:
                               properties:
                                 buckets:
                                   items:
-                                    type: string
+                                    format: double
+                                    type: number
                                   type: array
                                 value:
                                   type: string
                               required:
-                              - buckets
                               - value
+                              - buckets
                               type: object
                             labels:
                               items:
@@ -741,10 +875,13 @@ spec:
                             when:
                               type: string
                           required:
-                          - help
-                          - labels
                           - name
+                          - labels
+                          - help
                           - when
+                          - gauge
+                          - histogram
+                          - counter
                           type: object
                         type: array
                     required:
@@ -859,8 +996,6 @@ spec:
                             type: string
                           gmsaCredentialSpecName:
                             type: string
-                          runAsUserName:
-                            type: string
                         type: object
                     type: object
                   serviceAccountName:
@@ -921,8 +1056,8 @@ spec:
                                         format: int32
                                         type: integer
                                     required:
-                                    - preference
                                     - weight
+                                    - preference
                                     type: object
                                   type: array
                                 requiredDuringSchedulingIgnoredDuringExecution:
@@ -1011,8 +1146,8 @@ spec:
                                         format: int32
                                         type: integer
                                     required:
-                                    - podAffinityTerm
                                     - weight
+                                    - podAffinityTerm
                                     type: object
                                   type: array
                                 requiredDuringSchedulingIgnoredDuringExecution:
@@ -1095,8 +1230,8 @@ spec:
                                         format: int32
                                         type: integer
                                     required:
-                                    - podAffinityTerm
                                     - weight
+                                    - podAffinityTerm
                                     type: object
                                   type: array
                                 requiredDuringSchedulingIgnoredDuringExecution:
@@ -1335,11 +1470,11 @@ spec:
                                   - key
                                   type: object
                               required:
-                              - accessKeySecret
-                              - bucket
                               - endpoint
-                              - key
+                              - bucket
+                              - accessKeySecret
                               - secretKeySecret
+                              - key
                               type: object
                             raw:
                               properties:
@@ -1387,11 +1522,11 @@ spec:
                                 useSDKCreds:
                                   type: boolean
                               required:
-                              - accessKeySecret
-                              - bucket
                               - endpoint
-                              - key
+                              - bucket
+                              - accessKeySecret
                               - secretKeySecret
+                              - key
                               type: object
                           type: object
                         arguments:
@@ -1617,11 +1752,11 @@ spec:
                                         - key
                                         type: object
                                     required:
-                                    - accessKeySecret
-                                    - bucket
                                     - endpoint
-                                    - key
+                                    - bucket
+                                    - accessKeySecret
                                     - secretKeySecret
+                                    - key
                                     type: object
                                   path:
                                     type: string
@@ -1671,11 +1806,11 @@ spec:
                                       useSDKCreds:
                                         type: boolean
                                     required:
-                                    - accessKeySecret
-                                    - bucket
                                     - endpoint
-                                    - key
+                                    - bucket
+                                    - accessKeySecret
                                     - secretKeySecret
+                                    - key
                                     type: object
                                 required:
                                 - name
@@ -2130,74 +2265,7 @@ spec:
                                       type: string
                                     gmsaCredentialSpecName:
                                       type: string
-                                    runAsUserName:
-                                      type: string
                                   type: object
-                              type: object
-                            startupProbe:
-                              properties:
-                                exec:
-                                  properties:
-                                    command:
-                                      items:
-                                        type: string
-                                      type: array
-                                  type: object
-                                failureThreshold:
-                                  format: int32
-                                  type: integer
-                                httpGet:
-                                  properties:
-                                    host:
-                                      type: string
-                                    httpHeaders:
-                                      items:
-                                        properties:
-                                          name:
-                                            type: string
-                                          value:
-                                            type: string
-                                        required:
-                                        - name
-                                        - value
-                                        type: object
-                                      type: array
-                                    path:
-                                      type: string
-                                    port:
-                                      anyOf:
-                                      - type: integer
-                                      - type: string
-                                      x-kubernetes-int-or-string: true
-                                    scheme:
-                                      type: string
-                                  required:
-                                  - port
-                                  type: object
-                                initialDelaySeconds:
-                                  format: int32
-                                  type: integer
-                                periodSeconds:
-                                  format: int32
-                                  type: integer
-                                successThreshold:
-                                  format: int32
-                                  type: integer
-                                tcpSocket:
-                                  properties:
-                                    host:
-                                      type: string
-                                    port:
-                                      anyOf:
-                                      - type: integer
-                                      - type: string
-                                      x-kubernetes-int-or-string: true
-                                  required:
-                                  - port
-                                  type: object
-                                timeoutSeconds:
-                                  format: int32
-                                  type: integer
                               type: object
                             stdin:
                               type: boolean
@@ -2217,8 +2285,8 @@ spec:
                                   name:
                                     type: string
                                 required:
-                                - devicePath
                                 - name
+                                - devicePath
                                 type: object
                               type: array
                             volumeMounts:
@@ -2237,8 +2305,8 @@ spec:
                                   subPathExpr:
                                     type: string
                                 required:
-                                - mountPath
                                 - name
+                                - mountPath
                                 type: object
                               type: array
                             workingDir:
@@ -2478,11 +2546,11 @@ spec:
                                                   - key
                                                   type: object
                                               required:
-                                              - accessKeySecret
-                                              - bucket
                                               - endpoint
-                                              - key
+                                              - bucket
+                                              - accessKeySecret
                                               - secretKeySecret
+                                              - key
                                               type: object
                                             path:
                                               type: string
@@ -2532,11 +2600,11 @@ spec:
                                                 useSDKCreds:
                                                   type: boolean
                                               required:
-                                              - accessKeySecret
-                                              - bucket
                                               - endpoint
-                                              - key
+                                              - bucket
+                                              - accessKeySecret
                                               - secretKeySecret
+                                              - key
                                               type: object
                                           required:
                                           - name
@@ -2603,7 +2671,8 @@ spec:
                                     type: string
                                   withItems:
                                     items:
-                                      x-kubernetes-preserve-unknown-fields: true
+                                      format: item
+                                      type: string
                                     type: array
                                   withParam:
                                     type: string
@@ -2620,6 +2689,7 @@ spec:
                                     type: object
                                 required:
                                 - name
+                                - template
                                 type: object
                               type: array
                           required:
@@ -3062,8 +3132,6 @@ spec:
                                         type: string
                                       gmsaCredentialSpecName:
                                         type: string
-                                      runAsUserName:
-                                        type: string
                                     type: object
                                 type: object
                               startupProbe:
@@ -3149,8 +3217,8 @@ spec:
                                     name:
                                       type: string
                                   required:
-                                  - devicePath
                                   - name
+                                  - devicePath
                                   type: object
                                 type: array
                               volumeMounts:
@@ -3169,8 +3237,8 @@ spec:
                                     subPathExpr:
                                       type: string
                                   required:
-                                  - mountPath
                                   - name
+                                  - mountPath
                                   type: object
                                 type: array
                               workingDir:
@@ -3402,11 +3470,11 @@ spec:
                                         - key
                                         type: object
                                     required:
-                                    - accessKeySecret
-                                    - bucket
                                     - endpoint
-                                    - key
+                                    - bucket
+                                    - accessKeySecret
                                     - secretKeySecret
+                                    - key
                                     type: object
                                   path:
                                     type: string
@@ -3456,11 +3524,11 @@ spec:
                                       useSDKCreds:
                                         type: boolean
                                     required:
-                                    - accessKeySecret
-                                    - bucket
                                     - endpoint
-                                    - key
+                                    - bucket
+                                    - accessKeySecret
                                     - secretKeySecret
+                                    - key
                                     type: object
                                 required:
                                 - name
@@ -3496,15 +3564,6 @@ spec:
                               type: array
                           type: object
                         metadata:
-                          properties:
-                            annotations:
-                              additionalProperties:
-                                type: string
-                              type: object
-                            labels:
-                              additionalProperties:
-                                type: string
-                              type: object
                           type: object
                         metrics:
                           properties:
@@ -3525,8 +3584,8 @@ spec:
                                       value:
                                         type: string
                                     required:
-                                    - realtime
                                     - value
+                                    - realtime
                                     type: object
                                   help:
                                     type: string
@@ -3534,13 +3593,14 @@ spec:
                                     properties:
                                       buckets:
                                         items:
-                                          type: string
+                                          format: double
+                                          type: number
                                         type: array
                                       value:
                                         type: string
                                     required:
-                                    - buckets
                                     - value
+                                    - buckets
                                     type: object
                                   labels:
                                     items:
@@ -3559,10 +3619,13 @@ spec:
                                   when:
                                     type: string
                                 required:
-                                - help
-                                - labels
                                 - name
+                                - labels
+                                - help
                                 - when
+                                - gauge
+                                - histogram
+                                - counter
                                 type: object
                               type: array
                           required:
@@ -3797,11 +3860,11 @@ spec:
                                         - key
                                         type: object
                                     required:
-                                    - accessKeySecret
-                                    - bucket
                                     - endpoint
-                                    - key
+                                    - bucket
+                                    - accessKeySecret
                                     - secretKeySecret
+                                    - key
                                     type: object
                                   path:
                                     type: string
@@ -3851,11 +3914,11 @@ spec:
                                       useSDKCreds:
                                         type: boolean
                                     required:
-                                    - accessKeySecret
-                                    - bucket
                                     - endpoint
-                                    - key
+                                    - bucket
+                                    - accessKeySecret
                                     - secretKeySecret
+                                    - key
                                     type: object
                                 required:
                                 - name
@@ -4366,8 +4429,6 @@ spec:
                                       type: string
                                     gmsaCredentialSpecName:
                                       type: string
-                                    runAsUserName:
-                                      type: string
                                   type: object
                               type: object
                             source:
@@ -4455,8 +4516,8 @@ spec:
                                   name:
                                     type: string
                                 required:
-                                - devicePath
                                 - name
+                                - devicePath
                                 type: object
                               type: array
                             volumeMounts:
@@ -4475,8 +4536,8 @@ spec:
                                   subPathExpr:
                                     type: string
                                 required:
-                                - mountPath
                                 - name
+                                - mountPath
                                 type: object
                               type: array
                             workingDir:
@@ -4530,8 +4591,6 @@ spec:
                                 gmsaCredentialSpec:
                                   type: string
                                 gmsaCredentialSpecName:
-                                  type: string
-                                runAsUserName:
                                   type: string
                               type: object
                           type: object
@@ -4958,8 +5017,6 @@ spec:
                                         type: string
                                       gmsaCredentialSpecName:
                                         type: string
-                                      runAsUserName:
-                                        type: string
                                     type: object
                                 type: object
                               startupProbe:
@@ -5045,8 +5102,8 @@ spec:
                                     name:
                                       type: string
                                   required:
-                                  - devicePath
                                   - name
+                                  - devicePath
                                   type: object
                                 type: array
                               volumeMounts:
@@ -5065,8 +5122,8 @@ spec:
                                     subPathExpr:
                                       type: string
                                   required:
-                                  - mountPath
                                   - name
+                                  - mountPath
                                   type: object
                                 type: array
                               workingDir:
@@ -5302,11 +5359,11 @@ spec:
                                                 - key
                                                 type: object
                                             required:
-                                            - accessKeySecret
-                                            - bucket
                                             - endpoint
-                                            - key
+                                            - bucket
+                                            - accessKeySecret
                                             - secretKeySecret
+                                            - key
                                             type: object
                                           path:
                                             type: string
@@ -5356,11 +5413,11 @@ spec:
                                               useSDKCreds:
                                                 type: boolean
                                             required:
-                                            - accessKeySecret
-                                            - bucket
                                             - endpoint
-                                            - key
+                                            - bucket
+                                            - accessKeySecret
                                             - secretKeySecret
+                                            - key
                                             type: object
                                         required:
                                         - name
@@ -5423,7 +5480,8 @@ spec:
                                   type: string
                                 withItems:
                                   items:
-                                    x-kubernetes-preserve-unknown-fields: true
+                                    format: item
+                                    type: string
                                   type: array
                                 withParam:
                                   type: string
@@ -5780,9 +5838,9 @@ spec:
                                   targetPortal:
                                     type: string
                                 required:
+                                - targetPortal
                                 - iqn
                                 - lun
-                                - targetPortal
                                 type: object
                               name:
                                 type: string
@@ -5795,8 +5853,8 @@ spec:
                                   server:
                                     type: string
                                 required:
-                                - path
                                 - server
+                                - path
                                 type: object
                               persistentVolumeClaim:
                                 properties:
@@ -5977,8 +6035,8 @@ spec:
                                   user:
                                     type: string
                                 required:
-                                - image
                                 - monitors
+                                - image
                                 type: object
                               scaleIO:
                                 properties:
@@ -6007,8 +6065,8 @@ spec:
                                     type: string
                                 required:
                                 - gateway
-                                - secretRef
                                 - system
+                                - secretRef
                                 type: object
                               secret:
                                 properties:
@@ -6211,8 +6269,8 @@ spec:
                                   type:
                                     type: string
                                 required:
-                                - status
                                 - type
+                                - status
                                 type: object
                               type: array
                             phase:
@@ -6525,9 +6583,9 @@ spec:
                             targetPortal:
                               type: string
                           required:
+                          - targetPortal
                           - iqn
                           - lun
-                          - targetPortal
                           type: object
                         name:
                           type: string
@@ -6540,8 +6598,8 @@ spec:
                             server:
                               type: string
                           required:
-                          - path
                           - server
+                          - path
                           type: object
                         persistentVolumeClaim:
                           properties:
@@ -6722,8 +6780,8 @@ spec:
                             user:
                               type: string
                           required:
-                          - image
                           - monitors
+                          - image
                           type: object
                         scaleIO:
                           properties:
@@ -6752,8 +6810,8 @@ spec:
                               type: string
                           required:
                           - gateway
-                          - secretRef
                           - system
+                          - secretRef
                           type: object
                         secret:
                           properties:
@@ -6817,10 +6875,11 @@ spec:
                 - templates
                 type: object
             required:
-            - schedule
             - workflowSpec
+            - schedule
             type: object
         required:
+        - metadata
         - spec
         type: object
     served: true

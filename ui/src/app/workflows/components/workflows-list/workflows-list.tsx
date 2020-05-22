@@ -114,8 +114,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         </div>
                         <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
                             <ResourceEditor
-                                title={'Submit Workflow'}
-                                kind={'workflows'}
+                                title='Submit Workflow'
+                                kind='Workflow'
                                 upload={true}
                                 editing={true}
                                 value={exampleWorkflow(this.state.namespace)}
