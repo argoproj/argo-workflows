@@ -30,7 +30,7 @@ type listFlags struct {
 	since         string   // --since
 	chunkSize     int64    // --chunk-size
 	noHeaders     bool     // --no-headers
-	labels        string   // --label-columns
+	labels        string   // --selector
 	fields        string   // --field-selector
 }
 
