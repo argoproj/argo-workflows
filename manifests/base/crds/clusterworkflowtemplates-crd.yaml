@@ -11,7 +11,7 @@ spec:
     listKind: ClusterWorkflowTemplateList
     plural: clusterworkflowtemplates
     shortNames:
-    - cwftmpl
+    - clusterwftmpl
     singular: clusterworkflowtemplate
   scope: Cluster
   versions:

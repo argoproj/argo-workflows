@@ -52,7 +52,7 @@ func genCRDs() {
 					"listKind": kind + "List",
 					"plural":   plural,
 					"shortNames": array{map[string]string{
-						"ClusterWorkflowTemplate": "cwftmpl",
+						"ClusterWorkflowTemplate": "clusterwftmpl",
 						"CronWorkflow":            "cronwf",
 						"Workflow":                "wf",
 						"WorkflowTemplate":        "tmpl",
