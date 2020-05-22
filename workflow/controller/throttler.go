@@ -151,3 +151,11 @@ func (pq *priorityQueue) Pop() interface{} {
 	delete(pq.itemByKey, item.key)
 	return item
 }
+
+func (pq *priorityQueue) Peek() interface{} {
+	old := pq.items
+	n := len(old)
+	item := old[n-1]
+	item.index = -1
+	return item
+}

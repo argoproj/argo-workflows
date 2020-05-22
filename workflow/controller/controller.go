@@ -84,6 +84,7 @@ type WorkflowController struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	wfArchive             sqldb.WorkflowArchive
 	Metrics               map[string]common.Metric
+	concurrencyMgr        *ConcurrencyManager
 }
 
 const (
@@ -191,7 +192,9 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 
 	wfc.createClusterWorkflowTemplateInformer(ctx)
 
-	// Wait for all involved caches to be synced, before processing items from the queue is started
+	wfc.concurrencyMgr = NewConcurrencyManager(wfc)
+
+	// Wait for all involved caches to be synced, before processing items from the waiting is started
 	for _, informer := range []cache.SharedIndexInformer{wfc.incompleteWfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
 		if !cache.WaitForCacheSync(ctx.Done(), informer.HasSynced) {
 			log.Error("Timed out waiting for caches to sync")
@@ -479,6 +482,23 @@ func (wfc *WorkflowController) processNextItem() bool {
 		// but we are still draining the controller's workflow workqueue
 		return true
 	}
+	if wf.Spec.Semaphore != nil {
+		wfKey := fmt.Sprintf("%v", key)
+		priority, creationTime := getWfPriority(wf)
+		acquired, msg, err := wfc.concurrencyMgr.TryAcquire(wfKey, wf.Namespace, priority, creationTime, wf.Spec.Semaphore)
+		if err != nil {
+			log.Warnf("Failed to unmarshal key '%s' to workflow object: %v", key, err)
+			woc := newWorkflowOperationCtx(wf, wfc)
+			woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
+			woc.persistUpdates()
+			wfc.throttler.Remove(key)
+			return true
+		}
+		if !acquired {
+			log.Warnf("Workflow %s processing has been postponed due to semaphore limit. %s", key, msg)
+			return true
+		}
+	}
 
 	woc := newWorkflowOperationCtx(wf, wfc)
 
@@ -507,6 +527,10 @@ func (wfc *WorkflowController) processNextItem() bool {
 	woc.operate()
 	if woc.wf.Status.Completed() {
 		wfc.throttler.Remove(key)
+
+		if wf.Spec.Semaphore != nil {
+			wfc.concurrencyMgr.Release(fmt.Sprintf("%v", key), wf.Namespace, wf.Spec.Semaphore)
+		}
 		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 		var doPodGC bool
 		if woc.wf.Spec.PodGC != nil {
@@ -624,24 +648,23 @@ func getWfPriority(obj interface{}) (int32, time.Time) {
 	return int32(priority), un.GetCreationTimestamp().Time
 }
 
+func (wfc *WorkflowController) addWorkflowToQueue(obj interface{}) {
+	key, err := cache.MetaNamespaceKeyFunc(obj)
+	if err == nil {
+		wfc.wfQueue.Add(key)
+		priority, creation := getWfPriority(obj)
+		wfc.throttler.Add(key, priority, creation)
+	}
+}
+
 func (wfc *WorkflowController) addWorkflowInformerHandler() {
 	wfc.incompleteWfInformer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(obj)
-				if err == nil {
-					wfc.wfQueue.Add(key)
-					priority, creation := getWfPriority(obj)
-					wfc.throttler.Add(key, priority, creation)
-				}
+				wfc.addWorkflowToQueue(obj)
 			},
 			UpdateFunc: func(old, new interface{}) {
-				key, err := cache.MetaNamespaceKeyFunc(new)
-				if err == nil {
-					wfc.wfQueue.Add(key)
-					priority, creation := getWfPriority(new)
-					wfc.throttler.Add(key, priority, creation)
-				}
+				wfc.addWorkflowToQueue(new)
 			},
 			DeleteFunc: func(obj interface{}) {
 				// IndexerInformer uses a delta queue, therefore for deletes we have to use this

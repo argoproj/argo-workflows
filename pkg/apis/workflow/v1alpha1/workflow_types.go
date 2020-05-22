@@ -268,6 +268,9 @@ type WorkflowSpec struct {
 
 	// Shutdown will shutdown the workflow according to its ShutdownStrategy
 	Shutdown ShutdownStrategy `json:"shutdown,omitempty" protobuf:"bytes,33,opt,name=shutdown,casttype=ShutdownStrategy"`
+
+	// SemaphoreRef will holds semaphore configuration for this Workflow
+	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,34,opt,name=semaphore,casttype=SemaphoreRef"`
 }
 
 type ShutdownStrategy string
@@ -462,6 +465,9 @@ type Template struct {
 
 	// Metrics are a list of metrics emitted from this template
 	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,35,opt,name=metrics"`
+
+	// SemaphoreRef will holds semaphore configuration for this Template.
+	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,36,opt,name=semaphore,casttype=SemaphoreRef"`
 }
 
 // DEPRECATED: Templates should not be used as TemplateReferenceHolder
@@ -807,6 +813,12 @@ type TemplateRef struct {
 	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
 	// ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
+}
+
+// SemaphoreRef is a reference of Semaphore
+type SemaphoreRef struct {
+	// ConfigMapKeyRef is configmap selector for Semaphore configuration
+	ConfigMapKeyRef *apiv1.ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,1,opt,name=configMapKeyRef"`
 }
 
 type ArgumentsProvider interface {

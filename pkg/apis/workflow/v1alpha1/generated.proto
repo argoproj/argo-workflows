@@ -776,6 +776,12 @@ message ScriptTemplate {
   optional string source = 2;
 }
 
+// SemaphoreRef is a reference of Semaphore
+message SemaphoreRef {
+  // ConfigMapKeyRef is configmap selector for Semaphore configuration
+  optional k8s.io.api.core.v1.ConfigMapKeySelector configMapKeyRef = 1;
+}
+
 // Sequence expands a workflow step into numeric range
 message Sequence {
   // Count is number of elements in the sequence (default: 0). Not to be used with end
@@ -988,6 +994,9 @@ message Template {
 
   // Metrics are a list of metrics emitted from this template
   optional Metrics metrics = 35;
+
+  // SemaphoreRef will holds semaphore configuration for this Template.
+  optional SemaphoreRef semaphore = 36;
 }
 
 // TemplateRef is a reference of template resource.
@@ -1234,6 +1243,9 @@ message WorkflowSpec {
 
   // Shutdown will shutdown the workflow according to its ShutdownStrategy
   optional string shutdown = 33;
+
+  // SemaphoreRef will holds semaphore configuration for this Workflow
+  optional SemaphoreRef semaphore = 34;
 }
 
 // WorkflowStatus contains overall status information about a workflow
