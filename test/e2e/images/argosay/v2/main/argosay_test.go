@@ -11,6 +11,14 @@ func Test(t *testing.T) {
 		assert.NoError(t, argosay())
 		assert.Error(t, argosay("garbage"))
 	})
+	t.Run("assert_contains", func(t *testing.T) {
+		assert.NoError(t, argosay("echo", "foo", "/tmp/foo"))
+		assert.Error(t, argosay("assert_contains"))
+		assert.Error(t, argosay("assert_contains", "/tmp/foo"))
+		assert.Error(t, argosay("assert_contains", "/tmp/not-exists", "foo"))
+		assert.NoError(t, argosay("assert_contains", "/tmp/foo", "foo"))
+		assert.Error(t, argosay("assert_contains", "/tmp/foo", "bar"))
+	})
 	t.Run("echo", func(t *testing.T) {
 		assert.NoError(t, argosay("echo"))
 		assert.NoError(t, argosay("echo", "foo"))

@@ -19,6 +19,7 @@ import (
 
 	"github.com/argoproj/pkg/file"
 
+	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -65,13 +66,13 @@ func (g *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 			gcsClient, err := g.newGCSClient()
 			if err != nil {
 				log.Warnf("Failed to create new GCS client: %v", err)
-				return false, nil
+				return false, err
 			}
 			defer gcsClient.Close()
 			err = downloadObjects(gcsClient, inputArtifact.GCS.Bucket, inputArtifact.GCS.Key, path)
 			if err != nil {
 				log.Warnf("Failed to download objects from GCS: %v", err)
-				return false, nil
+				return false, err
 			}
 			return true, nil
 		})
@@ -87,7 +88,7 @@ func downloadObjects(client *storage.Client, bucket, key, path string) error {
 	for _, objName := range objNames {
 		err = downloadObject(client, bucket, key, objName, path)
 		if err != nil {
-			return fmt.Errorf("download object: %v", err)
+			return err
 		}
 	}
 	return nil
@@ -107,6 +108,9 @@ func downloadObject(client *storage.Client, bucket, key, objName, path string) e
 	ctx := context.Background()
 	rc, err := client.Bucket(bucket).Object(objName).NewReader(ctx)
 	if err != nil {
+		if err == storage.ErrObjectNotExist {
+			return errors.New(errors.CodeNotFound, err.Error())
+		}
 		return fmt.Errorf("new bucket reader: %v", err)
 	}
 	defer rc.Close()
@@ -152,13 +156,12 @@ func (g *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error 
 			log.Infof("GCS Save path: %s, key: %s", path, outputArtifact.GCS.Key)
 			client, err := g.newGCSClient()
 			if err != nil {
-				log.Warnf("Failed to create new GCS client: %v", err)
-				return false, nil
+				return false, err
 			}
 			defer client.Close()
 			err = uploadObjects(client, outputArtifact.GCS.Bucket, outputArtifact.GCS.Key, path)
 			if err != nil {
-				log.Warnf("Failed to upload objects: %v", err)
+				return false, err
 			}
 			return true, nil
 		})

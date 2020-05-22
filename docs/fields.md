@@ -60,6 +60,8 @@ Workflow is the definition of a workflow resource
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
 
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
+
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](../examples/dag-nested.yaml)
@@ -222,6 +224,8 @@ Workflow is the definition of a workflow resource
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -229,6 +233,10 @@ Workflow is the definition of a workflow resource
 - [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
 
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -342,6 +350,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -507,6 +517,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -516,6 +528,10 @@ WorkflowSpec is the specification of a Workflow.
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -639,6 +655,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
 
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
+
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](../examples/dag-nested.yaml)
@@ -803,6 +821,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -812,6 +832,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -901,6 +925,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
 
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
+
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](../examples/dag-nested.yaml)
@@ -1065,6 +1091,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -1074,6 +1102,10 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -1227,6 +1259,8 @@ Arguments to a template
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -1234,6 +1268,8 @@ Arguments to a template
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 </details>
 
 ### Fields
@@ -1356,6 +1392,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -1518,6 +1556,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
@@ -1675,6 +1715,8 @@ Outputs hold parameters, artifacts, and results from a step
 - [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
 
 - [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -1732,6 +1774,8 @@ Artifact indicates an artifact to place at a specified path
 - [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
 
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -1862,6 +1906,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -1869,6 +1915,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 </details>
 
 ### Fields
@@ -1949,6 +1997,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -2130,6 +2180,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
@@ -2202,6 +2254,8 @@ Pod metdata
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -2367,6 +2421,8 @@ Pod metdata
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -2376,6 +2432,10 @@ Pod metdata
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -2493,6 +2553,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
 - [`status-reference.yaml`](../examples/status-reference.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -2641,6 +2703,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
 
@@ -3020,6 +3084,8 @@ MetricLabel is a single label for a prometheus metric
 
 - [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
 
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
+
 - [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
 
 - [`resource-delete-with-flags.yaml`](../examples/resource-delete-with-flags.yaml)
@@ -3054,6 +3120,8 @@ DAGTask represents a node in the graph during DAG execution
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -3176,6 +3244,8 @@ Sequence expands a workflow step into numeric range
 <br>
 
 - [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -3281,6 +3351,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -3446,6 +3518,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -3455,6 +3529,10 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -3602,6 +3680,8 @@ PersistentVolumeClaim is a user's request for and claim to a persistent volume
 - [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -3739,6 +3819,8 @@ A single application container that you want to run within a pod.
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -3884,6 +3966,8 @@ A single application container that you want to run within a pod.
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
@@ -4016,6 +4100,8 @@ ResourceRequirements describes the compute resource requirements.
 - [`testvolume.yaml`](../examples/testvolume.yaml)
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -4082,6 +4168,8 @@ VolumeMount describes a mounting of a Volume within a container.
 - [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -4340,6 +4428,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
 
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
+
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](../examples/dag-nested.yaml)
@@ -4504,6 +4594,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -4513,6 +4605,10 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -5296,6 +5392,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
 
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
+
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
 - [`dag-nested.yaml`](../examples/dag-nested.yaml)
@@ -5460,6 +5558,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -5469,6 +5569,10 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields

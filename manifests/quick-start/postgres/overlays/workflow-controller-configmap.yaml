@@ -4,6 +4,7 @@ data:
     connectionPool:
       maxIdleConns: 100
       maxOpenConns: 0
+      connMaxLifetime: 0s
     nodeStatusOffLoad: true
     archive: true
     archiveTTL: 7d

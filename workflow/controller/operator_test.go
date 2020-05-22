@@ -104,6 +104,24 @@ spec:
         mountPath: /mnt/existing-vol
 `
 
+func TestGlobalParams(t *testing.T) {
+	wf := unmarshalWF(helloWorldWf)
+	cancel, controller := newController(wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	if assert.Contains(t, woc.globalParams, "workflow.creationTimestamp") {
+		assert.NotContains(t, woc.globalParams["workflow.creationTimestamp"], "UTC")
+	}
+	assert.Contains(t, woc.globalParams, "workflow.duration")
+	assert.Contains(t, woc.globalParams, "workflow.labels.workflows.argoproj.io/phase")
+	assert.Contains(t, woc.globalParams, "workflow.name")
+	assert.Contains(t, woc.globalParams, "workflow.namespace")
+	assert.Contains(t, woc.globalParams, "workflow.parameters")
+	assert.Contains(t, woc.globalParams, "workflow.serviceAccountName")
+	assert.Contains(t, woc.globalParams, "workflow.uid")
+}
+
 // TestSidecarWithVolume verifies ia sidecar can have a volumeMount reference to both existing or volumeClaimTemplate volumes
 func TestSidecarWithVolume(t *testing.T) {
 	cancel, controller := newController()
@@ -149,7 +167,8 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	assert.NotNil(t, wf)
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
-
+	_, _, err := woc.loadExecutionSpec()
+	assert.NoError(t, err)
 	// Verify that there are no nodes in the wf status.
 	assert.Zero(t, len(woc.wf.Status.Nodes))
 
@@ -221,7 +240,8 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	assert.NotNil(t, wf)
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
-
+	_, _, err := woc.loadExecutionSpec()
+	assert.NoError(t, err)
 	// Verify that there are no nodes in the wf status.
 	assert.Zero(t, len(woc.wf.Status.Nodes))
 
@@ -294,7 +314,8 @@ func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
 	assert.NotNil(t, wf)
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
-
+	_, _, err := woc.loadExecutionSpec()
+	assert.NoError(t, err)
 	// Verify that there are no nodes in the wf status.
 	assert.Zero(t, len(woc.wf.Status.Nodes))
 
@@ -351,7 +372,8 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	assert.NotNil(t, wf)
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
-
+	_, _, err := woc.loadExecutionSpec()
+	assert.NoError(t, err)
 	// Verify that there are no nodes in the wf status.
 	assert.Zero(t, len(woc.wf.Status.Nodes))
 
@@ -537,7 +559,8 @@ func TestBackoffMessage(t *testing.T) {
 	assert.NotNil(t, wf)
 	woc := newWorkflowOperationCtx(wf, controller)
 	assert.NotNil(t, woc)
-
+	_, _, err := woc.loadExecutionSpec()
+	assert.NoError(t, err)
 	retryNode := woc.getNodeByName("retry-backoff-s69z6")
 
 	// Simulate backoff of 4 secods
@@ -2851,7 +2874,7 @@ func TestStatusConditions(t *testing.T) {
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	//woc.operate()
+	woc.operate()
 	assert.Equal(t, len(woc.wf.Status.Conditions), 0)
 	woc.markWorkflowSuccess()
 	assert.Equal(t, woc.wf.Status.Conditions[0].Status, metav1.ConditionStatus("True"))
