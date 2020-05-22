@@ -56,6 +56,8 @@ func scrubStructuralSchema(definition obj) {
 	delete(definition, "x-kubernetes-group-version-kind")
 	delete(definition, "x-kubernetes-patch-merge-key")
 	delete(definition, "x-kubernetes-patch-strategy")
+	delete(definition, "x-kubernetes-list-map-keys")
+	delete(definition, "x-kubernetes-list-type")
 	properties, ok := definition["properties"].(obj)
 	if ok {
 		for _, v := range properties {
