@@ -126,7 +126,7 @@ func TestTopLevelWFTmplRefGetFromStored(t *testing.T) {
 		err := woc.loadWorkflowSpec()
 		assert.NoError(t, err)
 
-		assert.Equal(t, "test", *woc.submissionParameters[0].Value)
-		assert.Equal(t, "hello", *woc.submissionParameters[1].Value)
+		assert.Equal(t, "test", *woc.executionParameters[0].Value)
+		assert.Equal(t, "hello", *woc.executionParameters[1].Value)
 	})
 }

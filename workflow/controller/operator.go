@@ -88,10 +88,11 @@ type wfOperationCtx struct {
 	// preExecutionNodePhases contains the phases of all the nodes before the current operation. Necessary to infer
 	// changes in phase for metric emission
 	preExecutionNodePhases map[string]wfv1.NodePhase
-	// wfSpec holds the WorkflowSpec for execution
+	// wfSpec holds the WorkflowSpec for use in execution
 	wfSpec *wfv1.WorkflowSpec
-	// submissionParameters holds all submission parameters for workflow.
-	submissionParameters []wfv1.Parameter
+	// executionParameters holds all the parameters used in this execution. This is only relevant to merge the parameters
+	// of a Workflow and WorkflowTemplate when using workflowTemplateRef
+	executionParameters []wfv1.Parameter
 }
 
 var (
@@ -137,7 +138,6 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		deadline:               time.Now().UTC().Add(maxOperationTime),
 		auditLogger:            argo.NewAuditLogger(wf.ObjectMeta.Namespace, wfc.kubeclientset, wf.ObjectMeta.Name),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
-		submissionParameters:   wf.Spec.Arguments.DeepCopy().Parameters,
 	}
 
 	if woc.wf.Status.Nodes == nil {
@@ -174,7 +174,7 @@ func (woc *wfOperationCtx) operate() {
 
 	woc.log.Infof("Processing workflow")
 
-	// Load the WorkflowSpec for execution.
+	// Load the WorkflowSpec for execution
 	err := woc.loadWorkflowSpec()
 	if err != nil {
 		woc.log.Errorf("Unable to get Workflow Template Reference for workflow, %s error: %s", woc.wf.Name, err)
@@ -298,9 +298,8 @@ func (woc *wfOperationCtx) operate() {
 		if entrypoint == "" {
 			entrypoint = woc.wfSpec.Entrypoint
 		}
-		tmplRef.Template = ""
-		tmplRef.TemplateRef = woc.wf.Spec.WorkflowTemplateRef.ToTemplateRef(entrypoint)
-		args.Parameters = woc.submissionParameters
+		tmplRef = &wfv1.WorkflowStep{TemplateRef: woc.wf.Spec.WorkflowTemplateRef.ToTemplateRef(entrypoint)}
+		args.Parameters = woc.executionParameters
 	}
 
 	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, tmplRef, tmplCtx, args, &executeTemplateOpts{})
@@ -451,7 +450,7 @@ func (woc *wfOperationCtx) setGlobalParameters() {
 	if workflowParameters, err := json.Marshal(woc.wfSpec.Arguments.Parameters); err == nil {
 		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
 	}
-	for _, param := range woc.submissionParameters {
+	for _, param := range woc.executionParameters {
 		woc.globalParams["workflow.parameters."+param.Name] = *param.Value
 	}
 	for k, v := range woc.wf.ObjectMeta.Annotations {
@@ -2677,44 +2676,43 @@ func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (boo
 }
 
 func (woc *wfOperationCtx) fetchWorkflowSpec() (*wfv1.WorkflowSpec, error) {
-	var wftmpl wfv1.WorkflowSpecHolder
+	var specHolder wfv1.WorkflowSpecHolder
 	var err error
 	// Logic for workflow refers Workflow template
 	if woc.wf.Spec.WorkflowTemplateRef != nil {
 		if woc.wf.Spec.WorkflowTemplateRef.ClusterScope {
-			wftmpl, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)
+			specHolder, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)
 		} else {
-			wftmpl, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name)
+			specHolder, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name)
 		}
 		if err != nil {
 			return nil, err
 		}
 	}
-	return wftmpl.GetWorkflowSpec().DeepCopy(), nil
+	return specHolder.GetWorkflowSpec().DeepCopy(), nil
 }
 
 func (woc *wfOperationCtx) loadWorkflowSpec() error {
-	woc.submissionParameters = woc.wf.Spec.Arguments.Parameters
+	woc.executionParameters = woc.wf.Spec.Arguments.Parameters
+
 	if woc.wf.Spec.WorkflowTemplateRef == nil {
 		woc.wfSpec = &woc.wf.Spec
 		return nil
 	}
 
-	if woc.wf.Status.StoredWorkflowSpec != nil {
-		woc.wfSpec = woc.wf.Status.StoredWorkflowSpec.DeepCopy()
-	} else {
+	if woc.wf.Status.StoredWorkflowSpec == nil {
 		wftSpec, err := woc.fetchWorkflowSpec()
 		if err != nil {
 			return err
 		}
-		woc.wfSpec = wftSpec
-		woc.wf.Status.StoredWorkflowSpec = woc.wfSpec
+		woc.wf.Status.StoredWorkflowSpec = wftSpec
+		woc.updated = true
 	}
 
+	woc.wfSpec = woc.wf.Status.StoredWorkflowSpec
 	if len(woc.wfSpec.Arguments.Parameters) > 0 {
-		woc.submissionParameters = util.MergeParameters(woc.submissionParameters, woc.wfSpec.Arguments.Parameters)
+		woc.executionParameters = util.MergeParameters(woc.executionParameters, woc.wfSpec.Arguments.Parameters)
 	}
 
-	woc.updated = true
 	return nil
 }
