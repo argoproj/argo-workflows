@@ -482,7 +482,7 @@ pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/wor
 	go run ./hack secondaryswaggergen
 
 dist/swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
-	swagger mixin -c 680 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > dist/swagger.json
+	swagger mixin -c 684 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > dist/swagger.json
 
 dist/kubernetes.swagger.json:
 	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.15/api/openapi-spec/swagger.json

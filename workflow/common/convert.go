@@ -26,16 +26,21 @@ func ConvertCronWorkflowToWorkflow(cronWf *wfv1.CronWorkflow) *wfv1.Workflow {
 	return wf
 }
 
-func ConvertWorkflowTemplateToWorkflow(template *wfv1.WorkflowTemplate) *wfv1.Workflow {
-	wf := toWorkflow(template.TypeMeta, template.ObjectMeta, template.Spec.WorkflowSpec)
-	wf.Labels[LabelKeyWorkflowTemplate] = template.ObjectMeta.Name
-	return wf
-}
+func NewWorkflowFromWorkflowTemplate(templateName string, clusterScope bool) *wfv1.Workflow {
 
-func ConvertClusterWorkflowTemplateToWorkflow(template *wfv1.ClusterWorkflowTemplate) *wfv1.Workflow {
-	wf := toWorkflow(template.TypeMeta, template.ObjectMeta, template.Spec.WorkflowSpec)
-	wf.Labels[LabelKeyClusterWorkflowTemplate] = template.ObjectMeta.Name
-
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: templateName + "-",
+			Labels:       make(map[string]string),
+			Annotations:  make(map[string]string),
+		},
+		Spec: wfv1.WorkflowSpec{
+			WorkflowTemplateRef: &wfv1.WorkflowTemplateRef{
+				Name:         templateName,
+				ClusterScope: clusterScope,
+			},
+		},
+	}
 	return wf
 }
 
