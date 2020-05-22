@@ -139,8 +139,9 @@ func TestConvertWorkflowTemplateToWorkflow(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	wf := ConvertWorkflowTemplateToWorkflow(&wfTmpl)
+	wf := NewWorkflowFromWorkflowTemplate(wfTmpl.Name, false)
 	assert.NotNil(t, wf)
-	assert.Equal(t, wf.Labels[LabelKeyWorkflowTemplate], wfTmpl.Name)
-	assert.Equal(t, wf.GenerateName, wfTmpl.Name+"-")
+	assert.NotNil(t, wf.Spec.WorkflowTemplateRef)
+	assert.Equal(t, wfTmpl.Name, wf.Spec.WorkflowTemplateRef.Name)
+	assert.Equal(t, false, wf.Spec.WorkflowTemplateRef.ClusterScope)
 }

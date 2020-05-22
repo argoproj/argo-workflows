@@ -459,14 +459,6 @@ func DeletePod(c kubernetes.Interface, podName, namespace string) error {
 	return err
 }
 
-// IsPodTemplate returns whether the template corresponds to a pod
-func IsPodTemplate(tmpl *wfv1.Template) bool {
-	if tmpl.Container != nil || tmpl.Script != nil || tmpl.Resource != nil {
-		return true
-	}
-	return false
-}
-
 var yamlSeparator = regexp.MustCompile(`\n---`)
 
 // SplitWorkflowYAMLFile is a helper to split a body into multiple workflow objects
@@ -484,7 +476,11 @@ func SplitWorkflowYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
 		}
 		err := yaml.Unmarshal([]byte(manifestStr), &wf, opts...)
 		if wf.Kind != "" && wf.Kind != workflow.WorkflowKind {
-			log.Warnf("%s is not a workflow", wf.Kind)
+			name := wf.Kind
+			if wf.Name != "" {
+				name = fmt.Sprintf("%s '%s'", name, wf.Name)
+			}
+			log.Warnf("%s is not of kind Workflow. Ignoring...", name)
 			// If we get here, it was a k8s manifest which was not of type 'Workflow'
 			// We ignore these since we only care about Workflow manifests.
 			continue
@@ -512,7 +508,11 @@ func SplitWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.WorkflowTem
 		}
 		err := yaml.Unmarshal([]byte(manifestStr), &wftmpl, opts...)
 		if wftmpl.Kind != "" && wftmpl.Kind != workflow.WorkflowTemplateKind {
-			log.Warnf("%s is not a workflow template", wftmpl.Kind)
+			name := wftmpl.Kind
+			if wftmpl.Name != "" {
+				name = fmt.Sprintf("%s '%s'", name, wftmpl.Name)
+			}
+			log.Warnf("%s is not of kind WorkflowTemplate. Ignoring...", name)
 			// If we get here, it was a k8s manifest which was not of type 'WorkflowTemplate'
 			// We ignore these since we only care about WorkflowTemplate manifests.
 			continue
@@ -540,7 +540,11 @@ func SplitCronWorkflowYAMLFile(body []byte, strict bool) ([]wfv1.CronWorkflow, e
 		}
 		err := yaml.Unmarshal([]byte(manifestStr), &cronWf, opts...)
 		if cronWf.Kind != "" && cronWf.Kind != workflow.CronWorkflowKind {
-			log.Warnf("%s is not a cron workflow", cronWf.Kind)
+			name := cronWf.Kind
+			if cronWf.Name != "" {
+				name = fmt.Sprintf("%s '%s'", name, cronWf.Name)
+			}
+			log.Warnf("%s is not of kind CronWorkflow. Ignoring...", name)
 			// If we get here, it was a k8s manifest which was not of type 'CronWorkflow'
 			// We ignore these since we only care about CronWorkflow manifests.
 			continue

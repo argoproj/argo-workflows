@@ -46,6 +46,8 @@ Workflow is the definition of a workflow resource
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
 
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
 - [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
@@ -57,6 +59,8 @@ Workflow is the definition of a workflow resource
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -220,6 +224,8 @@ Workflow is the definition of a workflow resource
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -227,6 +233,10 @@ Workflow is the definition of a workflow resource
 - [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
 
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -327,6 +337,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
 
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
 - [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
@@ -338,6 +350,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -503,6 +517,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -512,6 +528,10 @@ WorkflowSpec is the specification of a Workflow.
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -546,7 +566,7 @@ WorkflowSpec is the specification of a Workflow.
 |`suspend`|`boolean`|Suspend will suspend the workflow and prevent execution of any future steps in the workflow|
 |`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
-|~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. ~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
+|~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
@@ -621,6 +641,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
 
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
 - [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
@@ -632,6 +654,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -797,6 +821,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -806,6 +832,10 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -881,6 +911,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
 
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
 - [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
@@ -892,6 +924,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -1057,6 +1091,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -1066,6 +1102,10 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -1100,7 +1140,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`suspend`|`boolean`|Suspend will suspend the workflow and prevent execution of any future steps in the workflow|
 |`templates`|`Array<`[`Template`](#template)`>`|Templates is a list of workflow templates used in a workflow|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
-|~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. ~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
+|~`ttlSecondsAfterFinished`~|~`int32`~|~TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.~ DEPRECATED: Use TTLStrategy.SecondsAfterCompletion instead.|
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
@@ -1219,6 +1259,8 @@ Arguments to a template
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -1226,6 +1268,8 @@ Arguments to a template
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 </details>
 
 ### Fields
@@ -1335,6 +1379,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
 
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
 - [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
@@ -1346,6 +1392,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -1509,6 +1557,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -1526,7 +1576,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`activeDeadlineSeconds`|`int64`|Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates.|
 |`affinity`|[`Affinity`](#affinity)|Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)|
 |`archiveLocation`|[`ArtifactLocation`](#artifactlocation)|Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the <workflowname>/<nodename> in the key.|
-|~`arguments`~|~[`Arguments`](#arguments)~|~Arguments hold arguments to the template. ~ DEPRECATED: This field is not used.|
+|~`arguments`~|~[`Arguments`](#arguments)~|~Arguments hold arguments to the template.~ DEPRECATED: This field is not used.|
 |`automountServiceAccountToken`|`boolean`|AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.|
 |`container`|[`Container`](#container)|Container is the main container image to run in the pod|
 |`daemon`|`boolean`|Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness|
@@ -1554,8 +1604,8 @@ Template is a reusable and composable unit of execution in a workflow
 |`sidecars`|`Array<`[`UserContainer`](#usercontainer)`>`|Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes|
 |`steps`|`Array<`[`ParallelSteps`](#parallelsteps)`>`|Steps define a series of sequential/parallel workflow steps|
 |`suspend`|[`SuspendTemplate`](#suspendtemplate)|Suspend template subtype which can suspend a workflow when reaching the step|
-|~`template`~|~`string`~|~Template is the name of the template which is used as the base of this template. ~ DEPRECATED: This field is not used.|
-|~`templateRef`~|~[`TemplateRef`](#templateref)~|~TemplateRef is the reference to the template resource which is used as the base of this template. ~ DEPRECATED: This field is not used.|
+|~`template`~|~`string`~|~Template is the name of the template which is used as the base of this template.~ DEPRECATED: This field is not used.|
+|~`templateRef`~|~[`TemplateRef`](#templateref)~|~TemplateRef is the reference to the template resource which is used as the base of this template.~ DEPRECATED: This field is not used.|
 |`tolerations`|`Array<`[`Toleration`](#toleration)`>`|Tolerations to apply to workflow pods.|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a template.|
 
@@ -1611,12 +1661,12 @@ NodeStatus contains status information about an individual node in the workflow
 |`podIP`|`string`|PodIP captures the IP of the pod for daemoned steps|
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is indicative, but not accurate, resource duration. This is populated when the nodes completes.|
 |`startedAt`|[`Time`](#time)|Time at which this node started|
-|~`storedTemplateID`~|~`string`~|~StoredTemplateID is the ID of stored template. ~ DEPRECATED: This value is not used anymore.|
+|~`storedTemplateID`~|~`string`~|~StoredTemplateID is the ID of stored template.~ DEPRECATED: This value is not used anymore.|
 |`templateName`|`string`|TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)|
 |`templateRef`|[`TemplateRef`](#templateref)|TemplateRef is the reference to the template resource which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)|
 |`templateScope`|`string`|TemplateScope is the template scope in which the template of this node was retrieved.|
 |`type`|`string`|Type indicates type of node|
-|~`workflowTemplateName`~|~`string`~|~WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved. ~ DEPRECATED: This value is not used anymore.|
+|~`workflowTemplateName`~|~`string`~|~WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.~ DEPRECATED: This value is not used anymore.|
 
 ## Outputs
 
@@ -1665,6 +1715,8 @@ Outputs hold parameters, artifacts, and results from a step
 - [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
 
 - [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -1722,6 +1774,8 @@ Artifact indicates an artifact to place at a specified path
 - [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
 
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -1852,6 +1906,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -1859,12 +1915,14 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 </details>
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|~`default`~|~`string`~|~Default is the default value to use for an input parameter if a value was not supplied ~ DEPRECATED: This field is not used|
+|~`default`~|~`string`~|~Default is the default value to use for an input parameter if a value was not supplied~ DEPRECATED: This field is not used|
 |`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters|
 |`name`|`string`|Name is the parameter name|
 |`value`|`string`|Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values|
@@ -1939,6 +1997,8 @@ DAGTemplate is a template subtype for directed acyclic graph templates
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -2120,6 +2180,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
@@ -2179,6 +2241,8 @@ Pod metdata
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
 
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
 - [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
@@ -2190,6 +2254,8 @@ Pod metdata
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -2355,6 +2421,8 @@ Pod metdata
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -2364,6 +2432,10 @@ Pod metdata
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -2379,6 +2451,8 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
+
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
 
 - [`k8s-jobs.yaml`](../examples/k8s-jobs.yaml)
 
@@ -2479,6 +2553,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
 - [`status-reference.yaml`](../examples/status-reference.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -2543,6 +2619,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
+
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
 
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
@@ -2625,6 +2703,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
 
@@ -3002,7 +3082,9 @@ MetricLabel is a single label for a prometheus metric
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
 
-- [`forever.yaml`](../examples/forever.yaml)
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`pod-metadata.yaml`](../examples/pod-metadata.yaml)
 
@@ -3038,6 +3120,8 @@ DAGTask represents a node in the graph during DAG execution
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -3160,6 +3244,8 @@ Sequence expands a workflow step into numeric range
 <br>
 
 - [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -3252,6 +3338,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
 
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
 - [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
@@ -3263,6 +3351,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -3428,6 +3518,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -3437,6 +3529,10 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -3450,7 +3546,7 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 |`finalizers`|`Array< string >`|Must be empty before the object is deleted from the registry. Each entry is an identifier for the responsible component that will remove the entry from the list. If the deletionTimestamp of the object is non-nil, entries in this list can only be removed.|
 |`generateName`|`string`|GenerateName is an optional prefix, used by the server, to generate a unique name ONLY IF the Name field has not been provided. If this field is used, the name returned to the client will be different than the name passed. This value will also be combined with a unique suffix. The provided value has the same validation rules as the Name field, and may be truncated by the length of the suffix required to make the value unique on the server.If this field is specified and the generated name exists, the server will NOT return a 409 - instead, it will either return 201 Created or 500 with Reason ServerTimeout indicating a unique name could not be found in the time allotted, and the client should retry (optionally after the time indicated in the Retry-After header).Applied only if Name is not specified. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#idempotency|
 |`generation`|`int64`|A sequence number representing a specific generation of the desired state. Populated by the system. Read-only.|
-|~`initializers`~|~[`Initializers`](#initializers)~|~An initializer is a controller which enforces some system invariant at object creation time. This field is a list of initializers that have not yet acted on this object. If nil or empty, this object has been completely initialized. Otherwise, the object is considered uninitialized and is hidden (in list/watch and get calls) from clients that haven't explicitly asked to observe uninitialized objects.When an object is created, the system will populate this list with the current set of initializers. Only privileged users may set or modify this list. Once it is empty, it may not be modified further by any user.~ DEPRECATED - initializers are an alpha field and will be removed in v1.15.|
+|~`initializers`~|~[`Initializers`](#initializers)~|~An initializer is a controller which enforces some system invariant at object creation time. This field is a list of initializers that have not yet acted on this object. If nil or empty, this object has been completely initialized. Otherwise, the object is considered uninitialized and is hidden (in list/watch and get calls) from clients that haven't explicitly asked to observe uninitialized objects.When an object is created, the system will populate this list with the current set of initializers. Only privileged users may set or modify this list. Once it is empty, it may not be modified further by any user~ DEPRECATED - initializers are an alpha field and will be removed in v1.15.|
 |`labels`|`Map< string , string >`|Map of string keys and values that can be used to organize and categorize (scope and select) objects. May match selectors of replication controllers and services. More info: http://kubernetes.io/docs/user-guide/labels|
 |`managedFields`|`Array<`[`ManagedFieldsEntry`](#managedfieldsentry)`>`|ManagedFields maps workflow-id and version to the set of fields that are managed by that workflow. This is mostly for internal housekeeping, and users typically shouldn't need to set or understand this field. A workflow can be the user's name, a controller's name, or the name of a specific apply path like "ci-cd". The set of fields is always in the version that the workflow used when modifying the object.This field is alpha and can be changed or removed without notice.|
 |`name`|`string`|Name must be unique within a namespace. Is required when creating resources, although some resources may allow a client to request the generation of an appropriate name automatically. Name is primarily intended for creation idempotence and configuration definition. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/identifiers#names|
@@ -3584,6 +3680,8 @@ PersistentVolumeClaim is a user's request for and claim to a persistent volume
 - [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -3628,7 +3726,7 @@ Volume represents a named volume in a pod that may be accessed by any container 
 |`flexVolume`|[`FlexVolumeSource`](#flexvolumesource)|FlexVolume represents a generic volume resource that is provisioned/attached using an exec based plugin.|
 |`flocker`|[`FlockerVolumeSource`](#flockervolumesource)|Flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running|
 |`gcePersistentDisk`|[`GCEPersistentDiskVolumeSource`](#gcepersistentdiskvolumesource)|GCEPersistentDisk represents a GCE Disk resource that is attached to a kubelet's host machine and then exposed to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk|
-|~`gitRepo`~|~[`GitRepoVolumeSource`](#gitrepovolumesource)~|~GitRepo represents a git repository at a particular revision. ~ DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir into the Pod's container.|
+|~`gitRepo`~|~[`GitRepoVolumeSource`](#gitrepovolumesource)~|~GitRepo represents a git repository at a particular revision.~ DEPRECATED: GitRepo is deprecated. To provision a container with a git repo, mount an EmptyDir into an InitContainer that clones the repo using git, then mount the EmptyDir into the Pod's container.|
 |`glusterfs`|[`GlusterfsVolumeSource`](#glusterfsvolumesource)|Glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime. More info: https://releases.k8s.io/HEAD/examples/volumes/glusterfs/README.md|
 |`hostPath`|[`HostPathVolumeSource`](#hostpathvolumesource)|HostPath represents a pre-existing file or directory on the host machine that is directly exposed to the container. This is generally used for system agents or other privileged things that are allowed to see the host machine. Most containers will NOT need this. More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath|
 |`iscsi`|[`ISCSIVolumeSource`](#iscsivolumesource)|ISCSI represents an ISCSI Disk resource that is attached to a kubelet's host machine and then exposed to the pod. More info: https://releases.k8s.io/HEAD/examples/volumes/iscsi/README.md|
@@ -3708,6 +3806,8 @@ A single application container that you want to run within a pod.
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
 
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
 - [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
@@ -3719,6 +3819,8 @@ A single application container that you want to run within a pod.
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -3864,6 +3966,8 @@ A single application container that you want to run within a pod.
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
@@ -3955,6 +4059,13 @@ Probe describes a health check to be performed against a container to determine 
 
 ContainerPort represents a network port in a single container.
 
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+</details>
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -3989,6 +4100,8 @@ ResourceRequirements describes the compute resource requirements.
 - [`testvolume.yaml`](../examples/testvolume.yaml)
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -4055,6 +4168,8 @@ VolumeMount describes a mounting of a Volume within a container.
 - [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -4204,6 +4319,13 @@ IntOrString is a type that can hold an int32 or a string.  When used in JSON or 
 
 A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.
 
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+</details>
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -4292,6 +4414,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
 
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
 - [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
@@ -4303,6 +4427,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -4468,6 +4594,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -4477,6 +4605,10 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -5246,6 +5378,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
 
+- [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
+
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
 - [`dag-continue-on-fail.yaml`](../examples/dag-continue-on-fail.yaml)
@@ -5257,6 +5391,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`dag-diamond.yaml`](../examples/dag-diamond.yaml)
 
 - [`dag-disable-failFast.yaml`](../examples/dag-disable-failFast.yaml)
+
+- [`dag-enhanced-depends.yaml`](../examples/dag-enhanced-depends.yaml)
 
 - [`dag-multiroot.yaml`](../examples/dag-multiroot.yaml)
 
@@ -5422,6 +5558,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -5431,6 +5569,10 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields

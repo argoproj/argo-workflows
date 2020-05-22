@@ -10,6 +10,7 @@ import (
 
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -268,6 +269,9 @@ type WorkflowSpec struct {
 
 	// Shutdown will shutdown the workflow according to its ShutdownStrategy
 	Shutdown ShutdownStrategy `json:"shutdown,omitempty" protobuf:"bytes,33,opt,name=shutdown,casttype=ShutdownStrategy"`
+
+	// WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution
+	WorkflowTemplateRef *WorkflowTemplateRef `json:"workflowTemplateRef,omitempty" protobuf:"bytes,34,opt,name=workflowTemplateRef"`
 }
 
 type ShutdownStrategy string
@@ -276,6 +280,17 @@ const (
 	ShutdownStrategyTerminate ShutdownStrategy = "Terminate"
 	ShutdownStrategyStop      ShutdownStrategy = "Stop"
 )
+
+func (s ShutdownStrategy) ShouldExecute(isOnExitPod bool) bool {
+	switch s {
+	case ShutdownStrategyTerminate:
+		return false
+	case ShutdownStrategyStop:
+		return isOnExitPod
+	default:
+		return true
+	}
+}
 
 type ParallelSteps struct {
 	Steps []WorkflowStep `protobuf:"bytes,1,rep,name=steps"`
@@ -685,6 +700,18 @@ type ArtifactLocation struct {
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 }
 
+// HasLocation whether or not an artifact has a location defined
+func (a *ArtifactLocation) HasLocation() bool {
+	return a.S3.HasLocation() ||
+		a.Git.HasLocation() ||
+		a.HTTP.HasLocation() ||
+		a.Artifactory.HasLocation() ||
+		a.Raw.HasLocation() ||
+		a.HDFS.HasLocation() ||
+		a.OSS.HasLocation() ||
+		a.GCS.HasLocation()
+}
+
 type ArtifactRepositoryRef struct {
 	ConfigMap string `json:"configMap,omitempty" protobuf:"bytes,1,opt,name=configMap"`
 	Key       string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
@@ -805,8 +832,24 @@ type TemplateRef struct {
 	// RuntimeResolution skips validation at creation time.
 	// By enabling this option, you can create the referred workflow template before the actual runtime.
 	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
-	// ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+	// ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
+}
+
+// WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
+type WorkflowTemplateRef struct {
+	// Name is the resource name of the workflow template.
+	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+	// ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
+	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,2,opt,name=clusterScope"`
+}
+
+func (ref *WorkflowTemplateRef) ToTemplateRef(entrypoint string) *TemplateRef {
+	return &TemplateRef{
+		Name:         ref.Name,
+		ClusterScope: ref.ClusterScope,
+		Template:     entrypoint,
+	}
 }
 
 type ArgumentsProvider interface {
@@ -903,6 +946,9 @@ type WorkflowStatus struct {
 
 	// ResourcesDuration is the total for the workflow
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
+
+	// StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.
+	StoredWorkflowSpec *WorkflowSpec `json:"storedWorkflowTemplateSpec,omitempty" protobuf:"bytes,14,opt,name=storedWorkflowTemplateSpec"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -978,13 +1024,25 @@ func (in ResourcesDuration) Add(o ResourcesDuration) ResourcesDuration {
 func (in ResourcesDuration) String() string {
 	var parts []string
 	for n, d := range in {
-		parts = append(parts, fmt.Sprintf("%v*%s", d, n))
+		parts = append(parts, fmt.Sprintf("%v*(%s %s)", d, ResourceQuantityDenominator(n).String(), n))
 	}
 	return strings.Join(parts, ",")
 }
 
 func (in ResourcesDuration) IsZero() bool {
 	return len(in) == 0
+}
+
+func ResourceQuantityDenominator(r apiv1.ResourceName) *resource.Quantity {
+	q, ok := map[apiv1.ResourceName]resource.Quantity{
+		apiv1.ResourceMemory:           resource.MustParse("100Mi"),
+		apiv1.ResourceStorage:          resource.MustParse("10Gi"),
+		apiv1.ResourceEphemeralStorage: resource.MustParse("10Gi"),
+	}[r]
+	if !ok {
+		q = resource.MustParse("1")
+	}
+	return &q
 }
 
 type WorkflowConditions []WorkflowCondition
@@ -1271,7 +1329,7 @@ type S3Artifact struct {
 }
 
 func (s *S3Artifact) HasLocation() bool {
-	return s != nil && s.Bucket != ""
+	return s != nil && s.Endpoint != "" && s.Bucket != "" && s.Key != ""
 }
 
 // GitArtifact is the location of an git artifact
@@ -1597,6 +1655,9 @@ type DAGTask struct {
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
+
+	// Depends are name of other targets which this depends on
+	Depends string `json:"depends,omitempty" protobuf:"bytes,12,opt,name=depends"`
 }
 
 var _ TemplateReferenceHolder = &DAGTask{}
@@ -1684,16 +1745,11 @@ func (args *Arguments) GetParameterByName(name string) *Parameter {
 	return nil
 }
 
-// HasLocation whether or not an artifact has a location defined
-func (a *Artifact) HasLocation() bool {
-	return a.S3.HasLocation() ||
-		a.Git.HasLocation() ||
-		a.HTTP.HasLocation() ||
-		a.Artifactory.HasLocation() ||
-		a.Raw.HasLocation() ||
-		a.HDFS.HasLocation() ||
-		a.OSS.HasLocation() ||
-		a.GCS.HasLocation()
+func (a *Artifact) GetArchive() *ArchiveStrategy {
+	if a == nil || a.Archive == nil {
+		return &ArchiveStrategy{}
+	}
+	return a.Archive
 }
 
 // GetTemplateByName retrieves a defined template by its name
@@ -1709,6 +1765,11 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 // GetResourceScope returns the template scope of workflow.
 func (wf *Workflow) GetResourceScope() ResourceScope {
 	return ResourceScopeLocal
+}
+
+// GetWorkflowSpec returns the Spec of a workflow.
+func (wf *Workflow) GetWorkflowSpec() WorkflowSpec {
+	return wf.Spec
 }
 
 // NodeID creates a deterministic node ID based on a node name

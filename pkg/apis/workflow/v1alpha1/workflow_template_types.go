@@ -59,3 +59,8 @@ func (wftmpl *WorkflowTemplate) GetTemplateByName(name string) *Template {
 func (wftmpl *WorkflowTemplate) GetResourceScope() ResourceScope {
 	return ResourceScopeNamespaced
 }
+
+// GetWorkflowSpec returns the WorkflowSpec of workflow template.
+func (wftmpl *WorkflowTemplate) GetWorkflowSpec() *WorkflowSpec {
+	return &wftmpl.Spec.WorkflowSpec
+}

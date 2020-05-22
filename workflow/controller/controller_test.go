@@ -5,8 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo/workflow/common"
-
 	"github.com/stretchr/testify/assert"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -24,6 +22,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
+	"github.com/argoproj/argo/workflow/metrics"
 )
 
 var helloWorldWf = `
@@ -126,7 +125,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		wfQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		wfArchive:       sqldb.NullWorkflowArchive,
-		Metrics:         make(map[string]common.Metric),
+		metrics:         metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
 	}
 	return cancel, controller
 }
@@ -328,20 +327,52 @@ func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
 	controller.archivedWorkflowGarbageCollector(make(chan struct{}))
 }
 
-func TestWorkflowControllerMetricsGarbageCollector(t *testing.T) {
-	cancel, controller := newController()
-	defer cancel()
+const wfWithTmplRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: workflow-template-hello-world-
+  namespace: default
+spec:
+  entrypoint: whalesay-template
+  arguments:
+    parameters:
+    - name: message
+      value: "test"
+  workflowTemplateRef:
+    name: workflow-template-whalesay-template
+`
+const wfTmpl = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-whalesay-template
+  namespace: default
+spec:
+  templates:
+  - name: whalesay-template
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+`
 
-	controller.Metrics["metric-1"] = common.Metric{Metric: nil, LastUpdated: time.Now().Add(-1 * time.Minute)}
-	controller.Metrics["metric-2"] = common.Metric{Metric: nil, LastUpdated: time.Now().Add(3 * time.Second)}
+func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
+	//_, controller := newController()
+	wf := unmarshalWF(wfWithTmplRef)
+	wftmpl := unmarshalWFTmpl(wfTmpl)
+	_, controller := newController(wf, wftmpl)
+	//_, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("default").Create(wftmpl)
+	//assert.NoError(t, err)
+	woc := wfOperationCtx{controller: controller,
+		wf: wf}
+	t.Run("WithWorkflowTmplRef", func(t *testing.T) {
+		_, _, err := woc.loadExecutionSpec()
+		assert.NoError(t, err)
+		assert.Equal(t, &wftmpl.Spec.WorkflowSpec, woc.wfSpec)
 
-	controller.Config.MetricsConfig.Enabled = true
-	controller.Config.MetricsConfig.MetricsTTL = config.TTL(1 * time.Second)
-
-	stop := make(chan struct{})
-	go func() { time.Sleep(2 * time.Second); stop <- struct{}{} }()
-	controller.metricsGarbageCollector(stop)
-
-	assert.Contains(t, controller.Metrics, "metric-2")
-	assert.NotContains(t, controller.Metrics, "metric-1")
+	})
 }

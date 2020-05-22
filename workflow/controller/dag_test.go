@@ -1,9 +1,16 @@
 package controller
 
 import (
+	"context"
+	"fmt"
+	"strings"
 	"testing"
 
+	"github.com/argoproj/argo/workflow/common"
+
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
@@ -39,6 +46,85 @@ func TestDagDisableFailFast(t *testing.T) {
 	woc := newWoc(*wf)
 	woc.operate()
 	assert.Equal(t, string(wfv1.NodeFailed), string(woc.wf.Status.Phase))
+}
+
+var dynamicSingleDag = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+ generateName: dag-diamond-
+spec:
+ entrypoint: diamond
+ templates:
+ - name: diamond
+   dag:
+     tasks:
+     - name: A
+       template: %s
+       %s
+     - name: TestSingle
+       template: Succeeded
+       depends: A.%s
+
+ - name: Succeeded
+   container:
+     image: alpine:3.7
+     command: [sh, -c, "exit 0"]
+
+ - name: Failed
+   container:
+     image: alpine:3.7
+     command: [sh, -c, "exit 1"]
+
+ - name: Skipped
+   when: "False"
+   container:
+     image: alpine:3.7
+     command: [sh, -c, "echo Hello"]
+`
+
+func TestSingleDependency(t *testing.T) {
+	statusMap := map[string]v1.PodPhase{"Succeeded": v1.PodSucceeded, "Failed": v1.PodFailed}
+	var closer context.CancelFunc
+	var controller *WorkflowController
+	for _, status := range []string{"Succeeded", "Failed", "Skipped"} {
+		fmt.Printf("\n\n\nCurrent status %s\n\n\n", status)
+		closer, controller = newController()
+		wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+		// If the status is "skipped" skip the root node.
+		var wfString string
+		if status == "Skipped" {
+			wfString = fmt.Sprintf(dynamicSingleDag, status, `when: "False == True"`, status)
+		} else {
+			wfString = fmt.Sprintf(dynamicSingleDag, status, "", status)
+		}
+		wf := unmarshalWF(wfString)
+		wf, err := wfcset.Create(wf)
+		assert.Nil(t, err)
+		wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+		assert.Nil(t, err)
+		woc := newWorkflowOperationCtx(wf, controller)
+
+		woc.operate()
+		// Mark the status of the pod according to the test
+		if _, ok := statusMap[status]; ok {
+			makePodsPhase(t, statusMap[status], controller.kubeclientset, wf.ObjectMeta.Namespace)
+		}
+
+		woc.operate()
+		found := false
+		for _, node := range woc.wf.Status.Nodes {
+			if strings.Contains(node.Name, "TestSingle") {
+				found = true
+				assert.Equal(t, wfv1.NodePending, node.Phase)
+			}
+		}
+		assert.True(t, found)
+	}
+	if closer != nil {
+		closer()
+	}
 }
 
 func TestGetDagTaskFromNode(t *testing.T) {
@@ -111,6 +197,162 @@ func TestArtifactResolutionWhenSkippedDAG(t *testing.T) {
 	woc.operate()
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+}
+
+func TestEvaluateDependsLogic(t *testing.T) {
+	testTasks := []wfv1.DAGTask{
+		{
+			Name: "A",
+		},
+		{
+			Name:    "B",
+			Depends: "A",
+		},
+		{
+			Name:    "C", // This task should fail
+			Depends: "A",
+		},
+		{
+			Name:    "should-execute-1",
+			Depends: "A && C.Completed",
+		},
+		{
+			Name:    "should-execute-2",
+			Depends: "B || C",
+		},
+		{
+			Name:    "should-not-execute",
+			Depends: "B && C",
+		},
+		{
+			Name:    "should-execute-3",
+			Depends: "should-execute-2 || should-not-execute",
+		},
+	}
+
+	d := &dagContext{
+		boundaryName: "test",
+		tasks:        testTasks,
+		wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
+		dependencies: make(map[string][]string),
+		dependsLogic: make(map[string]string),
+	}
+
+	// Task A is running
+	d.wf = &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
+		Status: wfv1.WorkflowStatus{
+			Nodes: map[string]wfv1.NodeStatus{
+				d.taskNodeID("A"): {Phase: wfv1.NodeRunning},
+			},
+		},
+	}
+
+	// Task B should not proceed, task A is still running
+	execute, proceed, err := d.evaluateDependsLogic("B")
+	assert.NoError(t, err)
+	assert.False(t, proceed)
+	assert.False(t, execute)
+
+	// Task A succeeded
+	d.wf.Status.Nodes[d.taskNodeID("A")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
+
+	// Task B and C should proceed and execute
+	execute, proceed, err = d.evaluateDependsLogic("B")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+	execute, proceed, err = d.evaluateDependsLogic("C")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+	// Other tasks should not
+	execute, proceed, err = d.evaluateDependsLogic("should-execute-1")
+	assert.NoError(t, err)
+	assert.False(t, proceed)
+	assert.False(t, execute)
+
+	// Tasks B succeeded, C failed
+	d.wf.Status.Nodes[d.taskNodeID("B")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
+	d.wf.Status.Nodes[d.taskNodeID("C")] = wfv1.NodeStatus{Phase: wfv1.NodeFailed}
+
+	// Tasks should-execute-1 and should-execute-2 should proceed and execute
+	execute, proceed, err = d.evaluateDependsLogic("should-execute-1")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+	execute, proceed, err = d.evaluateDependsLogic("should-execute-2")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+	// Task should-not-execute should proceed, but not execute
+	execute, proceed, err = d.evaluateDependsLogic("should-not-execute")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.False(t, execute)
+
+	// Tasks should-execute-1 and should-execute-2 succeeded, should-not-execute skipped
+	d.wf.Status.Nodes[d.taskNodeID("should-execute-1")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
+	d.wf.Status.Nodes[d.taskNodeID("should-execute-2")] = wfv1.NodeStatus{Phase: wfv1.NodeSucceeded}
+	d.wf.Status.Nodes[d.taskNodeID("should-not-execute")] = wfv1.NodeStatus{Phase: wfv1.NodeSkipped}
+
+	// Tasks should-execute-3 should proceed and execute
+	execute, proceed, err = d.evaluateDependsLogic("should-execute-3")
+	assert.NoError(t, err)
+	assert.True(t, proceed)
+	assert.True(t, execute)
+}
+
+func TestAllEvaluateDependsLogic(t *testing.T) {
+	statusMap := map[common.TaskResult]wfv1.NodePhase{
+		common.TaskResultSucceeded: wfv1.NodeSucceeded,
+		common.TaskResultFailed:    wfv1.NodeFailed,
+		common.TaskResultSkipped:   wfv1.NodeSkipped,
+		common.TaskResultCompleted: wfv1.NodeSucceeded,
+	}
+	for _, status := range []common.TaskResult{common.TaskResultSucceeded, common.TaskResultFailed, common.TaskResultSkipped,
+		common.TaskResultCompleted} {
+		testTasks := []wfv1.DAGTask{
+			{
+				Name: "same",
+			},
+			{
+				Name:    "Run",
+				Depends: fmt.Sprintf("same.%s", status),
+			},
+			{
+				Name:    "NotRun",
+				Depends: fmt.Sprintf("!same.%s", status),
+			},
+		}
+
+		d := &dagContext{
+			boundaryName: "test",
+			tasks:        testTasks,
+			wf:           &wfv1.Workflow{ObjectMeta: metav1.ObjectMeta{Name: "test-wf"}},
+			dependencies: make(map[string][]string),
+			dependsLogic: make(map[string]string),
+		}
+
+		// Task A is running
+		d.wf = &wfv1.Workflow{
+			ObjectMeta: metav1.ObjectMeta{Name: "test-wf"},
+			Status: wfv1.WorkflowStatus{
+				Nodes: map[string]wfv1.NodeStatus{
+					d.taskNodeID("same"): {Phase: statusMap[status]},
+				},
+			},
+		}
+
+		execute, proceed, err := d.evaluateDependsLogic("Run")
+		assert.NoError(t, err)
+		assert.True(t, proceed)
+		assert.True(t, execute)
+		execute, proceed, err = d.evaluateDependsLogic("NotRun")
+		assert.NoError(t, err)
+		assert.True(t, proceed)
+		assert.False(t, execute)
+	}
 }
 
 var dagAssessPhaseContinueOnExpandedTaskVariables = `
@@ -652,4 +894,241 @@ func TestDAGWithParamAndGlobalParam(t *testing.T) {
 
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+}
+
+var terminatingDAGWithRetryStrategyNodes = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-diamond-xfww2
+spec:
+  arguments: {}
+  entrypoint: diamond
+  shutdown: Terminate
+  templates:
+  - arguments: {}
+    dag:
+      tasks:
+      - arguments: {}
+        name: A
+        template: echo
+      - arguments: {}
+        dependencies:
+        - A
+        name: B
+        template: echo
+      - arguments: {}
+        dependencies:
+        - A
+        name: C
+        template: echo
+      - arguments: {}
+        dependencies:
+        - B
+        - C
+        name: D
+        template: echo
+    inputs: {}
+    metadata: {}
+    name: diamond
+    outputs: {}
+  - arguments: {}
+    container:
+      args:
+      - sleep 10
+      command:
+      - sh
+      - -c
+      image: alpine:3.7
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: echo
+    outputs: {}
+    retryStrategy:
+      limit: 4
+status:
+  finishedAt: null
+  nodes:
+    dag-diamond-xfww2:
+      children:
+      - dag-diamond-xfww2-1488588956
+      displayName: dag-diamond-xfww2
+      finishedAt: null
+      id: dag-diamond-xfww2
+      name: dag-diamond-xfww2
+      phase: Running
+      startedAt: "2020-05-06T16:15:38Z"
+      templateName: diamond
+      templateScope: local/dag-diamond-xfww2
+      type: DAG
+    dag-diamond-xfww2-990947287:
+      boundaryID: dag-diamond-xfww2
+      children:
+      - dag-diamond-xfww2-1522144194
+      - dag-diamond-xfww2-1538921813
+      displayName: A(0)
+      finishedAt: "2020-05-06T16:15:50Z"
+      hostNodeName: minikube
+      id: dag-diamond-xfww2-990947287
+      name: dag-diamond-xfww2.A(0)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-diamond-xfww2/dag-diamond-xfww2-990947287/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 21
+        memory: 0
+      startedAt: "2020-05-06T16:15:38Z"
+      templateName: echo
+      templateScope: local/dag-diamond-xfww2
+      type: Pod
+    dag-diamond-xfww2-1488588956:
+      boundaryID: dag-diamond-xfww2
+      children:
+      - dag-diamond-xfww2-990947287
+      displayName: A
+      finishedAt: "2020-05-06T16:15:51Z"
+      id: dag-diamond-xfww2-1488588956
+      name: dag-diamond-xfww2.A
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-diamond-xfww2/dag-diamond-xfww2-990947287/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+      phase: Succeeded
+      startedAt: "2020-05-06T16:15:38Z"
+      templateName: echo
+      templateScope: local/dag-diamond-xfww2
+      type: Retry
+    dag-diamond-xfww2-1522144194:
+      boundaryID: dag-diamond-xfww2
+      children:
+      - dag-diamond-xfww2-2043927737
+      displayName: C
+      finishedAt: "2020-05-06T16:15:59Z"
+      id: dag-diamond-xfww2-1522144194
+      message: Stopped with strategy 'Terminate'
+      name: dag-diamond-xfww2.C
+      phase: Failed
+      startedAt: "2020-05-06T16:15:51Z"
+      templateName: echo
+      templateScope: local/dag-diamond-xfww2
+      type: Retry
+    dag-diamond-xfww2-1538921813:
+      boundaryID: dag-diamond-xfww2
+      children:
+      - dag-diamond-xfww2-3629114292
+      displayName: B
+      finishedAt: "2020-05-06T16:15:59Z"
+      id: dag-diamond-xfww2-1538921813
+      message: Stopped with strategy 'Terminate'
+      name: dag-diamond-xfww2.B
+      phase: Failed
+      startedAt: "2020-05-06T16:15:52Z"
+      templateName: echo
+      templateScope: local/dag-diamond-xfww2
+      type: Retry
+    dag-diamond-xfww2-2043927737:
+      boundaryID: dag-diamond-xfww2
+      displayName: C(0)
+      finishedAt: "2020-05-06T16:15:58Z"
+      hostNodeName: minikube
+      id: dag-diamond-xfww2-2043927737
+      message: terminated
+      name: dag-diamond-xfww2.C(0)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-diamond-xfww2/dag-diamond-xfww2-2043927737/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+      phase: Failed
+      resourcesDuration:
+        cpu: 11
+        memory: 0
+      startedAt: "2020-05-06T16:15:51Z"
+      templateName: echo
+      templateScope: local/dag-diamond-xfww2
+      type: Pod
+    dag-diamond-xfww2-3629114292:
+      boundaryID: dag-diamond-xfww2
+      displayName: B(0)
+      finishedAt: "2020-05-06T16:15:58Z"
+      hostNodeName: minikube
+      id: dag-diamond-xfww2-3629114292
+      message: terminated
+      name: dag-diamond-xfww2.B(0)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-diamond-xfww2/dag-diamond-xfww2-3629114292/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+      phase: Failed
+      resourcesDuration:
+        cpu: 9
+        memory: 0
+      startedAt: "2020-05-06T16:15:52Z"
+      templateName: echo
+      templateScope: local/dag-diamond-xfww2
+      type: Pod
+  phase: Running
+  startedAt: "2020-05-06T16:15:38Z"
+`
+
+// This tests that a DAG with retry strategy in its tasks fails successfully when terminated
+func TestTerminatingDAGWithRetryStrategyNodes(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := unmarshalWF(terminatingDAGWithRetryStrategyNodes)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
 }
