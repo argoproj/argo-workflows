@@ -75,6 +75,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	cronWf.Spec.StartingDeadlineSeconds = &startingDeadlineSeconds
 	woc := &cronWfOperationCtx{
 		cronWf: &cronWf,
+		log:    logrus.WithFields(logrus.Fields{}),
 	}
 	proceed, err := woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
@@ -85,6 +86,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	cronWf.Spec.StartingDeadlineSeconds = &startingDeadlineSeconds
 	woc = &cronWfOperationCtx{
 		cronWf: &cronWf,
+		log:    logrus.WithFields(logrus.Fields{}),
 	}
 	proceed, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
@@ -105,6 +107,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	cronWf.Spec.StartingDeadlineSeconds = &startingDeadlineSeconds
 	woc = &cronWfOperationCtx{
 		cronWf: &cronWf,
+		log:    logrus.WithFields(logrus.Fields{}),
 	}
 	proceed, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
@@ -115,6 +118,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	cronWf.Spec.StartingDeadlineSeconds = &startingDeadlineSeconds
 	woc = &cronWfOperationCtx{
 		cronWf: &cronWf,
+		log:    logrus.WithFields(logrus.Fields{}),
 	}
 	proceed, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
