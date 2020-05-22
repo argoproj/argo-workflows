@@ -16,7 +16,7 @@ func genSchemaAssets() {
 	if err != nil {
 		panic(err)
 	}
-	swagger := swagger{}
+	swagger := obj{}
 	err = json.Unmarshal(data, &swagger)
 	if err != nil {
 		panic(err)
@@ -28,11 +28,10 @@ func genSchemaAssets() {
 
 		println(filename)
 
-		schema := swagger.definitionByName(name)
+		schema := swagger["definitions"].(obj)[name].(obj)
 		delete(schema["properties"].(obj), "status")
 		schema["definitions"] = swagger["definitions"]
-		definitions := schema["definitions"].(obj)
-		delete(definitions, name)
+		delete(schema["definitions"].(obj), name)
 		data, err = json.MarshalIndent(schema, "", "  ")
 		if err != nil {
 			panic(err)

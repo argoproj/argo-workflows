@@ -21,7 +21,7 @@ func genCRDs() {
 	if err != nil {
 		panic(err)
 	}
-	swagger := swagger{}
+	swagger := obj{}
 	err = json.Unmarshal(data, &swagger)
 	if err != nil {
 		panic(err)
@@ -36,12 +36,9 @@ func genCRDs() {
 
 		println(filename)
 
-		schema := swagger.expand(swagger.definitionByName("io.argoproj.workflow.v1alpha1." + kind))
-
+		schema := structuralSchema(swagger, structuralSchemaByName(swagger, "io.argoproj.workflow.v1alpha1."+kind))
 		schema["required"] = []string{"metadata", "spec"}
-		schema["properties"].(obj)["status"] = obj{
-			"x-kubernetes-preserve-unknown-fields": true,
-		}
+		schema["properties"].(obj)["status"] = any
 
 		crd := obj{
 			"apiVersion": "apiextensions.k8s.io/v1",
