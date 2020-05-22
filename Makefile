@@ -454,7 +454,7 @@ test-api: test-images
 test-cli: test-images cli
 	# Run CLI tests
 	go test -timeout 2m -v -count 1 -p 1 -run CLISuite ./test/e2e
-	go test -timeout 2m -v -count 1 -p 1 -run CLIWithServerSuite ./test/e2e
+	go test -timeout 3m -v -count 1 -p 1 -run CLIWithServerSuite ./test/e2e
 
 # clean
 
