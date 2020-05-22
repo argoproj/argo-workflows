@@ -4089,7 +4089,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"workflowTemplateRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WorkflowTemplateRef holds top level WorkflowTemplate reference to execute it.",
+							Description: "WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef"),
 						},
 					},
@@ -4748,7 +4748,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 					},
 					"workflowTemplateRef": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WorkflowTemplateRef holds top level WorkflowTemplate reference to execute it.",
+							Description: "WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef"),
 						},
 					},

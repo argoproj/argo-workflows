@@ -570,7 +570,7 @@ WorkflowSpec is the specification of a Workflow.
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
-|`workflowTemplateRef`|[`WorkflowTemplateRef`](#workflowtemplateref)|WorkflowTemplateRef holds top level WorkflowTemplate reference to execute it.|
+|`workflowTemplateRef`|[`WorkflowTemplateRef`](#workflowtemplateref)|WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution|
 
 ## WorkflowStatus
 
@@ -1146,7 +1146,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
-|`workflowTemplateRef`|[`WorkflowTemplateRef`](#workflowtemplateref)|WorkflowTemplateRef holds top level WorkflowTemplate reference to execute it.|
+|`workflowTemplateRef`|[`WorkflowTemplateRef`](#workflowtemplateref)|WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution|
 
 ## Arguments
 
@@ -1638,9 +1638,9 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
-- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
