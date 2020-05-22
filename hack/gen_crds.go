@@ -45,11 +45,11 @@ func genCRDs() {
 				"conversion": obj{"strategy": "None"},
 				"group":      workflow.Group,
 				"names": obj{
-					"kind":     crd.Kind,
-					"listKind": crd.Kind + "List",
-					"plural":   crd.Plural,
+					"kind":       crd.Kind,
+					"listKind":   crd.Kind + "List",
+					"plural":     crd.Plural,
 					"shortNames": array{crd.ShortName},
-					"singular": crd.Singular,
+					"singular":   crd.Singular,
 				},
 				"scope": crd.Scope,
 				"versions": array{

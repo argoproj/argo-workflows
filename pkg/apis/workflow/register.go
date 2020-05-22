@@ -3,33 +3,33 @@ package workflow
 // Workflow constants
 const (
 	Group                            string = "argoproj.io"
-	WorkflowKind                            = "Workflow"
-	WorkflowSingular                        = "workflow"
-	WorkflowPlural                          = "workflows"
-	WorkflowShortName                       = "wf"
-	WorkflowFullName                        = WorkflowPlural + "." + Group
-	WorkflowTemplateKind                    = "WorkflowTemplate"
-	WorkflowTemplateSingular                = "workflowtemplate"
-	WorkflowTemplatePlural                  = "workflowtemplates"
-	WorkflowTemplateShortName               = "wftmpl"
-	WorkflowTemplateFullName                = WorkflowTemplatePlural + "." + Group
-	CronWorkflowKind                        = "CronWorkflow"
-	CronWorkflowSingular                    = "cronworkflow"
-	CronWorkflowPlural                      = "cronworkflows"
-	CronWorkflowShortName                   = "cronwf"
-	CronWorkflowFullName                    = CronWorkflowPlural + "." + Group
-	ClusterWorkflowTemplateKind             = "ClusterWorkflowTemplate"
-	ClusterWorkflowTemplateSingular         = "clusterworkflowtemplate"
-	ClusterWorkflowTemplatePlural           = "clusterworkflowtemplates"
-	ClusterWorkflowTemplateShortName        = "cwftmpl"
-	ClusterWorkflowTemplateFullName         = ClusterWorkflowTemplatePlural + "." + Group
+	WorkflowKind                     string = "Workflow"
+	WorkflowSingular                 string = "workflow"
+	WorkflowPlural                   string = "workflows"
+	WorkflowShortName                string = "wf"
+	WorkflowFullName                 string = WorkflowPlural + "." + Group
+	WorkflowTemplateKind             string = "WorkflowTemplate"
+	WorkflowTemplateSingular         string = "workflowtemplate"
+	WorkflowTemplatePlural           string = "workflowtemplates"
+	WorkflowTemplateShortName        string = "wftmpl"
+	WorkflowTemplateFullName         string = WorkflowTemplatePlural + "." + Group
+	CronWorkflowKind                 string = "CronWorkflow"
+	CronWorkflowSingular             string = "cronworkflow"
+	CronWorkflowPlural               string = "cronworkflows"
+	CronWorkflowShortName            string = "cronwf"
+	CronWorkflowFullName             string = CronWorkflowPlural + "." + Group
+	ClusterWorkflowTemplateKind      string = "ClusterWorkflowTemplate"
+	ClusterWorkflowTemplateSingular  string = "clusterworkflowtemplate"
+	ClusterWorkflowTemplatePlural    string = "clusterworkflowtemplates"
+	ClusterWorkflowTemplateShortName string = "cwftmpl"
+	ClusterWorkflowTemplateFullName  string = ClusterWorkflowTemplatePlural + "." + Group
 )
 
 type ScopeType = string
 
 const (
 	Cluster    ScopeType = "Cluster"
-	Namespaced           = "Namespaced"
+	Namespaced ScopeType = "Namespaced"
 )
 
 type CRD struct {
