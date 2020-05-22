@@ -21,6 +21,18 @@ type FunctionalSuite struct {
 	fixtures.E2ESuite
 }
 
+func (s *FunctionalSuite) TestArchiveStrategies() {
+	s.Given().
+		Workflow(`@testdata/archive-strategies.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
 func (s *FunctionalSuite) TestContinueOnFail() {
 	s.Given().
 		Workflow(`
@@ -53,12 +65,12 @@ spec:
 
   - name: whalesay
     container:
-      image: argoproj/argosay:v1
+      image: argoproj/argosay:v2
       imagePullPolicy: IfNotPresent
 
   - name: whalesplosion
     container:
-      image: argoproj/argosay:v1
+      image: argoproj/argosay:v2
       imagePullPolicy: IfNotPresent
       command: ["sh", "-c", "sleep 5 ; exit 1"]
 `).
@@ -124,12 +136,12 @@ spec:
     - name: whalesay
       container:
         imagePullPolicy: IfNotPresent
-        image: argoproj/argosay:v1
+        image: argoproj/argosay:v2
 
     - name: whalesplosion
       container:
         imagePullPolicy: IfNotPresent
-        image: argoproj/argosay:v1
+        image: argoproj/argosay:v2
         command: ["sh", "-c", "sleep 10; exit 1"]
 `).
 		When().
@@ -163,11 +175,11 @@ func (s *FunctionalSuite) TestFastFailOnPodTermination() {
 		WaitForWorkflow(120 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Equal(t, wfv1.NodeError, status.Phase)
 			assert.Len(t, status.Nodes, 4)
 			nodeStatus := status.Nodes.FindByDisplayName("sleep")
-			assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
-			assert.Equal(t, "pod termination", nodeStatus.Message)
+			assert.Equal(t, wfv1.NodeError, nodeStatus.Phase)
+			assert.Equal(t, "pod deleted during operation", nodeStatus.Message)
 		})
 }
 
@@ -262,9 +274,8 @@ spec:
   - name: cowsay
     resubmitPendingPods: true
     container:
-      image: argoproj/argosay:v1
-      command: [sh, -c]
-      args: ["cowsay a"]
+      image: argoproj/argosay:v2
+      args: ["echo", "a"]
       resources:
         limits:
           memory: 128M
@@ -314,9 +325,8 @@ spec:
     retryStrategy:
       limit: 1
     container:
-      image: argoproj/argosay:v1
-      command: [sh, -c]
-      args: ["cowsay a"]
+      image: argoproj/argosay:v2
+      args: ["echo", "a"]
       resources:
         limits:
           memory: 128M
@@ -397,7 +407,6 @@ func (s *FunctionalSuite) TestGlobalScope() {
 }
 
 func (s *FunctionalSuite) TestStopBehavior() {
-	s.T().SkipNow()
 	s.Given().
 		Workflow("@functional/stop-terminate.yaml").
 		When().
@@ -407,7 +416,7 @@ func (s *FunctionalSuite) TestStopBehavior() {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow stop-terminate stopped")
 		}).
-		WaitForWorkflow(30 * time.Second).
+		WaitForWorkflow(45 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeFailed, status.Phase)
@@ -443,6 +452,39 @@ func (s *FunctionalSuite) TestTerminateBehavior() {
 		})
 }
 
+func (s *FunctionalSuite) TestDAGDepends() {
+	s.Given().
+		Workflow("@functional/dag-depends.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			nodeStatus := status.Nodes.FindByDisplayName("A")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			nodeStatus = status.Nodes.FindByDisplayName("B")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			nodeStatus = status.Nodes.FindByDisplayName("C")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
+			nodeStatus = status.Nodes.FindByDisplayName("should-execute-1")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			nodeStatus = status.Nodes.FindByDisplayName("should-execute-2")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			nodeStatus = status.Nodes.FindByDisplayName("should-not-execute")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
+			nodeStatus = status.Nodes.FindByDisplayName("should-execute-3")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+		})
+}
+
 func (s *FunctionalSuite) TestDefaultParameterOutputs() {
 	s.Given().
 		Workflow(`
@@ -471,11 +513,8 @@ spec:
 
   - name: generate
     container:
-      image: argoproj/argosay:v1
-      command: [sh, -c]
-      args: ["
-        echo 'my-output-parameter' > /tmp/my-output-parameter.txt
-      "]
+      image: argoproj/argosay:v2
+      args: [echo, my-output-parameter, /tmp/my-output-parameter.txt]
     outputs:
       parameters:
       - name: out-parameter
@@ -498,6 +537,30 @@ spec:
 				}
 				return false
 			}))
+		})
+}
+
+func (s *FunctionalSuite) TestSameInputOutputPathOptionalArtifact() {
+	s.Given().
+		Workflow("@testdata/same-input-output-path-optional.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestOptionalInputArtifacts() {
+	s.Given().
+		Workflow("@testdata/input-artifacts.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})
 }
 

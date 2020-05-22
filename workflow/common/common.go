@@ -3,6 +3,8 @@ package common
 import (
 	"time"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"github.com/argoproj/argo/pkg/apis/workflow"
 )
 
@@ -134,6 +136,8 @@ const (
 	GlobalVarWorkflowParameters = "workflow.parameters"
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"
+	// LocalVarRetries is a step level variable that references the retries number if retryStrategy is specified
+	LocalVarRetries = "retries"
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"
@@ -153,4 +157,11 @@ type ExecutionControl struct {
 	Deadline *time.Time `json:"deadline,omitempty"`
 	// IncludeScriptOutput is containing flag to include script output
 	IncludeScriptOutput bool `json:"includeScriptOutput,omitempty"`
+}
+
+func UnstructuredHasCompletedLabel(obj interface{}) bool {
+	if wf, ok := obj.(*unstructured.Unstructured); ok {
+		return wf.GetLabels()[LabelKeyCompleted] == "true"
+	}
+	panic("obj passed is not an Unstructured")
 }

@@ -217,9 +217,6 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 			labels[k] = v
 		}
 	}
-	if opts.InstanceID != "" {
-		labels[common.LabelKeyControllerInstanceID] = opts.InstanceID
-	}
 	wf.SetLabels(labels)
 	if len(opts.Parameters) > 0 || opts.ParameterFile != "" {
 		newParams := make([]wfv1.Parameter, 0)
@@ -431,7 +428,7 @@ func compressAndOffloadNodes(wf *wfv1.Workflow, repo sqldb.OffloadNodeStatusRepo
 	return nil
 }
 
-func selectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
+func SelectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
 	nodeFields := fields.Set{
 		"displayName":  node.DisplayName,
 		"templateName": node.TemplateName,
@@ -452,7 +449,6 @@ func selectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
 
 func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, repo sqldb.OffloadNodeStatusRepo, workflowName string, nodeFieldSelector string, phase wfv1.NodePhase, message string) error {
 	selector, err := fields.ParseSelector(nodeFieldSelector)
-
 	if err != nil {
 		return err
 	}
@@ -471,7 +467,7 @@ func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, repo sqldb.Offload
 		nodes := wf.Status.Nodes
 		for nodeID, node := range nodes {
 			if node.IsActiveSuspendNode() {
-				if selectorMatchesNode(selector, node) {
+				if SelectorMatchesNode(selector, node) {
 					node.Phase = phase
 					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 					if len(message) > 0 {
@@ -743,7 +739,7 @@ func getNodeIDsToReset(restartSuccessful bool, nodeFieldSelector string, nodes w
 		return nil, err
 	} else {
 		for _, node := range nodes {
-			if selectorMatchesNode(selector, node) {
+			if SelectorMatchesNode(selector, node) {
 				//traverse all children of the node
 				var queue []string
 				queue = append(queue, node.ID)

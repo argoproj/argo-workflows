@@ -5,11 +5,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/argoproj/pkg/errors"
 	argoJson "github.com/argoproj/pkg/json"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
@@ -25,6 +25,7 @@ type cliSubmitOpts struct {
 	watch    bool   // --watch
 	strict   bool   // --strict
 	priority *int32 // --priority
+	getArgs  getFlags
 }
 
 func NewSubmitCommand() *cobra.Command {
@@ -50,6 +51,10 @@ func NewSubmitCommand() *cobra.Command {
 				cliSubmitOpts.priority = &priority
 			}
 
+			if !cliSubmitOpts.watch && len(cliSubmitOpts.getArgs.status) > 0 {
+				logrus.Warn("--status should only be used with --watch")
+			}
+
 			if from != "" {
 				if len(args) != 0 {
 					cmd.HelpFunc()(cmd, args)
@@ -66,7 +71,6 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringVar(&submitOpts.Entrypoint, "entrypoint", "", "override entrypoint")
 	command.Flags().StringArrayVarP(&submitOpts.Parameters, "parameter", "p", []string{}, "pass an input parameter")
 	command.Flags().StringVar(&submitOpts.ServiceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
-	command.Flags().StringVar(&submitOpts.InstanceID, "instanceid", "", "submit with a specific controller's instance id label")
 	command.Flags().BoolVar(&submitOpts.DryRun, "dry-run", false, "modify the workflow on the client-side without creating it")
 	command.Flags().BoolVar(&submitOpts.ServerDryRun, "server-dry-run", false, "send request to server with dry-run flag which will modify the workflow without creating it")
 	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
@@ -77,6 +81,8 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringVarP(&submitOpts.ParameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
 	command.Flags().StringVarP(&submitOpts.Labels, "labels", "l", "", "Comma separated labels to apply to the workflow. Will override previous values.")
 	command.Flags().StringVar(&from, "from", "", "Submit from an existing `kind/name` E.g., --from=cronwf/hello-world-cwf")
+	command.Flags().StringVar(&cliSubmitOpts.getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error). Should only be used with --watch.")
+	command.Flags().StringVar(&cliSubmitOpts.getArgs.nodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
 	// Only complete files with appropriate extension.
 	err := command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})
 	if err != nil {
@@ -163,7 +169,8 @@ func submitWorkflowFromResource(resourceIdentifier string, submitOpts *wfv1.Subm
 	if err != nil {
 		log.Fatalf("Failed to submit workflow: %v", err)
 	}
-	printWorkflow(created, cliOpts.output, DefaultStatus)
+
+	printWorkflow(created, getFlags{output: cliOpts.output})
 
 	waitOrWatch([]string{created.Name}, *cliOpts)
 }
@@ -198,14 +205,14 @@ func submitWorkflows(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cli
 		created, err := serviceClient.CreateWorkflow(ctx, &workflowpkg.WorkflowCreateRequest{
 			Namespace:     wf.Namespace,
 			Workflow:      &wf,
-			InstanceID:    submitOpts.InstanceID,
 			ServerDryRun:  submitOpts.ServerDryRun,
 			CreateOptions: options,
 		})
 		if err != nil {
 			log.Fatalf("Failed to submit workflow: %v", err)
 		}
-		printWorkflow(created, cliOpts.output, DefaultStatus)
+
+		printWorkflow(created, getFlags{output: cliOpts.output, status: cliOpts.getArgs.status})
 		workflowNames = append(workflowNames, created.Name)
 	}
 
@@ -235,6 +242,6 @@ func waitOrWatch(workflowNames []string, cliSubmitOpts cliSubmitOpts) {
 	if cliSubmitOpts.wait {
 		WaitWorkflows(workflowNames, false, !(cliSubmitOpts.output == "" || cliSubmitOpts.output == "wide"))
 	} else if cliSubmitOpts.watch {
-		watchWorkflow(workflowNames[0])
+		watchWorkflow(workflowNames[0], cliSubmitOpts.getArgs)
 	}
 }

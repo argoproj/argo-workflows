@@ -160,7 +160,7 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					return
 				case event, open := <-wfWatch.ResultChan():
 					if !open {
-						logCtx.Info("Re-establishing workflow watch")
+						logCtx.Debug("Re-establishing workflow watch")
 						wfWatch, err = wfInterface.Watch(wfListOptions)
 						if err != nil {
 							logCtx.Error(err)

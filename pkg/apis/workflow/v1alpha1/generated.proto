@@ -264,6 +264,9 @@ message DAGTask {
   // template, irrespective of the success, failure, or error of the
   // primary template.
   optional string onExit = 11;
+
+  // Depends are name of other targets which this depends on
+  optional string depends = 12;
 }
 
 // DAGTemplate is a template subtype for directed acyclic graph templates
@@ -776,12 +779,6 @@ message ScriptTemplate {
   optional string source = 2;
 }
 
-// SemaphoreRef is a reference of Semaphore
-message SemaphoreRef {
-  // ConfigMapKeyRef is configmap selector for Semaphore configuration
-  optional k8s.io.api.core.v1.ConfigMapKeySelector configMapKeyRef = 1;
-}
-
 // Sequence expands a workflow step into numeric range
 message Sequence {
   // Count is number of elements in the sequence (default: 0). Not to be used with end
@@ -804,9 +801,6 @@ message SubmitOpts {
 
   // GenerateName overrides metadata.generateName
   optional string generateName = 2;
-
-  // InstanceID binds the Resource to the specified instance ID
-  optional string instanceID = 3;
 
   // Entrypoint overrides spec.entrypoint
   optional string entrypoint = 4;
@@ -994,9 +988,6 @@ message Template {
 
   // Metrics are a list of metrics emitted from this template
   optional Metrics metrics = 35;
-
-  // SemaphoreRef will holds semaphore configuration for this Template.
-  optional SemaphoreRef semaphore = 36;
 }
 
 // TemplateRef is a reference of template resource.
@@ -1011,7 +1002,7 @@ message TemplateRef {
   // By enabling this option, you can create the referred workflow template before the actual runtime.
   optional bool runtimeResolution = 3;
 
-  // ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+  // ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
   optional bool clusterScope = 4;
 }
 
@@ -1244,8 +1235,8 @@ message WorkflowSpec {
   // Shutdown will shutdown the workflow according to its ShutdownStrategy
   optional string shutdown = 33;
 
-  // SemaphoreRef will holds semaphore configuration for this Workflow
-  optional SemaphoreRef semaphore = 34;
+  // WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution
+  optional WorkflowTemplateRef workflowTemplateRef = 34;
 }
 
 // WorkflowStatus contains overall status information about a workflow
@@ -1287,6 +1278,9 @@ message WorkflowStatus {
 
   // ResourcesDuration is the total for the workflow
   map<string, int64> resourcesDuration = 12;
+
+  // StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.
+  optional WorkflowSpec storedWorkflowTemplateSpec = 14;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step
@@ -1342,6 +1336,15 @@ message WorkflowTemplateList {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   repeated WorkflowTemplate items = 2;
+}
+
+// WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
+message WorkflowTemplateRef {
+  // Name is the resource name of the workflow template.
+  optional string name = 1;
+
+  // ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
+  optional bool clusterScope = 2;
 }
 
 // WorkflowTemplateSpec is a spec of WorkflowTemplate.

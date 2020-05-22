@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/argoproj/pkg/errors"
@@ -19,6 +20,10 @@ import (
 )
 
 func NewWatchCommand() *cobra.Command {
+	var (
+		getArgs getFlags
+	)
+
 	var command = &cobra.Command{
 		Use:   "watch WORKFLOW",
 		Short: "watch a workflow until it completes",
@@ -27,14 +32,16 @@ func NewWatchCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			watchWorkflow(args[0])
+			watchWorkflow(args[0], getArgs)
 
 		},
 	}
+	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
+	command.Flags().StringVar(&getArgs.nodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
 	return command
 }
 
-func watchWorkflow(wfName string) {
+func watchWorkflow(wfName string, getArgs getFlags) {
 
 	ctx, apiClient := client.NewAPIClient()
 	serviceClient := apiClient.NewWorkflowServiceClient()
@@ -51,29 +58,28 @@ func watchWorkflow(wfName string) {
 	errors.CheckError(err)
 	for {
 		event, err := stream.Recv()
+		if err == io.EOF {
+			log.Debug("Re-establishing workflow watch")
+			stream, err = serviceClient.WatchWorkflows(ctx, req)
+			errors.CheckError(err)
+			continue
+		}
 		errors.CheckError(err)
 		wf := event.Object
 		if wf == nil {
-			log.Debug("Re-establishing workflow watch")
-			stream, err = serviceClient.WatchWorkflows(ctx, req)
-			if err != nil {
-				errors.CheckError(err)
-				return
-			}
-			continue
-
-		}
-		printWorkflowStatus(wf)
-		if !wf.Status.FinishedAt.IsZero() {
 			break
+		}
+		printWorkflowStatus(wf, getArgs)
+		if !wf.Status.FinishedAt.IsZero() {
+			return
 		}
 	}
 }
 
-func printWorkflowStatus(wf *wfv1.Workflow) {
+func printWorkflowStatus(wf *wfv1.Workflow, getArgs getFlags) {
 	err := packer.DecompressWorkflow(wf)
 	errors.CheckError(err)
 	print("\033[H\033[2J")
 	print("\033[0;0H")
-	printWorkflowHelper(wf, getFlags{})
+	printWorkflowHelper(wf, getArgs)
 }
