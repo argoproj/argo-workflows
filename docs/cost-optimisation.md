@@ -4,7 +4,11 @@
 
 > Suitable for all.
 
-The workflow controller memory and CPU needs increase linearly with the number of pods and workflows you are currently running. Limit these using TTL
+A workflow (and for that matter, any Kuberenetes resource) will incure a cost as long as they exists in your cluster. 
+
+The workflow controller memory and CPU needs increase linearly with the number of pods and workflows you are currently running. 
+
+Limit the total number of workflows using:
 
 * Active Deadline - delete running workflow that do not complete in a set time
 * [Workflow TTL Strategy](fields.md#ttlstrategy) - delete completed workflows after a time
