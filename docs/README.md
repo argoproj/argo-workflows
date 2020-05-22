@@ -46,6 +46,7 @@ Some use-case specific documentation is available:
 * [Workflow Variables](variables.md)
 * [Versioning](versioning.md)
 * [Windows Container Support](windows.md)
+* [Work Avoidance](work-avoidance.md)
 * [Workflow Archive](workflow-archive.md)
 * [Workflow Controller Configmap](workflow-controller-configmap.md)
 * [Workflow Creator](workflow-creator.md)
