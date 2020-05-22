@@ -169,7 +169,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 		if node.BoundaryID != d.boundaryID {
 			continue
 		}
-		if !node.Completed() {
+		if !node.Fulfilled() {
 			return wfv1.NodeRunning
 		}
 		if node.Successful() {
@@ -278,7 +278,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	}
 
 	defer func() {
-		if woc.wf.Status.Nodes[node.ID].Completed() {
+		if woc.wf.Status.Nodes[node.ID].Fulfilled() {
 			_ = woc.killDaemonedChildren(node.ID)
 		}
 	}()
@@ -377,10 +377,10 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 
 	node := dagCtx.getTaskNode(taskName)
 	task := dagCtx.GetTask(taskName)
-	if node != nil && node.Executed() {
+	if node != nil && node.Completed() {
 		// Run the node's onExit node, if any.
 		hasOnExitNode, onExitNode, err := woc.runOnExitNode(task.Name, task.OnExit, dagCtx.boundaryID, dagCtx.tmplCtx)
-		if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+		if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {
 			// The onExit node is either not complete or has errored out, return.
 			return
 		}
@@ -506,7 +506,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		for _, t := range expandedTasks {
 			// Add the child relationship from our dependency's outbound nodes to this node.
 			node := dagCtx.getTaskNode(t.Name)
-			if node == nil || !node.Completed() {
+			if node == nil || !node.Fulfilled() {
 				return
 			}
 			if !node.Successful() {
@@ -702,7 +702,7 @@ func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 
 		// If the task is still running, we should not proceed.
 		depNode := d.getTaskNode(taskName)
-		if depNode == nil || !depNode.Completed() {
+		if depNode == nil || !depNode.Fulfilled() {
 			return false, false, nil
 		}
 

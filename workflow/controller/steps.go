@@ -38,7 +38,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 	}
 
 	defer func() {
-		if woc.wf.Status.Nodes[node.ID].Completed() {
+		if woc.wf.Status.Nodes[node.ID].Fulfilled() {
 			_ = woc.killDaemonedChildren(node.ID)
 		}
 	}()
@@ -90,7 +90,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 
 		sgNode := woc.executeStepGroup(stepGroup.Steps, sgNodeName, &stepsCtx)
 
-		if !sgNode.Completed() {
+		if !sgNode.Fulfilled() {
 			woc.log.Infof("Workflow step group node %s not yet completed", sgNode.ID)
 			return node, nil
 		}
@@ -185,7 +185,7 @@ func (woc *wfOperationCtx) updateOutboundNodes(nodeName string, tmpl *wfv1.Templ
 // Handles referencing of variables in scope, expands `withItem` clauses, and evaluates `when` expressions
 func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNodeName string, stepsCtx *stepsContext) *wfv1.NodeStatus {
 	node := woc.getNodeByName(sgNodeName)
-	if node.Completed() {
+	if node.Fulfilled() {
 		woc.log.Debugf("Step group node %v already marked completed", node)
 		return node
 	}
@@ -255,11 +255,11 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	for _, childNodeID := range node.Children {
 		childNode := woc.wf.Status.Nodes[childNodeID]
 		step := nodeSteps[childNode.Name]
-		if !childNode.Completed() {
+		if !childNode.Fulfilled() {
 			completed = false
-		} else if childNode.Executed() {
+		} else if childNode.Completed() {
 			hasOnExitNode, onExitNode, err := woc.runOnExitNode(step.Name, step.OnExit, stepsCtx.boundaryID, stepsCtx.tmplCtx)
-			if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+			if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
 				completed = false
 			}
@@ -468,7 +468,7 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 	realTimeScope := make(map[string]func() float64)
 	localScope := woc.globalParams.DeepCopy()
 
-	if node.Completed() {
+	if node.Fulfilled() {
 		localScope["duration"] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())
 		realTimeScope["duration"] = func() float64 {
 			return node.FinishedAt.Sub(node.StartedAt.Time).Seconds()
