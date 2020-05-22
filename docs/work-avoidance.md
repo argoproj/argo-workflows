@@ -4,7 +4,7 @@
 
 > v2.9 and after
 
-You can make workflows faster and more robust by employing **work avoidance**. A workflow that utilizes this is simple a workflow containing steps that do not run if the work has already been done. This simplest way to do this is to use **marker files**.
+You can make workflows faster and more robust by employing **work avoidance**. A workflow that utilizes this is simply a workflow containing steps that do not run if the work has already been done. This simplest way to do this is to use **marker files**.
 
 Use cases:
 
