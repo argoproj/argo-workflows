@@ -23,36 +23,6 @@ func (s swagger) definitionByName(name string) obj {
 	return s["definitions"].(obj)[name].(obj)
 }
 
-func (s swagger) refs(name string) map[string]bool {
-	values := map[string]bool{name: true}
-	definition := s.definitionByName(name)
-	properties, ok := definition["properties"].(obj)
-	if ok {
-		for _, value := range properties {
-			property := value.(obj)
-			ref, ok := property["$ref"]
-			if ok {
-				for n := range s.refs(strings.TrimPrefix(ref.(string), "#/definitions/")) {
-					values[n] = true
-				}
-			}
-		}
-	}
-	items, ok := definition["items"].(obj)
-	if ok {
-		for _, value := range items {
-			item := value.(obj)
-			ref, ok := item["$ref"]
-			if ok {
-				for n := range s.refs(strings.TrimPrefix(ref.(string), "#/definitions/")) {
-					values[n] = true
-				}
-			}
-		}
-	}
-	return values
-}
-
 func (s swagger) expand(definition obj) obj {
 	ref, ok := definition["$ref"]
 	if ok {
