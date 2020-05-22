@@ -803,6 +803,9 @@ export interface WorkflowList {
  * WorkflowSpec is the specification of a Workflow.
  */
 export interface WorkflowSpec {
+    activeDeadlineSeconds?: number;
+    ttlStrategy?: {};
+    podGC?: {};
     /**
      * Affinity sets the scheduling constraints for all pods in the workflow. Can be overridden by an affinity specified in the template
      */
