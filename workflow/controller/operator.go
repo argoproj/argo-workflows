@@ -90,9 +90,6 @@ type wfOperationCtx struct {
 	preExecutionNodePhases map[string]wfv1.NodePhase
 	// wfSpec holds the WorkflowSpec for use in execution
 	wfSpec *wfv1.WorkflowSpec
-	// executionParameters holds all the parameters used in this execution. This is only relevant to merge the parameters
-	// of a Workflow and WorkflowTemplate when using workflowTemplateRef
-	executionParameters []wfv1.Parameter
 }
 
 var (
@@ -175,7 +172,7 @@ func (woc *wfOperationCtx) operate() {
 	woc.log.Infof("Processing workflow")
 
 	// Load the WorkflowSpec for execution
-	err := woc.loadWorkflowSpec()
+	execTmplRef, execArgs, err := woc.loadExecutionSpec()
 	if err != nil {
 		woc.log.Errorf("Unable to get Workflow Template Reference for workflow, %s error: %s", woc.wf.Name, err)
 		woc.markWorkflowError(err, true)
@@ -258,7 +255,7 @@ func (woc *wfOperationCtx) operate() {
 		return
 	}
 
-	woc.setGlobalParameters()
+	woc.setGlobalParameters(execArgs)
 
 	if woc.wfSpec.ArtifactRepositoryRef != nil {
 		repoReference := woc.wfSpec.ArtifactRepositoryRef
@@ -291,18 +288,7 @@ func (woc *wfOperationCtx) operate() {
 		return
 	}
 
-	tmplRef := &wfv1.WorkflowStep{Template: woc.wfSpec.Entrypoint}
-	args := woc.wfSpec.Arguments
-	if woc.wf.Spec.WorkflowTemplateRef != nil {
-		entrypoint := woc.wf.Spec.Entrypoint
-		if entrypoint == "" {
-			entrypoint = woc.wfSpec.Entrypoint
-		}
-		tmplRef = &wfv1.WorkflowStep{TemplateRef: woc.wf.Spec.WorkflowTemplateRef.ToTemplateRef(entrypoint)}
-		args.Parameters = woc.executionParameters
-	}
-
-	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, tmplRef, tmplCtx, args, &executeTemplateOpts{})
+	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, execTmplRef, tmplCtx, execArgs, &executeTemplateOpts{})
 	if err != nil {
 		msg := fmt.Sprintf("%s error in entry template execution: %+v", woc.wf.Name, err)
 		// the error are handled in the callee so just log it.
@@ -433,7 +419,7 @@ func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
 }
 
 // setGlobalParameters sets the globalParam map with global parameters
-func (woc *wfOperationCtx) setGlobalParameters() {
+func (woc *wfOperationCtx) setGlobalParameters(executionParameters wfv1.Arguments) {
 	woc.globalParams[common.GlobalVarWorkflowName] = woc.wf.ObjectMeta.Name
 	woc.globalParams[common.GlobalVarWorkflowNamespace] = woc.wf.ObjectMeta.Namespace
 	woc.globalParams[common.GlobalVarWorkflowServiceAccountName] = woc.wf.Spec.ServiceAccountName
@@ -450,7 +436,7 @@ func (woc *wfOperationCtx) setGlobalParameters() {
 	if workflowParameters, err := json.Marshal(woc.wfSpec.Arguments.Parameters); err == nil {
 		woc.globalParams[common.GlobalVarWorkflowParameters] = string(workflowParameters)
 	}
-	for _, param := range woc.executionParameters {
+	for _, param := range executionParameters.Parameters {
 		woc.globalParams["workflow.parameters."+param.Name] = *param.Value
 	}
 	for k, v := range woc.wf.ObjectMeta.Annotations {
@@ -2692,27 +2678,36 @@ func (woc *wfOperationCtx) fetchWorkflowSpec() (*wfv1.WorkflowSpec, error) {
 	return specHolder.GetWorkflowSpec().DeepCopy(), nil
 }
 
-func (woc *wfOperationCtx) loadWorkflowSpec() error {
-	woc.executionParameters = woc.wf.Spec.Arguments.Parameters
+func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wfv1.Arguments, error) {
+
+	executionParameters := woc.wf.Spec.Arguments
 
 	if woc.wf.Spec.WorkflowTemplateRef == nil {
 		woc.wfSpec = &woc.wf.Spec
-		return nil
+		tmplRef := &wfv1.WorkflowStep{Template: woc.wfSpec.Entrypoint}
+		return tmplRef, executionParameters, nil
 	}
 
 	if woc.wf.Status.StoredWorkflowSpec == nil {
 		wftSpec, err := woc.fetchWorkflowSpec()
 		if err != nil {
-			return err
+			return nil, wfv1.Arguments{}, err
 		}
 		woc.wf.Status.StoredWorkflowSpec = wftSpec
 		woc.updated = true
 	}
 
 	woc.wfSpec = woc.wf.Status.StoredWorkflowSpec
+
+	entrypoint := woc.wf.Spec.Entrypoint
+	if entrypoint == "" {
+		entrypoint = woc.wfSpec.Entrypoint
+	}
+	tmplRef := &wfv1.WorkflowStep{TemplateRef: woc.wf.Spec.WorkflowTemplateRef.ToTemplateRef(entrypoint)}
+
 	if len(woc.wfSpec.Arguments.Parameters) > 0 {
-		woc.executionParameters = util.MergeParameters(woc.executionParameters, woc.wfSpec.Arguments.Parameters)
+		executionParameters.Parameters = util.MergeParameters(executionParameters.Parameters, woc.wfSpec.Arguments.Parameters)
 	}
 
-	return nil
+	return tmplRef, executionParameters, nil
 }

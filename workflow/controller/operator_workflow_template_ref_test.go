@@ -123,10 +123,10 @@ func TestTopLevelWFTmplRefGetFromStored(t *testing.T) {
 	t.Run("ProcessWFWithStoredWFT", func(t *testing.T) {
 		_, controller := newController(wf)
 		woc := newWorkflowOperationCtx(wf, controller)
-		err := woc.loadWorkflowSpec()
+		_, execArgs, err := woc.loadExecutionSpec()
 		assert.NoError(t, err)
 
-		assert.Equal(t, "test", *woc.executionParameters[0].Value)
-		assert.Equal(t, "hello", *woc.executionParameters[1].Value)
+		assert.Equal(t, "test", execArgs.Parameters[0].Value)
+		assert.Equal(t, "hello", execArgs.Parameters[1].Value)
 	})
 }
