@@ -231,7 +231,6 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 			tmpl = &wfv1.WorkflowStep{TemplateRef: wfTmplRef}
 		}
 		_, err = ctx.validateTemplateHolder(tmpl, tmplCtx, args, map[string]interface{}{})
-
 		if err != nil {
 			return nil, err
 		}

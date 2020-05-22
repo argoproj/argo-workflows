@@ -370,7 +370,7 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	woc := wfOperationCtx{controller: controller,
 		wf: wf}
 	t.Run("WithWorkflowTmplRef", func(t *testing.T) {
-		err := woc.loadWorkflowSpec()
+		_, _, err := woc.loadExecutionSpec()
 		assert.NoError(t, err)
 		assert.Equal(t, &wftmpl.Spec.WorkflowSpec, woc.wfSpec)
 
