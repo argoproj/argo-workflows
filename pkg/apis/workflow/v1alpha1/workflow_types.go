@@ -1189,11 +1189,17 @@ func (n Nodes) GetResourcesDuration() ResourcesDuration {
 	return i
 }
 
+// Completed returns whether a phase is completed, i.e. it finished execution or was skipped
 func (phase NodePhase) Completed() bool {
+	return phase.Executed() || phase == NodeSkipped
+}
+
+// Executed returns whether or not a phase finished executing.
+// Mainly, a skipped phase is not considered as having executed.
+func (phase NodePhase) Executed() bool {
 	return phase == NodeSucceeded ||
 		phase == NodeFailed ||
-		phase == NodeError ||
-		phase == NodeSkipped
+		phase == NodeError
 }
 
 // Completed returns whether or not the workflow has completed execution
@@ -1219,9 +1225,15 @@ func (ws WorkflowStatus) FinishTime() *metav1.Time {
 	return &ws.FinishedAt
 }
 
-// Completed returns whether or not the node has completed execution
+// Completed returns whether or not a node is completed, i.e. it finished execution or was skipped
 func (n NodeStatus) Completed() bool {
 	return n.Phase.Completed() || n.IsDaemoned() && n.Phase != NodePending
+}
+
+// Completed returns whether or not the node finished executing
+// Mainly, a Skipped node is not considered as having executed
+func (n NodeStatus) Executed() bool {
+	return n.Phase.Executed()
 }
 
 func (in *WorkflowStatus) AnyActiveSuspendNode() bool {

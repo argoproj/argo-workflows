@@ -377,7 +377,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 
 	node := dagCtx.getTaskNode(taskName)
 	task := dagCtx.GetTask(taskName)
-	if node != nil && node.Completed() {
+	if node != nil && node.Executed() {
 		// Run the node's onExit node, if any.
 		hasOnExitNode, onExitNode, err := woc.runOnExitNode(task.Name, task.OnExit, dagCtx.boundaryID, dagCtx.tmplCtx)
 		if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
