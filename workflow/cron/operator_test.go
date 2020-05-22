@@ -173,6 +173,7 @@ func TestCronWorkflowConditionSubmissionError(t *testing.T) {
 		cronWfIf:    cs.ArgoprojV1alpha1().CronWorkflows(""),
 		wfLister:    &fakeLister{},
 		cronWf:      &cronWf,
+		log:         logrus.WithFields(logrus.Fields{}),
 	}
 	woc.Run()
 
