@@ -809,7 +809,7 @@ func (s *CLISuite) TestClusterTemplateCommands() {
 	})
 }
 
-func (s *CLISuite) TestTopLevelWFTRefSubmit() {
+func (s *CLISuite) TestWorkflowTemplateRefSubmit() {
 	s.Run("CreateWFT", func() {
 		s.Given().RunCli([]string{"template", "create", "smoke/workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {

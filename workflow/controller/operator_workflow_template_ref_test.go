@@ -9,7 +9,7 @@ import (
 	"github.com/argoproj/argo/util"
 )
 
-func TestTopLevelWFTmplRef(t *testing.T) {
+func TestWorkflowTemplateRef(t *testing.T) {
 	wf := unmarshalWF(wfWithTmplRef)
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
@@ -21,7 +21,7 @@ func TestTopLevelWFTmplRef(t *testing.T) {
 	})
 }
 
-func TestTopLevelWFTmplRefWithArgs(t *testing.T) {
+func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 	wf := unmarshalWF(wfWithTmplRef)
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
@@ -41,7 +41,7 @@ func TestTopLevelWFTmplRefWithArgs(t *testing.T) {
 	})
 
 }
-func TestTopLevelWFTmplRefWithWFTArgs(t *testing.T) {
+func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 	wf := unmarshalWF(wfWithTmplRef)
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
@@ -118,7 +118,7 @@ status:
       outputs: {}
 `
 
-func TestTopLevelWFTmplRefGetFromStored(t *testing.T) {
+func TestWorkflowTemplateRefGetFromStored(t *testing.T) {
 	wf := unmarshalWF(wfWithStatus)
 	t.Run("ProcessWFWithStoredWFT", func(t *testing.T) {
 		_, controller := newController(wf)
