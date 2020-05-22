@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"io/ioutil"
+
+	"github.com/argoproj/argo/pkg/apis/workflow"
 )
 
 /*
@@ -22,9 +24,9 @@ func genSchemaAssets() {
 		panic(err)
 	}
 
-	for _, kind := range kinds {
-		name := "io.argoproj.workflow.v1alpha1." + kind
-		filename := "ui/src/app/assets/schemas/" + kind + ".json"
+	for _, crd := range workflow.CRDs {
+		name := "io.argoproj.workflow.v1alpha1." + crd.Kind
+		filename := "ui/src/app/assets/schemas/" + crd.Kind + ".json"
 
 		println(filename)
 

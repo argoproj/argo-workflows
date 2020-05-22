@@ -11,7 +11,7 @@ spec:
     listKind: WorkflowTemplateList
     plural: workflowtemplates
     shortNames:
-    - tmpl
+    - wftmpl
     singular: workflowtemplate
   scope: Namespaced
   versions:

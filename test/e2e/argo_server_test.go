@@ -1202,7 +1202,7 @@ func (s *ArgoServerSuite) TestSubmitWorkflowFromResource() {
 			Expect().
 			Status(200)
 	})
-	s.Run("SubmitWFT", func() {
+	s.Run("SubmitCronWFT", func() {
 		s.e(s.T()).POST("/api/v1/workflows/argo/submit").
 			WithBytes([]byte(`{
 			  "resourceKind": "cronworkflow",

@@ -3,9 +3,10 @@ package main
 import (
 	"encoding/json"
 	"io/ioutil"
-	"strings"
 
 	"github.com/ghodss/yaml"
+
+	"github.com/argoproj/argo/pkg/apis/workflow"
 )
 
 /*
@@ -27,44 +28,30 @@ func genCRDs() {
 		panic(err)
 	}
 
-	for _, kind := range kinds {
-		singular := strings.ToLower(kind)
-		plural := singular + "s"
-		group := "argoproj.io"
-		name := plural + "." + group
-		filename := "manifests/base/crds/" + plural + "-crd.yaml"
+	for _, crd := range workflow.CRDs {
+		filename := "manifests/base/crds/" + crd.FullName + "-crd.yaml"
 
 		println(filename)
 
-		schema := structuralSchema(swagger, structuralSchemaByName(swagger, "io.argoproj.workflow.v1alpha1."+kind))
+		schema := structuralSchema(swagger, structuralSchemaByName(swagger, "io.argoproj.workflow.v1alpha1."+crd.Kind))
 		schema["required"] = []string{"metadata", "spec"}
 		schema["properties"].(obj)["status"] = any
 
 		crd := obj{
 			"apiVersion": "apiextensions.k8s.io/v1",
 			"kind":       "CustomResourceDefinition",
-			"metadata":   obj{"name": name},
+			"metadata":   obj{"name": crd.FullName},
 			"spec": obj{
 				"conversion": obj{"strategy": "None"},
-				"group":      group,
+				"group":      workflow.Group,
 				"names": obj{
-					"kind":     kind,
-					"listKind": kind + "List",
-					"plural":   plural,
-					"shortNames": array{map[string]string{
-						"ClusterWorkflowTemplate": "clusterwftmpl",
-						"CronWorkflow":            "cronwf",
-						"Workflow":                "wf",
-						"WorkflowTemplate":        "tmpl",
-					}[kind]},
-					"singular": singular,
+					"kind":     crd.Kind,
+					"listKind": crd.Kind + "List",
+					"plural":   crd.Plural,
+					"shortNames": array{crd.ShortName},
+					"singular": crd.Singular,
 				},
-				"scope": map[string]string{
-					"ClusterWorkflowTemplate": "Cluster",
-					"CronWorkflow":            "Namespaced",
-					"Workflow":                "Namespaced",
-					"WorkflowTemplate":        "Namespaced",
-				}[kind],
+				"scope": crd.Scope,
 				"versions": array{
 					obj{
 						"name":    "v1alpha1",
