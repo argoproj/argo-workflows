@@ -252,7 +252,7 @@ mocks: $(GOPATH)/bin/mockery
 	./hack/update-mocks.sh $(MOCK_FILES)
 
 .PHONY: codegen
-codegen: status proto swagger crds schemas mocks docs
+codegen: status proto swagger crds schemaassets mocks docs
 
 .PHONY: crds
 crds:

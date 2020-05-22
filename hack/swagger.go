@@ -10,13 +10,9 @@ type swagger obj
 
 func (s swagger) definitionByName(name string) obj {
 	switch name {
-	case "io.k8s.apimachinery.pkg.api.resource.Quantity":
+	case "io.k8s.apimachinery.pkg.api.resource.Quantity",
+		"io.argoproj.workflow.v1alpha1.Item":
 		return obj{
-			"anyOf": array{
-				obj{"type": "integer"},
-				obj{"type": "string"},
-			},
-			"pattern":                    `^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$`,
 			"x-kubernetes-int-or-string": true,
 		}
 	}

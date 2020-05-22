@@ -1730,7 +1730,6 @@ spec:
                                       containerName:
                                         type: string
                                       divisor:
-                                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                         x-kubernetes-int-or-string: true
                                       resource:
                                         type: string
@@ -2016,12 +2015,10 @@ spec:
                           properties:
                             limits:
                               additionalProperties:
-                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                 x-kubernetes-int-or-string: true
                               type: object
                             requests:
                               additionalProperties:
-                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                 x-kubernetes-int-or-string: true
                               type: object
                           type: object
@@ -2477,8 +2474,7 @@ spec:
                                 type: string
                               withItems:
                                 items:
-                                  format: item
-                                  type: string
+                                  x-kubernetes-int-or-string: true
                                 type: array
                               withParam:
                                 type: string
@@ -2562,7 +2558,6 @@ spec:
                                         containerName:
                                           type: string
                                         divisor:
-                                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                           x-kubernetes-int-or-string: true
                                         resource:
                                           type: string
@@ -2850,12 +2845,10 @@ spec:
                             properties:
                               limits:
                                 additionalProperties:
-                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                   x-kubernetes-int-or-string: true
                                 type: object
                               requests:
                                 additionalProperties:
-                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                   x-kubernetes-int-or-string: true
                                 type: object
                             type: object
@@ -3822,7 +3815,6 @@ spec:
                                       containerName:
                                         type: string
                                       divisor:
-                                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                         x-kubernetes-int-or-string: true
                                       resource:
                                         type: string
@@ -4108,12 +4100,10 @@ spec:
                           properties:
                             limits:
                               additionalProperties:
-                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                 x-kubernetes-int-or-string: true
                               type: object
                             requests:
                               additionalProperties:
-                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                 x-kubernetes-int-or-string: true
                               type: object
                           type: object
@@ -4369,7 +4359,6 @@ spec:
                                         containerName:
                                           type: string
                                         divisor:
-                                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                           x-kubernetes-int-or-string: true
                                         resource:
                                           type: string
@@ -4657,12 +4646,10 @@ spec:
                             properties:
                               limits:
                                 additionalProperties:
-                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                   x-kubernetes-int-or-string: true
                                 type: object
                               requests:
                                 additionalProperties:
-                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                   x-kubernetes-int-or-string: true
                                 type: object
                             type: object
@@ -5169,8 +5156,7 @@ spec:
                               type: string
                             withItems:
                               items:
-                                format: item
-                                type: string
+                                x-kubernetes-int-or-string: true
                               type: array
                             withParam:
                               type: string
@@ -5379,7 +5365,6 @@ spec:
                                         containerName:
                                           type: string
                                         divisor:
-                                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                           x-kubernetes-int-or-string: true
                                         resource:
                                           type: string
@@ -5396,7 +5381,6 @@ spec:
                               medium:
                                 type: string
                               sizeLimit:
-                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                 x-kubernetes-int-or-string: true
                             type: object
                           fc:
@@ -5622,7 +5606,6 @@ spec:
                                                   containerName:
                                                     type: string
                                                   divisor:
-                                                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                                     x-kubernetes-int-or-string: true
                                                   resource:
                                                     type: string
@@ -5872,12 +5855,10 @@ spec:
                           properties:
                             limits:
                               additionalProperties:
-                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                 x-kubernetes-int-or-string: true
                               type: object
                             requests:
                               additionalProperties:
-                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                 x-kubernetes-int-or-string: true
                               type: object
                           type: object
@@ -5919,7 +5900,6 @@ spec:
                           type: array
                         capacity:
                           additionalProperties:
-                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                             x-kubernetes-int-or-string: true
                           type: object
                         conditions:
@@ -6106,7 +6086,6 @@ spec:
                                   containerName:
                                     type: string
                                   divisor:
-                                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                     x-kubernetes-int-or-string: true
                                   resource:
                                     type: string
@@ -6123,7 +6102,6 @@ spec:
                         medium:
                           type: string
                         sizeLimit:
-                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                           x-kubernetes-int-or-string: true
                       type: object
                     fc:
@@ -6349,7 +6327,6 @@ spec:
                                             containerName:
                                               type: string
                                             divisor:
-                                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                               x-kubernetes-int-or-string: true
                                             resource:
                                               type: string
