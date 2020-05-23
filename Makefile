@@ -78,10 +78,11 @@ AUTH_MODE             := client
 endif
 K3D                   := $(shell if [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 LOG_LEVEL             := debug
-ALWAYS_OFFLOAD_NODE_STATUS := true
 
 ifeq ($(DB),no-db)
 ALWAYS_OFFLOAD_NODE_STATUS := false
+else
+ALWAYS_OFFLOAD_NODE_STATUS := true
 endif
 
 ifeq ($(CI),true)
