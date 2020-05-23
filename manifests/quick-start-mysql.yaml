@@ -1951,10 +1951,6 @@ spec:
                             - containerPort
                             type: object
                           type: array
-                          x-kubernetes-list-map-keys:
-                          - containerPort
-                          - protocol
-                          x-kubernetes-list-type: map
                         readinessProbe:
                           properties:
                             exec:
@@ -2783,10 +2779,6 @@ spec:
                               - containerPort
                               type: object
                             type: array
-                            x-kubernetes-list-map-keys:
-                            - containerPort
-                            - protocol
-                            x-kubernetes-list-type: map
                           readinessProbe:
                             properties:
                               exec:
@@ -4047,10 +4039,6 @@ spec:
                             - containerPort
                             type: object
                           type: array
-                          x-kubernetes-list-map-keys:
-                          - containerPort
-                          - protocol
-                          x-kubernetes-list-type: map
                         readinessProbe:
                           properties:
                             exec:
@@ -4593,10 +4581,6 @@ spec:
                               - containerPort
                               type: object
                             type: array
-                            x-kubernetes-list-map-keys:
-                            - containerPort
-                            - protocol
-                            x-kubernetes-list-type: map
                           readinessProbe:
                             properties:
                               exec:
@@ -6531,8 +6515,6 @@ spec:
                   name:
                     type: string
                 type: object
-            required:
-            - templates
             type: object
           status:
             x-kubernetes-preserve-unknown-fields: true
@@ -8516,10 +8498,6 @@ spec:
                                 - containerPort
                                 type: object
                               type: array
-                              x-kubernetes-list-map-keys:
-                              - containerPort
-                              - protocol
-                              x-kubernetes-list-type: map
                             readinessProbe:
                               properties:
                                 exec:
@@ -9348,10 +9326,6 @@ spec:
                                   - containerPort
                                   type: object
                                 type: array
-                                x-kubernetes-list-map-keys:
-                                - containerPort
-                                - protocol
-                                x-kubernetes-list-type: map
                               readinessProbe:
                                 properties:
                                   exec:
@@ -10612,10 +10586,6 @@ spec:
                                 - containerPort
                                 type: object
                               type: array
-                              x-kubernetes-list-map-keys:
-                              - containerPort
-                              - protocol
-                              x-kubernetes-list-type: map
                             readinessProbe:
                               properties:
                                 exec:
@@ -11158,10 +11128,6 @@ spec:
                                   - containerPort
                                   type: object
                                 type: array
-                                x-kubernetes-list-map-keys:
-                                - containerPort
-                                - protocol
-                                x-kubernetes-list-type: map
                               readinessProbe:
                                 properties:
                                   exec:
@@ -13096,8 +13062,6 @@ spec:
                       name:
                         type: string
                     type: object
-                required:
-                - templates
                 type: object
             required:
             - workflowSpec
@@ -15064,10 +15028,6 @@ spec:
                             - containerPort
                             type: object
                           type: array
-                          x-kubernetes-list-map-keys:
-                          - containerPort
-                          - protocol
-                          x-kubernetes-list-type: map
                         readinessProbe:
                           properties:
                             exec:
@@ -15896,10 +15856,6 @@ spec:
                               - containerPort
                               type: object
                             type: array
-                            x-kubernetes-list-map-keys:
-                            - containerPort
-                            - protocol
-                            x-kubernetes-list-type: map
                           readinessProbe:
                             properties:
                               exec:
@@ -17160,10 +17116,6 @@ spec:
                             - containerPort
                             type: object
                           type: array
-                          x-kubernetes-list-map-keys:
-                          - containerPort
-                          - protocol
-                          x-kubernetes-list-type: map
                         readinessProbe:
                           properties:
                             exec:
@@ -17706,10 +17658,6 @@ spec:
                               - containerPort
                               type: object
                             type: array
-                            x-kubernetes-list-map-keys:
-                            - containerPort
-                            - protocol
-                            x-kubernetes-list-type: map
                           readinessProbe:
                             properties:
                               exec:
@@ -19644,8 +19592,6 @@ spec:
                   name:
                     type: string
                 type: object
-            required:
-            - templates
             type: object
           status:
             x-kubernetes-preserve-unknown-fields: true
@@ -21608,10 +21554,6 @@ spec:
                             - containerPort
                             type: object
                           type: array
-                          x-kubernetes-list-map-keys:
-                          - containerPort
-                          - protocol
-                          x-kubernetes-list-type: map
                         readinessProbe:
                           properties:
                             exec:
@@ -22440,10 +22382,6 @@ spec:
                               - containerPort
                               type: object
                             type: array
-                            x-kubernetes-list-map-keys:
-                            - containerPort
-                            - protocol
-                            x-kubernetes-list-type: map
                           readinessProbe:
                             properties:
                               exec:
@@ -23704,10 +23642,6 @@ spec:
                             - containerPort
                             type: object
                           type: array
-                          x-kubernetes-list-map-keys:
-                          - containerPort
-                          - protocol
-                          x-kubernetes-list-type: map
                         readinessProbe:
                           properties:
                             exec:
@@ -24250,10 +24184,6 @@ spec:
                               - containerPort
                               type: object
                             type: array
-                            x-kubernetes-list-map-keys:
-                            - containerPort
-                            - protocol
-                            x-kubernetes-list-type: map
                           readinessProbe:
                             properties:
                               exec:
@@ -26188,8 +26118,6 @@ spec:
                   name:
                     type: string
                 type: object
-            required:
-            - templates
             type: object
           status:
             x-kubernetes-preserve-unknown-fields: true
