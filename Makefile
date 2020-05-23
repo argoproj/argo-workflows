@@ -73,10 +73,11 @@ CI                    ?= false
 DB                    ?= postgres
 K3D                   := $(shell if [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 LOG_LEVEL             := debug
-ALWAYS_OFFLOAD_NODE_STATUS := true
 
 ifeq ($(DB),no-db)
 ALWAYS_OFFLOAD_NODE_STATUS := false
+else
+ALWAYS_OFFLOAD_NODE_STATUS := true
 endif
 
 ifeq ($(CI),true)
@@ -318,7 +319,6 @@ $(VERSION_FILE):
 	touch $(VERSION_FILE)
 
 dist/$(DB).yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
-	# We additionally disable ALWAYS_OFFLOAD_NODE_STATUS
 	kustomize build --load_restrictor=none test/e2e/manifests/$(DB) | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(DB).yaml
 
 .PHONY: install

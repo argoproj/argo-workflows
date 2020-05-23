@@ -581,10 +581,7 @@ func generateNameReactor(action ktesting.Action) (handled bool, ret runtime.Obje
 }
 
 func getWorkflow(ctx context.Context, server workflowpkg.WorkflowServiceServer, namespace string, wfName string) (*v1alpha1.Workflow, error) {
-	return server.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
-		Name:      wfName,
-		Namespace: namespace,
-	})
+	return server.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{Name: wfName, Namespace: namespace})
 }
 
 func getWorkflowList(ctx context.Context, server workflowpkg.WorkflowServiceServer, namespace string) (*v1alpha1.WorkflowList, error) {
