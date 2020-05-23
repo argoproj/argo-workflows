@@ -13,6 +13,7 @@ import (
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/util/instanceid"
+	"github.com/argoproj/argo/workflow/hydrator"
 )
 
 func (wfc *WorkflowController) updateConfig(config config.Config) error {
@@ -67,6 +68,7 @@ func (wfc *WorkflowController) updateConfig(config config.Config) error {
 	} else {
 		log.Info("Persistence configuration disabled")
 	}
+	wfc.hydrator = hydrator.New(wfc.offloadNodeStatusRepo)
 	wfc.throttler.SetParallelism(config.Parallelism)
 	return nil
 }
