@@ -251,10 +251,11 @@ func (s *FunctionalSuite) TestLoopEmptyParam() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-			assert.Len(t, status.Nodes, 5)
-			nodeStatus := status.Nodes.FindByDisplayName("sleep")
-			assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
-			assert.Equal(t, "Skipped, empty params", nodeStatus.Message)
+			if assert.Len(t, status.Nodes, 5) {
+				nodeStatus := status.Nodes.FindByDisplayName("sleep")
+				assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
+				assert.Equal(t, "Skipped, empty params", nodeStatus.Message)
+			}
 		})
 }
 

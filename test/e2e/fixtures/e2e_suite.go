@@ -27,7 +27,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/kubeconfig"
-	"github.com/argoproj/argo/workflow/packer"
+	"github.com/argoproj/argo/workflow/hydrator"
 )
 
 const Namespace = "argo"
@@ -74,6 +74,7 @@ type E2ESuite struct {
 	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
 	cronClient        v1alpha1.CronWorkflowInterface
 	KubeClient        kubernetes.Interface
+	hydrator          hydrator.Interface
 	// Guard-rail.
 	// The number of archived workflows. If is changes between two tests, we have a problem.
 	numWorkflows int
@@ -89,6 +90,7 @@ func (s *E2ESuite) SetupSuite() {
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
 	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
 	s.Persistence = newPersistence(s.KubeClient)
+	s.hydrator = hydrator.New(s.Persistence.offloadNodeStatusRepo)
 	s.cwfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().ClusterWorkflowTemplates()
 }
 
@@ -310,7 +312,7 @@ func (s *E2ESuite) printWorkflowDiagnostics(name string) {
 	// print logs
 	wf, err := s.wfClient.Get(name, metav1.GetOptions{})
 	s.CheckError(err)
-	err = packer.DecompressWorkflow(wf)
+	err = s.hydrator.Hydrate(wf)
 	s.CheckError(err)
 	if wf.Status.IsOffloadNodeStatus() {
 		offloaded, err := s.Persistence.offloadNodeStatusRepo.Get(string(wf.UID), wf.Status.OffloadNodeStatusVersion)
@@ -376,12 +378,12 @@ func (s *E2ESuite) printPodLogs(logCtx *log.Entry, namespace, pod, container str
 
 func (s *E2ESuite) Given() *Given {
 	return &Given{
-		t:                     s.T(),
-		client:                s.wfClient,
-		wfTemplateClient:      s.wfTemplateClient,
-		cwfTemplateClient:     s.cwfTemplateClient,
-		cronClient:            s.cronClient,
-		offloadNodeStatusRepo: s.Persistence.offloadNodeStatusRepo,
-		kubeClient:            s.KubeClient,
+		t:                 s.T(),
+		client:            s.wfClient,
+		wfTemplateClient:  s.wfTemplateClient,
+		cwfTemplateClient: s.cwfTemplateClient,
+		cronClient:        s.cronClient,
+		hydrator:          s.hydrator,
+		kubeClient:        s.KubeClient,
 	}
 }
