@@ -24,6 +24,14 @@ type CronWorkflowList struct {
 	Items           []CronWorkflow `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
+type ConcurrencyPolicy string
+
+const (
+	AllowConcurrent   ConcurrencyPolicy = "Allow"
+	ForbidConcurrent  ConcurrencyPolicy = "Forbid"
+	ReplaceConcurrent ConcurrencyPolicy = "Replace"
+)
+
 // CronWorkflowSpec is the specification of a CronWorkflow
 type CronWorkflowSpec struct {
 	// WorkflowSpec is the spec of the workflow to be run
@@ -53,12 +61,11 @@ type CronWorkflowStatus struct {
 	Active []v1.ObjectReference `json:"active,omitempty" protobuf:"bytes,1,rep,name=active"`
 	// LastScheduleTime is the last time the CronWorkflow was scheduled
 	LastScheduledTime *metav1.Time `json:"lastScheduledTime,omitempty" protobuf:"bytes,2,opt,name=lastScheduledTime"`
+	// Conditions is a list of conditions the CronWorkflow may have
+	Conditions Conditions `json:"conditions,omitempty" protobuf:"bytes,3,rep,name=conditions"`
 }
 
-type ConcurrencyPolicy string
-
 const (
-	AllowConcurrent   ConcurrencyPolicy = "Allow"
-	ForbidConcurrent  ConcurrencyPolicy = "Forbid"
-	ReplaceConcurrent ConcurrencyPolicy = "Replace"
+	// ConditionTypeSubmissionError signifies that there was an error when submitting the CronWorkflow as a Workflow
+	ConditionTypeSubmissionError ConditionType = "SubmissionError"
 )
