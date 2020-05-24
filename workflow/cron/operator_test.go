@@ -11,6 +11,8 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 var scheduledWf = `
@@ -73,6 +75,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	cronWf.Spec.StartingDeadlineSeconds = &startingDeadlineSeconds
 	woc := &cronWfOperationCtx{
 		cronWf: &cronWf,
+		log:    logrus.WithFields(logrus.Fields{}),
 	}
 	proceed, err := woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
@@ -83,6 +86,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	cronWf.Spec.StartingDeadlineSeconds = &startingDeadlineSeconds
 	woc = &cronWfOperationCtx{
 		cronWf: &cronWf,
+		log:    logrus.WithFields(logrus.Fields{}),
 	}
 	proceed, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
@@ -103,6 +107,7 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	cronWf.Spec.StartingDeadlineSeconds = &startingDeadlineSeconds
 	woc = &cronWfOperationCtx{
 		cronWf: &cronWf,
+		log:    logrus.WithFields(logrus.Fields{}),
 	}
 	proceed, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
@@ -113,8 +118,68 @@ func TestRunOutstandingWorkflows(t *testing.T) {
 	cronWf.Spec.StartingDeadlineSeconds = &startingDeadlineSeconds
 	woc = &cronWfOperationCtx{
 		cronWf: &cronWf,
+		log:    logrus.WithFields(logrus.Fields{}),
 	}
 	proceed, err = woc.shouldOutstandingWorkflowsBeRun()
 	assert.NoError(t, err)
 	assert.False(t, proceed)
+}
+
+type fakeLister struct {
+}
+
+func (f fakeLister) List() ([]*v1alpha1.Workflow, error) {
+	// Do nothing
+	return nil, nil
+}
+
+var _ util.WorkflowLister = &fakeLister{}
+
+var invalidWf = `
+  apiVersion: argoproj.io/v1alpha1
+  kind: CronWorkflow
+  metadata:
+    name: hello-world
+  spec:
+    schedule: '* * * * *'
+    startingDeadlineSeconds: 30
+    workflowSpec:
+      arguments: {}
+      entrypoint: whalesay
+      templates:
+      - container:
+          args:
+          - "\U0001F553 hello world"
+          command:
+          - cowsay
+          image: docker/whalesay:latest
+          name: ""
+          resources: {}
+        inputs: {}
+        metadata: {}
+        name: "bad template name"
+        outputs: {}
+`
+
+func TestCronWorkflowConditionSubmissionError(t *testing.T) {
+	var cronWf v1alpha1.CronWorkflow
+	err := yaml.Unmarshal([]byte(invalidWf), &cronWf)
+	assert.NoError(t, err)
+
+	cs := fake.NewSimpleClientset()
+	woc := &cronWfOperationCtx{
+		wfClientset: cs,
+		wfClient:    cs.ArgoprojV1alpha1().Workflows(""),
+		cronWfIf:    cs.ArgoprojV1alpha1().CronWorkflows(""),
+		wfLister:    &fakeLister{},
+		cronWf:      &cronWf,
+		log:         logrus.WithFields(logrus.Fields{}),
+	}
+	woc.Run()
+
+	assert.Len(t, woc.cronWf.Status.Conditions, 1)
+	submissionErrorCond := woc.cronWf.Status.Conditions[0]
+	assert.Equal(t, v1.ConditionTrue, submissionErrorCond.Status)
+	assert.Equal(t, v1alpha1.ConditionTypeSubmissionError, submissionErrorCond.Type)
+	assert.Contains(t, submissionErrorCond.Message, "'bad template name' is invalid")
 }
