@@ -120,7 +120,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 editing={true}
                                 value={exampleWorkflow(this.state.namespace)}
                                 onSubmit={wfValue => {
-                                    return services.workflows
+                                    services.workflows
                                         .create(wfValue, wfValue.metadata.namespace || this.state.namespace)
                                         .then(wf => ctx.navigation.goto(uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)))
                                         .catch(error => this.setState({error}));

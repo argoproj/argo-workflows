@@ -85,7 +85,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                                 upload={true}
                                 value={exampleWorkflowTemplate(this.namespace || 'default')}
                                 onSubmit={wfTmpl => {
-                                    return services.workflowTemplate
+                                    services.workflowTemplate
                                         .create(wfTmpl, wfTmpl.metadata.namespace)
                                         .then(wf => ctx.navigation.goto(uiUrl(`workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`)))
                                         .catch(error => this.setState({error}));

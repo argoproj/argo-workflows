@@ -73,7 +73,7 @@ export class ClusterWorkflowTemplateList extends BasePage<RouteComponentProps<an
                                 kind='ClusterWorkflowTemplate'
                                 value={exampleClusterWorkflowTemplate()}
                                 onSubmit={wfTmpl => {
-                                    return services.clusterWorkflowTemplate
+                                    services.clusterWorkflowTemplate
                                         .create(wfTmpl)
                                         .then(wf => ctx.navigation.goto(uiUrl(`cluster-workflow-templates/${wf.metadata.name}`)))
                                         .catch(error => this.setState({error}));

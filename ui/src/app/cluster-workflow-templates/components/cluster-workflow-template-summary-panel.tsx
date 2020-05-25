@@ -36,7 +36,7 @@ export const ClusterWorkflowTemplateSummaryPanel = (props: Props) => {
                         title='Update Cluster Workflow Template'
                         value={props.template}
                         onSubmit={(value: WorkflowTemplate) => {
-                            return services.clusterWorkflowTemplate
+                            services.clusterWorkflowTemplate
                                 .update(value, props.template.metadata.name)
                                 .then(clusterWorkflowTemplate => props.onChange(clusterWorkflowTemplate))
                                 .catch(err => props.onError(err));

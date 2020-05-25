@@ -84,11 +84,12 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                                 title={'New Cron Workflow'}
                                 value={exampleCronWorkflow(this.namespace)}
                                 onSubmit={cronWf => {
-                                    return services.cronWorkflows
+                                    services.cronWorkflows
                                         .create(cronWf, cronWf.metadata.namespace)
                                         .then(res => ctx.navigation.goto(uiUrl(`cron-workflows/${res.metadata.namespace}/${res.metadata.name}`)))
                                         .catch(error => this.setState({error}));
                                 }}
+                                upload={true}
                                 editing={true}
                                 kind='CronWorkflow'
                             />

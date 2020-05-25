@@ -33,10 +33,9 @@ export const WorkflowTemplateSummaryPanel = (props: Props) => {
             <div className='white-box'>
                 <div className='white-box__details'>
                     <ResourceEditor
-                        editing={false}
                         value={props.template}
                         onSubmit={(value: WorkflowTemplate) => {
-                            return services.workflowTemplate
+                            services.workflowTemplate
                                 .update(value, props.template.metadata.name, props.template.metadata.namespace)
                                 .then(workflowTemplate => props.onChange(workflowTemplate))
                                 .catch(err => props.onError(err));

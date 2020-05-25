@@ -91,7 +91,7 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
                                     kind='Workflow'
                                     value={this.getWorkflow(this.state.template)}
                                     onSubmit={wfValue => {
-                                        return services.workflows
+                                        services.workflows
                                             .create(wfValue, wfValue.metadata.namespace)
                                             .then(workflow => ctx.navigation.goto(uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)))
                                             .catch(error => this.setState({error}));
