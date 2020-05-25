@@ -265,6 +265,11 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 	if err != nil {
 		return false
 	}
+	// Check if the node phase aligns with the retry policy
+	nodePhase := wfv1.RetryPolicy("On" + node.Phase)
+	if tmpl.RetryStrategy != nil && tmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyAlways && tmpl.RetryStrategy.RetryPolicy != nodePhase {
+		return false
+	}
 	if tmpl.RetryStrategy != nil && tmpl.RetryStrategy.Limit != nil && int32(len(node.Children)) > *tmpl.RetryStrategy.Limit {
 		return false
 	}
