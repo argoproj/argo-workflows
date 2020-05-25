@@ -91,8 +91,6 @@ spec:
 }
 
 func (s *FunctionalSuite) TestContinueOnFailDag() {
-	// https://github.com/argoproj/argo/issues/2624
-	s.T().SkipNow()
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
@@ -149,7 +147,7 @@ spec:
 		WaitForWorkflow(30 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 			assert.Len(t, status.Nodes, 6)
 
 			bStatus := status.Nodes.FindByDisplayName("B")
