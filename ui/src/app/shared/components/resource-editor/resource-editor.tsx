@@ -125,7 +125,6 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     private submit() {
         try {
             this.props.onSubmit(parse(this.state.value));
-            this.setState({editing: false});
         } catch (error) {
             this.setState({error});
         }

@@ -307,6 +307,23 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.Condition": {
+      "properties": {
+        "message": {
+          "description": "Message is the condition message",
+          "type": "string"
+        },
+        "status": {
+          "description": "Status is the status of the condition",
+          "type": "string"
+        },
+        "type": {
+          "description": "Type is the type of condition",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.ContinueOn": {
       "description": "ContinueOn defines if a workflow should continue even if a task or step fails/errors. It can be specified if the workflow should continue when the pod errors, fails or both.",
       "properties": {
@@ -459,6 +476,13 @@
           "description": "Active is a list of active workflows stemming from this CronWorkflow",
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
+          },
+          "type": "array"
+        },
+        "conditions": {
+          "description": "Conditions is a list of conditions the CronWorkflow may have",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Condition"
           },
           "type": "array"
         },
@@ -1969,23 +1993,6 @@
       ],
       "type": "object"
     },
-    "io.argoproj.workflow.v1alpha1.WorkflowCondition": {
-      "properties": {
-        "message": {
-          "description": "Message is the condition message",
-          "type": "string"
-        },
-        "status": {
-          "description": "Status is the status of the condition",
-          "type": "string"
-        },
-        "type": {
-          "description": "Type is the type of condition",
-          "type": "string"
-        }
-      },
-      "type": "object"
-    },
     "io.argoproj.workflow.v1alpha1.WorkflowCreateRequest": {
       "properties": {
         "createOptions": {
@@ -2285,7 +2292,7 @@
         "conditions": {
           "description": "Conditions is a list of conditions the Workflow may have",
           "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowCondition"
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Condition"
           },
           "type": "array"
         },

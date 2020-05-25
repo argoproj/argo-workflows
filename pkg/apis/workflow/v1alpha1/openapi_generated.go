@@ -23,6 +23,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Backoff":                     schema_pkg_apis_workflow_v1alpha1_Backoff(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ClusterWorkflowTemplate":     schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplate(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ClusterWorkflowTemplateList": schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplateList(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Condition":                   schema_pkg_apis_workflow_v1alpha1_Condition(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn":                  schema_pkg_apis_workflow_v1alpha1_ContinueOn(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Counter":                     schema_pkg_apis_workflow_v1alpha1_Counter(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflow":                schema_pkg_apis_workflow_v1alpha1_CronWorkflow(ref),
@@ -74,7 +75,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ValueFrom":                   schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Version":                     schema_pkg_apis_workflow_v1alpha1_Version(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Workflow":                    schema_pkg_apis_workflow_v1alpha1_Workflow(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowCondition":           schema_pkg_apis_workflow_v1alpha1_WorkflowCondition(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowList":                schema_pkg_apis_workflow_v1alpha1_WorkflowList(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec":                schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStatus":              schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref),
@@ -560,6 +560,39 @@ func schema_pkg_apis_workflow_v1alpha1_ClusterWorkflowTemplateList(ref common.Re
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_Condition(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"type": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Type is the type of condition",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Status is the status of the condition",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"message": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Message is the condition message",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_ContinueOn(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -801,11 +834,24 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCa
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 						},
 					},
+					"conditions": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Conditions is a list of conditions the CronWorkflow may have",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Condition"),
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.ObjectReference", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Condition", "k8s.io/api/core/v1.ObjectReference", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 
@@ -3700,39 +3746,6 @@ func schema_pkg_apis_workflow_v1alpha1_Workflow(ref common.ReferenceCallback) co
 	}
 }
 
-func schema_pkg_apis_workflow_v1alpha1_WorkflowCondition(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"type": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Type is the type of condition",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"status": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Status is the status of the condition",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"message": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Message is the condition message",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
 func schema_pkg_apis_workflow_v1alpha1_WorkflowList(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -4202,7 +4215,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowCondition"),
+										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Condition"),
 									},
 								},
 							},
@@ -4233,7 +4246,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeStatus", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowCondition", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Condition", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeStatus", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 

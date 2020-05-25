@@ -6,7 +6,6 @@ import {CronWorkflow} from '../../../models';
 import {uiUrl} from '../../shared/base';
 import {ResourceEditor} from '../../shared/components/resource-editor/resource-editor';
 import {Timestamp} from '../../shared/components/timestamp';
-import {YamlEditor} from '../../shared/components/yaml/yaml-editor';
 import {ConditionsPanel} from '../../shared/conditions-panel';
 import {services} from '../../shared/services';
 
