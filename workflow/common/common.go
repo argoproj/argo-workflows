@@ -144,19 +144,6 @@ const (
 	SecretVolMountPath            = "/argo/secret"
 )
 
-var GlobalVars = []string{
-	GlobalVarWorkflowName,
-	GlobalVarWorkflowNamespace,
-	GlobalVarWorkflowServiceAccountName,
-	GlobalVarWorkflowUID,
-	GlobalVarWorkflowStatus,
-	GlobalVarWorkflowCreationTimestamp,
-	GlobalVarWorkflowPriority,
-	GlobalVarWorkflowFailures,
-	GlobalVarWorkflowDuration,
-	GlobalVarWorkflowParameters,
-}
-
 // GlobalVarWorkflowRootTags is a list of root tags in workflow which could be used for variable reference
 var GlobalVarValidWorkflowVariablePrefix = []string{"item.", "steps.", "inputs.", "outputs.", "pod.", "workflow.", "tasks."}
 
