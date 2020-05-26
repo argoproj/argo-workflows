@@ -826,7 +826,6 @@
       }
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Item": {
-      "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number",
       "type": "string",
       "format": "item"
     },
@@ -2075,7 +2074,8 @@
       "type": "object",
       "required": [
         "metadata",
-        "spec"
+        "spec",
+        "status"
       ],
       "properties": {
         "apiVersion": {

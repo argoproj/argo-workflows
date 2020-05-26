@@ -31,267 +31,7 @@ spec:
                 format: int64
                 type: integer
               affinity:
-                properties:
-                  nodeAffinity:
-                    properties:
-                      preferredDuringSchedulingIgnoredDuringExecution:
-                        items:
-                          properties:
-                            preference:
-                              properties:
-                                matchExpressions:
-                                  items:
-                                    properties:
-                                      key:
-                                        type: string
-                                      operator:
-                                        type: string
-                                      values:
-                                        items:
-                                          type: string
-                                        type: array
-                                    required:
-                                    - key
-                                    - operator
-                                    type: object
-                                  type: array
-                                matchFields:
-                                  items:
-                                    properties:
-                                      key:
-                                        type: string
-                                      operator:
-                                        type: string
-                                      values:
-                                        items:
-                                          type: string
-                                        type: array
-                                    required:
-                                    - key
-                                    - operator
-                                    type: object
-                                  type: array
-                              type: object
-                            weight:
-                              format: int32
-                              type: integer
-                          required:
-                          - weight
-                          - preference
-                          type: object
-                        type: array
-                      requiredDuringSchedulingIgnoredDuringExecution:
-                        properties:
-                          nodeSelectorTerms:
-                            items:
-                              properties:
-                                matchExpressions:
-                                  items:
-                                    properties:
-                                      key:
-                                        type: string
-                                      operator:
-                                        type: string
-                                      values:
-                                        items:
-                                          type: string
-                                        type: array
-                                    required:
-                                    - key
-                                    - operator
-                                    type: object
-                                  type: array
-                                matchFields:
-                                  items:
-                                    properties:
-                                      key:
-                                        type: string
-                                      operator:
-                                        type: string
-                                      values:
-                                        items:
-                                          type: string
-                                        type: array
-                                    required:
-                                    - key
-                                    - operator
-                                    type: object
-                                  type: array
-                              type: object
-                            type: array
-                        required:
-                        - nodeSelectorTerms
-                        type: object
-                    type: object
-                  podAffinity:
-                    properties:
-                      preferredDuringSchedulingIgnoredDuringExecution:
-                        items:
-                          properties:
-                            podAffinityTerm:
-                              properties:
-                                labelSelector:
-                                  properties:
-                                    matchExpressions:
-                                      items:
-                                        properties:
-                                          key:
-                                            type: string
-                                          operator:
-                                            type: string
-                                          values:
-                                            items:
-                                              type: string
-                                            type: array
-                                        required:
-                                        - key
-                                        - operator
-                                        type: object
-                                      type: array
-                                    matchLabels:
-                                      additionalProperties:
-                                        type: string
-                                      type: object
-                                  type: object
-                                namespaces:
-                                  items:
-                                    type: string
-                                  type: array
-                                topologyKey:
-                                  type: string
-                              required:
-                              - topologyKey
-                              type: object
-                            weight:
-                              format: int32
-                              type: integer
-                          required:
-                          - weight
-                          - podAffinityTerm
-                          type: object
-                        type: array
-                      requiredDuringSchedulingIgnoredDuringExecution:
-                        items:
-                          properties:
-                            labelSelector:
-                              properties:
-                                matchExpressions:
-                                  items:
-                                    properties:
-                                      key:
-                                        type: string
-                                      operator:
-                                        type: string
-                                      values:
-                                        items:
-                                          type: string
-                                        type: array
-                                    required:
-                                    - key
-                                    - operator
-                                    type: object
-                                  type: array
-                                matchLabels:
-                                  additionalProperties:
-                                    type: string
-                                  type: object
-                              type: object
-                            namespaces:
-                              items:
-                                type: string
-                              type: array
-                            topologyKey:
-                              type: string
-                          required:
-                          - topologyKey
-                          type: object
-                        type: array
-                    type: object
-                  podAntiAffinity:
-                    properties:
-                      preferredDuringSchedulingIgnoredDuringExecution:
-                        items:
-                          properties:
-                            podAffinityTerm:
-                              properties:
-                                labelSelector:
-                                  properties:
-                                    matchExpressions:
-                                      items:
-                                        properties:
-                                          key:
-                                            type: string
-                                          operator:
-                                            type: string
-                                          values:
-                                            items:
-                                              type: string
-                                            type: array
-                                        required:
-                                        - key
-                                        - operator
-                                        type: object
-                                      type: array
-                                    matchLabels:
-                                      additionalProperties:
-                                        type: string
-                                      type: object
-                                  type: object
-                                namespaces:
-                                  items:
-                                    type: string
-                                  type: array
-                                topologyKey:
-                                  type: string
-                              required:
-                              - topologyKey
-                              type: object
-                            weight:
-                              format: int32
-                              type: integer
-                          required:
-                          - weight
-                          - podAffinityTerm
-                          type: object
-                        type: array
-                      requiredDuringSchedulingIgnoredDuringExecution:
-                        items:
-                          properties:
-                            labelSelector:
-                              properties:
-                                matchExpressions:
-                                  items:
-                                    properties:
-                                      key:
-                                        type: string
-                                      operator:
-                                        type: string
-                                      values:
-                                        items:
-                                          type: string
-                                        type: array
-                                    required:
-                                    - key
-                                    - operator
-                                    type: object
-                                  type: array
-                                matchLabels:
-                                  additionalProperties:
-                                    type: string
-                                  type: object
-                              type: object
-                            namespaces:
-                              items:
-                                type: string
-                              type: array
-                            topologyKey:
-                              type: string
-                          required:
-                          - topologyKey
-                          type: object
-                        type: array
-                    type: object
-                type: object
+                x-kubernetes-preserve-unknown-fields: true
               arguments:
                 properties:
                   artifacts:
@@ -313,29 +53,11 @@ spec:
                         artifactory:
                           properties:
                             passwordSecret:
-                              properties:
-                                key:
-                                  type: string
-                                name:
-                                  type: string
-                                optional:
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
                             url:
                               type: string
                             usernameSecret:
-                              properties:
-                                key:
-                                  type: string
-                                name:
-                                  type: string
-                                optional:
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
                           required:
                           - url
                           type: object
@@ -348,16 +70,7 @@ spec:
                             key:
                               type: string
                             serviceAccountKeySecret:
-                              properties:
-                                key:
-                                  type: string
-                                name:
-                                  type: string
-                                optional:
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
                           required:
                           - bucket
                           - key
@@ -374,42 +87,15 @@ spec:
                             insecureIgnoreHostKey:
                               type: boolean
                             passwordSecret:
-                              properties:
-                                key:
-                                  type: string
-                                name:
-                                  type: string
-                                optional:
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
                             repo:
                               type: string
                             revision:
                               type: string
                             sshPrivateKeySecret:
-                              properties:
-                                key:
-                                  type: string
-                                name:
-                                  type: string
-                                optional:
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
                             usernameSecret:
-                              properties:
-                                key:
-                                  type: string
-                                name:
-                                  type: string
-                                optional:
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
                           required:
                           - repo
                           type: object
@@ -426,38 +112,11 @@ spec:
                             hdfsUser:
                               type: string
                             krbCCacheSecret:
-                              properties:
-                                key:
-                                  type: string
-                                name:
-                                  type: string
-                                optional:
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
                             krbConfigConfigMap:
-                              properties:
-                                key:
-                                  type: string
-                                name:
-                                  type: string
-                                optional:
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
                             krbKeytabSecret:
-                              properties:
-                                key:
-                                  type: string
-                                name:
-                                  type: string
-                                optional:
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
                             krbRealm:
                               type: string
                             krbServicePrincipalName:
@@ -487,16 +146,7 @@ spec:
                         oss:
                           properties:
                             accessKeySecret:
-                              properties:
-                                key:
-                                  type: string
-                                name:
-                                  type: string
-                                optional:
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
                             bucket:
                               type: string
                             endpoint:
@@ -504,16 +154,7 @@ spec:
                             key:
                               type: string
                             secretKeySecret:
-                              properties:
-                                key:
-                                  type: string
-                                name:
-                                  type: string
-                                optional:
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
                           required:
                           - endpoint
                           - bucket
@@ -533,16 +174,7 @@ spec:
                         s3:
                           properties:
                             accessKeySecret:
-                              properties:
-                                key:
-                                  type: string
-                                name:
-                                  type: string
-                                optional:
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
                             bucket:
                               type: string
                             endpoint:
@@ -556,16 +188,7 @@ spec:
                             roleARN:
                               type: string
                             secretKeySecret:
-                              properties:
-                                key:
-                                  type: string
-                                name:
-                                  type: string
-                                optional:
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
+                              x-kubernetes-preserve-unknown-fields: true
                             useSDKCreds:
                               type: boolean
                           required:
@@ -618,25 +241,7 @@ spec:
               automountServiceAccountToken:
                 type: boolean
               dnsConfig:
-                properties:
-                  nameservers:
-                    items:
-                      type: string
-                    type: array
-                  options:
-                    items:
-                      properties:
-                        name:
-                          type: string
-                        value:
-                          type: string
-                      type: object
-                    type: array
-                  searches:
-                    items:
-                      type: string
-                    type: array
-                type: object
+                x-kubernetes-preserve-unknown-fields: true
               dnsPolicy:
                 type: string
               entrypoint:
@@ -648,23 +253,13 @@ spec:
                 type: object
               hostAliases:
                 items:
-                  properties:
-                    hostnames:
-                      items:
-                        type: string
-                      type: array
-                    ip:
-                      type: string
-                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 type: array
               hostNetwork:
                 type: boolean
               imagePullSecrets:
                 items:
-                  properties:
-                    name:
-                      type: string
-                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 type: array
               metrics:
                 properties:
@@ -742,35 +337,7 @@ spec:
                 format: int64
                 type: integer
               podDisruptionBudget:
-                properties:
-                  maxUnavailable:
-                    x-kubernetes-int-or-string: true
-                  minAvailable:
-                    x-kubernetes-int-or-string: true
-                  selector:
-                    properties:
-                      matchExpressions:
-                        items:
-                          properties:
-                            key:
-                              type: string
-                            operator:
-                              type: string
-                            values:
-                              items:
-                                type: string
-                              type: array
-                          required:
-                          - key
-                          - operator
-                          type: object
-                        type: array
-                      matchLabels:
-                        additionalProperties:
-                          type: string
-                        type: object
-                    type: object
-                type: object
+                x-kubernetes-preserve-unknown-fields: true
               podGC:
                 properties:
                   strategy:
@@ -789,54 +356,7 @@ spec:
               schedulerName:
                 type: string
               securityContext:
-                properties:
-                  fsGroup:
-                    format: int64
-                    type: integer
-                  runAsGroup:
-                    format: int64
-                    type: integer
-                  runAsNonRoot:
-                    type: boolean
-                  runAsUser:
-                    format: int64
-                    type: integer
-                  seLinuxOptions:
-                    properties:
-                      level:
-                        type: string
-                      role:
-                        type: string
-                      type:
-                        type: string
-                      user:
-                        type: string
-                    type: object
-                  supplementalGroups:
-                    items:
-                      format: int64
-                      type: integer
-                    type: array
-                  sysctls:
-                    items:
-                      properties:
-                        name:
-                          type: string
-                        value:
-                          type: string
-                      required:
-                      - name
-                      - value
-                      type: object
-                    type: array
-                  windowsOptions:
-                    properties:
-                      gmsaCredentialSpec:
-                        type: string
-                      gmsaCredentialSpecName:
-                        type: string
-                    type: object
-                type: object
+                x-kubernetes-preserve-unknown-fields: true
               serviceAccountName:
                 type: string
               shutdown:
@@ -845,23 +365,1655 @@ spec:
                 type: boolean
               templates:
                 items:
-                  x-kubernetes-preserve-unknown-fields: true
+                  properties:
+                    activeDeadlineSeconds:
+                      format: int64
+                      type: integer
+                    affinity:
+                      x-kubernetes-preserve-unknown-fields: true
+                    archiveLocation:
+                      properties:
+                        archiveLogs:
+                          type: boolean
+                        artifactory:
+                          properties:
+                            passwordSecret:
+                              x-kubernetes-preserve-unknown-fields: true
+                            url:
+                              type: string
+                            usernameSecret:
+                              x-kubernetes-preserve-unknown-fields: true
+                          required:
+                          - url
+                          type: object
+                        gcs:
+                          properties:
+                            bucket:
+                              type: string
+                            key:
+                              type: string
+                            serviceAccountKeySecret:
+                              x-kubernetes-preserve-unknown-fields: true
+                          required:
+                          - bucket
+                          - key
+                          type: object
+                        git:
+                          properties:
+                            depth:
+                              format: int64
+                              type: integer
+                            fetch:
+                              items:
+                                type: string
+                              type: array
+                            insecureIgnoreHostKey:
+                              type: boolean
+                            passwordSecret:
+                              x-kubernetes-preserve-unknown-fields: true
+                            repo:
+                              type: string
+                            revision:
+                              type: string
+                            sshPrivateKeySecret:
+                              x-kubernetes-preserve-unknown-fields: true
+                            usernameSecret:
+                              x-kubernetes-preserve-unknown-fields: true
+                          required:
+                          - repo
+                          type: object
+                        hdfs:
+                          properties:
+                            addresses:
+                              items:
+                                type: string
+                              type: array
+                            force:
+                              type: boolean
+                            hdfsUser:
+                              type: string
+                            krbCCacheSecret:
+                              x-kubernetes-preserve-unknown-fields: true
+                            krbConfigConfigMap:
+                              x-kubernetes-preserve-unknown-fields: true
+                            krbKeytabSecret:
+                              x-kubernetes-preserve-unknown-fields: true
+                            krbRealm:
+                              type: string
+                            krbServicePrincipalName:
+                              type: string
+                            krbUsername:
+                              type: string
+                            path:
+                              type: string
+                          required:
+                          - addresses
+                          - path
+                          type: object
+                        http:
+                          properties:
+                            url:
+                              type: string
+                          required:
+                          - url
+                          type: object
+                        oss:
+                          properties:
+                            accessKeySecret:
+                              x-kubernetes-preserve-unknown-fields: true
+                            bucket:
+                              type: string
+                            endpoint:
+                              type: string
+                            key:
+                              type: string
+                            secretKeySecret:
+                              x-kubernetes-preserve-unknown-fields: true
+                          required:
+                          - endpoint
+                          - bucket
+                          - accessKeySecret
+                          - secretKeySecret
+                          - key
+                          type: object
+                        raw:
+                          properties:
+                            data:
+                              type: string
+                          required:
+                          - data
+                          type: object
+                        s3:
+                          properties:
+                            accessKeySecret:
+                              x-kubernetes-preserve-unknown-fields: true
+                            bucket:
+                              type: string
+                            endpoint:
+                              type: string
+                            insecure:
+                              type: boolean
+                            key:
+                              type: string
+                            region:
+                              type: string
+                            roleARN:
+                              type: string
+                            secretKeySecret:
+                              x-kubernetes-preserve-unknown-fields: true
+                            useSDKCreds:
+                              type: boolean
+                          required:
+                          - endpoint
+                          - bucket
+                          - accessKeySecret
+                          - secretKeySecret
+                          - key
+                          type: object
+                      type: object
+                    arguments:
+                      properties:
+                        artifacts:
+                          items:
+                            properties:
+                              archive:
+                                properties:
+                                  none:
+                                    type: object
+                                  tar:
+                                    properties:
+                                      compressionLevel:
+                                        format: int32
+                                        type: integer
+                                    type: object
+                                type: object
+                              archiveLogs:
+                                type: boolean
+                              artifactory:
+                                properties:
+                                  passwordSecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  url:
+                                    type: string
+                                  usernameSecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                required:
+                                - url
+                                type: object
+                              from:
+                                type: string
+                              gcs:
+                                properties:
+                                  bucket:
+                                    type: string
+                                  key:
+                                    type: string
+                                  serviceAccountKeySecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                required:
+                                - bucket
+                                - key
+                                type: object
+                              git:
+                                properties:
+                                  depth:
+                                    format: int64
+                                    type: integer
+                                  fetch:
+                                    items:
+                                      type: string
+                                    type: array
+                                  insecureIgnoreHostKey:
+                                    type: boolean
+                                  passwordSecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  repo:
+                                    type: string
+                                  revision:
+                                    type: string
+                                  sshPrivateKeySecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  usernameSecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                required:
+                                - repo
+                                type: object
+                              globalName:
+                                type: string
+                              hdfs:
+                                properties:
+                                  addresses:
+                                    items:
+                                      type: string
+                                    type: array
+                                  force:
+                                    type: boolean
+                                  hdfsUser:
+                                    type: string
+                                  krbCCacheSecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  krbConfigConfigMap:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  krbKeytabSecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  krbRealm:
+                                    type: string
+                                  krbServicePrincipalName:
+                                    type: string
+                                  krbUsername:
+                                    type: string
+                                  path:
+                                    type: string
+                                required:
+                                - addresses
+                                - path
+                                type: object
+                              http:
+                                properties:
+                                  url:
+                                    type: string
+                                required:
+                                - url
+                                type: object
+                              mode:
+                                format: int32
+                                type: integer
+                              name:
+                                type: string
+                              optional:
+                                type: boolean
+                              oss:
+                                properties:
+                                  accessKeySecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  bucket:
+                                    type: string
+                                  endpoint:
+                                    type: string
+                                  key:
+                                    type: string
+                                  secretKeySecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                required:
+                                - endpoint
+                                - bucket
+                                - accessKeySecret
+                                - secretKeySecret
+                                - key
+                                type: object
+                              path:
+                                type: string
+                              raw:
+                                properties:
+                                  data:
+                                    type: string
+                                required:
+                                - data
+                                type: object
+                              s3:
+                                properties:
+                                  accessKeySecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  bucket:
+                                    type: string
+                                  endpoint:
+                                    type: string
+                                  insecure:
+                                    type: boolean
+                                  key:
+                                    type: string
+                                  region:
+                                    type: string
+                                  roleARN:
+                                    type: string
+                                  secretKeySecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  useSDKCreds:
+                                    type: boolean
+                                required:
+                                - endpoint
+                                - bucket
+                                - accessKeySecret
+                                - secretKeySecret
+                                - key
+                                type: object
+                            required:
+                            - name
+                            type: object
+                          type: array
+                        parameters:
+                          items:
+                            properties:
+                              default:
+                                type: string
+                              globalName:
+                                type: string
+                              name:
+                                type: string
+                              value:
+                                type: string
+                              valueFrom:
+                                properties:
+                                  default:
+                                    type: string
+                                  jqFilter:
+                                    type: string
+                                  jsonPath:
+                                    type: string
+                                  parameter:
+                                    type: string
+                                  path:
+                                    type: string
+                                type: object
+                            required:
+                            - name
+                            type: object
+                          type: array
+                      type: object
+                    automountServiceAccountToken:
+                      type: boolean
+                    container:
+                      x-kubernetes-preserve-unknown-fields: true
+                    daemon:
+                      type: boolean
+                    dag:
+                      properties:
+                        failFast:
+                          type: boolean
+                        target:
+                          type: string
+                        tasks:
+                          items:
+                            properties:
+                              arguments:
+                                properties:
+                                  artifacts:
+                                    items:
+                                      properties:
+                                        archive:
+                                          properties:
+                                            none:
+                                              type: object
+                                            tar:
+                                              properties:
+                                                compressionLevel:
+                                                  format: int32
+                                                  type: integer
+                                              type: object
+                                          type: object
+                                        archiveLogs:
+                                          type: boolean
+                                        artifactory:
+                                          properties:
+                                            passwordSecret:
+                                              x-kubernetes-preserve-unknown-fields: true
+                                            url:
+                                              type: string
+                                            usernameSecret:
+                                              x-kubernetes-preserve-unknown-fields: true
+                                          required:
+                                          - url
+                                          type: object
+                                        from:
+                                          type: string
+                                        gcs:
+                                          properties:
+                                            bucket:
+                                              type: string
+                                            key:
+                                              type: string
+                                            serviceAccountKeySecret:
+                                              x-kubernetes-preserve-unknown-fields: true
+                                          required:
+                                          - bucket
+                                          - key
+                                          type: object
+                                        git:
+                                          properties:
+                                            depth:
+                                              format: int64
+                                              type: integer
+                                            fetch:
+                                              items:
+                                                type: string
+                                              type: array
+                                            insecureIgnoreHostKey:
+                                              type: boolean
+                                            passwordSecret:
+                                              x-kubernetes-preserve-unknown-fields: true
+                                            repo:
+                                              type: string
+                                            revision:
+                                              type: string
+                                            sshPrivateKeySecret:
+                                              x-kubernetes-preserve-unknown-fields: true
+                                            usernameSecret:
+                                              x-kubernetes-preserve-unknown-fields: true
+                                          required:
+                                          - repo
+                                          type: object
+                                        globalName:
+                                          type: string
+                                        hdfs:
+                                          properties:
+                                            addresses:
+                                              items:
+                                                type: string
+                                              type: array
+                                            force:
+                                              type: boolean
+                                            hdfsUser:
+                                              type: string
+                                            krbCCacheSecret:
+                                              x-kubernetes-preserve-unknown-fields: true
+                                            krbConfigConfigMap:
+                                              x-kubernetes-preserve-unknown-fields: true
+                                            krbKeytabSecret:
+                                              x-kubernetes-preserve-unknown-fields: true
+                                            krbRealm:
+                                              type: string
+                                            krbServicePrincipalName:
+                                              type: string
+                                            krbUsername:
+                                              type: string
+                                            path:
+                                              type: string
+                                          required:
+                                          - addresses
+                                          - path
+                                          type: object
+                                        http:
+                                          properties:
+                                            url:
+                                              type: string
+                                          required:
+                                          - url
+                                          type: object
+                                        mode:
+                                          format: int32
+                                          type: integer
+                                        name:
+                                          type: string
+                                        optional:
+                                          type: boolean
+                                        oss:
+                                          properties:
+                                            accessKeySecret:
+                                              x-kubernetes-preserve-unknown-fields: true
+                                            bucket:
+                                              type: string
+                                            endpoint:
+                                              type: string
+                                            key:
+                                              type: string
+                                            secretKeySecret:
+                                              x-kubernetes-preserve-unknown-fields: true
+                                          required:
+                                          - endpoint
+                                          - bucket
+                                          - accessKeySecret
+                                          - secretKeySecret
+                                          - key
+                                          type: object
+                                        path:
+                                          type: string
+                                        raw:
+                                          properties:
+                                            data:
+                                              type: string
+                                          required:
+                                          - data
+                                          type: object
+                                        s3:
+                                          properties:
+                                            accessKeySecret:
+                                              x-kubernetes-preserve-unknown-fields: true
+                                            bucket:
+                                              type: string
+                                            endpoint:
+                                              type: string
+                                            insecure:
+                                              type: boolean
+                                            key:
+                                              type: string
+                                            region:
+                                              type: string
+                                            roleARN:
+                                              type: string
+                                            secretKeySecret:
+                                              x-kubernetes-preserve-unknown-fields: true
+                                            useSDKCreds:
+                                              type: boolean
+                                          required:
+                                          - endpoint
+                                          - bucket
+                                          - accessKeySecret
+                                          - secretKeySecret
+                                          - key
+                                          type: object
+                                      required:
+                                      - name
+                                      type: object
+                                    type: array
+                                  parameters:
+                                    items:
+                                      properties:
+                                        default:
+                                          type: string
+                                        globalName:
+                                          type: string
+                                        name:
+                                          type: string
+                                        value:
+                                          type: string
+                                        valueFrom:
+                                          properties:
+                                            default:
+                                              type: string
+                                            jqFilter:
+                                              type: string
+                                            jsonPath:
+                                              type: string
+                                            parameter:
+                                              type: string
+                                            path:
+                                              type: string
+                                          type: object
+                                      required:
+                                      - name
+                                      type: object
+                                    type: array
+                                type: object
+                              continueOn:
+                                properties:
+                                  error:
+                                    type: boolean
+                                  failed:
+                                    type: boolean
+                                type: object
+                              dependencies:
+                                items:
+                                  type: string
+                                type: array
+                              depends:
+                                type: string
+                              name:
+                                type: string
+                              onExit:
+                                type: string
+                              template:
+                                type: string
+                              templateRef:
+                                properties:
+                                  clusterScope:
+                                    type: boolean
+                                  name:
+                                    type: string
+                                  runtimeResolution:
+                                    type: boolean
+                                  template:
+                                    type: string
+                                type: object
+                              when:
+                                type: string
+                              withItems:
+                                items:
+                                  x-kubernetes-preserve-unknown-fields: true
+                                type: array
+                              withParam:
+                                type: string
+                              withSequence:
+                                properties:
+                                  count:
+                                    type: string
+                                  end:
+                                    type: string
+                                  format:
+                                    type: string
+                                  start:
+                                    type: string
+                                type: object
+                            required:
+                            - name
+                            - template
+                            type: object
+                          type: array
+                      required:
+                      - tasks
+                      type: object
+                    executor:
+                      properties:
+                        serviceAccountName:
+                          type: string
+                      type: object
+                    hostAliases:
+                      items:
+                        x-kubernetes-preserve-unknown-fields: true
+                      type: array
+                    initContainers:
+                      items:
+                        properties:
+                          args:
+                            items:
+                              type: string
+                            type: array
+                          command:
+                            items:
+                              type: string
+                            type: array
+                          env:
+                            items:
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
+                          envFrom:
+                            items:
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
+                          image:
+                            type: string
+                          imagePullPolicy:
+                            type: string
+                          lifecycle:
+                            x-kubernetes-preserve-unknown-fields: true
+                          livenessProbe:
+                            x-kubernetes-preserve-unknown-fields: true
+                          mirrorVolumeMounts:
+                            type: boolean
+                          name:
+                            type: string
+                          ports:
+                            items:
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
+                          readinessProbe:
+                            x-kubernetes-preserve-unknown-fields: true
+                          resources:
+                            x-kubernetes-preserve-unknown-fields: true
+                          securityContext:
+                            x-kubernetes-preserve-unknown-fields: true
+                          startupProbe:
+                            x-kubernetes-preserve-unknown-fields: true
+                          stdin:
+                            type: boolean
+                          stdinOnce:
+                            type: boolean
+                          terminationMessagePath:
+                            type: string
+                          terminationMessagePolicy:
+                            type: string
+                          tty:
+                            type: boolean
+                          volumeDevices:
+                            items:
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
+                          volumeMounts:
+                            items:
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
+                          workingDir:
+                            type: string
+                        required:
+                        - name
+                        type: object
+                      type: array
+                    inputs:
+                      properties:
+                        artifacts:
+                          items:
+                            properties:
+                              archive:
+                                properties:
+                                  none:
+                                    type: object
+                                  tar:
+                                    properties:
+                                      compressionLevel:
+                                        format: int32
+                                        type: integer
+                                    type: object
+                                type: object
+                              archiveLogs:
+                                type: boolean
+                              artifactory:
+                                properties:
+                                  passwordSecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  url:
+                                    type: string
+                                  usernameSecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                required:
+                                - url
+                                type: object
+                              from:
+                                type: string
+                              gcs:
+                                properties:
+                                  bucket:
+                                    type: string
+                                  key:
+                                    type: string
+                                  serviceAccountKeySecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                required:
+                                - bucket
+                                - key
+                                type: object
+                              git:
+                                properties:
+                                  depth:
+                                    format: int64
+                                    type: integer
+                                  fetch:
+                                    items:
+                                      type: string
+                                    type: array
+                                  insecureIgnoreHostKey:
+                                    type: boolean
+                                  passwordSecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  repo:
+                                    type: string
+                                  revision:
+                                    type: string
+                                  sshPrivateKeySecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  usernameSecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                required:
+                                - repo
+                                type: object
+                              globalName:
+                                type: string
+                              hdfs:
+                                properties:
+                                  addresses:
+                                    items:
+                                      type: string
+                                    type: array
+                                  force:
+                                    type: boolean
+                                  hdfsUser:
+                                    type: string
+                                  krbCCacheSecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  krbConfigConfigMap:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  krbKeytabSecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  krbRealm:
+                                    type: string
+                                  krbServicePrincipalName:
+                                    type: string
+                                  krbUsername:
+                                    type: string
+                                  path:
+                                    type: string
+                                required:
+                                - addresses
+                                - path
+                                type: object
+                              http:
+                                properties:
+                                  url:
+                                    type: string
+                                required:
+                                - url
+                                type: object
+                              mode:
+                                format: int32
+                                type: integer
+                              name:
+                                type: string
+                              optional:
+                                type: boolean
+                              oss:
+                                properties:
+                                  accessKeySecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  bucket:
+                                    type: string
+                                  endpoint:
+                                    type: string
+                                  key:
+                                    type: string
+                                  secretKeySecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                required:
+                                - endpoint
+                                - bucket
+                                - accessKeySecret
+                                - secretKeySecret
+                                - key
+                                type: object
+                              path:
+                                type: string
+                              raw:
+                                properties:
+                                  data:
+                                    type: string
+                                required:
+                                - data
+                                type: object
+                              s3:
+                                properties:
+                                  accessKeySecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  bucket:
+                                    type: string
+                                  endpoint:
+                                    type: string
+                                  insecure:
+                                    type: boolean
+                                  key:
+                                    type: string
+                                  region:
+                                    type: string
+                                  roleARN:
+                                    type: string
+                                  secretKeySecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  useSDKCreds:
+                                    type: boolean
+                                required:
+                                - endpoint
+                                - bucket
+                                - accessKeySecret
+                                - secretKeySecret
+                                - key
+                                type: object
+                            required:
+                            - name
+                            type: object
+                          type: array
+                        parameters:
+                          items:
+                            properties:
+                              default:
+                                type: string
+                              globalName:
+                                type: string
+                              name:
+                                type: string
+                              value:
+                                type: string
+                              valueFrom:
+                                properties:
+                                  default:
+                                    type: string
+                                  jqFilter:
+                                    type: string
+                                  jsonPath:
+                                    type: string
+                                  parameter:
+                                    type: string
+                                  path:
+                                    type: string
+                                type: object
+                            required:
+                            - name
+                            type: object
+                          type: array
+                      type: object
+                    metadata:
+                      properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        labels:
+                          additionalProperties:
+                            type: string
+                          type: object
+                      type: object
+                    metrics:
+                      properties:
+                        prometheus:
+                          items:
+                            properties:
+                              counter:
+                                properties:
+                                  value:
+                                    type: string
+                                required:
+                                - value
+                                type: object
+                              gauge:
+                                properties:
+                                  realtime:
+                                    type: boolean
+                                  value:
+                                    type: string
+                                required:
+                                - value
+                                - realtime
+                                type: object
+                              help:
+                                type: string
+                              histogram:
+                                properties:
+                                  buckets:
+                                    items:
+                                      format: double
+                                      type: number
+                                    type: array
+                                  value:
+                                    type: string
+                                required:
+                                - value
+                                - buckets
+                                type: object
+                              labels:
+                                items:
+                                  properties:
+                                    key:
+                                      type: string
+                                    value:
+                                      type: string
+                                  required:
+                                  - key
+                                  - value
+                                  type: object
+                                type: array
+                              name:
+                                type: string
+                              when:
+                                type: string
+                            required:
+                            - name
+                            - labels
+                            - help
+                            - when
+                            - gauge
+                            - histogram
+                            - counter
+                            type: object
+                          type: array
+                      required:
+                      - prometheus
+                      type: object
+                    name:
+                      type: string
+                    nodeSelector:
+                      additionalProperties:
+                        type: string
+                      type: object
+                    outputs:
+                      properties:
+                        artifacts:
+                          items:
+                            properties:
+                              archive:
+                                properties:
+                                  none:
+                                    type: object
+                                  tar:
+                                    properties:
+                                      compressionLevel:
+                                        format: int32
+                                        type: integer
+                                    type: object
+                                type: object
+                              archiveLogs:
+                                type: boolean
+                              artifactory:
+                                properties:
+                                  passwordSecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  url:
+                                    type: string
+                                  usernameSecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                required:
+                                - url
+                                type: object
+                              from:
+                                type: string
+                              gcs:
+                                properties:
+                                  bucket:
+                                    type: string
+                                  key:
+                                    type: string
+                                  serviceAccountKeySecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                required:
+                                - bucket
+                                - key
+                                type: object
+                              git:
+                                properties:
+                                  depth:
+                                    format: int64
+                                    type: integer
+                                  fetch:
+                                    items:
+                                      type: string
+                                    type: array
+                                  insecureIgnoreHostKey:
+                                    type: boolean
+                                  passwordSecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  repo:
+                                    type: string
+                                  revision:
+                                    type: string
+                                  sshPrivateKeySecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  usernameSecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                required:
+                                - repo
+                                type: object
+                              globalName:
+                                type: string
+                              hdfs:
+                                properties:
+                                  addresses:
+                                    items:
+                                      type: string
+                                    type: array
+                                  force:
+                                    type: boolean
+                                  hdfsUser:
+                                    type: string
+                                  krbCCacheSecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  krbConfigConfigMap:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  krbKeytabSecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  krbRealm:
+                                    type: string
+                                  krbServicePrincipalName:
+                                    type: string
+                                  krbUsername:
+                                    type: string
+                                  path:
+                                    type: string
+                                required:
+                                - addresses
+                                - path
+                                type: object
+                              http:
+                                properties:
+                                  url:
+                                    type: string
+                                required:
+                                - url
+                                type: object
+                              mode:
+                                format: int32
+                                type: integer
+                              name:
+                                type: string
+                              optional:
+                                type: boolean
+                              oss:
+                                properties:
+                                  accessKeySecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  bucket:
+                                    type: string
+                                  endpoint:
+                                    type: string
+                                  key:
+                                    type: string
+                                  secretKeySecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                required:
+                                - endpoint
+                                - bucket
+                                - accessKeySecret
+                                - secretKeySecret
+                                - key
+                                type: object
+                              path:
+                                type: string
+                              raw:
+                                properties:
+                                  data:
+                                    type: string
+                                required:
+                                - data
+                                type: object
+                              s3:
+                                properties:
+                                  accessKeySecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  bucket:
+                                    type: string
+                                  endpoint:
+                                    type: string
+                                  insecure:
+                                    type: boolean
+                                  key:
+                                    type: string
+                                  region:
+                                    type: string
+                                  roleARN:
+                                    type: string
+                                  secretKeySecret:
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  useSDKCreds:
+                                    type: boolean
+                                required:
+                                - endpoint
+                                - bucket
+                                - accessKeySecret
+                                - secretKeySecret
+                                - key
+                                type: object
+                            required:
+                            - name
+                            type: object
+                          type: array
+                        exitCode:
+                          type: string
+                        parameters:
+                          items:
+                            properties:
+                              default:
+                                type: string
+                              globalName:
+                                type: string
+                              name:
+                                type: string
+                              value:
+                                type: string
+                              valueFrom:
+                                properties:
+                                  default:
+                                    type: string
+                                  jqFilter:
+                                    type: string
+                                  jsonPath:
+                                    type: string
+                                  parameter:
+                                    type: string
+                                  path:
+                                    type: string
+                                type: object
+                            required:
+                            - name
+                            type: object
+                          type: array
+                        result:
+                          type: string
+                      type: object
+                    parallelism:
+                      format: int64
+                      type: integer
+                    podSpecPatch:
+                      type: string
+                    priority:
+                      format: int32
+                      type: integer
+                    priorityClassName:
+                      type: string
+                    resource:
+                      properties:
+                        action:
+                          type: string
+                        failureCondition:
+                          type: string
+                        flags:
+                          items:
+                            type: string
+                          type: array
+                        manifest:
+                          type: string
+                        mergeStrategy:
+                          type: string
+                        setOwnerReference:
+                          type: boolean
+                        successCondition:
+                          type: string
+                      required:
+                      - action
+                      - manifest
+                      type: object
+                    resubmitPendingPods:
+                      type: boolean
+                    retryStrategy:
+                      properties:
+                        backoff:
+                          properties:
+                            duration:
+                              type: string
+                            factor:
+                              format: int32
+                              type: integer
+                            maxDuration:
+                              type: string
+                          type: object
+                        limit:
+                          format: int32
+                          type: integer
+                        retryPolicy:
+                          type: string
+                      type: object
+                    schedulerName:
+                      type: string
+                    script:
+                      properties:
+                        args:
+                          items:
+                            type: string
+                          type: array
+                        command:
+                          items:
+                            type: string
+                          type: array
+                        env:
+                          items:
+                            x-kubernetes-preserve-unknown-fields: true
+                          type: array
+                        envFrom:
+                          items:
+                            x-kubernetes-preserve-unknown-fields: true
+                          type: array
+                        image:
+                          type: string
+                        imagePullPolicy:
+                          type: string
+                        lifecycle:
+                          x-kubernetes-preserve-unknown-fields: true
+                        livenessProbe:
+                          x-kubernetes-preserve-unknown-fields: true
+                        name:
+                          type: string
+                        ports:
+                          items:
+                            x-kubernetes-preserve-unknown-fields: true
+                          type: array
+                        readinessProbe:
+                          x-kubernetes-preserve-unknown-fields: true
+                        resources:
+                          x-kubernetes-preserve-unknown-fields: true
+                        securityContext:
+                          x-kubernetes-preserve-unknown-fields: true
+                        source:
+                          type: string
+                        startupProbe:
+                          x-kubernetes-preserve-unknown-fields: true
+                        stdin:
+                          type: boolean
+                        stdinOnce:
+                          type: boolean
+                        terminationMessagePath:
+                          type: string
+                        terminationMessagePolicy:
+                          type: string
+                        tty:
+                          type: boolean
+                        volumeDevices:
+                          items:
+                            x-kubernetes-preserve-unknown-fields: true
+                          type: array
+                        volumeMounts:
+                          items:
+                            x-kubernetes-preserve-unknown-fields: true
+                          type: array
+                        workingDir:
+                          type: string
+                      required:
+                      - source
+                      type: object
+                    securityContext:
+                      x-kubernetes-preserve-unknown-fields: true
+                    serviceAccountName:
+                      type: string
+                    sidecars:
+                      items:
+                        properties:
+                          args:
+                            items:
+                              type: string
+                            type: array
+                          command:
+                            items:
+                              type: string
+                            type: array
+                          env:
+                            items:
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
+                          envFrom:
+                            items:
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
+                          image:
+                            type: string
+                          imagePullPolicy:
+                            type: string
+                          lifecycle:
+                            x-kubernetes-preserve-unknown-fields: true
+                          livenessProbe:
+                            x-kubernetes-preserve-unknown-fields: true
+                          mirrorVolumeMounts:
+                            type: boolean
+                          name:
+                            type: string
+                          ports:
+                            items:
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
+                          readinessProbe:
+                            x-kubernetes-preserve-unknown-fields: true
+                          resources:
+                            x-kubernetes-preserve-unknown-fields: true
+                          securityContext:
+                            x-kubernetes-preserve-unknown-fields: true
+                          startupProbe:
+                            x-kubernetes-preserve-unknown-fields: true
+                          stdin:
+                            type: boolean
+                          stdinOnce:
+                            type: boolean
+                          terminationMessagePath:
+                            type: string
+                          terminationMessagePolicy:
+                            type: string
+                          tty:
+                            type: boolean
+                          volumeDevices:
+                            items:
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
+                          volumeMounts:
+                            items:
+                              x-kubernetes-preserve-unknown-fields: true
+                            type: array
+                          workingDir:
+                            type: string
+                        required:
+                        - name
+                        type: object
+                      type: array
+                    steps:
+                      items:
+                        items:
+                          properties:
+                            arguments:
+                              properties:
+                                artifacts:
+                                  items:
+                                    properties:
+                                      archive:
+                                        properties:
+                                          none:
+                                            type: object
+                                          tar:
+                                            properties:
+                                              compressionLevel:
+                                                format: int32
+                                                type: integer
+                                            type: object
+                                        type: object
+                                      archiveLogs:
+                                        type: boolean
+                                      artifactory:
+                                        properties:
+                                          passwordSecret:
+                                            x-kubernetes-preserve-unknown-fields: true
+                                          url:
+                                            type: string
+                                          usernameSecret:
+                                            x-kubernetes-preserve-unknown-fields: true
+                                        required:
+                                        - url
+                                        type: object
+                                      from:
+                                        type: string
+                                      gcs:
+                                        properties:
+                                          bucket:
+                                            type: string
+                                          key:
+                                            type: string
+                                          serviceAccountKeySecret:
+                                            x-kubernetes-preserve-unknown-fields: true
+                                        required:
+                                        - bucket
+                                        - key
+                                        type: object
+                                      git:
+                                        properties:
+                                          depth:
+                                            format: int64
+                                            type: integer
+                                          fetch:
+                                            items:
+                                              type: string
+                                            type: array
+                                          insecureIgnoreHostKey:
+                                            type: boolean
+                                          passwordSecret:
+                                            x-kubernetes-preserve-unknown-fields: true
+                                          repo:
+                                            type: string
+                                          revision:
+                                            type: string
+                                          sshPrivateKeySecret:
+                                            x-kubernetes-preserve-unknown-fields: true
+                                          usernameSecret:
+                                            x-kubernetes-preserve-unknown-fields: true
+                                        required:
+                                        - repo
+                                        type: object
+                                      globalName:
+                                        type: string
+                                      hdfs:
+                                        properties:
+                                          addresses:
+                                            items:
+                                              type: string
+                                            type: array
+                                          force:
+                                            type: boolean
+                                          hdfsUser:
+                                            type: string
+                                          krbCCacheSecret:
+                                            x-kubernetes-preserve-unknown-fields: true
+                                          krbConfigConfigMap:
+                                            x-kubernetes-preserve-unknown-fields: true
+                                          krbKeytabSecret:
+                                            x-kubernetes-preserve-unknown-fields: true
+                                          krbRealm:
+                                            type: string
+                                          krbServicePrincipalName:
+                                            type: string
+                                          krbUsername:
+                                            type: string
+                                          path:
+                                            type: string
+                                        required:
+                                        - addresses
+                                        - path
+                                        type: object
+                                      http:
+                                        properties:
+                                          url:
+                                            type: string
+                                        required:
+                                        - url
+                                        type: object
+                                      mode:
+                                        format: int32
+                                        type: integer
+                                      name:
+                                        type: string
+                                      optional:
+                                        type: boolean
+                                      oss:
+                                        properties:
+                                          accessKeySecret:
+                                            x-kubernetes-preserve-unknown-fields: true
+                                          bucket:
+                                            type: string
+                                          endpoint:
+                                            type: string
+                                          key:
+                                            type: string
+                                          secretKeySecret:
+                                            x-kubernetes-preserve-unknown-fields: true
+                                        required:
+                                        - endpoint
+                                        - bucket
+                                        - accessKeySecret
+                                        - secretKeySecret
+                                        - key
+                                        type: object
+                                      path:
+                                        type: string
+                                      raw:
+                                        properties:
+                                          data:
+                                            type: string
+                                        required:
+                                        - data
+                                        type: object
+                                      s3:
+                                        properties:
+                                          accessKeySecret:
+                                            x-kubernetes-preserve-unknown-fields: true
+                                          bucket:
+                                            type: string
+                                          endpoint:
+                                            type: string
+                                          insecure:
+                                            type: boolean
+                                          key:
+                                            type: string
+                                          region:
+                                            type: string
+                                          roleARN:
+                                            type: string
+                                          secretKeySecret:
+                                            x-kubernetes-preserve-unknown-fields: true
+                                          useSDKCreds:
+                                            type: boolean
+                                        required:
+                                        - endpoint
+                                        - bucket
+                                        - accessKeySecret
+                                        - secretKeySecret
+                                        - key
+                                        type: object
+                                    required:
+                                    - name
+                                    type: object
+                                  type: array
+                                parameters:
+                                  items:
+                                    properties:
+                                      default:
+                                        type: string
+                                      globalName:
+                                        type: string
+                                      name:
+                                        type: string
+                                      value:
+                                        type: string
+                                      valueFrom:
+                                        properties:
+                                          default:
+                                            type: string
+                                          jqFilter:
+                                            type: string
+                                          jsonPath:
+                                            type: string
+                                          parameter:
+                                            type: string
+                                          path:
+                                            type: string
+                                        type: object
+                                    required:
+                                    - name
+                                    type: object
+                                  type: array
+                              type: object
+                            continueOn:
+                              properties:
+                                error:
+                                  type: boolean
+                                failed:
+                                  type: boolean
+                              type: object
+                            name:
+                              type: string
+                            onExit:
+                              type: string
+                            template:
+                              type: string
+                            templateRef:
+                              properties:
+                                clusterScope:
+                                  type: boolean
+                                name:
+                                  type: string
+                                runtimeResolution:
+                                  type: boolean
+                                template:
+                                  type: string
+                              type: object
+                            when:
+                              type: string
+                            withItems:
+                              items:
+                                x-kubernetes-preserve-unknown-fields: true
+                              type: array
+                            withParam:
+                              type: string
+                            withSequence:
+                              properties:
+                                count:
+                                  type: string
+                                end:
+                                  type: string
+                                format:
+                                  type: string
+                                start:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                      type: array
+                    suspend:
+                      properties:
+                        duration:
+                          type: string
+                      type: object
+                    template:
+                      type: string
+                    templateRef:
+                      properties:
+                        clusterScope:
+                          type: boolean
+                        name:
+                          type: string
+                        runtimeResolution:
+                          type: boolean
+                        template:
+                          type: string
+                      type: object
+                    tolerations:
+                      items:
+                        x-kubernetes-preserve-unknown-fields: true
+                      type: array
+                    volumes:
+                      items:
+                        x-kubernetes-preserve-unknown-fields: true
+                      type: array
+                  required:
+                  - name
+                  type: object
                 type: array
               tolerations:
                 items:
-                  properties:
-                    effect:
-                      type: string
-                    key:
-                      type: string
-                    operator:
-                      type: string
-                    tolerationSeconds:
-                      format: int64
-                      type: integer
-                    value:
-                      type: string
-                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 type: array
               ttlSecondsAfterFinished:
                 format: int32
@@ -880,689 +2032,11 @@ spec:
                 type: object
               volumeClaimTemplates:
                 items:
-                  properties:
-                    apiVersion:
-                      type: string
-                    kind:
-                      type: string
-                    metadata:
-                      type: object
-                    spec:
-                      properties:
-                        accessModes:
-                          items:
-                            type: string
-                          type: array
-                        dataSource:
-                          properties:
-                            apiGroup:
-                              type: string
-                            kind:
-                              type: string
-                            name:
-                              type: string
-                          required:
-                          - kind
-                          - name
-                          type: object
-                        resources:
-                          properties:
-                            limits:
-                              additionalProperties:
-                                x-kubernetes-int-or-string: true
-                              type: object
-                            requests:
-                              additionalProperties:
-                                x-kubernetes-int-or-string: true
-                              type: object
-                          type: object
-                        selector:
-                          properties:
-                            matchExpressions:
-                              items:
-                                properties:
-                                  key:
-                                    type: string
-                                  operator:
-                                    type: string
-                                  values:
-                                    items:
-                                      type: string
-                                    type: array
-                                required:
-                                - key
-                                - operator
-                                type: object
-                              type: array
-                            matchLabels:
-                              additionalProperties:
-                                type: string
-                              type: object
-                          type: object
-                        storageClassName:
-                          type: string
-                        volumeMode:
-                          type: string
-                        volumeName:
-                          type: string
-                      type: object
-                    status:
-                      properties:
-                        accessModes:
-                          items:
-                            type: string
-                          type: array
-                        capacity:
-                          additionalProperties:
-                            x-kubernetes-int-or-string: true
-                          type: object
-                        conditions:
-                          items:
-                            properties:
-                              lastProbeTime:
-                                format: date-time
-                                type: string
-                              lastTransitionTime:
-                                format: date-time
-                                type: string
-                              message:
-                                type: string
-                              reason:
-                                type: string
-                              status:
-                                type: string
-                              type:
-                                type: string
-                            required:
-                            - type
-                            - status
-                            type: object
-                          type: array
-                        phase:
-                          type: string
-                      type: object
-                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 type: array
               volumes:
                 items:
-                  properties:
-                    awsElasticBlockStore:
-                      properties:
-                        fsType:
-                          type: string
-                        partition:
-                          format: int32
-                          type: integer
-                        readOnly:
-                          type: boolean
-                        volumeID:
-                          type: string
-                      required:
-                      - volumeID
-                      type: object
-                    azureDisk:
-                      properties:
-                        cachingMode:
-                          type: string
-                        diskName:
-                          type: string
-                        diskURI:
-                          type: string
-                        fsType:
-                          type: string
-                        kind:
-                          type: string
-                        readOnly:
-                          type: boolean
-                      required:
-                      - diskName
-                      - diskURI
-                      type: object
-                    azureFile:
-                      properties:
-                        readOnly:
-                          type: boolean
-                        secretName:
-                          type: string
-                        shareName:
-                          type: string
-                      required:
-                      - secretName
-                      - shareName
-                      type: object
-                    cephfs:
-                      properties:
-                        monitors:
-                          items:
-                            type: string
-                          type: array
-                        path:
-                          type: string
-                        readOnly:
-                          type: boolean
-                        secretFile:
-                          type: string
-                        secretRef:
-                          properties:
-                            name:
-                              type: string
-                          type: object
-                        user:
-                          type: string
-                      required:
-                      - monitors
-                      type: object
-                    cinder:
-                      properties:
-                        fsType:
-                          type: string
-                        readOnly:
-                          type: boolean
-                        secretRef:
-                          properties:
-                            name:
-                              type: string
-                          type: object
-                        volumeID:
-                          type: string
-                      required:
-                      - volumeID
-                      type: object
-                    configMap:
-                      properties:
-                        defaultMode:
-                          format: int32
-                          type: integer
-                        items:
-                          items:
-                            properties:
-                              key:
-                                type: string
-                              mode:
-                                format: int32
-                                type: integer
-                              path:
-                                type: string
-                            required:
-                            - key
-                            - path
-                            type: object
-                          type: array
-                        name:
-                          type: string
-                        optional:
-                          type: boolean
-                      type: object
-                    csi:
-                      properties:
-                        driver:
-                          type: string
-                        fsType:
-                          type: string
-                        nodePublishSecretRef:
-                          properties:
-                            name:
-                              type: string
-                          type: object
-                        readOnly:
-                          type: boolean
-                        volumeAttributes:
-                          additionalProperties:
-                            type: string
-                          type: object
-                      required:
-                      - driver
-                      type: object
-                    downwardAPI:
-                      properties:
-                        defaultMode:
-                          format: int32
-                          type: integer
-                        items:
-                          items:
-                            properties:
-                              fieldRef:
-                                properties:
-                                  apiVersion:
-                                    type: string
-                                  fieldPath:
-                                    type: string
-                                required:
-                                - fieldPath
-                                type: object
-                              mode:
-                                format: int32
-                                type: integer
-                              path:
-                                type: string
-                              resourceFieldRef:
-                                properties:
-                                  containerName:
-                                    type: string
-                                  divisor:
-                                    x-kubernetes-int-or-string: true
-                                  resource:
-                                    type: string
-                                required:
-                                - resource
-                                type: object
-                            required:
-                            - path
-                            type: object
-                          type: array
-                      type: object
-                    emptyDir:
-                      properties:
-                        medium:
-                          type: string
-                        sizeLimit:
-                          x-kubernetes-int-or-string: true
-                      type: object
-                    fc:
-                      properties:
-                        fsType:
-                          type: string
-                        lun:
-                          format: int32
-                          type: integer
-                        readOnly:
-                          type: boolean
-                        targetWWNs:
-                          items:
-                            type: string
-                          type: array
-                        wwids:
-                          items:
-                            type: string
-                          type: array
-                      type: object
-                    flexVolume:
-                      properties:
-                        driver:
-                          type: string
-                        fsType:
-                          type: string
-                        options:
-                          additionalProperties:
-                            type: string
-                          type: object
-                        readOnly:
-                          type: boolean
-                        secretRef:
-                          properties:
-                            name:
-                              type: string
-                          type: object
-                      required:
-                      - driver
-                      type: object
-                    flocker:
-                      properties:
-                        datasetName:
-                          type: string
-                        datasetUUID:
-                          type: string
-                      type: object
-                    gcePersistentDisk:
-                      properties:
-                        fsType:
-                          type: string
-                        partition:
-                          format: int32
-                          type: integer
-                        pdName:
-                          type: string
-                        readOnly:
-                          type: boolean
-                      required:
-                      - pdName
-                      type: object
-                    gitRepo:
-                      properties:
-                        directory:
-                          type: string
-                        repository:
-                          type: string
-                        revision:
-                          type: string
-                      required:
-                      - repository
-                      type: object
-                    glusterfs:
-                      properties:
-                        endpoints:
-                          type: string
-                        path:
-                          type: string
-                        readOnly:
-                          type: boolean
-                      required:
-                      - endpoints
-                      - path
-                      type: object
-                    hostPath:
-                      properties:
-                        path:
-                          type: string
-                        type:
-                          type: string
-                      required:
-                      - path
-                      type: object
-                    iscsi:
-                      properties:
-                        chapAuthDiscovery:
-                          type: boolean
-                        chapAuthSession:
-                          type: boolean
-                        fsType:
-                          type: string
-                        initiatorName:
-                          type: string
-                        iqn:
-                          type: string
-                        iscsiInterface:
-                          type: string
-                        lun:
-                          format: int32
-                          type: integer
-                        portals:
-                          items:
-                            type: string
-                          type: array
-                        readOnly:
-                          type: boolean
-                        secretRef:
-                          properties:
-                            name:
-                              type: string
-                          type: object
-                        targetPortal:
-                          type: string
-                      required:
-                      - targetPortal
-                      - iqn
-                      - lun
-                      type: object
-                    name:
-                      type: string
-                    nfs:
-                      properties:
-                        path:
-                          type: string
-                        readOnly:
-                          type: boolean
-                        server:
-                          type: string
-                      required:
-                      - server
-                      - path
-                      type: object
-                    persistentVolumeClaim:
-                      properties:
-                        claimName:
-                          type: string
-                        readOnly:
-                          type: boolean
-                      required:
-                      - claimName
-                      type: object
-                    photonPersistentDisk:
-                      properties:
-                        fsType:
-                          type: string
-                        pdID:
-                          type: string
-                      required:
-                      - pdID
-                      type: object
-                    portworxVolume:
-                      properties:
-                        fsType:
-                          type: string
-                        readOnly:
-                          type: boolean
-                        volumeID:
-                          type: string
-                      required:
-                      - volumeID
-                      type: object
-                    projected:
-                      properties:
-                        defaultMode:
-                          format: int32
-                          type: integer
-                        sources:
-                          items:
-                            properties:
-                              configMap:
-                                properties:
-                                  items:
-                                    items:
-                                      properties:
-                                        key:
-                                          type: string
-                                        mode:
-                                          format: int32
-                                          type: integer
-                                        path:
-                                          type: string
-                                      required:
-                                      - key
-                                      - path
-                                      type: object
-                                    type: array
-                                  name:
-                                    type: string
-                                  optional:
-                                    type: boolean
-                                type: object
-                              downwardAPI:
-                                properties:
-                                  items:
-                                    items:
-                                      properties:
-                                        fieldRef:
-                                          properties:
-                                            apiVersion:
-                                              type: string
-                                            fieldPath:
-                                              type: string
-                                          required:
-                                          - fieldPath
-                                          type: object
-                                        mode:
-                                          format: int32
-                                          type: integer
-                                        path:
-                                          type: string
-                                        resourceFieldRef:
-                                          properties:
-                                            containerName:
-                                              type: string
-                                            divisor:
-                                              x-kubernetes-int-or-string: true
-                                            resource:
-                                              type: string
-                                          required:
-                                          - resource
-                                          type: object
-                                      required:
-                                      - path
-                                      type: object
-                                    type: array
-                                type: object
-                              secret:
-                                properties:
-                                  items:
-                                    items:
-                                      properties:
-                                        key:
-                                          type: string
-                                        mode:
-                                          format: int32
-                                          type: integer
-                                        path:
-                                          type: string
-                                      required:
-                                      - key
-                                      - path
-                                      type: object
-                                    type: array
-                                  name:
-                                    type: string
-                                  optional:
-                                    type: boolean
-                                type: object
-                              serviceAccountToken:
-                                properties:
-                                  audience:
-                                    type: string
-                                  expirationSeconds:
-                                    format: int64
-                                    type: integer
-                                  path:
-                                    type: string
-                                required:
-                                - path
-                                type: object
-                            type: object
-                          type: array
-                      required:
-                      - sources
-                      type: object
-                    quobyte:
-                      properties:
-                        group:
-                          type: string
-                        readOnly:
-                          type: boolean
-                        registry:
-                          type: string
-                        tenant:
-                          type: string
-                        user:
-                          type: string
-                        volume:
-                          type: string
-                      required:
-                      - registry
-                      - volume
-                      type: object
-                    rbd:
-                      properties:
-                        fsType:
-                          type: string
-                        image:
-                          type: string
-                        keyring:
-                          type: string
-                        monitors:
-                          items:
-                            type: string
-                          type: array
-                        pool:
-                          type: string
-                        readOnly:
-                          type: boolean
-                        secretRef:
-                          properties:
-                            name:
-                              type: string
-                          type: object
-                        user:
-                          type: string
-                      required:
-                      - monitors
-                      - image
-                      type: object
-                    scaleIO:
-                      properties:
-                        fsType:
-                          type: string
-                        gateway:
-                          type: string
-                        protectionDomain:
-                          type: string
-                        readOnly:
-                          type: boolean
-                        secretRef:
-                          properties:
-                            name:
-                              type: string
-                          type: object
-                        sslEnabled:
-                          type: boolean
-                        storageMode:
-                          type: string
-                        storagePool:
-                          type: string
-                        system:
-                          type: string
-                        volumeName:
-                          type: string
-                      required:
-                      - gateway
-                      - system
-                      - secretRef
-                      type: object
-                    secret:
-                      properties:
-                        defaultMode:
-                          format: int32
-                          type: integer
-                        items:
-                          items:
-                            properties:
-                              key:
-                                type: string
-                              mode:
-                                format: int32
-                                type: integer
-                              path:
-                                type: string
-                            required:
-                            - key
-                            - path
-                            type: object
-                          type: array
-                        optional:
-                          type: boolean
-                        secretName:
-                          type: string
-                      type: object
-                    storageos:
-                      properties:
-                        fsType:
-                          type: string
-                        readOnly:
-                          type: boolean
-                        secretRef:
-                          properties:
-                            name:
-                              type: string
-                          type: object
-                        volumeName:
-                          type: string
-                        volumeNamespace:
-                          type: string
-                      type: object
-                    vsphereVolume:
-                      properties:
-                        fsType:
-                          type: string
-                        storagePolicyID:
-                          type: string
-                        storagePolicyName:
-                          type: string
-                        volumePath:
-                          type: string
-                      required:
-                      - volumePath
-                      type: object
-                  required:
-                  - name
-                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 type: array
               workflowTemplateRef:
                 properties:

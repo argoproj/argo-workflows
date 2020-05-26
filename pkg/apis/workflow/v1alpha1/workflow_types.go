@@ -8,10 +8,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-openapi/spec"
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	openapi "k8s.io/kube-openapi/pkg/common"
 )
 
 // TemplateType is the type of a template
@@ -75,7 +77,7 @@ type Workflow struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 	Spec              WorkflowSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec "`
-	Status            WorkflowStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+	Status            WorkflowStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
 }
 
 // Workflows is a sort interface which sorts running jobs earlier before considering FinishedAt
@@ -562,6 +564,25 @@ type Parameter struct {
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,5,opt,name=globalName"`
 }
 
+
+
+func (_ Parameter) OpenAPIDefinition() openapi.OpenAPIDefinition {
+	return openapi.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Properties: map[string]spec.Schema{
+					"name": {SchemaProps: spec.SchemaProps{Type: []string{"string"}}},
+					"default": {SchemaProps: spec.SchemaProps{Type: []string{"string"}}},
+					"value": {SchemaProps: spec.SchemaProps{Type: []string{"string"}}},
+					"valueFrom": {SchemaProps: spec.SchemaProps{Type: []string{"object"}}},
+					"globalName": {SchemaProps: spec.SchemaProps{Type: []string{"string"}}},
+				},
+				Required: []string{"name"},
+			},
+		},
+	}
+}
+
 func (p *Parameter) UnmarshalJSON(value []byte) error {
 	var candidate map[string]interface{}
 	err := json.Unmarshal(value, &candidate)
@@ -576,7 +597,7 @@ func (p *Parameter) UnmarshalJSON(value []byte) error {
 		p.Default = &stringVal
 	}
 	if val, ok := candidate["value"]; ok {
-		stringVal := fmt.Sprint(val)
+		stringVal := ParameterValue(fmt.Sprint(val))
 		p.Value = &stringVal
 	}
 	if val, ok := candidate["valueFrom"]; ok {
@@ -817,11 +838,16 @@ func (i *Item) DeepCopyInto(out *Item) {
 // OpenAPISchemaType is used by the kube-openapi generator when constructing
 // the OpenAPI spec of this type.
 // See: https://github.com/kubernetes/kube-openapi/tree/master/pkg/generators
-func (i Item) OpenAPISchemaType() []string { return []string{"string"} }
-
-// OpenAPISchemaFormat is used by the kube-openapi generator when constructing
-// the OpenAPI spec of this type.
-func (i Item) OpenAPISchemaFormat() string { return "item" }
+func (_ Item) OpenAPIDefinition() openapi.OpenAPIDefinition {
+	return openapi.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type:   []string{"string"},
+				Format: "item",
+			},
+		},
+	}
+}
 
 // TemplateRef is a reference of template resource.
 type TemplateRef struct {

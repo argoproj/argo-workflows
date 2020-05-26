@@ -1187,7 +1187,7 @@ func (in *Parameter) DeepCopyInto(out *Parameter) {
 	}
 	if in.Value != nil {
 		in, out := &in.Value, &out.Value
-		*out = new(string)
+		*out = new(ParameterValue)
 		**out = **in
 	}
 	if in.ValueFrom != nil {

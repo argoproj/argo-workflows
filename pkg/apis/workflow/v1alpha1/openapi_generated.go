@@ -43,7 +43,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HTTPArtifact":                schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Histogram":                   schema_pkg_apis_workflow_v1alpha1_Histogram(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs":                      schema_pkg_apis_workflow_v1alpha1_Inputs(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item":                        schema_pkg_apis_workflow_v1alpha1_Item(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item":                        Item{}.OpenAPIDefinition(),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ItemValue":                   schema_pkg_apis_workflow_v1alpha1_ItemValue(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Link":                        schema_pkg_apis_workflow_v1alpha1_Link(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metadata":                    schema_pkg_apis_workflow_v1alpha1_Metadata(ref),
@@ -55,7 +55,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.OSSBucket":                   schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs":                     schema_pkg_apis_workflow_v1alpha1_Outputs(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ParallelSteps":               schema_pkg_apis_workflow_v1alpha1_ParallelSteps(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter":                   schema_pkg_apis_workflow_v1alpha1_Parameter(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter":                   Parameter{}.OpenAPIDefinition(),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.PodGC":                       schema_pkg_apis_workflow_v1alpha1_PodGC(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Prometheus":                  schema_pkg_apis_workflow_v1alpha1_Prometheus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact":                 schema_pkg_apis_workflow_v1alpha1_RawArtifact(ref),
@@ -1531,18 +1531,6 @@ func schema_pkg_apis_workflow_v1alpha1_Inputs(ref common.ReferenceCallback) comm
 	}
 }
 
-func schema_pkg_apis_workflow_v1alpha1_Item(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number",
-				Type:        Item{}.OpenAPISchemaType(),
-				Format:      Item{}.OpenAPISchemaFormat(),
-			},
-		},
-	}
-}
-
 func schema_pkg_apis_workflow_v1alpha1_ItemValue(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -2124,56 +2112,6 @@ func schema_pkg_apis_workflow_v1alpha1_ParallelSteps(ref common.ReferenceCallbac
 		},
 		Dependencies: []string{
 			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStep"},
-	}
-}
-
-func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "Parameter indicate a passed string parameter to a service template with an optional default value",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"name": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Name is the parameter name",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"default": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Default is the default value to use for an input parameter if a value was not supplied DEPRECATED: This field is not used",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"value": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"valueFrom": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ValueFrom is the source for the output parameter's value",
-							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ValueFrom"),
-						},
-					},
-					"globalName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "GlobalName exports an output parameter to the global scope, making it available as '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"name"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ValueFrom"},
 	}
 }
 
@@ -3738,7 +3676,7 @@ func schema_pkg_apis_workflow_v1alpha1_Workflow(ref common.ReferenceCallback) co
 						},
 					},
 				},
-				Required: []string{"metadata", "spec"},
+				Required: []string{"metadata", "spec", "status"},
 			},
 		},
 		Dependencies: []string{

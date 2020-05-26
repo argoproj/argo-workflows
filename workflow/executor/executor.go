@@ -495,7 +495,8 @@ func (we *WorkflowExecutor) SaveParameters() error {
 		if outputLen > 0 && output[outputLen-1] == '\n' {
 			output = output[0 : outputLen-1]
 		}
-		we.Template.Outputs.Parameters[i].Value = &output
+		pv := wfv1.ParameterValue(output)
+		we.Template.Outputs.Parameters[i].Value = &pv
 		log.Infof("Successfully saved output parameter: %s", param.Name)
 	}
 	return nil
