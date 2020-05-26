@@ -3,9 +3,8 @@
 package mocks
 
 import (
-	mock "github.com/stretchr/testify/mock"
-
 	sqldb "github.com/argoproj/argo/persist/sqldb"
+	mock "github.com/stretchr/testify/mock"
 
 	v1alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
