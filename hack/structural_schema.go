@@ -6,7 +6,11 @@ import "strings"
 var intOrString = obj{"x-kubernetes-int-or-string": true}
 var any = obj{"x-kubernetes-preserve-unknown-fields": true}
 
-func structuralSchemaByName(s obj, name string) obj {
+type structuralSchemaContext struct {
+	swagger obj
+}
+
+func (c structuralSchemaContext) structuralSchemaByName(name string) obj {
 	switch name {
 	case "io.argoproj.workflow.v1alpha1.Item":
 		return any
@@ -15,12 +19,12 @@ func structuralSchemaByName(s obj, name string) obj {
 	case "io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta":
 		return obj{"type": "object"}
 	}
-	return s["definitions"].(obj)[name].(obj)
+	return c.swagger["definitions"].(obj)[name].(obj)
 }
 
-func structuralSchema(swagger obj, definition obj) obj {
+func (c structuralSchemaContext) structuralSchema(definition obj) obj {
 	if ref, ok := definition["$ref"]; ok {
-		return structuralSchema(swagger, structuralSchemaByName(swagger, strings.TrimPrefix(ref.(string), "#/definitions/")))
+		return c.structuralSchema(c.structuralSchemaByName(strings.TrimPrefix(ref.(string), "#/definitions/")))
 	}
 	if _, ok := definition["anyOf"]; ok {
 		return any
@@ -30,7 +34,7 @@ func structuralSchema(swagger obj, definition obj) obj {
 		if _, ok := items["anyOf"]; ok {
 			definition["items"] = any
 		} else if ref, ok := items["$ref"]; ok {
-			definition["items"] = structuralSchema(swagger, structuralSchemaByName(swagger, strings.TrimPrefix(ref.(string), "#/definitions/")))
+			definition["items"] = c.structuralSchema(c.structuralSchemaByName(strings.TrimPrefix(ref.(string), "#/definitions/")))
 		}
 	}
 	if properties, ok := definition["properties"].(obj); ok {
@@ -38,12 +42,12 @@ func structuralSchema(swagger obj, definition obj) obj {
 			if _, ok := value.(obj)["anyOf"]; ok {
 				definition[name] = any
 			} else {
-				properties[name] = structuralSchema(swagger, value.(obj))
+				properties[name] = c.structuralSchema(value.(obj))
 			}
 		}
 	}
 	if properties, ok := definition["additionalProperties"].(obj); ok {
-		definition["additionalProperties"] = structuralSchema(swagger, properties)
+		definition["additionalProperties"] = c.structuralSchema(properties)
 	}
 	if format, ok := definition["format"]; ok && format == "int-or-string" {
 		return intOrString

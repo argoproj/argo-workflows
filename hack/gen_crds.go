@@ -28,12 +28,14 @@ func genCRDs() {
 		panic(err)
 	}
 
+	ctx := structuralSchemaContext{swagger: swagger}
+
 	for _, crd := range workflow.CRDs {
 		filename := "manifests/base/crds/" + crd.FullName + "-crd.yaml"
 
 		println(filename)
 
-		schema := structuralSchema(swagger, structuralSchemaByName(swagger, "io.argoproj.workflow.v1alpha1."+crd.Kind))
+		schema := ctx.structuralSchema(ctx.structuralSchemaByName("io.argoproj.workflow.v1alpha1." + crd.Kind))
 		schema["required"] = []string{"metadata", "spec"}
 		schema["properties"].(obj)["status"] = any
 
