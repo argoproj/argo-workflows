@@ -765,7 +765,7 @@ export interface WorkflowStatus {
     /**
      * Conditions is a list of WorkflowConditions
      */
-    conditions?: WorkflowCondition[];
+    conditions?: Condition[];
 
     /**
      * StoredWorkflowSpec is a Workflow Spec of top level WorkflowTemplate.
@@ -773,12 +773,13 @@ export interface WorkflowStatus {
     storedWorkflowSpec?: WorkflowSpec;
 }
 
-export interface WorkflowCondition {
-    type: WorkflowConditionType;
+export interface Condition {
+    type: ConditionType;
     status: ConditionStatus;
     message: string;
 }
-export type WorkflowConditionType = 'Completed' | 'SpecWarning' | 'MetricsError';
+
+export type ConditionType = 'Completed' | 'SpecWarning' | 'MetricsError' | 'SubmissionError';
 export type ConditionStatus = 'True' | 'False' | 'Unknown;';
 
 /**

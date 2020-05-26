@@ -43,6 +43,7 @@ import (
 	grpcutil "github.com/argoproj/argo/util/grpc"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/util/json"
+	"github.com/argoproj/argo/workflow/hydrator"
 )
 
 const (
@@ -142,7 +143,7 @@ func (as *argoServer) Run(ctx context.Context, port int, browserOpenFunc func(st
 		// disable the archiving - and still read old records
 		wfArchive = sqldb.NewWorkflowArchive(session, persistence.GetClusterName(), as.managedNamespace, instanceIDService)
 	}
-	artifactServer := artifacts.NewArtifactServer(as.authenticator, offloadRepo, wfArchive, instanceIDService)
+	artifactServer := artifacts.NewArtifactServer(as.authenticator, hydrator.New(offloadRepo), wfArchive, instanceIDService)
 	grpcServer := as.newGRPCServer(instanceIDService, offloadRepo, wfArchive, configMap.Links)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
