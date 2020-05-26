@@ -261,11 +261,11 @@ mocks: $(GOPATH)/bin/mockery
 codegen: status proto swagger crds schemas mocks docs
 
 .PHONY: crds
-crds: pkg/apis/workflow/v1alpha1/openapi_generated.go
+crds:
 	go run ./hack gencrds
 
 .PHONY: schemas
-schemas: pkg/apis/workflow/v1alpha1/openapi_generated.go
+schemas:
 	go run ./hack genschemas
 
 .PHONY: proto

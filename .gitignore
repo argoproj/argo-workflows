@@ -18,4 +18,3 @@ debug.test
 /test-results/
 /argo-server.crt
 /argo-server.key
-/manifests/base/crds/src/

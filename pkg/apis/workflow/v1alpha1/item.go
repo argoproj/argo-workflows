@@ -130,8 +130,13 @@ func (iv *ItemValue) UnmarshalJSON(value []byte) error {
 		iv.Type = Map
 		return json.Unmarshal(value, &iv.MapVal)
 	}
+	if value[0] == '"' {
+		iv.Type = String
+		return json.Unmarshal(value, &iv.StrVal)
+	}
 	iv.Type = String
-	return json.Unmarshal(value, &iv.StrVal)
+	unquotedString := `"` + iv.StrVal + `"`
+	return json.Unmarshal(value, &unquotedString)
 }
 
 func (iv *ItemValue) String() string {
