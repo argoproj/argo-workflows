@@ -102,13 +102,13 @@ helm install argo-artifacts stable/minio \
   --set fullnameOverride=argo-artifacts
 ```
 
-Login to the Minio UI using a web browser (port 9000) after exposing obtaining the external IP using `kubectl`.
+Assuming Minio was installed into the "argo" namespace, the following `kubectl` command will expose the Minio UI. Login to the Minio UI using a web browser (port 9000).
 ```sh
 kubectl get service argo-artifacts -o wide -n argo
 ```
 On Minikube:
 ```sh
-minikube service --url argo-artifacts
+minikube service --url argo-artifacts -n argo
 ```
 
 NOTE: When minio is installed via Helm, it uses the following hard-wired default credentials,
