@@ -464,40 +464,37 @@ func (we *WorkflowExecutor) SaveParameters() error {
 			continue
 		}
 
-		var output string
+		var output *intstr.IntOrString
 		if we.isBaseImagePath(param.ValueFrom.Path) {
 			log.Infof("Copying %s from base image layer", param.ValueFrom.Path)
-			output, err = we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
+			fileContents, err := we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
-					output = *param.ValueFrom.Default
+					output = param.ValueFrom.Default
 				} else {
 					return err
 				}
+			} else {
+				intOrString := intstr.Parse(fileContents)
+				output = &intOrString
 			}
 		} else {
 			log.Infof("Copying %s from from volume mount", param.ValueFrom.Path)
 			mountedPath := filepath.Join(common.ExecutorMainFilesystemDir, param.ValueFrom.Path)
-			out, err := ioutil.ReadFile(mountedPath)
+			data, err := ioutil.ReadFile(mountedPath)
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
-					output = *param.ValueFrom.Default
+					output = param.ValueFrom.Default
 				} else {
 					return err
 				}
 			}
-			output = string(out)
+			intOrString := intstr.Parse(string(data))
+			output = &intOrString
 		}
-
-		outputLen := len(output)
-		// Trims off a single newline for user convenience
-		if outputLen > 0 && output[outputLen-1] == '\n' {
-			output = output[0 : outputLen-1]
-		}
-		fromString := intstr.Parse(output)
-		we.Template.Outputs.Parameters[i].Value = &fromString
+		we.Template.Outputs.Parameters[i].Value = output
 		log.Infof("Successfully saved output parameter: %s", param.Name)
 	}
 	return nil

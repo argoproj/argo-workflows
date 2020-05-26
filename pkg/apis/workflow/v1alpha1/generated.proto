@@ -1047,7 +1047,7 @@ message ValueFrom {
   optional string parameter = 4;
 
   // Default specifies a value to be used if retrieving the value from the specified source fails
-  optional string default = 5;
+  optional k8s.io.apimachinery.pkg.util.intstr.IntOrString default = 5;
 }
 
 message Version {

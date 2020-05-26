@@ -2009,7 +2009,7 @@
       "properties": {
         "default": {
           "description": "Default specifies a value to be used if retrieving the value from the specified source fails",
-          "type": "string"
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.util.intstr.IntOrString"
         },
         "jqFilter": {
           "description": "JQFilter expression against the resource object in resource templates",

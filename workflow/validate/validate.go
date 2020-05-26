@@ -102,8 +102,8 @@ var wfTmplRefAllowedWfSpecValidFields = map[string]bool{
 type FakeArguments struct{}
 
 func (args *FakeArguments) GetParameterByName(name string) *wfv1.Parameter {
-	s := intstr.Parse(placeholderGenerator.NextPlaceholder())
-	return &wfv1.Parameter{Name: name, Value: &s}
+	intOrString := intstr.Parse(placeholderGenerator.NextPlaceholder())
+	return &wfv1.Parameter{Name: name, Value: &intOrString}
 }
 
 func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {

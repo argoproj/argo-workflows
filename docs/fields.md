@@ -3035,7 +3035,7 @@ ValueFrom describes a location in which to obtain the value to a parameter
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`default`|`string`|Default specifies a value to be used if retrieving the value from the specified source fails|
+|`default`|[`IntOrString`](#intorstring)|Default specifies a value to be used if retrieving the value from the specified source fails|
 |`jqFilter`|`string`|JQFilter expression against the resource object in resource templates|
 |`jsonPath`|`string`|JSONPath of a resource to retrieve an output parameter value from in resource templates|
 |`parameter`|`string`|Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')|
@@ -3253,16 +3253,6 @@ Item expands a single workflow step into multiple parallel steps The value of It
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
 </details>
 
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`BoolVal`|`boolean`|_No description available_|
-|`ListVal`|`Array<`[`ItemValue`](#itemvalue)`>`|_No description available_|
-|`MapVal`|[`ItemValue`](#itemvalue)|_No description available_|
-|`NumVal`|`string`|_No description available_|
-|`StrVal`|`string`|_No description available_|
-|`Type`|`int32`|_No description available_|
-
 ## Sequence
 
 Sequence expands a workflow step into numeric range
@@ -3312,20 +3302,6 @@ TarStrategy will tar and gzip the file or directory when saving
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.|
-
-## ItemValue
-
-_No description available_
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`BoolVal`|`boolean`|_No description available_|
-|`ListVal`|`Array< string >`|_No description available_|
-|`MapVal`|`Map< string , string >`|_No description available_|
-|`NumVal`|`string`|_No description available_|
-|`StrVal`|`string`|_No description available_|
-|`Type`|`int32`|_No description available_|
 
 # External Fields
 

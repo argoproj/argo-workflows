@@ -16,13 +16,13 @@ import (
 
 func TestPrintWorkflows(t *testing.T) {
 	now := time.Now()
-	fromString := intstr.Parse("my-value")
+	intOrString := intstr.Parse("my-value")
 	workflows := wfv1.Workflows{
 		{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-wf", Namespace: "my-ns", CreationTimestamp: metav1.Time{Time: now}},
 			Spec: wfv1.WorkflowSpec{
 				Arguments: wfv1.Arguments{Parameters: []wfv1.Parameter{
-					{Name: "my-param", Value: &fromString},
+					{Name: "my-param", Value: &intOrString},
 				}},
 				Priority: pointer.Int32Ptr(2),
 				Templates: []wfv1.Template{

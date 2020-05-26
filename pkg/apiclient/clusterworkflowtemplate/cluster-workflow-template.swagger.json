@@ -1517,7 +1517,7 @@
           "title": "Parameter reference to a step or dag task in which to retrieve an output parameter value from\n(e.g. '{{steps.mystep.outputs.myparam}}')"
         },
         "default": {
-          "type": "string",
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.util.intstr.IntOrString",
           "title": "Default specifies a value to be used if retrieving the value from the specified source fails"
         }
       },

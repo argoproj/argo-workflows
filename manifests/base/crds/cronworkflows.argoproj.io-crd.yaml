@@ -237,7 +237,7 @@ spec:
                             valueFrom:
                               properties:
                                 default:
-                                  type: string
+                                  x-kubernetes-int-or-string: true
                                 jqFilter:
                                   type: string
                                 jsonPath:
@@ -711,7 +711,7 @@ spec:
                                   valueFrom:
                                     properties:
                                       default:
-                                        type: string
+                                        x-kubernetes-int-or-string: true
                                       jqFilter:
                                         type: string
                                       jsonPath:
@@ -925,7 +925,7 @@ spec:
                                             valueFrom:
                                               properties:
                                                 default:
-                                                  type: string
+                                                  x-kubernetes-int-or-string: true
                                                 jqFilter:
                                                   type: string
                                                 jsonPath:
@@ -1257,7 +1257,7 @@ spec:
                                   valueFrom:
                                     properties:
                                       default:
-                                        type: string
+                                        x-kubernetes-int-or-string: true
                                       jqFilter:
                                         type: string
                                       jsonPath:
@@ -1536,7 +1536,7 @@ spec:
                                   valueFrom:
                                     properties:
                                       default:
-                                        type: string
+                                        x-kubernetes-int-or-string: true
                                       jqFilter:
                                         type: string
                                       jsonPath:
@@ -1930,7 +1930,7 @@ spec:
                                           valueFrom:
                                             properties:
                                               default:
-                                                type: string
+                                                x-kubernetes-int-or-string: true
                                               jqFilter:
                                                 type: string
                                               jsonPath:

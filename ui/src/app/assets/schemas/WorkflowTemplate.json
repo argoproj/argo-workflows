@@ -1878,8 +1878,8 @@
       "description": "ValueFrom describes a location in which to obtain the value to a parameter",
       "properties": {
         "default": {
-          "description": "Default specifies a value to be used if retrieving the value from the specified source fails",
-          "type": "string"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
+          "description": "Default specifies a value to be used if retrieving the value from the specified source fails"
         },
         "jqFilter": {
           "description": "JQFilter expression against the resource object in resource templates",

@@ -1721,7 +1721,7 @@ func (in *ValueFrom) DeepCopyInto(out *ValueFrom) {
 	*out = *in
 	if in.Default != nil {
 		in, out := &in.Default, &out.Default
-		*out = new(string)
+		*out = new(intstr.IntOrString)
 		**out = **in
 	}
 	return

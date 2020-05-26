@@ -226,10 +226,10 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 			if len(parts) == 1 {
 				return fmt.Errorf("Expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
 			}
-			fromString := intstr.Parse(parts[2])
+			intOrString := intstr.Parse(parts[2])
 			param := wfv1.Parameter{
 				Name:  parts[0],
-				Value: &fromString,
+				Value: &intOrString,
 			}
 			newParams = append(newParams, param)
 			passedParams[param.Name] = true
@@ -264,10 +264,10 @@ func ApplySubmitOpts(wf *wfv1.Workflow, opts *wfv1.SubmitOpts) error {
 					// the string is already clean.
 					value = string(v)
 				}
-				fromString := intstr.Parse(value)
+				intOrString := intstr.Parse(value)
 				param := wfv1.Parameter{
 					Name:  k,
-					Value: &fromString,
+					Value: &intOrString,
 				}
 				if _, ok := passedParams[param.Name]; ok {
 					// this parameter was overridden via command line
