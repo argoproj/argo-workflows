@@ -94,12 +94,15 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 					default:
 						line := scanner.Text()
 						parts := strings.SplitN(line, " ", 2)
+						content := parts[1]
 						timestamp, err := time.Parse(time.RFC3339, parts[0])
 						if err != nil {
-							logCtx.Error(err)
-							return
+							logCtx.Errorf("unable to decode or infer timestamp from log line: %s", err)
+							// The current timestamp is the next best substitute. This won't be shown, but will be used
+							// for sorting
+							timestamp = time.Now()
+							content = line
 						}
-						content := parts[1]
 						// You might ask - why don't we let the client do this? Well, it is because
 						// this is the same as how this works for `kubectl logs`
 						if req.GetLogOptions().Timestamps {
