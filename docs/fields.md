@@ -588,7 +588,7 @@ WorkflowStatus contains overall status information about a workflow
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`compressedNodes`|`string`|Compressed and base64 decoded Nodes map|
-|`conditions`|`Array<`[`WorkflowCondition`](#workflowcondition)`>`|Conditions is a list of conditions the Workflow may have|
+|`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the Workflow may have|
 |`finishedAt`|[`Time`](#time)|Time at which this workflow completed|
 |`message`|`string`|A human readable message indicating details about why the workflow is in this condition.|
 |`nodes`|[`NodeStatus`](#nodestatus)|Nodes is a mapping between a node ID and the node's status.|
@@ -871,6 +871,7 @@ CronWorkflowStatus is the status of a CronWorkflow
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`active`|`Array<`[`ObjectReference`](#objectreference)`>`|Active is a list of active workflows stemming from this CronWorkflow|
+|`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the CronWorkflow may have|
 |`lastScheduledTime`|[`Time`](#time)|LastScheduleTime is the last time the CronWorkflow was scheduled|
 
 ## WorkflowTemplateSpec
@@ -1665,7 +1666,7 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 |`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).|
 |`name`|`string`|Name is the resource name of the workflow template.|
 
-## WorkflowCondition
+## Condition
 
 _No description available_
 
