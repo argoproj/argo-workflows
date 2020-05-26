@@ -1945,10 +1945,10 @@ Parameter indicate a passed string parameter to a service template with an optio
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|~`default`~|~`string`~|~Default is the default value to use for an input parameter if a value was not supplied~ DEPRECATED: This field is not used|
+|`default`|[`IntOrString`](#intorstring)|Default is the default value to use for an input parameter if a value was not supplied|
 |`globalName`|`string`|GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters|
 |`name`|`string`|Name is the parameter name|
-|`value`|`string`|Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values|
+|`value`|[`IntOrString`](#intorstring)|Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values|
 |`valueFrom`|[`ValueFrom`](#valuefrom)|ValueFrom is the source for the output parameter's value|
 
 ## Prometheus
@@ -2553,8 +2553,6 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
-- [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
-
 - [`loops-param-result.yaml`](../examples/loops-param-result.yaml)
 
 - [`parameter-aggregation-dag.yaml`](../examples/parameter-aggregation-dag.yaml)
@@ -2574,8 +2572,6 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
 
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
-
-- [`status-reference.yaml`](../examples/status-reference.yaml)
 
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
@@ -3257,6 +3253,16 @@ Item expands a single workflow step into multiple parallel steps The value of It
 - [`timeouts-workflow.yaml`](../examples/timeouts-workflow.yaml)
 </details>
 
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`BoolVal`|`boolean`|_No description available_|
+|`ListVal`|`Array<`[`ItemValue`](#itemvalue)`>`|_No description available_|
+|`MapVal`|[`ItemValue`](#itemvalue)|_No description available_|
+|`NumVal`|`string`|_No description available_|
+|`StrVal`|`string`|_No description available_|
+|`Type`|`int32`|_No description available_|
+
 ## Sequence
 
 Sequence expands a workflow step into numeric range
@@ -3306,6 +3312,20 @@ TarStrategy will tar and gzip the file or directory when saving
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`compressionLevel`|`int32`|CompressionLevel specifies the gzip compression level to use for the artifact. Defaults to gzip.DefaultCompression.|
+
+## ItemValue
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`BoolVal`|`boolean`|_No description available_|
+|`ListVal`|`Array< string >`|_No description available_|
+|`MapVal`|`Map< string , string >`|_No description available_|
+|`NumVal`|`string`|_No description available_|
+|`StrVal`|`string`|_No description available_|
+|`Type`|`int32`|_No description available_|
 
 # External Fields
 
@@ -3636,6 +3656,13 @@ LocalObjectReference contains enough information to let you locate the reference
 ## PodDisruptionBudgetSpec
 
 PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`default-pdb-support.yaml`](../examples/default-pdb-support.yaml)
+</details>
 
 ### Fields
 | Field Name | Field Type | Description   |
@@ -4018,6 +4045,21 @@ A single application container that you want to run within a pod.
 |`volumeMounts`|`Array<`[`VolumeMount`](#volumemount)`>`|Pod volumes to mount into the container's filesystem. Cannot be updated.|
 |`workingDir`|`string`|Container's working directory. If not specified, the container runtime's default will be used, which might be configured in the container image. Cannot be updated.|
 
+## IntOrString
+
+IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
+
+- [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
+
+- [`output-parameter.yaml`](../examples/output-parameter.yaml)
+</details>
+
 ## EnvVar
 
 EnvVar represents an environment variable present in a Container.
@@ -4332,10 +4374,6 @@ PodDNSConfigOption defines DNS resolver options of a pod.
 |:----------:|:----------:|---------------|
 |`name`|`string`|Required.|
 |`value`|`string`|_No description available_|
-
-## IntOrString
-
-IntOrString is a type that can hold an int32 or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a name or number.
 
 ## LabelSelector
 

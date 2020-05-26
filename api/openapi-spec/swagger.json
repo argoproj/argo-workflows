@@ -2510,8 +2510,14 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.Item": {
-      "type": "string",
-      "format": "item"
+      "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number",
+      "type": [
+        "string",
+        "number",
+        "boolean",
+        "array",
+        "object"
+      ]
     },
     "io.argoproj.workflow.v1alpha1.Link": {
       "description": "A link to another app.",
@@ -2616,7 +2622,6 @@
       "required": [
         "id",
         "name",
-        "displayName",
         "type"
       ],
       "properties": {
@@ -2803,8 +2808,8 @@
       ],
       "properties": {
         "default": {
-          "description": "Default is the default value to use for an input parameter if a value was not supplied DEPRECATED: This field is not used",
-          "type": "string"
+          "description": "Default is the default value to use for an input parameter if a value was not supplied",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "globalName": {
           "description": "GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters",
@@ -2816,7 +2821,7 @@
         },
         "value": {
           "description": "Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values",
-          "type": "string"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
         },
         "valueFrom": {
           "description": "ValueFrom is the source for the output parameter's value",
@@ -2839,12 +2844,7 @@
       "type": "object",
       "required": [
         "name",
-        "labels",
-        "help",
-        "when",
-        "gauge",
-        "histogram",
-        "counter"
+        "help"
       ],
       "properties": {
         "counter": {
@@ -2897,8 +2897,7 @@
       "description": "ResourceTemplate is a template subtype to manipulate kubernetes resources",
       "type": "object",
       "required": [
-        "action",
-        "manifest"
+        "action"
       ],
       "properties": {
         "action": {

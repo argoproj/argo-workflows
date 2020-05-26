@@ -1,4 +1,6 @@
 {
+  "$id": "http://workflows.argoproj.io/WorkflowTemplate.json",
+  "$schema": "http://json-schema.org/draft-07/schema",
   "definitions": {
     "google.protobuf.Any": {
       "properties": {
@@ -778,8 +780,14 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Item": {
-      "format": "item",
-      "type": "string"
+      "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number",
+      "type": [
+        "string",
+        "number",
+        "boolean",
+        "array",
+        "object"
+      ]
     },
     "io.argoproj.workflow.v1alpha1.Link": {
       "description": "A link to another app.",
@@ -983,7 +991,6 @@
       "required": [
         "id",
         "name",
-        "displayName",
         "type"
       ],
       "type": "object"
@@ -1067,8 +1074,8 @@
       "description": "Parameter indicate a passed string parameter to a service template with an optional default value",
       "properties": {
         "default": {
-          "description": "Default is the default value to use for an input parameter if a value was not supplied DEPRECATED: This field is not used",
-          "type": "string"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
+          "description": "Default is the default value to use for an input parameter if a value was not supplied"
         },
         "globalName": {
           "description": "GlobalName exports an output parameter to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters",
@@ -1079,8 +1086,8 @@
           "type": "string"
         },
         "value": {
-          "description": "Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values",
-          "type": "string"
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString",
+          "description": "Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values"
         },
         "valueFrom": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ValueFrom",
@@ -1139,12 +1146,7 @@
       },
       "required": [
         "name",
-        "labels",
-        "help",
-        "when",
-        "gauge",
-        "histogram",
-        "counter"
+        "help"
       ],
       "type": "object"
     },
@@ -1197,8 +1199,7 @@
         }
       },
       "required": [
-        "action",
-        "manifest"
+        "action"
       ],
       "type": "object"
     },

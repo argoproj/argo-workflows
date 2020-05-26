@@ -8,12 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-openapi/spec"
 	apiv1 "k8s.io/api/core/v1"
 	policyv1beta "k8s.io/api/policy/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	openapi "k8s.io/kube-openapi/pkg/common"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // TemplateType is the type of a template
@@ -77,7 +76,7 @@ type Workflow struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 	Spec              WorkflowSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec "`
-	Status            WorkflowStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
+	Status            WorkflowStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
 // Workflows is a sort interface which sorts running jobs earlier before considering FinishedAt
@@ -549,12 +548,11 @@ type Parameter struct {
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 
 	// Default is the default value to use for an input parameter if a value was not supplied
-	// DEPRECATED: This field is not used
-	Default *string `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
+	Default *intstr.IntOrString `json:"default,omitempty" protobuf:"bytes,2,opt,name=default"`
 
 	// Value is the literal value to use for the parameter.
 	// If specified in the context of an input parameter, the value takes precedence over any passed values
-	Value *string `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
+	Value *intstr.IntOrString `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
 
 	// ValueFrom is the source for the output parameter's value
 	ValueFrom *ValueFrom `json:"valueFrom,omitempty" protobuf:"bytes,4,opt,name=valueFrom"`
@@ -562,58 +560,6 @@ type Parameter struct {
 	// GlobalName exports an output parameter to the global scope, making it available as
 	// '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,5,opt,name=globalName"`
-}
-
-
-
-func (_ Parameter) OpenAPIDefinition() openapi.OpenAPIDefinition {
-	return openapi.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Properties: map[string]spec.Schema{
-					"name": {SchemaProps: spec.SchemaProps{Type: []string{"string"}}},
-					"default": {SchemaProps: spec.SchemaProps{Type: []string{"string"}}},
-					"value": {SchemaProps: spec.SchemaProps{Type: []string{"string"}}},
-					"valueFrom": {SchemaProps: spec.SchemaProps{Type: []string{"object"}}},
-					"globalName": {SchemaProps: spec.SchemaProps{Type: []string{"string"}}},
-				},
-				Required: []string{"name"},
-			},
-		},
-	}
-}
-
-func (p *Parameter) UnmarshalJSON(value []byte) error {
-	var candidate map[string]interface{}
-	err := json.Unmarshal(value, &candidate)
-	if err != nil {
-		return err
-	}
-	if val, ok := candidate["name"]; ok {
-		p.Name = fmt.Sprint(val)
-	}
-	if val, ok := candidate["default"]; ok {
-		stringVal := fmt.Sprint(val)
-		p.Default = &stringVal
-	}
-	if val, ok := candidate["value"]; ok {
-		stringVal := ParameterValue(fmt.Sprint(val))
-		p.Value = &stringVal
-	}
-	if val, ok := candidate["valueFrom"]; ok {
-		strVal, err := json.Marshal(val)
-		if err != nil {
-			return err
-		}
-		err = json.Unmarshal(strVal, &p.ValueFrom)
-		if err != nil {
-			return err
-		}
-	}
-	if val, ok := candidate["globalName"]; ok {
-		p.GlobalName = fmt.Sprint(val)
-	}
-	return nil
 }
 
 // ValueFrom describes a location in which to obtain the value to a parameter
@@ -838,16 +784,13 @@ func (i *Item) DeepCopyInto(out *Item) {
 // OpenAPISchemaType is used by the kube-openapi generator when constructing
 // the OpenAPI spec of this type.
 // See: https://github.com/kubernetes/kube-openapi/tree/master/pkg/generators
-func (_ Item) OpenAPIDefinition() openapi.OpenAPIDefinition {
-	return openapi.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type:   []string{"string"},
-				Format: "item",
-			},
-		},
-	}
+func (i Item) OpenAPISchemaType() []string {
+	return []string{"string", "number", "boolean", "array", "object"}
 }
+
+// OpenAPISchemaFormat is used by the kube-openapi generator when constructing
+// the OpenAPI spec of this type.
+func (i Item) OpenAPISchemaFormat() string { return "" }
 
 // TemplateRef is a reference of template resource.
 type TemplateRef struct {
@@ -1156,7 +1099,7 @@ type NodeStatus struct {
 	Name string `json:"name" protobuf:"bytes,2,opt,name=name"`
 
 	// DisplayName is a human readable representation of the node. Unique within a template boundary
-	DisplayName string `json:"displayName" protobuf:"bytes,3,opt,name=displayName"`
+	DisplayName string `json:"displayName,omitempty" protobuf:"bytes,3,opt,name=displayName"`
 
 	// Type indicates type of node
 	Type NodeType `json:"type" protobuf:"bytes,4,opt,name=type,casttype=NodeType"`
@@ -1587,7 +1530,7 @@ type ResourceTemplate struct {
 	MergeStrategy string `json:"mergeStrategy,omitempty" protobuf:"bytes,2,opt,name=mergeStrategy"`
 
 	// Manifest contains the kubernetes manifest
-	Manifest string `json:"manifest" protobuf:"bytes,3,opt,name=manifest"`
+	Manifest string `json:"manifest,omitempty" protobuf:"bytes,3,opt,name=manifest"`
 
 	// SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.
 	SetOwnerReference bool `json:"setOwnerReference,omitempty" protobuf:"varint,4,opt,name=setOwnerReference"`
@@ -1936,17 +1879,17 @@ type Prometheus struct {
 	// Name is the name of the metric
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 	// Labels is a list of metric labels
-	Labels []*MetricLabel `json:"labels" protobuf:"bytes,2,rep,name=labels"`
+	Labels []*MetricLabel `json:"labels,omitempty" protobuf:"bytes,2,rep,name=labels"`
 	// Help is a string that describes the metric
 	Help string `json:"help" protobuf:"bytes,3,opt,name=help"`
 	// When is a conditional statement that decides when to emit the metric
-	When string `json:"when" protobuf:"bytes,4,opt,name=when"`
+	When string `json:"when,omitempty" protobuf:"bytes,4,opt,name=when"`
 	// Gauge is a gauge metric
-	Gauge *Gauge `json:"gauge" protobuf:"bytes,5,opt,name=gauge"`
+	Gauge *Gauge `json:"gauge,omitempty" protobuf:"bytes,5,opt,name=gauge"`
 	// Histogram is a histogram metric
-	Histogram *Histogram `json:"histogram" protobuf:"bytes,6,opt,name=histogram"`
+	Histogram *Histogram `json:"histogram,omitempty" protobuf:"bytes,6,opt,name=histogram"`
 	// Counter is a counter metric
-	Counter *Counter `json:"counter" protobuf:"bytes,7,opt,name=counter"`
+	Counter *Counter `json:"counter,omitempty" protobuf:"bytes,7,opt,name=counter"`
 }
 
 func (p *Prometheus) GetMetricLabels() map[string]string {

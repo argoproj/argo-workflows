@@ -13,9 +13,7 @@ type structuralSchemaContext struct {
 
 func (c structuralSchemaContext) structuralSchemaByName(name string) obj {
 	switch name {
-	case "io.argoproj.workflow.v1alpha1.Item":
-		return any
-	case "io.k8s.apimachinery.pkg.api.resource.Quantity":
+	case "io.k8s.apimachinery.pkg.util.intstr.IntOrString":
 		return intOrString
 	case "io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta":
 		return obj{"type": "object"}
@@ -30,12 +28,12 @@ func (c structuralSchemaContext) structuralSchema(definition obj) obj {
 	if ref, ok := definition["$ref"]; ok {
 		return c.structuralSchema(c.structuralSchemaByName(strings.TrimPrefix(ref.(string), "#/definitions/")))
 	}
-	if _, ok := definition["anyOf"]; ok {
+	if types, ok := definition["type"].(array); ok && len(types) > 1 {
 		return any
 	}
 	scrubStructuralSchema(definition)
 	if items, ok := definition["items"].(obj); ok {
-		if _, ok := items["anyOf"]; ok {
+		if types, ok := items["type"].(array); ok && len(types) > 1 {
 			definition["items"] = any
 		} else if ref, ok := items["$ref"]; ok {
 			definition["items"] = c.structuralSchema(c.structuralSchemaByName(strings.TrimPrefix(ref.(string), "#/definitions/")))
@@ -43,7 +41,7 @@ func (c structuralSchemaContext) structuralSchema(definition obj) obj {
 	}
 	if properties, ok := definition["properties"].(obj); ok {
 		for name, value := range properties {
-			if _, ok := value.(obj)["anyOf"]; ok {
+			if types, ok := definition["type"].(array); ok && len(types) > 1 {
 				definition[name] = any
 			} else {
 				properties[name] = c.structuralSchema(value.(obj))

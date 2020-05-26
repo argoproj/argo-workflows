@@ -4,13 +4,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 func TestMergeParameters(t *testing.T) {
-	one := "one"
-	two := "two"
+	one := intstr.Parse("one")
+	two := intstr.Parse("two")
 	param1 := []wfv1.Parameter{
 		{
 			Name:  "p1",
@@ -34,7 +35,7 @@ func TestMergeParameters(t *testing.T) {
 		assert.Equal(t, len(result), 3)
 		for _, item := range result {
 			if item.Name == "p1" {
-				assert.Equal(t, "one", *item.Value)
+				assert.Equal(t, "one", item.Value.String())
 			}
 		}
 	})
@@ -43,7 +44,7 @@ func TestMergeParameters(t *testing.T) {
 		assert.Equal(t, len(result), 3)
 		for _, item := range result {
 			if item.Name == "p1" {
-				assert.Equal(t, "two", *item.Value)
+				assert.Equal(t, "two", item.Value.String())
 			}
 		}
 	})

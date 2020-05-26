@@ -11,6 +11,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
@@ -1300,10 +1301,10 @@ func TestSequence(t *testing.T) {
 	found101 := false
 	for _, node := range updatedWf.Status.Nodes {
 		if node.DisplayName == "step1(0:100)" {
-			assert.Equal(t, "100", *node.Inputs.Parameters[0].Value)
+			assert.Equal(t, "100", node.Inputs.Parameters[0].Value.String())
 			found100 = true
 		} else if node.DisplayName == "step1(1:101)" {
-			assert.Equal(t, "101", *node.Inputs.Parameters[0].Value)
+			assert.Equal(t, "101", node.Inputs.Parameters[0].Value.String())
 			found101 = true
 		}
 	}
@@ -1362,7 +1363,7 @@ func TestInputParametersAsJson(t *testing.T) {
 	for _, node := range updatedWf.Status.Nodes {
 		if node.Type == wfv1.NodeTypePod {
 			expectedJson := `Workflow: [{"name":"parameter1","value":"value1"}]. Template: [{"name":"parameter1","value":"value1"},{"name":"parameter2","value":"template2"}]`
-			assert.Equal(t, expectedJson, *node.Inputs.Parameters[0].Value)
+			assert.Equal(t, expectedJson, node.Inputs.Parameters[0].Value.String())
 			found = true
 		}
 	}
@@ -1464,7 +1465,7 @@ func TestExpandWithItemsMap(t *testing.T) {
 	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0].Steps[0])
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(newSteps))
-	assert.Equal(t, "debian 9.1 JSON({\"os\":\"debian\",\"version\":9.1})", *newSteps[0].Arguments.Parameters[0].Value)
+	assert.Equal(t, "debian 9.1 JSON({\"os\":\"debian\",\"version\":9.1})", newSteps[0].Arguments.Parameters[0].Value.String())
 }
 
 var suspendTemplate = `
@@ -1776,7 +1777,7 @@ func TestWorkflowSpecParam(t *testing.T) {
 func TestAddGlobalParamToScope(t *testing.T) {
 	woc := newWoc()
 	woc.globalParams = make(map[string]string)
-	testVal := "test-value"
+	testVal := intstr.Parse("test-value")
 	param := wfv1.Parameter{
 		Name:  "test-param",
 		Value: &testVal,
@@ -1791,16 +1792,16 @@ func TestAddGlobalParamToScope(t *testing.T) {
 	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Parameters))
 	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[0].Name)
 	assert.Equal(t, testVal, *woc.wf.Status.Outputs.Parameters[0].Value)
-	assert.Equal(t, testVal, woc.globalParams["workflow.outputs.parameters.global-param"])
+	assert.Equal(t, testVal.String(), woc.globalParams["workflow.outputs.parameters.global-param"])
 
 	// Change the value and verify it is reflected in workflow outputs
-	newValue := "new-value"
+	newValue := intstr.Parse("new-value")
 	param.Value = &newValue
 	woc.addParamToGlobalScope(param)
 	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Parameters))
 	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[0].Name)
 	assert.Equal(t, newValue, *woc.wf.Status.Outputs.Parameters[0].Value)
-	assert.Equal(t, newValue, woc.globalParams["workflow.outputs.parameters.global-param"])
+	assert.Equal(t, newValue.String(), woc.globalParams["workflow.outputs.parameters.global-param"])
 
 	// Add a new global parameter
 	param.GlobalName = "global-param2"
@@ -1808,7 +1809,7 @@ func TestAddGlobalParamToScope(t *testing.T) {
 	assert.Equal(t, 2, len(woc.wf.Status.Outputs.Parameters))
 	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[1].Name)
 	assert.Equal(t, newValue, *woc.wf.Status.Outputs.Parameters[1].Value)
-	assert.Equal(t, newValue, woc.globalParams["workflow.outputs.parameters.global-param2"])
+	assert.Equal(t, newValue.String(), woc.globalParams["workflow.outputs.parameters.global-param2"])
 
 }
 
@@ -2097,8 +2098,7 @@ func TestResolvePlaceholdersInOutputValues(t *testing.T) {
 	assert.NoError(t, err)
 	parameterValue := template.Outputs.Parameters[0].Value
 	assert.NotNil(t, parameterValue)
-	assert.NotEmpty(t, *parameterValue)
-	assert.Equal(t, "output-value-placeholders-wf", *parameterValue)
+	assert.Equal(t, "output-value-placeholders-wf", parameterValue.String())
 }
 
 var podNameInRetries = `
@@ -2135,10 +2135,8 @@ func TestResolvePodNameInRetries(t *testing.T) {
 	err = json.Unmarshal([]byte(templateString), &template)
 	assert.NoError(t, err)
 	parameterValue := template.Outputs.Parameters[0].Value
-	fmt.Println(parameterValue)
 	assert.NotNil(t, parameterValue)
-	assert.NotEmpty(t, *parameterValue)
-	assert.Equal(t, "output-value-placeholders-wf-3033990984", *parameterValue)
+	assert.Equal(t, "output-value-placeholders-wf-3033990984", parameterValue.String())
 }
 
 var outputStatuses = `
@@ -2895,7 +2893,7 @@ spec:
         arguments:
           parameters:
           - name: proceed
-            value: false
+            value: "false"
 
   - name: whalesay
     container:

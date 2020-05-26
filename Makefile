@@ -258,15 +258,15 @@ mocks: $(GOPATH)/bin/mockery
 	./hack/update-mocks.sh $(MOCK_FILES)
 
 .PHONY: codegen
-codegen: status proto swagger crds schemaassets mocks docs
+codegen: status proto swagger crds schemas mocks docs
 
 .PHONY: crds
-crds:
+crds: pkg/apis/workflow/v1alpha1/openapi_generated.go
 	go run ./hack gencrds
 
-.PHONY: schemaassets
-schemaassets:
-	go run ./hack genschemaassets
+.PHONY: schemas
+schemas: pkg/apis/workflow/v1alpha1/openapi_generated.go
+	go run ./hack genschemas
 
 .PHONY: proto
 proto:

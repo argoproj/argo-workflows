@@ -13,7 +13,7 @@ import (
 	We're a bit lazy with these, we do not scrub the assets, and we just bundle all
 	the definitions, when we could cherry-pick the relevant ones.
 */
-func genSchemaAssets() {
+func genSchemas() {
 	data, err := ioutil.ReadFile("api/openapi-spec/swagger.json")
 	if err != nil {
 		panic(err)
@@ -34,6 +34,8 @@ func genSchemaAssets() {
 		delete(schema["properties"].(obj), "status")
 		schema["definitions"] = swagger["definitions"]
 		delete(schema["definitions"].(obj), name)
+		schema["$schema"] = "http://json-schema.org/draft-07/schema"
+		schema["$id"] = "http://workflows.argoproj.io/" + crd.Kind + ".json"
 		data, err = json.MarshalIndent(schema, "", "  ")
 		if err != nil {
 			panic(err)

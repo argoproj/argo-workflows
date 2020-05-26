@@ -206,13 +206,13 @@ spec:
                     items:
                       properties:
                         default:
-                          type: string
+                          x-kubernetes-int-or-string: true
                         globalName:
                           type: string
                         name:
                           type: string
                         value:
-                          type: string
+                          x-kubernetes-int-or-string: true
                         valueFrom:
                           properties:
                             default:
@@ -316,12 +316,7 @@ spec:
                           type: string
                       required:
                       - name
-                      - labels
                       - help
-                      - when
-                      - gauge
-                      - histogram
-                      - counter
                       type: object
                     type: array
                 required:
@@ -685,13 +680,13 @@ spec:
                           items:
                             properties:
                               default:
-                                type: string
+                                x-kubernetes-int-or-string: true
                               globalName:
                                 type: string
                               name:
                                 type: string
                               value:
-                                type: string
+                                x-kubernetes-int-or-string: true
                               valueFrom:
                                 properties:
                                   default:
@@ -899,13 +894,13 @@ spec:
                                     items:
                                       properties:
                                         default:
-                                          type: string
+                                          x-kubernetes-int-or-string: true
                                         globalName:
                                           type: string
                                         name:
                                           type: string
                                         value:
-                                          type: string
+                                          x-kubernetes-int-or-string: true
                                         valueFrom:
                                           properties:
                                             default:
@@ -1231,13 +1226,13 @@ spec:
                           items:
                             properties:
                               default:
-                                type: string
+                                x-kubernetes-int-or-string: true
                               globalName:
                                 type: string
                               name:
                                 type: string
                               value:
-                                type: string
+                                x-kubernetes-int-or-string: true
                               valueFrom:
                                 properties:
                                   default:
@@ -1322,12 +1317,7 @@ spec:
                                 type: string
                             required:
                             - name
-                            - labels
                             - help
-                            - when
-                            - gauge
-                            - histogram
-                            - counter
                             type: object
                           type: array
                       required:
@@ -1515,13 +1505,13 @@ spec:
                           items:
                             properties:
                               default:
-                                type: string
+                                x-kubernetes-int-or-string: true
                               globalName:
                                 type: string
                               name:
                                 type: string
                               value:
-                                type: string
+                                x-kubernetes-int-or-string: true
                               valueFrom:
                                 properties:
                                   default:
@@ -1572,7 +1562,6 @@ spec:
                           type: string
                       required:
                       - action
-                      - manifest
                       type: object
                     resubmitPendingPods:
                       type: boolean
@@ -1910,13 +1899,13 @@ spec:
                                   items:
                                     properties:
                                       default:
-                                        type: string
+                                        x-kubernetes-int-or-string: true
                                       globalName:
                                         type: string
                                       name:
                                         type: string
                                       value:
-                                        type: string
+                                        x-kubernetes-int-or-string: true
                                       valueFrom:
                                         properties:
                                           default:

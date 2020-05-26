@@ -8,8 +8,8 @@ func main() {
 		generateDocs()
 	case "gencrds":
 		genCRDs()
-	case "genschemaassets":
-		genSchemaAssets()
+	case "genschemas":
+		genSchemas()
 	case "kubeifyswagger":
 		kubeifySwagger(os.Args[2], os.Args[3])
 	case "secondaryswaggergen":

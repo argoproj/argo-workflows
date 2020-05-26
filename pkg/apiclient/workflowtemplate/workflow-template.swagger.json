@@ -996,11 +996,11 @@
           "title": "Name is the parameter name"
         },
         "default": {
-          "type": "string",
-          "title": "Default is the default value to use for an input parameter if a value was not supplied\nDEPRECATED: This field is not used"
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.util.intstr.IntOrString",
+          "title": "Default is the default value to use for an input parameter if a value was not supplied"
         },
         "value": {
-          "type": "string",
+          "$ref": "#/definitions/k8s.io.apimachinery.pkg.util.intstr.IntOrString",
           "title": "Value is the literal value to use for the parameter.\nIf specified in the context of an input parameter, the value takes precedence over any passed values"
         },
         "valueFrom": {
