@@ -928,6 +928,23 @@
       },
       "title": "Backoff is a backoff strategy to use within retryStrategy"
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Condition": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "title": "Type is the type of condition"
+        },
+        "status": {
+          "type": "string",
+          "title": "Status is the status of the condition"
+        },
+        "message": {
+          "type": "string",
+          "title": "Message is the condition message"
+        }
+      }
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ContinueOn": {
       "type": "object",
       "properties": {
@@ -2112,23 +2129,6 @@
       },
       "title": "Workflow is the definition of a workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowCondition": {
-      "type": "object",
-      "properties": {
-        "type": {
-          "type": "string",
-          "title": "Type is the type of condition"
-        },
-        "status": {
-          "type": "string",
-          "title": "Status is the status of the condition"
-        },
-        "message": {
-          "type": "string",
-          "title": "Message is the condition message"
-        }
-      }
-    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowList": {
       "type": "object",
       "properties": {
@@ -2370,7 +2370,7 @@
         "conditions": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowCondition"
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Condition"
           },
           "title": "Conditions is a list of conditions the Workflow may have"
         },
