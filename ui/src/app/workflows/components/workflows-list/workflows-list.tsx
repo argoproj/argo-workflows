@@ -4,7 +4,7 @@ import {Subscription} from 'rxjs';
 
 import {Autocomplete, Page, SlidingPanel} from 'argo-ui';
 import * as models from '../../../../models';
-import {Workflow} from '../../../../models';
+import {labels, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
@@ -229,7 +229,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     private countsByCompleted() {
         const counts = {complete: 0, incomplete: 0};
         this.state.workflows.forEach(wf => {
-            if (wf.metadata.labels && wf.metadata.labels['workflows.argoproj.io/completed'] === 'true') {
+            if (wf.metadata.labels && wf.metadata.labels[labels.completed] === 'true') {
                 counts.complete++;
             } else {
                 counts.incomplete++;
@@ -255,7 +255,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
 
         return (
             <>
-                {(counts.complete > 0 || counts.incomplete > 100) && (
+                {(counts.complete > 100 || counts.incomplete > 100) && (
                     <CostOptimisationNudge name='workflow-list'>
                         You have at least {counts.incomplete} incomplete, and {counts.complete} complete workflows. Reducing these amounts will reduce your costs.
                     </CostOptimisationNudge>

@@ -1,5 +1,9 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
 
+export const labels = {
+    completed: 'workflows.argoproj.io/completed'
+};
+
 /**
  * Arguments to a template
  */
