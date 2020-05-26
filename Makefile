@@ -332,6 +332,12 @@ ifeq ($(K3D),true)
 	k3d start
 endif
 	kubectl apply -f test/e2e/manifests/argo-ns.yaml
+	# If you want SSO, then we want Dex, otherwise we delete any previouly installed Dex.
+ifeq ($(AUTH_MODE),sso)
+	kubectl -n argo apply -l app.kubernetes.io/part-of=dex --prune --force -k manifests/quick-start/base/dex
+else
+	kubectl -n argo delete all -l app.kubernetes.io/part-of=dex
+endif
 	kubectl -n argo apply -l app.kubernetes.io/part-of=argo --prune --force -f dist/$(DB).yaml
 
 .PHONY: pull-build-images
@@ -372,7 +378,7 @@ start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
 	grep '127.0.0.1 *minio' /etc/hosts
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
-	env ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) goreman -set-ports=false -logtime=false start
+	env ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) AUTH_MODES=$(AUTH_MODES) goreman -set-ports=false -logtime=false start
 
 
 .PHONY: wait
@@ -428,12 +434,12 @@ smoke: test-images
 	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: test-api
-test-api: test-images
+test-api:
 	# Run API tests
 	go test -timeout 1m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
 
 .PHONY: test-cli
-test-cli: test-images cli
+test-cli: cli
 	# Run CLI tests
 	go test -timeout 2m -v -count 1 -p 1 -run CLISuite ./test/e2e
 	go test -timeout 2m -v -count 1 -p 1 -run CLIWithServerSuite ./test/e2e

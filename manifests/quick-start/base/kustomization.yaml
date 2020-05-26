@@ -4,7 +4,6 @@ kind: Kustomization
 bases:
   - ../../namespace-install
   - minio
-  - dex
 
 resources:
   - argo-server-sso-secret.yaml
