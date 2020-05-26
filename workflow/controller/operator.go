@@ -151,7 +151,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 // later time
 func (woc *wfOperationCtx) operate() {
 	defer func() {
-		if woc.wf.Status.Completed() {
+		if woc.wf.Status.Fulfilled() {
 			_ = woc.killDaemonedChildren("")
 		}
 		woc.persistUpdates()

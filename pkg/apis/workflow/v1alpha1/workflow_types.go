@@ -1214,7 +1214,7 @@ func (n Nodes) GetResourcesDuration() ResourcesDuration {
 	return i
 }
 
-// Fulfilled returns whether a phase is fulfilled, i.e. it finished execution or was skipped
+// Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped
 func (phase NodePhase) Fulfilled() bool {
 	return phase.Completed() || phase == NodeSkipped
 }
@@ -1226,8 +1226,8 @@ func (phase NodePhase) Completed() bool {
 		phase == NodeError
 }
 
-// Completed returns whether or not the workflow has completed execution
-func (ws WorkflowStatus) Completed() bool {
+// Fulfilled returns whether or not the workflow has fulfilled its execution, i.e. it completed execution or was skipped
+func (ws WorkflowStatus) Fulfilled() bool {
 	return ws.Phase.Fulfilled()
 }
 
