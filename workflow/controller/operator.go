@@ -1908,7 +1908,7 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 			if err != nil {
 				// We have a default value to use instead of returning an error
 				if param.ValueFrom.Default != nil {
-					val = *param.ValueFrom.Default
+					val = param.ValueFrom.Default.String()
 				} else {
 					return nil, err
 				}
