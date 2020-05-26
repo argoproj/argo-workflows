@@ -1,4 +1,5 @@
 # This is an example of back-filling day for a daily cron workflow.
+# See ../docs/cron-backfill.md
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
@@ -82,6 +83,10 @@ spec:
               - name: main
                 steps:
                   - - name: start-job
+                      arguments:
+                        parameters:
+                          - name: date
+                            value: "{{inputs.parameters.date}}"
                       templateRef:
                         name: job
                         template: main
