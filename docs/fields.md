@@ -1655,6 +1655,8 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
