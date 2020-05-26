@@ -28,7 +28,7 @@ func genCRDs() {
 		panic(err)
 	}
 
-	ctx := structuralSchemaContext{swagger: swagger}
+	ctx := structuralSchemaContext{swagger: swagger, simple: true}
 
 	for _, crd := range workflow.CRDs {
 		filename := "manifests/base/crds/" + crd.FullName + "-crd.yaml"

@@ -8,12 +8,17 @@ var any = obj{"x-kubernetes-preserve-unknown-fields": true}
 
 type structuralSchemaContext struct {
 	swagger obj
+	simple  bool
 }
 
 func (c structuralSchemaContext) structuralSchemaByName(name string) obj {
 	switch name {
 	case "io.argoproj.workflow.v1alpha1.Item":
 		return any
+	case "io.argoproj.workflow.v1alpha1.Template":
+		if c.simple {
+			return any
+		}
 	case "io.k8s.apimachinery.pkg.api.resource.Quantity":
 		return intOrString
 	case "io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta":
