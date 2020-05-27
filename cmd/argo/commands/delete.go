@@ -19,10 +19,10 @@ func NewDeleteCommand() *cobra.Command {
 		listArgs      listFlags
 		all           bool
 		allNamespaces bool
+		dryRun        bool
 	)
-
 	var command = &cobra.Command{
-		Use:   "delete [WORKFLOW...|[--all] [--older] [--completed] [--prefix PREFIX] [--selector SELECTOR]]",
+		Use:   "delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--prefix PREFIX] [--selector SELECTOR]]",
 		Short: "delete workflows",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
@@ -42,12 +42,14 @@ func NewDeleteCommand() *cobra.Command {
 				workflows = append(workflows, listed...)
 			}
 			for _, md := range workflows {
-				_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: md.Name, Namespace: md.Namespace})
-				if err != nil && apierr.IsNotFound(err) {
-					fmt.Printf("Workflow '%s' not found\n", md.Name)
-					continue
+				if !dryRun {
+					_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: md.Name, Namespace: md.Namespace})
+					if err != nil && apierr.IsNotFound(err) {
+						fmt.Printf("Workflow '%s' not found\n", md.Name)
+						continue
+					}
+					errors.CheckError(err)
 				}
-				errors.CheckError(err)
 				fmt.Printf("Workflow '%s' deleted\n", md.Name)
 			}
 		},
@@ -59,5 +61,6 @@ func NewDeleteCommand() *cobra.Command {
 	command.Flags().StringVar(&listArgs.prefix, "prefix", "", "Delete workflows by prefix")
 	command.Flags().StringVar(&listArgs.finisheAfter, "older", "", "Delete completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
 	command.Flags().StringVarP(&listArgs.labels, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones")
+	command.Flags().BoolVar(&dryRun, "dry-run", false, "Do not delete the workflow, only print what would happen")
 	return command
 }

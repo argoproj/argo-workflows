@@ -343,6 +343,11 @@ func (s *CLISuite) TestWorkflowDelete() {
 			SubmitWorkflow().
 			WaitForWorkflow(30*time.Second).
 			Given().
+			RunCli([]string{"delete", "--dry-run", "basic"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "Workflow 'basic' deleted")
+				}
+			}).
 			RunCli([]string{"delete", "basic"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
 					assert.Contains(t, output, "Workflow 'basic' deleted")
