@@ -89,7 +89,7 @@ func countPendingRunningCompleted(wf *wfv1.Workflow) (int, int, int) {
 		if tmpl == nil || !tmpl.IsPodType() {
 			continue
 		}
-		if node.Completed() {
+		if node.Fulfilled() {
 			completed++
 		} else if node.Phase == wfv1.NodeRunning {
 			running++
