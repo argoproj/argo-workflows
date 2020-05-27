@@ -176,8 +176,8 @@ func WorkflowLogs(ctx context.Context, wfClient versioned.Interface, kubeClient 
 						logCtx.Errorf("watch object was not a workflow %v", reflect.TypeOf(event.Object))
 						return
 					}
-					logCtx.WithFields(log.Fields{"eventType": event.Type, "completed": wf.Status.Completed()}).Debug("Workflow event")
-					if event.Type == watch.Deleted || wf.Status.Completed() {
+					logCtx.WithFields(log.Fields{"eventType": event.Type, "completed": wf.Status.Fulfilled()}).Debug("Workflow event")
+					if event.Type == watch.Deleted || wf.Status.Fulfilled() {
 						return
 					}
 				}

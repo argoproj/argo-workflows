@@ -3527,3 +3527,168 @@ func TestBackoffExceedsMaxDuration(t *testing.T) {
 	assert.Equal(t, "Backoff would exceed max duration limit", woc.wf.Status.Nodes["echo-r6v49"].Message)
 	assert.Equal(t, "Backoff would exceed max duration limit", woc.wf.Status.Message)
 }
+
+var noOnExitWhenSkipped = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-primay-branch-sd6rg
+spec:
+  arguments: {}
+  entrypoint: statis
+  templates:
+  - arguments: {}
+    container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: pass
+    outputs: {}
+  - arguments: {}
+    container:
+      args:
+      - exit
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: exit
+    outputs: {}
+  - arguments: {}
+    dag:
+      tasks:
+      - arguments: {}
+        name: A
+        template: pass
+      - arguments: {}
+        dependencies:
+        - A
+        name: B
+        onExit: exit
+        template: pass
+        when: '{{tasks.A.status}} != Succeeded'
+      - arguments: {}
+        dependencies:
+        - A
+        name: C
+        template: pass
+    inputs: {}
+    metadata: {}
+    name: statis
+    outputs: {}
+status:
+  nodes:
+    dag-primay-branch-sd6rg:
+      children:
+      - dag-primay-branch-sd6rg-1815625391
+      displayName: dag-primay-branch-sd6rg
+      id: dag-primay-branch-sd6rg
+      name: dag-primay-branch-sd6rg
+      outboundNodes:
+      - dag-primay-branch-sd6rg-1832403010
+      - dag-primay-branch-sd6rg-1849180629
+      phase: Running
+      startedAt: "2020-05-22T16:44:05Z"
+      templateName: statis
+      templateScope: local/dag-primay-branch-sd6rg
+      type: DAG
+    dag-primay-branch-sd6rg-1815625391:
+      boundaryID: dag-primay-branch-sd6rg
+      children:
+      - dag-primay-branch-sd6rg-1832403010
+      - dag-primay-branch-sd6rg-1849180629
+      displayName: A
+      finishedAt: "2020-05-22T16:44:09Z"
+      hostNodeName: minikube
+      id: dag-primay-branch-sd6rg-1815625391
+      name: dag-primay-branch-sd6rg.A
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-primay-branch-sd6rg/dag-primay-branch-sd6rg-1815625391/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 3
+        memory: 1
+      startedAt: "2020-05-22T16:44:05Z"
+      templateName: pass
+      templateScope: local/dag-primay-branch-sd6rg
+      type: Pod
+    dag-primay-branch-sd6rg-1832403010:
+      boundaryID: dag-primay-branch-sd6rg
+      displayName: B
+      finishedAt: "2020-05-22T16:44:10Z"
+      id: dag-primay-branch-sd6rg-1832403010
+      message: when 'Succeeded != Succeeded' evaluated false
+      name: dag-primay-branch-sd6rg.B
+      phase: Skipped
+      startedAt: "2020-05-22T16:44:10Z"
+      templateName: pass
+      templateScope: local/dag-primay-branch-sd6rg
+      type: Skipped
+    dag-primay-branch-sd6rg-1849180629:
+      boundaryID: dag-primay-branch-sd6rg
+      displayName: C
+      hostNodeName: minikube
+      id: dag-primay-branch-sd6rg-1849180629
+      name: dag-primay-branch-sd6rg.C
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-primay-branch-sd6rg/dag-primay-branch-sd6rg-1849180629/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Running
+      resourcesDuration:
+        cpu: 3
+        memory: 1
+      startedAt: "2020-05-22T16:44:10Z"
+      templateName: pass
+      templateScope: local/dag-primay-branch-sd6rg
+      type: Pod
+  phase: Running
+  resourcesDuration:
+    cpu: 10
+    memory: 4
+  startedAt: "2020-05-22T16:44:05Z"
+`
+
+// This tests that we don't wait a backoff if it would exceed the maxDuration anyway.
+func TestNoOnExitWhenSkipped(t *testing.T) {
+	wf := unmarshalWF(noOnExitWhenSkipped)
+
+	woc := newWoc(*wf)
+	woc.operate()
+	assert.Nil(t, woc.getNodeByName("B.onExit"))
+}
