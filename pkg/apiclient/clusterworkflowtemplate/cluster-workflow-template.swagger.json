@@ -1222,6 +1222,16 @@
       },
       "title": "ScriptTemplate is a template subtype to enable scripting through code steps"
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreRef": {
+      "type": "object",
+      "properties": {
+        "configMapKeyRef": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.ConfigMapKeySelector",
+          "title": "ConfigMapKeyRef is configmap selector for Semaphore configuration"
+        }
+      },
+      "title": "SemaphoreRef is a reference of Semaphore"
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Sequence": {
       "type": "object",
       "properties": {
@@ -1455,6 +1465,10 @@
         "metrics": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Metrics",
           "title": "Metrics are a list of metrics emitted from this template"
+        },
+        "semaphore": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreRef",
+          "description": "SemaphoreRef will holds semaphore configuration for this Template."
         }
       },
       "title": "Template is a reusable and composable unit of execution in a workflow"
@@ -1690,6 +1704,10 @@
         "workflowTemplateRef": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateRef",
           "title": "WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution"
+        },
+        "semaphore": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreRef",
+          "title": "SemaphoreRef will holds semaphore configuration for this Workflow"
         }
       },
       "description": "WorkflowSpec is the specification of a Workflow."

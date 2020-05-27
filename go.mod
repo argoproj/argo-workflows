@@ -29,6 +29,7 @@ require (
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.3.5
+	github.com/google/martian v2.1.0+incompatible
 	github.com/googleapis/gnostic v0.3.1 // indirect
 	github.com/gophercloud/gophercloud v0.7.0 // indirect
 	github.com/gorilla/websocket v1.4.1

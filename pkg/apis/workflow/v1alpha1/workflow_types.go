@@ -275,7 +275,6 @@ type WorkflowSpec struct {
 
 	// SemaphoreRef will holds semaphore configuration for this Workflow
 	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,35,opt,name=semaphore,casttype=SemaphoreRef"`
-
 }
 
 type ShutdownStrategy string

@@ -626,7 +626,7 @@ func (woc *wfOperationCtx) releaseLock(node *wfv1.NodeStatus) error {
 			return err
 		}
 		resourceKey := fmt.Sprintf("%s/%s", wfKey, node.Name)
-		woc.controller.concurrencyMgr.Release(resourceKey, woc.wf.Namespace, tmpl.Semaphore)
+		woc.controller.concurrencyMgr.Release(resourceKey, woc.wf.Namespace, tmpl.Semaphore, woc.wf)
 	}
 	return nil
 }
@@ -854,7 +854,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				return err
 			}
 			resourceKey := fmt.Sprintf("%s/%s", wfKey, node.Name)
-			woc.controller.concurrencyMgr.Release(resourceKey, woc.wf.Namespace, tmpl.Semaphore)
+			woc.controller.concurrencyMgr.Release(resourceKey, woc.wf.Namespace, tmpl.Semaphore, woc.wf)
 		}
 
 		if node.Type != wfv1.NodeTypePod || node.Completed() || node.StartedAt.IsZero() {
@@ -1453,8 +1453,11 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		if node.Completed() {
 			if resolvedTmpl.Semaphore != nil {
 				woc.log.Debugf("Node %s is releasing Semaphore lock", nodeName)
-				holderKey := woc.controller.concurrencyMgr.getHolderKey(woc.wf, nodeName)
-				woc.controller.concurrencyMgr.Release(holderKey, woc.wf.Namespace, resolvedTmpl.Semaphore)
+				holderKey, err := woc.controller.concurrencyMgr.getHolderKey(woc.wf, nodeName)
+				if err != nil {
+
+				}
+				woc.controller.concurrencyMgr.Release(holderKey, woc.wf.Namespace, resolvedTmpl.Semaphore, woc.wf)
 			}
 			woc.log.Debugf("Node %s already completed", nodeName)
 			if resolvedTmpl.Metrics != nil {
@@ -1504,8 +1507,11 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	if processedTmpl.Semaphore != nil {
 		holderKey := woc.controller.concurrencyMgr.getHolderKey(woc.wf, nodeName)
+		if holderKey == "" {
+
+		}
 		priority, creationTime := getWfPriority(woc.wf)
-		acquireStatus, msg, err := woc.controller.concurrencyMgr.TryAcquire(holderKey, woc.wf.Namespace, priority, creationTime, resolvedTmpl.Semaphore)
+		acquireStatus, msg, err := woc.controller.concurrencyMgr.TryAcquire(holderKey, woc.wf.Namespace, priority, creationTime, resolvedTmpl.Semaphore, woc.wf)
 		if err != nil {
 			return woc.markNodeError(nodeName, err), err
 		}

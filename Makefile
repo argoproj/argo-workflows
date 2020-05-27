@@ -73,10 +73,11 @@ CI                    ?= false
 DB                    ?= postgres
 K3D                   := $(shell if [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 LOG_LEVEL             := debug
-ALWAYS_OFFLOAD_NODE_STATUS := true
 
 ifeq ($(DB),no-db)
 ALWAYS_OFFLOAD_NODE_STATUS := false
+else
+ALWAYS_OFFLOAD_NODE_STATUS := true
 endif
 
 ifeq ($(CI),true)
@@ -318,7 +319,6 @@ $(VERSION_FILE):
 	touch $(VERSION_FILE)
 
 dist/$(DB).yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
-	# We additionally disable ALWAYS_OFFLOAD_NODE_STATUS
 	kustomize build --load_restrictor=none test/e2e/manifests/$(DB) | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(DB).yaml
 
 .PHONY: install
@@ -465,7 +465,7 @@ pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/wor
 	go run ./hack secondaryswaggergen
 
 dist/swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
-	swagger mixin -c 684 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > dist/swagger.json
+	swagger mixin -c 688 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > dist/swagger.json
 
 dist/kubernetes.swagger.json:
 	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.15/api/openapi-spec/swagger.json
@@ -477,7 +477,6 @@ api/openapi-spec/swagger.json: dist/kubeified.swagger.json
 	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json > api/openapi-spec/swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
-
 
 .PHONY: docs
 docs: swagger

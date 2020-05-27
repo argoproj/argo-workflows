@@ -165,6 +165,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.metrics.RunServer(ctx)
 
 	wfc.concurrencyMgr = NewConcurrencyManager(wfc)
+	wfc.concurrencyMgr.initialize(wfc.GetManagedNamespace(), wfc.wfclientset)
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	for _, informer := range []cache.SharedIndexInformer{wfc.wfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
@@ -428,7 +429,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	if wf.Spec.Semaphore != nil {
 		wfKey := fmt.Sprintf("%v", key)
 		priority, creationTime := getWfPriority(wf)
-		acquired, msg, err := wfc.concurrencyMgr.TryAcquire(wfKey, wf.Namespace, priority, creationTime, wf.Spec.Semaphore)
+		acquired, msg, err := wfc.concurrencyMgr.TryAcquire(wfKey, wf.Namespace, priority, creationTime, wf.Spec.Semaphore, wf)
 		if err != nil {
 			log.Warnf("Failed to unmarshal key '%s' to workflow object: %v", key, err)
 			woc := newWorkflowOperationCtx(wf, wfc)
@@ -475,7 +476,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 		wfc.throttler.Remove(key)
 
 		if wf.Spec.Semaphore != nil {
-			wfc.concurrencyMgr.Release(fmt.Sprintf("%v", key), wf.Namespace, wf.Spec.Semaphore)
+			wfc.concurrencyMgr.Release(fmt.Sprintf("%v", key), wf.Namespace, wf.Spec.Semaphore, woc.wf)
 		}
 		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 		var doPodGC bool

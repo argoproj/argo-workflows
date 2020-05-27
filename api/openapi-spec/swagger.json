@@ -3110,16 +3110,6 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.SemaphoreRef": {
-      "type": "object",
-      "title": "SemaphoreRef is a reference of Semaphore",
-      "properties": {
-        "configMapKeyRef": {
-          "title": "ConfigMapKeyRef is configmap selector for Semaphore configuration",
-          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
-        }
-      }
-    },
     "io.argoproj.workflow.v1alpha1.Sequence": {
       "description": "Sequence expands a workflow step into numeric range",
       "type": "object",

@@ -81,6 +81,13 @@ func (ws *Semaphore) AddToQueue(holderKey string, priority int32, creationTime t
 	ws.inPending[holderKey] = true
 	ws.log.Debugf("Added into Queue %s \n", holderKey)
 }
+func (ws *Semaphore) Acquire(holderKey string) bool {
+	if ws.semaphore.TryAcquire(1) {
+		ws.lockHolder[holderKey] = true
+		return true
+	}
+	return false
+}
 
 func (ws *Semaphore) TryAcquire(holderKey string) (bool, string) {
 	ws.lock.Lock()
@@ -101,11 +108,10 @@ func (ws *Semaphore) TryAcquire(holderKey string) (bool, string) {
 		}
 	}
 
-	if ws.semaphore.TryAcquire(1) {
+	if ws.Acquire(holderKey) {
 		ws.pending.Pop()
 		delete(ws.inPending, holderKey)
 		ws.log.Infof("Lock is acquired by %s \n", nextKey)
-		ws.lockHolder[nextKey] = true
 		return true, ""
 	}
 	return false, waitingMsg
