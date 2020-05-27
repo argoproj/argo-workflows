@@ -159,33 +159,45 @@ func (d *dagContext) assertBranchFinished(targetTaskNames []string) bool {
 }
 
 // assessDAGPhase assesses the overall DAG status
-func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.NodeStatus) wfv1.NodePhase {
+func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1.NodePhase {
 	// First check all our nodes to see if anything is still running. If so, then the DAG is
 	// considered still running (even if there are failures). Remember any failures and if retry
 	// nodes have been exhausted.
 	var unsuccessfulPhase wfv1.NodePhase
-	retriesExhausted := true
-	for _, node := range nodes {
-		if node.BoundaryID != d.boundaryID {
-			continue
-		}
+	var curr string
+	queue := nodes[d.boundaryID].Children
+	for len(queue) != 0 {
+		curr, queue = queue[0], queue[1:]
+		node := nodes[curr]
+
 		if !node.Fulfilled() {
 			return wfv1.NodeRunning
 		}
+
+		if node.Type == wfv1.NodeTypeRetry {
+			// A fulfilled Retry node will always reflect the status of its last child node, so its attempts don't interest us.
+			// To resume the traversal, we look at the children of the last child node.
+			if childNode := getChildNodeIndex(&node, nodes, -1); childNode != nil {
+				queue = append(queue, childNode.Children...)
+			}
+		} else {
+			queue = append(queue, node.Children...)
+		}
+
 		if node.Successful() {
 			continue
 		}
-		// Failed retry attempts should not factor into the overall unsuccessful phase of the dag
-		// because the subsequent attempt may have succeeded
-		// Furthermore, if the node failed but ContinuesOn its phase, it should also not factor into the overall phase of the dag
-		if unsuccessfulPhase == "" && !(isRetryAttempt(node, nodes) || d.getTaskFromNode(&node).ContinuesOn(node.Phase)) {
-			unsuccessfulPhase = node.Phase
+
+		// At this point the node must be failed or errored
+
+		// If the node failed but ContinuesOn its phase, it should not factor into the overall phase of the dag
+		if d.getTaskFromNode(&node).ContinuesOn(node.Phase) {
+			continue
 		}
-		// If the node is a Retry node and has more retry attempts and is not shutting down, do not fail the task as a whole
-		// and allow the remaining retries to be executed
-		if node.Type == wfv1.NodeTypeRetry && d.hasMoreRetries(&node) && d.wf.Spec.Shutdown.ShouldExecute(d.onExitTemplate) {
-			retriesExhausted = false
-		}
+
+		// At this point, we know the DAG has an unrecoverable phase
+		unsuccessfulPhase = node.Phase
+		break
 	}
 
 	if unsuccessfulPhase != "" {
@@ -213,10 +225,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 			}
 		}
 
-		// if we were unsuccessful, we can return *only* if all retry nodes have ben exhausted.
-		if retriesExhausted {
-			return unsuccessfulPhase
-		}
+		return unsuccessfulPhase
 	}
 	// There are no currently running tasks. Now check if our dependencies were met
 	for _, depName := range targetTasks {
@@ -232,20 +241,6 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 	}
 	// If we get here, all our dependencies were completed and successful
 	return wfv1.NodeSucceeded
-}
-
-// isRetryAttempt detects if a node is part of a retry
-func isRetryAttempt(node wfv1.NodeStatus, nodes map[string]wfv1.NodeStatus) bool {
-	for _, potentialParent := range nodes {
-		if potentialParent.Type == wfv1.NodeTypeRetry {
-			for _, child := range potentialParent.Children {
-				if child == node.ID {
-					return true
-				}
-			}
-		}
-	}
-	return false
 }
 
 func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {

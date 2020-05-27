@@ -625,10 +625,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	if node.Fulfilled() {
 		return node, true, nil
 	}
-	lastChildNode, err := woc.getLastChildNode(node)
-	if err != nil {
-		return nil, false, fmt.Errorf("Failed to find last child of node " + node.Name)
-	}
+	lastChildNode := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
 
 	if lastChildNode == nil {
 		return node, true, nil
@@ -656,18 +653,15 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return woc.markNodePhase(node.Name, lastChildNode.Phase, message), true, nil
 	}
 
-	maxDurationDeadline := time.Time{}
 	if retryStrategy.Backoff != nil {
+		maxDurationDeadline := time.Time{}
 		// Process max duration limit
 		if retryStrategy.Backoff.MaxDuration != "" && len(node.Children) > 0 {
 			maxDuration, err := parseStringToDuration(retryStrategy.Backoff.MaxDuration)
 			if err != nil {
 				return nil, false, err
 			}
-			firstChildNode, err := woc.getFirstChildNode(node)
-			if err != nil {
-				return nil, false, fmt.Errorf("Failed to find first child of node " + node.Name)
-			}
+			firstChildNode := getChildNodeIndex(node, woc.wf.Status.Nodes, 0)
 			maxDurationDeadline = firstChildNode.StartedAt.Add(maxDuration)
 			if time.Now().After(maxDurationDeadline) {
 				woc.log.Infoln("Max duration limit exceeded. Failing...")
@@ -1338,32 +1332,26 @@ func (woc *wfOperationCtx) deletePVCs() error {
 	return firstErr
 }
 
-func (woc *wfOperationCtx) getLastChildNode(node *wfv1.NodeStatus) (*wfv1.NodeStatus, error) {
+func getChildNodeIndex(node *wfv1.NodeStatus, nodes wfv1.Nodes, index int) *wfv1.NodeStatus {
 	if len(node.Children) <= 0 {
-		return nil, nil
+		return nil
 	}
 
-	lastChildNodeName := node.Children[len(node.Children)-1]
-	lastChildNode, ok := woc.wf.Status.Nodes[lastChildNodeName]
+	nodeIndex := index
+	if index < 0 {
+		nodeIndex = len(node.Children) + index // This actually subtracts, since index is negative
+		if nodeIndex < 0 {
+			panic(fmt.Sprintf("child index '%d' out of bounds", index))
+		}
+	}
+
+	lastChildNodeName := node.Children[nodeIndex]
+	lastChildNode, ok := nodes[lastChildNodeName]
 	if !ok {
-		return nil, fmt.Errorf("Failed to find node " + lastChildNodeName)
+		panic("could not find child node")
 	}
 
-	return &lastChildNode, nil
-}
-
-func (woc *wfOperationCtx) getFirstChildNode(node *wfv1.NodeStatus) (*wfv1.NodeStatus, error) {
-	if len(node.Children) <= 0 {
-		return nil, nil
-	}
-
-	firstChildNodeName := node.Children[0]
-	firstChildNode, ok := woc.wf.Status.Nodes[firstChildNodeName]
-	if !ok {
-		return nil, fmt.Errorf("Failed to find node " + firstChildNodeName)
-	}
-
-	return &firstChildNode, nil
+	return &lastChildNode
 }
 
 func isResubmitAllowed(tmpl *wfv1.Template) bool {
@@ -1473,10 +1461,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		if retryParentNode.Fulfilled() {
 			return retryParentNode, nil
 		}
-		lastChildNode, err := woc.getLastChildNode(retryParentNode)
-		if err != nil {
-			return woc.markNodeError(retryNodeName, err), err
-		}
+		lastChildNode := getChildNodeIndex(retryParentNode, woc.wf.Status.Nodes, -1)
 		if lastChildNode != nil && !lastChildNode.Fulfilled() {
 			// Last child node is still running.
 			nodeName = lastChildNode.Name
@@ -1996,9 +1981,7 @@ func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *
 	// It may be that the node is a retry node, in which case we want to get the outputs of the last node
 	// in the retry group instead of the retry node itself.
 	if node.Type == wfv1.NodeTypeRetry {
-		if lastNode, err := woc.getLastChildNode(node); err == nil {
-			node = lastNode
-		}
+		node = getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
 	}
 
 	if node.PodIP != "" {

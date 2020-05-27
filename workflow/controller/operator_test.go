@@ -184,8 +184,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	assert.Equal(t, node.Phase, wfv1.NodeRunning)
 
 	// Ensure there are no child nodes yet.
-	lastChild, err := woc.getLastChildNode(node)
-	assert.NoError(t, err)
+	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
 	assert.Nil(t, lastChild)
 
 	// Add child nodes.
@@ -196,8 +195,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	}
 
 	n := woc.getNodeByName(nodeName)
-	lastChild, err = woc.getLastChildNode(n)
-	assert.NoError(t, err)
+	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
 	// Last child is still running. processNodesWithRetries() should return false since
@@ -258,8 +256,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	assert.Equal(t, node.Phase, wfv1.NodeRunning)
 
 	// Ensure there are no child nodes yet.
-	lastChild, err := woc.getLastChildNode(node)
-	assert.Nil(t, err)
+	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
 	assert.Nil(t, lastChild)
 
 	// Add child nodes.
@@ -270,8 +267,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	}
 
 	n := woc.getNodeByName(nodeName)
-	lastChild, err = woc.getLastChildNode(n)
-	assert.Nil(t, err)
+	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
 	// Last child is still running. processNodesWithRetries() should return false since
@@ -337,16 +333,14 @@ func TestProcessNodesWithRetriesWithBackoff(t *testing.T) {
 	assert.Equal(t, node.Phase, wfv1.NodeRunning)
 
 	// Ensure there are no child nodes yet.
-	lastChild, err := woc.getLastChildNode(node)
-	assert.Nil(t, err)
+	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
 	assert.Nil(t, lastChild)
 
 	woc.initializeNode("child-node-1", wfv1.NodeTypePod, "", &wfv1.Template{}, "", wfv1.NodeRunning)
 	woc.addChildNode(nodeName, "child-node-1")
 
 	n := woc.getNodeByName(nodeName)
-	lastChild, err = woc.getLastChildNode(n)
-	assert.Nil(t, err)
+	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
 	// Last child is still running. processNodesWithRetries() should return false since
@@ -390,8 +384,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	assert.Equal(t, node.Phase, wfv1.NodeRunning)
 
 	// Ensure there are no child nodes yet.
-	lastChild, err := woc.getLastChildNode(node)
-	assert.Nil(t, err)
+	lastChild := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
 	assert.Nil(t, lastChild)
 
 	// Add child nodes.
@@ -402,8 +395,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	}
 
 	n := woc.getNodeByName(nodeName)
-	lastChild, err = woc.getLastChildNode(n)
-	assert.Nil(t, err)
+	lastChild = getChildNodeIndex(n, woc.wf.Status.Nodes, -1)
 	assert.NotNil(t, lastChild)
 
 	// Last child is still running. processNodesWithRetries() should return false since
@@ -564,13 +556,11 @@ func TestBackoffMessage(t *testing.T) {
 	retryNode := woc.getNodeByName("retry-backoff-s69z6")
 
 	// Simulate backoff of 4 secods
-	firstNode, err := woc.getFirstChildNode(retryNode)
-	assert.NoError(t, err)
+	firstNode := getChildNodeIndex(retryNode, woc.wf.Status.Nodes, 0)
 	firstNode.StartedAt = metav1.Time{Time: time.Now().Add(-8 * time.Second)}
 	firstNode.FinishedAt = metav1.Time{Time: time.Now().Add(-6 * time.Second)}
 	woc.wf.Status.Nodes[firstNode.ID] = *firstNode
-	lastNode, err := woc.getLastChildNode(retryNode)
-	assert.NoError(t, err)
+	lastNode := getChildNodeIndex(retryNode, woc.wf.Status.Nodes, -1)
 	lastNode.StartedAt = metav1.Time{Time: time.Now().Add(-3 * time.Second)}
 	lastNode.FinishedAt = metav1.Time{Time: time.Now().Add(-1 * time.Second)}
 	woc.wf.Status.Nodes[lastNode.ID] = *lastNode
