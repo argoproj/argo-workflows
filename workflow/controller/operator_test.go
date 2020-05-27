@@ -3293,10 +3293,10 @@ func TestNestedStepGroupGlobalParams(t *testing.T) {
 	if assert.NotNil(t, node) {
 		assert.Equal(t, "hello-param", node.Outputs.Parameters[0].Name)
 		assert.Equal(t, "global-param", node.Outputs.Parameters[0].GlobalName)
-		assert.Equal(t, "hello world", *node.Outputs.Parameters[0].Value)
+		assert.Equal(t, "hello world", node.Outputs.Parameters[0].Value.String())
 	}
 
-	assert.Equal(t, "hello world", *woc.wf.Status.Outputs.Parameters[0].Value)
+	assert.Equal(t, "hello world", woc.wf.Status.Outputs.Parameters[0].Value.String())
 	assert.Equal(t, "global-param", woc.wf.Status.Outputs.Parameters[0].Name)
 }
 
@@ -3337,12 +3337,10 @@ func TestResolvePlaceholdersInGlobalVariables(t *testing.T) {
 	assert.NoError(t, err)
 	namespaceValue := template.Outputs.Parameters[0].Value
 	assert.NotNil(t, namespaceValue)
-	assert.NotEmpty(t, *namespaceValue)
-	assert.Equal(t, "testNamespace", *namespaceValue)
+	assert.Equal(t, "testNamespace", namespaceValue.String())
 	serviceAccountNameValue := template.Outputs.Parameters[1].Value
 	assert.NotNil(t, serviceAccountNameValue)
-	assert.NotEmpty(t, *serviceAccountNameValue)
-	assert.Equal(t, "testServiceAccountName", *serviceAccountNameValue)
+	assert.Equal(t, "testServiceAccountName", serviceAccountNameValue.String())
 }
 
 var maxDurationOnErroredFirstNode = `

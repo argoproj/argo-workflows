@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/fake"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -107,7 +108,7 @@ func TestIsBaseImagePath(t *testing.T) {
 }
 
 func TestDefaultParameters(t *testing.T) {
-	defaultValue := "Default Value"
+	defaultValue := intstr.Parse("Default Value")
 	fakeClientset := fake.NewSimpleClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 	templateWithOutParam := wfv1.Template{
@@ -140,7 +141,7 @@ func TestDefaultParameters(t *testing.T) {
 }
 
 func TestDefaultParametersEmptyString(t *testing.T) {
-	defaultValue := ""
+	defaultValue := intstr.Parse("")
 	fakeClientset := fake.NewSimpleClientset()
 	mockRuntimeExecutor := mocks.ContainerRuntimeExecutor{}
 	templateWithOutParam := wfv1.Template{

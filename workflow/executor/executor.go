@@ -490,9 +490,16 @@ func (we *WorkflowExecutor) SaveParameters() error {
 				} else {
 					return err
 				}
+			} else {
+				intOrString := intstr.Parse(string(data))
+				output = &intOrString
 			}
-			intOrString := intstr.Parse(string(data))
-			output = &intOrString
+		}
+
+		// Trims off a single newline for user convenience
+		if output.Type == intstr.String {
+			trimmed := intstr.Parse(strings.TrimSuffix(output.String(), "\n"))
+			output = &trimmed
 		}
 		we.Template.Outputs.Parameters[i].Value = output
 		log.Infof("Successfully saved output parameter: %s", param.Name)
