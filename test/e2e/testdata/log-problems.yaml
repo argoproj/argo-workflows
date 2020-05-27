@@ -4,7 +4,7 @@ kind: Workflow
 metadata:
   name: log-problems
   labels:
-    argo-e2e: "true"
+    argo-e2e: true
 spec:
   entrypoint: plan
   templates:

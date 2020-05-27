@@ -39,10 +39,12 @@ func (i *Item) UnmarshalJSON(value []byte) error {
 		i.Type = Number
 		return json.Unmarshal(value, &i.NumVal)
 	}
+
 	if _, err := strconv.ParseFloat(strValue, 64); err == nil {
 		i.Type = Number
 		return json.Unmarshal(value, &i.NumVal)
 	}
+
 	if _, err := strconv.ParseBool(strValue); err == nil {
 		i.Type = Bool
 		return json.Unmarshal(value, &i.BoolVal)
@@ -50,12 +52,14 @@ func (i *Item) UnmarshalJSON(value []byte) error {
 	if value[0] == '[' {
 		i.Type = List
 		err := json.Unmarshal(value, &i.ListVal)
+		fmt.Println(err)
 		return err
 	}
 	if value[0] == '{' {
 		i.Type = Map
 		return json.Unmarshal(value, &i.MapVal)
 	}
+
 	i.Type = String
 	return json.Unmarshal(value, &i.StrVal)
 }
@@ -113,10 +117,12 @@ func (iv *ItemValue) UnmarshalJSON(value []byte) error {
 		iv.Type = Number
 		return json.Unmarshal(value, &iv.NumVal)
 	}
+
 	if _, err := strconv.ParseFloat(strValue, 64); err == nil {
 		iv.Type = Number
 		return json.Unmarshal(value, &iv.NumVal)
 	}
+
 	if _, err := strconv.ParseBool(strValue); err == nil {
 		iv.Type = Bool
 		return json.Unmarshal(value, &iv.BoolVal)
@@ -124,19 +130,17 @@ func (iv *ItemValue) UnmarshalJSON(value []byte) error {
 	if value[0] == '[' {
 		iv.Type = List
 		err := json.Unmarshal(value, &iv.ListVal)
+		fmt.Println(err)
 		return err
 	}
 	if value[0] == '{' {
 		iv.Type = Map
 		return json.Unmarshal(value, &iv.MapVal)
 	}
-	if value[0] == '"' {
-		iv.Type = String
-		return json.Unmarshal(value, &iv.StrVal)
-	}
+
 	iv.Type = String
-	unquotedString := `"` + iv.StrVal + `"`
-	return json.Unmarshal(value, &unquotedString)
+	return json.Unmarshal(value, &iv.StrVal)
+
 }
 
 func (iv *ItemValue) String() string {
