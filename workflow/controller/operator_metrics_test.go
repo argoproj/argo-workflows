@@ -210,9 +210,9 @@ func TestMetricEmissionSameOperationCreationAndFailure(t *testing.T) {
 	woc.operate()
 
 	metricErrorDesc := wf.Spec.Templates[1].Metrics.Prometheus[0].GetDesc()
-	assert.NotNil(t, controller.metrics.GetCustomMetric(metricErrorDesc))
+	assert.NotNil(t, controller.Metrics[metricErrorDesc].(prometheus.Counter))
 
-	metricErrorCounter := controller.metrics.GetCustomMetric(metricErrorDesc).(prometheus.Counter)
+	metricErrorCounter := controller.Metrics[metricErrorDesc].(prometheus.Counter)
 	metricErrorCounterString, err := getMetricStringValue(metricErrorCounter)
 	assert.NoError(t, err)
 	assert.Contains(t, metricErrorCounterString, `counter:<value:1 > `)
