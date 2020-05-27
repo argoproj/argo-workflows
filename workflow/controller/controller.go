@@ -438,7 +438,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	startTime := time.Now()
 	woc.operate()
 	wfc.metrics.OperationCompleted(time.Since(startTime).Seconds())
-	if woc.wf.Status.Completed() {
+	if woc.wf.Status.Fulfilled() {
 		wfc.throttler.Remove(key)
 		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 		var doPodGC bool

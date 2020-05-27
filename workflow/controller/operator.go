@@ -152,7 +152,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 // later time
 func (woc *wfOperationCtx) operate() {
 	defer func() {
-		if woc.wf.Status.Completed() {
+		if woc.wf.Status.Fulfilled() {
 			_ = woc.killDaemonedChildren("")
 		}
 		woc.persistUpdates()
@@ -301,7 +301,7 @@ func (woc *wfOperationCtx) operate() {
 		return
 	}
 
-	if node == nil || !node.Completed() {
+	if node == nil || !node.Fulfilled() {
 		// node can be nil if a workflow created immediately in a parallelism == 0 state
 		return
 	}
@@ -346,7 +346,7 @@ func (woc *wfOperationCtx) operate() {
 			woc.log.Errorf("error in exit template execution: %+v", err)
 			return
 		}
-		if onExitNode == nil || !onExitNode.Completed() {
+		if onExitNode == nil || !onExitNode.Fulfilled() {
 			return
 		}
 	}
@@ -623,7 +623,7 @@ func (woc *wfOperationCtx) requeue(afterDuration time.Duration) {
 
 // processNodeRetries updates the retry node state based on the child node state and the retry strategy and returns the node.
 func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrategy wfv1.RetryStrategy) (*wfv1.NodeStatus, bool, error) {
-	if node.Completed() {
+	if node.Fulfilled() {
 		return node, true, nil
 	}
 	lastChildNode, err := woc.getLastChildNode(node)
@@ -635,7 +635,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return node, true, nil
 	}
 
-	if !lastChildNode.Completed() {
+	if !lastChildNode.Fulfilled() {
 		// last child node is still running.
 		return node, true, nil
 	}
@@ -775,7 +775,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				woc.updated = true
 			}
 			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
-			if node.Completed() && !node.IsDaemoned() {
+			if node.Fulfilled() && !node.IsDaemoned() {
 				if tmpVal, tmpOk := pod.Labels[common.LabelKeyCompleted]; tmpOk {
 					if tmpVal == "true" {
 						return
@@ -785,7 +785,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				if woc.shouldPrintPodSpec(node) {
 					printPodSpecLog(pod, woc.wf.Name)
 				}
-				if !woc.orig.Status.Nodes[node.ID].Completed() {
+				if !woc.orig.Status.Nodes[node.ID].Fulfilled() {
 					woc.onNodeComplete(&node)
 				}
 			}
@@ -819,7 +819,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	// It is now impossible to infer pod status. The only thing we can do at this point is to mark
 	// the node with Error.
 	for nodeID, node := range woc.wf.Status.Nodes {
-		if node.Type != wfv1.NodeTypePod || node.Completed() || node.StartedAt.IsZero() {
+		if node.Type != wfv1.NodeTypePod || node.Fulfilled() || node.StartedAt.IsZero() {
 			// node is not a pod, it is already complete, or it can be re-run.
 			continue
 		}
@@ -1060,7 +1060,7 @@ func (woc *wfOperationCtx) assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatu
 		node.Message = message
 	}
 
-	if node.Completed() && node.FinishedAt.IsZero() {
+	if node.Fulfilled() && node.FinishedAt.IsZero() {
 		updated = true
 		if !node.IsDaemoned() {
 			node.FinishedAt = getLatestFinishedAt(pod)
@@ -1403,13 +1403,13 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 
 	if node != nil {
-		if node.Completed() {
+		if node.Fulfilled() {
 			woc.log.Debugf("Node %s already completed", nodeName)
 			if resolvedTmpl.Metrics != nil {
 				// Check if this node completed between executions. If it did, emit metrics. If a node completes within
 				// the same execution, its metrics are emitted below.
 				// We can infer that this node completed during the current operation, emit metrics
-				if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Completed() {
+				if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; ok && !prevNodeStatus.Fulfilled() {
 					localScope, realTimeScope := woc.prepareMetricScope(node)
 					woc.computeMetrics(resolvedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 				}
@@ -1471,14 +1471,14 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		}
 		retryParentNode = processedRetryParentNode
 		// The retry node might have completed by now.
-		if retryParentNode.Completed() {
+		if retryParentNode.Fulfilled() {
 			return retryParentNode, nil
 		}
 		lastChildNode, err := woc.getLastChildNode(retryParentNode)
 		if err != nil {
 			return woc.markNodeError(retryNodeName, err), err
 		}
-		if lastChildNode != nil && !lastChildNode.Completed() {
+		if lastChildNode != nil && !lastChildNode.Fulfilled() {
 			// Last child node is still running.
 			nodeName = lastChildNode.Name
 			node = lastChildNode
@@ -1548,7 +1548,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		// completed before this execution. If it did not exist prior, then we can infer that it was completed during this execution.
 		// The statement "(!ok || prevNodeStatus.Completed())" checks for this behavior and represents the material conditional
 		// "ok -> prevNodeStatus.Completed()" (https://en.wikipedia.org/wiki/Material_conditional)
-		if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; (!ok || prevNodeStatus.Completed()) && node.Completed() {
+		if prevNodeStatus, ok := woc.preExecutionNodePhases[node.ID]; (!ok || prevNodeStatus.Fulfilled()) && node.Fulfilled() {
 			localScope, realTimeScope := woc.prepareMetricScope(node)
 			woc.computeMetrics(resolvedTmpl.Metrics.Prometheus, localScope, realTimeScope, false)
 		}
@@ -1559,7 +1559,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	// Swap the node back to retry node
 	if retryNodeName != "" {
 		retryNode := woc.getNodeByName(retryNodeName)
-		if !retryNode.Completed() && node.Completed() { //if the retry child has completed we need to update outself
+		if !retryNode.Fulfilled() && node.Fulfilled() { //if the retry child has completed we need to update outself
 			node, err = woc.executeTemplate(retryNodeName, orgTmpl, tmplCtx, args, opts)
 			if err != nil {
 				return woc.markNodeError(node.Name, err), err
@@ -1715,7 +1715,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		node.DisplayName = nodeName
 	}
 
-	if node.Completed() && node.FinishedAt.IsZero() {
+	if node.Fulfilled() && node.FinishedAt.IsZero() {
 		node.FinishedAt = node.StartedAt
 	}
 	var message string
@@ -1747,12 +1747,12 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 			woc.updated = true
 		}
 	}
-	if node.Completed() && node.FinishedAt.IsZero() {
+	if node.Fulfilled() && node.FinishedAt.IsZero() {
 		node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 		woc.log.Infof("node %s finished: %s", node.ID, node.FinishedAt)
 		woc.updated = true
 	}
-	if !woc.orig.Status.Nodes[node.ID].Completed() && node.Completed() {
+	if !woc.orig.Status.Nodes[node.ID].Fulfilled() && node.Fulfilled() {
 		woc.onNodeComplete(node)
 	}
 	woc.wf.Status.Nodes[node.ID] = *node

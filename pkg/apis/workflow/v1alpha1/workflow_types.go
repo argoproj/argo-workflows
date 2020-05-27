@@ -1183,16 +1183,21 @@ func (n Nodes) GetResourcesDuration() ResourcesDuration {
 	return i
 }
 
+// Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped
+func (phase NodePhase) Fulfilled() bool {
+	return phase.Completed() || phase == NodeSkipped
+}
+
+// Completed returns whether or not a phase completed. Notably, a skipped phase is not considered as having completed
 func (phase NodePhase) Completed() bool {
 	return phase == NodeSucceeded ||
 		phase == NodeFailed ||
-		phase == NodeError ||
-		phase == NodeSkipped
+		phase == NodeError
 }
 
-// Completed returns whether or not the workflow has completed execution
-func (ws WorkflowStatus) Completed() bool {
-	return ws.Phase.Completed()
+// Fulfilled returns whether or not the workflow has fulfilled its execution, i.e. it completed execution or was skipped
+func (ws WorkflowStatus) Fulfilled() bool {
+	return ws.Phase.Fulfilled()
 }
 
 // Successful return whether or not the workflow has succeeded
@@ -1213,9 +1218,14 @@ func (ws WorkflowStatus) FinishTime() *metav1.Time {
 	return &ws.FinishedAt
 }
 
-// Completed returns whether or not the node has completed execution
+// Fulfilled returns whether a node is fulfilled, i.e. it finished execution, was skipped, or was dameoned successfully
+func (n NodeStatus) Fulfilled() bool {
+	return n.Phase.Fulfilled() || n.IsDaemoned() && n.Phase != NodePending
+}
+
+// Completed returns whether a node completed. Notably, a skipped node is not considered as having completed
 func (n NodeStatus) Completed() bool {
-	return n.Phase.Completed() || n.IsDaemoned() && n.Phase != NodePending
+	return n.Phase.Completed()
 }
 
 func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
@@ -1255,7 +1265,7 @@ func (n NodeStatus) FinishTime() *metav1.Time {
 // CanRetry returns whether the node should be retried or not.
 func (n NodeStatus) CanRetry() bool {
 	// TODO(shri): Check if there are some 'unretryable' errors.
-	return n.Completed() && !n.Successful()
+	return n.Fulfilled() && !n.Successful()
 }
 
 func (n NodeStatus) GetTemplateScope() (ResourceScope, string) {
