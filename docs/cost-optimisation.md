@@ -32,10 +32,19 @@ You can set these configurations globally using [Default Workflow Spec](default-
 
 If you need to keep records historically, use the [Workflow Archive](workflow-archive.md).
 
-Changing these settings will not delete workflows that have already run. You can list old workflows as follows:
+Changing these settings will not delete workflows that have already run. To list old workflows:
 
 ```
-kubectl get wf --all-namespaces --sort-by .metadata.creationTimestamp
+argo list --completed --since 7d
+```
+
+> v2.9 and after
+
+To list/delete workflows completed over 7 days ago:
+
+```
+argo list --older 7d
+argo delete --older 7d
 ```
 
 ## Set Resources Requests Of Your Argo Instances
