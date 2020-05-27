@@ -1,7 +1,7 @@
 import {NotificationType, Page} from 'argo-ui';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
-import {CronWorkflow} from '../../../../models';
+import {CronWorkflow, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
@@ -62,9 +62,14 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
                     actionMenu: {
                         items: [
                             {
+                                title: 'Submit Now',
+                                iconClassName: 'fa fa-plus',
+                                action: () => this.submitCronWorkflow()
+                            },
+                            {
                                 title: 'Delete',
                                 iconClassName: 'fa fa-trash',
-                                action: () => this.deleteWorkflowTemplate()
+                                action: () => this.deleteCronWorkflow()
                             },
                             suspendButton
                         ]
@@ -93,7 +98,21 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
         );
     }
 
-    private deleteWorkflowTemplate() {
+    private submitCronWorkflow() {
+        services.workflows
+            .submit('cronwf', this.name, this.namespace)
+            .catch(e => {
+                this.appContext.apis.notifications.show({
+                    content: 'Failed to submit cron workflow ' + e,
+                    type: NotificationType.Error
+                });
+            })
+            .then((submitted: Workflow) => {
+                document.location.href = uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`);
+            });
+    }
+
+    private deleteCronWorkflow() {
         if (!confirm('Are you sure you want to delete this cron workflow?\nThere is no undo.')) {
             return;
         }
