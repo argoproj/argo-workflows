@@ -4065,6 +4065,8 @@ IntOrString is a type that can hold an int32 or a string.  When used in JSON or 
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`input-artifact-s3.yaml`](../examples/input-artifact-s3.yaml)
 
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
