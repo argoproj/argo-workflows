@@ -100,6 +100,31 @@ func (w Workflows) Less(i, j int) bool {
 	return jFinish.Before(&iFinish)
 }
 
+type WorkflowPredicate = func(wf Workflow) bool
+
+func (w Workflows) Filter(predicate WorkflowPredicate) Workflows {
+	var out Workflows
+	for _, wf := range w {
+		if predicate(wf) {
+			out = append(out, wf)
+		}
+	}
+	return out
+}
+
+var (
+	WorkflowCreatedAfter = func(t time.Time) WorkflowPredicate {
+		return func(wf Workflow) bool {
+			return wf.ObjectMeta.CreationTimestamp.After(t)
+		}
+	}
+	WorkflowFinishedBefore = func(t time.Time) WorkflowPredicate {
+		return func(wf Workflow) bool {
+			return !wf.Status.FinishedAt.IsZero() && wf.Status.FinishedAt.Time.Before(t)
+		}
+	}
+)
+
 // WorkflowList is list of Workflow resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type WorkflowList struct {

@@ -2,74 +2,46 @@ package commands
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/argoproj/pkg/errors"
-	argotime "github.com/argoproj/pkg/time"
 	"github.com/spf13/cobra"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
-	"github.com/argoproj/argo/workflow/common"
-)
-
-var (
-	completedLabelSelector = fmt.Sprintf("%s=true", common.LabelKeyCompleted)
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 // NewDeleteCommand returns a new instance of an `argo delete` command
 func NewDeleteCommand() *cobra.Command {
 	var (
-		selector  string
-		all       bool
-		completed bool
-		older     string
+		listArgs      listFlags
+		all           bool
+		allNamespaces bool
 	)
 
 	var command = &cobra.Command{
-		Use: "delete WORKFLOW...",
+		Use:   "delete [WORKFLOW...|[--all] [--older] [--completed] [--prefix PREFIX] [--selector SELECTOR]]",
+		Short: "delete workflows",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
-			namespace := client.Namespace()
-			var workflowsToDelete []metav1.ObjectMeta
+			if !allNamespaces {
+				listArgs.namespace = client.Namespace()
+			}
+			var workflows wfv1.Workflows
 			for _, name := range args {
-				workflowsToDelete = append(workflowsToDelete, metav1.ObjectMeta{
-					Name:      name,
-					Namespace: namespace,
+				workflows = append(workflows, wfv1.Workflow{
+					ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: listArgs.namespace},
 				})
 			}
-			if all || completed || older != "" {
-				// all is effectively the default, completed takes precedence over all
-				if completed {
-					if selector != "" {
-						selector = selector + "," + completedLabelSelector
-					} else {
-						selector = completedLabelSelector
-					}
-				}
-				// you can mix older with either of these
-				var olderTime *time.Time
-				if older != "" {
-					var err error
-					olderTime, err = argotime.ParseSince(older)
-					errors.CheckError(err)
-				}
-				list, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{
-					Namespace:   namespace,
-					ListOptions: &metav1.ListOptions{LabelSelector: selector},
-				})
+			if all || !listArgs.IsZero() {
+				listed, err := listWorkflows(ctx, serviceClient, listArgs)
 				errors.CheckError(err)
-				for _, wf := range list.Items {
-					if olderTime != nil && (wf.Status.FinishedAt.IsZero() || wf.Status.FinishedAt.After(*olderTime)) {
-						continue
-					}
-					workflowsToDelete = append(workflowsToDelete, wf.ObjectMeta)
-				}
+				workflows = append(workflows, listed...)
 			}
-			for _, md := range workflowsToDelete {
+			for _, md := range workflows {
 				_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: md.Name, Namespace: md.Namespace})
 				if err != nil && apierr.IsNotFound(err) {
 					fmt.Printf("Workflow '%s' not found\n", md.Name)
@@ -81,9 +53,11 @@ func NewDeleteCommand() *cobra.Command {
 		},
 	}
 
+	command.Flags().BoolVar(&allNamespaces, "all-namespaces", false, "Delete workflows from all namespaces")
 	command.Flags().BoolVar(&all, "all", false, "Delete all workflows")
-	command.Flags().BoolVar(&completed, "completed", false, "Delete completed workflows")
-	command.Flags().StringVar(&older, "older", "", "Delete completed workflows older than the specified duration (e.g. 10m, 3h, 1d)")
-	command.Flags().StringVarP(&selector, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones")
+	command.Flags().BoolVar(&listArgs.completed, "completed", false, "Delete completed workflows")
+	command.Flags().StringVar(&listArgs.prefix, "prefix", "", "Delete workflows by prefix")
+	command.Flags().StringVar(&listArgs.finisheAfter, "older", "", "Delete completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
+	command.Flags().StringVarP(&listArgs.labels, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones")
 	return command
 }
