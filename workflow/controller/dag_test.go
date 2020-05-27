@@ -1132,3 +1132,168 @@ func TestTerminatingDAGWithRetryStrategyNodes(t *testing.T) {
 	woc.operate()
 	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
 }
+
+var terminateDAGWithMaxDurationLimitExpiredAndMoreAttempts = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-diamond-dj7q5
+spec:
+  arguments: {}
+  entrypoint: diamond
+  templates:
+  - arguments: {}
+    dag:
+      tasks:
+      - arguments: {}
+        name: A
+        template: echo
+      - arguments: {}
+        dependencies:
+        - A
+        name: B
+        template: echo
+    inputs: {}
+    metadata: {}
+    name: diamond
+    outputs: {}
+  - arguments: {}
+    container:
+      args:
+      - exit 1
+      command:
+      - sh
+      - -c
+      image: alpine:3.7
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: echo
+    outputs: {}
+    retryStrategy:
+      backoff:
+        duration: "1"
+        maxDuration: "5"
+      limit: 10
+status:
+  nodes:
+    dag-diamond-dj7q5:
+      children:
+      - dag-diamond-dj7q5-2391658435
+      displayName: dag-diamond-dj7q5
+      finishedAt: "2020-05-27T15:42:01Z"
+      id: dag-diamond-dj7q5
+      name: dag-diamond-dj7q5
+      phase: Running
+      startedAt: "2020-05-27T15:41:54Z"
+      templateName: diamond
+      templateScope: local/dag-diamond-dj7q5
+      type: DAG
+    dag-diamond-dj7q5-2241203531:
+      boundaryID: dag-diamond-dj7q5
+      displayName: A(1)
+      finishedAt: "2020-05-27T15:41:59Z"
+      hostNodeName: minikube
+      id: dag-diamond-dj7q5-2241203531
+      message: failed with exit code 1
+      name: dag-diamond-dj7q5.A(1)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-diamond-dj7q5/dag-diamond-dj7q5-2241203531/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 1
+        memory: 0
+      startedAt: "2020-05-27T15:41:57Z"
+      templateName: echo
+      templateScope: local/dag-diamond-dj7q5
+      type: Pod
+    dag-diamond-dj7q5-2391658435:
+      boundaryID: dag-diamond-dj7q5
+      children:
+      - dag-diamond-dj7q5-2845344910
+      - dag-diamond-dj7q5-2241203531
+      displayName: A
+      finishedAt: "2020-05-27T15:42:01Z"
+      id: dag-diamond-dj7q5-2391658435
+      name: dag-diamond-dj7q5.A
+      phase: Running
+      startedAt: "2020-05-27T15:41:54Z"
+      templateName: echo
+      templateScope: local/dag-diamond-dj7q5
+      type: Retry
+    dag-diamond-dj7q5-2845344910:
+      boundaryID: dag-diamond-dj7q5
+      displayName: A(0)
+      finishedAt: "2020-05-27T15:41:56Z"
+      hostNodeName: minikube
+      id: dag-diamond-dj7q5-2845344910
+      message: failed with exit code 1
+      name: dag-diamond-dj7q5.A(0)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-diamond-dj7q5/dag-diamond-dj7q5-2845344910/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "1"
+      phase: Failed
+      resourcesDuration:
+        cpu: 1
+        memory: 0
+      startedAt: "2020-05-27T15:41:54Z"
+      templateName: echo
+      templateScope: local/dag-diamond-dj7q5
+      type: Pod
+  phase: Running
+  resourcesDuration:
+    cpu: 2
+    memory: 0
+  startedAt: "2020-05-27T15:41:54Z"
+`
+
+// This tests that a DAG with retry strategy in its tasks fails successfully when terminated
+func TestTerminateDAGWithMaxDurationLimitExpiredAndMoreAttempts(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := unmarshalWF(terminateDAGWithMaxDurationLimitExpiredAndMoreAttempts)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+
+	retryNode := woc.getNodeByName("dag-diamond-dj7q5.A")
+	if assert.NotNil(t, retryNode) {
+		assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
+		assert.Contains(t, retryNode.Message, "Max duration limit exceeded")
+	}
+
+	// This is the crucial part of the test
+	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+}
