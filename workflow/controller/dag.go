@@ -175,7 +175,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 		}
 
 		if node.Type == wfv1.NodeTypeRetry {
-			// A fulfilled Retry node will always reflect the status of its last child node, so its attempts don't interest us.
+			// A fulfilled Retry node will always reflect the status of its last child node, so its individual attempts don't interest us.
 			// To resume the traversal, we look at the children of the last child node.
 			if childNode := getChildNodeIndex(&node, nodes, -1); childNode != nil {
 				queue = append(queue, childNode.Children...)
@@ -183,13 +183,6 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 		} else {
 			queue = append(queue, node.Children...)
 		}
-
-		if !node.Failed() {
-			continue
-		}
-
-		// At this point the node must be failed or errored
-		unsuccessfulPhase = node.Phase
 	}
 
 	if unsuccessfulPhase != "" {
@@ -216,21 +209,22 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 				return wfv1.NodeRunning
 			}
 		}
-
 		return unsuccessfulPhase
 	}
+
 	// There are no currently running tasks. Now check if our dependencies were met
 	for _, depName := range targetTasks {
 		depNode := d.getTaskNode(depName)
-		depTask := d.GetTask(depName)
 		if depNode == nil {
 			return wfv1.NodeRunning
-		}
-		if depNode.Failed() && !depTask.ContinuesOn(depNode.Phase) {
-			// we should theoretically never get here since it would have been caught in first loop
-			return depNode.Phase
+		} else if !depNode.Succeeded() {
+			if depNode.Phase == wfv1.NodeError {
+				return wfv1.NodeError
+			}
+			return wfv1.NodeFailed
 		}
 	}
+
 	// If we get here, all our dependencies were completed and successful
 	return wfv1.NodeSucceeded
 }

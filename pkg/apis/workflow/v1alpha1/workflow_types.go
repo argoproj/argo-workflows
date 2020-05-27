@@ -1277,6 +1277,10 @@ func (n NodeStatus) IsDaemoned() bool {
 	return true
 }
 
+func (n NodeStatus) Succeeded() bool {
+	return n.Fulfilled() && n.Phase == NodeSucceeded
+}
+
 func (n NodeStatus) Failed() bool {
 	return n.Fulfilled() && (n.Phase == NodeFailed || n.Phase == NodeError)
 }

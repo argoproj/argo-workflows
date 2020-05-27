@@ -1294,6 +1294,185 @@ func TestTerminateDAGWithMaxDurationLimitExpiredAndMoreAttempts(t *testing.T) {
 		assert.Contains(t, retryNode.Message, "Max duration limit exceeded")
 	}
 
+	woc.operate()
+
 	// This is the crucial part of the test
 	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+}
+
+var testRetryStrategyNodes = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-retry-pol
+spec:
+  arguments: {}
+  entrypoint: run-steps
+  onExit: onExit
+  templates:
+  - arguments: {}
+    inputs: {}
+    metadata: {}
+    name: run-steps
+    outputs: {}
+    steps:
+    - - arguments: {}
+        name: run-dag
+        template: run-dag
+    - - arguments: {}
+        name: manual-onExit
+        template: onExit
+  - arguments: {}
+    dag:
+      tasks:
+      - arguments: {}
+        name: A
+        template: fail
+      - arguments: {}
+        dependencies:
+        - A
+        name: B
+        template: onExit
+    inputs: {}
+    metadata: {}
+    name: run-dag
+    outputs: {}
+  - arguments: {}
+    container:
+      args:
+      - exit 2
+      command:
+      - sh
+      - -c
+      image: alpine
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: fail
+    outputs: {}
+    retryStrategy:
+      limit: 100
+      retryPolicy: OnError
+  - arguments: {}
+    container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: onExit
+    outputs: {}
+status:
+  nodes:
+    wf-retry-pol:
+      children:
+      - wf-retry-pol-3488382045
+      displayName: wf-retry-pol
+      finishedAt: "2020-05-27T16:03:00Z"
+      id: wf-retry-pol
+      name: wf-retry-pol
+      outboundNodes:
+      - wf-retry-pol-2278798366
+      phase: Running
+      startedAt: "2020-05-27T16:02:49Z"
+      templateName: run-steps
+      templateScope: local/wf-retry-pol
+      type: Steps
+    wf-retry-pol-2616013767:
+      boundaryID: wf-retry-pol
+      children:
+      - wf-retry-pol-3151556158
+      displayName: run-dag
+      id: wf-retry-pol-2616013767
+      name: wf-retry-pol[0].run-dag
+      outboundNodes:
+      - wf-retry-pol-3134778539
+      phase: Running
+      startedAt: "2020-05-27T16:02:49Z"
+      templateName: run-dag
+      templateScope: local/wf-retry-pol
+      type: DAG
+    wf-retry-pol-3148069997:
+      boundaryID: wf-retry-pol-2616013767
+      children:
+      - wf-retry-pol-3134778539
+      displayName: A(0)
+      finishedAt: "2020-05-27T16:02:53Z"
+      hostNodeName: minikube
+      id: wf-retry-pol-3148069997
+      message: failed with exit code 2
+      name: wf-retry-pol[0].run-dag.A(0)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: wf-retry-pol/wf-retry-pol-3148069997/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "2"
+      phase: Failed
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      startedAt: "2020-05-27T16:02:49Z"
+      templateName: fail
+      templateScope: local/wf-retry-pol
+      type: Pod
+    wf-retry-pol-3151556158:
+      boundaryID: wf-retry-pol-2616013767
+      children:
+      - wf-retry-pol-3148069997
+      displayName: A
+      id: wf-retry-pol-3151556158
+      message: failed with exit code 2
+      name: wf-retry-pol[0].run-dag.A
+      phase: Running
+      startedAt: "2020-05-27T16:02:49Z"
+      templateName: fail
+      templateScope: local/wf-retry-pol
+      type: Retry
+    wf-retry-pol-3488382045:
+      boundaryID: wf-retry-pol
+      children:
+      - wf-retry-pol-2616013767
+      displayName: '[0]'
+      id: wf-retry-pol-3488382045
+      name: wf-retry-pol[0]
+      phase: Running
+      startedAt: "2020-05-27T16:02:49Z"
+      templateName: run-steps
+      templateScope: local/wf-retry-pol
+      type: StepGroup
+  phase: Running
+  resourcesDuration:
+    cpu: 6
+    memory: 2
+  startedAt: "2020-05-27T16:02:49Z"
+`
+
+func TestRetryStrategyNodes(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := unmarshalWF(testRetryStrategyNodes)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	// TODO: FINISH THIS TEST
 }
