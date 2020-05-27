@@ -39,6 +39,7 @@ const (
 	NodeSkipped   NodePhase = "Skipped"
 	NodeFailed    NodePhase = "Failed"
 	NodeError     NodePhase = "Error"
+	NodeOmitted   NodePhase = "Omitted"
 )
 
 // NodeType is the type of a node
@@ -1214,9 +1215,9 @@ func (n Nodes) GetResourcesDuration() ResourcesDuration {
 	return i
 }
 
-// Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped
+// Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted
 func (phase NodePhase) Fulfilled() bool {
-	return phase.Completed() || phase == NodeSkipped
+	return phase.Completed() || phase == NodeSkipped || phase == NodeOmitted
 }
 
 // Completed returns whether or not a phase completed. Notably, a skipped phase is not considered as having completed
@@ -1276,13 +1277,8 @@ func (n NodeStatus) IsDaemoned() bool {
 	return true
 }
 
-// Successful returns whether or not this node completed successfully
-func (n NodeStatus) Successful() bool {
-	return n.Phase == NodeSucceeded || n.Phase == NodeSkipped || n.IsDaemoned() && n.Phase != NodePending
-}
-
 func (n NodeStatus) Failed() bool {
-	return !n.Successful()
+	return n.Fulfilled() && (n.Phase == NodeFailed || n.Phase == NodeError)
 }
 
 func (n NodeStatus) StartTime() *metav1.Time {
@@ -1296,7 +1292,7 @@ func (n NodeStatus) FinishTime() *metav1.Time {
 // CanRetry returns whether the node should be retried or not.
 func (n NodeStatus) CanRetry() bool {
 	// TODO(shri): Check if there are some 'unretryable' errors.
-	return n.Fulfilled() && !n.Successful()
+	return n.Fulfilled() && n.Failed()
 }
 
 func (n NodeStatus) GetTemplateScope() (ResourceScope, string) {

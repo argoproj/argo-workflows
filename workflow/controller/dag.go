@@ -145,7 +145,7 @@ func (d *dagContext) assertBranchFinished(targetTaskNames []string) bool {
 				// Recursive check until top root node
 				return d.assertBranchFinished(d.GetTaskDependencies(taskObject.Name))
 			}
-		} else if !taskNode.Successful() {
+		} else if taskNode.Failed() {
 			taskObject := d.GetTask(targetTaskName)
 			if !taskObject.ContinuesOn(taskNode.Phase) {
 				flag = true
@@ -184,20 +184,12 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 			queue = append(queue, node.Children...)
 		}
 
-		if node.Successful() {
+		if !node.Failed() {
 			continue
 		}
 
 		// At this point the node must be failed or errored
-
-		// If the node failed but ContinuesOn its phase, it should not factor into the overall phase of the dag
-		if d.getTaskFromNode(&node).ContinuesOn(node.Phase) {
-			continue
-		}
-
-		// At this point, we know the DAG has an unrecoverable phase
 		unsuccessfulPhase = node.Phase
-		break
 	}
 
 	if unsuccessfulPhase != "" {
@@ -234,7 +226,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 		if depNode == nil {
 			return wfv1.NodeRunning
 		}
-		if !depNode.Successful() && !depTask.ContinuesOn(depNode.Phase) {
+		if depNode.Failed() && !depTask.ContinuesOn(depNode.Phase) {
 			// we should theoretically never get here since it would have been caught in first loop
 			return depNode.Phase
 		}
@@ -433,8 +425,8 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			return
 		}
 		if !execute {
-			// Given the results of this node's dependencies, this node should not be executed. Mark it skipped
-			woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeSkipped, "depends condition not met")
+			// Given the results of this node's dependencies, this node should not be executed. Mark it omitted
+			woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeOmitted, "omitted: depends condition not met")
 			connectDependencies(nodeName)
 			return
 		}
@@ -506,7 +498,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			if node == nil || !node.Fulfilled() {
 				return
 			}
-			if !node.Successful() {
+			if node.Failed() {
 				groupPhase = node.Phase
 			}
 		}
