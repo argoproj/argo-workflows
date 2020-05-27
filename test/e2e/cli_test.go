@@ -345,7 +345,7 @@ func (s *CLISuite) TestWorkflowDelete() {
 			Given().
 			RunCli([]string{"delete", "--dry-run", "basic"}, func(t *testing.T, output string, err error) {
 				if assert.NoError(t, err) {
-					assert.Contains(t, output, "Workflow 'basic' deleted")
+					assert.Contains(t, output, "Workflow 'basic' deleted (dry-run)")
 				}
 			}).
 			RunCli([]string{"delete", "basic"}, func(t *testing.T, output string, err error) {

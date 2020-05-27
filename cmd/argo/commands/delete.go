@@ -49,8 +49,10 @@ func NewDeleteCommand() *cobra.Command {
 						continue
 					}
 					errors.CheckError(err)
+					fmt.Printf("Workflow '%s' deleted\n", md.Name)
+				} else {
+					fmt.Printf("Workflow '%s' deleted (dry-run)\n", md.Name)
 				}
-				fmt.Printf("Workflow '%s' deleted\n", md.Name)
 			}
 		},
 	}
