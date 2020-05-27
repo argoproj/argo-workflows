@@ -183,6 +183,13 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 		} else {
 			queue = append(queue, node.Children...)
 		}
+
+		if !node.Failed() {
+			continue
+		}
+
+		// At this point we know the node must be failed or errored
+		unsuccessfulPhase = node.Phase
 	}
 
 	if unsuccessfulPhase != "" {
