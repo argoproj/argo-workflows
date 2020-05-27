@@ -27,7 +27,7 @@ available task results is as follows:
 | `.Completed` | Task Succeded or Failed |
 | `.Daemoned` | Task is Daemoned and is not Pending |
 
-For convenience, if an omitted task result is equivalent to `(task.Succeeded || task.Skipped || task.Daemoned)`.
+For convenience, an omitted task result is equivalent to `(task.Succeeded || task.Skipped || task.Daemoned)`.
 
 For example:
 
