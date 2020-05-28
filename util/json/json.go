@@ -79,12 +79,3 @@ func removeListFields(config, live []interface{}) []interface{} {
 	}
 	return result
 }
-
-// MustMarshal is a convenience function to marshal an object successfully or panic
-func MustMarshal(v interface{}) []byte {
-	bytes, err := json.Marshal(v)
-	if err != nil {
-		panic(err)
-	}
-	return bytes
-}

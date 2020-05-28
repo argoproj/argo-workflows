@@ -40,6 +40,8 @@ Workflow is the definition of a workflow resource
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
 
 - [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
@@ -224,6 +226,8 @@ Workflow is the definition of a workflow resource
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -232,9 +236,9 @@ Workflow is the definition of a workflow resource
 
 - [`steps.yaml`](../examples/workflow-template/steps.yaml)
 
-- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -253,6 +257,8 @@ CronWorkflow is the definition of a scheduled workflow resource
 <details>
 <summary>Examples (click to open)</summary>
 <br>
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
 </details>
@@ -273,6 +279,8 @@ WorkflowTemplate is the definition of a workflow template resource
 <details>
 <summary>Examples (click to open)</summary>
 <br>
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
@@ -327,6 +335,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
@@ -515,6 +525,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -525,9 +537,9 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 
-- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -566,6 +578,7 @@ WorkflowSpec is the specification of a Workflow.
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
+|`workflowTemplateRef`|[`WorkflowTemplateRef`](#workflowtemplateref)|WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution|
 
 ## WorkflowStatus
 
@@ -575,7 +588,7 @@ WorkflowStatus contains overall status information about a workflow
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`compressedNodes`|`string`|Compressed and base64 decoded Nodes map|
-|`conditions`|`Array<`[`WorkflowCondition`](#workflowcondition)`>`|Conditions is a list of conditions the Workflow may have|
+|`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the Workflow may have|
 |`finishedAt`|[`Time`](#time)|Time at which this workflow completed|
 |`message`|`string`|A human readable message indicating details about why the workflow is in this condition.|
 |`nodes`|[`NodeStatus`](#nodestatus)|Nodes is a mapping between a node ID and the node's status.|
@@ -586,6 +599,7 @@ WorkflowStatus contains overall status information about a workflow
 |`resourcesDuration`|`Map< integer , int64 >`|ResourcesDuration is the total for the workflow|
 |`startedAt`|[`Time`](#time)|Time at which this workflow started|
 |`storedTemplates`|[`Template`](#template)|StoredTemplates is a mapping between a template ref and the node's status.|
+|`storedWorkflowTemplateSpec`|[`WorkflowSpec`](#workflowspec)|StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.|
 
 ## CronWorkflowSpec
 
@@ -629,6 +643,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
@@ -817,6 +833,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -827,9 +845,9 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 
-- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -853,6 +871,7 @@ CronWorkflowStatus is the status of a CronWorkflow
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`active`|`Array<`[`ObjectReference`](#objectreference)`>`|Active is a list of active workflows stemming from this CronWorkflow|
+|`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the CronWorkflow may have|
 |`lastScheduledTime`|[`Time`](#time)|LastScheduleTime is the last time the CronWorkflow was scheduled|
 
 ## WorkflowTemplateSpec
@@ -897,6 +916,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
@@ -1085,6 +1106,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -1095,9 +1118,9 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 
-- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -1136,6 +1159,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`ttlStrategy`|[`TTLStrategy`](#ttlstrategy)|TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values.|
 |`volumeClaimTemplates`|`Array<`[`PersistentVolumeClaim`](#persistentvolumeclaim)`>`|VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow|
 |`volumes`|`Array<`[`Volume`](#volume)`>`|Volumes is a list of volumes that can be mounted by containers in a io.argoproj.workflow.v1alpha1.|
+|`workflowTemplateRef`|[`WorkflowTemplateRef`](#workflowtemplateref)|WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution|
 
 ## Arguments
 
@@ -1168,6 +1192,8 @@ Arguments to a template
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
 
@@ -1251,6 +1277,8 @@ Arguments to a template
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -1259,7 +1287,7 @@ Arguments to a template
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 
-- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 </details>
 
 ### Fields
@@ -1361,6 +1389,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
@@ -1547,6 +1577,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -1615,7 +1647,28 @@ TTLStrategy is the strategy for the time to live depending on if the workflow su
 |`secondsAfterFailure`|`int32`|SecondsAfterFailure is the number of seconds to live after failure|
 |`secondsAfterSuccess`|`int32`|SecondsAfterSuccess is the number of seconds to live after success|
 
-## WorkflowCondition
+## WorkflowTemplateRef
+
+WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
+
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).|
+|`name`|`string`|Name is the resource name of the workflow template.|
+
+## Condition
 
 _No description available_
 
@@ -1703,6 +1756,8 @@ Outputs hold parameters, artifacts, and results from a step
 - [`parameter-aggregation.yaml`](../examples/parameter-aggregation.yaml)
 
 - [`pod-spec-from-previous-step.yaml`](../examples/pod-spec-from-previous-step.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -1760,6 +1815,8 @@ Artifact indicates an artifact to place at a specified path
 - [`output-artifact-gcs.yaml`](../examples/output-artifact-gcs.yaml)
 
 - [`output-artifact-s3.yaml`](../examples/output-artifact-s3.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -1805,6 +1862,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
 
@@ -1890,6 +1949,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -1898,7 +1959,7 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 
-- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 </details>
 
 ### Fields
@@ -2076,6 +2137,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
@@ -2162,6 +2225,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`steps.yaml`](../examples/steps.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
@@ -2212,6 +2277,8 @@ Pod metdata
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
 
@@ -2401,6 +2468,8 @@ Pod metdata
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -2411,9 +2480,9 @@ Pod metdata
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 
-- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -2429,6 +2498,8 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
 
@@ -2506,6 +2577,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`colored-logs.yaml`](../examples/colored-logs.yaml)
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
 - [`exit-code-output-variable.yaml`](../examples/exit-code-output-variable.yaml)
@@ -2531,6 +2604,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
 - [`status-reference.yaml`](../examples/status-reference.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -2589,6 +2664,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
 
@@ -2680,6 +2757,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
 
 - [`retry-with-steps.yaml`](../examples/workflow-template/retry-with-steps.yaml)
@@ -2735,6 +2814,8 @@ TemplateRef is a reference of template resource.
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -2749,7 +2830,7 @@ TemplateRef is a reference of template resource.
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).|
+|`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).|
 |`name`|`string`|Name is the resource name of the template.|
 |`runtimeResolution`|`boolean`|RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime.|
 |`template`|`string`|Template is the name of referred template in the resource.|
@@ -3124,6 +3205,7 @@ DAGTask represents a node in the graph during DAG execution
 |`arguments`|[`Arguments`](#arguments)|Arguments are the parameter and artifact arguments to the template|
 |`continueOn`|[`ContinueOn`](#continueon)|ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified|
 |`dependencies`|`Array< string >`|Dependencies are name of other targets which this depends on|
+|`depends`|`string`|Depends are name of other targets which this depends on|
 |`name`|`string`|Name is the name of the target|
 |`onExit`|`string`|OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.|
 |`template`|`string`|Name of template to execute|
@@ -3217,7 +3299,11 @@ Sequence expands a workflow step into numeric range
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -3301,6 +3387,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
 
@@ -3490,6 +3578,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -3500,9 +3590,9 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 
-- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -3650,6 +3740,8 @@ PersistentVolumeClaim is a user's request for and claim to a persistent volume
 - [`fun-with-gifs.yaml`](../examples/fun-with-gifs.yaml)
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -3934,6 +4026,8 @@ A single application container that you want to run within a pod.
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
 
@@ -4066,6 +4160,8 @@ ResourceRequirements describes the compute resource requirements.
 - [`testvolume.yaml`](../examples/testvolume.yaml)
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -4132,6 +4228,8 @@ VolumeMount describes a mounting of a Volume within a container.
 - [`volumes-existing.yaml`](../examples/volumes-existing.yaml)
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
+
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
 </details>
 
 ### Fields
@@ -4368,6 +4466,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
@@ -4556,6 +4656,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -4566,9 +4668,9 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 
-- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields
@@ -5330,6 +5432,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
@@ -5518,6 +5622,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`volumes-pvc.yaml`](../examples/volumes-pvc.yaml)
 
+- [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
+
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
 - [`hello-world.yaml`](../examples/workflow-template/hello-world.yaml)
@@ -5528,9 +5634,9 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 
-- [`top-level-tmpl-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/top-level-tmpl-ref-with-entrypoint-arg-passing.yaml)
+- [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
-- [`top-level-tmpl-ref.yaml`](../examples/workflow-template/top-level-tmpl-ref.yaml)
+- [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
 </details>
 
 ### Fields

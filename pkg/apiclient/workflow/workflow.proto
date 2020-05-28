@@ -109,7 +109,7 @@ message WorkflowLintRequest {
 }
 
 
-message WorkflowSubmitRequest{
+message WorkflowSubmitRequest {
     string namespace = 1;
     string resourceKind = 2;
     string resourceName = 3;

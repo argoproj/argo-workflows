@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -71,7 +72,7 @@ func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts) {
 		if err != nil {
 			log.Fatalf("Failed to create workflow template: %v", err)
 		}
-		printCronWorkflowTemplate(created)
+		fmt.Print(getCronWorkflowGet(created))
 	}
 }
 

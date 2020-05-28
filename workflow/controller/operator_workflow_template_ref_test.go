@@ -9,7 +9,7 @@ import (
 	"github.com/argoproj/argo/util"
 )
 
-func TestTopLevelWFTmplRef(t *testing.T) {
+func TestWorkflowTemplateRef(t *testing.T) {
 	wf := unmarshalWF(wfWithTmplRef)
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
@@ -21,7 +21,7 @@ func TestTopLevelWFTmplRef(t *testing.T) {
 	})
 }
 
-func TestTopLevelWFTmplRefWithArgs(t *testing.T) {
+func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 	wf := unmarshalWF(wfWithTmplRef)
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
@@ -41,7 +41,7 @@ func TestTopLevelWFTmplRefWithArgs(t *testing.T) {
 	})
 
 }
-func TestTopLevelWFTmplRefWithWFTArgs(t *testing.T) {
+func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 	wf := unmarshalWF(wfWithTmplRef)
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
@@ -118,15 +118,40 @@ status:
       outputs: {}
 `
 
-func TestTopLevelWFTmplRefGetFromStored(t *testing.T) {
+func TestWorkflowTemplateRefGetFromStored(t *testing.T) {
 	wf := unmarshalWF(wfWithStatus)
 	t.Run("ProcessWFWithStoredWFT", func(t *testing.T) {
 		_, controller := newController(wf)
 		woc := newWorkflowOperationCtx(wf, controller)
-		err := woc.loadWorkflowSpec()
+		_, execArgs, err := woc.loadExecutionSpec()
 		assert.NoError(t, err)
 
-		assert.Equal(t, "test", *woc.submissionParameters[0].Value)
-		assert.Equal(t, "hello", *woc.submissionParameters[1].Value)
+		assert.Equal(t, "test", *execArgs.Parameters[0].Value)
+		assert.Equal(t, "hello", *execArgs.Parameters[1].Value)
+	})
+}
+
+
+const invalidWF =`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: ui-workflow-error
+  namespace: argo
+spec:
+  entrypoint: main
+  workflowTemplateRef:
+    name: not-exists
+`
+
+func TestWorkflowTemplateRefInvalidWF(t *testing.T) {
+	wf := unmarshalWF(invalidWF)
+	t.Run("ProcessWFWithStoredWFT", func(t *testing.T) {
+		_, controller := newController(wf)
+		woc := newWorkflowOperationCtx(wf, controller)
+		_, _, err := woc.loadExecutionSpec()
+		assert.Error(t, err)
+		woc.operate()
+		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
 	})
 }
