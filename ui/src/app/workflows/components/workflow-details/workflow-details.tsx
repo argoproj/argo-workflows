@@ -9,7 +9,9 @@ import {Link, NodePhase, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {services} from '../../../shared/services';
 
-import {WorkflowArtifacts, WorkflowDag, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowSummaryPanel, WorkflowTimeline, WorkflowYamlViewer} from '..';
+import {WorkflowArtifacts, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowPanel, WorkflowSummaryPanel, WorkflowTimeline, WorkflowYamlViewer} from '..';
+import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
+import {Loading} from '../../../shared/components/loading';
 import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Consumer, ContextApis} from '../../../shared/context';
 import {Utils} from '../../../shared/utils';
@@ -128,9 +130,9 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                                     <div>
                                         <div className='workflow-details__graph-container'>
                                             {(this.selectedTabKey === 'workflow' && (
-                                                <WorkflowDag
-                                                    nodes={this.state.workflow.status.nodes}
-                                                    workflowName={this.state.workflow.metadata.name}
+                                                <WorkflowPanel
+                                                    workflowMetadata={this.state.workflow.metadata}
+                                                    workflowStatus={this.state.workflow.status}
                                                     selectedNodeId={this.selectedNodeId}
                                                     nodeClicked={nodeId => this.selectNode(nodeId)}
                                                 />
@@ -360,14 +362,36 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
         this.appContext.router.history.push(`${this.props.match.url}?${params.toString()}`);
     }
 
+    private renderCostOptimisations() {
+        const recommendations: string[] = [];
+        if (!this.state.workflow.spec.activeDeadlineSeconds) {
+            recommendations.push('activeDeadlineSeconds');
+        }
+        if (!this.state.workflow.spec.ttlStrategy) {
+            recommendations.push('ttlStrategy');
+        }
+        if (!this.state.workflow.spec.podGC) {
+            recommendations.push('podGC');
+        }
+        if (recommendations.length === 0) {
+            return;
+        }
+        return (
+            <CostOptimisationNudge name='workflow'>
+                You do not have {recommendations.join('/')} enabled for this workflow. Enabling these will reduce your costs.
+            </CostOptimisationNudge>
+        );
+    }
+
     private renderSummaryTab() {
         if (!this.state.workflow) {
-            return <div>Loading...</div>;
+            return <Loading />;
         }
         return (
             <div className='argo-container'>
                 <div className='workflow-details__content'>
                     <WorkflowSummaryPanel workflow={this.state.workflow} />
+                    {this.renderCostOptimisations()}
                     {this.state.workflow.spec.arguments && this.state.workflow.spec.arguments.parameters && (
                         <React.Fragment>
                             <h6>Parameters</h6>

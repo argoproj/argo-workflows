@@ -909,8 +909,13 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 	} else if ossLocation := woc.artifactRepository.OSS; ossLocation != nil {
 		woc.log.Debugf("Setting OSS artifact repository information")
 		artLocationKey := ossLocation.KeyFormat
+		// NOTE: we use unresolved variables, will get substituted later
+		if artLocationKey == "" {
+			artLocationKey = path.Join(ossLocation.KeyFormat, common.DefaultArchivePattern)
+		}
 		tmpl.ArchiveLocation.OSS = &wfv1.OSSArtifact{
 			OSSBucket: wfv1.OSSBucket{
+				Bucket:          ossLocation.Bucket,
 				Endpoint:        ossLocation.Endpoint,
 				AccessKeySecret: ossLocation.AccessKeySecret,
 				SecretKeySecret: ossLocation.SecretKeySecret,

@@ -1,6 +1,5 @@
 import {Page} from 'argo-ui';
 
-import * as classNames from 'classnames';
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
@@ -9,6 +8,7 @@ import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
+import {PhaseIcon} from '../../../shared/components/phase-icon';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
@@ -208,7 +208,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                     {this.state.workflows.map(w => (
                         <Link className='row argo-table-list__row' key={`${w.metadata.uid}`} to={uiUrl(`archived-workflows/${w.metadata.namespace}/${w.metadata.uid}`)}>
                             <div className='columns small-1'>
-                                <i className={classNames('fa', Utils.statusIconClasses(w.status.phase))} />
+                                <PhaseIcon value={w.status.phase} />
                             </div>
                             <div className='columns small-3'>{w.metadata.name}</div>
                             <div className='columns small-2'>{w.metadata.namespace}</div>

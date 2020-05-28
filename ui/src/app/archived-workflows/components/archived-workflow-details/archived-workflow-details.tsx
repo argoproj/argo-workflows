@@ -10,9 +10,9 @@ import {ResourceEditor} from '../../../shared/components/resource-editor/resourc
 import {services} from '../../../shared/services';
 import {
     WorkflowArtifacts,
-    WorkflowDag,
     WorkflowLogsViewer,
     WorkflowNodeInfo,
+    WorkflowPanel,
     WorkflowParametersPanel,
     WorkflowSummaryPanel,
     WorkflowTimeline,
@@ -159,9 +159,9 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                     <div>
                         <div className='workflow-details__graph-container'>
                             {this.tab === 'workflow' ? (
-                                <WorkflowDag
-                                    nodes={this.state.workflow.status.nodes}
-                                    workflowName={this.state.workflow.metadata.name}
+                                <WorkflowPanel
+                                    workflowMetadata={this.state.workflow.metadata}
+                                    workflowStatus={this.state.workflow.status}
                                     selectedNodeId={this.nodeId}
                                     nodeClicked={nodeId => (this.nodeId = nodeId)}
                                 />

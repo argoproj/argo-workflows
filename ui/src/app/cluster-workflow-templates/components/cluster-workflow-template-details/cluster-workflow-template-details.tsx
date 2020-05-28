@@ -134,14 +134,10 @@ export class ClusterWorkflowTemplateDetails extends BasePage<RouteComponentProps
             },
             spec: {
                 entrypoint: template.spec.templates[0].name,
-                templates: template.spec.templates.map(t => ({
-                    name: t.name,
-                    templateRef: {
-                        name: template.metadata.name,
-                        template: t.name,
-                        clusterScope: true
-                    }
-                }))
+                workflowTemplateRef: {
+                    name: template.metadata.name,
+                    clusterScope: true
+                }
             }
         };
     }
