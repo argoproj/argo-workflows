@@ -31,5 +31,5 @@ func TestUnstructuredHasCompletedLabel(t *testing.T) {
 	assert.False(t, UnstructuredHasCompletedLabel(falseLabel))
 
 	unknownObject := "hello"
-	assert.Panics(t, func() { UnstructuredHasCompletedLabel(unknownObject) })
+	assert.False(t, UnstructuredHasCompletedLabel(unknownObject))
 }
