@@ -309,6 +309,23 @@
       },
       "title": "Backoff is a backoff strategy to use within retryStrategy"
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Condition": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "title": "Type is the type of condition"
+        },
+        "status": {
+          "type": "string",
+          "title": "Status is the status of the condition"
+        },
+        "message": {
+          "type": "string",
+          "title": "Message is the condition message"
+        }
+      }
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ContinueOn": {
       "type": "object",
       "properties": {
@@ -387,6 +404,10 @@
         "onExit": {
           "type": "string",
           "description": "OnExit is a template reference which is invoked at the end of the\ntemplate, irrespective of the success, failure, or error of the\nprimary template."
+        },
+        "depends": {
+          "type": "string",
+          "title": "Depends are name of other targets which this depends on"
         }
       },
       "title": "DAGTask represents a node in the graph during DAG execution"
@@ -1378,7 +1399,7 @@
         "clusterScope": {
           "type": "boolean",
           "format": "boolean",
-          "description": "ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate)."
+          "description": "ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate)."
         }
       },
       "description": "TemplateRef is a reference of template resource."
@@ -1437,23 +1458,6 @@
         }
       },
       "title": "Workflow is the definition of a workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
-    },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowCondition": {
-      "type": "object",
-      "properties": {
-        "type": {
-          "type": "string",
-          "title": "Type is the type of condition"
-        },
-        "status": {
-          "type": "string",
-          "title": "Status is the status of the condition"
-        },
-        "message": {
-          "type": "string",
-          "title": "Message is the condition message"
-        }
-      }
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowList": {
       "type": "object",
@@ -1633,6 +1637,10 @@
         "shutdown": {
           "type": "string",
           "title": "Shutdown will shutdown the workflow according to its ShutdownStrategy"
+        },
+        "workflowTemplateRef": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateRef",
+          "title": "WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution"
         }
       },
       "description": "WorkflowSpec is the specification of a Workflow."
@@ -1692,7 +1700,7 @@
         "conditions": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowCondition"
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Condition"
           },
           "title": "Conditions is a list of conditions the Workflow may have"
         },
@@ -1703,6 +1711,10 @@
             "format": "int64"
           },
           "title": "ResourcesDuration is the total for the workflow"
+        },
+        "storedWorkflowTemplateSpec": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowSpec",
+          "description": "StoredWorkflowSpec stores the WorkflowTemplate spec for future execution."
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"
@@ -1755,6 +1767,21 @@
         }
       },
       "title": "WorkflowStep is a reference to a template to execute in a series of step"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateRef": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name is the resource name of the workflow template."
+        },
+        "clusterScope": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate)."
+        }
+      },
+      "description": "WorkflowTemplateRef is a reference to a WorkflowTemplate resource."
     },
     "k8s.io.api.core.v1.AWSElasticBlockStoreVolumeSource": {
       "type": "object",

@@ -28,7 +28,7 @@ func NewResubmitCommand() *cobra.Command {
 					Memoized:  memoized,
 				})
 				errors.CheckError(err)
-				printWorkflow(created, cliSubmitOpts.output, DefaultStatus)
+				printWorkflow(created, getFlags{output: cliSubmitOpts.output})
 				waitOrWatch([]string{created.Name}, cliSubmitOpts)
 			}
 		},

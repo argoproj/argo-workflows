@@ -1,5 +1,9 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
 
+export const labels = {
+    completed: 'workflows.argoproj.io/completed'
+};
+
 /**
  * Arguments to a template
  */
@@ -765,15 +769,21 @@ export interface WorkflowStatus {
     /**
      * Conditions is a list of WorkflowConditions
      */
-    conditions?: WorkflowCondition[];
+    conditions?: Condition[];
+
+    /**
+     * StoredWorkflowSpec is a Workflow Spec of top level WorkflowTemplate.
+     */
+    storedWorkflowSpec?: WorkflowSpec;
 }
 
-export interface WorkflowCondition {
-    type: WorkflowConditionType;
+export interface Condition {
+    type: ConditionType;
     status: ConditionStatus;
     message: string;
 }
-export type WorkflowConditionType = 'Completed' | 'SpecWarning' | 'MetricsError';
+
+export type ConditionType = 'Completed' | 'SpecWarning' | 'MetricsError' | 'SubmissionError';
 export type ConditionStatus = 'True' | 'False' | 'Unknown;';
 
 /**
@@ -798,6 +808,23 @@ export interface WorkflowList {
  * WorkflowSpec is the specification of a Workflow.
  */
 export interface WorkflowSpec {
+    /**
+     * Optional duration in seconds relative to the workflow start time which the workflow is
+     * allowed to run before the controller terminates the workflow. A value of zero is used to
+     * terminate a Running workflow
+     */
+    activeDeadlineSeconds?: number;
+    /**
+     * TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
+     * Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be
+     * deleted after the time to live expires. If this field is unset,
+     * the controller config map will hold the default values.
+     */
+    ttlStrategy?: {};
+    /**
+     * PodGC describes the strategy to use when to deleting completed pods
+     */
+    podGC?: {};
     /**
      * Affinity sets the scheduling constraints for all pods in the workflow. Can be overridden by an affinity specified in the template
      */
@@ -833,7 +860,7 @@ export interface WorkflowSpec {
     /**
      * Templates is a list of workflow templates used in a workflow
      */
-    templates: Template[];
+    templates?: Template[];
     /**
      * VolumeClaimTemplates is a list of claims that containers are allowed to reference.
      * The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow
@@ -848,6 +875,23 @@ export interface WorkflowSpec {
      * Suspend will suspend the workflow and prevent execution of any future steps in the workflow
      */
     suspend?: boolean;
+
+    /**
+     * workflowTemplateRef is the reference to the workflow template resource to execute.
+     */
+    workflowTemplateRef?: WorkflowTemplateRef;
+}
+
+export interface WorkflowTemplateRef {
+    /**
+     * Name is the resource name of the template.
+     */
+    name: string;
+
+    /**
+     * ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+     */
+    clusterScope?: boolean;
 }
 
 export interface DAGTemplate {
