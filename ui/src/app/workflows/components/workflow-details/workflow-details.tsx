@@ -9,8 +9,9 @@ import {Link, NodePhase, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {services} from '../../../shared/services';
 
-import {WorkflowArtifacts, WorkflowDag, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowSummaryPanel, WorkflowTimeline, WorkflowYamlViewer} from '..';
+import {WorkflowArtifacts, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowPanel, WorkflowSummaryPanel, WorkflowTimeline, WorkflowYamlViewer} from '..';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
+import {Loading} from '../../../shared/components/loading';
 import {hasWarningConditionBadge} from '../../../shared/conditions-panel';
 import {Consumer, ContextApis} from '../../../shared/context';
 import {Utils} from '../../../shared/utils';
@@ -129,9 +130,9 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                                     <div>
                                         <div className='workflow-details__graph-container'>
                                             {(this.selectedTabKey === 'workflow' && (
-                                                <WorkflowDag
-                                                    nodes={this.state.workflow.status.nodes}
-                                                    workflowName={this.state.workflow.metadata.name}
+                                                <WorkflowPanel
+                                                    workflowMetadata={this.state.workflow.metadata}
+                                                    workflowStatus={this.state.workflow.status}
                                                     selectedNodeId={this.selectedNodeId}
                                                     nodeClicked={nodeId => this.selectNode(nodeId)}
                                                 />
@@ -384,7 +385,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
 
     private renderSummaryTab() {
         if (!this.state.workflow) {
-            return <div>Loading...</div>;
+            return <Loading />;
         }
         return (
             <div className='argo-container'>
