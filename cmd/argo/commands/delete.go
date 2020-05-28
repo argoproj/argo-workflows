@@ -19,7 +19,7 @@ import (
 // NewDeleteCommand returns a new instance of an `argo delete` command
 func NewDeleteCommand() *cobra.Command {
 	var (
-		listArgs      listFlags
+		flags         listFlags
 		all           bool
 		allNamespaces bool
 		dryRun        bool
@@ -32,16 +32,15 @@ func NewDeleteCommand() *cobra.Command {
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			var workflows wfv1.Workflows
 			if !allNamespaces {
-				listArgs.namespace = client.Namespace()
+				flags.namespace = client.Namespace()
 			}
-			if len(args) > 0 {
-				for _, name := range args {
-					workflows = append(workflows, wfv1.Workflow{
-						ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: listArgs.namespace},
-					})
-				}
-			} else {
-				listed, err := listWorkflows(ctx, serviceClient, listArgs)
+			for _, name := range args {
+				workflows = append(workflows, wfv1.Workflow{
+					ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: flags.namespace},
+				})
+			}
+			if all || flags.completed || flags.prefix != "" || flags.labels != "" {
+				listed, err := listWorkflows(ctx, serviceClient, flags)
 				errors.CheckError(err)
 				workflows = append(workflows, listed...)
 			}
@@ -64,10 +63,10 @@ func NewDeleteCommand() *cobra.Command {
 
 	command.Flags().BoolVar(&allNamespaces, "all-namespaces", false, "Delete workflows from all namespaces")
 	command.Flags().BoolVar(&all, "all", false, "Delete all workflows")
-	command.Flags().BoolVar(&listArgs.completed, "completed", false, "Delete completed workflows")
-	command.Flags().StringVar(&listArgs.prefix, "prefix", "", "Delete workflows by prefix")
-	command.Flags().StringVar(&listArgs.finisheAfter, "older", "", "Delete completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
-	command.Flags().StringVarP(&listArgs.labels, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones")
+	command.Flags().BoolVar(&flags.completed, "completed", false, "Delete completed workflows")
+	command.Flags().StringVar(&flags.prefix, "prefix", "", "Delete workflows by prefix")
+	command.Flags().StringVar(&flags.finisheAfter, "older", "", "Delete completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
+	command.Flags().StringVarP(&flags.labels, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones")
 	command.Flags().BoolVar(&dryRun, "dry-run", false, "Do not delete the workflow, only print what would happen")
 	return command
 }
