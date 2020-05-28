@@ -130,39 +130,12 @@ func (d *dagContext) getTaskNode(taskName string) *wfv1.NodeStatus {
 	return &node
 }
 
-// Assert all branch finished for failFast:disable function
-func (d *dagContext) assertBranchFinished(targetTaskNames []string) bool {
-	// We should ensure that from the bottom to the top,
-	// all the nodes of this branch have at least one failure.
-	// If successful, we should continue to run down until the leaf node
-	flag := false
-	for _, targetTaskName := range targetTaskNames {
-		taskNode := d.getTaskNode(targetTaskName)
-		if taskNode == nil {
-			taskObject := d.GetTask(targetTaskName)
-			if taskObject != nil {
-				// Make sure all the dependency node have one failed
-				// Recursive check until top root node
-				return d.assertBranchFinished(d.GetTaskDependencies(taskObject.Name))
-			}
-		} else if taskNode.Failed() {
-			taskObject := d.GetTask(targetTaskName)
-			if !taskObject.ContinuesOn(taskNode.Phase) {
-				flag = true
-			}
-		}
-
-		// In failFast situation, if node is successful, it will run to leaf node, above
-		// the function, we have already check the leaf node status
-	}
-	return flag
-}
-
 // assessDAGPhase assesses the overall DAG status
 func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1.NodePhase {
 	// First check all our nodes to see if anything is still running. If so, then the DAG is
 	// considered still running (even if there are failures). Remember any failures and if retry
 	// nodes have been exhausted.
+	failFastEnabled := d.tmpl.DAG.FailFast == nil || *d.tmpl.DAG.FailFast
 	var unsuccessfulPhase wfv1.NodePhase
 	var curr string
 	queue := nodes[d.boundaryID].Children
@@ -192,30 +165,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 		unsuccessfulPhase = node.Phase
 	}
 
-	if unsuccessfulPhase != "" {
-		// If failFast set to false, we should return Running to continue this workflow for other DAG branch
-		if d.tmpl.DAG.FailFast != nil && !*d.tmpl.DAG.FailFast {
-			tmpOverAllFinished := true
-			// If all the nodes have finished, we should mark the failed node to finish overall workflow
-			// So we should check all the targetTasks branch have finished
-			for _, tmpDepName := range targetTasks {
-				tmpDepNode := d.getTaskNode(tmpDepName)
-				if tmpDepNode == nil {
-					// If leaf node is nil, we should check it's parent node and recursive check
-					if !d.assertBranchFinished([]string{tmpDepName}) {
-						tmpOverAllFinished = false
-					}
-				} else if tmpDepNode.Type == wfv1.NodeTypeRetry && d.hasMoreRetries(tmpDepNode) {
-					tmpOverAllFinished = false
-					break
-				}
-
-				//If leaf node has finished, we should mark the error workflow
-			}
-			if !tmpOverAllFinished {
-				return wfv1.NodeRunning
-			}
-		}
+	if failFastEnabled && unsuccessfulPhase != "" {
 		return unsuccessfulPhase
 	}
 
@@ -234,29 +184,6 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 
 	// If we get here, all our dependencies were completed and successful
 	return wfv1.NodeSucceeded
-}
-
-func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
-	if node.Phase == wfv1.NodeSucceeded {
-		return false
-	}
-
-	if len(node.Children) == 0 {
-		return true
-	}
-	// pick the first child to determine it's template type
-	childNode, ok := d.wf.Status.Nodes[node.Children[0]]
-	if !ok {
-		return false
-	}
-	_, tmpl, _, err := d.tmplCtx.ResolveTemplate(&childNode)
-	if err != nil {
-		return false
-	}
-	if tmpl.RetryStrategy != nil && tmpl.RetryStrategy.Limit != nil && int32(len(node.Children)) > *tmpl.RetryStrategy.Limit {
-		return false
-	}
-	return true
 }
 
 func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {

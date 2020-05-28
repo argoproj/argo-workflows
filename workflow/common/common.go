@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"time"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -161,5 +162,5 @@ func UnstructuredHasCompletedLabel(obj interface{}) bool {
 	if wf, ok := obj.(*unstructured.Unstructured); ok {
 		return wf.GetLabels()[LabelKeyCompleted] == "true"
 	}
-	panic("obj passed is not an Unstructured")
+	panic(fmt.Sprintf("obj passed is not an Unstructured. Obj: %+v", obj))
 }
