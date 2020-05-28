@@ -3,7 +3,6 @@ package commands
 import (
 	"context"
 	"os"
-	"reflect"
 	"sort"
 	"strings"
 
@@ -35,10 +34,6 @@ type listFlags struct {
 	noHeaders    bool
 	labels       string
 	fields       string
-}
-
-func (f listFlags) IsZero() bool {
-	return reflect.ValueOf(f).IsZero()
 }
 
 func NewListCommand() *cobra.Command {

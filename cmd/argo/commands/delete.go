@@ -27,31 +27,32 @@ func NewDeleteCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
+			var workflows wfv1.Workflows
 			if !allNamespaces {
 				listArgs.namespace = client.Namespace()
 			}
-			var workflows wfv1.Workflows
-			for _, name := range args {
-				workflows = append(workflows, wfv1.Workflow{
-					ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: listArgs.namespace},
-				})
-			}
-			if all || !listArgs.IsZero() {
+			if len(args) > 0 {
+				for _, name := range args {
+					workflows = append(workflows, wfv1.Workflow{
+						ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: listArgs.namespace},
+					})
+				}
+			} else {
 				listed, err := listWorkflows(ctx, serviceClient, listArgs)
 				errors.CheckError(err)
 				workflows = append(workflows, listed...)
 			}
-			for _, md := range workflows {
+			for _, wf := range workflows {
 				if !dryRun {
-					_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: md.Name, Namespace: md.Namespace})
+					_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: wf.Name, Namespace: wf.Namespace})
 					if err != nil && apierr.IsNotFound(err) {
-						fmt.Printf("Workflow '%s' not found\n", md.Name)
+						fmt.Printf("Workflow '%s' not found\n", wf.Name)
 						continue
 					}
 					errors.CheckError(err)
-					fmt.Printf("Workflow '%s' deleted\n", md.Name)
+					fmt.Printf("Workflow '%s' deleted\n", wf.Name)
 				} else {
-					fmt.Printf("Workflow '%s' deleted (dry-run)\n", md.Name)
+					fmt.Printf("Workflow '%s' deleted (dry-run)\n", wf.Name)
 				}
 			}
 		},
