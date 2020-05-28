@@ -135,8 +135,6 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 	// First check all our nodes to see if anything is still running. If so, then the DAG is
 	// considered still running (even if there are failures). Remember any failures and if retry
 	// nodes have been exhausted.
-	failFastEnabled := d.tmpl.DAG.FailFast == nil || *d.tmpl.DAG.FailFast
-	var unsuccessfulPhase wfv1.NodePhase
 	var curr string
 	queue := nodes[d.boundaryID].Children
 	for len(queue) != 0 {
