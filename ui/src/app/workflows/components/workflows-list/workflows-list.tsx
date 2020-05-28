@@ -18,9 +18,9 @@ import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
 
 import {Ticker} from 'argo-ui/src/index';
-import * as classNames from 'classnames';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
+import {PhaseIcon} from '../../../shared/components/phase-icon';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {formatDuration, wfDuration} from '../../../shared/duration';
 import {Pagination, parseLimit} from '../../../shared/pagination';
@@ -275,7 +275,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                             key={`${w.metadata.namespace}-${w.metadata.name}`}
                             to={uiUrl(`workflows/${w.metadata.namespace}/${w.metadata.name}`)}>
                             <div className='columns small-1'>
-                                <i className={classNames('fa', Utils.statusIconClasses(w.status.phase))} />
+                                <PhaseIcon value={w.status.phase} />
                             </div>
                             <div className='columns small-3'>{w.metadata.name}</div>
                             <div className='columns small-2'>{w.metadata.namespace}</div>
