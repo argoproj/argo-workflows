@@ -3327,8 +3327,6 @@ func TestResolvePlaceholdersInGlobalVariables(t *testing.T) {
 	wf := unmarshalWF(globalVariablePlaceholders)
 	woc := newWoc(*wf)
 	woc.artifactRepository.S3 = new(config.S3ArtifactRepository)
-	err := woc.loadWorkflowSpec()
-	assert.NoError(t, err)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
