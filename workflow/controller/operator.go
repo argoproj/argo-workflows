@@ -2683,8 +2683,8 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 
 	executionParameters := woc.wf.Spec.Arguments
 
+	woc.wfSpec = &woc.wf.Spec
 	if woc.wf.Spec.WorkflowTemplateRef == nil {
-		woc.wfSpec = &woc.wf.Spec
 		tmplRef := &wfv1.WorkflowStep{Template: woc.wfSpec.Entrypoint}
 		return tmplRef, executionParameters, nil
 	}
