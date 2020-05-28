@@ -62,7 +62,7 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
                     actionMenu: {
                         items: [
                             {
-                                title: 'Submit Now',
+                                title: 'Submit',
                                 iconClassName: 'fa fa-plus',
                                 action: () => this.submitCronWorkflow()
                             },
@@ -109,6 +109,12 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
             })
             .then((submitted: Workflow) => {
                 document.location.href = uiUrl(`workflows/${submitted.metadata.namespace}/${submitted.metadata.name}`);
+            })
+            .catch(e => {
+                this.appContext.apis.notifications.show({
+                    content: 'Failed redirect to newly submitted cron workflow ' + e,
+                    type: NotificationType.Error
+                });
             });
     }
 
