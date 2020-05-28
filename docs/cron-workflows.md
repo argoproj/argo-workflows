@@ -93,6 +93,10 @@ Active Workflows:              test-cron-wf-rt4nf
 
 Using `kubectl apply -f` and `kubectl get cwf`
 
+## Backfilling Days
+
+See [cron backfill](cron-backfill.md).
+
 ### GitOps via Argo CD
 
 `CronWorkflow` resources can be managed with GitOps by using [Argo CD](https://github.com/argoproj/argo-cd)
