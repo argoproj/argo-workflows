@@ -131,8 +131,7 @@ func TestWorkflowTemplateRefGetFromStored(t *testing.T) {
 	})
 }
 
-
-const invalidWF =`
+const invalidWF = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
