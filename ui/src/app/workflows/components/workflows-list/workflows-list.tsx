@@ -4,7 +4,7 @@ import {Subscription} from 'rxjs';
 
 import {Autocomplete, Page, SlidingPanel} from 'argo-ui';
 import * as models from '../../../../models';
-import {Workflow} from '../../../../models';
+import {labels, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
@@ -19,6 +19,7 @@ import {Utils} from '../../../shared/utils';
 
 import {Ticker} from 'argo-ui/src/index';
 import * as classNames from 'classnames';
+import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {formatDuration, wfDuration} from '../../../shared/duration';
@@ -225,6 +226,18 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.fetchWorkflows(namespace, selectedPhases, selectedLabels, pagination);
     }
 
+    private countsByCompleted() {
+        const counts = {complete: 0, incomplete: 0};
+        this.state.workflows.forEach(wf => {
+            if (wf.metadata.labels && wf.metadata.labels[labels.completed] === 'true') {
+                counts.complete++;
+            } else {
+                counts.incomplete++;
+            }
+        });
+        return counts;
+    }
+
     private renderWorkflows() {
         if (!this.state.workflows) {
             return <Loading />;
@@ -238,8 +251,15 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             );
         }
 
+        const counts = this.countsByCompleted();
+
         return (
             <>
+                {(counts.complete > 100 || counts.incomplete > 100) && (
+                    <CostOptimisationNudge name='workflow-list'>
+                        You have at least {counts.incomplete} incomplete, and {counts.complete} complete workflows. Reducing these amounts will reduce your costs.
+                    </CostOptimisationNudge>
+                )}
                 <div className='argo-table-list'>
                     <div className='row argo-table-list__head'>
                         <div className='columns small-1' />

@@ -1,5 +1,9 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
 
+export const labels = {
+    completed: 'workflows.argoproj.io/completed'
+};
+
 /**
  * Arguments to a template
  */
@@ -804,6 +808,23 @@ export interface WorkflowList {
  * WorkflowSpec is the specification of a Workflow.
  */
 export interface WorkflowSpec {
+    /**
+     * Optional duration in seconds relative to the workflow start time which the workflow is
+     * allowed to run before the controller terminates the workflow. A value of zero is used to
+     * terminate a Running workflow
+     */
+    activeDeadlineSeconds?: number;
+    /**
+     * TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
+     * Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be
+     * deleted after the time to live expires. If this field is unset,
+     * the controller config map will hold the default values.
+     */
+    ttlStrategy?: {};
+    /**
+     * PodGC describes the strategy to use when to deleting completed pods
+     */
+    podGC?: {};
     /**
      * Affinity sets the scheduling constraints for all pods in the workflow. Can be overridden by an affinity specified in the template
      */
