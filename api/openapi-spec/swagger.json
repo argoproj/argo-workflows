@@ -11,8 +11,7 @@
   "swagger": "2.0",
   "info": {
     "description": "Argo",
-    "title": "Argo",
-    "version": "v2.8.0"
+    "title": "Argo"
   },
   "host": "localhost:2746",
   "paths": {
