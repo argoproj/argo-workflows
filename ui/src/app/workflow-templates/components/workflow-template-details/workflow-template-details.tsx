@@ -135,13 +135,9 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
             },
             spec: {
                 entrypoint: template.spec.templates[0].name,
-                templates: template.spec.templates.map(t => ({
-                    name: t.name,
-                    templateRef: {
-                        name: template.metadata.name,
-                        template: t.name
-                    }
-                }))
+                workflowTemplateRef: {
+                    name: template.metadata.name
+                }
             }
         };
     }

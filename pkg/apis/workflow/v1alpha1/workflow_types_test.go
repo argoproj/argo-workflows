@@ -88,8 +88,8 @@ func TestNodes_GetResourcesDuration(t *testing.T) {
 }
 
 func TestWorkflowConditions_UpsertConditionMessage(t *testing.T) {
-	wfCond := WorkflowConditions{WorkflowCondition{Type: WorkflowConditionCompleted, Message: "Hello"}}
-	wfCond.UpsertConditionMessage(WorkflowCondition{Type: WorkflowConditionCompleted, Message: "world!"})
+	wfCond := Conditions{Condition{Type: ConditionTypeCompleted, Message: "Hello"}}
+	wfCond.UpsertConditionMessage(Condition{Type: ConditionTypeCompleted, Message: "world!"})
 	assert.Equal(t, "Hello, world!", wfCond[0].Message)
 }
 
@@ -98,4 +98,38 @@ func TestShutdownStrategy_ShouldExecute(t *testing.T) {
 	assert.False(t, ShutdownStrategyTerminate.ShouldExecute(false))
 	assert.False(t, ShutdownStrategyStop.ShouldExecute(false))
 	assert.True(t, ShutdownStrategyStop.ShouldExecute(true))
+}
+
+func TestCronWorkflowConditions(t *testing.T) {
+	cwfCond := Conditions{}
+	cond := Condition{
+		Type:    ConditionTypeSubmissionError,
+		Message: "Failed to submit Workflow",
+		Status:  v1.ConditionTrue,
+	}
+
+	assert.Len(t, cwfCond, 0)
+	cwfCond.UpsertCondition(cond)
+	assert.Len(t, cwfCond, 1)
+	cwfCond.RemoveCondition(ConditionTypeSubmissionError)
+	assert.Len(t, cwfCond, 0)
+}
+
+func TestDisplayConditions(t *testing.T) {
+	const fmtStr = "%-20s %v\n"
+	cwfCond := Conditions{}
+
+	assert.Equal(t, "Conditions:          None\n", cwfCond.DisplayString(fmtStr, nil))
+
+	cond := Condition{
+		Type:    ConditionTypeSubmissionError,
+		Message: "Failed to submit Workflow",
+		Status:  v1.ConditionTrue,
+	}
+	cwfCond.UpsertCondition(cond)
+
+	expected := `Conditions:          
+✖ SubmissionError    Failed to submit Workflow
+`
+	assert.Equal(t, expected, cwfCond.DisplayString(fmtStr, map[ConditionType]string{ConditionTypeSubmissionError: "✖"}))
 }
