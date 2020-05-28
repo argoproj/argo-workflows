@@ -45,7 +45,6 @@ func initializeSession() {
 		wfv1.NodeRunning:   ansiFormat("●", FgCyan),
 		wfv1.NodeSucceeded: ansiFormat("✔", FgGreen),
 		wfv1.NodeSkipped:   ansiFormat("○", FgDefault),
-		wfv1.NodeOmitted:   ansiFormat("○", FgDefault),
 		wfv1.NodeFailed:    ansiFormat("✖", FgRed),
 		wfv1.NodeError:     ansiFormat("⚠", FgRed),
 	}

@@ -398,11 +398,15 @@ func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
 // two things. First argument tells if the node is filtered and second argument
 // tells whether the children need special indentation due to filtering
 // Return Values: (is node filtered, do children need special indent)
-func filterNode(node wfv1.NodeStatus) (bool, bool) {
+func filterNode(node wfv1.NodeStatus, getArgs getFlags) (bool, bool) {
 	if node.Type == wfv1.NodeTypeRetry && len(node.Children) == 1 {
 		return true, false
 	} else if node.Type == wfv1.NodeTypeStepGroup {
 		return true, true
+	} else if node.Type == wfv1.NodeTypeSkipped && node.Phase == wfv1.NodeOmitted {
+		return true, false
+	} else if !getArgs.shouldPrint(node) {
+		return true, false
 	}
 	return false, false
 }
@@ -454,9 +458,6 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 
 // Main method to print information of node in get
 func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, getArgs getFlags) {
-	if !getArgs.shouldPrint(node) {
-		return
-	}
 	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], node.DisplayName)
 	if node.IsActiveSuspendNode() {
 		nodeName = fmt.Sprintf("%s %s", nodeTypeIconMap[node.Type], node.DisplayName)
@@ -491,33 +492,75 @@ func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, get
 // renderNodes for each renderNode Type
 // boundaryNode
 func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, getArgs getFlags) {
-	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf))
+	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf), getArgs)
 	if !filtered {
 		printNode(w, nodeInfo.getNodeStatus(wf), nodePrefix, getArgs)
 	}
 
+	// tailFilteredNodes counts how many nodes at the end of the list will be filtered (not shown). This is necessary
+	// so that the last non-filtered node's prefix is correct.
+	//
+	// This is what we are trying to avoid:
+	//● dag-diamond-s7d4p  diamond
+	//├-◷ C		<- This node is the last node shown, but since it has filtered nodes following it its prefix is incorrect (├)
+	//<There are nodes here that are filtered>
+	//
+	// This is the desired behavior
+	//● dag-diamond-s7d4p  diamond
+	//└-◷ C		<- This node is the last node shown, and even though it has filtered nodes following it its prefix is incorrect (└)
+	//<There are nodes here that are filtered>
+	tailFilteredNodes := 0
+	for i := len(nodeInfo.boundaryContained) - 1; i >= 0; i-- {
+		if filter, _ := filterNode(nodeInfo.boundaryContained[i].getNodeStatus(wf), getArgs); filter {
+			tailFilteredNodes++
+		} else {
+			break
+		}
+	}
+
 	for i, nInfo := range nodeInfo.boundaryContained {
 		renderChild(w, wf, nInfo, depth, nodePrefix, childPrefix, filtered, i,
-			len(nodeInfo.boundaryContained)-1, childIndent, getArgs)
+			len(nodeInfo.boundaryContained)-1-tailFilteredNodes, childIndent, getArgs)
 	}
 }
 
 // nonBoundaryParentNode
 func (nodeInfo *nonBoundaryParentNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, getArgs getFlags) {
-	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf))
+	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf), getArgs)
 	if !filtered {
 		printNode(w, nodeInfo.getNodeStatus(wf), nodePrefix, getArgs)
 	}
 
+	// tailFilteredNodes counts how many nodes at the end of the list will be filtered (not shown). This is necessary
+	// so that the last non-filtered node's prefix is correct.
+	//
+	// This is what we are trying to avoid:
+	//● dag-diamond-s7d4p  diamond
+	//├-◷ C		<- This node is the last node shown, but since it has filtered nodes following it its prefix is incorrect (├)
+	//<There are nodes here that are filtered>
+	//
+	// This is the desired behavior
+	//● dag-diamond-s7d4p  diamond
+	//└-◷ C		<- This node is the last node shown, and even though it has filtered nodes following it its prefix is correct (└)
+	//<There are nodes here that are filtered>
+	tailFilteredNodes := 0
+	for i := len(nodeInfo.children) - 1; i >= 0; i-- {
+		if filter, _ := filterNode(nodeInfo.children[i].getNodeStatus(wf), getArgs); filter {
+			tailFilteredNodes++
+		} else {
+			break
+		}
+	}
+
 	for i, nInfo := range nodeInfo.children {
 		renderChild(w, wf, nInfo, depth, nodePrefix, childPrefix, filtered, i,
-			len(nodeInfo.children)-1, childIndent, getArgs)
+			len(nodeInfo.children)-1-tailFilteredNodes, childIndent, getArgs)
 	}
 }
 
 // executionNode
 func (nodeInfo *executionNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, _ int, nodePrefix string, _ string, getArgs getFlags) {
-	filtered, _ := filterNode(nodeInfo.getNodeStatus(wf))
+	filtered, _ := filterNode(nodeInfo.getNodeStatus(wf), getArgs)
 	if !filtered {
 		printNode(w, nodeInfo.getNodeStatus(wf), nodePrefix, getArgs)
 	}

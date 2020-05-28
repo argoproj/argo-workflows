@@ -1,7 +1,7 @@
 import * as classNames from 'classnames';
 import * as React from 'react';
 
-import {NodePhase, NodeStatus} from '../../../../models';
+import {NODE_PHASE, NodePhase, NodeStatus} from '../../../../models';
 import {Loading} from '../../../shared/components/loading';
 import {Utils} from '../../../shared/utils';
 import {CoffmanGrahamSorter} from './graph/coffman-graham-sorter';
@@ -242,6 +242,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
     private prepareGraph() {
         const nodes = Object.values(this.props.nodes)
             .filter(node => !!node)
+            .filter(node => node.phase !== NODE_PHASE.OMITTED)
             .map(node => node.id);
         const edges = Object.values(this.props.nodes)
             .filter(node => !!node)
@@ -249,6 +250,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 (node.children || [])
                     // we can get outbound nodes, but no node
                     .filter(childId => this.props.nodes[childId])
+                    .filter(childId => this.props.nodes[childId].phase !== NODE_PHASE.OMITTED)
                     .map(childId => ({v: node.id, w: childId}))
             )
             .reduce((a, b) => a.concat(b));
