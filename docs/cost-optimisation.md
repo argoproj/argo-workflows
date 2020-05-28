@@ -1,22 +1,57 @@
 # Cost Optimisation
 
-## Limit The Total Number Of Workflows And Pods
+## User Cost Optimisations
+
+Suggestions for users running workflows.
+
+### Set The Workflows Pod Resource Requests 
+
+> Suitable if you are running a workflow with many homogenous pods.
+
+[Resource duration](resource-duration.md) shows the amount of CPU and memory requested by a pod and is indicative of the cost. You can use this to find costly steps within your workflow.
+
+Smaller requests can be set in the pod spec patch's [resource requirements](fields.md#resourcerequirements). 
+
+## Use A Node Selector To Use Cheaper Instances
+
+You can use a [node selector](fields.md#nodeselector) for cheaper instances, e.g. spot instances:
+
+```yaml
+nodeSelector:
+  "node-role.kubernetes.io/argo-spot-worker": "true"
+```
+
+### Consider trying Volume Claim Templates or Volumes instead of Artifacts
+
+> Suitable if you have a workflow that passes a lot of artifacts within itself.
+
+Copying artifacts to and from storage outside of a cluster can be expensive. The correct choice is dependent on your artifact storage provider is vs. what volume they are using. For example, we believe it may be more expensive to allocate and delete new EBS volumes every workflow using the PVC feature, than it is to upload and download some small files to S3.
+
+On the other hand if they are using a NFS volume shared between all their workflows with large artifacts, that might be cheaper than the data transfer and storage costs of S3.
+
+Consider:
+
+* Data transfer costs (upload/download vs. copying)
+* Data storage costs (s3 vs. volume)
+* Requirement for parallel access to data (NFS vs. EBS vs. artifact)
+
+### Limit The Total Number Of Workflows And Pods
 
 > Suitable for all.
 
-A workflow (and for that matter, any Kuberenetes resource) will incure a cost as long as they exists in your cluster. 
+A workflow (and for that matter, any Kubernetes resource) will incur a cost as long as they exist in your cluster. 
 
 The workflow controller memory and CPU needs increase linearly with the number of pods and workflows you are currently running. 
 
 Limit the total number of workflows using:
 
-* Active Deadline - delete running workflow that do not complete in a set time
+* Active Deadline Seconds - terminate running workflows that do not complete in a set time. This will make sure workflows do not run forever.
 * [Workflow TTL Strategy](fields.md#ttlstrategy) - delete completed workflows after a time
 * [Pod GC](fields.md#podgc) - delete completed pods after a time
 
 Example
 
-```
+```yaml
 spec:
   # must complete in 8h (28,800 seconds)
   activeDeadlineSeconds: 28800
@@ -47,102 +82,41 @@ argo list --older 7d
 argo delete --older 7d
 ```
 
-## Set Resources Requests Of Your Argo Instances
+## Operator Cost Optimisations
+
+Suggestions for operators who installed Argo Workflows.
+
+### Set Resources Requests and Limits
 
 > Suitable if you have many instances, e.g. on dozens of clusters or namespaces.
 
-Set a resource quota for the namespace you install Argo in to limit its total usage, e.g.
+Set a resource requests and limits for the `workflow-controller` and `argo-server`, e.g. 
 
-```
-apiVersion: v1
-kind: ResourceQuota
-metadata:
-  name: argo
-spec:
-  hard:
-    pods: "4"
-    limits.cpu: 1000m
-    limits.memory: 1Gi
-    requests.cpu: 500m
-    requests.memory: 128Mi
-```
-
-Use limit range to set default container requests and limits, e.g.
-
-```
-apiVersion: v1
-kind: LimitRange
-metadata:
-  name: argo
-spec:
-  limits:
-    - type: Container
-      defaultRequest:
-        cpu: 100m
-        memory: 64Mi
-      default:
-        cpu: 500m
-        memory: 128Mi
+```yaml
+requests:
+  cpu: 100m
+  memory: 64Mi
+limits:
+  cpu: 500m
+  memory: 128Mi
 ```
 
 This above limit is suitable for the Argo Server, as this is stateless. The Workflow Controller is stateful and will scale to the number of live workflows - so you are likely to need higher values.
 
-## Configure Executor Resource Requests
+### Configure Executor Resource Requests
 
 > Suitable for all - unless you have large artifacts.
 
 Configure [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) to set the `executorResources`
 
-```
-    executorResources:
-      requests:
-        cpu: 100m
-        memory: 64Mi
-      limits:
-        cpu: 500m
-        memory: 512Mi
-```
-
-The correct values depend on the size of artifacts your workflows download. For artifacts >10GB, memory usage maybe large - [#1322](https://github.com/argoproj/argo/issues/1322).
-
-## Set The Workflows Pod Resource Requests 
-
-> Suitable if you are running a workflow with many homogenous pods.
-
-[Resource duration](resource-duration.md) shows the amount of CPU and memory requested by a pod and is indicative of the cost. You can use this to find costly steps within your workflow.
-
-Smaller requests can be set in the pod spec patch's [resource requirements](fields.md#resourcerequirements). 
-
-## Use A Node Selector To Use Cheaper Instances
-
-You can use a [node selector](fields.md#nodeselector) for cheaper instances, e.g. spot instances:
-
-```
-nodeSelector:
-  "node-role.kubernetes.io/argo-spot-worker": "true"
+```yaml
+executorResources:
+  requests:
+    cpu: 100m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
 ```
 
-## Use Volume Claims Templates Instead Of Artifacts
-
-> Suitable if you have a workflow that passes a lot of artifacts within itself.
-
-Copying artifacts to and from storage outside of a cluster can be expensive. You can use a volume claim template to mount a volume that is attached to each step within the cluster
-
-```
-spec:
-  volumeClaimTemplates:
-  - metadata:
-      name: workdir
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: 1Gi
-  templates:
-  - name: main
-    container:
-      # ...
-      volumeMounts:
-      - name: workdir
-        mountPath: /go
-```
+The correct values depend on the size of artifacts your workflows download. For artifacts > 10GB, memory usage maybe large - [#1322](https://github.com/argoproj/argo/issues/1322).
