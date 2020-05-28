@@ -167,7 +167,6 @@ func (iv ItemValue) Format(s fmt.State, verb rune) {
 	fmt.Fprintf(s, iv.String()) //nolint
 }
 
-
 func (i *ItemValue) GetType() Type {
 	return i.Type
 }
