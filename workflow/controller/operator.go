@@ -497,8 +497,6 @@ func (woc *wfOperationCtx) persistUpdates() {
 		woc.controller.hydrator.HydrateWithNodes(woc.wf, nodes)
 	}
 
-	woc.controller.latch.Set(woc.wf.UID, woc.wf.ResourceVersion)
-
 	if !woc.controller.hydrator.IsHydrated(woc.wf) {
 		panic("workflow should be hydrated")
 	}
@@ -535,11 +533,10 @@ func (woc *wfOperationCtx) persistUpdates() {
 func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.WorkflowInterface, err error) {
 	woc.wf = woc.orig.DeepCopy()
 	woc.markWorkflowError(err, true)
-	wf, err := wfClient.Update(woc.wf)
+	_, err = wfClient.Update(woc.wf)
 	if err != nil {
 		woc.log.Warnf("Error updating workflow: %v", err)
 	}
-	woc.controller.latch.Set(wf.UID, wf.ResourceVersion)
 }
 
 // reapplyUpdate GETs the latest version of the workflow, re-applies the updates and

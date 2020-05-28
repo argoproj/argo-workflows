@@ -75,7 +75,6 @@ type WorkflowController struct {
 	completedPods         chan string
 	gcPods                chan string // pods to be deleted depend on GC strategy
 	throttler             Throttler
-	latch                 *latch
 	session               sqlbuilder.Database
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
@@ -113,7 +112,6 @@ func NewWorkflowController(
 		containerRuntimeExecutor:   containerRuntimeExecutor,
 		wfQueue:                    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:                   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		latch:                      NewLatch(),
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
@@ -376,11 +374,6 @@ func (wfc *WorkflowController) processNextItem() bool {
 	}
 	defer wfc.wfQueue.Done(key)
 
-	if key, ok := wfc.throttler.Next(key); !ok {
-		log.Warnf("Workflow %s processing has been postponed due to max parallelism limit", key)
-		return true
-	}
-
 	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key.(string))
 	if err != nil {
 		log.Errorf("Failed to get workflow '%s' from informer index: %+v", key, err)
@@ -399,8 +392,8 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	if !wfc.latch.Pass(un.GetUID(), un.GetResourceVersion()) {
-		log.Warnf("Key '%s' is stale", key)
+	if key, ok = wfc.throttler.Next(key); !ok {
+		log.Warnf("Workflow %s processing has been postponed due to max parallelism limit", key)
 		return true
 	}
 
@@ -566,8 +559,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 				AddFunc: func(obj interface{}) {
 					key, err := cache.MetaNamespaceKeyFunc(obj)
 					if err == nil {
-						wf  := obj.(*unstructured.Unstructured)
-						wfc.latch.Set(wf.GetUID(), wf.GetResourceVersion())
 						wfc.wfQueue.Add(key)
 						priority, creation := getWfPriority(obj)
 						wfc.throttler.Add(key, priority, creation)
@@ -586,8 +577,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 					}
 				},
 				DeleteFunc: func(obj interface{}) {
-					wf  := obj.(*unstructured.Unstructured)
-					wfc.latch.Delete(wf.GetUID())
 					// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 					// key function.
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
