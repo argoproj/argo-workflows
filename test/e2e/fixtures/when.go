@@ -13,29 +13,28 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 
-	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/util"
-	"github.com/argoproj/argo/workflow/packer"
+	"github.com/argoproj/argo/workflow/hydrator"
 )
 
 type When struct {
-	t                     *testing.T
-	wf                    *wfv1.Workflow
-	wfTemplates           []*wfv1.WorkflowTemplate
-	cwfTemplates          []*wfv1.ClusterWorkflowTemplate
-	cronWf                *wfv1.CronWorkflow
-	client                v1alpha1.WorkflowInterface
-	wfTemplateClient      v1alpha1.WorkflowTemplateInterface
-	cwfTemplateClient     v1alpha1.ClusterWorkflowTemplateInterface
-	cronClient            v1alpha1.CronWorkflowInterface
-	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
-	workflowName          string
-	wfTemplateNames       []string
-	cronWorkflowName      string
-	kubeClient            kubernetes.Interface
-	resourceQuota         *corev1.ResourceQuota
+	t                 *testing.T
+	wf                *wfv1.Workflow
+	wfTemplates       []*wfv1.WorkflowTemplate
+	cwfTemplates      []*wfv1.ClusterWorkflowTemplate
+	cronWf            *wfv1.CronWorkflow
+	client            v1alpha1.WorkflowInterface
+	wfTemplateClient  v1alpha1.WorkflowTemplateInterface
+	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
+	cronClient        v1alpha1.CronWorkflowInterface
+	hydrator          hydrator.Interface
+	workflowName      string
+	wfTemplateNames   []string
+	cronWorkflowName  string
+	kubeClient        kubernetes.Interface
+	resourceQuota     *corev1.ResourceQuota
 }
 
 func (w *When) SubmitWorkflow() *When {
@@ -107,6 +106,7 @@ func (w *When) WaitForWorkflowCondition(test func(wf *wfv1.Workflow) bool, condi
 }
 
 func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow) bool, condition string, timeout time.Duration) *When {
+	start := time.Now()
 	logCtx := log.WithFields(log.Fields{"workflow": workflowName, "condition": condition, "timeout": timeout})
 	logCtx.Info("Waiting for condition")
 	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", workflowName)).String()}
@@ -128,7 +128,7 @@ func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow)
 				logCtx.WithFields(log.Fields{"type": event.Type, "phase": wf.Status.Phase, "message": wf.Status.Message}).Info("...")
 				w.hydrateWorkflow(wf)
 				if test(wf) {
-					logCtx.Infof("Condition met")
+					logCtx.Infof("Condition met after %v", time.Since(start).Truncate(time.Second))
 					return w
 				}
 			} else {
@@ -141,16 +141,9 @@ func (w *When) waitForWorkflow(workflowName string, test func(wf *wfv1.Workflow)
 }
 
 func (w *When) hydrateWorkflow(wf *wfv1.Workflow) {
-	err := packer.DecompressWorkflow(wf)
+	err := w.hydrator.Hydrate(wf)
 	if err != nil {
 		w.t.Fatal(err)
-	}
-	if wf.Status.IsOffloadNodeStatus() && w.offloadNodeStatusRepo.IsEnabled() {
-		offloadedNodes, err := w.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-		if err != nil {
-			w.t.Fatal(err)
-		}
-		wf.Status.Nodes = offloadedNodes
 	}
 }
 func (w *When) WaitForWorkflowToStart(timeout time.Duration) *When {
@@ -217,30 +210,30 @@ func (w *When) DeleteQuota() *When {
 
 func (w *When) Then() *Then {
 	return &Then{
-		t:                     w.t,
-		workflowName:          w.workflowName,
-		wfTemplateNames:       w.wfTemplateNames,
-		cronWorkflowName:      w.cronWorkflowName,
-		client:                w.client,
-		cronClient:            w.cronClient,
-		offloadNodeStatusRepo: w.offloadNodeStatusRepo,
-		kubeClient:            w.kubeClient,
+		t:                w.t,
+		workflowName:     w.workflowName,
+		wfTemplateNames:  w.wfTemplateNames,
+		cronWorkflowName: w.cronWorkflowName,
+		client:           w.client,
+		cronClient:       w.cronClient,
+		hydrator:         w.hydrator,
+		kubeClient:       w.kubeClient,
 	}
 }
 
 func (w *When) Given() *Given {
 	return &Given{
-		t:                     w.t,
-		client:                w.client,
-		wfTemplateClient:      w.wfTemplateClient,
-		cwfTemplateClient:     w.cwfTemplateClient,
-		cronClient:            w.cronClient,
-		offloadNodeStatusRepo: w.offloadNodeStatusRepo,
-		wf:                    w.wf,
-		wfTemplates:           w.wfTemplates,
-		cwfTemplates:          w.cwfTemplates,
-		cronWf:                w.cronWf,
-		workflowName:          w.workflowName,
-		kubeClient:            w.kubeClient,
+		t:                 w.t,
+		client:            w.client,
+		wfTemplateClient:  w.wfTemplateClient,
+		cwfTemplateClient: w.cwfTemplateClient,
+		cronClient:        w.cronClient,
+		hydrator:          w.hydrator,
+		wf:                w.wf,
+		wfTemplates:       w.wfTemplates,
+		cwfTemplates:      w.cwfTemplates,
+		cronWf:            w.cronWf,
+		workflowName:      w.workflowName,
+		kubeClient:        w.kubeClient,
 	}
 }

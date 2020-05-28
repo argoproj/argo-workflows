@@ -21,6 +21,18 @@ type FunctionalSuite struct {
 	fixtures.E2ESuite
 }
 
+func (s *FunctionalSuite) TestArchiveStrategies() {
+	s.Given().
+		Workflow(`@testdata/archive-strategies.yaml`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
 func (s *FunctionalSuite) TestContinueOnFail() {
 	s.Given().
 		Workflow(`
@@ -79,8 +91,6 @@ spec:
 }
 
 func (s *FunctionalSuite) TestContinueOnFailDag() {
-	// https://github.com/argoproj/argo/issues/2624
-	s.T().SkipNow()
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
@@ -137,7 +147,7 @@ spec:
 		WaitForWorkflow(30 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 			assert.Len(t, status.Nodes, 6)
 
 			bStatus := status.Nodes.FindByDisplayName("B")
@@ -239,10 +249,11 @@ func (s *FunctionalSuite) TestLoopEmptyParam() {
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-			assert.Len(t, status.Nodes, 5)
-			nodeStatus := status.Nodes.FindByDisplayName("sleep")
-			assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
-			assert.Equal(t, "Skipped, empty params", nodeStatus.Message)
+			if assert.Len(t, status.Nodes, 5) {
+				nodeStatus := status.Nodes.FindByDisplayName("sleep")
+				assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
+				assert.Equal(t, "Skipped, empty params", nodeStatus.Message)
+			}
 		})
 }
 
@@ -404,7 +415,7 @@ func (s *FunctionalSuite) TestStopBehavior() {
 			assert.NoError(t, err)
 			assert.Contains(t, output, "workflow stop-terminate stopped")
 		}).
-		WaitForWorkflow(30 * time.Second).
+		WaitForWorkflow(45 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeFailed, status.Phase)
@@ -437,6 +448,39 @@ func (s *FunctionalSuite) TestTerminateBehavior() {
 			assert.Nil(t, nodeStatus)
 			nodeStatus = status.Nodes.FindByDisplayName("stop-terminate.onExit")
 			assert.Nil(t, nodeStatus)
+		})
+}
+
+func (s *FunctionalSuite) TestDAGDepends() {
+	s.Given().
+		Workflow("@functional/dag-depends.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			nodeStatus := status.Nodes.FindByDisplayName("A")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			nodeStatus = status.Nodes.FindByDisplayName("B")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			nodeStatus = status.Nodes.FindByDisplayName("C")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
+			nodeStatus = status.Nodes.FindByDisplayName("should-execute-1")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			nodeStatus = status.Nodes.FindByDisplayName("should-execute-2")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
+			nodeStatus = status.Nodes.FindByDisplayName("should-not-execute")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
+			nodeStatus = status.Nodes.FindByDisplayName("should-execute-3")
+			assert.NotNil(t, nodeStatus)
+			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
 		})
 }
 
@@ -492,6 +536,30 @@ spec:
 				}
 				return false
 			}))
+		})
+}
+
+func (s *FunctionalSuite) TestSameInputOutputPathOptionalArtifact() {
+	s.Given().
+		Workflow("@testdata/same-input-output-path-optional.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+		})
+}
+
+func (s *FunctionalSuite) TestOptionalInputArtifacts() {
+	s.Given().
+		Workflow("@testdata/input-artifacts.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30 * time.Second).
+		Then().
+		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 		})
 }
 

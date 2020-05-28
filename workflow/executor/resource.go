@@ -38,6 +38,9 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, fla
 	if action == "delete" {
 		return "", "", nil
 	}
+	if action == "get" && len(out) == 0 {
+		return "", "", nil
+	}
 	obj := unstructured.Unstructured{}
 	err = json.Unmarshal(out, &obj)
 	if err != nil {
@@ -305,6 +308,14 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 	log.Infof("Saving resource output parameters")
 	for i, param := range we.Template.Outputs.Parameters {
 		if param.ValueFrom == nil {
+			continue
+		}
+		if resourceNamespace == "" && resourceName == "" {
+			output := ""
+			if param.ValueFrom.Default != nil {
+				output = string([]byte(*param.ValueFrom.Default))
+			}
+			we.Template.Outputs.Parameters[i].Value = &output
 			continue
 		}
 		var cmd *exec.Cmd

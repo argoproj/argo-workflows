@@ -35,14 +35,7 @@ VERSION := latest
 endif
 
 ifneq ($(findstring release,$(GIT_BRANCH)),)
-# this will be something like "v2.5" or "v3.7"
-MAJOR_MINOR := v$(word 2,$(subst -, ,$(GIT_BRANCH)))
-# if GIT_TAG is on HEAD, then this will be the same
-GIT_LATEST_TAG := $(shell git tag --merged | tail -n1)
-# only use the latest tag if it matches the correct major/minor version
-ifneq ($(findstring $(MAJOR_MINOR),$(GIT_LATEST_TAG)),)
-VERSION := $(GIT_LATEST_TAG)
-endif
+VERSION := $(shell git tag --points-at=HEAD|grep ^v|head -n1)
 endif
 
 # MANIFESTS_VERSION is the version to be used for files in manifests and should always be latests unles we are releasing
@@ -77,11 +70,20 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.$(VERSION)
 # perform static compilation
 STATIC_BUILD          ?= true
 CI                    ?= false
-DB                    ?= postgres
-K3D                   := $(shell if [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
-# which components to start, useful if you want to disable them to debug
-COMPONENTS            := controller,argo-server
+DB                    ?= no-db
+ifeq ($(CI),false)
+AUTH_MODE             := hybrid
+else
+AUTH_MODE             := client
+endif
+K3D                   := $(shell if [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 LOG_LEVEL             := debug
+
+ifeq ($(DB),no-db)
+ALWAYS_OFFLOAD_NODE_STATUS := false
+else
+ALWAYS_OFFLOAD_NODE_STATUS := true
+endif
 
 ifeq ($(CI),true)
 TEST_OPTS := -coverprofile=coverage.out
@@ -127,10 +129,14 @@ endef
 define docker_build
 	# If we're making a dev build, we build this locally (this will be faster due to existing Go build caches).
 	if [ $(DEV_IMAGE) = true ]; then $(MAKE) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) && mv dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH) $(2); fi
-	docker build $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
+	docker build --progress plain $(DOCKER_BUILD_OPTS) -t $(IMAGE_NAMESPACE)/$(1):$(VERSION) --target $(1) -f $(DOCKERFILE) --build-arg IMAGE_OS=$(OUTPUT_IMAGE_OS) --build-arg IMAGE_ARCH=$(OUTPUT_IMAGE_ARCH) .
 	if [ $(DEV_IMAGE) = true ]; then mv $(2) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH); fi
 	if [ $(K3D) = true ]; then k3d import-images $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
 	touch $(3)
+endef
+define docker_pull
+	docker pull $(1)
+	if [ $(K3D) = true ]; then k3d import-images $(1); fi
 endef
 
 .PHONY: build
@@ -152,7 +158,7 @@ ui/dist/node_modules.marker: ui/package.json ui/yarn.lock
 	# Get UI dependencies
 	@mkdir -p ui/node_modules
 ifeq ($(CI),false)
-	yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
+	yarn --cwd ui install
 endif
 	@mkdir -p ui/dist
 	touch ui/dist/node_modules.marker
@@ -167,8 +173,9 @@ else
 endif
 
 $(GOPATH)/bin/staticfiles:
-	# Install the "staticfiles" tool
+	$(call backup_go_mod)
 	go get bou.ke/staticfiles
+	$(call restore_go_mod)
 
 server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
@@ -316,32 +323,16 @@ $(VERSION_FILE):
 	@mkdir -p dist
 	touch $(VERSION_FILE)
 
-dist/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
-	kustomize build --load_restrictor=none test/e2e/manifests/postgres | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/postgres.yaml
-
-dist/no-db.yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
-	# We additionally disable ALWAYS_OFFLOAD_NODE_STATUS
-	kustomize build --load_restrictor=none test/e2e/manifests/no-db | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | sed 's/"true"/"false"/' > dist/no-db.yaml
-
-dist/mysql.yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
-	kustomize build --load_restrictor=none test/e2e/manifests/mysql | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/mysql.yaml
+dist/$(DB).yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
+	kustomize build --load_restrictor=none test/e2e/manifests/$(DB) | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(DB).yaml
 
 .PHONY: install
-install: dist/postgres.yaml dist/mysql.yaml dist/no-db.yaml
+install: dist/$(DB).yaml
 ifeq ($(K3D),true)
 	k3d start
 endif
-	# Install quick-start
 	kubectl apply -f test/e2e/manifests/argo-ns.yaml
-ifeq ($(DB),postgres)
-	kubectl -n argo apply -f dist/postgres.yaml
-else
-ifeq ($(DB),mysql)
-	kubectl -n argo apply -f dist/mysql.yaml
-else
-	kubectl -n argo apply -f dist/no-db.yaml
-endif
-endif
+	kubectl -n argo apply -l app.kubernetes.io/part-of=argo --prune --force -f dist/$(DB).yaml
 
 .PHONY: pull-build-images
 pull-build-images:
@@ -360,16 +351,19 @@ test/e2e/images/argosay/v2/argosay: $(shell find test/e2e/images/argosay/v2/main
 
 .PHONY: test-images
 test-images:
-	docker pull argoproj/argosay:v1
-	docker pull argoproj/argosay:v2
-	docker pull python:alpine3.6
+	$(call docker_pull,argoproj/argosay:v1)
+	$(call docker_pull,argoproj/argosay:v2)
+	$(call docker_pull,python:alpine3.6)
 
 .PHONY: stop
 stop:
 	killall argo workflow-controller pf.sh kubectl || true
 
-.PHONY: start-aux
-start-aux:
+$(GOPATH)/bin/goreman:
+	go get github.com/mattn/goreman
+
+.PHONY: start
+start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
 	kubectl config set-context --current --namespace=argo
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
 	./hack/port-forward.sh
@@ -377,26 +371,15 @@ start-aux:
 	grep '127.0.0.1 *minio' /etc/hosts
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
-ifneq ($(findstring controller,$(COMPONENTS)),)
-	ALWAYS_OFFLOAD_NODE_STATUS=true OFFLOAD_NODE_STATUS_TTL=30s WORKFLOW_GC_PERIOD=30s UPPERIO_DB_DEBUG=1 ARCHIVED_WORKFLOW_GC_PERIOD=30s ./dist/workflow-controller --executor-image argoproj/argoexec:$(VERSION) --namespaced --loglevel $(LOG_LEVEL) &
-endif
-ifneq ($(findstring argo-server,$(COMPONENTS)),)
-	UPPERIO_DB_DEBUG=1 ./dist/argo --loglevel $(LOG_LEVEL) server --namespaced --auth-mode client --secure &
-endif
+	env ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) goreman -set-ports=false -logtime=false start
 
-.PHONY: start
-start: status stop install controller cli executor-image start-aux wait env
 
 .PHONY: wait
 wait:
-ifneq ($(findstring controller,$(COMPONENTS)),)
 	# Wait for workflow controller
 	until lsof -i :9090 > /dev/null ; do sleep 10s ; done
-endif
-ifneq ($(findstring argo-server,$(COMPONENTS)),)
 	# Wait for Argo Server
 	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
-endif
 
 define print_env
 	export ARGO_SERVER=localhost:2746
@@ -471,7 +454,7 @@ $(GOPATH)/bin/swagger:
 .PHONY: swagger
 swagger: api/openapi-spec/swagger.json
 
-pkg/apis/workflow/v1alpha1/openapi_generated.go:
+pkg/apis/workflow/v1alpha1/openapi_generated.go: $(shell find pkg/apis/workflow/v1alpha1 -type f -not -name openapi_generated.go)
 	$(call backup_go_mod)
 	go install k8s.io/kube-openapi/cmd/openapi-gen
 	openapi-gen \
@@ -481,20 +464,29 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go:
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
 	$(call restore_go_mod)
 
-pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
-	go run ./hack secondaryswaggergen
-
-dist/swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
-	swagger mixin -c 680 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > dist/swagger.json
-
 dist/kubernetes.swagger.json:
 	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.15/api/openapi-spec/swagger.json
 
-dist/kubeified.swagger.json: dist/swagger.json dist/kubernetes.swagger.json hack/kubeifyswagger.go
-	go run ./hack kubeifyswagger dist/swagger.json dist/kubeified.swagger.json
+pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
+	go run ./hack secondaryswaggergen
+
+# we always ignore the conflicts, so lets automated figuring out how many there will be and just use that
+dist/swagger-conflicts: $(GOPATH)/bin/swagger $(SWAGGER_FILES)
+	swagger mixin $(SWAGGER_FILES) 2>&1 | grep -c skipping > dist/swagger-conflicts || true
+
+dist/mixed.swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) dist/swagger-conflicts
+	swagger mixin -c $(shell cat dist/swagger-conflicts) $(SWAGGER_FILES) > dist/mixed.swagger.json.tmp
+	mv dist/mixed.swagger.json.tmp dist/mixed.swagger.json
+
+dist/swaggifed.swagger.json: dist/mixed.swagger.json $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
+	cat dist/mixed.swagger.json | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > dist/swaggifed.swagger.json
+
+dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json hack/kubeifyswagger.go
+	go run ./hack kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
 
 api/openapi-spec/swagger.json: dist/kubeified.swagger.json
-	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json > api/openapi-spec/swagger.json
+	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json > dist/swagger.json
+	mv dist/swagger.json api/openapi-spec/swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 

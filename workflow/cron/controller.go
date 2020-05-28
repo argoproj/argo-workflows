@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	cron "github.com/robfig/cron/v3"
+	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -238,7 +238,7 @@ func (cc *Controller) processNextWorkflowItem() bool {
 	}
 
 	// If the workflow is completed or was deleted, remove it from Active Workflows
-	if wf.Status.Completed() || !wfExists {
+	if wf.Status.Fulfilled() || !wfExists {
 		log.Warnf("Workflow '%s' from CronWorkflow '%s' completed", wf.Name, woc.cronWf.Name)
 		woc.removeActiveWf(wf)
 	}

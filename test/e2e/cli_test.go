@@ -27,6 +27,13 @@ func (s *CLISuite) BeforeTest(suiteName, testName string) {
 	_ = os.Unsetenv("ARGO_TOKEN")
 }
 
+func (s *CLISuite) testNeedsOffloading() {
+	skip := s.Persistence.IsEnabled() && os.Getenv("ARGO_SERVER") == ""
+	if skip {
+		s.T().Skip("test needs offloading, but not Argo Server available")
+	}
+}
+
 func (s *CLISuite) TestCompletion() {
 	s.Given().RunCli([]string{"completion", "bash"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
@@ -214,6 +221,7 @@ func (s *CLISuite) TestRoot() {
 		})
 	})
 	s.Run("List", func() {
+		s.testNeedsOffloading()
 		for i := 0; i < 3; i++ {
 			s.Given().
 				Workflow("@smoke/basic-generate-name.yaml").
@@ -232,6 +240,7 @@ func (s *CLISuite) TestRoot() {
 		})
 	})
 	s.Run("Get", func() {
+		s.testNeedsOffloading()
 		s.Given().RunCli([]string{"get", "basic"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
@@ -245,7 +254,7 @@ func (s *CLISuite) TestRoot() {
 
 	var createdWorkflowName string
 	s.Run("From", func() {
-		s.Given().CronWorkflow("@testdata/basic.yaml").
+		s.Given().CronWorkflow("@cron/basic.yaml").
 			When().
 			CreateCronWorkflow().
 			RunCli([]string{"submit", "--from", "cronwf/test-cron-wf-basic", "-l", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
@@ -267,11 +276,7 @@ func (s *CLISuite) TestRoot() {
 }
 
 func (s *CLISuite) TestWorkflowSuspendResume() {
-	if s.Persistence.IsEnabled() {
-		// Persistence is enabled for this test, but it is not enabled for the Argo Server in this test suite.
-		// When this is the case, this behavior is tested in cli_with_server_test.go
-		s.T().SkipNow()
-	}
+	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/sleep-3s.yaml").
 		When().
@@ -294,15 +299,8 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 		})
 }
 
-func (s *CLISuite) TestNodeSuspendResumeNoPersistence() {
-	if s.Persistence.IsEnabled() {
-		// Persistence is enabled for this test, but it is not enabled for the Argo Server in this test suite.
-		s.T().SkipNow()
-	}
-	NodeSuspendResumeCommon(s.E2ESuite)
-}
-
-func NodeSuspendResumeCommon(s fixtures.E2ESuite) {
+func (s *CLISuite) TestNodeSuspendResume() {
+	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/node-suspend.yaml").
 		When().
@@ -451,15 +449,54 @@ func (s *CLISuite) TestWorkflowLint() {
 				}
 			})
 	})
+
+	s.Run("Different Kind", func() {
+		s.Given().
+			RunCli([]string{"lint", "testdata/workflow-template-nested-template.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.Error(t, err) {
+					assert.Contains(t, output, "WorkflowTemplate 'workflow-template-nested-template' is not of kind Workflow. Ignoring...")
+					assert.Contains(t, output, "Error in file testdata/workflow-template-nested-template.yaml: there was nothing to validate")
+				}
+			})
+	})
+	s.Run("Valid", func() {
+		s.Given().
+			RunCli([]string{"lint", "testdata/exit-1.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.NoError(t, err) {
+					assert.Contains(t, output, "exit-1.yaml is valid")
+				}
+			})
+	})
+	s.Run("Invalid", func() {
+		s.Given().
+			RunCli([]string{"lint", "expectedfailures/empty-parameter-dag.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.Error(t, err) {
+					assert.Contains(t, output, "Error in file expectedfailures/empty-parameter-dag.yaml:")
+				}
+			})
+	})
+	// Not all files in this directory are Workflows, expect failure
+	s.Run("NotAllWorkflows", func() {
+		s.Given().
+			RunCli([]string{"lint", "testdata"}, func(t *testing.T, output string, err error) {
+				if assert.Error(t, err) {
+					assert.Contains(t, output, "WorkflowTemplate 'workflow-template-nested-template' is not of kind Workflow. Ignoring...")
+					assert.Contains(t, output, "Error in file testdata/workflow-template-nested-template.yaml: there was nothing to validate")
+				}
+			})
+	})
+
+	// All files in this directory are Workflows, expect success
+	s.Run("AllWorkflows", func() {
+		s.Given().
+			RunCli([]string{"lint", "stress"}, func(t *testing.T, output string, err error) {
+				assert.NoError(t, err)
+			})
+	})
 }
 
-func (s *CLISuite) TestWorkflowRetryNoPersistence() {
-	if s.Persistence.IsEnabled() {
-		// Persistence is enabled for this test, but it is not enabled for the Argo Server in this test suite.
-		// When this is the case, this behavior is tested in cli_with_server_test.go
-		s.T().SkipNow()
-	}
-
+func (s *CLISuite) TestWorkflowRetry() {
+	s.testNeedsOffloading()
 	var retryTime corev1.Time
 
 	s.Given().
@@ -512,6 +549,7 @@ func (s *CLISuite) TestWorkflowTerminate() {
 }
 
 func (s *CLISuite) TestWorkflowWait() {
+	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
@@ -525,6 +563,7 @@ func (s *CLISuite) TestWorkflowWait() {
 }
 
 func (s *CLISuite) TestWorkflowWatch() {
+	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
@@ -576,6 +615,7 @@ func (s *CLISuite) TestTemplate() {
 		})
 	})
 	s.Run("Submittable-Template", func() {
+		s.testNeedsOffloading()
 		s.Given().RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template", "-l", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
@@ -632,15 +672,43 @@ func (s *CLISuite) TestWorkflowResubmit() {
 
 func (s *CLISuite) TestCron() {
 	s.Run("Lint", func() {
-		s.Given().RunCli([]string{"cron", "lint", "testdata/basic.yaml"}, func(t *testing.T, output string, err error) {
+		s.Given().RunCli([]string{"cron", "lint", "cron/basic.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
-				assert.Contains(t, output, "testdata/basic.yaml is valid")
+				assert.Contains(t, output, "cron/basic.yaml is valid")
 				assert.Contains(t, output, "Cron workflow manifests validated")
 			}
 		})
 	})
+	s.Run("Different Kind", func() {
+		s.Given().
+			RunCli([]string{"cron", "lint", "testdata/workflow-template-nested-template.yaml"}, func(t *testing.T, output string, err error) {
+				if assert.Error(t, err) {
+					assert.Contains(t, output, "WorkflowTemplate 'workflow-template-nested-template' is not of kind CronWorkflow. Ignoring...")
+					assert.Contains(t, output, "Error in file testdata/workflow-template-nested-template.yaml: there was nothing to validate")
+				}
+			})
+	})
+	// Not all files in this directory are CronWorkflows, expect failure
+	s.Run("NotAllWorkflows", func() {
+		s.Given().
+			RunCli([]string{"cron", "lint", "testdata"}, func(t *testing.T, output string, err error) {
+				if assert.Error(t, err) {
+					assert.Contains(t, output, "WorkflowTemplate 'workflow-template-nested-template' is not of kind CronWorkflow. Ignoring...")
+					assert.Contains(t, output, "Error in file testdata/workflow-template-nested-template.yaml: there was nothing to validate")
+				}
+			})
+	})
+
+	// All files in this directory are CronWorkflows, expect success
+	s.Run("AllCron", func() {
+		s.Given().
+			RunCli([]string{"cron", "lint", "cron"}, func(t *testing.T, output string, err error) {
+				assert.NoError(t, err)
+			})
+	})
+
 	s.Run("Create", func() {
-		s.Given().RunCli([]string{"cron", "create", "testdata/basic.yaml"}, func(t *testing.T, output string, err error) {
+		s.Given().RunCli([]string{"cron", "create", "cron/basic.yaml"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
 				assert.Contains(t, output, "Namespace:")
@@ -734,6 +802,44 @@ func (s *CLISuite) TestClusterTemplateCommands() {
 					assert.Contains(t, output, "cluster-workflow-template-whalesay-template")
 				}
 			})
+	})
+}
+
+func (s *CLISuite) TestWorkflowTemplateRefSubmit() {
+	s.Run("CreateWFT", func() {
+		s.Given().RunCli([]string{"template", "create", "smoke/workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
+	})
+	s.Run("CreateWF", func() {
+		s.Given().RunCli([]string{"submit", "testdata/workflow-template-ref.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
+	})
+	s.Run("CreateCWFT", func() {
+		s.Given().RunCli([]string{"cluster-template", "create", "smoke/cluster-workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
+	})
+	s.Run("CreateWFWithCWFTRef", func() {
+		s.Given().RunCli([]string{"submit", "testdata/cluster-workflow-template-ref.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
 	})
 }
 

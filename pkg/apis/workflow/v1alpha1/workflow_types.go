@@ -269,6 +269,9 @@ type WorkflowSpec struct {
 
 	// Shutdown will shutdown the workflow according to its ShutdownStrategy
 	Shutdown ShutdownStrategy `json:"shutdown,omitempty" protobuf:"bytes,33,opt,name=shutdown,casttype=ShutdownStrategy"`
+
+	// WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution
+	WorkflowTemplateRef *WorkflowTemplateRef `json:"workflowTemplateRef,omitempty" protobuf:"bytes,34,opt,name=workflowTemplateRef"`
 }
 
 type ShutdownStrategy string
@@ -697,6 +700,18 @@ type ArtifactLocation struct {
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 }
 
+// HasLocation whether or not an artifact has a location defined
+func (a *ArtifactLocation) HasLocation() bool {
+	return a.S3.HasLocation() ||
+		a.Git.HasLocation() ||
+		a.HTTP.HasLocation() ||
+		a.Artifactory.HasLocation() ||
+		a.Raw.HasLocation() ||
+		a.HDFS.HasLocation() ||
+		a.OSS.HasLocation() ||
+		a.GCS.HasLocation()
+}
+
 type ArtifactRepositoryRef struct {
 	ConfigMap string `json:"configMap,omitempty" protobuf:"bytes,1,opt,name=configMap"`
 	Key       string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
@@ -817,8 +832,24 @@ type TemplateRef struct {
 	// RuntimeResolution skips validation at creation time.
 	// By enabling this option, you can create the referred workflow template before the actual runtime.
 	RuntimeResolution bool `json:"runtimeResolution,omitempty" protobuf:"varint,3,opt,name=runtimeResolution"`
-	// ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate).
+	// ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
+}
+
+// WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
+type WorkflowTemplateRef struct {
+	// Name is the resource name of the workflow template.
+	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+	// ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).
+	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,2,opt,name=clusterScope"`
+}
+
+func (ref *WorkflowTemplateRef) ToTemplateRef(entrypoint string) *TemplateRef {
+	return &TemplateRef{
+		Name:         ref.Name,
+		ClusterScope: ref.ClusterScope,
+		Template:     entrypoint,
+	}
 }
 
 type ArgumentsProvider interface {
@@ -911,10 +942,13 @@ type WorkflowStatus struct {
 	Outputs *Outputs `json:"outputs,omitempty" protobuf:"bytes,8,opt,name=outputs"`
 
 	// Conditions is a list of conditions the Workflow may have
-	Conditions WorkflowConditions `json:"conditions,omitempty" protobuf:"bytes,13,rep,name=conditions"`
+	Conditions Conditions `json:"conditions,omitempty" protobuf:"bytes,13,rep,name=conditions"`
 
 	// ResourcesDuration is the total for the workflow
 	ResourcesDuration ResourcesDuration `json:"resourcesDuration,omitempty" protobuf:"bytes,12,opt,name=resourcesDuration"`
+
+	// StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.
+	StoredWorkflowSpec *WorkflowSpec `json:"storedWorkflowTemplateSpec,omitempty" protobuf:"bytes,14,opt,name=storedWorkflowTemplateSpec"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -1011,48 +1045,73 @@ func ResourceQuantityDenominator(r apiv1.ResourceName) *resource.Quantity {
 	return &q
 }
 
-type WorkflowConditions []WorkflowCondition
+type Conditions []Condition
 
-func (wc *WorkflowConditions) UpsertCondition(condition WorkflowCondition) {
-	for index, wfCondition := range *wc {
+func (cs *Conditions) UpsertCondition(condition Condition) {
+	for index, wfCondition := range *cs {
 		if wfCondition.Type == condition.Type {
-			(*wc)[index] = condition
+			(*cs)[index] = condition
 			return
 		}
 	}
-	*wc = append(*wc, condition)
+	*cs = append(*cs, condition)
 }
 
-func (wc *WorkflowConditions) UpsertConditionMessage(condition WorkflowCondition) {
-	for index, wfCondition := range *wc {
+func (cs *Conditions) UpsertConditionMessage(condition Condition) {
+	for index, wfCondition := range *cs {
 		if wfCondition.Type == condition.Type {
-			(*wc)[index].Message += ", " + condition.Message
+			(*cs)[index].Message += ", " + condition.Message
 			return
 		}
 	}
-	*wc = append(*wc, condition)
+	*cs = append(*cs, condition)
 }
 
-func (wc *WorkflowConditions) JoinConditions(conditions *WorkflowConditions) {
+func (cs *Conditions) JoinConditions(conditions *Conditions) {
 	for _, condition := range *conditions {
-		wc.UpsertCondition(condition)
+		cs.UpsertCondition(condition)
 	}
 }
 
-type WorkflowConditionType string
+func (cs *Conditions) RemoveCondition(conditionType ConditionType) {
+	for index, wfCondition := range *cs {
+		if wfCondition.Type == conditionType {
+			*cs = append((*cs)[:index], (*cs)[index+1:]...)
+			return
+		}
+	}
+}
+
+func (cs *Conditions) DisplayString(fmtStr string, iconMap map[ConditionType]string) string {
+	if len(*cs) == 0 {
+		return fmt.Sprintf(fmtStr, "Conditions:", "None")
+	}
+	out := fmt.Sprintf(fmtStr, "Conditions:", "")
+	for _, condition := range *cs {
+		conditionMessage := condition.Message
+		if conditionMessage == "" {
+			conditionMessage = string(condition.Status)
+		}
+		conditionPrefix := fmt.Sprintf("%s %s", iconMap[condition.Type], string(condition.Type))
+		out += fmt.Sprintf(fmtStr, conditionPrefix, conditionMessage)
+	}
+	return out
+}
+
+type ConditionType string
 
 const (
-	// WorkflowConditionCompleted is a signifies the workflow has completed
-	WorkflowConditionCompleted WorkflowConditionType = "Completed"
-	// WorkflowConditionSpecWarning is a warning on the current application spec
-	WorkflowConditionSpecWarning WorkflowConditionType = "SpecWarning"
-	// WorkflowConditionMetricsError is an error during metric emission
-	WorkflowConditionMetricsError WorkflowConditionType = "MetricsError"
+	// ConditionTypeCompleted is a signifies the workflow has completed
+	ConditionTypeCompleted ConditionType = "Completed"
+	// ConditionTypeSpecWarning is a warning on the current application spec
+	ConditionTypeSpecWarning ConditionType = "SpecWarning"
+	// ConditionTypeMetricsError is an error during metric emission
+	ConditionTypeMetricsError ConditionType = "MetricsError"
 )
 
-type WorkflowCondition struct {
+type Condition struct {
 	// Type is the type of condition
-	Type WorkflowConditionType `json:"type,omitempty" protobuf:"bytes,1,opt,name=type,casttype=WorkflowConditionType"`
+	Type ConditionType `json:"type,omitempty" protobuf:"bytes,1,opt,name=type,casttype=ConditionType"`
 
 	// Status is the status of the condition
 	Status metav1.ConditionStatus `json:"status,omitempty" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/apimachinery/pkg/apis/meta/v1.ConditionStatus"`
@@ -1155,16 +1214,21 @@ func (n Nodes) GetResourcesDuration() ResourcesDuration {
 	return i
 }
 
+// Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped
+func (phase NodePhase) Fulfilled() bool {
+	return phase.Completed() || phase == NodeSkipped
+}
+
+// Completed returns whether or not a phase completed. Notably, a skipped phase is not considered as having completed
 func (phase NodePhase) Completed() bool {
 	return phase == NodeSucceeded ||
 		phase == NodeFailed ||
-		phase == NodeError ||
-		phase == NodeSkipped
+		phase == NodeError
 }
 
-// Completed returns whether or not the workflow has completed execution
-func (ws WorkflowStatus) Completed() bool {
-	return ws.Phase.Completed()
+// Fulfilled returns whether or not the workflow has fulfilled its execution, i.e. it completed execution or was skipped
+func (ws WorkflowStatus) Fulfilled() bool {
+	return ws.Phase.Fulfilled()
 }
 
 // Successful return whether or not the workflow has succeeded
@@ -1185,9 +1249,14 @@ func (ws WorkflowStatus) FinishTime() *metav1.Time {
 	return &ws.FinishedAt
 }
 
-// Completed returns whether or not the node has completed execution
+// Fulfilled returns whether a node is fulfilled, i.e. it finished execution, was skipped, or was dameoned successfully
+func (n NodeStatus) Fulfilled() bool {
+	return n.Phase.Fulfilled() || n.IsDaemoned() && n.Phase != NodePending
+}
+
+// Completed returns whether a node completed. Notably, a skipped node is not considered as having completed
 func (n NodeStatus) Completed() bool {
-	return n.Phase.Completed() || n.IsDaemoned() && n.Phase != NodePending
+	return n.Phase.Completed()
 }
 
 func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
@@ -1227,7 +1296,7 @@ func (n NodeStatus) FinishTime() *metav1.Time {
 // CanRetry returns whether the node should be retried or not.
 func (n NodeStatus) CanRetry() bool {
 	// TODO(shri): Check if there are some 'unretryable' errors.
-	return n.Completed() && !n.Successful()
+	return n.Fulfilled() && !n.Successful()
 }
 
 func (n NodeStatus) GetTemplateScope() (ResourceScope, string) {
@@ -1295,7 +1364,7 @@ type S3Artifact struct {
 }
 
 func (s *S3Artifact) HasLocation() bool {
-	return s != nil && s.Bucket != ""
+	return s != nil && s.Endpoint != "" && s.Bucket != "" && s.Key != ""
 }
 
 // GitArtifact is the location of an git artifact
@@ -1621,6 +1690,9 @@ type DAGTask struct {
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
 	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
+
+	// Depends are name of other targets which this depends on
+	Depends string `json:"depends,omitempty" protobuf:"bytes,12,opt,name=depends"`
 }
 
 var _ TemplateReferenceHolder = &DAGTask{}
@@ -1708,16 +1780,11 @@ func (args *Arguments) GetParameterByName(name string) *Parameter {
 	return nil
 }
 
-// HasLocation whether or not an artifact has a location defined
-func (a *Artifact) HasLocation() bool {
-	return a.S3.HasLocation() ||
-		a.Git.HasLocation() ||
-		a.HTTP.HasLocation() ||
-		a.Artifactory.HasLocation() ||
-		a.Raw.HasLocation() ||
-		a.HDFS.HasLocation() ||
-		a.OSS.HasLocation() ||
-		a.GCS.HasLocation()
+func (a *Artifact) GetArchive() *ArchiveStrategy {
+	if a == nil || a.Archive == nil {
+		return &ArchiveStrategy{}
+	}
+	return a.Archive
 }
 
 // GetTemplateByName retrieves a defined template by its name
@@ -1733,6 +1800,11 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 // GetResourceScope returns the template scope of workflow.
 func (wf *Workflow) GetResourceScope() ResourceScope {
 	return ResourceScopeLocal
+}
+
+// GetWorkflowSpec returns the Spec of a workflow.
+func (wf *Workflow) GetWorkflowSpec() WorkflowSpec {
+	return wf.Spec
 }
 
 // NodeID creates a deterministic node ID based on a node name

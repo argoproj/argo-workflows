@@ -150,63 +150,6 @@ func (s *CLIWithServerSuite) TestArchive() {
 	})
 }
 
-func (s *CLIWithServerSuite) TestWorkflowRetryPersistence() {
-	if !s.Persistence.IsEnabled() {
-		// Persistence is disabled for this test, but it is enabled for the Argo Server in this test suite.
-		// When this is the case, this behavior is tested in cli_test.go
-		s.T().SkipNow()
-	}
-	s.Given().
-		Workflow("@testdata/exit-1.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(20*time.Second).
-		Given().
-		RunCli([]string{"retry", "exit-1"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "Name:")
-				assert.Contains(t, output, "Namespace:")
-			}
-		})
-}
-
-func (s *CLIWithServerSuite) TestWorkflowSuspendResumePersistence() {
-	if !s.Persistence.IsEnabled() {
-		// Persistence is disabled for this test, but it is enabled for the Argo Server in this test suite.
-		// When this is the case, this behavior is tested in cli_test.go
-		s.T().SkipNow()
-	}
-	s.Given().
-		Workflow("@testdata/sleep-3s.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflowToStart(10*time.Second).
-		RunCli([]string{"suspend", "sleep-3s"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "workflow sleep-3s suspended")
-			}
-		}).
-		RunCli([]string{"resume", "sleep-3s"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "workflow sleep-3s resumed")
-			}
-		}).
-		WaitForWorkflow(20 * time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
-}
-
-func (s *CLIWithServerSuite) TestNodeSuspendResumePersistence() {
-	if !s.Persistence.IsEnabled() {
-		// Persistence is disabled for this test, but it is enabled for the Argo Server in this test suite.
-		// When this is the case, this behavior is tested in cli_test.go
-		s.T().SkipNow()
-	}
-	NodeSuspendResumeCommon(s.E2ESuite)
-}
-
 func TestCLIWithServerSuite(t *testing.T) {
 	suite.Run(t, new(CLIWithServerSuite))
 }

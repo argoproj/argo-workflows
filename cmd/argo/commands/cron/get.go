@@ -61,36 +61,42 @@ func printCronWorkflow(wf *wfv1.CronWorkflow, outFmt string) {
 		outBytes, _ := yaml.Marshal(wf)
 		fmt.Print(string(outBytes))
 	case "wide", "":
-		printCronWorkflowTemplate(wf)
+		fmt.Print(getCronWorkflowGet(wf))
 	default:
 		log.Fatalf("Unknown output format: %s", outFmt)
 	}
 }
 
-func printCronWorkflowTemplate(wf *wfv1.CronWorkflow) {
+func getCronWorkflowGet(wf *wfv1.CronWorkflow) string {
 	const fmtStr = "%-30s %v\n"
-	fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
-	fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
-	fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
-	fmt.Printf(fmtStr, "Schedule:", wf.Spec.Schedule)
-	fmt.Printf(fmtStr, "Suspended:", wf.Spec.Suspend)
+
+	out := ""
+	out += fmt.Sprintf(fmtStr, "Name:", wf.ObjectMeta.Name)
+	out += fmt.Sprintf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
+	out += fmt.Sprintf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
+	out += fmt.Sprintf(fmtStr, "Schedule:", wf.Spec.Schedule)
+	out += fmt.Sprintf(fmtStr, "Suspended:", wf.Spec.Suspend)
 	if wf.Spec.Timezone != "" {
-		fmt.Printf(fmtStr, "Timezone:", wf.Spec.Timezone)
+		out += fmt.Sprintf(fmtStr, "Timezone:", wf.Spec.Timezone)
 	}
 	if wf.Spec.StartingDeadlineSeconds != nil {
-		fmt.Printf(fmtStr, "StartingDeadlineSeconds:", *wf.Spec.StartingDeadlineSeconds)
+		out += fmt.Sprintf(fmtStr, "StartingDeadlineSeconds:", *wf.Spec.StartingDeadlineSeconds)
 	}
 	if wf.Spec.ConcurrencyPolicy != "" {
-		fmt.Printf(fmtStr, "ConcurrencyPolicy:", wf.Spec.ConcurrencyPolicy)
+		out += fmt.Sprintf(fmtStr, "ConcurrencyPolicy:", wf.Spec.ConcurrencyPolicy)
 	}
 	if wf.Status.LastScheduledTime != nil {
-		fmt.Printf(fmtStr, "LastScheduledTime:", humanize.Timestamp(wf.Status.LastScheduledTime.Time))
+		out += fmt.Sprintf(fmtStr, "LastScheduledTime:", humanize.Timestamp(wf.Status.LastScheduledTime.Time))
 	}
 	if len(wf.Status.Active) > 0 {
 		var activeWfNames []string
 		for _, activeWf := range wf.Status.Active {
 			activeWfNames = append(activeWfNames, activeWf.Name)
 		}
-		fmt.Printf(fmtStr, "Active Workflows:", strings.Join(activeWfNames, ", "))
+		out += fmt.Sprintf(fmtStr, "Active Workflows:", strings.Join(activeWfNames, ", "))
 	}
+	if len(wf.Status.Conditions) > 0 {
+		out += wf.Status.Conditions.DisplayString(fmtStr, map[wfv1.ConditionType]string{wfv1.ConditionTypeSubmissionError: "✖"})
+	}
+	return out
 }
