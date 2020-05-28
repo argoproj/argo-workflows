@@ -2,10 +2,13 @@ package commands
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/argoproj/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
@@ -45,10 +48,11 @@ func NewDeleteCommand() *cobra.Command {
 			for _, wf := range workflows {
 				if !dryRun {
 					_, err := serviceClient.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: wf.Name, Namespace: wf.Namespace})
-					if err != nil && apierr.IsNotFound(err) {
+					if err != nil && status.Code(err) == codes.NotFound {
 						fmt.Printf("Workflow '%s' not found\n", wf.Name)
 						continue
 					}
+					log.Debug(reflect.TypeOf(err))
 					errors.CheckError(err)
 					fmt.Printf("Workflow '%s' deleted\n", wf.Name)
 				} else {

@@ -10,7 +10,8 @@ import (
 	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 
@@ -71,7 +72,7 @@ func waitOnOne(serviceClient workflowpkg.WorkflowServiceClient, ctx context.Cont
 	}
 	stream, err := serviceClient.WatchWorkflows(ctx, req)
 	if err != nil {
-		if apierr.IsNotFound(err) && ignoreNotFound {
+		if status.Code(err) == codes.NotFound && ignoreNotFound {
 			return true
 		}
 		errors.CheckError(err)
