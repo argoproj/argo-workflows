@@ -130,3 +130,28 @@ func TestWorkflowTemplateRefGetFromStored(t *testing.T) {
 		assert.Equal(t, "hello", *execArgs.Parameters[1].Value)
 	})
 }
+
+
+const invalidWF =`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: ui-workflow-error
+  namespace: argo
+spec:
+  entrypoint: main
+  workflowTemplateRef:
+    name: not-exists
+`
+
+func TestWorkflowTemplateRefInvalidWF(t *testing.T) {
+	wf := unmarshalWF(invalidWF)
+	t.Run("ProcessWFWithStoredWFT", func(t *testing.T) {
+		_, controller := newController(wf)
+		woc := newWorkflowOperationCtx(wf, controller)
+		_, _, err := woc.loadExecutionSpec()
+		assert.Error(t, err)
+		woc.operate()
+		assert.Equal(t, wfv1.NodeError, woc.wf.Status.Phase)
+	})
+}
