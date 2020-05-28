@@ -14,7 +14,7 @@ interface Props {
 
 export class WorkflowPanel extends React.Component<Props> {
     public render() {
-        if (this.props.workflowMetadata.labels && this.props.workflowMetadata.labels[labels.completed] === 'true' && !this.props.workflowStatus.nodes) {
+        if (this.props.workflowMetadata.labels[labels.completed] === 'true' && !this.props.workflowStatus.nodes) {
             return (
                 <div className='argo-container'>
                     <Notice>
