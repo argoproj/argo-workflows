@@ -15,7 +15,7 @@ import (
 var (
 	jobStatusIconMap         map[wfv1.NodePhase]string
 	nodeTypeIconMap          map[wfv1.NodeType]string
-	workflowConditionIconMap map[wfv1.WorkflowConditionType]string
+	workflowConditionIconMap map[wfv1.ConditionType]string
 	noColor                  bool
 )
 
@@ -39,9 +39,6 @@ const (
 	FgDefault = 39
 )
 
-// Default status for printWorkflow
-const DefaultStatus = ""
-
 func initializeSession() {
 	jobStatusIconMap = map[wfv1.NodePhase]string{
 		wfv1.NodePending:   ansiFormat("◷", FgYellow),
@@ -54,9 +51,9 @@ func initializeSession() {
 	nodeTypeIconMap = map[wfv1.NodeType]string{
 		wfv1.NodeTypeSuspend: ansiFormat("ǁ", FgCyan),
 	}
-	workflowConditionIconMap = map[wfv1.WorkflowConditionType]string{
-		wfv1.WorkflowConditionMetricsError: ansiFormat("✖", FgRed),
-		wfv1.WorkflowConditionSpecWarning:  ansiFormat("⚠", FgYellow),
+	workflowConditionIconMap = map[wfv1.ConditionType]string{
+		wfv1.ConditionTypeMetricsError: ansiFormat("✖", FgRed),
+		wfv1.ConditionTypeSpecWarning:  ansiFormat("⚠", FgYellow),
 	}
 }
 

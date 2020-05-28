@@ -20,6 +20,7 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/help"
 	"github.com/argoproj/argo/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo/workflow/common"
@@ -87,6 +88,16 @@ var (
 	placeholderGenerator = common.NewPlaceholderGenerator()
 )
 
+// Allowed WfSpec fields if workflow referred WorkflowTemplate reference.
+var wfTmplRefAllowedWfSpecValidFields = map[string]bool{
+	"Entrypoint":            true,
+	"Suspend":               true,
+	"ActiveDeadlineSeconds": true,
+	"Priority":              true,
+	"Arguments":             true,
+	"WorkflowTemplateRef":   true,
+}
+
 type FakeArguments struct{}
 
 func (args *FakeArguments) GetParameterByName(name string) *wfv1.Parameter {
@@ -101,29 +112,62 @@ func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
 var _ wfv1.ArgumentsProvider = &FakeArguments{}
 
 // ValidateWorkflow accepts a workflow and performs validation against it.
-func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wf *wfv1.Workflow, opts ValidateOpts) (*wfv1.WorkflowConditions, error) {
-	wfConditions := &wfv1.WorkflowConditions{}
+func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wf *wfv1.Workflow, opts ValidateOpts) (*wfv1.Conditions, error) {
+	wfConditions := &wfv1.Conditions{}
 	ctx := newTemplateValidationCtx(wf, opts)
 	tmplCtx := templateresolution.NewContext(wftmplGetter, cwftmplGetter, wf, wf)
 
-	err := validateWorkflowFieldNames(wf.Spec.Templates)
+	var wfSpecHolder wfv1.WorkflowSpecHolder
+	var wfTmplRef *wfv1.TemplateRef
+	var err error
+
+	entrypoint := wf.Spec.Entrypoint
+
+	hasWorkflowTemplateRef := wf.Spec.WorkflowTemplateRef != nil
+
+	if hasWorkflowTemplateRef {
+		err := ValidateWorkflowSpecFields(wf.Spec, wfTmplRefAllowedWfSpecValidFields)
+		if err != nil {
+			return nil, err
+		}
+		if wf.Spec.WorkflowTemplateRef.ClusterScope {
+			wfSpecHolder, err = cwftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
+		} else {
+			wfSpecHolder, err = wftmplGetter.Get(wf.Spec.WorkflowTemplateRef.Name)
+		}
+		if err != nil {
+			return nil, err
+		}
+		if entrypoint == "" {
+			entrypoint = wfSpecHolder.GetWorkflowSpec().Entrypoint
+		}
+		wfTmplRef = wf.Spec.WorkflowTemplateRef.ToTemplateRef(entrypoint)
+	}
+	err = validateWorkflowFieldNames(wf.Spec.Templates)
+
+	wfArgs := wf.Spec.Arguments
+
+	if wf.Spec.WorkflowTemplateRef != nil {
+		wfArgs.Parameters = util.MergeParameters(wfSpecHolder.GetWorkflowSpec().Arguments.Parameters, wfArgs.Parameters)
+	}
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
 	}
 	if ctx.Lint {
 		// if we are just linting we don't care if spec.arguments.parameters.XXX doesn't have an
 		// explicit value. workflows without a default value is a desired use case
-		err = validateArgumentsFieldNames("spec.arguments.", wf.Spec.Arguments)
+		err = validateArgumentsFieldNames("spec.arguments.", wfArgs)
 	} else {
-		err = validateArguments("spec.arguments.", wf.Spec.Arguments)
+		err = validateArguments("spec.arguments.", wfArgs)
 	}
 	if err != nil {
 		return nil, err
 	}
-	if len(wf.Spec.Arguments.Parameters) > 0 {
+	if len(wfArgs.Parameters) > 0 {
 		ctx.globalParams[common.GlobalVarWorkflowParameters] = placeholderGenerator.NextPlaceholder()
 	}
-	for _, param := range wf.Spec.Arguments.Parameters {
+
+	for _, param := range wfArgs.Parameters {
 		if param.Name != "" {
 			if param.Value != nil {
 				ctx.globalParams["workflow.parameters."+param.Name] = *param.Value
@@ -144,7 +188,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 		ctx.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*wf.Spec.Priority))
 	}
 
-	if !opts.IgnoreEntrypoint && wf.Spec.Entrypoint == "" {
+	if !opts.IgnoreEntrypoint && entrypoint == "" {
 		return nil, errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
 	}
 
@@ -152,24 +196,24 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	for _, template := range wf.Spec.Templates {
 		if !template.Arguments.IsEmpty() {
 			logrus.Warn("template.arguments is deprecated and its contents are ignored")
-			wfConditions.UpsertConditionMessage(wfv1.WorkflowCondition{
-				Type:    wfv1.WorkflowConditionSpecWarning,
+			wfConditions.UpsertConditionMessage(wfv1.Condition{
+				Type:    wfv1.ConditionTypeSpecWarning,
 				Status:  v1.ConditionTrue,
 				Message: fmt.Sprintf(`template.arguments is deprecated and its contents are ignored. See more: %s`, help.WorkflowTemplatesReferencingOtherTemplates),
 			})
 		}
 		if template.TemplateRef != nil {
 			logrus.Warn(getTemplateRefHelpString(&template))
-			wfConditions.UpsertConditionMessage(wfv1.WorkflowCondition{
-				Type:    wfv1.WorkflowConditionSpecWarning,
+			wfConditions.UpsertConditionMessage(wfv1.Condition{
+				Type:    wfv1.ConditionTypeSpecWarning,
 				Status:  v1.ConditionTrue,
 				Message: fmt.Sprintf(`Referencing/calling other templates directly on a "template" is deprecated; they should be referenced in a "steps" or a "dag" template. See more: %s`, help.WorkflowTemplatesReferencingOtherTemplates),
 			})
 		}
 		if template.Template != "" {
 			logrus.Warn(getTemplateRefHelpString(&template))
-			wfConditions.UpsertConditionMessage(wfv1.WorkflowCondition{
-				Type:    wfv1.WorkflowConditionSpecWarning,
+			wfConditions.UpsertConditionMessage(wfv1.Condition{
+				Type:    wfv1.ConditionTypeSpecWarning,
 				Status:  v1.ConditionTrue,
 				Message: fmt.Sprintf(`Referencing/calling other templates directly on a "template" is deprecated; they should be referenced in a "steps" or a "dag" template. See more: %s`, help.WorkflowTemplatesReferencingOtherTemplates),
 			})
@@ -178,12 +222,15 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 
 	if !opts.IgnoreEntrypoint {
 		var args wfv1.ArgumentsProvider
-		args = &wf.Spec.Arguments
-
+		args = &wfArgs
 		if opts.WorkflowTemplateValidation {
 			args = &FakeArguments{}
 		}
-		_, err = ctx.validateTemplateHolder(&wfv1.WorkflowStep{Template: wf.Spec.Entrypoint}, tmplCtx, args, map[string]interface{}{})
+		tmpl := &wfv1.WorkflowStep{Template: entrypoint}
+		if hasWorkflowTemplateRef {
+			tmpl = &wfv1.WorkflowStep{TemplateRef: wfTmplRef}
+		}
+		_, err = ctx.validateTemplateHolder(tmpl, tmplCtx, args, map[string]interface{}{})
 		if err != nil {
 			return nil, err
 		}
@@ -216,15 +263,34 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	return wfConditions, nil
 }
 
+func ValidateWorkflowSpecFields(v interface{}, validFieldMap map[string]bool) error {
+	val := reflect.ValueOf(v)
+
+	for i := 0; i < val.NumField(); i++ {
+		// Lookup the validate tag
+		field := val.Type().Field(i)
+		fieldVal := val.Field(i).IsZero()
+		_, ok := validFieldMap[field.Name]
+		if !ok && !fieldVal {
+			return errors.Errorf(errors.CodeBadRequest, "%s is invalid field in spec if workflow referred WorkflowTemplate reference", field.Name)
+		}
+	}
+	return nil
+}
+
 // ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
-func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate) (*wfv1.WorkflowConditions, error) {
-	wf := common.ConvertWorkflowTemplateToWorkflow(wftmpl)
+func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate) (*wfv1.Conditions, error) {
+	wf := &wfv1.Workflow{
+		Spec: wftmpl.Spec.WorkflowSpec,
+	}
 	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
 }
 
 // ValidateClusterWorkflowTemplate accepts a cluster workflow template and performs validation against it.
-func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate) (*wfv1.WorkflowConditions, error) {
-	wf := common.ConvertClusterWorkflowTemplateToWorkflow(cwftmpl)
+func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate) (*wfv1.Conditions, error) {
+	wf := &wfv1.Workflow{
+		Spec: cwftmpl.Spec.WorkflowSpec,
+	}
 	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
 }
 
