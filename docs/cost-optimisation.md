@@ -4,7 +4,11 @@
 
 > Suitable for all.
 
-The workflow controller memory and CPU needs increase linearly with the number of pods and workflows you are currently running. Limit these using TTL
+A workflow (and for that matter, any Kuberenetes resource) will incure a cost as long as they exists in your cluster. 
+
+The workflow controller memory and CPU needs increase linearly with the number of pods and workflows you are currently running. 
+
+Limit the total number of workflows using:
 
 * Active Deadline - delete running workflow that do not complete in a set time
 * [Workflow TTL Strategy](fields.md#ttlstrategy) - delete completed workflows after a time
@@ -28,6 +32,21 @@ You can set these configurations globally using [Default Workflow Spec](default-
 
 If you need to keep records historically, use the [Workflow Archive](workflow-archive.md).
 
+Changing these settings will not delete workflows that have already run. To list old workflows:
+
+```
+argo list --completed --since 7d
+```
+
+> v2.9 and after
+
+To list/delete workflows completed over 7 days ago:
+
+```
+argo list --older 7d
+argo delete --older 7d
+```
+
 ## Set Resources Requests Of Your Argo Instances
 
 > Suitable if you have many instances, e.g. on dozens of clusters or namespaces.
@@ -38,7 +57,7 @@ Set a resource quota for the namespace you install Argo in to limit its total us
 apiVersion: v1
 kind: ResourceQuota
 metadata:
-  name: resource-quota
+  name: argo
 spec:
   hard:
     pods: "4"
@@ -54,7 +73,7 @@ Use limit range to set default container requests and limits, e.g.
 apiVersion: v1
 kind: LimitRange
 metadata:
-  name: limit-range
+  name: argo
 spec:
   limits:
     - type: Container
