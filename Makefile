@@ -32,7 +32,7 @@ VERSION := latest
 endif
 
 ifneq ($(findstring release,$(GIT_BRANCH)),)
-VERSION := $(shell git tag --points-at=HEAD|grep ^v|head -n1)
+VERSION := $(shell git describe --abbrev=0 --tags --exclude stable)
 endif
 
 # MANIFESTS_VERSION is the version to be used for files in manifests and should always be latests unles we are releasing
