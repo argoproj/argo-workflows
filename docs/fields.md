@@ -40,6 +40,8 @@ Workflow is the definition of a workflow resource
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
 
 - [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
@@ -256,6 +258,8 @@ CronWorkflow is the definition of a scheduled workflow resource
 <summary>Examples (click to open)</summary>
 <br>
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
 </details>
 
@@ -275,6 +279,8 @@ WorkflowTemplate is the definition of a workflow template resource
 <details>
 <summary>Examples (click to open)</summary>
 <br>
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`templates.yaml`](../examples/workflow-template/templates.yaml)
 </details>
@@ -328,6 +334,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
 
@@ -580,7 +588,7 @@ WorkflowStatus contains overall status information about a workflow
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`compressedNodes`|`string`|Compressed and base64 decoded Nodes map|
-|`conditions`|`Array<`[`WorkflowCondition`](#workflowcondition)`>`|Conditions is a list of conditions the Workflow may have|
+|`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the Workflow may have|
 |`finishedAt`|[`Time`](#time)|Time at which this workflow completed|
 |`message`|`string`|A human readable message indicating details about why the workflow is in this condition.|
 |`nodes`|[`NodeStatus`](#nodestatus)|Nodes is a mapping between a node ID and the node's status.|
@@ -634,6 +642,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
 
@@ -861,6 +871,7 @@ CronWorkflowStatus is the status of a CronWorkflow
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`active`|`Array<`[`ObjectReference`](#objectreference)`>`|Active is a list of active workflows stemming from this CronWorkflow|
+|`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the CronWorkflow may have|
 |`lastScheduledTime`|[`Time`](#time)|LastScheduleTime is the last time the CronWorkflow was scheduled|
 
 ## WorkflowTemplateSpec
@@ -904,6 +915,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
 
@@ -1180,6 +1193,8 @@ Arguments to a template
 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
@@ -1373,6 +1388,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
 
@@ -1638,6 +1655,8 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`workflow-template-ref-with-entrypoint-arg-passing.yaml`](../examples/workflow-template/workflow-template-ref-with-entrypoint-arg-passing.yaml)
 
 - [`workflow-template-ref.yaml`](../examples/workflow-template/workflow-template-ref.yaml)
@@ -1649,7 +1668,7 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 |`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).|
 |`name`|`string`|Name is the resource name of the workflow template.|
 
-## WorkflowCondition
+## Condition
 
 _No description available_
 
@@ -1843,6 +1862,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
 
@@ -2116,6 +2137,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`daemon-nginx.yaml`](../examples/daemon-nginx.yaml)
 
 - [`daemon-step.yaml`](../examples/daemon-step.yaml)
@@ -2254,6 +2277,8 @@ Pod metdata
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
 
@@ -2474,6 +2499,8 @@ ResourceTemplate is a template subtype to manipulate kubernetes resources
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`daemoned-stateful-set-with-service.yaml`](../examples/daemoned-stateful-set-with-service.yaml)
 
 - [`k8s-jobs.yaml`](../examples/k8s-jobs.yaml)
@@ -2549,6 +2576,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 - [`coinflip.yaml`](../examples/coinflip.yaml)
 
 - [`colored-logs.yaml`](../examples/colored-logs.yaml)
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`dag-coinflip.yaml`](../examples/dag-coinflip.yaml)
 
@@ -2635,6 +2664,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
 
@@ -2782,6 +2813,8 @@ TemplateRef is a reference of template resource.
 - [`clustertemplates.yaml`](../examples/cluster-workflow-template/clustertemplates.yaml)
 
 - [`mixed-cluster-namespaced-wftmpl-steps.yaml`](../examples/cluster-workflow-template/mixed-cluster-namespaced-wftmpl-steps.yaml)
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`dag.yaml`](../examples/workflow-template/dag.yaml)
 
@@ -3266,6 +3299,8 @@ Sequence expands a workflow step into numeric range
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`loops-sequence.yaml`](../examples/loops-sequence.yaml)
 
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
@@ -3352,6 +3387,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
 
@@ -4429,6 +4466,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
 
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
+
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
 
 - [`custom-metrics.yaml`](../examples/custom-metrics.yaml)
@@ -5392,6 +5431,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`conditionals.yaml`](../examples/conditionals.yaml)
 
 - [`continue-on-fail.yaml`](../examples/continue-on-fail.yaml)
+
+- [`cron-backfill.yaml`](../examples/cron-backfill.yaml)
 
 - [`cron-workflow.yaml`](../examples/cron-workflow.yaml)
 

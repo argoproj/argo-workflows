@@ -249,7 +249,7 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit() {
 		if wf.Labels[common.LabelKeyCronWorkflow] != woc.cronWf.Name {
 			continue
 		}
-		if wf.Status.Completed() {
+		if wf.Status.Fulfilled() {
 			if wf.Status.Successful() {
 				successfulWorkflows = append(successfulWorkflows, wf)
 			} else {
