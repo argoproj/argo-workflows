@@ -5,5 +5,6 @@ export * from './workflow-timeline/workflow-timeline';
 export * from './workflow-yaml-viewer/workflow-yaml-viewer';
 export * from './workflows-list/workflows-list';
 export * from './workflow-artifacts';
+export * from './workflow-panel/workflow-panel';
 export * from './workflow-parameters-panel';
 export * from './workflow-summary-panel';
