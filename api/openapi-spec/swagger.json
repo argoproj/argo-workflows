@@ -3489,6 +3489,10 @@
     },
     "io.argoproj.workflow.v1alpha1.User": {
       "type": "object",
+      "required": [
+        "name",
+        "groups"
+      ],
       "properties": {
         "groups": {
           "type": "array",
