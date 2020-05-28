@@ -860,7 +860,7 @@ export interface WorkflowSpec {
     /**
      * Templates is a list of workflow templates used in a workflow
      */
-    templates: Template[];
+    templates?: Template[];
     /**
      * VolumeClaimTemplates is a list of claims that containers are allowed to reference.
      * The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow
