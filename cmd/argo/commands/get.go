@@ -505,9 +505,9 @@ func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow
 	//├-◷ C		<- This node is the last node shown, but since it has filtered nodes following it its prefix is incorrect (├)
 	//<There are nodes here that are filtered>
 	//
-	// This is the desired behavior
+	// This is the desired behavior:
 	//● dag-diamond-s7d4p  diamond
-	//└-◷ C		<- This node is the last node shown, and even though it has filtered nodes following it its prefix is incorrect (└)
+	//└-◷ C		<- This node is the last node shown, and even though it has filtered nodes following it its prefix is correct (└)
 	//<There are nodes here that are filtered>
 	tailFilteredNodes := 0
 	for i := len(nodeInfo.boundaryContained) - 1; i >= 0; i-- {
@@ -539,7 +539,7 @@ func (nodeInfo *nonBoundaryParentNode) renderNodes(w *tabwriter.Writer, wf *wfv1
 	//├-◷ C		<- This node is the last node shown, but since it has filtered nodes following it its prefix is incorrect (├)
 	//<There are nodes here that are filtered>
 	//
-	// This is the desired behavior
+	// This is the desired behavior:
 	//● dag-diamond-s7d4p  diamond
 	//└-◷ C		<- This node is the last node shown, and even though it has filtered nodes following it its prefix is correct (└)
 	//<There are nodes here that are filtered>
