@@ -41,7 +41,6 @@ import (
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/templateresolution"
-	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
 
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
@@ -501,20 +500,6 @@ func (woc *wfOperationCtx) persistUpdates() {
 		woc.wf = wf
 	} else {
 		woc.wf = wf
-	}
-	// After we successfully persist an update to the workflow, the informer's
-	// cache is now invalid. It's very common that we will need to immediately re-operate on a
-	// workflow due to queuing by the pod workers, so we update the informer.
-	// Without this, the next worker to work on this workflow will very likely operate on a stale
-	// object and redo work.
-	un, err := util.ToUnstructured(woc.wf)
-	if err != nil {
-		log.Errorf("failed to convert workflow to unstructured: %v", err)
-	} else {
-		err = woc.controller.wfInformer.GetStore().Update(un)
-		if err != nil {
-			log.Errorf("failed to update workflow: %v", err)
-		}
 	}
 
 	// restore to pre-compressed state
