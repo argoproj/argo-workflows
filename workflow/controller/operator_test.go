@@ -3692,3 +3692,43 @@ func TestNoOnExitWhenSkipped(t *testing.T) {
 	woc.operate()
 	assert.Nil(t, woc.getNodeByName("B.onExit"))
 }
+
+func TestNoStringParameter(t *testing.T) {
+	wf := unmarshalWF(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: steps
+            template: general
+            arguments:
+              parameters:
+                - name: cpu
+                  value: "100m"
+                - name: memory
+                  value: "1G"
+    - name: general
+      inputs:
+        parameters:
+          - name: cpu
+          - name: memory
+      container:
+        image: ubuntu:latest
+        command: [sh, -c]
+        resources:
+          requests:
+            memory: "{{inputs.parameters.memory}}"
+            cpu: "{{inputs.parameters.cpu}}"
+        args: ["sleep infinity"]
+`)
+	cancel, controller := newController(wf)
+	defer cancel()
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status)
+}

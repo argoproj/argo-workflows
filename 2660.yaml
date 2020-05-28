@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: competitions-sync
+spec:
+  entrypoint: competitions-sync
+  templates:
+    - name: competitions-sync
+      steps:
+        - - name: generate
+            template: load-comps
+
+        - - name: say
+            template: print-message
+            arguments:
+              parameters:
+                - name: message
+                  value: "{{item.owner_id}}"
+            withParam: "{{steps.generate.outputs.result}}"
+
+    - name: load-comps
+      script:
+        image: docker/whalesay:latest
+        command: [sh]
+        env:
+          - name: CONTEXTGG_ENV
+            value: prod
+        source: |
+          echo '[{"id":"8958929a-772d-11ea-80c7-f24469382481","state":0,"created_by":"6dde4052-5614-5d4d-ab22-facf8acdf6e5","owner_id":"6dde4052-5614-5d4d-ab22-facf8acdf6e5","type":"smashgg","tournament_text":null,"tournament_type":"","tournament_id":209601,"event_id":471337,"season_id":null,"region_id":"","rank_id":"","max_teams":2,"payment_type":"percentage","payment_breakdown":[75,25],"amount":500,"currency":"USD","locked":false,"contributors":null},{"id":"986b96b9-7985-11ea-9fae-128030a29656","state":0,"created_by":"55e1ff11-7001-5018-875e-5e81ce9d02d3","owner_id":"55e1ff11-7001-5018-875e-5e81ce9d02d3","type":"sixmans","tournament_text":null,"tournament_type":"","tournament_id":null,"event_id":null,"season_id":31,"region_id":"OCE","rank_id":"X","max_teams":3,"payment_type":"percentage","payment_breakdown":[60,25,15],"amount":0,"currency":"AUD","locked":false,"contributors":null},{"id":"f972d8d7-799b-11ea-b570-86bdb62ad2fc","state":0,"created_by":"55e1ff11-7001-5018-875e-5e81ce9d02d3","owner_id":"55e1ff11-7001-5018-875e-5e81ce9d02d3","type":"sixmans","tournament_text":null,"tournament_type":"","tournament_id":null,"event_id":null,"season_id":31,"region_id":"NA","rank_id":"X","max_teams":3,"payment_type":"percentage","payment_breakdown":[60,25,15],"amount":0,"currency":"USD","locked":false,"contributors":null},{"id":"151c1d12-799c-11ea-b570-86bdb62ad2fc","state":0,"created_by":"1750fd55-0507-5441-a3bc-79bfe5efac1a","owner_id":"1750fd55-0507-5441-a3bc-79bfe5efac1a","type":"sixmans","tournament_text":null,"tournament_type":"","tournament_id":null,"event_id":null,"season_id":31,"region_id":"OCE","rank_id":"S","max_teams":3,"payment_type":"percentage","payment_breakdown":[60,25,15],"amount":0,"currency":"AUD","locked":false,"contributors":null},{"id":"34c0c141-799c-11ea-b570-86bdb62ad2fc","state":0,"created_by":"55e1ff11-7001-5018-875e-5e81ce9d02d3","owner_id":"55e1ff11-7001-5018-875e-5e81ce9d02d3","type":"sixmans","tournament_text":null,"tournament_type":"","tournament_id":null,"event_id":null,"season_id":31,"region_id":"EU","rank_id":"X","max_teams":3,"payment_type":"percentage","payment_breakdown":[60,25,15],"amount":0,"currency":"EUR","locked":false,"contributors":null},{"id":"de92ef77-799e-11ea-b570-86bdb62ad2fc","state":0,"created_by":"1750fd55-0507-5441-a3bc-79bfe5efac1a","owner_id":"1750fd55-0507-5441-a3bc-79bfe5efac1a","type":"sixmans","tournament_text":null,"tournament_type":"","tournament_id":null,"event_id":null,"season_id":31,"region_id":"NA","rank_id":"S","max_teams":3,"payment_type":"percentage","payment_breakdown":[60,25,15],"amount":0,"currency":"USD","locked":false,"contributors":null},{"id":"f7e7f59f-799e-11ea-b570-86bdb62ad2fc","state":0,"created_by":"1750fd55-0507-5441-a3bc-79bfe5efac1a","owner_id":"1750fd55-0507-5441-a3bc-79bfe5efac1a","type":"sixmans","tournament_text":null,"tournament_type":"","tournament_id":null,"event_id":null,"season_id":31,"region_id":"EU","rank_id":"S","max_teams":3,"payment_type":"percentage","payment_breakdown":[60,25,15],"amount":0,"currency":"EUR","locked":false,"contributors":null},{"id":"3102c54a-7a98-11ea-96da-6e380b72ac98","state":0,"created_by":"f14b0f7e-260a-5caf-8e65-c1d25179302a","owner_id":"f14b0f7e-260a-5caf-8e65-c1d25179302a","type":"smashgg","tournament_text":null,"tournament_type":"","tournament_id":210650,"event_id":472702,"season_id":null,"region_id":"","rank_id":"","max_teams":1,"payment_type":"percentage","payment_breakdown":[100],"amount":0,"currency":"USD","locked":false,"contributors":null}]'
+
+    - name: print-message
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]

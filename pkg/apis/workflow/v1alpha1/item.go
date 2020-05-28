@@ -17,6 +17,10 @@ const (
 	List
 )
 
+type Typer interface {
+	GetType() Type
+}
+
 // Item expands a single workflow step into multiple parallel steps
 // The value of Item can be a map, string, bool, or number
 //
@@ -98,6 +102,10 @@ func (i Item) MarshalJSON() ([]byte, error) {
 	}
 }
 
+func (i *Item) GetType() Type {
+	return i.Type
+}
+
 // +protobuf=true
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 // +k8s:openapi-gen=true
@@ -159,6 +167,11 @@ func (iv ItemValue) Format(s fmt.State, verb rune) {
 	fmt.Fprintf(s, iv.String()) //nolint
 }
 
+
+func (i *ItemValue) GetType() Type {
+	return i.Type
+}
+
 // MarshalJSON implements the json.Marshaller interface.
 func (iv ItemValue) MarshalJSON() ([]byte, error) {
 	switch iv.Type {
@@ -170,7 +183,9 @@ func (iv ItemValue) MarshalJSON() ([]byte, error) {
 		return json.Marshal(iv.NumVal)
 	case Map:
 		return json.Marshal(iv.MapVal)
+	case List:
+		return json.Marshal(iv.ListVal)
 	default:
-		return []byte{}, fmt.Errorf("impossible ItemValue.Type")
+		return []byte{}, fmt.Errorf("impossible ItemValue.Type %v", iv.Type)
 	}
 }
