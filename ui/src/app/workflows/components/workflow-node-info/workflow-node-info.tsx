@@ -286,7 +286,7 @@ export const WorkflowNodeInfo = (props: Props) => (
                     content: <WorkflowNodeContainers {...props} />
                 },
                 {
-                    title: 'ARTIFACTS',
+                    title: 'OUTPUT ARTIFACTS',
                     key: 'artifacts',
                     content: <WorkflowNodeArtifacts {...props} />
                 }
