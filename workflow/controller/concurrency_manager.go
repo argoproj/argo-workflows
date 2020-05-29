@@ -12,13 +12,12 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1Label "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
-	"k8s.io/client-go/tools/cache"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/util/labels"
+	"github.com/argoproj/argo/workflow/common"
 )
 
 type ConcurrencyManager struct {
@@ -40,13 +39,13 @@ func NewConcurrencyManager(controller *WorkflowController) *ConcurrencyManager {
 	}
 }
 
-func (wt *ConcurrencyManager) initialize(namespace string, wfClient wfclientset.Interface) error {
+func (cm *ConcurrencyManager) initialize(namespace string, wfClient wfclientset.Interface) error {
 	labelSelector := v1Label.NewSelector()
 	req, _ := v1Label.NewRequirement(common.LabelKeySemaphore, selection.Exists, nil)
 	if req != nil {
 		labelSelector.Add(*req)
 	}
-	req, _ = v1Label.NewRequirement(common.LabelKeyPhase, selection.In, []string{"Running"})
+	req, _ = v1Label.NewRequirement(common.LabelKeyPhase, selection.Equals, []string{string(wfv1.NodeRunning)})
 	if req != nil {
 		labelSelector = labelSelector.Add(*req)
 	}
@@ -58,42 +57,44 @@ func (wt *ConcurrencyManager) initialize(namespace string, wfClient wfclientset.
 		return err
 	}
 
-	log.Infof("%d of Workflow previously acquired the locks", wfList.Items.Len())
+	log.Infof("%d of workflows previously acquired the locks", wfList.Items.Len())
 
 	for _, wf := range wfList.Items {
-		annotation := wf.Annotations[common.LabelKeySemaphore]
+		annotation := wf.Annotations[common.AnnotationKeySemaphoreHolder]
+		log.Infof("Annotation=%s", annotation)
 		var semphoreMap map[string]interface{}
 		err := json.Unmarshal([]byte(annotation), &semphoreMap)
 		if err != nil {
 			log.Errorf("%v", err)
 		}
-		log.Debugf("workflow %s and semaphore map %v, ", wf.Name, semphoreMap)
+		log.Infof("workflow %s and semaphore map %v, ", wf.Name, semphoreMap)
 		for k, v := range semphoreMap {
 			val := fmt.Sprintf("%s", v)
-			var sema *Semaphore
-			sema = wt.semaphoreMap[val]
-			if sema == nil {
-				sema, err = wt.initializeSemphore(val)
+			var semaphore *Semaphore
+			semaphore = cm.semaphoreMap[val]
+			if semaphore == nil {
+				semaphore, err = cm.initializeSemphore(val)
 				if err != nil {
 					return err
 				}
-				wt.semaphoreMap[val] = sema
+				cm.semaphoreMap[val] = semaphore
 			}
-			if sema != nil && sema.Acquire(k) {
-				log.Debugf("Lock Acquired by %s from %s", k, v)
+			if semaphore != nil && semaphore.Acquire(k) {
+				log.Infof("Lock Acquired by %s from %s", k, v)
 			}
 		}
 	}
+	log.Infof("ConcurrencyManager initialized successfully")
 	return nil
 }
 
-func (wt *ConcurrencyManager) GetConfigMapKeyRef(lockName string) (int, error) {
+func (cm *ConcurrencyManager) GetConfigMapKeyRef(lockName string) (int, error) {
 	items := strings.Split(lockName, "/")
 	if len(items) < 4 {
 		return 0, errors.New(errors.CodeBadRequest, "Invalid Config Map Key")
 	}
 
-	configMap, err := wt.controller.kubeclientset.CoreV1().ConfigMaps(items[0]).Get(items[2], v1.GetOptions{})
+	configMap, err := cm.controller.kubeclientset.CoreV1().ConfigMaps(items[0]).Get(items[2], v1.GetOptions{})
 
 	if err != nil {
 		return 0, err
@@ -107,77 +108,91 @@ func (wt *ConcurrencyManager) GetConfigMapKeyRef(lockName string) (int, error) {
 	return strconv.Atoi(value)
 }
 
-func getSemaphoreRefKey(namespace string, sem *wfv1.SemaphoreRef) string {
-	key := namespace
-	if sem.ConfigMapKeyRef != nil {
-		key = fmt.Sprintf("%s/%s/%s/%s", namespace, "configmap", sem.ConfigMapKeyRef.Name, sem.ConfigMapKeyRef.Key)
-	}
-	return key
-}
-
-func (wt *ConcurrencyManager) initializeSemphore(semphoreName string) (*Semaphore, error) {
-	limit, err := wt.GetConfigMapKeyRef(semphoreName)
+func (cm *ConcurrencyManager) initializeSemphore(semphoreName string) (*Semaphore, error) {
+	limit, err := cm.GetConfigMapKeyRef(semphoreName)
 	if err != nil {
 		return nil, err
 	}
-	return NewSemaphore(semphoreName, limit, wt.controller), nil
+	return NewSemaphore(semphoreName, limit, cm.controller), nil
 }
 
-func (wt *ConcurrencyManager) TryAcquire(key, namespace string, priority int32, creationTime time.Time, semaphoreRef *wfv1.SemaphoreRef, wf *wfv1.Workflow) (bool, string, error) {
-	wt.lock.Lock()
-	defer wt.lock.Unlock()
+func (cm *ConcurrencyManager) TryAcquire(key, namespace string, priority int32, creationTime time.Time, semaphoreRef *wfv1.SemaphoreRef, wf *wfv1.Workflow) (bool, string, error) {
+	cm.lock.Lock()
+	defer cm.lock.Unlock()
 	lockName := getSemaphoreRefKey(namespace, semaphoreRef)
-	var sema *Semaphore
+	var semaphore *Semaphore
 	var err error
-	sema, ok := wt.semaphoreMap[lockName]
+	semaphore, ok := cm.semaphoreMap[lockName]
 	if !ok {
 		if semaphoreRef.ConfigMapKeyRef != nil {
-			sema, err = wt.initializeSemphore(lockName)
+			semaphore, err = cm.initializeSemphore(lockName)
 			if err != nil {
 				return false, "", err
 			}
-			wt.semaphoreMap[lockName] = sema
+			cm.semaphoreMap[lockName] = semaphore
 		}
 	}
-	if sema == nil {
+	if semaphore == nil {
 		return false, "", errors.New(errors.CodeBadRequest, "Requested Semaphore is invalid")
 	}
 
-	sema.AddToQueue(key, priority, creationTime)
-	status, msg := sema.TryAcquire(key)
+	semaphore.AddToQueue(key, priority, creationTime)
+	status, msg := semaphore.TryAcquire(key)
 	if status {
-		wt.updateWorkflowMetaData(key, lockName, AcquireAction, wf)
+		cm.updateWorkflowMetaData(key, lockName, AcquireAction, wf)
 	}
 	return status, msg, nil
 }
 
-func (wt *ConcurrencyManager) Release(key, namespace string, sem *wfv1.SemaphoreRef, wf *wfv1.Workflow) {
+func (cm *ConcurrencyManager) Release(key, namespace string, sem *wfv1.SemaphoreRef, wf *wfv1.Workflow) {
 	if sem != nil {
 		lockName := getSemaphoreRefKey(namespace, sem)
-		if sem, ok := wt.semaphoreMap[lockName]; ok {
+		if sem, ok := cm.semaphoreMap[lockName]; ok {
 			sem.Release(key)
-			wt.updateWorkflowMetaData(key, lockName, ReleaseAction, wf)
+			log.Debugf("%s semaphore lock is released by %s", lockName, key)
+			cm.updateWorkflowMetaData(key, lockName, ReleaseAction, wf)
 		}
 	}
 }
 
-func (wt *ConcurrencyManager) getHolderKey(wf *wfv1.Workflow, nodeName string) (string, error) {
-	if wf == nil {
-		return "", errors.Errorf(errors.CodeBadRequest, "Invalid Workflow object")
+func (cm *ConcurrencyManager) releaseAll(wf *wfv1.Workflow) {
+	if wf.Annotations == nil {
+		return
 	}
-	key, err := cache.MetaNamespaceKeyFunc(wf)
+	semaphoreHolder := wf.Annotations[common.AnnotationKeySemaphoreHolder]
+	if semaphoreHolder == "" {
+		return
+	}
+	var holder map[string]interface{}
+	err := json.Unmarshal([]byte(semaphoreHolder), &holder)
 	if err != nil {
-		return "", err
+		log.Errorf("Invalid Semaphore Annotation. %v", err)
+		return
 	}
+	for k, v := range holder {
+		semaphoreName := fmt.Sprintf("%s", v)
+		semaphore := cm.semaphoreMap[semaphoreName]
+		if semaphore == nil {
+			continue
+		}
+		semaphore.Release(k)
+	}
+}
+
+func (cm *ConcurrencyManager) getHolderKey(wf *wfv1.Workflow, nodeName string) string {
+	if wf == nil {
+		return ""
+	}
+	key := fmt.Sprintf("%s/%s", wf.Namespace, wf.Name)
 	if nodeName != "" {
 		key = fmt.Sprintf("%s/%s", key, nodeName)
 	}
-	return key, nil
+	return key
 }
 
-func (wt *ConcurrencyManager) updateWorkflowMetaData(key, semaphoreKey, action string, wf *wfv1.Workflow) {
+func (cm *ConcurrencyManager) updateWorkflowMetaData(key, semaphoreKey, action string, wf *wfv1.Workflow) {
 
-	labels.Label(wf,common.LabelKeySemaphore, "true")
+	labels.Label(wf, common.LabelKeySemaphore, "true")
 
 	if wf.Annotations == nil {
 		wf.Annotations = make(map[string]string)
@@ -189,20 +204,29 @@ func (wt *ConcurrencyManager) updateWorkflowMetaData(key, semaphoreKey, action s
 	} else {
 		err := json.Unmarshal([]byte(semaphoreHolder), &holder)
 		if err != nil {
-
+			log.Errorf("Invalid Semaphore Annotation. %v", err)
+			return
 		}
 	}
 	if action == AcquireAction {
 		holder[key] = semaphoreKey
 	}
 	if action == ReleaseAction {
-		log.Infof("Removed from Annotation %k", key)
+		log.Debugf("%s removed from Annotation", key)
 		delete(holder, key)
-		log.Infof("%v", holder)
 	}
 	holderStr, err := json.Marshal(holder)
 	if err != nil {
-
+		log.Errorf("Invalid Semaphore Annotation. %v", err)
+		return
 	}
 	wf.Annotations[common.AnnotationKeySemaphoreHolder] = string(holderStr)
+}
+
+func getSemaphoreRefKey(namespace string, sem *wfv1.SemaphoreRef) string {
+	key := namespace
+	if sem.ConfigMapKeyRef != nil {
+		key = fmt.Sprintf("%s/%s/%s/%s", namespace, "configmap", sem.ConfigMapKeyRef.Name, sem.ConfigMapKeyRef.Key)
+	}
+	return key
 }

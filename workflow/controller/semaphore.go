@@ -50,7 +50,7 @@ func (ws *Semaphore) Release(key string) {
 	if _, ok := ws.lockHolder[key]; ok {
 		ws.semaphore.Release(1)
 		delete(ws.lockHolder, key)
-		ws.log.Infof("Lock has been released by %s", key)
+		ws.log.Infof("Lock has been released by %s. Available locks: %d", key, ws.limit-len(ws.lockHolder))
 		if ws.pending.Len() > 0 {
 			item := ws.pending.Peek().(*item)
 			keyStr := fmt.Sprintf("%v", item.key)
@@ -94,7 +94,7 @@ func (ws *Semaphore) TryAcquire(holderKey string) (bool, string) {
 	defer ws.lock.Unlock()
 
 	if _, ok := ws.lockHolder[holderKey]; ok {
-		ws.log.Debugf("%s is holding a lock\n", holderKey)
+		ws.log.Debugf("%s is already holding a lock\n", holderKey)
 		return true, ""
 	}
 	var nextKey string
@@ -111,7 +111,7 @@ func (ws *Semaphore) TryAcquire(holderKey string) (bool, string) {
 	if ws.Acquire(holderKey) {
 		ws.pending.Pop()
 		delete(ws.inPending, holderKey)
-		ws.log.Infof("Lock is acquired by %s \n", nextKey)
+		ws.log.Infof("%s acquired by %s \n", ws.name, nextKey)
 		return true, ""
 	}
 	return false, waitingMsg

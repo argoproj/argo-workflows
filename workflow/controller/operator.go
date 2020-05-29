@@ -1453,10 +1453,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		if node.Completed() {
 			if resolvedTmpl.Semaphore != nil {
 				woc.log.Debugf("Node %s is releasing Semaphore lock", nodeName)
-				holderKey, err := woc.controller.concurrencyMgr.getHolderKey(woc.wf, nodeName)
-				if err != nil {
-
-				}
+				holderKey := woc.controller.concurrencyMgr.getHolderKey(woc.wf, nodeName)
 				woc.controller.concurrencyMgr.Release(holderKey, woc.wf.Namespace, resolvedTmpl.Semaphore, woc.wf)
 			}
 			woc.log.Debugf("Node %s already completed", nodeName)
@@ -1507,17 +1504,14 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	if processedTmpl.Semaphore != nil {
 		holderKey := woc.controller.concurrencyMgr.getHolderKey(woc.wf, nodeName)
-		if holderKey == "" {
-
-		}
 		priority, creationTime := getWfPriority(woc.wf)
 		acquireStatus, msg, err := woc.controller.concurrencyMgr.TryAcquire(holderKey, woc.wf.Namespace, priority, creationTime, resolvedTmpl.Semaphore, woc.wf)
+
 		if err != nil {
 			return woc.markNodeError(nodeName, err), err
 		}
 		if !acquireStatus {
 			if node == nil {
-				log.Info("create node")
 				node = woc.initializeExecutableNode(nodeName, woc.getNodeType(processedTmpl.GetType()), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, msg)
 				woc.updated = true
 			}
@@ -1527,7 +1521,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		if node != nil {
 			node.Message = ""
 		}
-		woc.log.Info("Node %s is acquiring Semaphore lock", nodeName)
+		woc.updated = true
+		woc.log.Infof("Node %s acquired semaphore lock", nodeName)
 	}
 
 	// If the user has specified retries, node becomes a special retry node.
