@@ -39,7 +39,6 @@ const (
 	NodeSkipped   NodePhase = "Skipped"
 	NodeFailed    NodePhase = "Failed"
 	NodeError     NodePhase = "Error"
-	NodeOmitted   NodePhase = "Omitted"
 )
 
 // NodeType is the type of a node
@@ -55,6 +54,7 @@ const (
 	NodeTypeRetry     NodeType = "Retry"
 	NodeTypeSkipped   NodeType = "Skipped"
 	NodeTypeSuspend   NodeType = "Suspend"
+	NodeTypeOmitted   NodeType = "Omitted"
 )
 
 // PodGCStrategy is the strategy when to delete completed pods for GC.
@@ -1217,7 +1217,7 @@ func (n Nodes) GetResourcesDuration() ResourcesDuration {
 
 // Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted
 func (phase NodePhase) Fulfilled() bool {
-	return phase.Completed() || phase == NodeSkipped || phase == NodeOmitted
+	return phase.Completed() || phase == NodeSkipped
 }
 
 // Completed returns whether or not a phase completed. Notably, a skipped phase is not considered as having completed

@@ -477,7 +477,7 @@ func (s *FunctionalSuite) TestDAGDepends() {
 			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
 			nodeStatus = status.Nodes.FindByDisplayName("should-not-execute")
 			assert.NotNil(t, nodeStatus)
-			assert.Equal(t, wfv1.NodeOmitted, nodeStatus.Phase)
+			assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
 			nodeStatus = status.Nodes.FindByDisplayName("should-execute-3")
 			assert.NotNil(t, nodeStatus)
 			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)

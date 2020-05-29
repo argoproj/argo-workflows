@@ -171,11 +171,8 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 				break
 			}
 		} else if depNode.Failed() {
-			if depNode.Phase == wfv1.NodeError {
-				result = wfv1.NodeError
-			}
-			result = wfv1.NodeFailed
-			// If failFast is enabled, don't check and see if other target tasks are completed and fail now
+			result = depNode.Phase
+			// If failFast is enabled, don't check to see if other target tasks are complete and fail now instead
 			if failFast {
 				break
 			}
@@ -353,7 +350,15 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		}
 		if !execute {
 			// Given the results of this node's dependencies, this node should not be executed. Mark it omitted
-			woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagTemplateScope, task, dagCtx.boundaryID, wfv1.NodeOmitted, "omitted: depends condition not met")
+			// We still want to preserve and pass down the phase of the parent nodes for use in determining the overall
+			// DAG's phase.
+			omittedNodePhase := wfv1.NodeSucceeded
+			for _, parentTaskName := range dagCtx.GetTaskDependencies(taskName) {
+				if parentNode := dagCtx.getTaskNode(parentTaskName); parentNode.Failed() {
+					omittedNodePhase = parentNode.Phase
+				}
+			}
+			woc.initializeNode(nodeName, wfv1.NodeTypeOmitted, dagTemplateScope, task, dagCtx.boundaryID, omittedNodePhase, "omitted: depends condition not met")
 			connectDependencies(nodeName)
 			return
 		}
