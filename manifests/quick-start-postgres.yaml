@@ -17,6 +17,9 @@ spec:
   scope: Cluster
   versions:
   - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        type: object
     served: true
     storage: true
 ---
@@ -38,6 +41,9 @@ spec:
   scope: Namespaced
   versions:
   - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        type: object
     served: true
     storage: true
 ---
@@ -59,6 +65,9 @@ spec:
   scope: Namespaced
   versions:
   - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        type: object
     served: true
     storage: true
 ---
@@ -80,6 +89,9 @@ spec:
   scope: Namespaced
   versions:
   - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        type: object
     served: true
     storage: true
 ---
