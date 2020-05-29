@@ -65,6 +65,13 @@ export class WorkflowsService {
         return requests.delete(`api/v1/workflows/${namespace}/${name}`).then(res => res.body as WorkflowDeleteResponse);
     }
 
+    public submit(kind: string, name: string, namespace: string) {
+        return requests
+            .post(`api/v1/workflows/${namespace}/submit`)
+            .send({namespace, resourceKind: kind, resourceName: name})
+            .then(res => res.body as Workflow);
+    }
+
     public getContainerLogs(workflow: Workflow, nodeId: string, container: string, archived: boolean): Observable<string> {
         // we firstly try to get the logs from the API,
         // but if that fails, then we try and get them from the artifacts

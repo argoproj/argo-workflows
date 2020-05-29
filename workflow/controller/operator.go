@@ -543,7 +543,7 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.Workflo
 	woc.markWorkflowError(err, true)
 	_, err = wfClient.Update(woc.wf)
 	if err != nil {
-		woc.log.Warnf("Error updating workflow: %v", err)
+		woc.log.Warnf("Error updating workflow with size error: %v", err)
 	}
 }
 
@@ -551,8 +551,9 @@ func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.Workflo
 // retries the UPDATE multiple times. For reasoning behind this technique, see:
 // https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#concurrency-control-and-consistency
 func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface, nodes wfv1.Nodes) (*wfv1.Workflow, error) {
-	if !woc.controller.hydrator.IsHydrated(woc.orig) {
-		panic("original workflow is not hydrated")
+	err := woc.controller.hydrator.Hydrate(woc.orig)
+	if err != nil {
+		return nil, err
 	}
 	// First generate the patch
 	oldData, err := json.Marshal(woc.orig)
@@ -2665,8 +2666,8 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 
 	executionParameters := woc.wf.Spec.Arguments
 
+	woc.wfSpec = &woc.wf.Spec
 	if woc.wf.Spec.WorkflowTemplateRef == nil {
-		woc.wfSpec = &woc.wf.Spec
 		tmplRef := &wfv1.WorkflowStep{Template: woc.wfSpec.Entrypoint}
 		return tmplRef, executionParameters, nil
 	}

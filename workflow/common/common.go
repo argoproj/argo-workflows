@@ -162,5 +162,5 @@ func UnstructuredHasCompletedLabel(obj interface{}) bool {
 	if wf, ok := obj.(*unstructured.Unstructured); ok {
 		return wf.GetLabels()[LabelKeyCompleted] == "true"
 	}
-	panic(fmt.Sprintf("obj passed is not an Unstructured. Obj: %+v", obj))
+	return false
 }
