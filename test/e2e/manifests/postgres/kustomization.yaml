@@ -1,9 +1,17 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-bases:
+commonLabels:
+  "app.kubernetes.io/part-of": "argo"
+
+resources:
   - ../../../../manifests/quick-start/postgres
+
 patchesStrategicMerge:
+  - ../../../../manifests/base/crds/simple/cronworkflows.argoproj.io-crd.yaml
+  - ../../../../manifests/base/crds/simple/clusterworkflowtemplates.argoproj.io-crd.yaml
+  - ../../../../manifests/base/crds/simple/workflows.argoproj.io-crd.yaml
+  - ../../../../manifests/base/crds/simple/workflowtemplates.argoproj.io-crd.yaml
   - ../mixins/argo-server-deployment.yaml
   - ../mixins/workflow-controller-configmap.yaml
   - ../mixins/workflow-controller-deployment.yaml

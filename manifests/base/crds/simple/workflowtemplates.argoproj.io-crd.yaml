@@ -4,7 +4,7 @@ metadata:
   name: workflowtemplates.argoproj.io
 spec:
   conversion:
-    strategy: none
+    strategy: None
   group: argoproj.io
   names:
     kind: WorkflowTemplate

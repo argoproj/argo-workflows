@@ -4,7 +4,7 @@ metadata:
   name: clusterworkflowtemplates.argoproj.io
 spec:
   conversion:
-    strategy: none
+    strategy: None
   group: argoproj.io
   names:
     kind: ClusterWorkflowTemplate
@@ -16,5 +16,8 @@ spec:
   scope: Cluster
   versions:
   - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        type: object
     served: true
     storage: true

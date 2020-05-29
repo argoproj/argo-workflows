@@ -4,7 +4,7 @@ metadata:
   name: cronworkflows.argoproj.io
 spec:
   conversion:
-    strategy: none
+    strategy: None
   group: argoproj.io
   names:
     kind: CronWorkflow

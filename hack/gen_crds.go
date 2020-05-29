@@ -36,7 +36,7 @@ func genCRDs() {
 				"kind":       "CustomResourceDefinition",
 				"metadata":   obj{"name": crd.FullName},
 				"spec": obj{
-					"conversion": obj{"strategy": "none"},
+					"conversion": obj{"strategy": "None"},
 					"group":      workflow.Group,
 					"names": obj{
 						"kind":       crd.Kind,
@@ -50,6 +50,7 @@ func genCRDs() {
 						obj{
 							"name":    "v1alpha1",
 							"served":  true,
+							"schema":  obj{"openAPIV3Schema": obj{"type": "object"}},
 							"storage": true,
 						},
 					},
@@ -71,7 +72,7 @@ func genCRDs() {
 				schema := ssc.structuralSchema(ssc.structuralSchemaByName("io.argoproj.workflow.v1alpha1." + crd.Kind))
 				schema["required"] = []string{"metadata", "spec"}
 				schema["properties"].(obj)["status"] = any
-				resource["spec"].(obj)["versions"].(array)[0].(obj)["schema"] = obj{"openAPIV3Schema": schema}
+				resource["spec"].(obj)["versions"].(array)[0].(obj)["schema"].(obj)["openAPIV3Schema"] = schema
 			}
 
 			data, err := yaml.Marshal(resource)

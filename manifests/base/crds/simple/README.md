@@ -1,3 +1,3 @@
 # Simple CRDs
 
-These CRDS have simplified schema validation.
+These CRDs have simplified schema validation.
