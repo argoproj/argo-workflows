@@ -3788,6 +3788,9 @@
         },
         "nodeFieldSelector": {
           "type": "string"
+        },
+        "result": {
+          "type": "string"
         }
       }
     },

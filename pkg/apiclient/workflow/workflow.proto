@@ -51,6 +51,7 @@ message WorkflowResumeRequest {
     string name = 1;
     string namespace = 2;
     string nodeFieldSelector = 3;
+    string result = 4;
 }
 
 message WorkflowTerminateRequest {
