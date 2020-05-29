@@ -323,9 +323,9 @@ func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error
 
 // ResumeWorkflow resumes a workflow by setting spec.suspend to nil and any suspended nodes to Successful.
 // Retries conflict errors
-func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string) error {
+func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string, result string) error {
 	if len(nodeFieldSelector) > 0 {
-		return updateWorkflowNodeByKey(wfIf, hydrator, workflowName, nodeFieldSelector, wfv1.NodeSucceeded, "")
+		return updateWorkflowNodeByKey(wfIf, hydrator, workflowName, nodeFieldSelector, wfv1.NodeSucceeded, "", result)
 	} else {
 		err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 			wf, err := wfIf.Get(workflowName, metav1.GetOptions{})
@@ -349,6 +349,12 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface
 				if node.IsActiveSuspendNode() {
 					node.Phase = wfv1.NodeSucceeded
 					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+					if len(result) > 0 {
+						if node.Outputs == nil {
+							node.Outputs = &wfv1.Outputs{}
+						}
+						node.Outputs.Result = &result
+					}
 					wf.Status.Nodes[nodeID] = node
 					workflowUpdated = true
 				}
@@ -393,7 +399,7 @@ func SelectorMatchesNode(selector fields.Selector, node wfv1.NodeStatus) bool {
 	return selector.Matches(nodeFields)
 }
 
-func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string, phase wfv1.NodePhase, message string) error {
+func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.Interface, workflowName string, nodeFieldSelector string, phase wfv1.NodePhase, message string, result string) error {
 	selector, err := fields.ParseSelector(nodeFieldSelector)
 	if err != nil {
 		return err
@@ -417,6 +423,12 @@ func updateWorkflowNodeByKey(wfIf v1alpha1.WorkflowInterface, hydrator hydrator.
 					node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 					if len(message) > 0 {
 						node.Message = message
+					}
+					if len(result) > 0 {
+						if node.Outputs == nil {
+							node.Outputs = &wfv1.Outputs{}
+						}
+						node.Outputs.Result = &result
 					}
 					wf.Status.Nodes[nodeID] = node
 					nodeUpdated = true
@@ -746,7 +758,7 @@ func TerminateWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
 // Or terminates a single resume step referenced by nodeFieldSelector
 func StopWorkflow(wfClient v1alpha1.WorkflowInterface, hydrator hydrator.Interface, name string, nodeFieldSelector string, message string) error {
 	if len(nodeFieldSelector) > 0 {
-		return updateWorkflowNodeByKey(wfClient, hydrator, name, nodeFieldSelector, wfv1.NodeFailed, message)
+		return updateWorkflowNodeByKey(wfClient, hydrator, name, nodeFieldSelector, wfv1.NodeFailed, message, "")
 	} else {
 		patchObj := map[string]interface{}{
 			"spec": map[string]interface{}{

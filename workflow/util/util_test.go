@@ -283,7 +283,7 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 	assert.NoError(t, err)
 
 	//will return error as displayName does not match any nodes
-	err = ResumeWorkflow(wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant")
+	err = ResumeWorkflow(wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant", "")
 	assert.Error(t, err)
 
 	//displayName didn't match suspend node so should still be running
@@ -291,13 +291,14 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
-	err = ResumeWorkflow(wfIf, hydratorfake.Noop, "suspend", "displayName=approve")
+	err = ResumeWorkflow(wfIf, hydratorfake.Noop, "suspend", "displayName=approve", "Approved")
 	assert.NoError(t, err)
 
 	//displayName matched node so has succeeded
 	wf, err = wfIf.Get("suspend", metav1.GetOptions{})
 	if assert.NoError(t, err) {
 		assert.Equal(t, wfv1.NodeSucceeded, wf.Status.Nodes.FindByDisplayName("approve").Phase)
+		assert.Equal(t, "Approved", *wf.Status.Nodes.FindByDisplayName("approve").Outputs.Result)
 	}
 }
 

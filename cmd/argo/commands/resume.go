@@ -12,6 +12,7 @@ import (
 )
 
 type resumeOps struct {
+	result            string // --result
 	nodeFieldSelector string // --node-field-selector
 }
 
@@ -38,6 +39,7 @@ func NewResumeCommand() *cobra.Command {
 					Name:              wfName,
 					Namespace:         namespace,
 					NodeFieldSelector: selector.String(),
+					Result:            resumeArgs.result,
 				})
 				if err != nil {
 					log.Fatalf("Failed to resume %s: %+v", wfName, err)
@@ -47,6 +49,7 @@ func NewResumeCommand() *cobra.Command {
 
 		},
 	}
+	command.Flags().StringVar(&resumeArgs.result, "result", "", "Result to add to resumed nodes")
 	command.Flags().StringVar(&resumeArgs.nodeFieldSelector, "node-field-selector", "", "selector of node to resume, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
 	return command
 }
