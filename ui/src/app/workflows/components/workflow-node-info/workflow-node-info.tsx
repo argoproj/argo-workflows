@@ -122,7 +122,7 @@ export const WorkflowNodeInputs = (props: {inputs: models.Inputs}) => {
                 ]}
                 {artifacts.length > 0 && [
                     <div className='row white-box__details-row' key='title'>
-                        <p>Artifacts</p>
+                        <p>Input Artifacts</p>
                     </div>,
                     <AttributeRows key='attrs' attributes={artifacts} />
                 ]}
@@ -286,7 +286,7 @@ export const WorkflowNodeInfo = (props: Props) => (
                     content: <WorkflowNodeContainers {...props} />
                 },
                 {
-                    title: 'ARTIFACTS',
+                    title: 'OUTPUT ARTIFACTS',
                     key: 'artifacts',
                     content: <WorkflowNodeArtifacts {...props} />
                 }
