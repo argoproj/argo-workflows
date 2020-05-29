@@ -98,22 +98,6 @@ func (d *dagContext) taskNodeName(taskName string) string {
 	return fmt.Sprintf("%s.%s", d.boundaryName, taskName)
 }
 
-// nodeTaskName formulates the corresponding task name for a dag node. Note that this is not simply the inverse of
-// taskNodeName. A task name might be from an expanded task, in which case it will not have an explicit task defined for it.
-// When that is the case, we formulate the name of the original expanded task by removing the fields after "("
-func (d *dagContext) taskNameFromNodeName(nodeName string) string {
-	nodeName = strings.TrimPrefix(nodeName, fmt.Sprintf("%s.", d.boundaryName))
-	// Check if this nodeName comes from an expanded task. If it does, return the original parent task
-	if index := strings.Index(nodeName, "("); index != -1 {
-		nodeName = nodeName[:index]
-	}
-	return nodeName
-}
-
-func (d *dagContext) getTaskFromNode(node *wfv1.NodeStatus) *wfv1.DAGTask {
-	return d.GetTask(d.taskNameFromNodeName(node.Name))
-}
-
 // taskNodeID formulates the node ID for a dag task
 func (d *dagContext) taskNodeID(taskName string) string {
 	nodeName := d.taskNodeName(taskName)
@@ -133,9 +117,7 @@ func (d *dagContext) getTaskNode(taskName string) *wfv1.NodeStatus {
 // assessDAGPhase assesses the overall DAG status
 func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1.NodePhase {
 	// First check all our nodes to see if anything is still running. If so, then the DAG is
-	// considered still running (even if there are failures). Remember any failures and if retry
-	// nodes have been exhausted.
-	failFast := d.tmpl.DAG.FailFast == nil || *d.tmpl.DAG.FailFast
+	// considered still running (even if there are failures)
 	var curr string
 	queue := nodes[d.boundaryID].Children
 	for len(queue) != 0 {
@@ -161,6 +143,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 	}
 
 	// We only succeed if all the target tasks have been considered (i.e. its nodes created) and there are no failures
+	failFast := d.tmpl.DAG.FailFast == nil || *d.tmpl.DAG.FailFast
 	result := wfv1.NodeSucceeded
 	for _, depName := range targetTasks {
 		depNode := d.getTaskNode(depName)
@@ -394,11 +377,6 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 
 	for _, t := range expandedTasks {
 		taskNodeName := dagCtx.taskNodeName(t.Name)
-		// Ensure that the generated taskNodeName can be reversed into the original (not expanded) task name
-		if dagCtx.taskNameFromNodeName(taskNodeName) != task.Name {
-			panic("unreachable: task node name cannot be reversed into tag name; please file a bug on GitHub")
-		}
-
 		node = dagCtx.getTaskNode(t.Name)
 		if node == nil {
 			woc.log.Infof("All of node %s dependencies %s completed", taskNodeName, taskDependencies)
