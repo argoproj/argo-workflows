@@ -4,15 +4,17 @@ import (
 	"context"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 type PodItem struct {
+	wf        *wfv1.Workflow
 	nodeName  string
 	nodeID    string
 	namespace string
@@ -22,12 +24,16 @@ type PodItem struct {
 type PodManager struct {
 	podCreateQueue workqueue.RateLimitingInterface
 	kubeClient     kubernetes.Interface
+	controller     WorkflowController
+	nodeError      map[string]error
 }
 
-func NewPodManager(kubeClient kubernetes.Interface) *PodManager {
+func NewPodManager(kubeClient kubernetes.Interface, controller WorkflowController) *PodManager {
 	return &PodManager{
 		podCreateQueue: workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		kubeClient:     kubeClient,
+		controller:     controller,
+		nodeError:      make(map[string]error),
 	}
 }
 
@@ -48,16 +54,12 @@ func (pm *PodManager) processNextPodItem() bool {
 		return false
 	}
 	defer pm.podCreateQueue.Done(pod)
-
 	podItem := pod.(*PodItem)
 	_, err := pm.kubeClient.CoreV1().Pods(podItem.namespace).Create(podItem.pod)
 	if err != nil {
-		if apierr.IsAlreadyExists(err) {
-			// workflow pod names are deterministic. We can get here if the
-			// controller fails to persist the workflow after creating the pod.
-			log.Infof("Skipped pod %s (%s) creation: already exists", podItem.nodeName, podItem.nodeID)
-		}
-		log.Infof("Failed to create pod %s (%s): %v", podItem.nodeName, podItem.nodeID, err)
+		pm.nodeError[podItem.nodeID] = err
+		key, _ := cache.MetaNamespaceKeyFunc(podItem.wf)
+		pm.controller.wfQueue.Add(key)
 	}
 	return true
 }

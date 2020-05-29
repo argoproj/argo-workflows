@@ -116,8 +116,8 @@ func NewWorkflowController(
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
-		podManager:                 NewPodManager(kubeclientset),
 	}
+	wfc.podManager = NewPodManager(kubeclientset, wfc)
 	wfc.throttler = NewThrottler(0, wfc.wfQueue)
 	wfc.UpdateConfig()
 

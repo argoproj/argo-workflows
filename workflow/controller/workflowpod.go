@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	apierr "k8s.io/apimachinery/pkg/api/errors"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
@@ -94,6 +96,21 @@ type createWorkflowPodOpts struct {
 
 func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, opts *createWorkflowPodOpts) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
+	if err := woc.controller.podManager.nodeError[nodeID]; err != nil {
+		delete(woc.controller.podManager.nodeError, nodeID)
+		if apierr.IsAlreadyExists(err) {
+			// workflow pod names are deterministic. We can get here if the
+			// controller fails to persist the workflow after creating the pod.
+			woc.log.Infof("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
+			return nil, nil
+		}
+		if apierr.IsForbidden(err) {
+			return nil, err
+		}
+		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
+		return nil, errors.InternalWrapError(err)
+	}
+
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 	tmpl = tmpl.DeepCopy()
 	wfSpec := woc.wfSpec.DeepCopy()
@@ -301,7 +318,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	}
 
 	if podCreateAllowed {
-		podItem := &PodItem{pod: pod.DeepCopy(), namespace: woc.wf.Namespace, nodeName: nodeName, nodeID: nodeID}
+		podItem := &PodItem{pod: pod.DeepCopy(), namespace: woc.wf.Namespace, nodeName: nodeName, nodeID: nodeID, wf: woc.wf}
 		woc.controller.podManager.podCreateQueue.Add(podItem)
 	} else {
 		woc.log.Warn("Controller doesn't have permission to create pod resource on namespace " + woc.wf.Namespace)
