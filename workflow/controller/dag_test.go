@@ -185,7 +185,7 @@ func TestArtifactResolutionWhenSkippedDAG(t *testing.T) {
 
 	woc.operate()
 	woc.operate()
-	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.Equal(t, wfv1.NodeSucceeded, woc.wf.Status.Phase)
 }
 
 func TestEvaluateDependsLogic(t *testing.T) {
