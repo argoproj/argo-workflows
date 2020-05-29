@@ -14,8 +14,8 @@ type crdType string
 
 const (
 	minimal crdType = "minimal"
-	simple          = "simple"
-	full            = "full"
+	simple  crdType = "simple"
+	full    crdType = "full"
 )
 
 /*
