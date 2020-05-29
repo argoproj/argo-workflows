@@ -22,18 +22,18 @@ import (
 )
 
 type listFlags struct {
-	namespace    string
-	status       []string
-	completed    bool
-	running      bool
-	prefix       string
-	output       string
-	createdSince string
-	finisheAfter string
-	chunkSize    int64
-	noHeaders    bool
-	labels       string
-	fields       string
+	namespace     string
+	status        []string
+	completed     bool
+	running       bool
+	prefix        string
+	output        string
+	createdSince  string
+	finishedAfter string
+	chunkSize     int64
+	noHeaders     bool
+	labels        string
+	fields        string
 }
 
 func NewListCommand() *cobra.Command {
@@ -62,7 +62,7 @@ func NewListCommand() *cobra.Command {
 	}
 	command.Flags().BoolVar(&allNamespaces, "all-namespaces", false, "Show workflows from all namespaces")
 	command.Flags().StringVar(&listArgs.prefix, "prefix", "", "Filter workflows by prefix")
-	command.Flags().StringVar(&listArgs.finisheAfter, "older", "", "List completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
+	command.Flags().StringVar(&listArgs.finishedAfter, "older", "", "List completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
 	command.Flags().StringSliceVar(&listArgs.status, "status", []string{}, "Filter by status (comma separated)")
 	command.Flags().BoolVar(&listArgs.completed, "completed", false, "Show only completed workflows")
 	command.Flags().BoolVar(&listArgs.running, "running", false, "Show only running workflows")
@@ -121,8 +121,8 @@ func listWorkflows(ctx context.Context, serviceClient workflowpkg.WorkflowServic
 		errors.CheckError(err)
 		workflows = workflows.Filter(wfv1.WorkflowCreatedAfter(*t))
 	}
-	if flags.finisheAfter != "" {
-		t, err := argotime.ParseSince(flags.finisheAfter)
+	if flags.finishedAfter != "" {
+		t, err := argotime.ParseSince(flags.finishedAfter)
 		errors.CheckError(err)
 		workflows = workflows.Filter(wfv1.WorkflowFinishedBefore(*t))
 	}

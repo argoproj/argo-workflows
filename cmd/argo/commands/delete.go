@@ -62,7 +62,7 @@ func NewDeleteCommand() *cobra.Command {
 	command.Flags().BoolVar(&all, "all", false, "Delete all workflows")
 	command.Flags().BoolVar(&flags.completed, "completed", false, "Delete completed workflows")
 	command.Flags().StringVar(&flags.prefix, "prefix", "", "Delete workflows by prefix")
-	command.Flags().StringVar(&flags.finisheAfter, "older", "", "Delete completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
+	command.Flags().StringVar(&flags.finishedAfter, "older", "", "Delete completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
 	command.Flags().StringVarP(&flags.labels, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones")
 	command.Flags().BoolVar(&dryRun, "dry-run", false, "Do not delete the workflow, only print what would happen")
 	return command
