@@ -85,9 +85,21 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
+  annotations:
+    workflows.argoproj.io/rbac-groups: authors
+    workflows.argoproj.io/rbac-priority: "1"
   labels:
     app.kubernetes.io/part-of: argo
   name: argo-server
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    workflows.argoproj.io/rbac-default: "true"
+  labels:
+    app.kubernetes.io/part-of: argo
+  name: argo-server-read-only
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -185,6 +197,54 @@ rules:
   - create
   - get
   - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/part-of: argo
+  name: argo-server-read-only
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - watch
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - pods/exec
+  - pods/log
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflows
+  - workflowtemplates
+  - cronworkflows
+  verbs:
+  - get
+  - list
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -326,6 +386,20 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: argo-server
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/part-of: argo
+  name: argo-server-read-only
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: argo-server-read-only
+subjects:
+- kind: ServiceAccount
+  name: argo-server-read-only
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

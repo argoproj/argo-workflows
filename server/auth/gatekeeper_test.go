@@ -13,8 +13,8 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/server/auth/rbac"
-	"github.com/argoproj/argo/server/auth/sso/mocks"
+	rbacmocks "github.com/argoproj/argo/server/auth/rbac/mocks"
+	ssomocks "github.com/argoproj/argo/server/auth/sso/mocks"
 )
 
 func TestServer_GetWFClient(t *testing.T) {
@@ -56,9 +56,11 @@ func TestServer_GetWFClient(t *testing.T) {
 		}
 	})
 	t.Run("SSO", func(t *testing.T) {
-		ssoIf := &mocks.Interface{}
+		ssoIf := &ssomocks.Interface{}
+		rbacIf := &rbacmocks.Interface{}
 		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(wfv1.User{Name: "my-name", Groups: []string{"my-group"}}, nil)
-		g, err := NewGatekeeper(Modes{SSO: true}, "my-ns", nil, kubeClient, nil, ssoIf, rbac.Config{DefaultServiceAccount: &corev1.LocalObjectReference{Name: "my-sa"}})
+		rbacIf.On("ServiceAccount", mock.Anything).Return(&corev1.LocalObjectReference{Name: "my-sa"}, nil)
+		g, err := NewGatekeeper(Modes{SSO: true}, "my-ns", nil, kubeClient, nil, ssoIf, rbacIf)
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer id_token:whatever"))
 			if assert.NoError(t, err) {

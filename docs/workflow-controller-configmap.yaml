@@ -177,20 +177,6 @@ data:
         key: clientSecret
       redirectUrl: https://localhost:2746/oauth2/callback
 
-    # With SSO, RBAC configuration is mandatory
-    rbac:
-      # For each rule...
-      rules:
-        # If the user is in one of these groups.
-        - groups:
-          - authors
-          # Then use this service account.
-          serviceAccount:
-            name: argo-server
-      # The account to use if no rule matches
-      defaultServiceAccount:
-        name: argo-server-read-only
-
       # Optional config for mysql:
       # mysql:
       #   host: localhost

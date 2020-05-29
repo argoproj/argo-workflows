@@ -32,6 +32,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/artifacts"
 	"github.com/argoproj/argo/server/auth"
+	"github.com/argoproj/argo/server/auth/rbac"
 	"github.com/argoproj/argo/server/auth/sso"
 	"github.com/argoproj/argo/server/clusterworkflowtemplate"
 	"github.com/argoproj/argo/server/cronworkflow"
@@ -82,6 +83,7 @@ type ArgoServerOpts struct {
 func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 	configController := config.NewController(opts.Namespace, opts.ConfigName, opts.KubeClientset)
 	ssoIf := sso.NullSSO
+	var rbacIf rbac.Interface
 	c, err := configController.Get()
 	if err != nil {
 		return nil, err
@@ -92,10 +94,11 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 			return nil, err
 		}
 		log.Info("SSO enabled")
+		rbacIf = rbac.New(opts.KubeClientset.CoreV1().ServiceAccounts(opts.Namespace))
 	} else {
 		log.Info("SSO disabled")
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Namespace, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, ssoIf, c.RBAC)
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Namespace, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, ssoIf, rbacIf)
 	if err != nil {
 		return nil, err
 	}
