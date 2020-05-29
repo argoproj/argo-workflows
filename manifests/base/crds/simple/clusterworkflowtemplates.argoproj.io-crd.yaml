@@ -1,19 +1,19 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: workflows.argoproj.io
+  name: clusterworkflowtemplates.argoproj.io
 spec:
   conversion:
-    strategy: None
+    strategy: none
   group: argoproj.io
   names:
-    kind: Workflow
-    listKind: WorkflowList
-    plural: workflows
+    kind: ClusterWorkflowTemplate
+    listKind: ClusterWorkflowTemplateList
+    plural: clusterworkflowtemplates
     shortNames:
-    - wf
-    singular: workflow
-  scope: Namespaced
+    - cwftmpl
+    singular: clusterworkflowtemplate
+  scope: Cluster
   versions:
   - name: v1alpha1
     schema:

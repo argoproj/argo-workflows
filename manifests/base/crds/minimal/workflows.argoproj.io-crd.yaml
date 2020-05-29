@@ -1,0 +1,20 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: workflows.argoproj.io
+spec:
+  conversion:
+    strategy: none
+  group: argoproj.io
+  names:
+    kind: Workflow
+    listKind: WorkflowList
+    plural: workflows
+    shortNames:
+    - wf
+    singular: workflow
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
