@@ -170,7 +170,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 			if !failFast {
 				break
 			}
-		} else if depNode.Failed() {
+		} else if depNode.FailedOrError() {
 			result = depNode.Phase
 			// If failFast is enabled, don't check to see if other target tasks are complete and fail now instead
 			if failFast {
@@ -354,7 +354,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			// DAG's phase.
 			omittedNodePhase := wfv1.NodeSucceeded
 			for _, parentTaskName := range dagCtx.GetTaskDependencies(taskName) {
-				if parentNode := dagCtx.getTaskNode(parentTaskName); parentNode.Failed() {
+				if parentNode := dagCtx.getTaskNode(parentTaskName); parentNode.FailedOrError() {
 					omittedNodePhase = parentNode.Phase
 				}
 			}
@@ -430,7 +430,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			if node == nil || !node.Fulfilled() {
 				return
 			}
-			if node.Failed() {
+			if node.FailedOrError() {
 				groupPhase = node.Phase
 			}
 		}

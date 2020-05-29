@@ -363,7 +363,7 @@ func (woc *wfOperationCtx) operate() {
 	}
 
 	var workflowMessage string
-	if node.Failed() && woc.wfSpec.Shutdown != "" {
+	if node.FailedOrError() && woc.wfSpec.Shutdown != "" {
 		workflowMessage = fmt.Sprintf("Stopped with strategy '%s'", woc.wfSpec.Shutdown)
 	} else {
 		workflowMessage = node.Message
@@ -374,7 +374,7 @@ func (woc *wfOperationCtx) operate() {
 	// node phase.
 	switch workflowStatus {
 	case wfv1.NodeSucceeded, wfv1.NodeSkipped:
-		if onExitNode != nil && onExitNode.Failed() {
+		if onExitNode != nil && onExitNode.FailedOrError() {
 			// if main workflow succeeded, but the exit node was unsuccessful
 			// the workflow is now considered unsuccessful.
 			woc.markWorkflowPhase(onExitNode.Phase, true, onExitNode.Message)
@@ -637,7 +637,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return node, true, nil
 	}
 
-	if !lastChildNode.Failed() {
+	if !lastChildNode.FailedOrError() {
 		node.Outputs = lastChildNode.Outputs.DeepCopy()
 		woc.wf.Status.Nodes[node.ID] = *node
 		return woc.markNodePhase(node.Name, wfv1.NodeSucceeded), true, nil
@@ -783,7 +783,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 					woc.onNodeComplete(&node)
 				}
 			}
-			if !node.Failed() {
+			if !node.FailedOrError() {
 				woc.succeededPods[pod.ObjectMeta.Name] = true
 			}
 		}
@@ -858,7 +858,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 // shouldPrintPodSpec return eligible to print to the pod spec
 func (woc *wfOperationCtx) shouldPrintPodSpec(node wfv1.NodeStatus) bool {
 	return woc.controller.Config.PodSpecLogStrategy.AllPods ||
-		(woc.controller.Config.PodSpecLogStrategy.FailedPod && node.Failed())
+		(woc.controller.Config.PodSpecLogStrategy.FailedPod && node.FailedOrError())
 }
 
 //fails any suspended nodes if the workflow deadline has passed

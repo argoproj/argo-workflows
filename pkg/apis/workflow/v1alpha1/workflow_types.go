@@ -1278,11 +1278,11 @@ func (n NodeStatus) IsDaemoned() bool {
 }
 
 func (n NodeStatus) Succeeded() bool {
-	return n.Fulfilled() && n.Phase == NodeSucceeded
+	return n.Phase == NodeSucceeded
 }
 
-func (n NodeStatus) Failed() bool {
-	return n.Fulfilled() && (n.Phase == NodeFailed || n.Phase == NodeError)
+func (n NodeStatus) FailedOrError() bool {
+	return n.Phase == NodeFailed || n.Phase == NodeError
 }
 
 func (n NodeStatus) StartTime() *metav1.Time {
@@ -1296,7 +1296,7 @@ func (n NodeStatus) FinishTime() *metav1.Time {
 // CanRetry returns whether the node should be retried or not.
 func (n NodeStatus) CanRetry() bool {
 	// TODO(shri): Check if there are some 'unretryable' errors.
-	return n.Fulfilled() && n.Failed()
+	return n.FailedOrError()
 }
 
 func (n NodeStatus) GetTemplateScope() (ResourceScope, string) {

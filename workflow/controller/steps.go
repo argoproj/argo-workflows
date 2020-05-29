@@ -95,7 +95,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 			return node, nil
 		}
 
-		if sgNode.Failed() {
+		if sgNode.FailedOrError() {
 			failMessage := fmt.Sprintf("step group %s was unsuccessful: %s", sgNode.ID, sgNode.Message)
 			woc.log.Info(failMessage)
 			woc.updateOutboundNodes(nodeName, tmpl)
@@ -275,7 +275,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	for _, childNodeID := range node.Children {
 		childNode := woc.wf.Status.Nodes[childNodeID]
 		step := nodeSteps[childNode.Name]
-		if childNode.Failed() && !step.ContinuesOn(childNode.Phase) {
+		if childNode.FailedOrError() && !step.ContinuesOn(childNode.Phase) {
 			failMessage := fmt.Sprintf("child '%s' failed", childNodeID)
 			woc.log.Infof("Step group node %s deemed failed: %s", node.ID, failMessage)
 			return woc.markNodePhase(node.Name, wfv1.NodeFailed, failMessage)
