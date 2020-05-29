@@ -135,6 +135,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 	// First check all our nodes to see if anything is still running. If so, then the DAG is
 	// considered still running (even if there are failures). Remember any failures and if retry
 	// nodes have been exhausted.
+	failFast := d.tmpl.DAG.FailFast == nil || *d.tmpl.DAG.FailFast
 	var curr string
 	queue := nodes[d.boundaryID].Children
 	for len(queue) != 0 {
@@ -159,21 +160,29 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 		}
 	}
 
-	// There are no currently running tasks. Now check if our dependencies were met
+	// We only succeed if all the target tasks have been considered (i.e. its nodes created) and there are no failures
+	result := wfv1.NodeSucceeded
 	for _, depName := range targetTasks {
 		depNode := d.getTaskNode(depName)
 		if depNode == nil {
-			return wfv1.NodeRunning
-		} else if !depNode.Succeeded() {
-			if depNode.Phase == wfv1.NodeError {
-				return wfv1.NodeError
+			result = wfv1.NodeRunning
+			// If failFast is disabled, we will want to let all tasks complete before checking for failures
+			if !failFast {
+				break
 			}
-			return wfv1.NodeFailed
+		} else if depNode.Failed() {
+			if depNode.Phase == wfv1.NodeError {
+				result = wfv1.NodeError
+			}
+			result = wfv1.NodeFailed
+			// If failFast is enabled, don't check and see if other target tasks are completed and fail now
+			if failFast {
+				break
+			}
 		}
 	}
 
-	// If we get here, all our dependencies were completed and successful
-	return wfv1.NodeSucceeded
+	return result
 }
 
 func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {

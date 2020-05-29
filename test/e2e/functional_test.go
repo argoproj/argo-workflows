@@ -459,7 +459,7 @@ func (s *FunctionalSuite) TestDAGDepends() {
 		WaitForWorkflow(30 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("A")
 			assert.NotNil(t, nodeStatus)
 			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
@@ -477,7 +477,7 @@ func (s *FunctionalSuite) TestDAGDepends() {
 			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
 			nodeStatus = status.Nodes.FindByDisplayName("should-not-execute")
 			assert.NotNil(t, nodeStatus)
-			assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
+			assert.Equal(t, wfv1.NodeOmitted, nodeStatus.Phase)
 			nodeStatus = status.Nodes.FindByDisplayName("should-execute-3")
 			assert.NotNil(t, nodeStatus)
 			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
