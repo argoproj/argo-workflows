@@ -5,7 +5,6 @@ bases:
   - ../../namespace-install
   - ../../namespace-install/argo-server-read-only
   - minio
-  - dex
 
 resources:
   - argo-server-sso-secret.yaml

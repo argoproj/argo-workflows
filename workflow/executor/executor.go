@@ -547,6 +547,10 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 		shallowCopy := *we.Template.ArchiveLocation.GCS
 		art.GCS = &shallowCopy
 		art.GCS.Key = path.Join(art.GCS.Key, fileName)
+	} else if we.Template.ArchiveLocation.OSS != nil {
+		shallowCopy := *we.Template.ArchiveLocation.OSS
+		art.OSS = &shallowCopy
+		art.OSS.Key = path.Join(art.OSS.Key, fileName)
 	} else {
 		return nil, errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
 	}

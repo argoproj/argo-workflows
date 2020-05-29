@@ -1,14 +1,13 @@
 import {Duration, Tabs, Ticker} from 'argo-ui';
-import * as classNames from 'classnames';
 import * as moment from 'moment';
 import * as React from 'react';
 
 import * as models from '../../../../models';
+import {Phase} from '../../../shared/components/phase';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {ResourcesDuration} from '../../../shared/resources-duration';
 import {services} from '../../../shared/services';
 import {getResolvedTemplates} from '../../../shared/template-resolution';
-import {Utils} from '../../../shared/utils';
 
 require('./workflow-node-info.scss');
 
@@ -46,11 +45,7 @@ export const WorkflowNodeSummary = (props: Props) => {
         {title: 'TYPE', value: props.node.type},
         {
             title: 'PHASE',
-            value: (
-                <span>
-                    <i className={classNames('fa', Utils.statusIconClasses(props.node.phase))} aria-hidden='true' /> {props.node.phase}
-                </span>
-            )
+            value: <Phase value={props.node.phase} />
         },
         ...(props.node.message
             ? [
@@ -127,7 +122,7 @@ export const WorkflowNodeInputs = (props: {inputs: models.Inputs}) => {
                 ]}
                 {artifacts.length > 0 && [
                     <div className='row white-box__details-row' key='title'>
-                        <p>Artifacts</p>
+                        <p>Input Artifacts</p>
                     </div>,
                     <AttributeRows key='attrs' attributes={artifacts} />
                 ]}
@@ -291,7 +286,7 @@ export const WorkflowNodeInfo = (props: Props) => (
                     content: <WorkflowNodeContainers {...props} />
                 },
                 {
-                    title: 'ARTIFACTS',
+                    title: 'OUTPUT ARTIFACTS',
                     key: 'artifacts',
                     content: <WorkflowNodeArtifacts {...props} />
                 }

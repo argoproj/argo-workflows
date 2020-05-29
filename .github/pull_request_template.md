@@ -5,4 +5,4 @@ Checklist:
 * [ ] I've signed the CLA.
 * [ ] I have written unit and/or e2e tests for my change. PRs without these are unlikely to be merged.
 * [ ] My builds are green. Try syncing with master if they are not. 
-* [ ] My organization is added to USERS.md.
+* [ ] My organization is added to [USERS.md](https://github.com/argoproj/argo/blob/master/USERS.md).

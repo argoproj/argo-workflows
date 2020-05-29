@@ -12,19 +12,42 @@ import (
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/printer"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 const onExitSuffix = "onExit"
 
 type getFlags struct {
-	output string
+	output                  string
+	nodeFieldSelectorString string
+
+	// Only used for backwards compatibility
 	status string
+}
+
+func (g getFlags) shouldPrint(node wfv1.NodeStatus) bool {
+	if g.status != "" {
+		// Adapt --status to a node field selector for compatibility
+		if g.nodeFieldSelectorString != "" {
+			log.Fatalf("cannot use both --status and --node-field-selector")
+		}
+		g.nodeFieldSelectorString = statusToNodeFieldSelector(g.status)
+	}
+	if g.nodeFieldSelectorString != "" {
+		selector, err := fields.ParseSelector(g.nodeFieldSelectorString)
+		if err != nil {
+			log.Fatalf("selector is invalid: %s", err)
+		}
+		return util.SelectorMatchesNode(selector, node)
+	}
+	return true
 }
 
 func NewGetCommand() *cobra.Command {
@@ -49,7 +72,7 @@ func NewGetCommand() *cobra.Command {
 					Namespace: namespace,
 				})
 				errors.CheckError(err)
-				outputWorkflow(wf, getArgs)
+				printWorkflow(wf, getArgs)
 			}
 		},
 	}
@@ -57,18 +80,15 @@ func NewGetCommand() *cobra.Command {
 	command.Flags().StringVarP(&getArgs.output, "output", "o", "", "Output format. One of: json|yaml|wide")
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
 	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
+	command.Flags().StringVar(&getArgs.nodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
 	return command
 }
 
-func outputWorkflow(wf *wfv1.Workflow, getArgs getFlags) {
-	printWorkflow(wf, getArgs.output, getArgs.status)
+func statusToNodeFieldSelector(status string) string {
+	return fmt.Sprintf("phase=%s", status)
 }
 
-func printWorkflow(wf *wfv1.Workflow, output, status string) {
-	getArgs := getFlags{
-		output: output,
-		status: status,
-	}
+func printWorkflow(wf *wfv1.Workflow, getArgs getFlags) {
 	switch getArgs.output {
 	case "name":
 		fmt.Println(wf.ObjectMeta.Name)
@@ -99,15 +119,7 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 		fmt.Printf(fmtStr, "Message:", wf.Status.Message)
 	}
 	if len(wf.Status.Conditions) > 0 {
-		fmt.Printf(fmtStr, "Conditions:", "")
-		for _, condition := range wf.Status.Conditions {
-			conditionMessage := condition.Message
-			if conditionMessage == "" {
-				conditionMessage = string(condition.Status)
-			}
-			conditionPrefix := fmt.Sprintf("%s %s", workflowConditionIconMap[condition.Type], string(condition.Type))
-			fmt.Printf(fmtStr, conditionPrefix, conditionMessage)
-		}
+		fmt.Print(wf.Status.Conditions.DisplayString(fmtStr, workflowConditionIconMap))
 	}
 	fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
 	if !wf.Status.StartedAt.IsZero() {
@@ -133,7 +145,6 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 		}
 	}
 	if wf.Status.Outputs != nil {
-		//fmt.Printf(fmtStr, "Outputs:", "")
 		if len(wf.Status.Outputs.Parameters) > 0 {
 			fmt.Printf(fmtStr, "Output Parameters:", "")
 			for _, param := range wf.Status.Outputs.Parameters {
@@ -443,7 +454,7 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 
 // Main method to print information of node in get
 func printNode(w *tabwriter.Writer, node wfv1.NodeStatus, nodePrefix string, getArgs getFlags) {
-	if getArgs.status != "" && string(node.Phase) != getArgs.status {
+	if !getArgs.shouldPrint(node) {
 		return
 	}
 	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], node.DisplayName)

@@ -588,6 +588,10 @@
         "onExit": {
           "type": "string",
           "description": "OnExit is a template reference which is invoked at the end of the\ntemplate, irrespective of the success, failure, or error of the\nprimary template."
+        },
+        "depends": {
+          "type": "string",
+          "title": "Depends are name of other targets which this depends on"
         }
       },
       "title": "DAGTask represents a node in the graph during DAG execution"
@@ -1474,7 +1478,7 @@
         "clusterScope": {
           "type": "boolean",
           "format": "boolean",
-          "description": "ClusterScope indicates the referred template is cluster scoped (i.e., a ClusterWorkflowTemplate)."
+          "description": "ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate)."
         }
       },
       "description": "TemplateRef is a reference of template resource."
@@ -1682,6 +1686,10 @@
         "shutdown": {
           "type": "string",
           "title": "Shutdown will shutdown the workflow according to its ShutdownStrategy"
+        },
+        "workflowTemplateRef": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateRef",
+          "title": "WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution"
         }
       },
       "description": "WorkflowSpec is the specification of a Workflow."
@@ -1734,6 +1742,21 @@
         }
       },
       "title": "WorkflowStep is a reference to a template to execute in a series of step"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateRef": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name is the resource name of the workflow template."
+        },
+        "clusterScope": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate)."
+        }
+      },
+      "description": "WorkflowTemplateRef is a reference to a WorkflowTemplate resource."
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateSpec": {
       "type": "object",
