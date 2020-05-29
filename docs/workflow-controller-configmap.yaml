@@ -169,7 +169,7 @@ data:
           key: password
 
     # Single sign-on
-    sso :
+    sso:
       issuer: http://dex:5556/dex
       clientId: argo-server
       clientSecret:
