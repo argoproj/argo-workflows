@@ -1,23 +1,23 @@
 import * as React from 'react';
-import {WorkflowCondition, WorkflowConditionType} from '../../models';
+import {Condition, ConditionType} from '../../models';
 
 interface Props {
-    conditions: WorkflowCondition[];
+    conditions: Condition[];
 }
 
-const WarningWorkflowConditions: WorkflowConditionType[] = ['SpecWarning'];
-const ErrorWorkflowConditions: WorkflowConditionType[] = ['MetricsError'];
+const WarningConditions: ConditionType[] = ['SpecWarning'];
+const ErrorConditions: ConditionType[] = ['MetricsError', 'SubmissionError'];
 
-export function hasWarningConditionBadge(conditions: WorkflowCondition[]): boolean {
+export function hasWarningConditionBadge(conditions: Condition[]): boolean {
     if (conditions.length === 0) {
         return false;
     }
 
     for (const condition of conditions) {
-        if (WarningWorkflowConditions.includes(condition.type)) {
+        if (WarningConditions.includes(condition.type)) {
             return true;
         }
-        if (ErrorWorkflowConditions.includes(condition.type)) {
+        if (ErrorConditions.includes(condition.type)) {
             return true;
         }
     }
@@ -25,11 +25,11 @@ export function hasWarningConditionBadge(conditions: WorkflowCondition[]): boole
     return false;
 }
 
-function getConditionIcon(condition: WorkflowConditionType): JSX.Element {
-    if (WarningWorkflowConditions.includes(condition)) {
+function getConditionIcon(condition: ConditionType): JSX.Element {
+    if (WarningConditions.includes(condition as ConditionType)) {
         return <span className={'fa fa-exclamation-triangle'} style={{color: '#d7b700'}} />;
     }
-    if (ErrorWorkflowConditions.includes(condition)) {
+    if (ErrorConditions.includes(condition as ConditionType)) {
         return <span className={'fa fa-exclamation-circle'} style={{color: '#d70022'}} />;
     }
     return <span />;

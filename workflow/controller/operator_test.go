@@ -14,11 +14,11 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
-	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
 	"github.com/argoproj/argo/util/argo"
 	"github.com/argoproj/argo/workflow/common"
+	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -38,6 +38,31 @@ func TestOperateWorkflowPanicRecover(t *testing.T) {
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
+}
+
+func Test_wfOperationCtx_reapplyUpdate(t *testing.T) {
+	wf := &wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "my-wf"},
+		Status:     wfv1.WorkflowStatus{Nodes: wfv1.Nodes{"foo": wfv1.NodeStatus{Name: "my-foo"}}},
+	}
+	cancel, controller := newController(wf)
+	defer cancel()
+	controller.hydrator = hydratorfake.Always
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	// fake the behaviour woc.operate()
+	assert.NoError(t, controller.hydrator.Hydrate(wf))
+	nodes := wfv1.Nodes{"foo": wfv1.NodeStatus{Name: "my-foo", Phase: wfv1.NodeSucceeded}}
+
+	// now force a re-apply update
+	updatedWf, err := woc.reapplyUpdate(controller.wfclientset.ArgoprojV1alpha1().Workflows(""), nodes)
+	if assert.NoError(t, err) && assert.NotNil(t, updatedWf) {
+		assert.True(t, woc.controller.hydrator.IsHydrated(updatedWf))
+		if assert.Contains(t, updatedWf.Status.Nodes, "foo") {
+			assert.Equal(t, "my-foo", updatedWf.Status.Nodes["foo"].Name)
+			assert.Equal(t, wfv1.NodeSucceeded, updatedWf.Status.Nodes["foo"].Phase, "phase is merged")
+		}
+	}
 }
 
 var sidecarWithVol = `
@@ -607,26 +632,25 @@ func TestRetriesVariable(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(retriesVariableTemplate)
 	wf, err := wfcset.Create(wf)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.Nil(t, err)
-
+	assert.NoError(t, err)
 	iterations := 5
 	for i := 1; i <= iterations; i++ {
 		if i != 1 {
 			makePodsPhase(t, apiv1.PodFailed, controller.kubeclientset, wf.ObjectMeta.Namespace)
 			wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		}
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate()
 	}
 
 	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
-	assert.Nil(t, err)
-	assert.Equal(t, iterations, len(pods.Items))
-	for i := 0; i < iterations; i++ {
-		assert.Equal(t, fmt.Sprintf("cowsay %d", i), pods.Items[i].Spec.Containers[1].Args[0])
+	if assert.NoError(t, err) && assert.Len(t, pods.Items, iterations) {
+		for i := 0; i < iterations; i++ {
+			assert.Equal(t, fmt.Sprintf("cowsay %d", i), pods.Items[i].Spec.Containers[1].Args[0])
+		}
 	}
 }
 
@@ -1173,7 +1197,7 @@ func TestSuspendResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow and operate again. two pods should be able to be scheduled
-	err = util.ResumeWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "")
+	err = util.ResumeWorkflow(wfcset, controller.hydrator, wf.ObjectMeta.Name, "")
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -1498,7 +1522,7 @@ func TestSuspendTemplate(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
-	err = util.ResumeWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "")
+	err = util.ResumeWorkflow(wfcset, controller.hydrator, wf.ObjectMeta.Name, "")
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -1535,7 +1559,7 @@ func TestSuspendTemplateWithFailedResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
-	err = util.StopWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1", "Step failed!")
+	err = util.StopWorkflow(wfcset, controller.hydrator, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1", "Step failed!")
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -1573,7 +1597,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow, but with non-matching selector
-	err = util.ResumeWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "inputs.paramaters.param1.value=value2")
+	err = util.ResumeWorkflow(wfcset, controller.hydrator, wf.ObjectMeta.Name, "inputs.paramaters.param1.value=value2")
 	assert.Error(t, err)
 
 	// operate the workflow. nothing should have happened
@@ -1585,7 +1609,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.True(t, util.IsWorkflowSuspended(wf))
 
 	// resume the workflow, but with matching selector
-	err = util.ResumeWorkflow(wfcset, sqldb.ExplosiveOffloadNodeStatusRepo, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1")
+	err = util.ResumeWorkflow(wfcset, controller.hydrator, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1")
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -3502,4 +3526,169 @@ func TestBackoffExceedsMaxDuration(t *testing.T) {
 	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
 	assert.Equal(t, "Backoff would exceed max duration limit", woc.wf.Status.Nodes["echo-r6v49"].Message)
 	assert.Equal(t, "Backoff would exceed max duration limit", woc.wf.Status.Message)
+}
+
+var noOnExitWhenSkipped = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-primay-branch-sd6rg
+spec:
+  arguments: {}
+  entrypoint: statis
+  templates:
+  - arguments: {}
+    container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: pass
+    outputs: {}
+  - arguments: {}
+    container:
+      args:
+      - exit
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: exit
+    outputs: {}
+  - arguments: {}
+    dag:
+      tasks:
+      - arguments: {}
+        name: A
+        template: pass
+      - arguments: {}
+        dependencies:
+        - A
+        name: B
+        onExit: exit
+        template: pass
+        when: '{{tasks.A.status}} != Succeeded'
+      - arguments: {}
+        dependencies:
+        - A
+        name: C
+        template: pass
+    inputs: {}
+    metadata: {}
+    name: statis
+    outputs: {}
+status:
+  nodes:
+    dag-primay-branch-sd6rg:
+      children:
+      - dag-primay-branch-sd6rg-1815625391
+      displayName: dag-primay-branch-sd6rg
+      id: dag-primay-branch-sd6rg
+      name: dag-primay-branch-sd6rg
+      outboundNodes:
+      - dag-primay-branch-sd6rg-1832403010
+      - dag-primay-branch-sd6rg-1849180629
+      phase: Running
+      startedAt: "2020-05-22T16:44:05Z"
+      templateName: statis
+      templateScope: local/dag-primay-branch-sd6rg
+      type: DAG
+    dag-primay-branch-sd6rg-1815625391:
+      boundaryID: dag-primay-branch-sd6rg
+      children:
+      - dag-primay-branch-sd6rg-1832403010
+      - dag-primay-branch-sd6rg-1849180629
+      displayName: A
+      finishedAt: "2020-05-22T16:44:09Z"
+      hostNodeName: minikube
+      id: dag-primay-branch-sd6rg-1815625391
+      name: dag-primay-branch-sd6rg.A
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-primay-branch-sd6rg/dag-primay-branch-sd6rg-1815625391/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 3
+        memory: 1
+      startedAt: "2020-05-22T16:44:05Z"
+      templateName: pass
+      templateScope: local/dag-primay-branch-sd6rg
+      type: Pod
+    dag-primay-branch-sd6rg-1832403010:
+      boundaryID: dag-primay-branch-sd6rg
+      displayName: B
+      finishedAt: "2020-05-22T16:44:10Z"
+      id: dag-primay-branch-sd6rg-1832403010
+      message: when 'Succeeded != Succeeded' evaluated false
+      name: dag-primay-branch-sd6rg.B
+      phase: Skipped
+      startedAt: "2020-05-22T16:44:10Z"
+      templateName: pass
+      templateScope: local/dag-primay-branch-sd6rg
+      type: Skipped
+    dag-primay-branch-sd6rg-1849180629:
+      boundaryID: dag-primay-branch-sd6rg
+      displayName: C
+      hostNodeName: minikube
+      id: dag-primay-branch-sd6rg-1849180629
+      name: dag-primay-branch-sd6rg.C
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-primay-branch-sd6rg/dag-primay-branch-sd6rg-1849180629/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Running
+      resourcesDuration:
+        cpu: 3
+        memory: 1
+      startedAt: "2020-05-22T16:44:10Z"
+      templateName: pass
+      templateScope: local/dag-primay-branch-sd6rg
+      type: Pod
+  phase: Running
+  resourcesDuration:
+    cpu: 10
+    memory: 4
+  startedAt: "2020-05-22T16:44:05Z"
+`
+
+// This tests that we don't wait a backoff if it would exceed the maxDuration anyway.
+func TestNoOnExitWhenSkipped(t *testing.T) {
+	wf := unmarshalWF(noOnExitWhenSkipped)
+
+	woc := newWoc(*wf)
+	woc.operate()
+	assert.Nil(t, woc.getNodeByName("B.onExit"))
 }
