@@ -2,10 +2,8 @@ package commands
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/argoproj/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -51,7 +49,6 @@ func NewDeleteCommand() *cobra.Command {
 						fmt.Printf("Workflow '%s' not found\n", wf.Name)
 						continue
 					}
-					log.Debug(reflect.TypeOf(err))
 					errors.CheckError(err)
 					fmt.Printf("Workflow '%s' deleted\n", wf.Name)
 				} else {
