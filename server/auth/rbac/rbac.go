@@ -13,9 +13,11 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow"
 )
 
-const orderLabel = workflow.WorkflowFullName + "/rbac-order"
-const groupsLabel = workflow.WorkflowFullName + "/rbac-groups"
-const defaultLabel = workflow.WorkflowFullName + "/rbac-default"
+const (
+	orderKey   = workflow.WorkflowFullName + "/rbac-order"
+	groupsKey  = workflow.WorkflowFullName + "/rbac-groups"
+	defaultKey = workflow.WorkflowFullName + "/rbac-default"
+)
 
 type Interface interface {
 	ServiceAccount(groups []string) (*corev1.LocalObjectReference, error)
@@ -40,7 +42,7 @@ func (c rbac) ServiceAccount(groups []string) (*corev1.LocalObjectReference, err
 	}
 	var serviceAccounts []corev1.ServiceAccount
 	for _, a := range list.Items {
-		for _, l := range []string{orderLabel, groupsLabel, defaultLabel} {
+		for _, l := range []string{orderKey, groupsKey, defaultKey} {
 			if _, ok := a.GetAnnotations()[l]; ok {
 				serviceAccounts = append(serviceAccounts, a)
 				break
@@ -48,19 +50,19 @@ func (c rbac) ServiceAccount(groups []string) (*corev1.LocalObjectReference, err
 		}
 	}
 	sort.Slice(serviceAccounts, func(i, j int) bool {
-		x, _ := strconv.Atoi(serviceAccounts[i].GetAnnotations()[orderLabel])
-		y, _ := strconv.Atoi(serviceAccounts[j].GetAnnotations()[orderLabel])
+		x, _ := strconv.Atoi(serviceAccounts[i].GetAnnotations()[orderKey])
+		y, _ := strconv.Atoi(serviceAccounts[j].GetAnnotations()[orderKey])
 		return x < y
 	})
 	for _, a := range serviceAccounts {
-		for _, g := range strings.Split(a.GetAnnotations()[groupsLabel], ",") {
+		for _, g := range strings.Split(a.GetAnnotations()[groupsKey], ",") {
 			if hasGroup[g] {
 				return &corev1.LocalObjectReference{Name: a.Name}, nil
 			}
 		}
 	}
 	for _, a := range serviceAccounts {
-		if _, ok := a.GetLabels()[defaultLabel]; ok {
+		if _, ok := a.GetLabels()[defaultKey]; ok {
 			return &corev1.LocalObjectReference{Name: a.Name}, nil
 		}
 	}
