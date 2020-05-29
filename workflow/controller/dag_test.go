@@ -1463,5 +1463,21 @@ func TestRetryStrategyNodes(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate()
-	// TODO: FINISH THIS TEST
+	retryNode := woc.getNodeByName("wf-retry-pol")
+	if assert.NotNil(t, retryNode) {
+		assert.Equal(t, wfv1.NodeRunning, retryNode.Phase)
+	}
+
+	woc.operate()
+	retryNode = woc.getNodeByName("wf-retry-pol")
+	if assert.NotNil(t, retryNode) {
+		assert.Equal(t, wfv1.NodeFailed, retryNode.Phase)
+	}
+
+	onExitNode := woc.getNodeByName("wf-retry-pol.onExit")
+	if assert.NotNil(t, onExitNode) {
+		assert.Equal(t, wfv1.NodePending, onExitNode.Phase)
+	}
+
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 }
