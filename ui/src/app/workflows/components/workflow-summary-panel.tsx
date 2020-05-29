@@ -2,6 +2,8 @@ import {Ticker} from 'argo-ui';
 import * as React from 'react';
 
 import {NODE_PHASE, Workflow} from '../../../models';
+import {Phase} from '../../shared/components/phase';
+import {Timestamp} from '../../shared/components/timestamp';
 import {ConditionsPanel} from '../../shared/conditions-panel';
 import {formatDuration, wfDuration} from '../../shared/duration';
 import {ResourcesDuration} from '../../shared/resources-duration';
@@ -10,12 +12,12 @@ export const WorkflowSummaryPanel = (props: {workflow: Workflow}) => (
     <Ticker disabled={props.workflow && props.workflow.status.phase !== NODE_PHASE.RUNNING}>
         {() => {
             const attributes: {title: string; value: any}[] = [
-                {title: 'Status', value: props.workflow.status.phase},
+                {title: 'Status', value: <Phase value={props.workflow.status.phase} />},
                 {title: 'Message', value: props.workflow.status.message},
                 {title: 'Name', value: props.workflow.metadata.name},
                 {title: 'Namespace', value: props.workflow.metadata.namespace},
-                {title: 'Started At', value: props.workflow.status.startedAt},
-                {title: 'Finished At', value: props.workflow.status.finishedAt || '-'},
+                {title: 'Started', value: <Timestamp date={props.workflow.status.startedAt} />},
+                {title: 'Finished ', value: <Timestamp date={props.workflow.status.finishedAt} />},
                 {title: 'Duration', value: formatDuration(wfDuration(props.workflow.status))}
             ];
             if (props.workflow.status.resourcesDuration) {
