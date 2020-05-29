@@ -1481,3 +1481,167 @@ func TestRetryStrategyNodes(t *testing.T) {
 
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 }
+
+var testOnExitNodeDAGPhase = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-diamond-88trp
+spec:
+  arguments: {}
+  entrypoint: diamond
+  templates:
+  - arguments: {}
+    dag:
+      failFast: false
+      tasks:
+      - arguments: {}
+        name: A
+        template: echo
+      - arguments: {}
+        dependencies:
+        - A
+        name: B
+        onExit: echo
+        template: echo
+    inputs: {}
+    metadata: {}
+    name: diamond
+    outputs: {}
+  - arguments: {}
+    container:
+      args:
+      - exit 0
+      command:
+      - sh
+      - -c
+      image: alpine:3.7
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: echo
+    outputs: {}
+  - arguments: {}
+    container:
+      args:
+      - exit 1
+      command:
+      - sh
+      - -c
+      image: alpine:3.7
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: fail
+    outputs: {}
+status:
+  nodes:
+    dag-diamond-88trp:
+      children:
+      - dag-diamond-88trp-2052796420
+      displayName: dag-diamond-88trp
+      id: dag-diamond-88trp
+      name: dag-diamond-88trp
+      outboundNodes:
+      - dag-diamond-88trp-2103129277
+      phase: Running
+      startedAt: "2020-05-29T18:11:55Z"
+      templateName: diamond
+      templateScope: local/dag-diamond-88trp
+      type: DAG
+    dag-diamond-88trp-2052796420:
+      boundaryID: dag-diamond-88trp
+      children:
+      - dag-diamond-88trp-2103129277
+      displayName: A
+      finishedAt: "2020-05-29T18:11:58Z"
+      hostNodeName: minikube
+      id: dag-diamond-88trp-2052796420
+      name: dag-diamond-88trp.A
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-diamond-88trp/dag-diamond-88trp-2052796420/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 2
+        memory: 1
+      startedAt: "2020-05-29T18:11:55Z"
+      templateName: echo
+      templateScope: local/dag-diamond-88trp
+      type: Pod
+    dag-diamond-88trp-2103129277:
+      boundaryID: dag-diamond-88trp
+      displayName: B
+      finishedAt: "2020-05-29T18:12:01Z"
+      hostNodeName: minikube
+      id: dag-diamond-88trp-2103129277
+      name: dag-diamond-88trp.B
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: dag-diamond-88trp/dag-diamond-88trp-2103129277/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 1
+        memory: 0
+      startedAt: "2020-05-29T18:11:59Z"
+      templateName: echo
+      templateScope: local/dag-diamond-88trp
+      type: Pod
+  phase: Running
+  resourcesDuration:
+    cpu: 5
+    memory: 2
+  startedAt: "2020-05-29T18:11:55Z"
+`
+
+func TestOnExitDAGPhase(t *testing.T) {
+	cancel, controller := newController()
+	defer cancel()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := unmarshalWF(testOnExitNodeDAGPhase)
+	wf, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	retryNode := woc.getNodeByName("dag-diamond-88trp")
+	if assert.NotNil(t, retryNode) {
+		assert.Equal(t, wfv1.NodeRunning, retryNode.Phase)
+	}
+
+	retryNode = woc.getNodeByName("B.onExit")
+	if assert.NotNil(t, retryNode) {
+		assert.Equal(t, wfv1.NodePending, retryNode.Phase)
+	}
+
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+}

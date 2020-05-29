@@ -258,7 +258,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		if !childNode.Fulfilled() {
 			completed = false
 		} else if childNode.Completed() {
-			hasOnExitNode, onExitNode, err := woc.runOnExitNode(step.Name, step.OnExit, stepsCtx.boundaryID, stepsCtx.tmplCtx)
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(step.OnExit, step.Name, childNode.Name, stepsCtx.boundaryID, stepsCtx.tmplCtx)
 			if hasOnExitNode && (onExitNode == nil || !onExitNode.Fulfilled() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
 				completed = false
