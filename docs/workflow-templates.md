@@ -188,9 +188,9 @@ to pass in "live" arguments and reference other templates (those other templates
 This behavior has been problematic and dangerous. It causes confusion and has design inconsistencies.
 
 > 2.9 and after
-#### Referring `WorkflowTemplate` as Workflow
-You can refer the `WorkflowTemplate` as `workflow` without defining templates.  If Workflow has Arguments that will be merged with ClusterWorkflowTemplate arguments and Workflow Argument value will get overwrite with ClusterWorkflowTemplate argument value.
-Here is an example of a referring `WorkflowTemplate` as Workflow with passing `entrypoint` and `Workflow Arguments` to `WorkflowTemplate`
+#### Create `Workflow` from `WorkflowTemplate` Spec
+You can create `Workflow` from `WorkflowTemplate` spec using `workflowTemplateRef`. If you pass the arguments to created `Workflow`, it will be merged with WorkflowTemplate arguments 
+Here is an example for referring `WorkflowTemplate` as Workflow with passing `entrypoint` and `Workflow Arguments` to `WorkflowTemplate`
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -205,6 +205,7 @@ spec:
   workflowTemplateRef:
     name: workflow-template-submittable
 ```  
+
 Here is an example of a referring `WorkflowTemplate` as Workflow and using `WorkflowTemplates`'s `entrypoint` and `Workflow Arguments`
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -216,8 +217,6 @@ spec:
     name: workflow-template-submittable
 
 ```
-
-
 
 ## Managing `WorkflowTemplates`
 

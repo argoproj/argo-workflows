@@ -55,38 +55,63 @@ spec:
             - name: message
               value: "hello world"
 ```
-
 > 2.9 and after
-#### Referring `ClusterWorkflowTemplate` as Workflow
-You can refer the `ClusterWorkflowTemplate` as `workflow` without defining templates. If `Workflow` has `arguments` that will be merged with `ClusterWorkflowTemplate` arguments and Workflow argument value will get overwrite with ClusterWorkflowTemplate argument value.
+#### Create `Workflow` from `ClusterWorkflowTemplate` Spec
+You can create `Workflow` from `ClusterWorkflowTemplate` spec using `workflowTemplateRef` with `clusterScope: true`. If you pass the arguments to created `Workflow`, it will be merged with ClusterWorkflowTemplate arguments 
 
-Here is an example of a referring `WorkflowTemplate` as Workflow with passing `entrypoint` and  `arguments` to `ClusterWorkflowTemplate`
+Here is an example for `ClusterWorkflowTemplate` with `entrypoint` and `arguments`
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: ClusterWorkflowTemplate
+metadata:
+  name: cluster-workflow-template-submittable
+spec:
+  entryPoint: whalesay-template
+  arguments:
+    parameters:
+      - name: message
+        value: hello world
+  templates:
+    - name: whalesay-template
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: docker/whalesay
+        command: [cowsay]
+        args: ["{{inputs.parameters.message}}"]
+
+```
+Here is an example for creating `ClusterWorkflowTemplate` as Workflow with passing `entrypoint` and `arguments` to `ClusterWorkflowTemplate`
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: workflow-template-hello-world-
+  generateName: cluster-workflow-template-hello-world-
 spec:
   entrypoint: whalesay-template
   arguments:
     parameters:
       - name: message
-        value: "from workflow"  # This will be passed to ClusterWorkflowTemplate argument
+        value: "from workflow"
   workflowTemplateRef:
-    name: workflow-template-submittable
+    name: cluster-workflow-template-submittable
     clusterScope: true
 ```  
-Here is an example of a referring `ClusterWorkflowTemplate` as Workflow and using `ClusterWorkflowTemplates`'s `entrypoint` and `arguments`
+
+Here is an example of a creating `WorkflowTemplate` as Workflow and using `WorkflowTemplates`'s `entrypoint` and `Workflow Arguments`
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: workflow-template-hello-world-
+  generateName: cluster-workflow-template-hello-world-
 spec:
   workflowTemplateRef:
-    name: workflow-template-submittable
+    name: cluster-workflow-template-submittable
     clusterScope: true
+
 ```
+
 
 
 ## Managing `ClusterWorkflowTemplates`
