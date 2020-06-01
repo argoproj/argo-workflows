@@ -48,8 +48,8 @@ export class WorkflowLabels extends React.Component<WorkflowLabelsProps, {hidden
 					}
 					className={`wf-row-labels__action wf-row-labels__action--${this.state.hidden ? 'show' : 'hide'}`}> 
 					{ this.state.hidden ? 
-						(<span>SHOW <i className='fas fa-caret-down'></i> </span>) : 
-						(<span>HIDE <i className='fas fa-caret-up'></i></span>) 
+						(<span>SHOW <i className='fas fa-caret-down'/> </span>) : 
+						(<span>HIDE <i className='fas fa-caret-up'/></span>) 
 					}
 				</div> 
 			</div> 
