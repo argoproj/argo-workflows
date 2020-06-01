@@ -143,7 +143,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 
 	// BFS over the children of the DAG
 	var curr phaseNode
-	queue := generatePhaseNodes(nodes[d.boundaryID].Children, "")
+	queue := generatePhaseNodes(nodes[d.boundaryID].Children, wfv1.NodeSucceeded)
 	for len(queue) != 0 {
 		curr, queue = queue[0], queue[1:]
 		// We need to store the current branchPhase to remember the last completed phase in this branch so that we can apply it to omitted nodes
@@ -167,7 +167,6 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 			if !previousPhase.FailedOrError() {
 				targetTaskPhases[node.ID] = branchPhase
 			}
-			continue
 		}
 
 		// TODO: Might have to consider OutboundNodes for DAG and Steps NodeTypes
