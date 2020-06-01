@@ -403,7 +403,7 @@ func filterNode(node wfv1.NodeStatus, getArgs getFlags) (bool, bool) {
 		return true, false
 	} else if node.Type == wfv1.NodeTypeStepGroup {
 		return true, true
-	} else if node.Type == wfv1.NodeTypeOmitted {
+	} else if node.Type == wfv1.NodeTypeSkipped && node.Phase == wfv1.NodeOmitted {
 		return true, false
 	} else if !getArgs.shouldPrint(node) {
 		return true, false
