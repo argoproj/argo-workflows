@@ -297,10 +297,8 @@ func TestAllEvaluateDependsLogic(t *testing.T) {
 		common.TaskResultSucceeded: wfv1.NodeSucceeded,
 		common.TaskResultFailed:    wfv1.NodeFailed,
 		common.TaskResultSkipped:   wfv1.NodeSkipped,
-		common.TaskResultCompleted: wfv1.NodeSucceeded,
 	}
-	for _, status := range []common.TaskResult{common.TaskResultSucceeded, common.TaskResultFailed, common.TaskResultSkipped,
-		common.TaskResultCompleted} {
+	for _, status := range []common.TaskResult{common.TaskResultSucceeded, common.TaskResultFailed, common.TaskResultSkipped} {
 		testTasks := []wfv1.DAGTask{
 			{
 				Name: "same",
