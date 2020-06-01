@@ -202,6 +202,8 @@ Workflow is the definition of a workflow resource
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
+- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
+
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
@@ -499,6 +501,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
+- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
+
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
@@ -569,6 +573,7 @@ WorkflowSpec is the specification of a Workflow.
 |`priority`|`int32`|Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.|
 |`schedulerName`|`string`|Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.|
 |`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.|
+|`semaphore`|[`SemaphoreRef`](#semaphoreref)|SemaphoreRef will holds semaphore configuration for this Workflow|
 |`serviceAccountName`|`string`|ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.|
 |`shutdown`|`string`|Shutdown will shutdown the workflow according to its ShutdownStrategy|
 |`suspend`|`boolean`|Suspend will suspend the workflow and prevent execution of any future steps in the workflow|
@@ -806,6 +811,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
 - [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
 
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 
@@ -1080,6 +1087,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
+- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
+
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
@@ -1150,6 +1159,7 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 |`priority`|`int32`|Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.|
 |`schedulerName`|`string`|Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.|
 |`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.|
+|`semaphore`|[`SemaphoreRef`](#semaphoreref)|SemaphoreRef will holds semaphore configuration for this Workflow|
 |`serviceAccountName`|`string`|ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.|
 |`shutdown`|`string`|Shutdown will shutdown the workflow according to its ShutdownStrategy|
 |`suspend`|`boolean`|Suspend will suspend the workflow and prevent execution of any future steps in the workflow|
@@ -1346,6 +1356,22 @@ PodGC describes how to delete completed pods as they complete
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`strategy`|`string`|Strategy is the strategy to use. One of "OnPodCompletion", "OnPodSuccess", "OnWorkflowCompletion", "OnWorkflowSuccess"|
+
+## SemaphoreRef
+
+SemaphoreRef is a reference of Semaphore
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`configMapKeyRef`|[`ConfigMapKeySelector`](#configmapkeyselector)|ConfigMapKeyRef is configmap selector for Semaphore configuration|
 
 ## Template
 
@@ -1553,6 +1579,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
+- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
+
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
@@ -1620,6 +1648,7 @@ Template is a reusable and composable unit of execution in a workflow
 |`schedulerName`|`string`|If specified, the pod will be dispatched by specified scheduler. Or it will be dispatched by workflow scope scheduler if specified. If neither specified, the pod will be dispatched by default scheduler.|
 |`script`|[`ScriptTemplate`](#scripttemplate)|Script runs a portion of code against an interpreter|
 |`securityContext`|[`PodSecurityContext`](#podsecuritycontext)|SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.|
+|`semaphore`|[`SemaphoreRef`](#semaphoreref)|SemaphoreRef will holds semaphore configuration for this Template.|
 |`serviceAccountName`|`string`|ServiceAccountName to apply to workflow pods|
 |`sidecars`|`Array<`[`UserContainer`](#usercontainer)`>`|Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes|
 |`steps`|`Array<`[`ParallelSteps`](#parallelsteps)`>`|Steps define a series of sequential/parallel workflow steps|
@@ -2441,6 +2470,8 @@ Pod metdata
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
 - [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
 
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 
@@ -3552,6 +3583,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
+- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
+
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 
 - [`sidecar-nginx.yaml`](../examples/sidecar-nginx.yaml)
@@ -3822,6 +3855,24 @@ ObjectReference contains enough information to let you inspect or modify the ref
 |`resourceVersion`|`string`|Specific resourceVersion to which this reference is made, if any. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#concurrency-control-and-consistency|
 |`uid`|`string`|UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids|
 
+## ConfigMapKeySelector
+
+Selects a key from a ConfigMap.
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`key`|`string`|The key to select.|
+|`name`|`string`|Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names|
+|`optional`|`boolean`|Specify whether the ConfigMap or its key must be defined|
+
 ## Container
 
 A single application container that you want to run within a pod.
@@ -4001,6 +4052,8 @@ A single application container that you want to run within a pod.
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
 - [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
 
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 
@@ -4261,24 +4314,6 @@ SecretKeySelector selects a key of a Secret.
 |`key`|`string`|The key of the secret to select from.  Must be a valid secret key.|
 |`name`|`string`|Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names|
 |`optional`|`boolean`|Specify whether the Secret or its key must be defined|
-
-## ConfigMapKeySelector
-
-Selects a key from a ConfigMap.
-
-<details>
-<summary>Examples with this field (click to open)</summary>
-<br>
-
-- [`hdfs-artifact.yaml`](../examples/hdfs-artifact.yaml)
-</details>
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`key`|`string`|The key to select.|
-|`name`|`string`|Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names|
-|`optional`|`boolean`|Specify whether the ConfigMap or its key must be defined|
 
 ## Initializers
 
@@ -4629,6 +4664,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
 - [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
 
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 
@@ -5595,6 +5632,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
 - [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
 
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
 

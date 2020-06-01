@@ -64,6 +64,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact":                  schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Bucket":                    schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ScriptTemplate":              schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreRef":                schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sequence":                    schema_pkg_apis_workflow_v1alpha1_Sequence(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SubmitOpts":                  schema_pkg_apis_workflow_v1alpha1_SubmitOpts(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuspendTemplate":             schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref),
@@ -2782,6 +2783,27 @@ func schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref common.ReferenceCallba
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_SemaphoreRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "SemaphoreRef is a reference of Semaphore",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"configMapKeyRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ConfigMapKeyRef is configmap selector for Semaphore configuration",
+							Ref:         ref("k8s.io/api/core/v1.ConfigMapKeySelector"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.ConfigMapKeySelector"},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_Sequence(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -3298,12 +3320,18 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metrics"),
 						},
 					},
+					"semaphore": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SemaphoreRef will holds semaphore configuration for this Template.",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreRef"),
+						},
+					},
 				},
 				Required: []string{"name"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ParallelSteps", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.UserContainer", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ParallelSteps", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.UserContainer", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
 	}
 }
 
@@ -4106,12 +4134,18 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef"),
 						},
 					},
+					"semaphore": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SemaphoreRef will holds semaphore configuration for this Workflow",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreRef"),
+						},
+					},
 				},
 				Required: []string{"templates"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec"},
 	}
 }
 
@@ -4765,11 +4799,17 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref common.Reference
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef"),
 						},
 					},
+					"semaphore": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SemaphoreRef will holds semaphore configuration for this Workflow",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreRef"),
+						},
+					},
 				},
 				Required: []string{"templates"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metrics", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SemaphoreRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TTLStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateRef", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume", "k8s.io/api/policy/v1beta1.PodDisruptionBudgetSpec"},
 	}
 }

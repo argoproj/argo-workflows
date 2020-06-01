@@ -1551,6 +1551,16 @@
         }
       }
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreRef": {
+      "description": "SemaphoreRef is a reference of Semaphore",
+      "type": "object",
+      "properties": {
+        "configMapKeyRef": {
+          "description": "ConfigMapKeyRef is configmap selector for Semaphore configuration",
+          "$ref": "#/definitions/k8s.io.api.core.v1.ConfigMapKeySelector"
+        }
+      }
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Sequence": {
       "description": "Sequence expands a workflow step into numeric range",
       "type": "object",
@@ -1794,6 +1804,10 @@
         "securityContext": {
           "description": "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
           "$ref": "#/definitions/k8s.io.api.core.v1.PodSecurityContext"
+        },
+        "semaphore": {
+          "description": "SemaphoreRef will holds semaphore configuration for this Template.",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreRef"
         },
         "serviceAccountName": {
           "description": "ServiceAccountName to apply to workflow pods",
@@ -2243,6 +2257,10 @@
           "description": "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
           "$ref": "#/definitions/k8s.io.api.core.v1.PodSecurityContext"
         },
+        "semaphore": {
+          "description": "SemaphoreRef will holds semaphore configuration for this Workflow",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreRef"
+        },
         "serviceAccountName": {
           "description": "ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.",
           "type": "string"
@@ -2611,6 +2629,10 @@
         "securityContext": {
           "description": "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
           "$ref": "#/definitions/k8s.io.api.core.v1.PodSecurityContext"
+        },
+        "semaphore": {
+          "description": "SemaphoreRef will holds semaphore configuration for this Workflow",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreRef"
         },
         "serviceAccountName": {
           "description": "ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.",
