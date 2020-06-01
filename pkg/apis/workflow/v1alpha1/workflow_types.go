@@ -1222,9 +1222,11 @@ func (phase NodePhase) Fulfilled() bool {
 
 // Completed returns whether or not a phase completed. Notably, a skipped phase is not considered as having completed
 func (phase NodePhase) Completed() bool {
-	return phase == NodeSucceeded ||
-		phase == NodeFailed ||
-		phase == NodeError
+	return phase.FailedOrError() || phase == NodeSucceeded
+}
+
+func (phase NodePhase) FailedOrError() bool {
+	return phase == NodeFailed || phase == NodeError
 }
 
 // Fulfilled returns whether or not the workflow has fulfilled its execution, i.e. it completed execution or was skipped
@@ -1282,7 +1284,11 @@ func (n NodeStatus) Succeeded() bool {
 }
 
 func (n NodeStatus) FailedOrError() bool {
-	return n.Phase == NodeFailed || n.Phase == NodeError
+	return n.Phase.FailedOrError()
+}
+
+func (n NodeStatus) Omitted() bool {
+	return n.Type == NodeTypeSkipped && n.Phase == NodeOmitted
 }
 
 func (n NodeStatus) StartTime() *metav1.Time {

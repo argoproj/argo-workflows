@@ -114,20 +114,63 @@ func (d *dagContext) getTaskNode(taskName string) *wfv1.NodeStatus {
 	return &node
 }
 
+type phaseNode struct {
+	nodeId string
+	phase  wfv1.NodePhase
+}
+
+func generatePhaseNodes(children []string, branchPhase wfv1.NodePhase) []phaseNode {
+	var out []phaseNode
+	for _, child := range children {
+		out = append(out, phaseNode{nodeId: child, phase: branchPhase})
+	}
+	return out
+}
+
 // assessDAGPhase assesses the overall DAG status
 func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1.NodePhase {
-	// First check all our nodes to see if anything is still running. If so, then the DAG is
-	// considered still running (even if there are failures)
-	var curr string
-	queue := nodes[d.boundaryID].Children
+
+	// targetTaskPhases keeps track of all the phases of the target tasks. This is necessary because some target tasks may
+	// be omitted and will not have an explicit phase. We would still like to deduce a phase for those tasks in order to
+	// determine the overall phase of the DAG. To do so, an omitted task always inherits the phase of its parents, with
+	// preference of Failed or Error phases over Succeeded. This means that if a task in a branch fails, all of its descendents
+	// will be considered Failed unless they themselves complete with a different phase, in which case that different phase
+	// will take precedence as the branch phase for their descendents.
+	targetTaskPhases := make(map[string]wfv1.NodePhase)
+	for _, task := range targetTasks {
+		targetTaskPhases[d.taskNodeID(task)] = ""
+	}
+
+	// BFS over the children of the DAG
+	var curr phaseNode
+	queue := generatePhaseNodes(nodes[d.boundaryID].Children, "")
 	for len(queue) != 0 {
 		curr, queue = queue[0], queue[1:]
-		node := nodes[curr]
+		// We need to store the current branchPhase to remember the last completed phase in this branch so that we can apply it to omitted nodes
+		node, branchPhase := nodes[curr.nodeId], curr.phase
 
 		if !node.Fulfilled() {
 			return wfv1.NodeRunning
 		}
 
+		// Only overwrite the branchPhase if this node completed. (If it didn't we can just inherit our parent's branchPhase).
+		if node.Completed() {
+			branchPhase = node.Phase
+		}
+
+		// This node is a target task, so it will not have any children. Store or deduce its phase
+		if previousPhase, isTargetTask := targetTaskPhases[node.ID]; isTargetTask {
+			// Since we want Failed or Errored phases to have preference over Succeeded in case of ambiguity, only update
+			// the deduced phase of the target task if it is not already Failed or Errored.
+			// Note that if the target task is NOT omitted (i.e. it Completed), then this check is moot, because every time
+			// we arrive at said target task it will have the same branchPhase.
+			if !previousPhase.FailedOrError() {
+				targetTaskPhases[node.ID] = branchPhase
+			}
+			continue
+		}
+
+		// TODO: Might have to consider OutboundNodes for DAG and Steps NodeTypes
 		if node.Type == wfv1.NodeTypeRetry || node.Type == wfv1.NodeTypeTaskGroup {
 			// A fulfilled Retry node will always reflect the status of its last child node, so its individual attempts don't interest us.
 			// To resume the traversal, we look at the children of the last child node.
@@ -135,10 +178,10 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 			// expanded tasks have succeeded), so each individual expanded task doesn't interest us. To resume the traversal, we look at the
 			// children of its last child node (note that this is arbitrary, since all expanded tasks will have the same children).
 			if childNode := getChildNodeIndex(&node, nodes, -1); childNode != nil {
-				queue = append(queue, childNode.Children...)
+				queue = append(queue, generatePhaseNodes(childNode.Children, branchPhase)...)
 			}
 		} else {
-			queue = append(queue, node.Children...)
+			queue = append(queue, generatePhaseNodes(node.Children, branchPhase)...)
 		}
 	}
 
@@ -146,15 +189,15 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes wfv1.Nodes) wfv1
 	failFast := d.tmpl.DAG.FailFast == nil || *d.tmpl.DAG.FailFast
 	result := wfv1.NodeSucceeded
 	for _, depName := range targetTasks {
-		depNode := d.getTaskNode(depName)
-		if depNode == nil {
+		branchPhase := targetTaskPhases[d.taskNodeID(depName)]
+		if branchPhase == "" {
 			result = wfv1.NodeRunning
 			// If failFast is disabled, we will want to let all tasks complete before checking for failures
 			if !failFast {
 				break
 			}
-		} else if depNode.FailedOrError() {
-			result = depNode.Phase
+		} else if branchPhase.FailedOrError() {
+			result = branchPhase
 			// If failFast is enabled, don't check to see if other target tasks are complete and fail now instead
 			if failFast {
 				break
