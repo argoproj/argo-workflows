@@ -3,32 +3,16 @@
 .workflows-list {
   padding: 1em;
 
+  &__labels-container {
+    height: 100%;
+  }
+
   &__title {
     font-weight: bolder;
     font-size: 15px;
     color: $argo-color-gray-6;
     padding-top: 0.25em;
     padding-bottom: 0.5em;
-  }
-
-  &__labels {
-    display: flex; 
-    flex-wrap: wrap;
-    align-items: center;
-    height: 100%;
-
-    &--tag {
-      line-height: normal;
-      background-color: $argo-color-gray-3;
-      border-radius: 3px;
-      height: auto;
-      padding: 0.5em 8px; 
-      margin-right: 4px;
-
-      &:hover {
-        color: $argo-color-teal-5;
-      }
-    }
   }
 
   &__info {
