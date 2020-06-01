@@ -26,7 +26,7 @@ export class TagsInput extends React.Component<TagsInputProps, {tags: string[]; 
             <div
                 className={classNames('tags-input argo-field', {'tags-input--focused': this.state.focused || !!this.state.input})}
                 onClick={() => this.inputElement && this.inputElement.focus()}>
-                {this.state.tags.map((tag, i) => (
+                {this.props.tags ? this.props.tags.map((tag, i) => (
                     <span className='tags-input__tag' key={tag}>
                         {tag}{' '}
                         <i
@@ -39,7 +39,7 @@ export class TagsInput extends React.Component<TagsInputProps, {tags: string[]; 
                             }}
                         />
                     </span>
-                ))}
+                )) : <span/>}
                 <Autocomplete
                     filterSuggestions={true}
                     autoCompleteRef={api => (this.autocompleteApi = api)}

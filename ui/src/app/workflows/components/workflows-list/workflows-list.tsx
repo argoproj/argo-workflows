@@ -276,7 +276,16 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                             labels.push(Object.keys(w.metadata.labels).map((key) => (
                                 <div 
                                     className='workflows-list__labels--tag' 
-                                    key={`${w.metadata.namespace}-${w.metadata.name}-${key}`}>
+                                    key={`${w.metadata.namespace}-${w.metadata.name}-${key}`}
+                                    onClick={async (e) => {
+                                        e.preventDefault()
+                                        let value = `${key}=${w.metadata.labels[key]}`
+                                        if (this.state.selectedLabels.indexOf(value) === -1) {
+                                            const newTags = this.state.selectedLabels.concat(value)
+                                            await this.setState({selectedLabels: newTags})
+                                        }
+                                        this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.pagination)
+                                    }}>
                                     {key}
                                 </div> 
                             )))
