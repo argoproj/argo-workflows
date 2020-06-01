@@ -2032,6 +2032,7 @@ Artifact indicates an artifact to place at a specified path
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
 |`from`|`string`|From allows an artifact to reference an artifact from a previous step|
+|`fromSubpath`|`string`|FromSubPath allows an artifact to reference a subpath from a previous step|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
 |`git`|[`GitArtifact`](#gitartifact)|Git contains git artifact location details|
 |`globalName`|`string`|GlobalName exports an output artifact to the global scope, making it available as '{{io.argoproj.workflow.v1alpha1.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts|

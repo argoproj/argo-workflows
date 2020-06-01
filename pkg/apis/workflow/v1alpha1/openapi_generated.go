@@ -302,6 +302,13 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
+					"fromSubpath": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FromSubPath allows an artifact to reference a subpath from a previous step",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name"},
 			},

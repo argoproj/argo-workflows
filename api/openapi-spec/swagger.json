@@ -1886,6 +1886,10 @@
           "description": "From allows an artifact to reference an artifact from a previous step",
           "type": "string"
         },
+        "fromSubpath": {
+          "description": "FromSubPath allows an artifact to reference a subpath from a previous step",
+          "type": "string"
+        },
         "gcs": {
           "description": "GCS contains GCS artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSArtifact"
