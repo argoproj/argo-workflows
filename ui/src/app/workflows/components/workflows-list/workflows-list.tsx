@@ -264,12 +264,26 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                     <div className='row argo-table-list__head'>
                         <div className='columns small-1' />
                         <div className='columns small-3'>NAME</div>
-                        <div className='columns small-2'>NAMESPACE</div>
-                        <div className='columns small-2'>STARTED</div>
-                        <div className='columns small-2'>FINISHED</div>
-                        <div className='columns small-2'>DURATION</div>
+                        <div className='columns small-1'>NAMESPACE</div>
+                        <div className='columns small-1'>STARTED</div>
+                        <div className='columns small-1'>FINISHED</div>
+                        <div className='columns small-1'>DURATION</div>
+                        <div className='columns small-4'>LABELS</div>
                     </div>
-                    {this.state.workflows.map(w => (
+                    {this.state.workflows.map(w => { 
+                        let labels = []
+                        if (w.metadata.labels) {
+                            labels.push(Object.keys(w.metadata.labels).map((key) => (
+                                <div 
+                                    className='workflows-list__labels--tag' 
+                                    key={`${w.metadata.namespace}-${w.metadata.name}-${key}`}>
+                                    {key}
+                                </div> 
+                            )))
+                        } else {
+                            labels.push(<div key={`${w.metadata.namespace}-${w.metadata.name}-none`}> No labels </div>)
+                        }
+                        return (
                         <Link
                             className='row argo-table-list__row'
                             key={`${w.metadata.namespace}-${w.metadata.name}`}
@@ -278,18 +292,23 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 <PhaseIcon value={w.status.phase} />
                             </div>
                             <div className='columns small-3'>{w.metadata.name}</div>
-                            <div className='columns small-2'>{w.metadata.namespace}</div>
-                            <div className='columns small-2'>
+                            <div className='columns small-1'>{w.metadata.namespace}</div>
+                            <div className='columns small-1'>
                                 <Timestamp date={w.status.startedAt} />
                             </div>
-                            <div className='columns small-2'>
+                            <div className='columns small-1'>
                                 <Timestamp date={w.status.finishedAt} />
                             </div>
-                            <div className='columns small-2'>
+                            <div className='columns small-1'>
                                 <Ticker>{() => formatDuration(wfDuration(w.status))}</Ticker>
                             </div>
+                            <div className='columns small-4'>
+                                <div className='workflows-list__labels'> 
+                                    {labels}
+                                </div> 
+                            </div>
                         </Link>
-                    ))}
+                    )})}
                 </div>
                 <PaginationPanel
                     onChange={pagination => this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, pagination)}
