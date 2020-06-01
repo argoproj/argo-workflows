@@ -23,7 +23,6 @@ const (
 	TaskResultFailed    TaskResult = "Failed"
 	TaskResultErrored   TaskResult = "Errored"
 	TaskResultSkipped   TaskResult = "Skipped"
-	TaskResultCompleted TaskResult = "Completed"
 	TaskResultDaemoned  TaskResult = "Daemoned"
 )
 

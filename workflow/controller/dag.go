@@ -48,7 +48,7 @@ type dagContext struct {
 
 	// dependsLogic is the resolved "depends" string of a particular task. A resolved "depends" simply contains
 	// task with their explicit results since we allow them to be omitted for convinience
-	// (i.e., "A || B.Completed" -> "(A.Succeeded || A.Skipped || A.Daemoned) || B.Completed").
+	// (i.e., "A || (B.Succeeded || B.Failed)" -> "(A.Succeeded || A.Skipped || A.Daemoned) || (B.Succeeded || B.Failed)").
 	// Because this resolved "depends" is computed using regex and regex is expensive, we cache the results so that they
 	// are only computed once per operation
 	dependsLogic map[string]string
@@ -339,6 +339,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			for _, parentTaskName := range dagCtx.GetTaskDependencies(taskName) {
 				if parentNode := dagCtx.getTaskNode(parentTaskName); parentNode.FailedOrError() {
 					omittedNodePhase = parentNode.Phase
+					break
 				}
 			}
 			woc.initializeNode(nodeName, wfv1.NodeTypeOmitted, dagTemplateScope, task, dagCtx.boundaryID, omittedNodePhase, "omitted: depends condition not met")
@@ -588,7 +589,6 @@ type TaskResults struct {
 	Failed    bool `json:"Failed"`
 	Errored   bool `json:"Errored"`
 	Skipped   bool `json:"Skipped"`
-	Completed bool `json:"Completed"`
 	Daemoned  bool `json:"Daemoned"`
 }
 
@@ -615,7 +615,6 @@ func (d *dagContext) evaluateDependsLogic(taskName string) (bool, bool, error) {
 			Failed:    depNode.Phase == wfv1.NodeFailed,
 			Errored:   depNode.Phase == wfv1.NodeError,
 			Skipped:   depNode.Phase == wfv1.NodeSkipped,
-			Completed: depNode.Phase == wfv1.NodeSucceeded || depNode.Phase == wfv1.NodeFailed,
 			Daemoned:  depNode.IsDaemoned() && depNode.Phase != wfv1.NodePending,
 		}
 	}

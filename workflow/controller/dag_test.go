@@ -203,7 +203,7 @@ func TestEvaluateDependsLogic(t *testing.T) {
 		},
 		{
 			Name:    "should-execute-1",
-			Depends: "A && C.Completed",
+			Depends: "A && (C.Succeeded || C.Failed)",
 		},
 		{
 			Name:    "should-execute-2",
