@@ -20,7 +20,6 @@ interface WorkflowLogsViewerState {
 }
 
 export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps, WorkflowLogsViewerState> {
-    public static defaultProps = {follow: true};
     constructor(props: WorkflowLogsViewerProps) {
         super(props);
         this.state = {lines: []};

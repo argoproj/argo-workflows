@@ -166,7 +166,13 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                         {this.state.workflow && (
                             <SlidingPanel isShown={this.selectedNodeId && !!this.sidePanel} onClose={() => this.closeSidePanel()}>
                                 {this.sidePanel && this.sidePanel.type === 'logs' && (
-                                    <WorkflowLogsViewer workflow={this.state.workflow} nodeId={this.sidePanel.nodeId} container={this.sidePanel.container} archived={false} />
+                                    <WorkflowLogsViewer
+                                        workflow={this.state.workflow}
+                                        nodeId={this.sidePanel.nodeId}
+                                        container={this.sidePanel.container}
+                                        archived={false}
+                                        follow={true}
+                                    />
                                 )}
                                 {this.sidePanel && this.sidePanel.type === 'yaml' && <WorkflowYamlViewer workflow={this.state.workflow} selectedNode={selectedNode} />}
                             </SlidingPanel>
