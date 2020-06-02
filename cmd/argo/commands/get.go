@@ -122,7 +122,7 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 		out += fmt.Sprintf(fmtStr, "Message:", wf.Status.Message)
 	}
 	if len(wf.Status.Conditions) > 0 {
-		fmt.Print(wf.Status.Conditions.DisplayString(fmtStr, workflowConditionIconMap))
+		out += wf.Status.Conditions.DisplayString(fmtStr, workflowConditionIconMap)
 	}
 	out += fmt.Sprintf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
 	if !wf.Status.StartedAt.IsZero() {
@@ -174,7 +174,7 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) string {
 	if printTree {
 		writerBuffer := new(bytes.Buffer)
 		w := tabwriter.NewWriter(writerBuffer, 0, 0, 2, ' ', 0)
-		fmt.Println()
+		out += "\n"
 		// apply a dummy FgDefault format to align tab writer with the rest of the columns
 		if getArgs.output == "wide" {
 			_, _ = fmt.Fprintf(w, "%s\tTEMPLATE\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\tRESOURCESDURATION\tNODENAME\n", ansiFormat("STEP", FgDefault))
