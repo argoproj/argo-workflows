@@ -21,7 +21,7 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, {hideLabels
     public render() {
         const wf = this.props.workflow;
         return (
-            <div>
+            <div className='workflows-list__row-container'>
                 <Link className='row argo-table-list__row' to={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)}>
                     <div className='columns small-1 workflows-list__status'>
                         <PhaseIcon value={wf.status.phase} />
