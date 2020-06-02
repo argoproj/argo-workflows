@@ -25,6 +25,8 @@ require('./workflow-dag.scss');
 
 type DagPhase = NodePhase | 'Suspended';
 
+const LOCAL_STORAGE_KEY = 'DagOptions';
+
 export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRenderOptions> {
     private get scale() {
         return this.state.scale;
@@ -152,25 +154,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
 
     constructor(props: Readonly<WorkflowDagProps>) {
         super(props);
-        this.state = {
-            horizontal: false,
-            scale: 1,
-            nodesToDisplay: [
-                'phase:Pending',
-                'phase:Running',
-                'phase:Succeeded',
-                'phase:Skipped',
-                'phase:Omitted',
-                'phase:Failed',
-                'phase:Error',
-                'type:Pod',
-                'type:Steps',
-                'type:DAG',
-                'type:Retry',
-                'type:Skipped',
-                'type:Suspend'
-            ]
-        };
+        this.state = this.getOptions();
     }
 
     public render() {
@@ -182,7 +166,7 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
 
         return (
             <>
-                <WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.setState(workflowDagRenderOptions)} />
+                <WorkflowDagRenderOptionsPanel {...this.state} onChange={workflowDagRenderOptions => this.saveOptions(workflowDagRenderOptions)} />
                 <div className='workflow-dag'>
                     <svg
                         style={{
@@ -237,6 +221,35 @@ export class WorkflowDag extends React.Component<WorkflowDagProps, WorkflowDagRe
                 </div>
             </>
         );
+    }
+
+    private saveOptions(newChanges: WorkflowDagRenderOptions) {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newChanges));
+        this.setState(newChanges);
+    }
+
+    private getOptions(): WorkflowDagRenderOptions {
+        if (localStorage.getItem(LOCAL_STORAGE_KEY) !== null) {
+            return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) as WorkflowDagRenderOptions;
+        }
+        return {
+            horizontal: false,
+            scale: 1,
+            nodesToDisplay: [
+                'phase:Pending',
+                'phase:Running',
+                'phase:Succeeded',
+                'phase:Skipped',
+                'phase:Failed',
+                'phase:Error',
+                'type:Pod',
+                'type:Steps',
+                'type:DAG',
+                'type:Retry',
+                'type:Skipped',
+                'type:Suspend'
+            ]
+        } as WorkflowDagRenderOptions;
     }
 
     private prepareGraph() {
