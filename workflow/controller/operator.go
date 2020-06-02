@@ -2694,7 +2694,8 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 		return tmplRef, executionParameters, nil
 	}
 
-	if woc.wf.Status.StoredWorkflowSpec == nil {
+	// If the controller is in reference mode, don't trust the stored spec in the Workflow object and refetch it every time
+	if woc.wf.Status.StoredWorkflowSpec == nil || woc.controller.referenceMode {
 		wftSpec, err := woc.fetchWorkflowSpec()
 		if err != nil {
 			// A call downstream will need to use `wfSpec` even though the execution will result in an error
