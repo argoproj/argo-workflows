@@ -38,6 +38,7 @@ type Metrics struct {
 	workflowsProcessed prometheus.Counter
 	workflowsByPhase   map[v1alpha1.NodePhase]prometheus.Gauge
 	operationDurations prometheus.Histogram
+	errors             map[ErrorCause]prometheus.Counter
 	customMetrics      map[string]metric
 
 	// Used to quickly check if a metric desc is already used by the system
@@ -53,6 +54,7 @@ func New(metricsConfig, telemetryConfig ServerConfig) Metrics {
 		workflowsProcessed: newCounter("workflows_processed_count", "Number of workflow updates processed", nil),
 		workflowsByPhase:   getWorkflowPhaseGauges(),
 		operationDurations: newHistogram("operation_duration_seconds", "Histogram of durations of operations", nil, []float64{0.1, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0}),
+		errors:             getErrorCounters(),
 		customMetrics:      make(map[string]metric),
 		defaultMetricDescs: make(map[string]bool),
 	}
@@ -70,6 +72,9 @@ func (m Metrics) allMetrics() []prometheus.Metric {
 		m.operationDurations,
 	}
 	for _, metric := range m.workflowsByPhase {
+		allMetrics = append(allMetrics, metric)
+	}
+	for _, metric := range m.errors {
 		allMetrics = append(allMetrics, metric)
 	}
 	for _, metric := range m.customMetrics {
@@ -111,4 +116,19 @@ func (m Metrics) UpsertCustomMetric(key string, newMetric prometheus.Metric) err
 	}
 	m.customMetrics[key] = metric{metric: newMetric, lastUpdated: time.Now()}
 	return nil
+}
+
+type ErrorCause string
+
+const (
+	ErrorCauseOperationPanic              ErrorCause = "OperationPanic"
+	ErrorCauseCronWorkflowSubmissionError ErrorCause = "CronWorkflowSubmissionError"
+)
+
+func (m Metrics) OperationPanic() {
+	m.errors[ErrorCauseOperationPanic].Inc()
+}
+
+func (m Metrics) CronWorkflowSubmissionError() {
+	m.errors[ErrorCauseCronWorkflowSubmissionError].Inc()
 }

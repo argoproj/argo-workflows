@@ -163,6 +163,7 @@ func (woc *wfOperationCtx) operate() {
 			} else {
 				woc.markWorkflowPhase(wfv1.NodeError, true, fmt.Sprintf("%v", r))
 			}
+			woc.controller.metrics.OperationPanic()
 			woc.log.Errorf("Recovered from panic: %+v\n%s", r, debug.Stack())
 		}
 	}()
