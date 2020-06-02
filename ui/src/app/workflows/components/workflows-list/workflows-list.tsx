@@ -271,32 +271,32 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         <div className='columns small-1'>DURATION</div>
                         <div className='columns small-3'>LABELS</div>
                     </div>
-                    {this.state.workflows.map(w => {
+                    {this.state.workflows.map(wf => {
                         return (
                             <Link
                                 className='row argo-table-list__row'
-                                key={`${w.metadata.namespace}-${w.metadata.name}`}
-                                to={uiUrl(`workflows/${w.metadata.namespace}/${w.metadata.name}`)}>
+                                key={`${wf.metadata.namespace}-${wf.metadata.name}`}
+                                to={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)}>
                                 <div className='columns small-1'>
-                                    <PhaseIcon value={w.status.phase} />
+                                    <PhaseIcon value={wf.status.phase} />
                                 </div>
-                                <div className='columns small-2'>{w.metadata.name}</div>
-                                <div className='columns small-1'>{w.metadata.namespace}</div>
+                                <div className='columns small-2'>{wf.metadata.name}</div>
+                                <div className='columns small-1'>{wf.metadata.namespace}</div>
                                 <div className='columns small-2'>
-                                    <Timestamp date={w.status.startedAt} />
+                                    <Timestamp date={wf.status.startedAt} />
                                 </div>
                                 <div className='columns small-2'>
-                                    <Timestamp date={w.status.finishedAt} />
+                                    <Timestamp date={wf.status.finishedAt} />
                                 </div>
                                 <div className='columns small-1'>
-                                    <Ticker>{() => formatDuration(wfDuration(w.status))}</Ticker>
+                                    <Ticker>{() => formatDuration(wfDuration(wf.status))}</Ticker>
                                 </div>
                                 <div className='columns small-3'>
                                     <div className='workflows-list__labels-container'>
                                         <WorkflowLabels
-                                            workflow={w}
+                                            workflow={wf}
                                             onChange={async key => {
-                                                const value = `${key}=${w.metadata.labels[key]}`;
+                                                const value = `${key}=${wf.metadata.labels[key]}`;
                                                 let newTags: string[] = []; 
                                                 if (this.state.selectedLabels.indexOf(value) === -1) {
                                                     newTags = this.state.selectedLabels.concat(value);
