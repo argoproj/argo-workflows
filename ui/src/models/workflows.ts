@@ -58,6 +58,10 @@ export interface Artifact {
      * S3 contains S3 artifact location details
      */
     s3?: S3Artifact;
+    /**
+     * OSS contains Alibaba Cloud OSS artifact location details
+     */
+    oss?: OSSArtifact;
 }
 
 /**
@@ -87,6 +91,10 @@ export interface ArtifactLocation {
      * S3 contains S3 artifact location details
      */
     s3?: S3Artifact;
+    /**
+     * OSS contains Alibaba Cloud OSS artifact location details
+     */
+    oss?: OSSArtifact;
 }
 
 /**
@@ -311,6 +319,54 @@ export interface S3Bucket {
      * Region contains the optional bucket region
      */
     region?: string;
+    /**
+     * SecretKeySecret is the secret selector to the bucket's secret key
+     */
+    secretKeySecret: kubernetes.SecretKeySelector;
+}
+
+/**
+ * OSSArtifact is the location of an Alibaba Cloud OSS artifact
+ */
+export interface OSSArtifact {
+    /**
+     * AccessKeySecret is the secret selector to the bucket's access key
+     */
+    accessKeySecret: kubernetes.SecretKeySelector;
+    /**
+     * Bucket is the name of the bucket
+     */
+    bucket: string;
+    /**
+     * Endpoint is the hostname of the bucket endpoint
+     */
+    endpoint: string;
+    /**
+     * Key is the key in the bucket where the artifact resides
+     */
+    key: string;
+    /**
+     * SecretKeySecret is the secret selector to the bucket's secret key
+     */
+    secretKeySecret: kubernetes.SecretKeySelector;
+}
+
+/**
+ * OSSBucket contains the access information required for interfacing with an OSS bucket
+ */
+export interface OSSBucket {
+    /**
+     * AccessKeySecret is the secret selector to the bucket's access key
+     */
+    accessKeySecret: kubernetes.SecretKeySelector;
+    /**
+     * Bucket is the name of the bucket
+     */
+    bucket: string;
+    /**
+     * Endpoint is the hostname of the bucket endpoint
+     */
+    endpoint: string;
     /**
      * SecretKeySecret is the secret selector to the bucket's secret key
      */
