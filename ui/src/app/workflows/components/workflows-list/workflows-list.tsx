@@ -297,11 +297,12 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                             workflow={w}
                                             onChange={async key => {
                                                 const value = `${key}=${w.metadata.labels[key]}`;
+                                                let newTags: string[] = []; 
                                                 if (this.state.selectedLabels.indexOf(value) === -1) {
-                                                    const newTags = this.state.selectedLabels.concat(value);
-                                                    await this.setState({selectedLabels: newTags});
+                                                    newTags = this.state.selectedLabels.concat(value);
+                                                    this.setState({selectedLabels: newTags});
                                                 }
-                                                this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.pagination);
+                                                this.changeFilters(this.state.namespace, this.state.selectedPhases, newTags, this.state.pagination);
                                             }}
                                         />
                                     </div>
