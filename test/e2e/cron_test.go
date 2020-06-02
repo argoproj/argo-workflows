@@ -282,7 +282,7 @@ spec:
           args: ["sleep 300"]`).
 			When().
 			CreateCronWorkflow().
-			Wait(2 * time.Minute).
+			Wait(2 * time.Minute + 20 * time.Second).
 			Then().
 			ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 				assert.Equal(t, 1, len(cronWf.Status.Active))
