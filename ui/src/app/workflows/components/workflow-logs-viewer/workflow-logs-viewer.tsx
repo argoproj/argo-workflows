@@ -11,6 +11,7 @@ interface WorkflowLogsViewerProps {
     nodeId: string;
     container: string;
     archived: boolean;
+    follow: boolean;
 }
 
 interface WorkflowLogsViewerState {
@@ -19,13 +20,14 @@ interface WorkflowLogsViewerState {
 }
 
 export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps, WorkflowLogsViewerState> {
+    public static defaultProps = {follow: true};
     constructor(props: WorkflowLogsViewerProps) {
         super(props);
         this.state = {lines: []};
     }
 
     public componentDidMount(): void {
-        services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived).subscribe(
+        services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived, this.props.follow).subscribe(
             log => {
                 if (log) {
                     this.setState(state => {
@@ -73,9 +75,11 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                                 source={{
                                     key: `${this.props.workflow.metadata.name}-${this.props.container}`,
                                     loadLogs: () => {
-                                        return services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived).map(log => {
-                                            return log ? log + '\n' : '';
-                                        });
+                                        return services.workflows
+                                            .getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived, this.props.follow)
+                                            .map(log => {
+                                                return log ? log + '\n' : '';
+                                            });
                                     },
                                     shouldRepeat: () => this.isCurrentNodeRunningOrPending()
                                 }}

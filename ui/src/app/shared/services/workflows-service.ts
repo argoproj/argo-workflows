@@ -72,7 +72,7 @@ export class WorkflowsService {
             .then(res => res.body as Workflow);
     }
 
-    public getContainerLogs(workflow: Workflow, nodeId: string, container: string, archived: boolean): Observable<string> {
+    public getContainerLogs(workflow: Workflow, nodeId: string, container: string, archived: boolean, follow: boolean): Observable<string> {
         // we firstly try to get the logs from the API,
         // but if that fails, then we try and get them from the artifacts
         const logsFromArtifacts: Observable<string> = Observable.create((observer: Observer<string>) => {
@@ -87,7 +87,7 @@ export class WorkflowsService {
         });
         return requests
             .loadEventSource(
-                `api/v1/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/log` + `?logOptions.container=${container}&logOptions.follow=true`
+                `api/v1/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/log` + `?logOptions.container=${container}&logOptions.follow=${follow}`
             )
             .pipe(
                 map(line => JSON.parse(line).result.content),
