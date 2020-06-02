@@ -19,7 +19,7 @@ const (
 
 // killGracePeriod is the time in seconds after sending SIGTERM before
 // forcefully killing the sidecar with SIGKILL (value matches k8s)
-const KillGracePeriod = 10
+const KillGracePeriod = 30
 
 // GetContainerID returns container ID of a ContainerStatus resource
 func GetContainerID(container *v1.ContainerStatus) string {

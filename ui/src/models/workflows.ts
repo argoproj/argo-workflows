@@ -1,5 +1,9 @@
 import * as kubernetes from 'argo-ui/src/models/kubernetes';
 
+export const labels = {
+    completed: 'workflows.argoproj.io/completed'
+};
+
 /**
  * Arguments to a template
  */
@@ -54,6 +58,10 @@ export interface Artifact {
      * S3 contains S3 artifact location details
      */
     s3?: S3Artifact;
+    /**
+     * OSS contains Alibaba Cloud OSS artifact location details
+     */
+    oss?: OSSArtifact;
 }
 
 /**
@@ -83,6 +91,10 @@ export interface ArtifactLocation {
      * S3 contains S3 artifact location details
      */
     s3?: S3Artifact;
+    /**
+     * OSS contains Alibaba Cloud OSS artifact location details
+     */
+    oss?: OSSArtifact;
 }
 
 /**
@@ -307,6 +319,54 @@ export interface S3Bucket {
      * Region contains the optional bucket region
      */
     region?: string;
+    /**
+     * SecretKeySecret is the secret selector to the bucket's secret key
+     */
+    secretKeySecret: kubernetes.SecretKeySelector;
+}
+
+/**
+ * OSSArtifact is the location of an Alibaba Cloud OSS artifact
+ */
+export interface OSSArtifact {
+    /**
+     * AccessKeySecret is the secret selector to the bucket's access key
+     */
+    accessKeySecret: kubernetes.SecretKeySelector;
+    /**
+     * Bucket is the name of the bucket
+     */
+    bucket: string;
+    /**
+     * Endpoint is the hostname of the bucket endpoint
+     */
+    endpoint: string;
+    /**
+     * Key is the key in the bucket where the artifact resides
+     */
+    key: string;
+    /**
+     * SecretKeySecret is the secret selector to the bucket's secret key
+     */
+    secretKeySecret: kubernetes.SecretKeySelector;
+}
+
+/**
+ * OSSBucket contains the access information required for interfacing with an OSS bucket
+ */
+export interface OSSBucket {
+    /**
+     * AccessKeySecret is the secret selector to the bucket's access key
+     */
+    accessKeySecret: kubernetes.SecretKeySelector;
+    /**
+     * Bucket is the name of the bucket
+     */
+    bucket: string;
+    /**
+     * Endpoint is the hostname of the bucket endpoint
+     */
+    endpoint: string;
     /**
      * SecretKeySecret is the secret selector to the bucket's secret key
      */
@@ -805,6 +865,23 @@ export interface WorkflowList {
  */
 export interface WorkflowSpec {
     /**
+     * Optional duration in seconds relative to the workflow start time which the workflow is
+     * allowed to run before the controller terminates the workflow. A value of zero is used to
+     * terminate a Running workflow
+     */
+    activeDeadlineSeconds?: number;
+    /**
+     * TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
+     * Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be
+     * deleted after the time to live expires. If this field is unset,
+     * the controller config map will hold the default values.
+     */
+    ttlStrategy?: {};
+    /**
+     * PodGC describes the strategy to use when to deleting completed pods
+     */
+    podGC?: {};
+    /**
      * Affinity sets the scheduling constraints for all pods in the workflow. Can be overridden by an affinity specified in the template
      */
     affinity?: kubernetes.Affinity;
@@ -839,7 +916,7 @@ export interface WorkflowSpec {
     /**
      * Templates is a list of workflow templates used in a workflow
      */
-    templates: Template[];
+    templates?: Template[];
     /**
      * VolumeClaimTemplates is a list of claims that containers are allowed to reference.
      * The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow

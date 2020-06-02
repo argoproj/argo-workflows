@@ -2,6 +2,13 @@
 
 .workflow-node-info {
 
+    .tabs {
+        a {
+            padding-right: 0;
+            padding-left: 0;
+        }
+    }
+
     &__multi-line {
         line-height: 24px;
         display: inline-block;
