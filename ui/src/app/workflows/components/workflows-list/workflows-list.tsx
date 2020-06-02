@@ -271,43 +271,44 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         <div className='columns small-1'>DURATION</div>
                         <div className='columns small-3'>LABELS</div>
                     </div>
-                    {this.state.workflows.map(w => { 
+                    {this.state.workflows.map(w => {
                         return (
-                        <Link
-                            className='row argo-table-list__row'
-                            key={`${w.metadata.namespace}-${w.metadata.name}`}
-                            to={uiUrl(`workflows/${w.metadata.namespace}/${w.metadata.name}`)}>
-                            <div className='columns small-1'>
-                                <PhaseIcon value={w.status.phase} />
-                            </div>
-                            <div className='columns small-3'>{w.metadata.name}</div>
-                            <div className='columns small-2'>{w.metadata.namespace}</div>
-                            <div className='columns small-1'>
-                                <Timestamp date={w.status.startedAt} />
-                            </div>
-                            <div className='columns small-1'>
-                                <Timestamp date={w.status.finishedAt} />
-                            </div>
-                            <div className='columns small-1'>
-                                <Ticker>{() => formatDuration(wfDuration(w.status))}</Ticker>
-                            </div>
-                            <div className='columns small-3'>
-                                <div className='workflows-list__labels-container'> 
-                                    <WorkflowLabels 
-                                        workflow={w}
-                                        onChange={async (key) => {
-                                            let value = `${key}=${w.metadata.labels[key]}`
-                                            if (this.state.selectedLabels.indexOf(value) === -1) {
-                                                const newTags = this.state.selectedLabels.concat(value)
-                                                await this.setState({selectedLabels: newTags})
-                                            }
-                                            this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.pagination)
-                                        }}
-                                    />
-                                </div> 
-                            </div>
-                        </Link>
-                    )})}
+                            <Link
+                                className='row argo-table-list__row'
+                                key={`${w.metadata.namespace}-${w.metadata.name}`}
+                                to={uiUrl(`workflows/${w.metadata.namespace}/${w.metadata.name}`)}>
+                                <div className='columns small-1'>
+                                    <PhaseIcon value={w.status.phase} />
+                                </div>
+                                <div className='columns small-3'>{w.metadata.name}</div>
+                                <div className='columns small-2'>{w.metadata.namespace}</div>
+                                <div className='columns small-1'>
+                                    <Timestamp date={w.status.startedAt} />
+                                </div>
+                                <div className='columns small-1'>
+                                    <Timestamp date={w.status.finishedAt} />
+                                </div>
+                                <div className='columns small-1'>
+                                    <Ticker>{() => formatDuration(wfDuration(w.status))}</Ticker>
+                                </div>
+                                <div className='columns small-3'>
+                                    <div className='workflows-list__labels-container'>
+                                        <WorkflowLabels
+                                            workflow={w}
+                                            onChange={async key => {
+                                                const value = `${key}=${w.metadata.labels[key]}`;
+                                                if (this.state.selectedLabels.indexOf(value) === -1) {
+                                                    const newTags = this.state.selectedLabels.concat(value);
+                                                    await this.setState({selectedLabels: newTags});
+                                                }
+                                                this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.pagination);
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            </Link>
+                        );
+                    })}
                 </div>
                 <PaginationPanel
                     onChange={pagination => this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, pagination)}
