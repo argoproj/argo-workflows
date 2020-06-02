@@ -89,14 +89,6 @@ func (s *ArgoServerSuite) TestInfo() {
 	})
 }
 
-func (s *ArgoServerSuite) TestUser() {
-	s.Run("GetUser", func() {
-		s.e().GET("/api/v1/user").
-			Expect().
-			Status(200)
-	})
-}
-
 func (s *ArgoServerSuite) TestVersion() {
 	s.Run("Version", func() {
 		s.e().GET("/api/v1/version").
