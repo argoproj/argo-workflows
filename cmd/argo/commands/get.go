@@ -18,6 +18,7 @@ import (
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	argoutil "github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/printer"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -268,6 +269,17 @@ func insertSorted(wf *wfv1.Workflow, sortedArray []renderNode, item renderNode) 
 			// get some consistent printing
 			insertName := item.getNodeStatus(wf).DisplayName
 			equalName := existingItem.getNodeStatus(wf).DisplayName
+
+			// If they are both elements of a list (e.g. withParams, withSequence, etc.) order by index number instead of
+			// alphabetical order
+			insertIndex := argoutil.RecoverIndexFromNodeName(insertName)
+			equalIndex := argoutil.RecoverIndexFromNodeName(equalName)
+			if insertIndex >= 0 && equalIndex >= 0 {
+				if insertIndex < equalIndex {
+					break
+				}
+			}
+
 			if insertName < equalName {
 				break
 			}
