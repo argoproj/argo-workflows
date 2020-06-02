@@ -3,6 +3,10 @@
 .workflows-list {
   padding: 1em;
 
+  &__status {
+    max-width: 40px;
+  }
+
   &__labels-container {
     height: 100%;
   }

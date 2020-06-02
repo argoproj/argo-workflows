@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {Link, RouteComponentProps} from 'react-router-dom';
+import {RouteComponentProps} from 'react-router-dom';
 import {Subscription} from 'rxjs';
 
 import {Autocomplete, Page, SlidingPanel} from 'argo-ui';
@@ -17,15 +17,11 @@ import {ZeroState} from '../../../shared/components/zero-state';
 import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
 
-import {Ticker} from 'argo-ui/src/index';
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
-import {PhaseIcon} from '../../../shared/components/phase-icon';
-import {Timestamp} from '../../../shared/components/timestamp';
-import {formatDuration, wfDuration} from '../../../shared/duration';
 import {Pagination, parseLimit} from '../../../shared/pagination';
 import {WorkflowFilters} from '../workflow-filters/workflow-filters';
-import {WorkflowLabels} from '../workflow-labels/workflow-labels';
+import {WorkflowsRow} from '../workflows-row/workflows-row';
 
 require('./workflows-list.scss');
 
@@ -263,51 +259,29 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                 )}
                 <div className='argo-table-list'>
                     <div className='row argo-table-list__head'>
-                        <div className='columns small-1' />
-                        <div className='columns small-2'>NAME</div>
-                        <div className='columns small-1'>NAMESPACE</div>
+                        <div className='columns small-1 workflows-list__status' />
+                        <div className='columns small-3'>NAME</div>
+                        <div className='columns small-2'>NAMESPACE</div>
                         <div className='columns small-2'>STARTED</div>
                         <div className='columns small-2'>FINISHED</div>
                         <div className='columns small-1'>DURATION</div>
-                        <div className='columns small-3'>LABELS</div>
+                        <div className='columns small-1'>LABELS</div>
                     </div>
                     {this.state.workflows.map(wf => {
                         return (
-                            <Link
-                                className='row argo-table-list__row'
+                            <WorkflowsRow
+                                workflow={wf}
                                 key={`${wf.metadata.namespace}-${wf.metadata.name}`}
-                                to={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)}>
-                                <div className='columns small-1'>
-                                    <PhaseIcon value={wf.status.phase} />
-                                </div>
-                                <div className='columns small-2'>{wf.metadata.name}</div>
-                                <div className='columns small-1'>{wf.metadata.namespace}</div>
-                                <div className='columns small-2'>
-                                    <Timestamp date={wf.status.startedAt} />
-                                </div>
-                                <div className='columns small-2'>
-                                    <Timestamp date={wf.status.finishedAt} />
-                                </div>
-                                <div className='columns small-1'>
-                                    <Ticker>{() => formatDuration(wfDuration(wf.status))}</Ticker>
-                                </div>
-                                <div className='columns small-3'>
-                                    <div className='workflows-list__labels-container'>
-                                        <WorkflowLabels
-                                            workflow={wf}
-                                            onChange={async key => {
-                                                const value = `${key}=${wf.metadata.labels[key]}`;
-                                                let newTags: string[] = [];
-                                                if (this.state.selectedLabels.indexOf(value) === -1) {
-                                                    newTags = this.state.selectedLabels.concat(value);
-                                                    this.setState({selectedLabels: newTags});
-                                                }
-                                                this.changeFilters(this.state.namespace, this.state.selectedPhases, newTags, this.state.pagination);
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                            </Link>
+                                onChange={key => {
+                                    const value = `${key}=${wf.metadata.labels[key]}`;
+                                    let newTags: string[] = [];
+                                    if (this.state.selectedLabels.indexOf(value) === -1) {
+                                        newTags = this.state.selectedLabels.concat(value);
+                                        this.setState({selectedLabels: newTags});
+                                    }
+                                    this.changeFilters(this.state.namespace, this.state.selectedPhases, newTags, this.state.pagination);
+                                }}
+                            />
                         );
                     })}
                 </div>
