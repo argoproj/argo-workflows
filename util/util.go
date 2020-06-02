@@ -84,7 +84,7 @@ func RecoverIndexFromNodeName(name string) int {
 	if startIndex < 0 || endIndex < 0 {
 		return -1
 	}
-	out, err := strconv.Atoi(name[startIndex+1:endIndex])
+	out, err := strconv.Atoi(name[startIndex+1 : endIndex])
 	if err != nil {
 		return -1
 	}
