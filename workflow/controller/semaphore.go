@@ -44,7 +44,7 @@ func (s *Semaphore) enqueueWorkflow(key string) {
 	s.controller.wfQueue.AddAfter(key, 0)
 }
 
-func (s *Semaphore) Release(key string) {
+func (s *Semaphore) release(key string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	if _, ok := s.lockHolder[key]; ok {
@@ -65,7 +65,7 @@ func (s *Semaphore) Release(key string) {
 	}
 }
 
-func (s *Semaphore) AddToQueue(holderKey string, priority int32, creationTime time.Time) {
+func (s *Semaphore) addToQueue(holderKey string, priority int32, creationTime time.Time) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	if _, ok := s.lockHolder[holderKey]; ok {
@@ -81,7 +81,7 @@ func (s *Semaphore) AddToQueue(holderKey string, priority int32, creationTime ti
 	s.inPending[holderKey] = true
 	s.log.Debugf("Added into Queue %s \n", holderKey)
 }
-func (s *Semaphore) Acquire(holderKey string) bool {
+func (s *Semaphore) acquire(holderKey string) bool {
 	if s.semaphore.TryAcquire(1) {
 		s.lockHolder[holderKey] = true
 		return true
@@ -89,7 +89,7 @@ func (s *Semaphore) Acquire(holderKey string) bool {
 	return false
 }
 
-func (s *Semaphore) TryAcquire(holderKey string) (bool, string) {
+func (s *Semaphore) tryAcquire(holderKey string) (bool, string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -108,7 +108,7 @@ func (s *Semaphore) TryAcquire(holderKey string) (bool, string) {
 		}
 	}
 
-	if s.Acquire(holderKey) {
+	if s.acquire(holderKey) {
 		s.pending.Pop()
 		delete(s.inPending, holderKey)
 		s.log.Infof("%s acquired by %s \n", s.name, nextKey)

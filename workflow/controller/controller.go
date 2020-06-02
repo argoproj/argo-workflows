@@ -166,7 +166,10 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.metrics.RunServer(ctx)
 
 	wfc.concurrencyMgr = NewConcurrencyManager(wfc)
-	wfc.concurrencyMgr.initialize(wfc.GetManagedNamespace(), wfc.wfclientset)
+	err := wfc.concurrencyMgr.initialize(wfc.GetManagedNamespace(), wfc.wfclientset)
+	if err != nil {
+		log.Errorf("Error on ConcurrencyManager initialization, error:%v", err)
+	}
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	for _, informer := range []cache.SharedIndexInformer{wfc.wfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
@@ -430,9 +433,9 @@ func (wfc *WorkflowController) processNextItem() bool {
 	if wf.Spec.Semaphore != nil {
 		wfKey := fmt.Sprintf("%v", key)
 		priority, creationTime := getWfPriority(wf)
-		acquired, msg, err := wfc.concurrencyMgr.TryAcquire(wfKey, wf.Namespace, priority, creationTime, wf.Spec.Semaphore, wf)
+		acquired, msg, err := wfc.concurrencyMgr.tryAcquire(wfKey, wf.Namespace, priority, creationTime, wf.Spec.Semaphore, wf)
 		if err != nil {
-			log.Warnf("Failed to unmarshal key '%s' to workflow object: %v", key, err)
+			log.Warnf("Failed to acquire the lock for '%s' : %v", key, err)
 			woc := newWorkflowOperationCtx(wf, wfc)
 			woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
 			woc.persistUpdates()
@@ -458,13 +461,14 @@ func (wfc *WorkflowController) processNextItem() bool {
 
 	startTime := time.Now()
 	woc.operate()
+
 	wfc.metrics.OperationCompleted(time.Since(startTime).Seconds())
 	if woc.wf.Status.Fulfilled() {
 		wfc.throttler.Remove(key)
 
-		if wf.Spec.Semaphore != nil {
-			wfc.concurrencyMgr.Release(fmt.Sprintf("%v", key), wf.Namespace, wf.Spec.Semaphore, woc.wf)
-		}
+		// Release all acquired lock for completed workflow
+		wfc.concurrencyMgr.releaseAll(woc.wf)
+
 		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 		var doPodGC bool
 		if woc.wfSpec.PodGC != nil {
@@ -570,7 +574,6 @@ func (wfc *WorkflowController) addWorkflowToQueue(obj interface{}) {
 		wfc.throttler.Add(key, priority, creation)
 	}
 }
-
 
 func getWfPhase(obj interface{}) wfv1.NodePhase {
 	un, ok := obj.(*unstructured.Unstructured)
