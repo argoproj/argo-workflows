@@ -4,16 +4,6 @@ import {uiUrl} from '../../shared/base';
 
 require('./login.scss');
 
-const getToken = () => {
-    for (const cookie of document.cookie.split(';')) {
-        if (cookie.startsWith('authorization=')) {
-            return cookie.substring(14);
-        }
-    }
-    return null;
-};
-
-const maybeLoggedIn = () => !!getToken();
 const logout = () => {
     document.cookie = 'authorization=;Max-Age=0';
     document.location.reload(true);
@@ -30,9 +20,7 @@ export const Login = () => (
                 <h3>
                     <i className='fa fa-shield-alt' /> Login
                 </h3>
-                <p>
-                    You appear to be <b>logged {maybeLoggedIn() ? 'in' : 'out'}</b>. It may not be necessary to user to use Argo, it depends on how it is configured.
-                </p>
+                <p>It may not be necessary to be logged in to use Argo Workflows, it depends on how it is configured.</p>
                 <p>
                     <a href='https://github.com/argoproj/argo/blob/master/docs/argo-server-auth.md'>Learn more</a>.
                 </p>
