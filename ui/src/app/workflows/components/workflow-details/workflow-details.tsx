@@ -31,7 +31,7 @@ function parseSidePanelParam(param: string) {
 interface WorkflowDetailsState {
     workflow: Workflow;
     links: Link[];
-    follow: boolean;
+    followLogStream: boolean;
 }
 
 export class WorkflowDetails extends React.Component<RouteComponentProps<any>, WorkflowDetailsState> {
@@ -60,7 +60,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
         this.state = {
             workflow: null,
             links: null,
-            follow: true
+            followLogStream: true
         };
     }
 
@@ -166,7 +166,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                                 ))}
                         </div>
                         <div>
-                            <input type='checkbox' id='followLogStream' onClick={() => this.setState({follow: !this.state.follow})} />
+                            <input type='checkbox' id='followLogStream' onClick={() => this.setState({followLogStream: !this.state.followLogStream})} />
                             <label htmlFor='followLogStream'>Follow log stream?</label>
                         </div>
                         {this.state.workflow && (
@@ -177,7 +177,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                                         nodeId={this.sidePanel.nodeId}
                                         container={this.sidePanel.container}
                                         archived={false}
-                                        follow={this.state.follow}
+                                        follow={this.state.followLogStream}
                                     />
                                 )}
                                 {this.sidePanel && this.sidePanel.type === 'yaml' && <WorkflowYamlViewer workflow={this.state.workflow} selectedNode={selectedNode} />}
