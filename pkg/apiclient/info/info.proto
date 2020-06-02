@@ -20,6 +20,7 @@ message InfoResponse {
 message GetVersionRequest {
 }
 
+
 service InfoService {
     rpc GetInfo (GetInfoRequest) returns (InfoResponse) {
         option (google.api.http).get = "/api/v1/info";
