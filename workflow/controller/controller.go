@@ -721,11 +721,11 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 	// Metrics config
 	path := wfc.Config.MetricsConfig.Path
 	if path == "" {
-		path = "/metrics"
+		path = metrics.DefaultMetricsServerPath
 	}
 	port := wfc.Config.MetricsConfig.Port
 	if port == "" {
-		port = "9090"
+		port = metrics.DefaultMetricsServerPort
 	}
 	metricsConfig := metrics.ServerConfig{
 		Enabled:      wfc.Config.MetricsConfig.Enabled == nil || *wfc.Config.MetricsConfig.Enabled,
