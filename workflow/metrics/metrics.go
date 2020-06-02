@@ -12,6 +12,8 @@ import (
 const (
 	argoNamespace      = "argo"
 	workflowsSubsystem = "workflows"
+	DefaultMetricsServerPort = "9090"
+	DefaultMetricsServerPath = "/metrics"
 )
 
 type ServerConfig struct {
