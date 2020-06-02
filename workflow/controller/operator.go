@@ -2663,20 +2663,22 @@ func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (boo
 }
 
 func (woc *wfOperationCtx) fetchWorkflowSpec() (*wfv1.WorkflowSpec, error) {
+	if woc.wf.Spec.WorkflowTemplateRef == nil {
+		return nil, fmt.Errorf("cannot fetch workflow spec without workflowTemplateRef")
+	}
+
 	var specHolder wfv1.WorkflowSpecHolder
 	var err error
 	// Logic for workflow refers Workflow template
-	if woc.wf.Spec.WorkflowTemplateRef != nil {
-		if woc.wf.Spec.WorkflowTemplateRef.ClusterScope {
-			specHolder, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)
-		} else {
-			specHolder, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name)
-		}
-		if err != nil {
-			return nil, err
-		}
+	if woc.wf.Spec.WorkflowTemplateRef.ClusterScope {
+		specHolder, err = woc.controller.cwftmplInformer.Lister().Get(woc.wf.Spec.WorkflowTemplateRef.Name)
+	} else {
+		specHolder, err = woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace).Get(woc.wf.Spec.WorkflowTemplateRef.Name)
 	}
-	return specHolder.GetWorkflowSpec().DeepCopy(), nil
+	if err != nil {
+		return nil, err
+	}
+	return specHolder.GetWorkflowSpec(), nil
 }
 
 func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wfv1.Arguments, error) {
@@ -2687,7 +2689,7 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 		woc.wfSpec = &woc.wf.Spec
 
 		if woc.controller.referenceMode {
-			return nil, wfv1.Arguments{}, fmt.Errorf("workflows may only use workflowTemplateRef to be executed when the controller is in reference mode")
+			return nil, wfv1.Arguments{}, fmt.Errorf("workflows must use workflowTemplateRef to be executed when the controller is in reference mode")
 		}
 
 		tmplRef := &wfv1.WorkflowStep{Template: woc.wfSpec.Entrypoint}
