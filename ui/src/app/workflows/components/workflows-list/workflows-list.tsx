@@ -297,7 +297,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                             workflow={wf}
                                             onChange={async key => {
                                                 const value = `${key}=${wf.metadata.labels[key]}`;
-                                                let newTags: string[] = []; 
+                                                let newTags: string[] = [];
                                                 if (this.state.selectedLabels.indexOf(value) === -1) {
                                                     newTags = this.state.selectedLabels.concat(value);
                                                     this.setState({selectedLabels: newTags});
