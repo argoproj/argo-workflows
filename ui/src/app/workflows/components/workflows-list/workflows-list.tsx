@@ -264,10 +264,10 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                 <div className='argo-table-list'>
                     <div className='row argo-table-list__head'>
                         <div className='columns small-1' />
-                        <div className='columns small-3'>NAME</div>
-                        <div className='columns small-2'>NAMESPACE</div>
-                        <div className='columns small-1'>STARTED</div>
-                        <div className='columns small-1'>FINISHED</div>
+                        <div className='columns small-2'>NAME</div>
+                        <div className='columns small-1'>NAMESPACE</div>
+                        <div className='columns small-2'>STARTED</div>
+                        <div className='columns small-2'>FINISHED</div>
                         <div className='columns small-1'>DURATION</div>
                         <div className='columns small-3'>LABELS</div>
                     </div>
@@ -280,12 +280,12 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 <div className='columns small-1'>
                                     <PhaseIcon value={w.status.phase} />
                                 </div>
-                                <div className='columns small-3'>{w.metadata.name}</div>
-                                <div className='columns small-2'>{w.metadata.namespace}</div>
-                                <div className='columns small-1'>
+                                <div className='columns small-2'>{w.metadata.name}</div>
+                                <div className='columns small-1'>{w.metadata.namespace}</div>
+                                <div className='columns small-2'>
                                     <Timestamp date={w.status.startedAt} />
                                 </div>
-                                <div className='columns small-1'>
+                                <div className='columns small-2'>
                                     <Timestamp date={w.status.finishedAt} />
                                 </div>
                                 <div className='columns small-1'>
