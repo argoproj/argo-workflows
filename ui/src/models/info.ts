@@ -12,8 +12,3 @@ export interface Info {
 export interface Version {
     version: string;
 }
-
-export interface User {
-    name?: string;
-    groups?: string[];
-}

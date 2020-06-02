@@ -9,7 +9,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"k8s.io/client-go/kubernetes/fake"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/server/auth/sso/mocks"
 )
@@ -47,13 +46,11 @@ func TestServer_GetWFClient(t *testing.T) {
 	})
 	t.Run("SSO", func(t *testing.T) {
 		ssoIf := &mocks.Interface{}
-		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(wfv1.User{Name: "my-name"}, nil)
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(nil)
 		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf)
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer id_token:whatever"))
 			if assert.NoError(t, err) {
-				user := GetUser(ctx)
-				assert.Equal(t, "my-name", user.Name)
 				assert.Equal(t, wfClient, GetWfClient(ctx))
 				assert.Equal(t, kubeClient, GetKubeClient(ctx))
 			}

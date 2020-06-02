@@ -27,22 +27,6 @@
         ]
       }
     },
-    "/api/v1/user": {
-      "get": {
-        "operationId": "GetUser",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.User"
-            }
-          }
-        },
-        "tags": [
-          "InfoService"
-        ]
-      }
-    },
     "/api/v1/version": {
       "get": {
         "operationId": "GetVersion",
@@ -78,20 +62,6 @@
         }
       },
       "title": "A link to another app.\n+patchStrategy=merge\n+patchMergeKey=name"
-    },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.User": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "groups": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      }
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Version": {
       "type": "object",

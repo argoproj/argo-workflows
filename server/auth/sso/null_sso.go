@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 var NullSSO Interface = nullService{}
@@ -13,8 +11,8 @@ var NullSSO Interface = nullService{}
 type nullService struct {
 }
 
-func (n nullService) Authorize(context.Context, string) (wfv1.User, error) {
-	return wfv1.NullUser, fmt.Errorf("not implemented")
+func (n nullService) Authorize(context.Context, string) error {
+	return fmt.Errorf("not implemented")
 }
 
 func (n nullService) HandleRedirect(w http.ResponseWriter, _ *http.Request) {
