@@ -2683,8 +2683,13 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 
 	executionParameters := woc.wf.Spec.Arguments
 
-	woc.wfSpec = &woc.wf.Spec
 	if woc.wf.Spec.WorkflowTemplateRef == nil {
+		woc.wfSpec = &woc.wf.Spec
+
+		if woc.controller.referenceMode {
+			return nil, wfv1.Arguments{}, fmt.Errorf("workflows may only use workflowTemplateRef to be executed when the controller is in reference mode")
+		}
+
 		tmplRef := &wfv1.WorkflowStep{Template: woc.wfSpec.Entrypoint}
 		return tmplRef, executionParameters, nil
 	}
@@ -2692,6 +2697,8 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 	if woc.wf.Status.StoredWorkflowSpec == nil {
 		wftSpec, err := woc.fetchWorkflowSpec()
 		if err != nil {
+			// A call downstream will need to use `wfSpec` even though the execution will result in an error
+			woc.wfSpec = &woc.wf.Spec
 			return nil, wfv1.Arguments{}, err
 		}
 		woc.wf.Status.StoredWorkflowSpec = wftSpec

@@ -49,6 +49,9 @@ type WorkflowController struct {
 	namespace        string
 	managedNamespace string
 
+	// referenceMode restricts execution of Workflows to only those referencing WorkflowTemplates via workflowTemplateRef
+	referenceMode bool
+
 	configController config.Controller
 	// Config is the workflow controller's configuration
 	Config config.Config
@@ -100,6 +103,7 @@ func NewWorkflowController(
 	executorImagePullPolicy,
 	containerRuntimeExecutor,
 	configMap string,
+	referenceMode bool,
 ) *WorkflowController {
 	wfc := WorkflowController{
 		restConfig:                 restConfig,
@@ -107,6 +111,7 @@ func NewWorkflowController(
 		wfclientset:                wfclientset,
 		namespace:                  namespace,
 		managedNamespace:           managedNamespace,
+		referenceMode:              referenceMode,
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
 		containerRuntimeExecutor:   containerRuntimeExecutor,
