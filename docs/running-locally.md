@@ -20,6 +20,7 @@ K3D tip: You can set-up K3D to be part of your default kube config as follows
 
 Add to /etc/hosts:
 
+    127.0.0.1 dex
     127.0.0.1 minio
     127.0.0.1 postgres
     127.0.0.1 mysql
