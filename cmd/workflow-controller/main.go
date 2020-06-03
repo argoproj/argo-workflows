@@ -40,8 +40,8 @@ func NewRootCommand() *cobra.Command {
 		glogLevel                int    // --gloglevel
 		workflowWorkers          int    // --workflow-workers
 		podWorkers               int    // --pod-workers
-		burst int
-		qps float32
+		burst                    int
+		qps                      float32
 		namespaced               bool   // --namespaced
 		managedNamespace         string // --managed-namespace
 	)
