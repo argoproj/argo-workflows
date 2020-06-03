@@ -17,10 +17,6 @@ We recommend using [K3D](https://k3d.io/) to set up the local Kubernetes cluster
     
 Alternatively, you can use [Minikube](https://github.com/kubernetes/minikube) to set up the local Kubernetes cluster. Once a local Kubernetes cluster has started via `minikube start`, your kube config will use Minikube's context automatically.
 
-Useful:
-
-* For a PS1 prompt showing your current kube context: kube-ps1 to help.  `brew install kube-ps1`
-
 Add to /etc/hosts:
 
     127.0.0.1 minio
