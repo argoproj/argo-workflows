@@ -19,12 +19,12 @@ import (
 
 const Prefix = "Bearer id_token:"
 
-type claims struct {
+type Claims struct {
 	Groups []string `json:"groups"`
 }
 
 type Interface interface {
-	Authorize(ctx context.Context, authorization string) error
+	Authorize(ctx context.Context, authorization string) (*Claims, error)
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
 }
@@ -126,7 +126,7 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to verify token: %v", err)))
 		return
 	}
-	c := &claims{}
+	c := &Claims{}
 	if err := idToken.Claims(c); err != nil {
 		w.WriteHeader(401)
 		_, _ = w.Write([]byte(fmt.Sprintf("failed to get claims: %v", err)))
@@ -152,18 +152,18 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 // authorize verifies a bearer token and pulls user information form the claims.
-func (s *sso) Authorize(ctx context.Context, authorisation string) error {
+func (s *sso) Authorize(ctx context.Context, authorisation string) (*Claims, error) {
 	rawIDToken, err := zjwt.JWT(strings.TrimPrefix(authorisation, Prefix))
 	if err != nil {
-		return fmt.Errorf("failed to decompress token %v", err)
+		return nil, fmt.Errorf("failed to decompress token %v", err)
 	}
 	idToken, err := s.idTokenVerifier.Verify(ctx, rawIDToken)
 	if err != nil {
-		return fmt.Errorf("failed to verify id_token %v", err)
+		return nil, fmt.Errorf("failed to verify id_token %v", err)
 	}
-	c := &claims{}
+	c := &Claims{}
 	if err := idToken.Claims(c); err != nil {
-		return fmt.Errorf("failed to parse claims: %v", err)
+		return nil, fmt.Errorf("failed to parse claims: %v", err)
 	}
-	return nil
+	return c, nil
 }

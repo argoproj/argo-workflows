@@ -98,7 +98,7 @@ func NewArgoServer(opts ArgoServerOpts) (*argoServer, error) {
 	} else {
 		log.Info("SSO disabled")
 	}
-	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, ssoIf, rbacIf)
+	gatekeeper, err := auth.NewGatekeeper(opts.AuthModes, opts.Namespace, opts.WfClientSet, opts.KubeClientset, opts.RestConfig, ssoIf, rbacIf)
 	if err != nil {
 		return nil, err
 	}

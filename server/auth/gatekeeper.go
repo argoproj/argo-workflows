@@ -14,7 +14,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/auth/rbac"
 	"github.com/argoproj/argo/server/auth/sso"
@@ -35,7 +34,7 @@ type Gatekeeper interface {
 }
 
 type gatekeeper struct {
-	modes Modes
+	modes     Modes
 	namespace string
 	// global clients, not to be used if there are better ones
 	wfClient   versioned.Interface
@@ -116,7 +115,7 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if !s.modes[mode] {
-		return nil, nil,  status.Errorf(codes.Unauthenticated, "no valid authentication methods found for mode %v", mode)
+		return nil, nil, status.Errorf(codes.Unauthenticated, "no valid authentication methods found for mode %v", mode)
 	}
 	switch mode {
 	case Client:
@@ -132,15 +131,15 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		if err != nil {
 			return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig: %v", err)
 		}
-		return wfClient, kubeClient,  nil
+		return wfClient, kubeClient, nil
 	case Server:
 		return s.wfClient, s.kubeClient, nil
 	case SSO:
-		err := s.ssoIf.Authorize(ctx, authorization)
+		claims, err := s.ssoIf.Authorize(ctx, authorization)
 		if err != nil {
 			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
-		wfClient, kubeClient, err := s.getClientsFromRBAC(user)
+		wfClient, kubeClient, err := s.getClientsFromRBAC(claims)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -148,13 +147,10 @@ func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 	default:
 		panic("this should never happen")
 	}
-		}
-	}
-	return nil, nil, status.Errorf(codes.Internal, `could not find secret for service account named "%s"`, account.Name)
 }
 
-func (s gatekeeper) getClientsFromRBAC(user wfv1.User) (versioned.Interface, kubernetes.Interface, error) {
-	serviceAccount, err := s.rbacIf.ServiceAccount(user.Groups)
+func (s gatekeeper) getClientsFromRBAC(claims *sso.Claims) (versioned.Interface, kubernetes.Interface, error) {
+	serviceAccount, err := s.rbacIf.ServiceAccount(claims.Groups)
 	if err != nil {
 		return nil, nil, status.Errorf(codes.PermissionDenied, "failed to determine RBAC service account: %v", err.Error())
 	}

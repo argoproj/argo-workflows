@@ -11,8 +11,8 @@ var NullSSO Interface = nullService{}
 type nullService struct {
 }
 
-func (n nullService) Authorize(context.Context, string) error {
-	return fmt.Errorf("not implemented")
+func (n nullService) Authorize(context.Context, string) (*Claims, error) {
+	return nil, fmt.Errorf("not implemented")
 }
 
 func (n nullService) HandleRedirect(w http.ResponseWriter, _ *http.Request) {
