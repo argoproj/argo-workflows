@@ -8,7 +8,6 @@ import requests from './requests';
 import {WorkflowDeleteResponse} from './responses';
 
 export class WorkflowsService {
-
     public create(workflow: Workflow, namespace: string) {
         return requests
             .post(`api/v1/workflows/${namespace}`)
@@ -33,8 +32,10 @@ export class WorkflowsService {
     }
 
     public watch(filter: {namespace?: string; name?: string; phases?: Array<string>; labels?: Array<string>}): Observable<models.kubernetes.WatchEvent<Workflow>> {
-        const params = this.queryParams(filter); 
-        params.push(`fields=result.object.metadata.name,result.object.metadata.namespace,result.object.status.finishedAt,result.object.status.startedAt,result.object.status.phase`);
+        const params = this.queryParams(filter);
+        params.push(
+            `fields=result.object.metadata.name,result.object.metadata.namespace,result.object.status.finishedAt,result.object.status.startedAt,result.object.status.phase`
+        );
         const url = `api/v1/workflow-events/${filter.namespace || ''}?${params.join('&')}`;
 
         return requests.loadEventSource(url, true).map(data => JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>);

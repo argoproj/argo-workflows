@@ -24,7 +24,7 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, {hideDrawer
     }
 
     public render() {
-        const wf = this.props.workflow;
+        const wf = this.state.workflow;
         return (
             <div className='workflows-list__row-container'>
                 <Link className='row argo-table-list__row' to={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)}>
