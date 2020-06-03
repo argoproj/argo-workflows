@@ -82,7 +82,11 @@ const config = {
       "/artifacts-by-uid": {
         "target": isProd ? "" : "https://localhost:2746",
         "secure": false
-      }
+      },
+      '/oauth2': {
+        'target': isProd ? '' : 'https://localhost:2746',
+        'secure': false,
+      },
     }
   }
 };
