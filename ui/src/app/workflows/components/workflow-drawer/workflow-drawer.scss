@@ -20,6 +20,10 @@
     &:last-child {
       padding-bottom: 0;
     }
+
+    &:only-child {
+      padding: 0;
+    }
   }
 
   &__message {

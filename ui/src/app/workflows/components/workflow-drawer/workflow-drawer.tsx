@@ -27,7 +27,7 @@ export class WorkflowDrawer extends React.Component<WorkflowDrawerProps, {}> {
                     </div>
                 </div>
                 {!wf.status.message ? (
-                    <span />
+                    null
                 ) : (
                     <div className='workflow-drawer__section workflow-drawer__message'>
                         <div className='workflow-drawer__title workflow-drawer__message--label'>MESSAGE</div>
@@ -35,7 +35,7 @@ export class WorkflowDrawer extends React.Component<WorkflowDrawerProps, {}> {
                     </div>
                 )}
                 {!wf.status.resourcesDuration ? (
-                    <span />
+                    null
                 ) : (
                     <div className='workflow-drawer__section'>
                         <div className='workflow-drawer__resourcesDuration'>
@@ -59,7 +59,7 @@ export class WorkflowDrawer extends React.Component<WorkflowDrawerProps, {}> {
                     </div>
                 )}
                 {!wf.status.conditions ? (
-                    <span />
+                    null
                 ) : (
                     <div className='workflow-drawer__section'>
                         <div className='workflow-drawer__title'>CONDITIONS</div>
