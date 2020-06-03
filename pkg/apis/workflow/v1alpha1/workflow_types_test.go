@@ -7,22 +7,44 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 )
 
 func TestWorkflows(t *testing.T) {
 	wfs := Workflows{
-		{ObjectMeta: v1.ObjectMeta{Name: "3"}, Status: WorkflowStatus{FinishedAt: v1.NewTime(time.Time{}.Add(1))}},
-		{ObjectMeta: v1.ObjectMeta{Name: "2"}, Status: WorkflowStatus{FinishedAt: v1.NewTime(time.Time{}.Add(0))}},
-		{ObjectMeta: v1.ObjectMeta{Name: "1"}, Status: WorkflowStatus{StartedAt: v1.NewTime(time.Time{}.Add(0))}},
-		{ObjectMeta: v1.ObjectMeta{Name: "0"}, Status: WorkflowStatus{StartedAt: v1.NewTime(time.Time{}.Add(1))}},
+		{ObjectMeta: metav1.ObjectMeta{Name: "3"}, Status: WorkflowStatus{FinishedAt: metav1.NewTime(time.Time{}.Add(1))}},
+		{ObjectMeta: metav1.ObjectMeta{Name: "2"}, Status: WorkflowStatus{FinishedAt: metav1.NewTime(time.Time{}.Add(0))}},
+		{ObjectMeta: metav1.ObjectMeta{Name: "1"}, Status: WorkflowStatus{StartedAt: metav1.NewTime(time.Time{}.Add(0))}},
+		{ObjectMeta: metav1.ObjectMeta{Name: "0"}, Status: WorkflowStatus{StartedAt: metav1.NewTime(time.Time{}.Add(1))}},
 	}
-	sort.Sort(wfs)
-	assert.Equal(t, "0", wfs[0].Name)
-	assert.Equal(t, "1", wfs[1].Name)
-	assert.Equal(t, "2", wfs[2].Name)
-	assert.Equal(t, "3", wfs[3].Name)
+	t.Run("Sort", func(t *testing.T) {
+		sort.Sort(wfs)
+		assert.Equal(t, "0", wfs[0].Name)
+		assert.Equal(t, "1", wfs[1].Name)
+		assert.Equal(t, "2", wfs[2].Name)
+		assert.Equal(t, "3", wfs[3].Name)
+	})
+	t.Run("Filter", func(t *testing.T) {
+		assert.Len(t, wfs.Filter(func(wf Workflow) bool { return true }), 4)
+		assert.Len(t, wfs.Filter(func(wf Workflow) bool { return false }), 0)
+	})
+}
+
+func TestWorkflowCreatedAfter(t *testing.T) {
+	t0 := time.Time{}
+	t1 := t0.Add(time.Second)
+	assert.False(t, WorkflowCreatedAfter(t1)(Workflow{ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t0}}}))
+	assert.True(t, WorkflowCreatedAfter(t0)(Workflow{ObjectMeta: metav1.ObjectMeta{CreationTimestamp: metav1.Time{Time: t1}}}))
+}
+
+func TestWorkflowFinishedBefore(t *testing.T) {
+	t0 := time.Time{}.Add(time.Second)
+	t1 := t0.Add(time.Second)
+	assert.False(t, WorkflowFinishedBefore(t0)(Workflow{}))
+	assert.False(t, WorkflowFinishedBefore(t1)(Workflow{}))
+	assert.False(t, WorkflowFinishedBefore(t0)(Workflow{Status: WorkflowStatus{FinishedAt: metav1.Time{Time: t1}}}))
+	assert.True(t, WorkflowFinishedBefore(t1)(Workflow{Status: WorkflowStatus{FinishedAt: metav1.Time{Time: t0}}}))
 }
 
 func TestArtifactLocation_HasLocation(t *testing.T) {
@@ -105,7 +127,7 @@ func TestCronWorkflowConditions(t *testing.T) {
 	cond := Condition{
 		Type:    ConditionTypeSubmissionError,
 		Message: "Failed to submit Workflow",
-		Status:  v1.ConditionTrue,
+		Status:  metav1.ConditionTrue,
 	}
 
 	assert.Len(t, cwfCond, 0)
@@ -124,7 +146,7 @@ func TestDisplayConditions(t *testing.T) {
 	cond := Condition{
 		Type:    ConditionTypeSubmissionError,
 		Message: "Failed to submit Workflow",
-		Status:  v1.ConditionTrue,
+		Status:  metav1.ConditionTrue,
 	}
 	cwfCond.UpsertCondition(cond)
 
