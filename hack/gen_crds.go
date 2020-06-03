@@ -56,7 +56,10 @@ func genCRDs() {
 					},
 				},
 			}
-
+			version := resource["spec"].(obj)["versions"].(array)[0].(obj)
+			if len(crd.AdditionalPrinterColumns) > 0 {
+				version["additionalPrinterColumns"] = crd.AdditionalPrinterColumns
+			}
 			if t != minimal {
 				data, err := ioutil.ReadFile("api/openapi-spec/swagger.json")
 				if err != nil {
@@ -72,7 +75,7 @@ func genCRDs() {
 				schema := ssc.structuralSchema(ssc.structuralSchemaByName("io.argoproj.workflow.v1alpha1." + crd.Kind))
 				schema["required"] = []string{"metadata", "spec"}
 				schema["properties"].(obj)["status"] = any
-				resource["spec"].(obj)["versions"].(array)[0].(obj)["schema"].(obj)["openAPIV3Schema"] = schema
+				version["schema"].(obj)["openAPIV3Schema"] = schema
 			}
 
 			data, err := yaml.Marshal(resource)

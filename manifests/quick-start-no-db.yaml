@@ -64,7 +64,18 @@ spec:
     singular: workflow
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - description: Status of the workflow
+      format: ""
+      jsonPath: .status.phase
+      name: Status
+      type: string
+    - description: When the workflow was started
+      format: date-time
+      jsonPath: .status.startedAt
+      name: Age
+      type: date
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         type: object
