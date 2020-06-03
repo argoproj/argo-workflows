@@ -12,6 +12,7 @@ interface WorkflowsRowProps {
     workflow: models.Workflow;
     onChange: (key: string) => void;
 }
+
 export class WorkflowsRow extends React.Component<WorkflowsRowProps, {hideDrawer: boolean}> {
     constructor(props: WorkflowsRowProps) {
         super(props);
