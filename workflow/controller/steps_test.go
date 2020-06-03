@@ -3,10 +3,12 @@ package controller
 import (
 	"testing"
 
+	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
+	"github.com/argoproj/argo/workflow/common"
 )
 
 // TestStepsFailedRetries ensures a steps template will recognize exhausted retries
@@ -118,4 +120,48 @@ func TestStepsWithParamAndGlobalParam(t *testing.T) {
 
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+}
+
+func TestResourceDurationMetric(t *testing.T) {
+	var nodeStatus = `
+      boundaryID: many-items-z26lj
+      displayName: sleep(4:four)
+      finishedAt: "2020-06-02T16:04:50Z"
+      hostNodeName: minikube
+      id: many-items-z26lj-3491220632
+      name: many-items-z26lj[0].sleep(4:four)
+      outputs:
+        artifacts:
+        - archiveLogs: true
+          name: main-logs
+          s3:
+            accessKeySecret:
+              key: accesskey
+              name: my-minio-cred
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            key: many-items-z26lj/many-items-z26lj-3491220632/main.log
+            secretKeySecret:
+              key: secretkey
+              name: my-minio-cred
+        exitCode: "0"
+      phase: Succeeded
+      resourcesDuration:
+        cpu: 33
+        memory: 24
+      startedAt: "2020-06-02T16:04:21Z"
+      templateName: sleep
+      templateScope: local/many-items-z26lj
+      type: Pod
+`
+
+	woc := wfOperationCtx{globalParams: make(common.Parameters)}
+	var node wfv1.NodeStatus
+	err := yaml.Unmarshal([]byte(nodeStatus), &node)
+	if assert.NoError(t, err) {
+		localScope, _ := woc.prepareMetricScope(&node)
+		assert.Equal(t, "33s", localScope["resourceDuration.cpu"])
+		assert.Equal(t, "24s", localScope["resourceDuration.memory"])
+	}
 }
