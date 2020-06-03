@@ -66,7 +66,7 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, {hideDrawer
                         onChange={key => {
                             this.props.onChange(key);
                         }}
-                    /> 
+                    />
                 )}
             </div>
         );
