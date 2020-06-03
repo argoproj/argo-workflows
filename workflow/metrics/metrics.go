@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	argoNamespace      = "argo"
-	workflowsSubsystem = "workflows"
+	argoNamespace            = "argo"
+	workflowsSubsystem       = "workflows"
 	DefaultMetricsServerPort = "9090"
 	DefaultMetricsServerPath = "/metrics"
 )
