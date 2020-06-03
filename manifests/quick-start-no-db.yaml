@@ -418,8 +418,6 @@ metadata:
 apiVersion: v1
 kind: Secret
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: argo-server-sso
 stringData:
   clientSecret: ZXhhbXBsZS1hcHAtc2VjcmV0
