@@ -6,7 +6,7 @@
 
 ## To start Argo Server with SSO.
 
-Firstly, configure both SSO  settings [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) with the correct OAuth 2 values.
+Firstly, configure the SSO settings [workflow-controller-configmap.yaml](workflow-controller-configmap.yaml) with the correct OAuth 2 values.
 
 You must annotated at least one service account with:
 

@@ -26,7 +26,6 @@ type ContextKey string
 const (
 	WfKey   ContextKey = "versioned.Interface"
 	KubeKey ContextKey = "kubernetes.Interface"
-	UserKey ContextKey = "v1alpha1.User"
 )
 
 type Gatekeeper interface {
@@ -36,7 +35,7 @@ type Gatekeeper interface {
 }
 
 type gatekeeper struct {
-	modes     Modes
+	modes Modes
 	namespace string
 	// global clients, not to be used if there are better ones
 	wfClient   versioned.Interface
@@ -76,11 +75,11 @@ func (s *gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
 }
 
 func (s *gatekeeper) Context(ctx context.Context) (context.Context, error) {
-	wfClient, kubeClient, user, err := s.getClients(ctx)
+	wfClient, kubeClient, err := s.getClients(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return context.WithValue(context.WithValue(context.WithValue(ctx, WfKey, wfClient), KubeKey, kubeClient), UserKey, user), nil
+	return context.WithValue(context.WithValue(ctx, WfKey, wfClient), KubeKey, kubeClient), nil
 }
 
 func GetWfClient(ctx context.Context) versioned.Interface {
@@ -89,10 +88,6 @@ func GetWfClient(ctx context.Context) versioned.Interface {
 
 func GetKubeClient(ctx context.Context) kubernetes.Interface {
 	return ctx.Value(KubeKey).(kubernetes.Interface)
-}
-
-func GetUser(ctx context.Context) wfv1.User {
-	return ctx.Value(UserKey).(wfv1.User)
 }
 
 func getAuthHeader(md metadata.MD) string {
@@ -113,50 +108,49 @@ func getAuthHeader(md metadata.MD) string {
 	return ""
 }
 
-func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, wfv1.User, error) {
+func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	authorization := getAuthHeader(md)
 	mode, err := GetMode(authorization)
 	if err != nil {
-		return nil, nil, wfv1.NullUser, status.Error(codes.InvalidArgument, err.Error())
+		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if !s.modes[mode] {
-		return nil, nil, wfv1.NullUser, status.Errorf(codes.Unauthenticated, "no valid authentication methods found for mode %v", mode)
+		return nil, nil,  status.Errorf(codes.Unauthenticated, "no valid authentication methods found for mode %v", mode)
 	}
 	switch mode {
 	case Client:
 		restConfig, err := kubeconfig.GetRestConfig(authorization)
 		if err != nil {
-			return nil, nil, wfv1.NullUser, status.Errorf(codes.Unauthenticated, "failed to create REST config: %v", err)
+			return nil, nil, status.Errorf(codes.Unauthenticated, "failed to create REST config: %v", err)
 		}
 		wfClient, err := versioned.NewForConfig(restConfig)
 		if err != nil {
-			return nil, nil, wfv1.NullUser, status.Errorf(codes.Unauthenticated, "failure to create wfClientset with ClientConfig: %v", err)
+			return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create wfClientset with ClientConfig: %v", err)
 		}
 		kubeClient, err := kubernetes.NewForConfig(restConfig)
 		if err != nil {
-			return nil, nil, wfv1.NullUser, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig: %v", err)
+			return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig: %v", err)
 		}
-		user := wfv1.NullUser
-		if restConfig.Username != "" {
-			user = wfv1.User{Name: restConfig.Username}
-		}
-		return wfClient, kubeClient, user, nil
+		return wfClient, kubeClient,  nil
 	case Server:
-		return s.wfClient, s.kubeClient, wfv1.NullUser, nil
+		return s.wfClient, s.kubeClient, nil
 	case SSO:
-		user, err := s.ssoIf.Authorize(ctx, authorization)
+		err := s.ssoIf.Authorize(ctx, authorization)
 		if err != nil {
-			return nil, nil, wfv1.NullUser, status.Error(codes.Unauthenticated, err.Error())
+			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
 		}
 		wfClient, kubeClient, err := s.getClientsFromRBAC(user)
 		if err != nil {
-			return nil, nil, wfv1.NullUser, err
+			return nil, nil, err
 		}
-		return wfClient, kubeClient, user, nil
+		return wfClient, kubeClient, nil
 	default:
 		panic("this should never happen")
 	}
+		}
+	}
+	return nil, nil, status.Errorf(codes.Internal, `could not find secret for service account named "%s"`, account.Name)
 }
 
 func (s gatekeeper) getClientsFromRBAC(user wfv1.User) (versioned.Interface, kubernetes.Interface, error) {

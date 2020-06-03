@@ -7,39 +7,28 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc/metadata"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	rbacmocks "github.com/argoproj/argo/server/auth/rbac/mocks"
-	ssomocks "github.com/argoproj/argo/server/auth/sso/mocks"
+	"github.com/argoproj/argo/server/auth/sso/mocks"
 )
 
 func TestServer_GetWFClient(t *testing.T) {
 	wfClient := &fakewfclientset.Clientset{}
-	kubeClient := fake.NewSimpleClientset(&corev1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "my-sa"},
-		Secrets:    []corev1.ObjectReference{{Name: "my-secret"}},
-	}, &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "my-secret"},
-		// base64("my-token") = "Im15LXRva2VuIg=="
-		Data: map[string][]byte{"token": []byte("Im15LXRva2VuIg==")},
-	})
+	kubeClient := &fake.Clientset{}
 	t.Run("None", func(t *testing.T) {
-		_, err := NewGatekeeper(Modes{}, "my-ns", wfClient, kubeClient, nil, nil, nil)
+		_, err := NewGatekeeper(Modes{}, wfClient, kubeClient, nil, nil)
 		assert.Error(t, err)
 	})
 	t.Run("Invalid", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{Client: true}, "my-ns", wfClient, kubeClient, nil, nil, nil)
+		g, err := NewGatekeeper(Modes{Client: true}, wfClient, kubeClient, nil, nil)
 		if assert.NoError(t, err) {
 			_, err := g.Context(x("invalid"))
 			assert.Error(t, err)
 		}
 	})
 	t.Run("NotAllowed", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{SSO: true}, "my-ns", wfClient, kubeClient, nil, nil, nil)
+		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, nil)
 		if assert.NoError(t, err) {
 			_, err := g.Context(x("Bearer "))
 			assert.Error(t, err)
@@ -47,7 +36,7 @@ func TestServer_GetWFClient(t *testing.T) {
 	})
 	// not possible to unit test client auth today
 	t.Run("Server", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{Server: true}, "my-ns", wfClient, kubeClient, nil, nil, nil)
+		g, err := NewGatekeeper(Modes{Server: true}, wfClient, kubeClient, nil, nil)
 		assert.NoError(t, err)
 		ctx, err := g.Context(x(""))
 		if assert.NoError(t, err) {
@@ -56,19 +45,14 @@ func TestServer_GetWFClient(t *testing.T) {
 		}
 	})
 	t.Run("SSO", func(t *testing.T) {
-		ssoIf := &ssomocks.Interface{}
-		rbacIf := &rbacmocks.Interface{}
-		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(wfv1.User{Name: "my-name", Groups: []string{"my-group"}}, nil)
-		rbacIf.On("ServiceAccount", mock.Anything).Return(&corev1.LocalObjectReference{Name: "my-sa"}, nil)
-		g, err := NewGatekeeper(Modes{SSO: true}, "my-ns", nil, kubeClient, nil, ssoIf, rbacIf)
+		ssoIf := &mocks.Interface{}
+		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(nil)
+		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf)
 		if assert.NoError(t, err) {
 			ctx, err := g.Context(x("Bearer id_token:whatever"))
 			if assert.NoError(t, err) {
-				user := GetUser(ctx)
-				assert.Equal(t, "my-name", user.Name)
-				assert.Equal(t, []string{"my-group"}, user.Groups)
-				assert.NotNil(t, GetWfClient(ctx))
-				assert.NotNil(t, GetKubeClient(ctx))
+				assert.Equal(t, wfClient, GetWfClient(ctx))
+				assert.Equal(t, kubeClient, GetKubeClient(ctx))
 			}
 		}
 	})

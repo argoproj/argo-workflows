@@ -15,8 +15,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 const Prefix = "Bearer id_token:"
@@ -26,10 +24,12 @@ type claims struct {
 }
 
 type Interface interface {
-	Authorize(ctx context.Context, authorization string) (wfv1.User, error)
+	Authorize(ctx context.Context, authorization string) error
 	HandleRedirect(writer http.ResponseWriter, request *http.Request)
 	HandleCallback(writer http.ResponseWriter, request *http.Request)
 }
+
+var _ Interface = &sso{}
 
 type sso struct {
 	config          *oauth2.Config
@@ -85,7 +85,7 @@ func (s *sso) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     stateCookieName,
 		Value:    state,
-		Expires:  time.Now().Add(1 * time.Hour),
+		Expires:  time.Now().Add(3 * time.Minute),
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 		Secure:   s.secure,
@@ -152,18 +152,18 @@ func (s *sso) HandleCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 // authorize verifies a bearer token and pulls user information form the claims.
-func (s *sso) Authorize(ctx context.Context, authorisation string) (wfv1.User, error) {
+func (s *sso) Authorize(ctx context.Context, authorisation string) error {
 	rawIDToken, err := zjwt.JWT(strings.TrimPrefix(authorisation, Prefix))
 	if err != nil {
-		return wfv1.NullUser, fmt.Errorf("failed to decompress token %v", err)
+		return fmt.Errorf("failed to decompress token %v", err)
 	}
 	idToken, err := s.idTokenVerifier.Verify(ctx, rawIDToken)
 	if err != nil {
-		return wfv1.NullUser, fmt.Errorf("failed to verify id_token %v", err)
+		return fmt.Errorf("failed to verify id_token %v", err)
 	}
 	c := &claims{}
 	if err := idToken.Claims(c); err != nil {
-		return wfv1.NullUser, fmt.Errorf("failed to parse claims: %v", err)
+		return fmt.Errorf("failed to parse claims: %v", err)
 	}
-	return wfv1.User{Name: idToken.Subject, Groups: c.Groups}, nil
+	return nil
 }
