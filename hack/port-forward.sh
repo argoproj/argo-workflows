@@ -22,6 +22,11 @@ info() {
 
 pf MinIO pod/minio 9000
 
+dex=$(kubectl -n argo get pod -l app=dex -o name)
+if [[ "$dex" != "" ]]; then
+  pf DEX svc/dex 5556
+fi
+
 postgres=$(kubectl -n argo get pod -l app=postgres -o name)
 if [[ "$postgres" != "" ]]; then
   pf Postgres "$postgres" 5432

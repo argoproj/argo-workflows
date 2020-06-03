@@ -12,6 +12,7 @@ import (
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -167,6 +168,7 @@ func TestCronWorkflowConditionSubmissionError(t *testing.T) {
 	assert.NoError(t, err)
 
 	cs := fake.NewSimpleClientset()
+	testMetrics := metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{})
 	woc := &cronWfOperationCtx{
 		wfClientset: cs,
 		wfClient:    cs.ArgoprojV1alpha1().Workflows(""),
@@ -174,6 +176,7 @@ func TestCronWorkflowConditionSubmissionError(t *testing.T) {
 		wfLister:    &fakeLister{},
 		cronWf:      &cronWf,
 		log:         logrus.WithFields(logrus.Fields{}),
+		metrics:     &testMetrics,
 	}
 	woc.Run()
 
