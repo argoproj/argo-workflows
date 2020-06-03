@@ -14,7 +14,7 @@ func TestWorkflowTemplateRef(t *testing.T) {
 	wftmpl := unmarshalWFTmpl(wfTmpl)
 
 	t.Run("ExecuteWorkflowWithTmplRef", func(t *testing.T) {
-		_, controller := newController(wf, wftmpl)
+		_, controller := NewController(wf, wftmpl)
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate()
 		assert.Equal(t, &wftmpl.Spec.WorkflowSpec, woc.wfSpec)
@@ -34,7 +34,7 @@ func TestWorkflowTemplateRefWithArgs(t *testing.T) {
 			},
 		}
 		wf.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
-		_, controller := newController(wf, wftmpl)
+		_, controller := NewController(wf, wftmpl)
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate()
 		assert.Equal(t, "test", woc.globalParams["workflow.parameters.param1"])
@@ -54,7 +54,7 @@ func TestWorkflowTemplateRefWithWorkflowTemplateArgs(t *testing.T) {
 			},
 		}
 		wftmpl.Spec.Arguments.Parameters = util.MergeParameters(wf.Spec.Arguments.Parameters, args)
-		_, controller := newController(wf, wftmpl)
+		_, controller := NewController(wf, wftmpl)
 		woc := newWorkflowOperationCtx(wf, controller)
 		woc.operate()
 		assert.Equal(t, "test", woc.globalParams["workflow.parameters.param1"])
@@ -121,7 +121,7 @@ status:
 func TestWorkflowTemplateRefGetFromStored(t *testing.T) {
 	wf := unmarshalWF(wfWithStatus)
 	t.Run("ProcessWFWithStoredWFT", func(t *testing.T) {
-		_, controller := newController(wf)
+		_, controller := NewController(wf)
 		woc := newWorkflowOperationCtx(wf, controller)
 		_, execArgs, err := woc.loadExecutionSpec()
 		assert.NoError(t, err)
@@ -146,7 +146,7 @@ spec:
 func TestWorkflowTemplateRefInvalidWF(t *testing.T) {
 	wf := unmarshalWF(invalidWF)
 	t.Run("ProcessWFWithStoredWFT", func(t *testing.T) {
-		_, controller := newController(wf)
+		_, controller := NewController(wf)
 		woc := newWorkflowOperationCtx(wf, controller)
 		_, _, err := woc.loadExecutionSpec()
 		assert.Error(t, err)

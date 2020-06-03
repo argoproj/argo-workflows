@@ -828,14 +828,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			return err
 		}
 
-		if node.Completed() && tmpl.Semaphore != nil {
-			wfKey, err := cache.MetaNamespaceKeyFunc(woc.wf)
-			if err != nil {
-				return err
-			}
-			resourceKey := fmt.Sprintf("%s/%s", wfKey, node.Name)
-			woc.controller.concurrencyMgr.release(resourceKey, woc.wf.Namespace, tmpl.Semaphore, woc.wf)
-		}
+
 
 		if node.Type != wfv1.NodeTypePod || node.Completed() || node.StartedAt.IsZero() {
 			// node is not a pod, it is already complete, or it can be re-run.
@@ -1433,8 +1426,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		if node.Completed() {
 			if resolvedTmpl.Semaphore != nil {
 				woc.log.Debugf("Node %s is releasing Semaphore lock", nodeName)
-				holderKey := woc.controller.concurrencyMgr.getHolderKey(woc.wf, nodeName)
-				woc.controller.concurrencyMgr.release(holderKey, woc.wf.Namespace, resolvedTmpl.Semaphore, woc.wf)
+				holderKey := woc.controller.concurrencyMgr.GetHolderKey(woc.wf, nodeName)
+				woc.controller.concurrencyMgr.Release(holderKey, woc.wf.Namespace, resolvedTmpl.Semaphore, woc.wf)
 			}
 			woc.log.Debugf("Node %s already completed", nodeName)
 			if resolvedTmpl.Metrics != nil {
@@ -1483,9 +1476,9 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 
 	if processedTmpl.Semaphore != nil {
-		holderKey := woc.controller.concurrencyMgr.getHolderKey(woc.wf, nodeName)
+		holderKey := woc.controller.concurrencyMgr.GetHolderKey(woc.wf, nodeName)
 		priority, creationTime := getWfPriority(woc.wf)
-		acquireStatus, msg, err := woc.controller.concurrencyMgr.tryAcquire(holderKey, woc.wf.Namespace, priority, creationTime, resolvedTmpl.Semaphore, woc.wf)
+		acquireStatus, msg, err := woc.controller.concurrencyMgr.TryAcquire(holderKey, woc.wf.Namespace, priority, creationTime, resolvedTmpl.Semaphore, woc.wf)
 
 		if err != nil {
 			return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, err), err
@@ -1579,8 +1572,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		node = woc.markNodeError(node.Name, err)
 		if resolvedTmpl.Semaphore != nil {
 			woc.log.Debugf("Node %s is releasing Semaphore lock", nodeName)
-			holderKey := woc.controller.concurrencyMgr.getHolderKey(woc.wf, nodeName)
-			woc.controller.concurrencyMgr.release(holderKey, woc.wf.Namespace, resolvedTmpl.Semaphore, woc.wf)
+			holderKey := woc.controller.concurrencyMgr.GetHolderKey(woc.wf, nodeName)
+			woc.controller.concurrencyMgr.Release(holderKey, woc.wf.Namespace, resolvedTmpl.Semaphore, woc.wf)
 		}
 
 		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container

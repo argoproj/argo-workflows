@@ -1,8 +1,9 @@
-package controller
+package concurrency
 
 import (
 	"encoding/json"
 	"fmt"
+	"k8s.io/client-go/kubernetes"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,10 +21,13 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 )
 
+type ReleaseNotifyCallbackFunc func(string)
+
 type ConcurrencyManager struct {
-	semaphoreMap map[string]*Semaphore
-	lock         *sync.Mutex
-	controller   *WorkflowController
+	kubeClient        kubernetes.Interface
+	semaphoreMap      map[string]*Semaphore
+	lock              *sync.Mutex
+	releaseNotifyFunc ReleaseNotifyCallbackFunc
 }
 
 const (
@@ -31,15 +35,16 @@ const (
 	ReleaseAction = "released"
 )
 
-func NewConcurrencyManager(controller *WorkflowController) *ConcurrencyManager {
+func NewConcurrencyManager(kubeClient kubernetes.Interface, callbackFunc func(string)) *ConcurrencyManager {
 	return &ConcurrencyManager{
-		semaphoreMap: make(map[string]*Semaphore),
-		lock:         &sync.Mutex{},
-		controller:   controller,
+		kubeClient:        kubeClient,
+		semaphoreMap:      make(map[string]*Semaphore),
+		lock:              &sync.Mutex{},
+		releaseNotifyFunc: callbackFunc,
 	}
 }
 
-func (cm *ConcurrencyManager) initialize(namespace string, wfClient wfclientset.Interface) error {
+func (cm *ConcurrencyManager) Initialize(namespace string, wfClient wfclientset.Interface) error {
 	labelSelector := v1Label.NewSelector()
 	req, _ := v1Label.NewRequirement(common.LabelKeySemaphore, selection.Exists, nil)
 	if req != nil {
@@ -62,18 +67,18 @@ func (cm *ConcurrencyManager) initialize(namespace string, wfClient wfclientset.
 	for _, wf := range wfList.Items {
 		annotation := wf.Annotations[common.AnnotationKeySemaphoreHolder]
 		log.Infof("Annotation=%s", annotation)
-		var semphoreMap map[string]interface{}
-		err := json.Unmarshal([]byte(annotation), &semphoreMap)
+		var semaphoreMap map[string]interface{}
+		err := json.Unmarshal([]byte(annotation), &semaphoreMap)
 		if err != nil {
 			log.Errorf("%v", err)
 		}
-		log.Debugf("workflow %s and semaphore map %v, ", wf.Name, semphoreMap)
-		for k, v := range semphoreMap {
+		log.Debugf("workflow %s and semaphore map %v, ", wf.Name, semaphoreMap)
+		for k, v := range semaphoreMap {
 			val := fmt.Sprintf("%s", v)
 			var semaphore *Semaphore
 			semaphore = cm.semaphoreMap[val]
 			if semaphore == nil {
-				semaphore, err = cm.initializeSemphore(val)
+				semaphore, err = cm.initializeSemaphore(val)
 				if err != nil {
 					return err
 				}
@@ -94,7 +99,7 @@ func (cm *ConcurrencyManager) getConfigMapKeyRef(lockName string) (int, error) {
 		return 0, errors.New(errors.CodeBadRequest, "Invalid Config Map Key")
 	}
 
-	configMap, err := cm.controller.kubeclientset.CoreV1().ConfigMaps(items[0]).Get(items[2], v1.GetOptions{})
+	configMap, err := cm.kubeClient.CoreV1().ConfigMaps(items[0]).Get(items[2], v1.GetOptions{})
 
 	if err != nil {
 		return 0, err
@@ -108,15 +113,37 @@ func (cm *ConcurrencyManager) getConfigMapKeyRef(lockName string) (int, error) {
 	return strconv.Atoi(value)
 }
 
-func (cm *ConcurrencyManager) initializeSemphore(semphoreName string) (*Semaphore, error) {
-	limit, err := cm.getConfigMapKeyRef(semphoreName)
+func (cm *ConcurrencyManager) initializeSemaphore(semaphoreName string) (*Semaphore, error) {
+	limit, err := cm.getConfigMapKeyRef(semaphoreName)
 	if err != nil {
 		return nil, err
 	}
-	return NewSemaphore(semphoreName, limit, cm.controller), nil
+	return NewSemaphore(semaphoreName, limit, cm.releaseNotifyFunc), nil
 }
 
-func (cm *ConcurrencyManager) tryAcquire(key, namespace string, priority int32, creationTime time.Time, semaphoreRef *wfv1.SemaphoreRef, wf *wfv1.Workflow) (bool, string, error) {
+func (cm *ConcurrencyManager) isSemaphoreSizeChanged(semaphore *Semaphore) (bool, int, error) {
+	limit, err := cm.getConfigMapKeyRef(semaphore.name)
+	if err != nil {
+		return false, semaphore.limit, err
+	}
+	return !(semaphore.limit == limit), limit, nil
+}
+
+func (cm *ConcurrencyManager) checkAndUpdateSemaphoreSize(semaphore *Semaphore) (bool, error) {
+
+	changed,newLimit, err := cm.isSemaphoreSizeChanged(semaphore)
+	if err != nil {
+		return false, err
+	}
+	if changed {
+		return semaphore.resize(newLimit) , nil
+	}
+	return changed, nil
+}
+
+// TryAcquire tries to acquire the lock from semaphore.
+// It returns status of lock acquire, waiting message if lock is not available and any error encountered
+func (cm *ConcurrencyManager) TryAcquire(key, namespace string, priority int32, creationTime time.Time, semaphoreRef *wfv1.SemaphoreRef, wf *wfv1.Workflow) (bool, string, error) {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
 	lockName := getSemaphoreRefKey(namespace, semaphoreRef)
@@ -125,7 +152,7 @@ func (cm *ConcurrencyManager) tryAcquire(key, namespace string, priority int32, 
 	semaphore, ok := cm.semaphoreMap[lockName]
 	if !ok {
 		if semaphoreRef.ConfigMapKeyRef != nil {
-			semaphore, err = cm.initializeSemphore(lockName)
+			semaphore, err = cm.initializeSemaphore(lockName)
 			if err != nil {
 				return false, "", err
 			}
@@ -136,6 +163,12 @@ func (cm *ConcurrencyManager) tryAcquire(key, namespace string, priority int32, 
 		return false, "", errors.New(errors.CodeBadRequest, "Requested Semaphore is invalid")
 	}
 
+	_, err = cm.checkAndUpdateSemaphoreSize(semaphore)
+
+	if err != nil {
+		return false, "", err
+	}
+
 	semaphore.addToQueue(key, priority, creationTime)
 	status, msg := semaphore.tryAcquire(key)
 	if status {
@@ -144,7 +177,7 @@ func (cm *ConcurrencyManager) tryAcquire(key, namespace string, priority int32, 
 	return status, msg, nil
 }
 
-func (cm *ConcurrencyManager) release(key, namespace string, sem *wfv1.SemaphoreRef, wf *wfv1.Workflow) {
+func (cm *ConcurrencyManager) Release(key, namespace string, sem *wfv1.SemaphoreRef, wf *wfv1.Workflow) {
 	if sem != nil {
 		lockName := getSemaphoreRefKey(namespace, sem)
 		if sem, ok := cm.semaphoreMap[lockName]; ok {
@@ -155,7 +188,7 @@ func (cm *ConcurrencyManager) release(key, namespace string, sem *wfv1.Semaphore
 	}
 }
 
-func (cm *ConcurrencyManager) releaseAll(wf *wfv1.Workflow) {
+func (cm *ConcurrencyManager) ReleaseAll(wf *wfv1.Workflow) {
 	if wf.Annotations == nil {
 		return
 	}
@@ -179,7 +212,7 @@ func (cm *ConcurrencyManager) releaseAll(wf *wfv1.Workflow) {
 	}
 }
 
-func (cm *ConcurrencyManager) getHolderKey(wf *wfv1.Workflow, nodeName string) string {
+func (cm *ConcurrencyManager) GetHolderKey(wf *wfv1.Workflow, nodeName string) string {
 	if wf == nil {
 		return ""
 	}

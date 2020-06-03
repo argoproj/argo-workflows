@@ -1,4 +1,4 @@
-package controller
+package concurrency
 
 import (
 	"container/heap"

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj/argo/workflow/concurrency"
 	"os"
 	"strings"
 	"time"
@@ -74,12 +75,12 @@ type WorkflowController struct {
 	podQueue              workqueue.RateLimitingInterface
 	completedPods         chan string
 	gcPods                chan string // pods to be deleted depend on GC strategy
-	throttler             Throttler
+	throttler             concurrency.Throttler
 	session               sqlbuilder.Database
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
-	concurrencyMgr        *ConcurrencyManager
+	concurrencyMgr        *concurrency.ConcurrencyManager
 	metrics               metrics.Metrics
 }
 
@@ -117,7 +118,7 @@ func NewWorkflowController(
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
 	}
-	wfc.throttler = NewThrottler(0, wfc.wfQueue)
+	wfc.throttler = concurrency.NewThrottler(0, wfc.wfQueue)
 	wfc.UpdateConfig()
 
 	wfc.metrics = metrics.New(wfc.getMetricsServerConfig())
@@ -165,8 +166,10 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.runCronController(ctx)
 	go wfc.metrics.RunServer(ctx)
 
-	wfc.concurrencyMgr = NewConcurrencyManager(wfc)
-	err := wfc.concurrencyMgr.initialize(wfc.GetManagedNamespace(), wfc.wfclientset)
+	wfc.concurrencyMgr = concurrency.NewConcurrencyManager(wfc.kubeclientset, func(key string) {
+		wfc.wfQueue.AddAfter(key, 0)
+	})
+	err := wfc.concurrencyMgr.Initialize(wfc.GetManagedNamespace(), wfc.wfclientset)
 	if err != nil {
 		log.Errorf("Error on ConcurrencyManager initialization, error:%v", err)
 	}
@@ -433,7 +436,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	if wf.Spec.Semaphore != nil {
 		wfKey := fmt.Sprintf("%v", key)
 		priority, creationTime := getWfPriority(wf)
-		acquired, msg, err := wfc.concurrencyMgr.tryAcquire(wfKey, wf.Namespace, priority, creationTime, wf.Spec.Semaphore, wf)
+		acquired, msg, err := wfc.concurrencyMgr.TryAcquire(wfKey, wf.Namespace, priority, creationTime, wf.Spec.Semaphore, wf)
 		if err != nil {
 			log.Warnf("Failed to acquire the lock for '%s' : %v", key, err)
 			woc := newWorkflowOperationCtx(wf, wfc)
@@ -467,7 +470,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 		wfc.throttler.Remove(key)
 
 		// Release all acquired lock for completed workflow
-		wfc.concurrencyMgr.releaseAll(woc.wf)
+		wfc.concurrencyMgr.ReleaseAll(woc.wf)
 
 		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 		var doPodGC bool
@@ -622,6 +625,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 					// key function.
 					key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 					if err == nil {
+						wfc.cleanupWorkflowDeletion(obj)
 						wfc.wfQueue.Add(key)
 						wfc.throttler.Remove(key)
 					}
@@ -789,6 +793,18 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 		Port:         port,
 		IgnoreErrors: wfc.Config.TelemetryConfig.IgnoreErrors,
 	}
-
 	return metricsConfig, telemetryConfig
+}
+
+func (wfc *WorkflowController) cleanupWorkflowDeletion(obj interface{}){
+	un, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		log.Warnf("Key '%s' in index is not an unstructured", obj)
+	}
+	log.Warnf("Key '%s' in index is not an unstructured", obj)
+	wf, err := util.FromUnstructured(un)
+	if err != nil {
+	}
+	wfc.concurrencyMgr.ReleaseAll(wf)
+
 }

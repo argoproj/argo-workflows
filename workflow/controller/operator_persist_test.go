@@ -48,7 +48,7 @@ spec:
 // TestPersistWithoutLargeWfSupport verifies persistence with no largeWFsuppport
 func TestPersistWithoutLargeWfSupport(t *testing.T) {
 	defer makeMax()()
-	cancel, controller := newController()
+	cancel, controller := NewController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(helloWorldWfPersist)
@@ -66,7 +66,7 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 // TestPersistWithoutLargeWfSupport verifies persistence error with no largeWFsuppport
 func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 	defer makeMax()()
-	cancel, controller := newController()
+	cancel, controller := NewController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(helloWorldWfPersist)
@@ -83,7 +83,7 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 // TestPersistWithoutLargeWfSupport verifies persistence with largeWFsuppport
 func TestPersistWithLargeWfSupport(t *testing.T) {
 	defer makeMax()()
-	cancel, controller := newController()
+	cancel, controller := NewController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(helloWorldWfPersist)
@@ -108,7 +108,7 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 // TestPersistWithoutLargeWfSupport verifies persistence error with largeWFsuppport
 func TestPersistErrorWithLargeWfSupport(t *testing.T) {
 	defer makeMax()()
-	cancel, controller := newController()
+	cancel, controller := NewController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(helloWorldWfPersist)

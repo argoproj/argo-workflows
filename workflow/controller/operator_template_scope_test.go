@@ -73,7 +73,7 @@ func TestTemplateScope(t *testing.T) {
 	wftmpl1 := unmarshalWFTmpl(testTemplateScopeWorkflowTemplateYaml1)
 	wftmpl2 := unmarshalWFTmpl(testTemplateScopeWorkflowTemplateYaml2)
 
-	cancel, controller := newController(wf, wftmpl1, wftmpl2)
+	cancel, controller := NewController(wf, wftmpl1, wftmpl2)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 
@@ -166,7 +166,7 @@ func TestTemplateScopeWithParam(t *testing.T) {
 	wf := unmarshalWF(testTemplateScopeWithParamWorkflowYaml)
 	wftmpl := unmarshalWFTmpl(testTemplateScopeWithParamWorkflowTemplateYaml1)
 
-	cancel, controller := newController(wf, wftmpl)
+	cancel, controller := NewController(wf, wftmpl)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 
@@ -257,7 +257,7 @@ func TestTemplateScopeNestedStepsWithParams(t *testing.T) {
 	wf := unmarshalWF(testTemplateScopeNestedStepsWithParamsWorkflowYaml)
 	wftmpl := unmarshalWFTmpl(testTemplateScopeNestedStepsWithParamsWorkflowTemplateYaml1)
 
-	cancel, controller := newController(wf, wftmpl)
+	cancel, controller := NewController(wf, wftmpl)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 
@@ -363,7 +363,7 @@ func TestTemplateScopeDAG(t *testing.T) {
 	wf := unmarshalWF(testTemplateScopeDAGWorkflowYaml)
 	wftmpl := unmarshalWFTmpl(testTemplateScopeDAGWorkflowTemplateYaml1)
 
-	cancel, controller := newController(wf, wftmpl)
+	cancel, controller := NewController(wf, wftmpl)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 
@@ -463,7 +463,7 @@ func TestTemplateClusterScope(t *testing.T) {
 	cwftmpl := unmarshalCWFTmpl(testTemplateClusterScopeWorkflowTemplateYaml1)
 	wftmpl := unmarshalWFTmpl(testTemplateScopeWorkflowTemplateYaml2)
 
-	cancel, controller := newController(wf, cwftmpl, wftmpl)
+	cancel, controller := NewController(wf, cwftmpl, wftmpl)
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
 

@@ -1,4 +1,4 @@
-package controller
+package concurrency
 
 import (
 	"fmt"
@@ -11,28 +11,28 @@ import (
 )
 
 type Semaphore struct {
-	name       string
-	limit      int
-	pending    *priorityQueue
-	semaphore  *sema.Weighted
-	lockHolder map[string]bool
-	inPending  map[string]bool
-	lock       *sync.Mutex
-	controller *WorkflowController
-	log        *log.Entry
+	name              string
+	limit             int
+	pending           *priorityQueue
+	semaphore         *sema.Weighted
+	lockHolder        map[string]bool
+	inPending         map[string]bool
+	lock              *sync.Mutex
+	releaseNotifyFunc ReleaseNotifyCallbackFunc
+	log               *log.Entry
 }
 
-func NewSemaphore(name string, limit int, wfc *WorkflowController) *Semaphore {
+func NewSemaphore(name string, limit int, callbackFunc func(string)) *Semaphore {
 	holder := make(map[string]bool)
 	return &Semaphore{
-		name:       name,
-		limit:      limit,
-		pending:    &priorityQueue{itemByKey: make(map[interface{}]*item)},
-		semaphore:  sema.NewWeighted(int64(limit)),
-		lockHolder: holder,
-		inPending:  make(map[string]bool),
-		lock:       &sync.Mutex{},
-		controller: wfc,
+		name:              name,
+		limit:             limit,
+		pending:           &priorityQueue{itemByKey: make(map[interface{}]*item)},
+		semaphore:         sema.NewWeighted(int64(limit)),
+		lockHolder:        holder,
+		inPending:         make(map[string]bool),
+		lock:              &sync.Mutex{},
+		releaseNotifyFunc: callbackFunc,
 		log: log.WithFields(log.Fields{
 			"semaphore": name,
 			"limit":     limit,
@@ -40,14 +40,38 @@ func NewSemaphore(name string, limit int, wfc *WorkflowController) *Semaphore {
 	}
 }
 
+func (s *Semaphore) resize(n int) bool {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	cur := len(s.lockHolder)
+
+	// downward case, acquired n locks
+	if cur >= n {
+		cur = n
+	}
+
+	sema := sema.NewWeighted(int64(n))
+	status := sema.TryAcquire(int64(cur))
+	if status {
+		s.semaphore = sema
+	}
+	return status
+}
+
 func (s *Semaphore) enqueueWorkflow(key string) {
-	s.controller.wfQueue.AddAfter(key, 0)
+	s.releaseNotifyFunc(key)
 }
 
 func (s *Semaphore) release(key string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	if _, ok := s.lockHolder[key]; ok {
+		// When Semaphore resized downward
+		// Remove the excess holders from map once the done.
+		if len(s.lockHolder) > s.limit {
+			delete(s.lockHolder, key)
+			return
+		}
 		s.semaphore.Release(1)
 		delete(s.lockHolder, key)
 		s.log.Infof("Lock has been released by %s. Available locks: %d", key, s.limit-len(s.lockHolder))

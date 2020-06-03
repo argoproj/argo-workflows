@@ -1,9 +1,10 @@
-package controller
+package concurrency
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/controller"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
@@ -77,20 +78,20 @@ spec:
 
 
 func TestSemaphoreWfLevel(t *testing.T) {
-	_, controller := newController()
+	_, controller := controller.NewController()
 	controller.concurrencyMgr = NewConcurrencyManager(controller)
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
 	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&cm)
 	assert.NoError(t, err)
-	wf := unmarshalWF(wfWithSemaphore)
+	wf := controller2.unmarshalWF(wfWithSemaphore)
 
 	wf1 := wf.DeepCopy()
 	wf2 := wf.DeepCopy()
 	t.Run("First Lock acquired", func(t *testing.T) {
 		wf.Name = "one"
-		priority, createTime := getWfPriority(wf)
+		priority, createTime := controller.getWfPriority(wf)
 		key := controller.concurrencyMgr.getHolderKey(wf, "")
 		status, _, err := controller.concurrencyMgr.tryAcquire(key, wf.Namespace, priority, createTime, wf.Spec.Semaphore, wf)
 		assert.NoError(t, err)
@@ -104,7 +105,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 
 	t.Run("Second Lock acquired", func(t *testing.T) {
 		wf1.Name = "two"
-		priority, createTime := getWfPriority(wf1)
+		priority, createTime := controller2.getWfPriority(wf1)
 		key := controller.concurrencyMgr.getHolderKey(wf1, "")
 		status, _, err := controller.concurrencyMgr.tryAcquire(key, wf1.Namespace, priority, createTime, wf1.Spec.Semaphore, wf1)
 		assert.NoError(t, err)
@@ -116,7 +117,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 	})
 	t.Run("Waiting for Lock", func(t *testing.T) {
 		wf2.Name = "three"
-		priority, createTime := getWfPriority(wf2)
+		priority, createTime := controller2.getWfPriority(wf2)
 		key := controller.concurrencyMgr.getHolderKey(wf2, "")
 		status, msg, err := controller.concurrencyMgr.tryAcquire(key, wf.Namespace, priority, createTime, wf2.Spec.Semaphore, wf2)
 		assert.NoError(t, err)
@@ -132,7 +133,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 	})
 	t.Run("Released Lock acquired", func(t *testing.T) {
 		wf2.Name = "three"
-		priority, createTime := getWfPriority(wf2)
+		priority, createTime := controller2.getWfPriority(wf2)
 		key := controller.concurrencyMgr.getHolderKey(wf2, "")
 		status, _, err := controller.concurrencyMgr.tryAcquire(key, wf2.Namespace, priority, createTime, wf2.Spec.Semaphore, wf2)
 		assert.NoError(t, err)
@@ -145,7 +146,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 }
 
 func TestSemaphoreTmplLevel(t *testing.T) {
-	_, controller := newController()
+	_, controller := controller2.newController()
 	controller.concurrencyMgr = NewConcurrencyManager(controller)
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
@@ -154,10 +155,10 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 	assert.NoError(t, err)
 	t.Run("Acquire lock for nodes", func(t *testing.T) {
 		wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
-		wf := unmarshalWF(wfWithTmplSemaphore)
+		wf := controller2.unmarshalWF(wfWithTmplSemaphore)
 		wf, err := wfcset.Create(wf)
 		assert.NoError(t, err)
-		woc := newWorkflowOperationCtx(wf, controller)
+		woc := controller2.newWorkflowOperationCtx(wf, controller)
 		woc.operate()
 
 		b,_ := json.Marshal(woc.wf)

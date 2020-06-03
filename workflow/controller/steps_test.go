@@ -62,7 +62,7 @@ spec:
 
 // Tests ability to reference workflow parameters from within top level spec fields (e.g. spec.volumes)
 func TestArtifactResolutionWhenSkipped(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := NewController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
@@ -107,7 +107,7 @@ spec:
 `
 
 func TestStepsWithParamAndGlobalParam(t *testing.T) {
-	cancel, controller := newController()
+	cancel, controller := NewController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
