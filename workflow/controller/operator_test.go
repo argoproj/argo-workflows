@@ -2778,7 +2778,7 @@ func TestEventTimeout(t *testing.T) {
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	woc = newWorkflowOperationCtx(wf, controller)
-	time.Sleep(10 * time.Second)
+	time.Sleep(3 * time.Second)
 	woc.operate()
 	events, err := controller.kubeclientset.CoreV1().Events("").List(metav1.ListOptions{})
 	assert.NoError(t, err)

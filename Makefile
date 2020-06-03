@@ -421,18 +421,18 @@ test-e2e-cron: test-images cli
 	go test -timeout 5m -v -count 1 -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: smoke
-smoke: test-images
+smoke:
 	# Run smoke tests
 	@mkdir -p test-results
 	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: test-api
-test-api: test-images
+test-api:
 	# Run API tests
 	go test -timeout 1m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
 
 .PHONY: test-cli
-test-cli: test-images cli
+test-cli:
 	# Run CLI tests
 	go test -timeout 2m -v -count 1 -p 1 -run CLISuite ./test/e2e
 	go test -timeout 2m -v -count 1 -p 1 -run CLIWithServerSuite ./test/e2e

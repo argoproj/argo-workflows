@@ -22,6 +22,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
+	"github.com/argoproj/argo/workflow/controller/latch"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/metrics"
 )
@@ -128,7 +129,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		wfArchive:       sqldb.NullWorkflowArchive,
 		hydrator:        hydratorfake.Noop,
 		metrics:         metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
-		wfInformer:      &testSharedIndexInformer{},
+		latch:           latch.New(),
 	}
 	return cancel, controller
 }

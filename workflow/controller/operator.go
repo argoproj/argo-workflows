@@ -501,6 +501,8 @@ func (woc *wfOperationCtx) persistUpdates() {
 		panic("workflow should be hydrated")
 	}
 
+	woc.controller.latch.Update(woc.wf)
+
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
