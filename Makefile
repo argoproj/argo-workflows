@@ -428,7 +428,7 @@ test-e2e-cron: test-images cli
 	go test -timeout 5m -v -count 1 -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: smoke
-smoke:
+smoke: test-images
 	# Run smoke tests
 	@mkdir -p test-results
 	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
