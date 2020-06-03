@@ -18,10 +18,7 @@ import {Utils} from '../../../shared/utils';
 
 import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
-import {PhaseIcon} from '../../../shared/components/phase-icon';
 import {ResourceEditor} from '../../../shared/components/resource-editor/resource-editor';
-import {Timestamp} from '../../../shared/components/timestamp';
-import {formatDuration, wfDuration} from '../../../shared/duration';
 import {Pagination, parseLimit} from '../../../shared/pagination';
 import {WorkflowFilters} from '../workflow-filters/workflow-filters';
 import {WorkflowsRow} from '../workflows-row/workflows-row';

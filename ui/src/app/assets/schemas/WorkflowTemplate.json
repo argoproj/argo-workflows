@@ -1000,7 +1000,7 @@
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.OSSArtifact": {
-      "description": "OSSArtifact is the location of an OSS artifact",
+      "description": "OSSArtifact is the location of an Alibaba Cloud OSS artifact",
       "properties": {
         "accessKeySecret": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector",
