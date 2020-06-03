@@ -6,6 +6,7 @@ import {uiUrl} from '../../../shared/base';
 import {PhaseIcon} from '../../../shared/components/phase-icon';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {formatDuration, wfDuration} from '../../../shared/duration';
+import {services} from '../../../shared/services';
 import {WorkflowDrawer} from '../workflow-drawer/workflow-drawer';
 
 interface WorkflowsRowProps {
@@ -13,10 +14,13 @@ interface WorkflowsRowProps {
     onChange: (key: string) => void;
 }
 
-export class WorkflowsRow extends React.Component<WorkflowsRowProps, {hideDrawer: boolean}> {
+export class WorkflowsRow extends React.Component<WorkflowsRowProps, {hideDrawer: boolean; workflow: models.Workflow}> {
     constructor(props: WorkflowsRowProps) {
         super(props);
-        this.state = {hideDrawer: true};
+        this.state = {
+            workflow: this.props.workflow,
+            hideDrawer: true
+        };
     }
 
     public render() {
@@ -43,6 +47,7 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, {hideDrawer
                             <div
                                 onClick={e => {
                                     e.preventDefault();
+                                    this.fetchWorkflow();
                                     this.setState({hideDrawer: !this.state.hideDrawer});
                                 }}
                                 className={`workflows-row__action workflows-row__action--${this.state.hideDrawer ? 'show' : 'hide'}`}>
@@ -71,5 +76,11 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, {hideDrawer
                 )}
             </div>
         );
+    }
+
+    private fetchWorkflow(): void {
+        services.workflows.get(this.props.workflow.metadata.namespace, this.props.workflow.metadata.name).then(wf => {
+            this.setState({workflow: wf});
+        });
     }
 }
