@@ -23,19 +23,16 @@ func genSchemas() {
 	if err != nil {
 		panic(err)
 	}
-
 	for _, crd := range workflow.CRDs {
 		name := "io.argoproj.workflow.v1alpha1." + crd.Kind
 		filename := "ui/src/app/assets/schemas/" + crd.Kind + ".json"
-
 		println(filename)
-
-		schema := swagger["definitions"].(obj)[name].(obj)
-		delete(schema["properties"].(obj), "status")
-		schema["definitions"] = swagger["definitions"]
-		delete(schema["definitions"].(obj), name)
-		schema["$schema"] = "http://json-schema.org/draft-07/schema"
-		schema["$id"] = "http://workflows.argoproj.io/" + crd.Kind + ".json"
+		schema := obj{
+			"$id":         "http://workflows.argoproj.io/" + crd.Kind + ".json",
+			"$schema":     "http://json-schema.org/draft-07/schema",
+			"definitions": swagger["definitions"],
+			"$ref":        "#/definitions/" + name,
+		}
 		data, err = json.MarshalIndent(schema, "", "  ")
 		if err != nil {
 			panic(err)
@@ -45,5 +42,4 @@ func genSchemas() {
 			panic(err)
 		}
 	}
-
 }

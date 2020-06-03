@@ -1,5 +1,6 @@
 {
   "$id": "http://workflows.argoproj.io/WorkflowTemplate.json",
+  "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate",
   "$schema": "http://json-schema.org/draft-07/schema",
   "definitions": {
     "google.protobuf.Any": {
@@ -245,6 +246,30 @@
       },
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplate": {
+      "description": "ClusterWorkflowTemplate is the definition of a workflow template resource in cluster scope",
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec"
+        }
+      },
+      "required": [
+        "metadata",
+        "spec"
+      ],
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.ClusterWorkflowTemplateCreateRequest": {
       "properties": {
         "createOptions": {
@@ -363,6 +388,33 @@
           "type": "string"
         }
       },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.CronWorkflow": {
+      "description": "CronWorkflow is the definition of a scheduled workflow resource",
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflowSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflowStatus"
+        }
+      },
+      "required": [
+        "metadata",
+        "spec"
+      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.CronWorkflowDeletedResponse": {
@@ -1939,6 +1991,33 @@
       ],
       "type": "object"
     },
+    "io.argoproj.workflow.v1alpha1.Workflow": {
+      "description": "Workflow is the definition of a workflow resource",
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStatus"
+        }
+      },
+      "required": [
+        "metadata",
+        "spec"
+      ],
+      "type": "object"
+    },
     "io.argoproj.workflow.v1alpha1.WorkflowCreateRequest": {
       "properties": {
         "createOptions": {
@@ -2394,6 +2473,30 @@
           "type": "string"
         }
       },
+      "type": "object"
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTemplate": {
+      "description": "WorkflowTemplate is the definition of a workflow template resource",
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec"
+        }
+      },
+      "required": [
+        "metadata",
+        "spec"
+      ],
       "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.WorkflowTemplateCreateRequest": {
@@ -5337,27 +5440,5 @@
       "format": "int-or-string",
       "type": "string"
     }
-  },
-  "description": "WorkflowTemplate is the definition of a workflow template resource",
-  "properties": {
-    "apiVersion": {
-      "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#resources",
-      "type": "string"
-    },
-    "kind": {
-      "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.io.k8s.community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
-      "type": "string"
-    },
-    "metadata": {
-      "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
-    },
-    "spec": {
-      "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec"
-    }
-  },
-  "required": [
-    "metadata",
-    "spec"
-  ],
-  "type": "object"
+  }
 }

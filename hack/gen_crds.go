@@ -50,7 +50,7 @@ func genCRDs() {
 						obj{
 							"name":    "v1alpha1",
 							"served":  true,
-							"schema":  obj{"openAPIV3Schema": obj{"type": "object"}},
+							"schema":  obj{"openAPIV3Schema": any},
 							"storage": true,
 						},
 					},

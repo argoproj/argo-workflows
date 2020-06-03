@@ -21,7 +21,7 @@ const config = {
   devtool: "source-map",
 
   resolve: {
-    extensions: [".ts", ".tsx", ".js", ".json"]
+    extensions: [".ts", ".tsx", ".js", ".json", ".ttf"]
   },
 
   module: {
@@ -43,7 +43,10 @@ const config = {
       }, {
         test: /\.css$/,
         loader: "style-loader!raw-loader"
-      },
+      }, {
+        test: /\.ttf$/,
+        use: ['file-loader']
+      }
     ]
   },
   node: {
@@ -63,6 +66,8 @@ const config = {
       from: "node_modules/@fortawesome/fontawesome-free/webfonts", to: "assets/fonts"
     }, {
       from: "src/app/assets", to: "assets"
+    }, {
+      from: 'node_modules/monaco-editor/min/vs/base/browser/ui/codiconLabel/codicon/codicon.ttf', to: "."
     }]),
     new MonacoWebpackPlugin({"languages":["json","yaml"]})
   ],

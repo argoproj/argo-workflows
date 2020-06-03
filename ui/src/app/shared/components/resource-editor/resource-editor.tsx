@@ -85,6 +85,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
                 ) : (
                     <ResourceViewer value={parse(this.state.value)} />
                 )}
+                {this.renderFooter()}
             </>
         );
     }
@@ -125,8 +126,17 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     private submit() {
         try {
             this.props.onSubmit(parse(this.state.value));
+            this.setState({editing: false});
         } catch (error) {
             this.setState({error});
         }
+    }
+
+    private renderFooter() {
+        return this.state.editing ? (
+            <small>
+                <i className='fa fa-info-circle' /> {this.state.type === 'json' ? <>Full auto-completion</> : <>Basic completion</>} for {this.state.type.toUpperCase()}
+            </small>
+        ) : null;
     }
 }
