@@ -604,7 +604,7 @@ message NodeStatus {
 message NoneStrategy {
 }
 
-// OSSArtifact is the location of an OSS artifact
+// OSSArtifact is the location of an Alibaba Cloud OSS artifact
 message OSSArtifact {
   optional OSSBucket oSSBucket = 1;
 
@@ -612,7 +612,7 @@ message OSSArtifact {
   optional string key = 2;
 }
 
-// OSSBucket contains the access information required for interfacing with an OSS bucket
+// OSSBucket contains the access information required for interfacing with an Alibaba Cloud OSS bucket
 message OSSBucket {
   // Endpoint is the hostname of the bucket endpoint
   optional string endpoint = 1;

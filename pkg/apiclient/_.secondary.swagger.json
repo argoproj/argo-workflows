@@ -1063,7 +1063,7 @@
       "type": "object"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSArtifact": {
-      "description": "OSSArtifact is the location of an OSS artifact",
+      "description": "OSSArtifact is the location of an Alibaba Cloud OSS artifact",
       "type": "object",
       "required": [
         "endpoint",
@@ -1096,7 +1096,7 @@
       }
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSBucket": {
-      "description": "OSSBucket contains the access information required for interfacing with an OSS bucket",
+      "description": "OSSBucket contains the access information required for interfacing with an Alibaba Cloud OSS bucket",
       "type": "object",
       "required": [
         "endpoint",

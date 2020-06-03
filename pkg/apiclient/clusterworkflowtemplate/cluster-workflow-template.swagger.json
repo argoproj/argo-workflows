@@ -953,7 +953,7 @@
           "title": "Key is the path in the bucket where the artifact resides"
         }
       },
-      "title": "OSSArtifact is the location of an OSS artifact"
+      "title": "OSSArtifact is the location of an Alibaba Cloud OSS artifact"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSBucket": {
       "type": "object",
@@ -975,7 +975,7 @@
           "title": "SecretKeySecret is the secret selector to the bucket's secret key"
         }
       },
-      "title": "OSSBucket contains the access information required for interfacing with an OSS bucket"
+      "title": "OSSBucket contains the access information required for interfacing with an Alibaba Cloud OSS bucket"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Outputs": {
       "type": "object",

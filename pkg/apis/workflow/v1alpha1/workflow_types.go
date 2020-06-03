@@ -1488,7 +1488,7 @@ func (g *GCSArtifact) HasLocation() bool {
 	return g != nil && g.Bucket != "" && g.Key != ""
 }
 
-// OSSBucket contains the access information required for interfacing with an OSS bucket
+// OSSBucket contains the access information required for interfacing with an Alibaba Cloud OSS bucket
 type OSSBucket struct {
 	// Endpoint is the hostname of the bucket endpoint
 	Endpoint string `json:"endpoint" protobuf:"bytes,1,opt,name=endpoint"`
@@ -1503,7 +1503,7 @@ type OSSBucket struct {
 	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret" protobuf:"bytes,4,opt,name=secretKeySecret"`
 }
 
-// OSSArtifact is the location of an OSS artifact
+// OSSArtifact is the location of an Alibaba Cloud OSS artifact
 type OSSArtifact struct {
 	OSSBucket `json:",inline" protobuf:"bytes,1,opt,name=oSSBucket"`
 

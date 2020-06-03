@@ -2978,7 +2978,7 @@ HTTPArtifact allows an file served on HTTP to be placed as an input artifact in 
 
 ## OSSArtifact
 
-OSSArtifact is the location of an OSS artifact
+OSSArtifact is the location of an Alibaba Cloud OSS artifact
 
 <details>
 <summary>Examples with this field (click to open)</summary>
