@@ -28,10 +28,11 @@ func (l *latch) Pass(obj metav1.Object) bool {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	resourceVersion, exists := l.store[obj.GetUID()]
-	if exists {
+	pass := !exists || resourceVersion <= obj.GetResourceVersion()
+	if pass {
 		delete(l.store, obj.GetUID())
 	}
-	return !exists || resourceVersion == obj.GetResourceVersion()
+	return pass
 }
 
 // set the expected next version to this, overwriting any other versions
