@@ -275,6 +275,10 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeDAG, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodeRunning)
+	} else {
+		if ExceededQuota(node) || FailedQuota(node) {
+			woc.log.Infof(quotaIssueMsgTmpl, nodeName, node.Message)
+		}
 	}
 
 	defer func() {

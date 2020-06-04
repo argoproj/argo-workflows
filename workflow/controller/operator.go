@@ -105,6 +105,8 @@ const (
 	exceededQuotaString string = "exceeded quota"
 	// failedQuotaString is a string used to check for a failed quota error in the return string from k8s api.
 	failedQuotaString string = "failed quota"
+	// quotaIssueMsgTmpl is a template string for marking quota issues.
+	quotaIssueMsgTmpl string = "Node %s exists but a pod does not due to issues with quota: %s"
 )
 
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
@@ -118,13 +120,13 @@ type failedNodeStatus struct {
 }
 
 
-// exceededQuota checks if the error message indicates an exceeded quota in the namespace.
-func exceededQuota(n *wfv1.NodeStatus) bool {
+// ExceededQuota checks if the error message indicates an exceeded quota in the namespace.
+func ExceededQuota(n *wfv1.NodeStatus) bool {
 	return strings.Contains(n.Message, exceededQuotaString)
 }
 
-// failedQuota checks if the error message indicates a failed quota in the namespace.
-func failedQuota(n *wfv1.NodeStatus) bool {
+// FailedQuota checks if the error message indicates a failed quota in the namespace.
+func FailedQuota(n *wfv1.NodeStatus) bool {
 	return strings.Contains(n.Message, failedQuotaString)
 }
 
@@ -836,7 +838,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	// It is now impossible to infer pod status. The only thing we can do at this point is to mark
 	// the node with Error.
 	for nodeID, node := range woc.wf.Status.Nodes {
-		if node.Type != wfv1.NodeTypePod || node.Fulfilled() || node.StartedAt.IsZero() || exceededQuota(&node) || failedQuota(&node) {
+		if node.Type != wfv1.NodeTypePod || node.Fulfilled() || node.StartedAt.IsZero() || ExceededQuota(&node) || FailedQuota(&node) {
 			// node is not a pod, it is already complete, it can be re-run, or it failed to create due to issues with quota
 			continue
 		}
@@ -1988,8 +1990,8 @@ func getStepOrDAGTaskName(nodeName string) string {
 func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
-		if exceededQuota(node) || failedQuota(node) {
-			woc.log.Infof("Node %s exists but a pod does not due to issues with quota: %s", nodeName, node.Message)
+		if ExceededQuota(node) || FailedQuota(node) {
+			woc.log.Infof(quotaIssueMsgTmpl, nodeName, node.Message)
 		}
 		return node, nil
 	}
@@ -2246,6 +2248,9 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 func (woc *wfOperationCtx) executeResource(nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
+		if ExceededQuota(node) || FailedQuota(node) {
+			woc.log.Infof(quotaIssueMsgTmpl, nodeName, node.Message)
+		}
 		return node, nil
 	}
 	node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
