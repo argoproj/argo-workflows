@@ -436,7 +436,7 @@ smoke:
 .PHONY: test-api
 test-api:
 	# Run API tests
-	go test -timeout 45s -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
+	go test -timeout 1m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
 
 .PHONY: test-cli
 test-cli: cli
