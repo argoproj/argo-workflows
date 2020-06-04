@@ -97,7 +97,7 @@ commands:
           name: Run tests
           command: |
             trap 'make test-results/junit.xml' EXIT
-            make smoke $SUITE
+            make test-images smoke $SUITE
       - store_test_results:
           path: test-results
           when: always

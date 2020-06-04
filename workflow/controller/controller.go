@@ -402,7 +402,8 @@ func (wfc *WorkflowController) processNextItem() bool {
 	}
 
 	if !wfc.latch.Pass(un) {
-		log.Infof("workflow '%s' stale in cache", key)
+		// https://www.youtube.com/watch?v=mJZZNHekEQw
+		log.Infof("workflow '%s' - you shall not pass", key)
 		return true
 	}
 

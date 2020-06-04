@@ -416,33 +416,33 @@ mysql-cli:
 	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
 .PHONY: test-e2e
-test-e2e: test-images cli
+test-e2e: cli
 	# Run E2E tests
 	@mkdir -p test-results
 	go test -timeout 15m -v -count 1 -p 1 --short ./test/e2e/... 2>&1 | tee test-results/test.out
 
 .PHONY: test-e2e-cron
-test-e2e-cron: test-images cli
+test-e2e-cron: cli
 	# Run E2E tests
 	@mkdir -p test-results
 	go test -timeout 5m -v -count 1 -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: smoke
-smoke: test-images
+smoke:
 	# Run smoke tests
 	@mkdir -p test-results
-	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
+	go test -timeout 30s -v -count 1 -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: test-api
 test-api:
 	# Run API tests
-	go test -timeout 1m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
+	go test -timeout 45s -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
 
 .PHONY: test-cli
 test-cli: cli
 	# Run CLI tests
 	go test -timeout 2m -v -count 1 -p 1 -run CLISuite ./test/e2e
-	go test -timeout 2m -v -count 1 -p 1 -run CLIWithServerSuite ./test/e2e
+	go test -timeout 3m -v -count 1 -p 1 -run CLIWithServerSuite ./test/e2e
 
 # clean
 

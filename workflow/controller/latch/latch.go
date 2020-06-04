@@ -14,7 +14,7 @@ type Interface interface {
 }
 
 type latch struct {
-	mutex sync.RWMutex
+	mutex sync.Mutex
 	store map[types.UID]string
 }
 
@@ -25,21 +25,22 @@ func (l *latch) Remove(obj metav1.Object) {
 }
 
 func (l *latch) Pass(obj metav1.Object) bool {
-	l.mutex.RLock()
-	defer l.mutex.RUnlock()
-	resourceVersion, exists := l.store[obj.GetUID()]
-	return !exists || resourceVersion <= obj.GetResourceVersion()
-}
-
-func (l *latch) Update(obj metav1.Object) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	resourceVersion, exists := l.store[obj.GetUID()]
-	if !exists || obj.GetResourceVersion() > resourceVersion {
-		l.store[obj.GetUID()] = obj.GetResourceVersion()
+	if exists {
+		delete(l.store, obj.GetUID())
 	}
+	return !exists || resourceVersion == obj.GetResourceVersion()
+}
+
+// set the expected next version to this, overwriting any other versions
+func (l *latch) Update(obj metav1.Object) {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+	l.store[obj.GetUID()] = obj.GetResourceVersion()
 }
 
 func New() Interface {
-	return &latch{mutex: sync.RWMutex{}, store: make(map[types.UID]string)}
+	return &latch{mutex: sync.Mutex{}, store: make(map[types.UID]string)}
 }
