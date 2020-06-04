@@ -133,7 +133,7 @@ func (wfc *WorkflowController) runTTLController(ctx context.Context) {
 }
 
 func (wfc *WorkflowController) runCronController(ctx context.Context) {
-	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID)
+	cronController := cron.NewCronController(wfc.wfclientset, wfc.restConfig, wfc.namespace, wfc.GetManagedNamespace(), wfc.Config.InstanceID, &wfc.metrics)
 	cronController.Run(ctx)
 }
 
@@ -721,11 +721,11 @@ func (wfc *WorkflowController) getMetricsServerConfig() (metrics.ServerConfig, m
 	// Metrics config
 	path := wfc.Config.MetricsConfig.Path
 	if path == "" {
-		path = "/metrics"
+		path = metrics.DefaultMetricsServerPath
 	}
 	port := wfc.Config.MetricsConfig.Port
 	if port == "" {
-		port = "9090"
+		port = metrics.DefaultMetricsServerPort
 	}
 	metricsConfig := metrics.ServerConfig{
 		Enabled:      wfc.Config.MetricsConfig.Enabled == nil || *wfc.Config.MetricsConfig.Enabled,

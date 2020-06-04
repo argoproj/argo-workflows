@@ -113,7 +113,7 @@ E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
 # The sort puts _.primary first in the list. 'env LC_COLLATE=C' makes sure underscore comes first in both Mac and Linux.
 SWAGGER_FILES    := $(shell find pkg/apiclient -name '*.swagger.json' | env LC_COLLATE=C sort)
-MOCK_FILES       := $(shell find persist workflow -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
+MOCK_FILES       := $(shell find persist server workflow -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
 UI_FILES         := $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 
 define backup_go_mod
@@ -179,7 +179,7 @@ $(GOPATH)/bin/staticfiles:
 
 server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
-	staticfiles -o server/static/files.go ui/dist/app
+	$(GOPATH)/bin/staticfiles -o server/static/files.go ui/dist/app
 
 dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
@@ -332,6 +332,12 @@ ifeq ($(K3D),true)
 	k3d start
 endif
 	kubectl apply -f test/e2e/manifests/argo-ns.yaml
+	# If you want SSO, then we want Dex, otherwise we delete any previouly installed Dex.
+ifeq ($(AUTH_MODE),sso)
+	kubectl -n argo apply -l app.kubernetes.io/part-of=dex --prune --force -k manifests/quick-start/base/dex
+else
+	kubectl -n argo delete all -l app.kubernetes.io/part-of=dex
+endif
 	kubectl -n argo apply -l app.kubernetes.io/part-of=argo --prune --force -f dist/$(DB).yaml
 
 .PHONY: pull-build-images
@@ -367,11 +373,12 @@ start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
 	kubectl config set-context --current --namespace=argo
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
 	./hack/port-forward.sh
-	# Check minio, postgres and mysql are in hosts file
+	# Check dex, minio, postgres and mysql are in hosts file
+	grep '127.0.0.1 *dex' /etc/hosts
 	grep '127.0.0.1 *minio' /etc/hosts
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
-	env ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) goreman -set-ports=false -logtime=false start
+	env ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
 
 
 .PHONY: wait
@@ -418,7 +425,7 @@ test-e2e: test-images cli
 test-e2e-cron: test-images cli
 	# Run E2E tests
 	@mkdir -p test-results
-	go test -timeout 4m -v -count 1 -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
+	go test -timeout 5m -v -count 1 -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: smoke
 smoke: test-images
@@ -427,12 +434,12 @@ smoke: test-images
 	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: test-api
-test-api: test-images
+test-api:
 	# Run API tests
 	go test -timeout 1m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
 
 .PHONY: test-cli
-test-cli: test-images cli
+test-cli: cli
 	# Run CLI tests
 	go test -timeout 2m -v -count 1 -p 1 -run CLISuite ./test/e2e
 	go test -timeout 2m -v -count 1 -p 1 -run CLIWithServerSuite ./test/e2e
