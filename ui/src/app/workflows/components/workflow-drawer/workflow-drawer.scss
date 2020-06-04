@@ -15,6 +15,7 @@
 
     &:first-child {
       padding-top: 0;
+      border-top: none;
     }
 
     &:last-child {
@@ -39,10 +40,13 @@
   }
 
   &__labels {
-    border-top: none;
     &--list {
       margin-top: 0.5em; 
     }
+  }
+
+  &__message {
+    border-top: none;
   }
 
   .tag {
@@ -102,22 +106,14 @@
   }
 
   &__conditions {
-    display: flex;
     margin-top: 0.5em;
 
-    .tag {
-      cursor: default;
-      &:hover {
+    .condition-panel__type {
+      font-weight: 600;
+    }
 
-        .key {
-          color: $argo-color-gray-6;
-        }
-
-        .value {
-          color: white;
-        }
-
-      }
+    .type {
+      font-weight: 600;
     }
   }
 }

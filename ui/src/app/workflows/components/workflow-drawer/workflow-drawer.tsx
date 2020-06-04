@@ -1,6 +1,7 @@
 import * as React from 'react';
 import * as models from '../../../../models';
 
+import {ConditionsPanel} from '../../../shared/conditions-panel';
 import {WorkflowLabels} from '../workflow-labels/workflow-labels';
 
 require('./workflow-drawer.scss');
@@ -15,21 +16,18 @@ export class WorkflowDrawer extends React.Component<WorkflowDrawerProps, {}> {
         const wf = this.props.workflow;
         return (
             <div className='workflow-drawer'>
-                <div className='workflow-drawer__section workflow-drawer__labels'>
-                    <div className='workflow-drawer__title'>LABELS</div>
-                    <div className='workflow-drawer__labels--list'>
-                        <WorkflowLabels
-                            workflow={wf}
-                            onChange={key => {
-                                this.props.onChange(key);
-                            }}
-                        />
-                    </div>
-                </div>
                 {!wf.status.message ? null : (
                     <div className='workflow-drawer__section workflow-drawer__message'>
                         <div className='workflow-drawer__title workflow-drawer__message--label'>MESSAGE</div>
                         <div className='workflow-drawer__message--content'>{wf.status.message}</div>
+                    </div>
+                )}
+                {!wf.status.conditions ? null : (
+                    <div className='workflow-drawer__section'>
+                        <div className='workflow-drawer__title'>CONDITIONS</div>
+                        <div className='workflow-drawer__conditions'>
+                            <ConditionsPanel conditions={wf.status.conditions} />
+                        </div>
                     </div>
                 )}
                 {!wf.status.resourcesDuration ? null : (
@@ -54,21 +52,17 @@ export class WorkflowDrawer extends React.Component<WorkflowDrawerProps, {}> {
                         </div>
                     </div>
                 )}
-                {!wf.status.conditions ? null : (
-                    <div className='workflow-drawer__section'>
-                        <div className='workflow-drawer__title'>CONDITIONS</div>
-                        <div className='workflow-drawer__conditions'>
-                            {wf.status.conditions.map(condition => {
-                                return (
-                                    <div className='tag' key={`${wf.metadata.namespace}-${wf.metadata.name}-${condition.type}-${condition.status}`}>
-                                        <div className='key'>{condition.type}</div>
-                                        <div className='value'>{condition.status}</div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                <div className='workflow-drawer__section workflow-drawer__labels'>
+                    <div className='workflow-drawer__title'>LABELS</div>
+                    <div className='workflow-drawer__labels--list'>
+                        <WorkflowLabels
+                            workflow={wf}
+                            onChange={key => {
+                                this.props.onChange(key);
+                            }}
+                        />
                     </div>
-                )}
+                </div>
             </div>
         );
     }

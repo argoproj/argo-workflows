@@ -14,7 +14,12 @@ interface WorkflowsRowProps {
     onChange: (key: string) => void;
 }
 
-export class WorkflowsRow extends React.Component<WorkflowsRowProps, {hideDrawer: boolean; workflow: models.Workflow}> {
+interface WorkflowRowState {
+    hideDrawer: boolean;
+    workflow: models.Workflow;
+}
+
+export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRowState> {
     constructor(props: WorkflowsRowProps) {
         super(props);
         this.state = {
@@ -24,7 +29,7 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, {hideDrawer
     }
 
     public render() {
-        const wf = this.props.workflow;
+        const wf = this.state.workflow;
         return (
             <div className='workflows-list__row-container'>
                 <Link className='row argo-table-list__row' to={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)}>
@@ -47,7 +52,7 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, {hideDrawer
                             <div
                                 onClick={e => {
                                     e.preventDefault();
-                                    this.fetchWorkflow();
+                                    this.fetchFullWorkflow();
                                     this.setState({hideDrawer: !this.state.hideDrawer});
                                 }}
                                 className={`workflows-row__action workflows-row__action--${this.state.hideDrawer ? 'show' : 'hide'}`}>
@@ -78,7 +83,7 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, {hideDrawer
         );
     }
 
-    private fetchWorkflow(): void {
+    private fetchFullWorkflow(): void {
         services.workflows.get(this.props.workflow.metadata.namespace, this.props.workflow.metadata.name).then(wf => {
             this.setState({workflow: wf});
         });
