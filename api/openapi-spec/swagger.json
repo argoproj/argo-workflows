@@ -12,7 +12,7 @@
   "info": {
     "description": "Argo",
     "title": "Argo",
-    "version": "084f9234"
+    "version": "latest"
   },
   "host": "localhost:2746",
   "paths": {
