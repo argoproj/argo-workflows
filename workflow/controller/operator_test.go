@@ -2673,7 +2673,6 @@ func TestStepsOnExitFailures(t *testing.T) {
 	woc.operate()
 	woc.operate()
 
-	fmt.Println(woc.globalParams)
 	assert.Contains(t, woc.globalParams[common.GlobalVarWorkflowFailures], `[{\"displayName\":\"exit-handlers\",\"message\":\"Unexpected pod phase for exit-handlers: \",\"templateName\":\"intentional-fail\",\"phase\":\"Error\",\"podName\":\"exit-handlers\"`)
 }
 
@@ -3693,6 +3692,18 @@ func TestNoOnExitWhenSkipped(t *testing.T) {
 	woc := newWoc(*wf)
 	woc.operate()
 	assert.Nil(t, woc.getNodeByName("B.onExit"))
+}
+
+func TestGenerateNodeName(t *testing.T) {
+	assert.Equal(t, "sleep(10:ten)", generateNodeName("sleep", 10, "ten"))
+	assert.Equal(t, `sleep(10:[{"foo":"bar"}])`, generateNodeName("sleep", 10, []wfv1.ItemValue{{
+		Type:   wfv1.Map,
+		MapVal: map[string]string{"foo": "bar"},
+	}}))
+	assert.Equal(t, `sleep(10:[10])`, generateNodeName("sleep", 10, []wfv1.ItemValue{{
+		Type:   wfv1.Number,
+		NumVal: "10",
+	}}))
 }
 
 // This tests that we don't wait a backoff if it would exceed the maxDuration anyway.
