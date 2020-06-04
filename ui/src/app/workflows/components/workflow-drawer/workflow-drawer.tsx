@@ -27,9 +27,13 @@ export class WorkflowDrawer extends React.Component<WorkflowDrawerProps, {}> {
                         <div className='workflow-drawer__conditions'>
                             {wf.status.conditions.map(condition => {
                                 return (
-                                    <div className='tag' key={`${wf.metadata.namespace}-${wf.metadata.name}-${condition.type}-${condition.status}`}>
-                                        <div className='key'>{condition.type}</div>
-                                        <div className='value'>{condition.status}</div>
+                                    <div key={`${wf.metadata.namespace}-${wf.metadata.name}-${condition.type}-${condition.status}`}>
+                                        <span className='type'>{condition.type}</span>:&nbsp;
+                                        {condition.message ? (
+                                            <span className='message'>{condition.message}</span>
+                                        ) : (
+                                            <span className='status'>{condition.status}</span>
+                                        )}                                          
                                     </div>
                                 );
                             })}

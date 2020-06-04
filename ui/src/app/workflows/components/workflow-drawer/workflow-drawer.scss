@@ -109,19 +109,8 @@
     display: flex;
     margin-top: 0.5em;
 
-    .tag {
-      cursor: default;
-      &:hover {
-
-        .key {
-          color: $argo-color-gray-6;
-        }
-
-        .value {
-          color: white;
-        }
-
-      }
+    .type {
+      font-weight: 600;
     }
   }
 }
