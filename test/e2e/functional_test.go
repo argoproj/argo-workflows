@@ -139,7 +139,7 @@ spec:
     - name: whalesplosion
       container:
         imagePullPolicy: IfNotPresent
-        image: argoproj/argosay:v2
+        image: argoproj/argosay:v1
         command: ["sh", "-c", "sleep 10; exit 1"]
 `).
 		When().
