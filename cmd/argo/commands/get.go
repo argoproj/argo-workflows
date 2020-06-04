@@ -288,7 +288,6 @@ func insertSorted(wf *wfv1.Workflow, sortedArray []renderNode, item renderNode) 
 					break
 				}
 			}
-
 		}
 	}
 	sortedArray = append(sortedArray, nil)
