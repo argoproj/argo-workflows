@@ -97,9 +97,15 @@ var (
 	ErrParallelismReached = errors.New(errors.CodeForbidden, "Max parallelism reached")
 )
 
-// maxOperationTime is the maximum time a workflow operation is allowed to run
-// for before requeuing the workflow onto the workqueue.
-const maxOperationTime = 10 * time.Second
+const (
+	// maxOperationTime is the maximum time a workflow operation is allowed to run
+	// for before requeuing the workflow onto the workqueue.
+	maxOperationTime = 10 * time.Second
+	// exceededQuotaString is a string used to check for an exceeded quota error in the return string from k8s api.
+	exceededQuotaString string = "exceeded quota"
+	// failedQuotaString is a string used to check for a failed quota error in the return string from k8s api.
+	failedQuotaString string = "failed quota"
+)
 
 // failedNodeStatus is a subset of NodeStatus that is only used to Marshal certain fields into a JSON of failed nodes
 type failedNodeStatus struct {
@@ -109,6 +115,17 @@ type failedNodeStatus struct {
 	Phase        string      `json:"phase"`
 	PodName      string      `json:"podName"`
 	FinishedAt   metav1.Time `json:"finishedAt"`
+}
+
+
+// exceededQuota checks if the error message indicates an exceeded quota in the namespace.
+func exceededQuota(n *wfv1.NodeStatus) bool {
+	return strings.Contains(n.Message, exceededQuotaString)
+}
+
+// failedQuota checks if the error message indicates a failed quota in the namespace.
+func failedQuota(n *wfv1.NodeStatus) bool {
+	return strings.Contains(n.Message, failedQuotaString)
 }
 
 // newWorkflowOperationCtx creates and initializes a new wfOperationCtx object.
@@ -819,8 +836,8 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	// It is now impossible to infer pod status. The only thing we can do at this point is to mark
 	// the node with Error.
 	for nodeID, node := range woc.wf.Status.Nodes {
-		if node.Type != wfv1.NodeTypePod || node.Fulfilled() || node.StartedAt.IsZero() {
-			// node is not a pod, it is already complete, or it can be re-run.
+		if node.Type != wfv1.NodeTypePod || node.Fulfilled() || node.StartedAt.IsZero() || exceededQuota(&node) || failedQuota(&node) {
+			// node is not a pod, it is already complete, it can be re-run, or it failed to create due to issues with quota
 			continue
 		}
 		if _, ok := seenPods[nodeID]; !ok {
@@ -1971,6 +1988,9 @@ func getStepOrDAGTaskName(nodeName string) string {
 func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateReferenceHolder, opts *executeTemplateOpts) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
+		if exceededQuota(node) || failedQuota(node) {
+			woc.log.Infof("Node %s exists but a pod does not due to issues with quota: %s", nodeName, node.Message)
+		}
 		return node, nil
 	}
 	node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypePod, templateScope, tmpl, orgTmpl, opts.boundaryID, wfv1.NodePending)
