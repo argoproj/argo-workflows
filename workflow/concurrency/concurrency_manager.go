@@ -136,8 +136,10 @@ func (cm *ConcurrencyManager) TryAcquire(key, namespace string, priority int32, 
 	lockName := getSemaphoreRefKey(namespace, semaphoreRef)
 	var semaphore *Semaphore
 	var err error
-	semaphore, ok := cm.semaphoreMap[lockName]
-	if !ok {
+
+	semaphore, found := cm.semaphoreMap[lockName]
+
+	if !found {
 		if semaphoreRef.ConfigMapKeyRef != nil {
 			semaphore, err = cm.initializeSemaphore(lockName)
 			if err != nil {
@@ -146,10 +148,12 @@ func (cm *ConcurrencyManager) TryAcquire(key, namespace string, priority int32, 
 			cm.semaphoreMap[lockName] = semaphore
 		}
 	}
+
 	if semaphore == nil {
 		return false, "", errors.New(errors.CodeBadRequest, "Requested Semaphore is invalid")
 	}
 
+	// Check semaphore configmap changes
 	err = cm.checkAndUpdateSemaphoreSize(semaphore)
 
 	if err != nil {
@@ -157,9 +161,15 @@ func (cm *ConcurrencyManager) TryAcquire(key, namespace string, priority int32, 
 	}
 
 	semaphore.addToQueue(key, priority, creationTime)
+
 	status, msg := semaphore.tryAcquire(key)
+
 	if status {
 		cm.updateWorkflowMetaData(key, lockName, AcquireAction, wf)
+	}
+	if !status {
+		curHolders := fmt.Sprintf("Current lock holders: %v", semaphore.getCurrentHolders())
+		msg = fmt.Sprintf( "%s. %s ", msg, curHolders)
 	}
 	return status, msg, nil
 }

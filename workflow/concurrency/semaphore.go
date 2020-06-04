@@ -40,6 +40,14 @@ func NewSemaphore(name string, limit int, callbackFunc func(string)) *Semaphore 
 	}
 }
 
+func (s *Semaphore) getCurrentHolders() []string {
+	keys := make([]string, len(s.lockHolder))
+	for k := range s.lockHolder {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 func (s *Semaphore) resize(n int) bool {
 	s.lock.Lock()
 	defer s.lock.Unlock()
