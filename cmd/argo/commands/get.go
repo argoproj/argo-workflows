@@ -514,30 +514,9 @@ func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow
 		printNode(w, nodeInfo.getNodeStatus(wf), nodePrefix, getArgs)
 	}
 
-	// tailFilteredNodes counts how many nodes at the end of the list will be filtered (not shown). This is necessary
-	// so that the last non-filtered node's prefix is correct.
-	//
-	// This is what we are trying to avoid:
-	//● dag-diamond-s7d4p  diamond
-	//├-◷ C		<- This node is the last node shown, but since it has filtered nodes following it its prefix is incorrect (├)
-	//<There are nodes here that are filtered>
-	//
-	// This is the desired behavior:
-	//● dag-diamond-s7d4p  diamond
-	//└-◷ C		<- This node is the last node shown, and even though it has filtered nodes following it its prefix is correct (└)
-	//<There are nodes here that are filtered>
-	tailFilteredNodes := 0
-	for i := len(nodeInfo.boundaryContained) - 1; i >= 0; i-- {
-		if filter, _ := filterNode(nodeInfo.boundaryContained[i].getNodeStatus(wf), getArgs); filter {
-			tailFilteredNodes++
-		} else {
-			break
-		}
-	}
-
 	for i, nInfo := range nodeInfo.boundaryContained {
 		renderChild(w, wf, nInfo, depth, nodePrefix, childPrefix, filtered, i,
-			len(nodeInfo.boundaryContained)-1-tailFilteredNodes, childIndent, getArgs)
+			len(nodeInfo.boundaryContained)-1, childIndent, getArgs)
 	}
 }
 
@@ -548,30 +527,9 @@ func (nodeInfo *nonBoundaryParentNode) renderNodes(w *tabwriter.Writer, wf *wfv1
 		printNode(w, nodeInfo.getNodeStatus(wf), nodePrefix, getArgs)
 	}
 
-	// tailFilteredNodes counts how many nodes at the end of the list will be filtered (not shown). This is necessary
-	// so that the last non-filtered node's prefix is correct.
-	//
-	// This is what we are trying to avoid:
-	//● dag-diamond-s7d4p  diamond
-	//├-◷ C		<- This node is the last node shown, but since it has filtered nodes following it its prefix is incorrect (├)
-	//<There are nodes here that are filtered>
-	//
-	// This is the desired behavior:
-	//● dag-diamond-s7d4p  diamond
-	//└-◷ C		<- This node is the last node shown, and even though it has filtered nodes following it its prefix is correct (└)
-	//<There are nodes here that are filtered>
-	tailFilteredNodes := 0
-	for i := len(nodeInfo.children) - 1; i >= 0; i-- {
-		if filter, _ := filterNode(nodeInfo.children[i].getNodeStatus(wf), getArgs); filter {
-			tailFilteredNodes++
-		} else {
-			break
-		}
-	}
-
 	for i, nInfo := range nodeInfo.children {
 		renderChild(w, wf, nInfo, depth, nodePrefix, childPrefix, filtered, i,
-			len(nodeInfo.children)-1-tailFilteredNodes, childIndent, getArgs)
+			len(nodeInfo.children)-1, childIndent, getArgs)
 	}
 }
 
