@@ -469,19 +469,19 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 	localScope := woc.globalParams.DeepCopy()
 
 	if node.Fulfilled() {
-		localScope["duration"] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())
-		realTimeScope["duration"] = func() float64 {
+		localScope[common.LocalVarDuration] = fmt.Sprintf("%f", node.FinishedAt.Sub(node.StartedAt.Time).Seconds())
+		realTimeScope[common.LocalVarDuration] = func() float64 {
 			return node.FinishedAt.Sub(node.StartedAt.Time).Seconds()
 		}
 	} else {
-		localScope["duration"] = fmt.Sprintf("%f", time.Since(node.StartedAt.Time).Seconds())
-		realTimeScope["duration"] = func() float64 {
+		localScope[common.LocalVarDuration] = fmt.Sprintf("%f", time.Since(node.StartedAt.Time).Seconds())
+		realTimeScope[common.LocalVarDuration] = func() float64 {
 			return time.Since(node.StartedAt.Time).Seconds()
 		}
 	}
 
 	if node.Phase != "" {
-		localScope["status"] = string(node.Phase)
+		localScope[common.LocalVarStatus] = string(node.Phase)
 	}
 
 	if node.Inputs != nil {
@@ -498,6 +498,13 @@ func (woc *wfOperationCtx) prepareMetricScope(node *wfv1.NodeStatus) (map[string
 		for _, param := range node.Outputs.Parameters {
 			key := fmt.Sprintf("outputs.parameters.%s", param.Name)
 			localScope[key] = param.Value.String()
+		}
+	}
+
+	if node.ResourcesDuration != nil {
+		localScope[common.LocalVarResourcesDuration] = node.ResourcesDuration.String()
+		for name, duration := range node.ResourcesDuration {
+			localScope[fmt.Sprintf("%s.%s", common.LocalVarResourcesDuration, name)] = duration.String()
 		}
 	}
 
