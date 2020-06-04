@@ -14,13 +14,13 @@ import (
 func TestServerConfig_SameServerAs(t *testing.T) {
 	a := ServerConfig{
 		Enabled: true,
-		Path:    "/metrics",
-		Port:    "9090",
+		Path:    DefaultMetricsServerPath,
+		Port:    DefaultMetricsServerPort,
 	}
 	b := ServerConfig{
 		Enabled: true,
-		Path:    "/metrics",
-		Port:    "9090",
+		Path:    DefaultMetricsServerPath,
+		Port:    DefaultMetricsServerPort,
 	}
 
 	assert.True(t, a.SameServerAs(b))
@@ -34,7 +34,7 @@ func TestServerConfig_SameServerAs(t *testing.T) {
 	b.Port = "9091"
 	assert.False(t, a.SameServerAs(b))
 
-	b.Port = "9090"
+	b.Port = DefaultMetricsServerPort
 	b.Path = "/telemetry"
 	assert.False(t, a.SameServerAs(b))
 }
@@ -42,8 +42,8 @@ func TestServerConfig_SameServerAs(t *testing.T) {
 func TestMetrics(t *testing.T) {
 	config := ServerConfig{
 		Enabled: true,
-		Path:    "/metrics",
-		Port:    "9090",
+		Path:    DefaultMetricsServerPath,
+		Port:    DefaultMetricsServerPort,
 	}
 	m := New(config, config)
 
@@ -105,8 +105,8 @@ func TestErrors(t *testing.T) {
 func TestMetricGC(t *testing.T) {
 	config := ServerConfig{
 		Enabled: true,
-		Path:    "/metrics",
-		Port:    "9090",
+		Path:    DefaultMetricsServerPath,
+		Port:    DefaultMetricsServerPort,
 		TTL:     1 * time.Second,
 	}
 	m := New(config, config)

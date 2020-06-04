@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -2671,7 +2673,6 @@ func TestStepsOnExitFailures(t *testing.T) {
 	woc.operate()
 	woc.operate()
 
-	fmt.Println(woc.globalParams)
 	assert.Contains(t, woc.globalParams[common.GlobalVarWorkflowFailures], `[{\"displayName\":\"exit-handlers\",\"message\":\"Unexpected pod phase for exit-handlers: \",\"templateName\":\"intentional-fail\",\"phase\":\"Error\",\"podName\":\"exit-handlers\"`)
 }
 
@@ -3703,4 +3704,37 @@ func TestGenerateNodeName(t *testing.T) {
 		Type:   wfv1.Number,
 		NumVal: "10",
 	}}))
+}
+
+// This tests that we don't wait a backoff if it would exceed the maxDuration anyway.
+func TestPanicMetric(t *testing.T) {
+	wf := unmarshalWF(noOnExitWhenSkipped)
+	woc := newWoc(*wf)
+
+	// This should make the call to "operate" panic
+	woc.preExecutionNodePhases = nil
+	woc.operate()
+
+	metricsChan := make(chan prometheus.Metric)
+	go func() {
+		woc.controller.metrics.Collect(metricsChan)
+		close(metricsChan)
+	}()
+
+	seen := false
+	for {
+		metric, ok := <-metricsChan
+		if !ok {
+			break
+		}
+		if strings.Contains(metric.Desc().String(), "OperationPanic") {
+			seen = true
+			var writtenMetric dto.Metric
+			err := metric.Write(&writtenMetric)
+			if assert.NoError(t, err) {
+				assert.Equal(t, float64(1), *writtenMetric.Counter.Value)
+			}
+		}
+	}
+	assert.True(t, seen)
 }
