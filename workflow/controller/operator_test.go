@@ -2673,7 +2673,6 @@ func TestStepsOnExitFailures(t *testing.T) {
 	woc.operate()
 	woc.operate()
 
-	fmt.Println(woc.globalParams)
 	assert.Contains(t, woc.globalParams[common.GlobalVarWorkflowFailures], `[{\"displayName\":\"exit-handlers\",\"message\":\"Unexpected pod phase for exit-handlers: \",\"templateName\":\"intentional-fail\",\"phase\":\"Error\",\"podName\":\"exit-handlers\"`)
 }
 
