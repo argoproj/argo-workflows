@@ -36,7 +36,6 @@ import (
 	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	authutil "github.com/argoproj/argo/util/auth"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/controller/latch"
 	"github.com/argoproj/argo/workflow/controller/pod"
 	"github.com/argoproj/argo/workflow/cron"
 	"github.com/argoproj/argo/workflow/hydrator"
@@ -82,7 +81,6 @@ type WorkflowController struct {
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
 	metrics               metrics.Metrics
-	latch                 latch.Interface
 }
 
 const (
@@ -118,7 +116,6 @@ func NewWorkflowController(
 		configController:           config.NewController(namespace, configMap, kubeclientset),
 		completedPods:              make(chan string, 512),
 		gcPods:                     make(chan string, 512),
-		latch:                      latch.New(),
 	}
 	wfc.throttler = NewThrottler(0, wfc.wfQueue)
 	wfc.UpdateConfig()
@@ -401,12 +398,6 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	if !wfc.latch.Pass(un) {
-		// https://www.youtube.com/watch?v=mJZZNHekEQw
-		log.Infof("workflow '%s' - you shall not pass", key)
-		return true
-	}
-
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
 		log.Warnf("Failed to unmarshal key '%s' to workflow object: %v", key, err)
@@ -599,17 +590,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 			},
 		},
 	)
-	wfc.wfInformer.AddEventHandler(cache.FilteringResourceEventHandler{FilterFunc: incomplete, Handler: cache.ResourceEventHandlerFuncs{
-		DeleteFunc: func(obj interface{}) {
-			var o *unstructured.Unstructured
-			if d, ok := obj.(cache.DeletedFinalStateUnknown); ok {
-				o = d.Obj.(*unstructured.Unstructured)
-			} else {
-				o = obj.(*unstructured.Unstructured)
-			}
-			wfc.latch.Remove(o)
-		},
-	}})
 	wfc.wfInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			wfc.metrics.WorkflowAdded(getWfPhase(obj))

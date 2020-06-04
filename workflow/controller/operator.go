@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/argoproj/pkg/humanize"
+	argokubeerr "github.com/argoproj/pkg/kube/errors"
 	"github.com/argoproj/pkg/strftime"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
@@ -40,9 +41,8 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/templateresolution"
+	workflowutil "github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
-
-	argokubeerr "github.com/argoproj/pkg/kube/errors"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -503,9 +503,17 @@ func (woc *wfOperationCtx) persistUpdates() {
 		panic("workflow should be hydrated")
 	}
 
-	woc.controller.latch.Update(woc.wf)
-
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
+
+	un, err := workflowutil.ToUnstructured(woc.wf)
+	if err != nil {
+		log.WithError(err).Warn("failed to convert workflow to unstructured")
+	} else {
+		err = woc.controller.wfInformer.GetStore().Update(un)
+		if err != nil {
+			log.WithError(err).Warn("failed to stuff the workflow back into the informer")
+		}
+	}
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
