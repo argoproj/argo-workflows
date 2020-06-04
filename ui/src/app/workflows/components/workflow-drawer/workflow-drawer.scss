@@ -15,6 +15,7 @@
 
     &:first-child {
       padding-top: 0;
+      border-top: none;
     }
 
     &:last-child {
@@ -39,10 +40,13 @@
   }
 
   &__labels {
-    border-top: none;
     &--list {
       margin-top: 0.5em; 
     }
+  }
+
+  &__message {
+    border-top: none;
   }
 
   .tag {

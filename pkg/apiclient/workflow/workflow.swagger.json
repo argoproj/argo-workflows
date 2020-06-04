@@ -98,12 +98,6 @@
             "in": "query",
             "required": false,
             "type": "string"
-          },
-          {
-            "name": "fields",
-            "in": "query",
-            "required": false,
-            "type": "string"
           }
         ],
         "tags": [
