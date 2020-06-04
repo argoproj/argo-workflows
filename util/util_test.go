@@ -49,3 +49,12 @@ func TestMergeParameters(t *testing.T) {
 	})
 
 }
+
+func TestRecoverIndexFromNodeName(t *testing.T) {
+	out := RecoverIndexFromNodeName("sleep(10:ten)")
+	assert.Equal(t, 10, out)
+	out = RecoverIndexFromNodeName("sleep(17:[foobar]])")
+	assert.Equal(t, 17, out)
+	out = RecoverIndexFromNodeName("sleep(1:a;skldfja)")
+	assert.Equal(t, 1, out)
+}

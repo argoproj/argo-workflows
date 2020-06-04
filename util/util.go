@@ -2,6 +2,8 @@ package util
 
 import (
 	"io/ioutil"
+	"strconv"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -74,4 +76,17 @@ func MergeParameters(params ...[]wfv1.Parameter) []wfv1.Parameter {
 		}
 	}
 	return resultParams
+}
+
+func RecoverIndexFromNodeName(name string) int {
+	startIndex := strings.Index(name, "(")
+	endIndex := strings.Index(name, ":")
+	if startIndex < 0 || endIndex < 0 {
+		return -1
+	}
+	out, err := strconv.Atoi(name[startIndex+1 : endIndex])
+	if err != nil {
+		return -1
+	}
+	return out
 }
