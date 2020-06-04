@@ -271,6 +271,7 @@
       "type": "object",
       "properties": {
         "semaphoreHolders": {
+          "description": "SemaphoreHolders stores the Semaphore holder details",
           "type": "object",
           "additionalProperties": {
             "type": "string"

@@ -151,6 +151,7 @@ message ClusterWorkflowTemplateList {
 }
 
 message ConcurrencyLockStatus {
+  // SemaphoreHolders stores the Semaphore holder details
   map<string, string> semaphoreHolders = 1;
 }
 

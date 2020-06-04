@@ -570,7 +570,8 @@ func schema_pkg_apis_workflow_v1alpha1_ConcurrencyLockStatus(ref common.Referenc
 				Properties: map[string]spec.Schema{
 					"semaphoreHolders": {
 						SchemaProps: spec.SchemaProps{
-							Type: []string{"object"},
+							Description: "SemaphoreHolders stores the Semaphore holder details",
+							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
 								Allows: true,
 								Schema: &spec.Schema{

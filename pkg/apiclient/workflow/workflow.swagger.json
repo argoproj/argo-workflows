@@ -935,7 +935,8 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
-          }
+          },
+          "title": "SemaphoreHolders stores the Semaphore holder details"
         }
       }
     },

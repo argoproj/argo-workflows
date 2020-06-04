@@ -1719,7 +1719,7 @@ _No description available_
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`semaphoreHolders`|`Map< string , string >`|_No description available_|
+|`semaphoreHolders`|`Map< string , string >`|SemaphoreHolders stores the Semaphore holder details|
 
 ## Condition
 

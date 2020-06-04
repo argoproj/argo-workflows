@@ -169,7 +169,7 @@ func (cm *ConcurrencyManager) TryAcquire(key, namespace string, priority int32, 
 	}
 	if !status {
 		curHolders := fmt.Sprintf("Current lock holders: %v", semaphore.getCurrentHolders())
-		msg = fmt.Sprintf( "%s. %s ", msg, curHolders)
+		msg = fmt.Sprintf("%s. %s ", msg, curHolders)
 	}
 	return status, msg, nil
 }
