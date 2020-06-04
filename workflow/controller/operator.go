@@ -119,7 +119,6 @@ type failedNodeStatus struct {
 	FinishedAt   metav1.Time `json:"finishedAt"`
 }
 
-
 // ExceededQuota checks if the error message indicates an exceeded quota in the namespace.
 func ExceededQuota(n *wfv1.NodeStatus) bool {
 	return strings.Contains(n.Message, exceededQuotaString)
