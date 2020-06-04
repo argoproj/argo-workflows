@@ -2,6 +2,7 @@ import * as React from 'react';
 import * as models from '../../../../models';
 
 import {WorkflowLabels} from '../workflow-labels/workflow-labels';
+import {ConditionsPanel} from '../../../shared/conditions-panel';
 
 require('./workflow-drawer.scss');
 
@@ -25,18 +26,7 @@ export class WorkflowDrawer extends React.Component<WorkflowDrawerProps, {}> {
                     <div className='workflow-drawer__section'>
                         <div className='workflow-drawer__title'>CONDITIONS</div>
                         <div className='workflow-drawer__conditions'>
-                            {wf.status.conditions.map(condition => {
-                                return (
-                                    <div key={`${wf.metadata.namespace}-${wf.metadata.name}-${condition.type}-${condition.status}`}>
-                                        <span className='type'>{condition.type}</span>:&nbsp;
-                                        {condition.message ? (
-                                            <span className='message'>{condition.message}</span>
-                                        ) : (
-                                            <span className='status'>{condition.status}</span>
-                                        )}                                          
-                                    </div>
-                                );
-                            })}
+                            <ConditionsPanel conditions={wf.status.conditions} />
                         </div>
                     </div>
                 )}

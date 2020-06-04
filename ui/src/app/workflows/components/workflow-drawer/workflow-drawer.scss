@@ -106,8 +106,11 @@
   }
 
   &__conditions {
-    display: flex;
     margin-top: 0.5em;
+
+    .condition-panel__type {
+      font-weight: 600;
+    }
 
     .type {
       font-weight: 600;
