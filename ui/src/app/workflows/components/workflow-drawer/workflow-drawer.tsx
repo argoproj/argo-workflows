@@ -1,8 +1,8 @@
 import * as React from 'react';
 import * as models from '../../../../models';
 
-import {WorkflowLabels} from '../workflow-labels/workflow-labels';
 import {ConditionsPanel} from '../../../shared/conditions-panel';
+import {WorkflowLabels} from '../workflow-labels/workflow-labels';
 
 require('./workflow-drawer.scss');
 

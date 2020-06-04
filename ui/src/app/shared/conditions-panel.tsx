@@ -33,8 +33,11 @@ function getConditionIcon(condition: ConditionType): JSX.Element {
     if (ErrorConditions.includes(condition as ConditionType)) {
         icon = <span className={'fa fa-exclamation-circle'} style={{color: '#d70022'}} />;
     }
-    if (!icon) return <span />;
-    else return (<>{icon}&nbsp;</>); 
+    if (!icon) {
+        return <span />;
+    } else {
+        return <>{icon}&nbsp;</>;
+    }
 }
 
 export class ConditionsPanel extends React.Component<Props> {
