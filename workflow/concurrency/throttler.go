@@ -100,6 +100,11 @@ type priorityQueue struct {
 func (pq *priorityQueue) pop() *item {
 	return heap.Pop(pq).(*item)
 }
+func (pq *priorityQueue) peek() *item {
+	item := pq.pop()
+	heap.Push(pq, item)
+	return  item
+}
 
 func (pq *priorityQueue) add(key interface{}, priority int32, creationTime time.Time) {
 	if res, ok := pq.itemByKey[key]; ok {
@@ -149,13 +154,5 @@ func (pq *priorityQueue) Pop() interface{} {
 	item.index = -1
 	pq.items = old[0 : n-1]
 	delete(pq.itemByKey, item.key)
-	return item
-}
-
-func (pq *priorityQueue) Peek() interface{} {
-	old := pq.items
-	n := len(old)
-	item := old[n-1]
-	item.index = -1
 	return item
 }

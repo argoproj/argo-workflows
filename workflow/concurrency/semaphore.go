@@ -35,7 +35,6 @@ func NewSemaphore(name string, limit int, callbackFunc func(string)) *Semaphore 
 		releaseNotifyFunc: callbackFunc,
 		log: log.WithFields(log.Fields{
 			"semaphore": name,
-			"limit":     limit,
 		}),
 	}
 }
@@ -51,8 +50,8 @@ func (s *Semaphore) getCurrentHolders() []string {
 func (s *Semaphore) resize(n int) bool {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	cur := len(s.lockHolder)
 
+	cur := len(s.lockHolder)
 	// downward case, acquired n locks
 	if cur >= n {
 		cur = n
@@ -61,7 +60,9 @@ func (s *Semaphore) resize(n int) bool {
 	sema := sema.NewWeighted(int64(n))
 	status := sema.TryAcquire(int64(cur))
 	if status {
+		s.log.Infof("%s semaphore resized from %d to %d", s.name, cur, n)
 		s.semaphore = sema
+		s.limit = n
 	}
 	return status
 }
@@ -84,7 +85,7 @@ func (s *Semaphore) release(key string) {
 		delete(s.lockHolder, key)
 		s.log.Infof("Lock has been released by %s. Available locks: %d", key, s.limit-len(s.lockHolder))
 		if s.pending.Len() > 0 {
-			item := s.pending.Peek().(*item)
+			item := s.pending.peek()
 			keyStr := fmt.Sprintf("%v", item.key)
 			items := strings.Split(keyStr, "/")
 			workflowKey := keyStr
@@ -133,7 +134,7 @@ func (s *Semaphore) tryAcquire(holderKey string) (bool, string) {
 
 	waitingMsg := fmt.Sprintf("Waiting for Lock. Lock status: %d/%d ", s.limit-len(s.lockHolder), s.limit)
 	if s.pending.Len() > 0 {
-		item := s.pending.Peek().(*item)
+		item := s.pending.peek()
 		nextKey = fmt.Sprintf("%v", item.key)
 		if holderKey != nextKey {
 			return false, waitingMsg
@@ -141,7 +142,7 @@ func (s *Semaphore) tryAcquire(holderKey string) (bool, string) {
 	}
 
 	if s.acquire(holderKey) {
-		s.pending.Pop()
+		s.pending.pop()
 		delete(s.inPending, holderKey)
 		s.log.Infof("%s acquired by %s \n", s.name, nextKey)
 		return true, ""

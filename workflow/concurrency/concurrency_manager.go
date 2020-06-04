@@ -214,9 +214,6 @@ func (cm *ConcurrencyManager) GetHolderKey(wf *wfv1.Workflow, nodeName string) s
 
 func (cm *ConcurrencyManager) updateWorkflowMetaData(key, semaphoreKey, action string, wf *wfv1.Workflow) {
 
-	if wf.Annotations == nil {
-		wf.Annotations = make(map[string]string)
-	}
 	if wf.Status.ConcurrencyLockStatus == nil {
 		wf.Status.ConcurrencyLockStatus = &wfv1.ConcurrencyLockStatus{SemaphoreHolders: make(map[string]string)}
 	}
