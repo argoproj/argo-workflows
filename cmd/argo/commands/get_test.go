@@ -189,67 +189,24 @@ status:
       phase: Succeeded
       startedAt: "2020-06-02T16:04:21Z"
       templateName: parallel-sleep
-      templateScope: local/many-items-z26lj
       type: Steps
     many-items-z26lj-753834747:
       boundaryID: many-items-z26lj
       displayName: sleep(8:eight)
       finishedAt: "2020-06-02T16:04:42Z"
-      hostNodeName: minikube
       id: many-items-z26lj-753834747
       name: many-items-z26lj[0].sleep(8:eight)
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: many-items-z26lj/many-items-z26lj-753834747/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-      phase: Succeeded
-      resourcesDuration:
-        cpu: 26
-        memory: 20
       startedAt: "2020-06-02T16:04:21Z"
       templateName: sleep
-      templateScope: local/many-items-z26lj
       type: Pod
     many-items-z26lj-1052882686:
       boundaryID: many-items-z26lj
       displayName: sleep(10:ten)
       finishedAt: "2020-06-02T16:04:45Z"
-      hostNodeName: minikube
       id: many-items-z26lj-1052882686
       name: many-items-z26lj[0].sleep(10:ten)
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: many-items-z26lj/many-items-z26lj-1052882686/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-      phase: Succeeded
-      resourcesDuration:
-        cpu: 29
-        memory: 22
       startedAt: "2020-06-02T16:04:22Z"
       templateName: sleep
-      templateScope: local/many-items-z26lj
       type: Pod
     many-items-z26lj-1414877240:
       boundaryID: many-items-z26lj
@@ -274,344 +231,109 @@ status:
       phase: Succeeded
       startedAt: "2020-06-02T16:04:21Z"
       templateName: parallel-sleep
-      templateScope: local/many-items-z26lj
       type: StepGroup
     many-items-z26lj-1774150289:
       boundaryID: many-items-z26lj
       displayName: sleep(3:three)
       finishedAt: "2020-06-02T16:04:54Z"
-      hostNodeName: minikube
       id: many-items-z26lj-1774150289
       name: many-items-z26lj[0].sleep(3:three)
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: many-items-z26lj/many-items-z26lj-1774150289/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-      phase: Succeeded
-      resourcesDuration:
-        cpu: 37
-        memory: 27
       startedAt: "2020-06-02T16:04:21Z"
       templateName: sleep
-      templateScope: local/many-items-z26lj
       type: Pod
     many-items-z26lj-1939921510:
       boundaryID: many-items-z26lj
       displayName: sleep(0:zero)
       finishedAt: "2020-06-02T16:04:48Z"
-      hostNodeName: minikube
       id: many-items-z26lj-1939921510
       name: many-items-z26lj[0].sleep(0:zero)
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: many-items-z26lj/many-items-z26lj-1939921510/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-      phase: Succeeded
-      resourcesDuration:
-        cpu: 31
-        memory: 23
       startedAt: "2020-06-02T16:04:21Z"
       templateName: sleep
-      templateScope: local/many-items-z26lj
       type: Pod
     many-items-z26lj-1942531647:
       boundaryID: many-items-z26lj
       displayName: sleep(5:five)
       finishedAt: "2020-06-02T16:04:47Z"
-      hostNodeName: minikube
       id: many-items-z26lj-1942531647
       name: many-items-z26lj[0].sleep(5:five)
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: many-items-z26lj/many-items-z26lj-1942531647/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-        exitCode: "0"
       phase: Succeeded
-      resourcesDuration:
-        cpu: 30
-        memory: 22
       startedAt: "2020-06-02T16:04:21Z"
       templateName: sleep
-      templateScope: local/many-items-z26lj
       type: Pod
     many-items-z26lj-2156977535:
       boundaryID: many-items-z26lj
       displayName: sleep(1:one)
       finishedAt: "2020-06-02T16:04:53Z"
-      hostNodeName: minikube
       id: many-items-z26lj-2156977535
       name: many-items-z26lj[0].sleep(1:one)
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: many-items-z26lj/many-items-z26lj-2156977535/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-      phase: Succeeded
-      resourcesDuration:
-        cpu: 36
-        memory: 26
       startedAt: "2020-06-02T16:04:21Z"
       templateName: sleep
-      templateScope: local/many-items-z26lj
       type: Pod
     many-items-z26lj-2619926859:
       boundaryID: many-items-z26lj
       displayName: sleep(9:nine)
       finishedAt: "2020-06-02T16:04:40Z"
-      hostNodeName: minikube
       id: many-items-z26lj-2619926859
       name: many-items-z26lj[0].sleep(9:nine)
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: many-items-z26lj/many-items-z26lj-2619926859/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-      phase: Succeeded
-      resourcesDuration:
-        cpu: 25
-        memory: 19
       startedAt: "2020-06-02T16:04:21Z"
       templateName: sleep
-      templateScope: local/many-items-z26lj
       type: Pod
     many-items-z26lj-3011405271:
       boundaryID: many-items-z26lj
       displayName: sleep(11:eleven)
       finishedAt: "2020-06-02T16:04:44Z"
-      hostNodeName: minikube
       id: many-items-z26lj-3011405271
       name: many-items-z26lj[0].sleep(11:eleven)
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: many-items-z26lj/many-items-z26lj-3011405271/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-      phase: Succeeded
-      resourcesDuration:
-        cpu: 28
-        memory: 21
       startedAt: "2020-06-02T16:04:22Z"
       templateName: sleep
-      templateScope: local/many-items-z26lj
       type: Pod
     many-items-z26lj-3031375822:
       boundaryID: many-items-z26lj
       displayName: sleep(7:seven)
       finishedAt: "2020-06-02T16:04:57Z"
-      hostNodeName: minikube
       id: many-items-z26lj-3031375822
       name: many-items-z26lj[0].sleep(7:seven)
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: many-items-z26lj/many-items-z26lj-3031375822/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-      phase: Succeeded
-      resourcesDuration:
-        cpu: 40
-        memory: 29
       startedAt: "2020-06-02T16:04:21Z"
       templateName: sleep
-      templateScope: local/many-items-z26lj
       type: Pod
     many-items-z26lj-3126938806:
       boundaryID: many-items-z26lj
       displayName: sleep(12:twelve)
       finishedAt: "2020-06-02T16:04:59Z"
-      hostNodeName: minikube
       id: many-items-z26lj-3126938806
       name: many-items-z26lj[0].sleep(12:twelve)
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: many-items-z26lj/many-items-z26lj-3126938806/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-      phase: Succeeded
-      resourcesDuration:
-        cpu: 27
-        memory: 20
       startedAt: "2020-06-02T16:04:22Z"
       templateName: sleep
-      templateScope: local/many-items-z26lj
       type: Pod
     many-items-z26lj-3178865096:
       boundaryID: many-items-z26lj
       displayName: sleep(6:six)
       finishedAt: "2020-06-02T16:04:56Z"
-      hostNodeName: minikube
       id: many-items-z26lj-3178865096
       name: many-items-z26lj[0].sleep(6:six)
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: many-items-z26lj/many-items-z26lj-3178865096/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-      phase: Succeeded
-      resourcesDuration:
-        cpu: 39
-        memory: 28
       startedAt: "2020-06-02T16:04:21Z"
       templateName: sleep
-      templateScope: local/many-items-z26lj
       type: Pod
     many-items-z26lj-3409403178:
       boundaryID: many-items-z26lj
       displayName: sleep(2:two)
       finishedAt: "2020-06-02T16:04:51Z"
-      hostNodeName: minikube
       id: many-items-z26lj-3409403178
       name: many-items-z26lj[0].sleep(2:two)
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: many-items-z26lj/many-items-z26lj-3409403178/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-      phase: Succeeded
-      resourcesDuration:
-        cpu: 34
-        memory: 25
       startedAt: "2020-06-02T16:04:21Z"
       templateName: sleep
-      templateScope: local/many-items-z26lj
       type: Pod
     many-items-z26lj-3491220632:
       boundaryID: many-items-z26lj
       displayName: sleep(4:four)
       finishedAt: "2020-06-02T16:04:50Z"
-      hostNodeName: minikube
       id: many-items-z26lj-3491220632
       name: many-items-z26lj[0].sleep(4:four)
-      outputs:
-        artifacts:
-        - archiveLogs: true
-          name: main-logs
-          s3:
-            accessKeySecret:
-              key: accesskey
-              name: my-minio-cred
-            bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            key: many-items-z26lj/many-items-z26lj-3491220632/main.log
-            secretKeySecret:
-              key: secretkey
-              name: my-minio-cred
-        exitCode: "0"
       phase: Succeeded
-      resourcesDuration:
-        cpu: 33
-        memory: 24
       startedAt: "2020-06-02T16:04:21Z"
       templateName: sleep
-      templateScope: local/many-items-z26lj
       type: Pod
   phase: Succeeded
-  resourcesDuration:
-    cpu: 415
-    memory: 306
   startedAt: "2020-06-02T16:04:21Z"
 `
 
