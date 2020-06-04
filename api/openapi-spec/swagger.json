@@ -12,7 +12,7 @@
   "info": {
     "description": "Argo",
     "title": "Argo",
-    "version": "latest"
+    "version": "5043bf1a"
   },
   "host": "localhost:2746",
   "paths": {
@@ -1915,10 +1915,8 @@
       "description": "GCSArtifact is the location of a GCS artifact",
       "type": "object",
       "required": [
-        "defaultEndpointsProtocol",
-        "endpointSuffix",
-        "container",
         "accountKey",
+        "container",
         "accountNameSecret",
         "accountKeySecret",
         "key"
@@ -1937,15 +1935,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "container": {
-          "description": "Container is the place where reources are stored together",
-          "type": "string"
-        },
-        "defaultEndpointsProtocol": {
-          "description": "DefaultEndpointsProtocol is the default list of network protocols to use in the connection",
-          "type": "string"
-        },
-        "endpointSuffix": {
-          "description": "EndpointSuffix is the url suffix to the resources",
+          "description": "Container is the place where resources are stored together",
           "type": "string"
         },
         "key": {

@@ -482,21 +482,13 @@
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.AzureBlobContainer": {
       "type": "object",
       "properties": {
-        "defaultEndpointsProtocol": {
+        "accountKey": {
           "type": "string",
-          "title": "DefaultEndpointsProtocol is the default list of network protocols to use in the connection"
-        },
-        "endpointSuffix": {
-          "type": "string",
-          "title": "EndpointSuffix is the url suffix to the resources"
+          "title": "Key is the service url associated with an account"
         },
         "container": {
           "type": "string",
-          "title": "Container is the place where reources are stored together"
-        },
-        "key": {
-          "type": "string",
-          "title": "Key is the service url associated with an account"
+          "title": "Container is the place where resources are stored together"
         },
         "accountNameSecret": {
           "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",

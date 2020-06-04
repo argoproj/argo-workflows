@@ -1576,23 +1576,17 @@ func (o *OSSArtifact) HasLocation() bool {
 
 // AzureBlob contains the access information for interfacing with an Azure blob
 type AzureBlobContainer struct {
-	// DefaultEndpointsProtocol is the default list of network protocols to use in the connection
-	DefaultEndpointsProtocol string `json:"defaultEndpointsProtocol" protobuf:"bytes,1,opt,name=defaultEndpointsProtocol"`
-
-	// EndpointSuffix is the url suffix to the resources
-	EndpointSuffix string `json:"endpointSuffix" protobuf:"bytes,2,opt,name=endpointSuffix"`
-
-	// Container is the place where reources are stored together
-	Container string `json:"container" protobuf:"bytes,3,opt,name=container"`
-
 	// Key is the service url associated with an account
-	AccountKey string `json:"accountKey" protobuf:"bytes,4,opt,name=key"`
+	Endpoint string `json:"accountKey" protobuf:"bytes,1,opt,name=accountKey"`
+
+	// Container is the place where resources are stored together
+	Container string `json:"container" protobuf:"bytes,2,opt,name=container"`
 
 	// AccountNameSecret is the secret selector to the Azure blob storage account name
-	AccountNameSecret apiv1.SecretKeySelector `json:"accountNameSecret" protobuf:"bytes,5,opt,name=accountNameSecret"`
+	AccountNameSecret apiv1.SecretKeySelector `json:"accountNameSecret" protobuf:"bytes,3,opt,name=accountNameSecret"`
 
 	// AccountKeySecret is the secret selector to the Azurer blob storage account key
-	AccountKeySecret apiv1.SecretKeySelector `json:"accountKeySecret" protobuf:"bytes,6,opt,name=accountKeySecret"`
+	AccountKeySecret apiv1.SecretKeySelector `json:"accountKeySecret" protobuf:"bytes,4,opt,name=accountKeySecret"`
 }
 
 // GCSArtifact is the location of a GCS artifact

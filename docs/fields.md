@@ -2884,9 +2884,7 @@ GCSArtifact is the location of a GCS artifact
 |`accountKey`|`string`|Key is the service url associated with an account|
 |`accountKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccountKeySecret is the secret selector to the Azurer blob storage account key|
 |`accountNameSecret`|[`SecretKeySelector`](#secretkeyselector)|AccountNameSecret is the secret selector to the Azure blob storage account name|
-|`container`|`string`|Container is the place where reources are stored together|
-|`defaultEndpointsProtocol`|`string`|DefaultEndpointsProtocol is the default list of network protocols to use in the connection|
-|`endpointSuffix`|`string`|EndpointSuffix is the url suffix to the resources|
+|`container`|`string`|Container is the place where resources are stored together|
 |`key`|`string`|Key is the path in the bucket where the artifact resides|
 
 ## GCSArtifact

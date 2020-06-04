@@ -458,30 +458,16 @@ func schema_pkg_apis_workflow_v1alpha1_AzureBlobArtifact(ref common.ReferenceCal
 				Description: "GCSArtifact is the location of a GCS artifact",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"defaultEndpointsProtocol": {
+					"accountKey": {
 						SchemaProps: spec.SchemaProps{
-							Description: "DefaultEndpointsProtocol is the default list of network protocols to use in the connection",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"endpointSuffix": {
-						SchemaProps: spec.SchemaProps{
-							Description: "EndpointSuffix is the url suffix to the resources",
+							Description: "Key is the service url associated with an account",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"container": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Container is the place where reources are stored together",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"accountKey": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Key is the service url associated with an account",
+							Description: "Container is the place where resources are stored together",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -506,7 +492,7 @@ func schema_pkg_apis_workflow_v1alpha1_AzureBlobArtifact(ref common.ReferenceCal
 						},
 					},
 				},
-				Required: []string{"defaultEndpointsProtocol", "endpointSuffix", "container", "accountKey", "accountNameSecret", "accountKeySecret", "key"},
+				Required: []string{"accountKey", "container", "accountNameSecret", "accountKeySecret", "key"},
 			},
 		},
 		Dependencies: []string{
@@ -521,30 +507,16 @@ func schema_pkg_apis_workflow_v1alpha1_AzureBlobContainer(ref common.ReferenceCa
 				Description: "AzureBlob contains the access information for interfacing with an Azure blob",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"defaultEndpointsProtocol": {
+					"accountKey": {
 						SchemaProps: spec.SchemaProps{
-							Description: "DefaultEndpointsProtocol is the default list of network protocols to use in the connection",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"endpointSuffix": {
-						SchemaProps: spec.SchemaProps{
-							Description: "EndpointSuffix is the url suffix to the resources",
+							Description: "Key is the service url associated with an account",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"container": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Container is the place where reources are stored together",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"accountKey": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Key is the service url associated with an account",
+							Description: "Container is the place where resources are stored together",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -562,7 +534,7 @@ func schema_pkg_apis_workflow_v1alpha1_AzureBlobContainer(ref common.ReferenceCa
 						},
 					},
 				},
-				Required: []string{"defaultEndpointsProtocol", "endpointSuffix", "container", "accountKey", "accountNameSecret", "accountKeySecret"},
+				Required: []string{"accountKey", "container", "accountNameSecret", "accountKeySecret"},
 			},
 		},
 		Dependencies: []string{

@@ -5,6 +5,7 @@ go 1.13
 require (
 	cloud.google.com/go v0.55.0 // indirect
 	cloud.google.com/go/storage v1.6.0
+	github.com/Azure/azure-storage-blob-go v0.9.0
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
 	github.com/aliyun/aliyun-oss-go-sdk v2.0.6+incompatible
 	github.com/antonmedv/expr v1.8.2
@@ -14,7 +15,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/colinmarc/hdfs v1.1.4-0.20180805212432-9746310a4d31
 	github.com/coreos/go-oidc v2.2.1+incompatible
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
@@ -72,7 +72,7 @@ require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	golang.org/x/crypto v0.0.0-20200422194213-44a606286825
-	golang.org/x/net v0.0.0-20200421231249-e086a090c8fd
+	golang.org/x/net v0.0.0-20200602114024-627f9648deb9
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/tools v0.0.0-20200428211428-0c9eba77bc32 // indirect
 	google.golang.org/api v0.20.0
