@@ -431,7 +431,7 @@ test-e2e-cron: cli
 smoke:
 	# Run smoke tests
 	@mkdir -p test-results
-	go test -timeout 30s -v -count 1 -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
+	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: test-api
 test-api:
