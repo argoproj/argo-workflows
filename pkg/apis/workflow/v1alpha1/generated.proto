@@ -94,6 +94,8 @@ message ArtifactLocation {
 
   // GCS contains GCS artifact location details
   optional GCSArtifact gcs = 9;
+
+  optional AzureBlobArtifact azureBlob = 10;
 }
 
 message ArtifactRepositoryRef {
@@ -117,6 +119,35 @@ message ArtifactoryAuth {
 
   // PasswordSecret is the secret selector to the repository password
   optional k8s.io.api.core.v1.SecretKeySelector passwordSecret = 2;
+}
+
+// GCSArtifact is the location of a GCS artifact
+message AzureBlobArtifact {
+  optional AzureBlobContainer azureBlobContainer = 1;
+
+  // Key is the path in the bucket where the artifact resides
+  optional string key = 2;
+}
+
+// AzureBlob contains the access information for interfacing with an Azure blob
+message AzureBlobContainer {
+  // DefaultEndpointsProtocol is the default list of network protocols to use in the connection
+  optional string defaultEndpointsProtocol = 1;
+
+  // EndpointSuffix is the url suffix to the resources
+  optional string endpointSuffix = 2;
+
+  // Container is the place where reources are stored together
+  optional string container = 3;
+
+  // Key is the service url associated with an account
+  optional string key = 4;
+
+  // AccountNameSecret is the secret selector to the Azure blob storage account name
+  optional k8s.io.api.core.v1.SecretKeySelector accountNameSecret = 5;
+
+  // AccountKeySecret is the secret selector to the Azurer blob storage account key
+  optional k8s.io.api.core.v1.SecretKeySelector accountKeySecret = 6;
 }
 
 // Backoff is a backoff strategy to use within retryStrategy

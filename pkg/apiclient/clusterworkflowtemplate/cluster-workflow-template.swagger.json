@@ -422,6 +422,9 @@
         "gcs": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.GCSArtifact",
           "title": "GCS contains GCS artifact location details"
+        },
+        "azureBlob": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.AzureBlobArtifact"
         }
       },
       "description": "ArtifactLocation describes a location for a single or multiple artifacts.\nIt is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).\nIt is also used to describe the location of multiple artifacts such as the archive location\nof a single workflow step, which the executor will use as a default location to store its files."
@@ -463,6 +466,49 @@
         }
       },
       "title": "ArtifactoryAuth describes the secret selectors required for authenticating to artifactory"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.AzureBlobArtifact": {
+      "type": "object",
+      "properties": {
+        "azureBlobContainer": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.AzureBlobContainer"
+        },
+        "key": {
+          "type": "string",
+          "title": "Key is the path in the bucket where the artifact resides"
+        }
+      },
+      "title": "GCSArtifact is the location of a GCS artifact"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.AzureBlobContainer": {
+      "type": "object",
+      "properties": {
+        "defaultEndpointsProtocol": {
+          "type": "string",
+          "title": "DefaultEndpointsProtocol is the default list of network protocols to use in the connection"
+        },
+        "endpointSuffix": {
+          "type": "string",
+          "title": "EndpointSuffix is the url suffix to the resources"
+        },
+        "container": {
+          "type": "string",
+          "title": "Container is the place where reources are stored together"
+        },
+        "key": {
+          "type": "string",
+          "title": "Key is the service url associated with an account"
+        },
+        "accountNameSecret": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",
+          "title": "AccountNameSecret is the secret selector to the Azure blob storage account name"
+        },
+        "accountKeySecret": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",
+          "title": "AccountKeySecret is the secret selector to the Azurer blob storage account key"
+        }
+      },
+      "title": "AzureBlob contains the access information for interfacing with an Azure blob"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Backoff": {
       "type": "object",

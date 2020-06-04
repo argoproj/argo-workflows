@@ -723,6 +723,8 @@ type ArtifactLocation struct {
 
 	// GCS contains GCS artifact location details
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
+
+	AzureBlob *AzureBlobArtifact `json:"azureBlob,omitempty" protobuf:"bytes,10,opt,name=azureBlob"`
 }
 
 // HasLocation whether or not an artifact has a location defined
@@ -734,7 +736,8 @@ func (a *ArtifactLocation) HasLocation() bool {
 		a.Raw.HasLocation() ||
 		a.HDFS.HasLocation() ||
 		a.OSS.HasLocation() ||
-		a.GCS.HasLocation()
+		a.GCS.HasLocation() ||
+		a.AzureBlob.HasLocation()
 }
 
 type ArtifactRepositoryRef struct {
@@ -1569,6 +1572,39 @@ type OSSArtifact struct {
 
 func (o *OSSArtifact) HasLocation() bool {
 	return o != nil && o.Bucket != "" && o.Endpoint != "" && o.Key != ""
+}
+
+// AzureBlob contains the access information for interfacing with an Azure blob
+type AzureBlobContainer struct {
+	// DefaultEndpointsProtocol is the default list of network protocols to use in the connection
+	DefaultEndpointsProtocol string `json:"defaultEndpointsProtocol" protobuf:"bytes,1,opt,name=defaultEndpointsProtocol"`
+
+	// EndpointSuffix is the url suffix to the resources
+	EndpointSuffix string `json:"endpointSuffix" protobuf:"bytes,2,opt,name=endpointSuffix"`
+
+	// Container is the place where reources are stored together
+	Container string `json:"container" protobuf:"bytes,3,opt,name=container"`
+
+	// Key is the service url associated with an account
+	AccountKey string `json:"accountKey" protobuf:"bytes,4,opt,name=key"`
+
+	// AccountNameSecret is the secret selector to the Azure blob storage account name
+	AccountNameSecret apiv1.SecretKeySelector `json:"accountNameSecret" protobuf:"bytes,5,opt,name=accountNameSecret"`
+
+	// AccountKeySecret is the secret selector to the Azurer blob storage account key
+	AccountKeySecret apiv1.SecretKeySelector `json:"accountKeySecret" protobuf:"bytes,6,opt,name=accountKeySecret"`
+}
+
+// GCSArtifact is the location of a GCS artifact
+type AzureBlobArtifact struct {
+	AzureBlobContainer `json:",inline" protobuf:"bytes,1,opt,name=azureBlobContainer"`
+
+	// Key is the path in the bucket where the artifact resides
+	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+}
+
+func (a *AzureBlobArtifact) HasLocation() bool {
+	return a != nil && a.Container != ""
 }
 
 // ExecutorConfig holds configurations of an executor container.

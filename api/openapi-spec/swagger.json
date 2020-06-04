@@ -1776,6 +1776,9 @@
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
         },
+        "azureBlob": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureBlobArtifact"
+        },
         "from": {
           "description": "From allows an artifact to reference an artifact from a previous step",
           "type": "string"
@@ -1843,6 +1846,9 @@
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
         },
+        "azureBlob": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureBlobArtifact"
+        },
         "gcs": {
           "description": "GCS contains GCS artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSArtifact"
@@ -1902,6 +1908,49 @@
         "usernameSecret": {
           "description": "UsernameSecret is the secret selector to the repository username",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.AzureBlobArtifact": {
+      "description": "GCSArtifact is the location of a GCS artifact",
+      "type": "object",
+      "required": [
+        "defaultEndpointsProtocol",
+        "endpointSuffix",
+        "container",
+        "accountKey",
+        "accountNameSecret",
+        "accountKeySecret",
+        "key"
+      ],
+      "properties": {
+        "accountKey": {
+          "description": "Key is the service url associated with an account",
+          "type": "string"
+        },
+        "accountKeySecret": {
+          "description": "AccountKeySecret is the secret selector to the Azurer blob storage account key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "accountNameSecret": {
+          "description": "AccountNameSecret is the secret selector to the Azure blob storage account name",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "container": {
+          "description": "Container is the place where reources are stored together",
+          "type": "string"
+        },
+        "defaultEndpointsProtocol": {
+          "description": "DefaultEndpointsProtocol is the default list of network protocols to use in the connection",
+          "type": "string"
+        },
+        "endpointSuffix": {
+          "description": "EndpointSuffix is the url suffix to the resources",
+          "type": "string"
+        },
+        "key": {
+          "description": "Key is the path in the bucket where the artifact resides",
+          "type": "string"
         }
       }
     },
