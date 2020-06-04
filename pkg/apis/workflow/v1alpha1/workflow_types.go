@@ -100,6 +100,31 @@ func (w Workflows) Less(i, j int) bool {
 	return jFinish.Before(&iFinish)
 }
 
+type WorkflowPredicate = func(wf Workflow) bool
+
+func (w Workflows) Filter(predicate WorkflowPredicate) Workflows {
+	var out Workflows
+	for _, wf := range w {
+		if predicate(wf) {
+			out = append(out, wf)
+		}
+	}
+	return out
+}
+
+var (
+	WorkflowCreatedAfter = func(t time.Time) WorkflowPredicate {
+		return func(wf Workflow) bool {
+			return wf.ObjectMeta.CreationTimestamp.After(t)
+		}
+	}
+	WorkflowFinishedBefore = func(t time.Time) WorkflowPredicate {
+		return func(wf Workflow) bool {
+			return !wf.Status.FinishedAt.IsZero() && wf.Status.FinishedAt.Time.Before(t)
+		}
+	}
+)
+
 // WorkflowList is list of Workflow resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type WorkflowList struct {
@@ -1539,7 +1564,7 @@ func (g *GCSArtifact) HasLocation() bool {
 	return g != nil && g.Bucket != "" && g.Key != ""
 }
 
-// OSSBucket contains the access information required for interfacing with an OSS bucket
+// OSSBucket contains the access information required for interfacing with an Alibaba Cloud OSS bucket
 type OSSBucket struct {
 	// Endpoint is the hostname of the bucket endpoint
 	Endpoint string `json:"endpoint" protobuf:"bytes,1,opt,name=endpoint"`
@@ -1554,7 +1579,7 @@ type OSSBucket struct {
 	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret" protobuf:"bytes,4,opt,name=secretKeySecret"`
 }
 
-// OSSArtifact is the location of an OSS artifact
+// OSSArtifact is the location of an Alibaba Cloud OSS artifact
 type OSSArtifact struct {
 	OSSBucket `json:",inline" protobuf:"bytes,1,opt,name=oSSBucket"`
 

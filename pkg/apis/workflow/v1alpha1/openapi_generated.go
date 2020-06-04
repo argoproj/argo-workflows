@@ -1974,7 +1974,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback)
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "OSSArtifact is the location of an OSS artifact",
+				Description: "OSSArtifact is the location of an Alibaba Cloud OSS artifact",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"endpoint": {
@@ -2023,7 +2023,7 @@ func schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref common.ReferenceCallback) c
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "OSSBucket contains the access information required for interfacing with an OSS bucket",
+				Description: "OSSBucket contains the access information required for interfacing with an Alibaba Cloud OSS bucket",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"endpoint": {

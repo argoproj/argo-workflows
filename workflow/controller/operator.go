@@ -119,6 +119,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 	woc := wfOperationCtx{
 		wf:      wf.DeepCopyObject().(*wfv1.Workflow),
 		orig:    wf,
+		wfSpec:  &wf.Spec,
 		updated: false,
 		log: log.WithFields(log.Fields{
 			"workflow":  wf.ObjectMeta.Name,
@@ -163,6 +164,7 @@ func (woc *wfOperationCtx) operate() {
 			} else {
 				woc.markWorkflowPhase(wfv1.NodeError, true, fmt.Sprintf("%v", r))
 			}
+			woc.controller.metrics.OperationPanic()
 			woc.log.Errorf("Recovered from panic: %+v\n%s", r, debug.Stack())
 		}
 	}()
@@ -1413,7 +1415,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	templateScope := tmplCtx.GetTemplateScope()
 	newTmplCtx, resolvedTmpl, templateStored, err := tmplCtx.ResolveTemplate(orgTmpl)
 	if err != nil {
-		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, err), err
+		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 	}
 	// A new template was stored during resolution, persist it
 	if templateStored {
@@ -1465,7 +1467,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	// Inputs has been processed with arguments already, so pass empty arguments.
 	processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false)
 	if err != nil {
-		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, err), err
+		return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 	}
 
 	// Check if we exceeded template or workflow parallelism and immediately return if we did
@@ -1544,7 +1546,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 			processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, localParams)
 			if err != nil {
-				return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, templateScope, orgTmpl, opts.boundaryID, err), err
+				return woc.initializeNodeOrMarkError(node, nodeName, templateScope, orgTmpl, opts.boundaryID, err), err
 			}
 		}
 	}
@@ -1734,7 +1736,7 @@ func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wf
 }
 
 // initializeNodeOrMarkError initializes an error node or mark a node if it already exists.
-func (woc *wfOperationCtx) initializeNodeOrMarkError(node *wfv1.NodeStatus, nodeName string, nodeType wfv1.NodeType, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, err error) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) initializeNodeOrMarkError(node *wfv1.NodeStatus, nodeName string, templateScope string, orgTmpl wfv1.TemplateReferenceHolder, boundaryID string, err error) *wfv1.NodeStatus {
 	if node != nil {
 		return woc.markNodeError(nodeName, err)
 	}
@@ -2742,7 +2744,6 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 
 	executionParameters := woc.wf.Spec.Arguments
 
-	woc.wfSpec = &woc.wf.Spec
 	if woc.wf.Spec.WorkflowTemplateRef == nil {
 		tmplRef := &wfv1.WorkflowStep{Template: woc.wfSpec.Entrypoint}
 		return tmplRef, executionParameters, nil

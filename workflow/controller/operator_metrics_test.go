@@ -3,12 +3,10 @@ package controller
 import (
 	"testing"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/stretchr/testify/assert"
-
 	dto "github.com/prometheus/client_model/go"
-
+	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 )
 
