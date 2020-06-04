@@ -283,11 +283,12 @@ func insertSorted(wf *wfv1.Workflow, sortedArray []renderNode, item renderNode) 
 				if insertIndex < equalIndex {
 					break
 				}
+			} else {
+				if insertName < equalName {
+					break
+				}
 			}
 
-			if insertName < equalName {
-				break
-			}
 		}
 	}
 	sortedArray = append(sortedArray, nil)
