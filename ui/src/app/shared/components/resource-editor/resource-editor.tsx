@@ -1,7 +1,6 @@
 import * as React from 'react';
 import MonacoEditor from 'react-monaco-editor';
 import {uiUrl} from '../../base';
-import {ResourceViewer} from './resource-viewer';
 
 import {languages} from 'monaco-editor/esm/vs/editor/editor.api';
 import {parse, stringify} from './resource';
@@ -31,8 +30,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     }
 
     private set type(type: string) {
-        const value = stringify(parse(this.state.value), type);
-        this.setState({type, value});
+        this.setState({type, value: stringify(parse(this.state.value), type)});
     }
 
     public componentDidMount() {
@@ -58,9 +56,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
     public handleFiles(files: FileList) {
         files[0]
             .text()
-            .then(value => {
-                this.setState({value: stringify(parse(value), this.state.type)});
-            })
+            .then(value => this.setState({value: stringify(parse(value), this.state.type)}))
             .catch(error => this.setState(error));
     }
 
@@ -74,17 +70,19 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
                         <i className='fa fa-exclamation-triangle status-icon--failed' /> {this.state.error.message}
                     </p>
                 )}
-                {this.state.editing ? (
-                    <MonacoEditor
-                        value={this.state.value}
-                        language={this.state.type}
-                        height={'600px'}
-                        onChange={value => this.setState({value})}
-                        options={{extraEditorClassName: 'resource', minimap: {enabled: false}, lineNumbers: 'off', renderIndentGuides: false}}
-                    />
-                ) : (
-                    <ResourceViewer value={parse(this.state.value)} />
-                )}
+                <MonacoEditor
+                    value={this.state.value}
+                    language={this.state.type}
+                    height={'600px'}
+                    onChange={value => this.setState({value})}
+                    options={{
+                        readOnly: !this.state.editing,
+                        extraEditorClassName: 'resource',
+                        minimap: {enabled: false},
+                        lineNumbers: 'off',
+                        renderIndentGuides: false
+                    }}
+                />
                 {this.renderFooter()}
             </>
         );
@@ -100,13 +98,7 @@ export class ResourceEditor<T> extends React.Component<Props<T>, State> {
                         </label>{' '}
                         {this.props.upload && (
                             <label className='argo-button argo-button--base-o'>
-                                <input
-                                    type='file'
-                                    onChange={e => {
-                                        this.handleFiles(e.target.files);
-                                    }}
-                                    style={{display: 'none'}}
-                                />
+                                <input type='file' onChange={e => this.handleFiles(e.target.files)} style={{display: 'none'}} />
                                 <i className='fa fa-upload' /> Upload file
                             </label>
                         )}{' '}
