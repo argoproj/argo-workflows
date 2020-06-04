@@ -28,7 +28,7 @@ func (s *FilesServer) ServerFiles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("X-Frame-Options", "DENY")
-	w.Header().Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline'")
+	w.Header().Set("Content-Security-Policy", "default-srcTestContinueOnFailDag 'self' 'unsafe-inline'")
 	if s.hsts {
 		w.Header().Set("Strict-Transport-Security", "max-age=31536000")
 	}
