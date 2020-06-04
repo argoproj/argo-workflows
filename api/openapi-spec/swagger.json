@@ -2011,6 +2011,17 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.ConcurrencyLockStatus": {
+      "type": "object",
+      "properties": {
+        "semaphoreHolders": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Condition": {
       "type": "object",
       "properties": {
@@ -4016,6 +4027,10 @@
         "compressedNodes": {
           "description": "Compressed and base64 decoded Nodes map",
           "type": "string"
+        },
+        "concurrencyLockStatus": {
+          "description": "ConcurrencyLockStatus stores the currently holding locks",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ConcurrencyLockStatus"
         },
         "conditions": {
           "description": "Conditions is a list of conditions the Workflow may have",

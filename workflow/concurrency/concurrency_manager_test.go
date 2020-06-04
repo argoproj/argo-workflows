@@ -1,168 +1,176 @@
 package concurrency
 
 import (
-	"encoding/json"
-	"fmt"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/controller"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/yaml"
-	"testing"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 )
 
 const configMap = `
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: my-config
+ name: my-config
 data:
-  workflow: "2"
-  template: "2"
+ workflow: "1"
+ template: "2"
+`
+const wfWithStatus = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: "2020-06-03T23:06:35Z"
+  generateName: hello-world-
+  generation: 4
+  labels:
+    workflows.argoproj.io/phase: Running
+  name: hello-world-vcrg5
+  namespace: argo
+spec:
+  entrypoint: whalesay
+  semaphore:
+    configMapKeyRef:
+      key: workflow
+      name: my-config
+  templates:
+  - arguments: {}
+    container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: whalesay
+    outputs: {}
+status:
+  concurrencyLockStatus:
+    semaphoreHolders:
+      argo/hello-world-vcrg5: default/configmap/my-config/workflow
+  finishedAt: null
+  nodes:
+    hello-world-vcrg5:
+      displayName: hello-world-vcrg5
+      finishedAt: null
+      hostNodeName: k3d-k3s-default-server
+      id: hello-world-vcrg5
+      name: hello-world-vcrg5
+      phase: Running
+      startedAt: "2020-06-03T23:06:35Z"
+      templateName: whalesay
+      templateScope: local/hello-world-vcrg5
+      type: Pod
+  phase: Running
+  startedAt: "2020-06-03T23:06:35Z"
 `
 const wfWithSemaphore = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: hello-world
-  namespace: default
+ name: hello-world
+ namespace: default
 spec:
-  entrypoint: whalesay
-  semaphore:
-    configMapKeyRef:
-      name: my-config
-      key: workflow
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
-`
-const wfWithTmplSemaphore = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: semaphore-tmpl-level
-  namespace: default
-spec:
-  entrypoint: semaphore-tmpl-level-example
-  templates:
-  - name: semaphore-tmpl-level-example
-    steps:
-    - - name: sleep
-        template: sleep-n-sec
-      - name: sleep1
-        template: sleep-n-sec
-      - name: sleep2
-        template: sleep-n-sec
-      - name: sleep3
-        template: sleep-n-sec
-      - name: sleep4
-        template: sleep-n-sec
-      - name: sleep5
-        template: sleep-n-sec
-      - name: sleep6
-        template: sleep-n-sec
-
-  - name: sleep-n-sec
-    semaphore:
-      configMapKeyRef:
-        name: my-config
-        key: template
-    container:
-      image: alpine:latest
-      command: [sh, -c]
-      args: ["sleep 10; echo done"]
+ entrypoint: whalesay
+ semaphore:
+   configMapKeyRef:
+     name: my-config
+     key: workflow
+ templates:
+ - name: whalesay
+   container:
+     image: docker/whalesay:latest
+     command: [cowsay]
+     args: ["hello world"]
 `
 
-
-func TestSemaphoreWfLevel(t *testing.T) {
-	_, controller := controller.NewController()
-	controller.concurrencyMgr = NewConcurrencyManager(controller)
-	var cm v1.ConfigMap
-	err := yaml.Unmarshal([]byte(configMap), &cm)
-	assert.NoError(t, err)
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&cm)
-	assert.NoError(t, err)
-	wf := controller2.unmarshalWF(wfWithSemaphore)
-
-	wf1 := wf.DeepCopy()
-	wf2 := wf.DeepCopy()
-	t.Run("First Lock acquired", func(t *testing.T) {
-		wf.Name = "one"
-		priority, createTime := controller.getWfPriority(wf)
-		key := controller.concurrencyMgr.getHolderKey(wf, "")
-		status, _, err := controller.concurrencyMgr.tryAcquire(key, wf.Namespace, priority, createTime, wf.Spec.Semaphore, wf)
-		assert.NoError(t, err)
-		assert.True(t, status)
-		assert.NotNil(t, wf.Labels)
-		assert.Equal(t, "true", wf.Labels[common.LabelKeySemaphore])
-		assert.NotNil(t, wf.Annotations)
-		assert.Contains(t, wf.Annotations[common.AnnotationKeySemaphoreHolder], key)
-
-	})
-
-	t.Run("Second Lock acquired", func(t *testing.T) {
-		wf1.Name = "two"
-		priority, createTime := controller2.getWfPriority(wf1)
-		key := controller.concurrencyMgr.getHolderKey(wf1, "")
-		status, _, err := controller.concurrencyMgr.tryAcquire(key, wf1.Namespace, priority, createTime, wf1.Spec.Semaphore, wf1)
-		assert.NoError(t, err)
-		assert.True(t, status)
-		assert.NotNil(t, wf1.Labels)
-		assert.Equal(t, "true", wf1.Labels[common.LabelKeySemaphore])
-		assert.NotNil(t, wf1.Annotations)
-		assert.Contains(t, wf1.Annotations[common.AnnotationKeySemaphoreHolder], key)
-	})
-	t.Run("Waiting for Lock", func(t *testing.T) {
-		wf2.Name = "three"
-		priority, createTime := controller2.getWfPriority(wf2)
-		key := controller.concurrencyMgr.getHolderKey(wf2, "")
-		status, msg, err := controller.concurrencyMgr.tryAcquire(key, wf.Namespace, priority, createTime, wf2.Spec.Semaphore, wf2)
-		assert.NoError(t, err)
-		assert.False(t, status)
-		assert.NotEmpty(t, msg)
-	})
-	t.Run("release the Lock", func(t *testing.T) {
-		wf.Name = "one"
-		key := controller.concurrencyMgr.getHolderKey(wf, "")
-		controller.concurrencyMgr.release(key, wf.Namespace, wf.Spec.Semaphore, wf)
-		assert.NotNil(t, wf.Annotations)
-		assert.NotContains(t, wf.Annotations[common.AnnotationKeySemaphoreHolder], key)
-	})
-	t.Run("Released Lock acquired", func(t *testing.T) {
-		wf2.Name = "three"
-		priority, createTime := controller2.getWfPriority(wf2)
-		key := controller.concurrencyMgr.getHolderKey(wf2, "")
-		status, _, err := controller.concurrencyMgr.tryAcquire(key, wf2.Namespace, priority, createTime, wf2.Spec.Semaphore, wf2)
-		assert.NoError(t, err)
-		assert.True(t, status)
-		assert.NotNil(t, wf2.Labels)
-		assert.Equal(t, "true", wf2.Labels[common.LabelKeySemaphore])
-		assert.NotNil(t, wf2.Annotations)
-		assert.Contains(t, wf2.Annotations[common.AnnotationKeySemaphoreHolder], key)
-	})
+func unmarshalWF(yamlStr string) *wfv1.Workflow {
+	var wf wfv1.Workflow
+	err := yaml.Unmarshal([]byte(yamlStr), &wf)
+	if err != nil {
+		panic(err)
+	}
+	return &wf
 }
 
-func TestSemaphoreTmplLevel(t *testing.T) {
-	_, controller := controller2.newController()
-	controller.concurrencyMgr = NewConcurrencyManager(controller)
+func TestSemaphoreWfLevel(t *testing.T) {
+	kube := fake.NewSimpleClientset()
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
 	assert.NoError(t, err)
-	_, err = controller.kubeclientset.CoreV1().ConfigMaps("default").Create(&cm)
+	_, err = kube.CoreV1().ConfigMaps("default").Create(&cm)
 	assert.NoError(t, err)
-	t.Run("Acquire lock for nodes", func(t *testing.T) {
-		wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("default")
-		wf := controller2.unmarshalWF(wfWithTmplSemaphore)
-		wf, err := wfcset.Create(wf)
-		assert.NoError(t, err)
-		woc := controller2.newWorkflowOperationCtx(wf, controller)
-		woc.operate()
+	t.Run("InitializeConcurrency", func(t *testing.T) {
+		concurrenyMgr := NewConcurrencyManager(kube, func(key string) {
+		})
+		wf := unmarshalWF(wfWithStatus)
+		wfclientset := fakewfclientset.NewSimpleClientset(wf)
+		concurrenyMgr.Initialize(wf.Namespace, wfclientset)
 
-		b,_ := json.Marshal(woc.wf)
-		fmt.Println(string(b))
+		assert.Equal(t, 1, len(concurrenyMgr.semaphoreMap))
+	})
+	t.Run("InitializeConcurrencyWithInvalid", func(t *testing.T) {
+		concurrenyMgr := NewConcurrencyManager(kube, func(key string) {
+
+		})
+		wf := unmarshalWF(wfWithStatus)
+		invalidMap := map[string]string{
+			"argo/hello-world-vcrg5": "default/configmap/my-config1/workflow",
+		}
+		wf.Status.ConcurrencyLockStatus.SemaphoreHolders = invalidMap
+		wfclientset := fakewfclientset.NewSimpleClientset(wf)
+		concurrenyMgr.Initialize(wf.Namespace, wfclientset)
+		assert.Equal(t, 0, len(concurrenyMgr.semaphoreMap))
+	})
+	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
+		var nextKey string
+		concurrenyMgr := NewConcurrencyManager(kube, func(key string) {
+			nextKey = key
+		})
+		wf := unmarshalWF(wfWithSemaphore)
+		holderKey := concurrenyMgr.GetHolderKey(wf, "")
+		SemaName := getSemaphoreRefKey(wf.Namespace, wf.Spec.Semaphore)
+		status, msg, err := concurrenyMgr.TryAcquire(holderKey, wf.Namespace, 0, time.Now(), wf.Spec.Semaphore, wf)
+		assert.NoError(t, err)
+		assert.Empty(t, msg)
+		assert.True(t, status)
+		assert.NotNil(t, wf.Status.ConcurrencyLockStatus)
+		assert.NotNil(t, wf.Status.ConcurrencyLockStatus.SemaphoreHolders)
+		assert.Equal(t, SemaName, wf.Status.ConcurrencyLockStatus.SemaphoreHolders[holderKey])
+
+		wf1 := wf.DeepCopy()
+		wf1.Name = "two"
+		holderKey1 := concurrenyMgr.GetHolderKey(wf1, "")
+		status, msg, err = concurrenyMgr.TryAcquire(holderKey1, wf1.Namespace, 0, time.Now(), wf1.Spec.Semaphore, wf1)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, msg)
+		assert.False(t, status)
+
+		concurrenyMgr.Release(holderKey, wf.Namespace, wf.Spec.Semaphore, wf)
+		assert.Equal(t, holderKey1, nextKey)
+		assert.NotNil(t, wf.Status.ConcurrencyLockStatus)
+		assert.Equal(t, 0, len(wf.Status.ConcurrencyLockStatus.SemaphoreHolders))
+
+		status, msg, err = concurrenyMgr.TryAcquire(holderKey, wf1.Namespace, 0, time.Now(), wf1.Spec.Semaphore, wf1)
+		assert.NoError(t, err)
+		assert.Empty(t, msg)
+		assert.True(t, status)
+		assert.NotNil(t, wf1.Status.ConcurrencyLockStatus)
+		assert.NotNil(t, wf1.Status.ConcurrencyLockStatus.SemaphoreHolders)
+		assert.Equal(t, SemaName, wf1.Status.ConcurrencyLockStatus.SemaphoreHolders[holderKey])
+
+		concurrenyMgr.ReleaseAll(wf1)
+		assert.NotNil(t, wf1.Status.ConcurrencyLockStatus)
+		assert.Equal(t, 0, len(wf1.Status.ConcurrencyLockStatus.SemaphoreHolders))
 	})
 
 }

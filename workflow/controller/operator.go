@@ -828,8 +828,6 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			return err
 		}
 
-
-
 		if node.Type != wfv1.NodeTypePod || node.Completed() || node.StartedAt.IsZero() {
 			// node is not a pod, it is already complete, or it can be re-run.
 			continue
@@ -1425,8 +1423,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	if node != nil {
 		if node.Completed() {
 			if resolvedTmpl.Semaphore != nil {
-				woc.log.Debugf("Node %s is releasing Semaphore lock", nodeName)
-				holderKey := woc.controller.concurrencyMgr.GetHolderKey(woc.wf, nodeName)
+				woc.log.Debugf("Node %s is releasing Semaphore lock", node.ID)
+				holderKey := woc.controller.concurrencyMgr.GetHolderKey(woc.wf, node.ID)
 				woc.controller.concurrencyMgr.Release(holderKey, woc.wf.Namespace, resolvedTmpl.Semaphore, woc.wf)
 			}
 			woc.log.Debugf("Node %s already completed", nodeName)
@@ -1476,7 +1474,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 
 	if processedTmpl.Semaphore != nil {
-		holderKey := woc.controller.concurrencyMgr.GetHolderKey(woc.wf, nodeName)
+		holderKey := woc.controller.concurrencyMgr.GetHolderKey(woc.wf, woc.wf.NodeID(nodeName))
 		priority, creationTime := getWfPriority(woc.wf)
 		acquireStatus, msg, err := woc.controller.concurrencyMgr.TryAcquire(holderKey, woc.wf.Namespace, priority, creationTime, resolvedTmpl.Semaphore, woc.wf)
 
@@ -1571,8 +1569,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	if err != nil {
 		node = woc.markNodeError(node.Name, err)
 		if resolvedTmpl.Semaphore != nil {
-			woc.log.Debugf("Node %s is releasing Semaphore lock", nodeName)
-			holderKey := woc.controller.concurrencyMgr.GetHolderKey(woc.wf, nodeName)
+			woc.log.Debugf("Node %s is releasing Semaphore lock", node.ID)
+			holderKey := woc.controller.concurrencyMgr.GetHolderKey(woc.wf, node.ID)
 			woc.controller.concurrencyMgr.Release(holderKey, woc.wf.Namespace, resolvedTmpl.Semaphore, woc.wf)
 		}
 

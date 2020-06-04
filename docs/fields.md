@@ -202,6 +202,8 @@ Workflow is the definition of a workflow resource
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
+
 - [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
 
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
@@ -501,6 +503,8 @@ WorkflowSpec is the specification of a Workflow.
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
+
 - [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
 
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
@@ -593,6 +597,7 @@ WorkflowStatus contains overall status information about a workflow
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`compressedNodes`|`string`|Compressed and base64 decoded Nodes map|
+|`concurrencyLockStatus`|[`ConcurrencyLockStatus`](#concurrencylockstatus)|ConcurrencyLockStatus stores the currently holding locks|
 |`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the Workflow may have|
 |`finishedAt`|[`Time`](#time)|Time at which this workflow completed|
 |`message`|`string`|A human readable message indicating details about why the workflow is in this condition.|
@@ -811,6 +816,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
 - [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
 
 - [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
 
@@ -1087,6 +1094,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
+
 - [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
 
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
@@ -1285,6 +1294,8 @@ Arguments to a template
 
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
+
 - [`steps.yaml`](../examples/steps.yaml)
 
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
@@ -1364,6 +1375,8 @@ SemaphoreRef is a reference of Semaphore
 <details>
 <summary>Examples with this field (click to open)</summary>
 <br>
+
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
 
 - [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
 </details>
@@ -1579,6 +1592,8 @@ Template is a reusable and composable unit of execution in a workflow
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
+
 - [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
 
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
@@ -1696,6 +1711,15 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 |:----------:|:----------:|---------------|
 |`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).|
 |`name`|`string`|Name is the resource name of the workflow template.|
+
+## ConcurrencyLockStatus
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`semaphoreHolders`|`Map< string , string >`|_No description available_|
 
 ## Condition
 
@@ -1976,6 +2000,8 @@ Parameter indicate a passed string parameter to a service template with an optio
 
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
+
 - [`steps.yaml`](../examples/steps.yaml)
 
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
@@ -2252,6 +2278,8 @@ Inputs are the mechanism for passing parameters, artifacts, volumes from one tem
 
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
+
 - [`steps.yaml`](../examples/steps.yaml)
 
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
@@ -2471,6 +2499,8 @@ Pod metdata
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
+
 - [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
 
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
@@ -2634,6 +2664,8 @@ ScriptTemplate is a template subtype to enable scripting through code steps
 
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
+
 - [`status-reference.yaml`](../examples/status-reference.yaml)
 
 - [`work-avoidance.yaml`](../examples/work-avoidance.yaml)
@@ -2773,6 +2805,8 @@ WorkflowStep is a reference to a template to execute in a series of step
 - [`scripts-javascript.yaml`](../examples/scripts-javascript.yaml)
 
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
+
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
 
 - [`status-reference.yaml`](../examples/status-reference.yaml)
 
@@ -3583,6 +3617,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`secrets.yaml`](../examples/secrets.yaml)
 
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
+
 - [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
 
 - [`sidecar-dind.yaml`](../examples/sidecar-dind.yaml)
@@ -3863,6 +3899,8 @@ Selects a key from a ConfigMap.
 <summary>Examples with this field (click to open)</summary>
 <br>
 
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
+
 - [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
 </details>
 
@@ -4052,6 +4090,8 @@ A single application container that you want to run within a pod.
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
 - [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
 
 - [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
 
@@ -4664,6 +4704,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
 - [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
 
 - [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
 
@@ -5632,6 +5674,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`scripts-python.yaml`](../examples/scripts-python.yaml)
 
 - [`secrets.yaml`](../examples/secrets.yaml)
+
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
 
 - [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
 

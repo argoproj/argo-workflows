@@ -309,6 +309,17 @@
       },
       "title": "Backoff is a backoff strategy to use within retryStrategy"
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyLockStatus": {
+      "type": "object",
+      "properties": {
+        "semaphoreHolders": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Condition": {
       "type": "object",
       "properties": {
@@ -1733,6 +1744,10 @@
         "storedWorkflowTemplateSpec": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowSpec",
           "description": "StoredWorkflowSpec stores the WorkflowTemplate spec for future execution."
+        },
+        "concurrencyLockStatus": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyLockStatus",
+          "title": "ConcurrencyLockStatus stores the currently holding locks"
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"

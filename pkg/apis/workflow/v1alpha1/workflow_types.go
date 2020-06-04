@@ -961,6 +961,14 @@ type WorkflowStatus struct {
 
 	// StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.
 	StoredWorkflowSpec *WorkflowSpec `json:"storedWorkflowTemplateSpec,omitempty" protobuf:"bytes,14,opt,name=storedWorkflowTemplateSpec"`
+
+	// ConcurrencyLockStatus stores the currently holding locks
+	ConcurrencyLockStatus *ConcurrencyLockStatus `json:"concurrencyLockStatus,omitempty" protobuf:"bytes,15,opt,name=concurrencyLockStatus"`
+}
+
+type ConcurrencyLockStatus struct {
+	// SemaphoreHolders stores the Semaphore holder details
+	SemaphoreHolders map[string]string `json:"semaphoreHolders,omitempty" protobuf:"bytes,1,opt,name=semaphoreHolders"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {

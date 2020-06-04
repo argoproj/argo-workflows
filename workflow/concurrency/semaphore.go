@@ -138,6 +138,7 @@ func (s *Semaphore) tryAcquire(holderKey string) (bool, string) {
 		s.log.Infof("%s acquired by %s \n", s.name, nextKey)
 		return true, ""
 	}
+	s.log.Infof("Current Semaphore Holders. %v", s.lockHolder)
 	return false, waitingMsg
 
 }

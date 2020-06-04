@@ -150,6 +150,10 @@ message ClusterWorkflowTemplateList {
   repeated ClusterWorkflowTemplate items = 2;
 }
 
+message ConcurrencyLockStatus {
+  map<string, string> semaphoreHolders = 1;
+}
+
 message Condition {
   // Type is the type of condition
   optional string type = 1;
@@ -1296,6 +1300,9 @@ message WorkflowStatus {
 
   // StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.
   optional WorkflowSpec storedWorkflowTemplateSpec = 14;
+
+  // ConcurrencyLockStatus stores the currently holding locks
+  optional ConcurrencyLockStatus concurrencyLockStatus = 15;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step
