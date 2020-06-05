@@ -76,6 +76,10 @@ func NewGetCommand() *cobra.Command {
 				wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{Namespace: namespace})
 				errors.CheckError(err)
 				workflows = append(workflows, wfList.Items...)
+				if len(workflows == 0) {
+					Println("No workflows. Exiting")
+					os.Exit(1)
+				}
 				min := workflows[0]
 				for _, wf := range workflows {
 					if wf.ObjectMeta.CreationTimestamp.Before(&min.ObjectMeta.CreationTimestamp) {
