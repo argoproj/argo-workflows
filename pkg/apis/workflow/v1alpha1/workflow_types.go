@@ -100,6 +100,16 @@ func (w Workflows) Less(i, j int) bool {
 	return jFinish.Before(&iFinish)
 }
 
+type ByCreationTimestamp []Workflow
+
+func (w ByCreationTimestamp) Len() int      { return len(w) }
+func (w ByCreationTimestamp) Swap(i, j int) { w[i], w[j] = w[j], w[i] }
+func (w ByCreationTimestamp) Less(i, j int) bool {
+	iStart := w[i].ObjectMeta.CreationTimestamp
+	jStart := w[j].ObjectMeta.CreationTimestamp
+	return jStart.Before(&iStart)
+}
+
 type WorkflowPredicate = func(wf Workflow) bool
 
 func (w Workflows) Filter(predicate WorkflowPredicate) Workflows {
