@@ -1592,7 +1592,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow, but with non-matching selector
-	resumeOpts := util.ResumeOpts{Name: wf.ObjectMeta.Name, NodeFieldSelector: "inputs.paramaters.param1.value=value2", Result: ""}
+	resumeOpts := util.ResumeOpts{Name: wf.ObjectMeta.Name, NodeFieldSelector: "inputs.parameters.param1.value=value2", Result: ""}
 	err = util.ResumeWorkflow(wfcset, controller.hydrator, resumeOpts)
 	assert.Error(t, err)
 
@@ -1605,7 +1605,7 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.True(t, util.IsWorkflowSuspended(wf))
 
 	// resume the workflow, but with matching selector
-	resumeOpts = util.ResumeOpts{Name: wf.ObjectMeta.Name, NodeFieldSelector: "inputs.paramaters.param1.value=value1", Result: ""}
+	resumeOpts = util.ResumeOpts{Name: wf.ObjectMeta.Name, NodeFieldSelector: "inputs.parameters.param1.value=value1", Result: ""}
 	err = util.ResumeWorkflow(wfcset, controller.hydrator, resumeOpts)
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})

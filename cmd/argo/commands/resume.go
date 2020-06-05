@@ -50,6 +50,6 @@ func NewResumeCommand() *cobra.Command {
 		},
 	}
 	command.Flags().StringVar(&resumeArgs.result, "result", "", "Result to add to resumed nodes")
-	command.Flags().StringVar(&resumeArgs.nodeFieldSelector, "node-field-selector", "", "selector of node to resume, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
+	command.Flags().StringVar(&resumeArgs.nodeFieldSelector, "node-field-selector", "", "selector of node to resume, eg: --node-field-selector inputs.parameters.myparam.value=abc")
 	return command
 }
