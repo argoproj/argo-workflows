@@ -3,6 +3,7 @@ import * as React from 'react';
 import * as models from '../../../../models';
 import {services} from '../../../shared/services';
 import {FullHeightLogsViewer} from './full-height-logs-viewer';
+import {Checkbox} from "argo-ui/src/index";
 
 require('./workflow-logs-viewer.scss');
 
@@ -49,10 +50,14 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
     public render() {
         return (
             <div className='workflow-logs-viewer'>
-                <div>
-                    <input type='checkbox' id='followLogStream' onClick={() => this.setState({followLogStream: !this.state.followLogStream})} />
-                    <label htmlFor='followLogStream'>Stream Logs</label>
-                </div>
+                <Checkbox
+                    checked={this.state.followLogStream}
+                    id='followLogStream'
+                    onChange={() => {
+                        this.setState({followLogStream: !this.state.followLogStream});
+                    }}
+                />{' '}
+                <label htmlFor='followLogStream'>Stream Logs</label>
                 <h3>Logs</h3>
                 {this.props.archived && (
                     <p>
