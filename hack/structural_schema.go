@@ -31,7 +31,7 @@ func (c structuralSchemaContext) structuralSchema(definition obj) obj {
 	if types, ok := definition["type"].(array); ok && len(types) > 1 {
 		return any
 	}
-	scrubStructuralSchema(definition)
+	c.scrubStructuralSchema(definition)
 	if items, ok := definition["items"].(obj); ok {
 		if types, ok := items["type"].(array); ok && len(types) > 1 {
 			definition["items"] = any
@@ -57,8 +57,10 @@ func (c structuralSchemaContext) structuralSchema(definition obj) obj {
 	return definition
 }
 
-func scrubStructuralSchema(definition obj) {
-	delete(definition, "description")
+func (c structuralSchemaContext) scrubStructuralSchema(definition obj) {
+	if c.simple {
+		delete(definition, "description")
+	}
 	delete(definition, "x-kubernetes-group-version-kind")
 	delete(definition, "x-kubernetes-patch-merge-key")
 	delete(definition, "x-kubernetes-patch-strategy")
@@ -67,7 +69,7 @@ func scrubStructuralSchema(definition obj) {
 	properties, ok := definition["properties"].(obj)
 	if ok {
 		for _, v := range properties {
-			scrubStructuralSchema(v.(obj))
+			c.scrubStructuralSchema(v.(obj))
 		}
 	}
 }

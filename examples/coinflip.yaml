@@ -9,6 +9,8 @@ metadata:
   generateName: coinflip-
 spec:
   entrypoint: coinflip
+  podGC:
+    strategy: OnPodCompletion
   templates:
   - name: coinflip
     steps:
