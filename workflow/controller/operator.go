@@ -1388,7 +1388,7 @@ type executeTemplateOpts struct {
 	onExitTemplate bool
 }
 
-func (woc *wfOperationCtx) getNodeType(tmplType wfv1.TemplateType) wfv1.NodeType {
+func getNodeType(tmplType wfv1.TemplateType) wfv1.NodeType {
 	switch tmplType {
 	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript, wfv1.TemplateTypeResource:
 		return wfv1.NodeTypePod
@@ -1485,7 +1485,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		}
 		if !acquireStatus {
 			if node == nil {
-				node = woc.initializeExecutableNode(nodeName, woc.getNodeType(processedTmpl.GetType()), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, msg)
+				node = woc.initializeExecutableNode(nodeName, getNodeType(processedTmpl.GetType()), templateScope, processedTmpl, orgTmpl, opts.boundaryID, wfv1.NodePending, msg)
 				woc.updated = true
 			}
 			return node, nil
