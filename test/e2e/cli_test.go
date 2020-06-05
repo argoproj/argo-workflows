@@ -251,6 +251,18 @@ func (s *CLISuite) TestRoot() {
 			}
 		})
 	})
+	s.Run("Get", func() {
+		s.testNeedsOffloading()
+		s.Given().RunCli([]string{"get", "--latest"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "ServiceAccount:")
+				assert.Contains(t, output, "Status:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
+	})
 
 	var createdWorkflowName string
 	s.Run("From", func() {
@@ -629,6 +641,20 @@ func (s *CLISuite) TestWorkflowWatch() {
 		SubmitWorkflow().
 		Given().
 		RunCli([]string{"watch", "basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowWatchLatest() {
+	s.testNeedsOffloading()
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		Given().
+		RunCli([]string{"watch", "--latest"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
 			}
