@@ -43,9 +43,9 @@ metadata:
   labels:
     argo-e2e: true
 spec:
-  entrypoint: workflow-ignore
+  entrypoint: main
   templates:
-  - name: workflow-ignore
+  - name: main
     steps:
     - - name: A
         template: whalesay
@@ -69,7 +69,7 @@ spec:
 
   - name: whalesplosion
     container:
-      image: argoproj/argosay:v2
+      image: argoproj/argosay:v1
       imagePullPolicy: IfNotPresent
       command: ["sh", "-c", "sleep 5 ; exit 1"]
 `).
