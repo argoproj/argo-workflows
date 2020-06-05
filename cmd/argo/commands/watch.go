@@ -28,16 +28,21 @@ func NewWatchCommand() *cobra.Command {
 		Use:   "watch WORKFLOW",
 		Short: "watch a workflow until it completes",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 1 {
+			if (len(args) != 1 && !getArgs.latest) || (len(args) > 0 && getArgs.latest) {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			watchWorkflow(args[0], getArgs)
+			wfName := ""
+			if len(args) > 0 {
+				wfName = args[0]
+			}
+			watchWorkflow(wfName, getArgs)
 
 		},
 	}
 	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
 	command.Flags().StringVar(&getArgs.nodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
+	command.Flags().BoolVar(&getArgs.latest, "latest", false, "Watch last submitted workflow")
 	return command
 }
 
@@ -48,6 +53,32 @@ func watchWorkflow(wfName string, getArgs getFlags) {
 	namespace := client.Namespace()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	if getArgs.latest {
+		var workflows wfv1.Workflows
+		wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{Namespace: namespace})
+		errors.CheckError(err)
+		workflows = append(workflows, wfList.Items...)
+		if len(workflows) == 0 {
+			fmt.Println("No workflows. Exiting")
+			os.Exit(1)
+		}
+		min := workflows[0]
+		for _, wf := range workflows {
+			if wf.ObjectMeta.CreationTimestamp.Before(&min.ObjectMeta.CreationTimestamp) {
+				min = wf
+			}
+		}
+		wfName = min.ObjectMeta.Name
+	} else {
+		// ensure that the desired workflow exists
+		_, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
+			Name:      wfName,
+			Namespace: namespace,
+		})
+		errors.CheckError(err)
+	}
+
 	req := &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{
