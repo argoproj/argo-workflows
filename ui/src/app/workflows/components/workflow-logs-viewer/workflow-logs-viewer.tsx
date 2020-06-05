@@ -11,22 +11,25 @@ interface WorkflowLogsViewerProps {
     nodeId: string;
     container: string;
     archived: boolean;
-    follow: boolean;
 }
 
 interface WorkflowLogsViewerState {
     error?: Error;
     lines: string[];
+    followLogStream: boolean;
 }
 
 export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps, WorkflowLogsViewerState> {
     constructor(props: WorkflowLogsViewerProps) {
         super(props);
-        this.state = {lines: []};
+        this.state = {
+            lines: [],
+            followLogStream: true
+        };
     }
 
     public componentDidMount(): void {
-        services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived, this.props.follow).subscribe(
+        services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived, this.state.followLogStream).subscribe(
             log => {
                 if (log) {
                     this.setState(state => {
@@ -46,6 +49,10 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
     public render() {
         return (
             <div className='workflow-logs-viewer'>
+                <div>
+                    <input type='checkbox' id='followLogStream' onClick={() => this.setState({followLogStream: !this.state.followLogStream})} />
+                    <label htmlFor='followLogStream'>Stream Logs</label>
+                </div>
                 <h3>Logs</h3>
                 {this.props.archived && (
                     <p>
@@ -75,7 +82,7 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                                     key: `${this.props.workflow.metadata.name}-${this.props.container}`,
                                     loadLogs: () => {
                                         return services.workflows
-                                            .getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived, this.props.follow)
+                                            .getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived, this.state.followLogStream)
                                             .map(log => {
                                                 return log ? log + '\n' : '';
                                             });

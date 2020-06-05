@@ -199,9 +199,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                 )}
                 <SlidingPanel isShown={!!this.sidePanel} onClose={() => (this.sidePanel = null)}>
                     {this.sidePanel === 'yaml' && <WorkflowYamlViewer workflow={this.state.workflow} selectedNode={this.node} />}
-                    {this.sidePanel === 'logs' && (
-                        <WorkflowLogsViewer workflow={this.state.workflow} nodeId={this.nodeId} container={this.container} archived={true} follow={true} />
-                    )}
+                    {this.sidePanel === 'logs' && <WorkflowLogsViewer workflow={this.state.workflow} nodeId={this.nodeId} container={this.container} archived={true} />}
                     {this.sidePanel === 'resubmit' && (
                         <YamlEditor
                             editing={true}

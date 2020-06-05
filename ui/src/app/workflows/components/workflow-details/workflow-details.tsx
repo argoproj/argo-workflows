@@ -165,20 +165,11 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                                     </div>
                                 ))}
                         </div>
-                        <div>
-                            <input type='checkbox' id='followLogStream' onClick={() => this.setState({followLogStream: !this.state.followLogStream})} />
-                            <label htmlFor='followLogStream'>Follow log stream?</label>
-                        </div>
+
                         {this.state.workflow && (
                             <SlidingPanel isShown={this.selectedNodeId && !!this.sidePanel} onClose={() => this.closeSidePanel()}>
                                 {this.sidePanel && this.sidePanel.type === 'logs' && (
-                                    <WorkflowLogsViewer
-                                        workflow={this.state.workflow}
-                                        nodeId={this.sidePanel.nodeId}
-                                        container={this.sidePanel.container}
-                                        archived={false}
-                                        follow={this.state.followLogStream}
-                                    />
+                                    <WorkflowLogsViewer workflow={this.state.workflow} nodeId={this.sidePanel.nodeId} container={this.sidePanel.container} archived={false} />
                                 )}
                                 {this.sidePanel && this.sidePanel.type === 'yaml' && <WorkflowYamlViewer workflow={this.state.workflow} selectedNode={selectedNode} />}
                             </SlidingPanel>
