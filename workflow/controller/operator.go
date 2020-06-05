@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/argoproj/pkg/humanize"
-	argokubeerr "github.com/argoproj/pkg/kube/errors"
 	"github.com/argoproj/pkg/strftime"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
@@ -41,8 +40,9 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/templateresolution"
-	workflowutil "github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
+
+	argokubeerr "github.com/argoproj/pkg/kube/errors"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -505,15 +505,13 @@ func (woc *wfOperationCtx) persistUpdates() {
 
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
 
-	un, err := workflowutil.ToUnstructured(woc.wf)
-	if err != nil {
-		log.WithError(err).Warn("failed to convert workflow to unstructured")
-	} else {
-		err = woc.controller.wfInformer.GetStore().Update(un)
-		if err != nil {
-			log.WithError(err).Warn("failed to stuff the workflow back into the informer")
-		}
-	}
+	// HACK(jessesuen) after we successfully persist an update to the workflow, the informer's
+	// cache is now invalid. It's very common that we will need to immediately re-operate on a
+	// workflow due to queuing by the pod workers. The following sleep gives a *chance* for the
+	// informer's cache to catch up to the version of the workflow we just persisted. Without
+	// this sleep, the next worker to work on this workflow will very likely operate on a stale
+	// object and redo work.
+	time.Sleep(1 * time.Second)
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
