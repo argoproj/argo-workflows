@@ -119,6 +119,8 @@ type ArtifactRepository struct {
 	OSS *OSSArtifactRepository `json:"oss,omitempty"`
 	// GCS stores artifact in a GCS object store
 	GCS *GCSArtifactRepository `json:"gcs,omitempty"`
+	// GCS stores artifact in a GCS object store
+	AzureBlob *AzureBlobArtifactRepository `json:"azureBlob,omitempty"`
 }
 
 func (a *ArtifactRepository) IsArchiveLogs() bool {
@@ -214,6 +216,14 @@ type HDFSArtifactRepository struct {
 
 	// Force copies a file forcibly even if it exists (default: false)
 	Force bool `json:"force,omitempty"`
+}
+
+// AzureBlobArtifactRepository defines the controller configuration for an azure artifact repository
+type AzureBlobArtifactRepository struct {
+	wfv1.AzureBlobArtifact `json:",inline"`
+
+	// KeyFormat is defines the format of how to store keys. Can reference workflow variables
+	KeyFormat string `json:"keyFormat,omitempty"`
 }
 
 // MetricsConfig defines a config for a metrics server

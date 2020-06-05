@@ -850,7 +850,7 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 	var needLocation bool
 
 	if tmpl.ArchiveLocation != nil {
-		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil || tmpl.ArchiveLocation.OSS != nil || tmpl.ArchiveLocation.GCS != nil {
+		if tmpl.ArchiveLocation.HasLocation() {
 			// User explicitly set the location. nothing else to do.
 			return nil
 		}
@@ -932,6 +932,21 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 			GCSBucket: wfv1.GCSBucket{
 				Bucket:                  gcsLocation.Bucket,
 				ServiceAccountKeySecret: gcsLocation.ServiceAccountKeySecret,
+			},
+			Key: artLocationKey,
+		}
+	} else if azureBlob := woc.artifactRepository.AzureBlob; azureBlob != nil {
+		woc.log.Debugf("Setting Azure Blob artifact repository information")
+		artLocationKey := azureBlob.KeyFormat
+		if artLocationKey == "" {
+			artLocationKey = common.DefaultArchivePattern
+		}
+		tmpl.ArchiveLocation.AzureBlob = &wfv1.AzureBlobArtifact{
+			AzureBlobContainer: wfv1.AzureBlobContainer{
+				Endpoint:          azureBlob.Endpoint,
+				Container:         azureBlob.Container,
+				AccountNameSecret: azureBlob.AccountNameSecret,
+				AccountKeySecret:  azureBlob.AccountKeySecret,
 			},
 			Key: artLocationKey,
 		}

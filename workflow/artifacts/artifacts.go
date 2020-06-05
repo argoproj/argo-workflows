@@ -2,6 +2,7 @@ package executor
 
 import (
 	"fmt"
+	"github.com/argoproj/argo/workflow/artifacts/azureblob"
 
 	"github.com/argoproj/argo/workflow/artifacts/gcs"
 	"github.com/argoproj/argo/workflow/artifacts/oss"
@@ -110,7 +111,6 @@ func NewDriver(art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error
 	if art.Raw != nil {
 		return &raw.RawArtifactDriver{}, nil
 	}
-
 	if art.OSS != nil {
 		var accessKey string
 		var secretKey string
@@ -135,7 +135,6 @@ func NewDriver(art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error
 		}
 		return &driver, nil
 	}
-
 	if art.GCS != nil {
 		driver := gcs.ArtifactDriver{}
 		if art.GCS.ServiceAccountKeySecret.Name != "" {
@@ -147,6 +146,30 @@ func NewDriver(art *wfv1.Artifact, ri resource.Interface) (ArtifactDriver, error
 			driver.ServiceAccountKey = serviceAccountKey
 		}
 		// key is not set, assume it is using Workload Idendity
+		return &driver, nil
+	}
+	if art.AzureBlob != nil {
+		var accountName string
+		var accountKey string
+
+		if art.AzureBlob.AccountKeySecret.Name != "" {
+			accountNameBytes, err := ri.GetSecret(art.AzureBlob.AccountNameSecret.Name, art.AzureBlob.AccountNameSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			accountName = accountNameBytes
+			accountKeyBytes, err := ri.GetSecret(art.AzureBlob.AccountKeySecret.Name, art.AzureBlob.AccountKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			accountKey = accountKeyBytes
+		}
+		driver := azureblob.AzureBlobArtifactDriver{
+			Endpoint:    art.AzureBlob.Endpoint,
+			Container:   art.AzureBlob.Container,
+			AccountName: accountName,
+			AccountKey:  accountKey,
+		}
 		return &driver, nil
 	}
 
