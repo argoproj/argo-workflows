@@ -72,7 +72,7 @@ func NewGetCommand() *cobra.Command {
 			namespace := client.Namespace()
 
 			if getArgs.latest {
-				var workflows wfv1.ByCreationTimestamp
+				var workflows wfv1.Workflows
 				wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{Namespace: namespace})
 				errors.CheckError(err)
 				workflows = append(workflows, wfList.Items...)

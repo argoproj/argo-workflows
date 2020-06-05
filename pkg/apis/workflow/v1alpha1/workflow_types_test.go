@@ -31,22 +31,6 @@ func TestWorkflows(t *testing.T) {
 	})
 }
 
-func TestByCreationTimestamp(t *testing.T) {
-	wfs := Workflows{
-		{ObjectMeta: metav1.ObjectMeta{Name: "3"}, Status: WorkflowStatus{FinishedAt: metav1.NewTime(time.Time{}.Add(1))}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "2"}, Status: WorkflowStatus{FinishedAt: metav1.NewTime(time.Time{}.Add(0))}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "1"}, Status: WorkflowStatus{StartedAt: metav1.NewTime(time.Time{}.Add(0))}},
-		{ObjectMeta: metav1.ObjectMeta{Name: "0"}, Status: WorkflowStatus{StartedAt: metav1.NewTime(time.Time{}.Add(1))}},
-	}
-	t.Run("Sort", func(t *testing.T) {
-		sort.Sort(wfs)
-		assert.Equal(t, "0", wfs[0].Name)
-		assert.Equal(t, "1", wfs[1].Name)
-		assert.Equal(t, "2", wfs[2].Name)
-		assert.Equal(t, "3", wfs[3].Name)
-	})
-}
-
 func TestWorkflowCreatedAfter(t *testing.T) {
 	t0 := time.Time{}
 	t1 := t0.Add(time.Second)
