@@ -265,7 +265,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         <div className='columns small-2'>STARTED</div>
                         <div className='columns small-2'>FINISHED</div>
                         <div className='columns small-1'>DURATION</div>
-                        <div className='columns small-1'>LABELS</div>
+                        <div className='columns small-1'>DETAILS</div>
                     </div>
                     {this.state.workflows.map(wf => {
                         return (
