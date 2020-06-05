@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sort"
 	"strings"
 	"text/tabwriter"
 
@@ -77,8 +76,13 @@ func NewGetCommand() *cobra.Command {
 				wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{Namespace: namespace})
 				errors.CheckError(err)
 				workflows = append(workflows, wfList.Items...)
-				sort.Sort(workflows)
-				printWorkflow(&workflows[0], getArgs)
+				min := workflows[0]
+				for _, wf := range workflows {
+					if wf.ObjectMeta.CreationTimestamp.Before(&min.ObjectMeta.CreationTimestamp) {
+						min = wf
+					}
+				}
+				printWorkflow(&min, getArgs)
 				os.Exit(0)
 			}
 
