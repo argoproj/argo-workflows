@@ -44,7 +44,6 @@ metadata:
     argo-e2e: true
 spec:
   entrypoint: workflow-ignore
-  parallelism: 2
   templates:
   - name: workflow-ignore
     steps:
@@ -101,7 +100,6 @@ metadata:
     argo-e2e: true
 spec:
   entrypoint: workflow-ignore
-  parallelism: 2
   templates:
     - name: workflow-ignore
       dag:
