@@ -283,7 +283,8 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 	assert.NoError(t, err)
 
 	//will return error as displayName does not match any nodes
-	err = ResumeWorkflow(wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant", "")
+	resumeOpts := ResumeOpts{Name: "suspend", NodeFieldSelector: "displayName=nonexistant", Result: ""}
+	err = ResumeWorkflow(wfIf, hydratorfake.Noop, resumeOpts)
 	assert.Error(t, err)
 
 	//displayName didn't match suspend node so should still be running
@@ -291,7 +292,8 @@ func TestResumeWorkflowByNodeName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
-	err = ResumeWorkflow(wfIf, hydratorfake.Noop, "suspend", "displayName=approve", "Approved")
+	resumeOpts = ResumeOpts{Name: "suspend", NodeFieldSelector: "displayName=approve", Result: "Approved"}
+	err = ResumeWorkflow(wfIf, hydratorfake.Noop, resumeOpts)
 	assert.NoError(t, err)
 
 	//displayName matched node so has succeeded
@@ -310,7 +312,8 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	assert.NoError(t, err)
 
 	//will return error as displayName does not match any nodes
-	err = StopWorkflow(wfIf, hydratorfake.Noop, "suspend", "displayName=nonexistant", "error occurred")
+	stopOpts := StopOpts{Name: "suspend", NodeFieldSelector: "displayName=nonexistant", Message: "error occurred"}
+	err = StopWorkflow(wfIf, hydratorfake.Noop, stopOpts)
 	assert.Error(t, err)
 
 	//displayName didn't match suspend node so should still be running
@@ -318,7 +321,8 @@ func TestStopWorkflowByNodeName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, wfv1.NodeRunning, wf.Status.Nodes.FindByDisplayName("approve").Phase)
 
-	err = StopWorkflow(wfIf, hydratorfake.Noop, "suspend", "displayName=approve", "error occurred")
+	stopOpts = StopOpts{Name: "suspend", NodeFieldSelector: "displayName=approve", Message: "error occurred"}
+	err = StopWorkflow(wfIf, hydratorfake.Noop, stopOpts)
 	assert.NoError(t, err)
 
 	//displayName matched node so has succeeded

@@ -1189,7 +1189,8 @@ func TestSuspendResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow and operate again. two pods should be able to be scheduled
-	err = util.ResumeWorkflow(wfcset, controller.hydrator, wf.ObjectMeta.Name, "", "")
+	resumeOpts := util.ResumeOpts{Name: wf.ObjectMeta.Name, NodeFieldSelector: "", Result: ""}
+	err = util.ResumeWorkflow(wfcset, controller.hydrator, resumeOpts)
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -1514,7 +1515,8 @@ func TestSuspendTemplate(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
-	err = util.ResumeWorkflow(wfcset, controller.hydrator, wf.ObjectMeta.Name, "", "")
+	resumeOpts := util.ResumeOpts{Name: wf.ObjectMeta.Name, NodeFieldSelector: "", Result: ""}
+	err = util.ResumeWorkflow(wfcset, controller.hydrator, resumeOpts)
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -1551,7 +1553,8 @@ func TestSuspendTemplateWithFailedResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
-	err = util.StopWorkflow(wfcset, controller.hydrator, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1", "Step failed!")
+	stopOpts := util.StopOpts{Name: wf.ObjectMeta.Name, NodeFieldSelector: "inputs.parameters.param1.value=value1", Message: "Step failed!"}
+	err = util.StopWorkflow(wfcset, controller.hydrator, stopOpts)
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -1589,7 +1592,8 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow, but with non-matching selector
-	err = util.ResumeWorkflow(wfcset, controller.hydrator, wf.ObjectMeta.Name, "inputs.paramaters.param1.value=value2", "")
+	resumeOpts := util.ResumeOpts{Name: wf.ObjectMeta.Name, NodeFieldSelector: "inputs.paramaters.param1.value=value2", Result: ""}
+	err = util.ResumeWorkflow(wfcset, controller.hydrator, resumeOpts)
 	assert.Error(t, err)
 
 	// operate the workflow. nothing should have happened
@@ -1601,7 +1605,8 @@ func TestSuspendTemplateWithFilteredResume(t *testing.T) {
 	assert.True(t, util.IsWorkflowSuspended(wf))
 
 	// resume the workflow, but with matching selector
-	err = util.ResumeWorkflow(wfcset, controller.hydrator, wf.ObjectMeta.Name, "inputs.parameters.param1.value=value1", "")
+	resumeOpts = util.ResumeOpts{Name: wf.ObjectMeta.Name, NodeFieldSelector: "inputs.paramaters.param1.value=value1", Result: ""}
+	err = util.ResumeWorkflow(wfcset, controller.hydrator, resumeOpts)
 	assert.NoError(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
