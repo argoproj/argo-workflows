@@ -31,7 +31,6 @@ function parseSidePanelParam(param: string) {
 interface WorkflowDetailsState {
     workflow: Workflow;
     links: Link[];
-    followLogStream: boolean;
 }
 
 export class WorkflowDetails extends React.Component<RouteComponentProps<any>, WorkflowDetailsState> {
@@ -59,8 +58,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
         super(props);
         this.state = {
             workflow: null,
-            links: null,
-            followLogStream: true
+            links: null
         };
     }
 
@@ -165,7 +163,6 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, W
                                     </div>
                                 ))}
                         </div>
-
                         {this.state.workflow && (
                             <SlidingPanel isShown={this.selectedNodeId && !!this.sidePanel} onClose={() => this.closeSidePanel()}>
                                 {this.sidePanel && this.sidePanel.type === 'logs' && (
