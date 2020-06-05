@@ -9,9 +9,10 @@ import (
 	"time"
 
 	"github.com/Azure/azure-storage-blob-go/azblob"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 type AzureBlobArtifactDriver struct {
@@ -82,6 +83,14 @@ func (azblobDriver *AzureBlobArtifactDriver) Save(path string, outputArtifact *w
 
 			blobUrl := containerUrl.NewBlockBlobURL(outputArtifact.AzureBlob.Key)
 			file, err := os.Open(path)
+			if err != nil {
+				return false, fmt.Errorf("unable to open file: %s", err)
+			}
+			defer func() {
+				if err := file.Close(); err != nil {
+					log.Warnf("unable to close file: %s", err)
+				}
+			}()
 
 			_, err = azblob.UploadFileToBlockBlob(context.Background(), file, blobUrl, azblob.UploadToBlockBlobOptions{})
 			if err != nil {

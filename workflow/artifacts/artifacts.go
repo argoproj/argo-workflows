@@ -2,6 +2,7 @@ package executor
 
 import (
 	"fmt"
+
 	"github.com/argoproj/argo/workflow/artifacts/azureblob"
 
 	"github.com/argoproj/argo/workflow/artifacts/gcs"
