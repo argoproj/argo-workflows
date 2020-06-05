@@ -1,9 +1,9 @@
 import * as React from 'react';
 
+import {Checkbox} from 'argo-ui/src/index';
 import * as models from '../../../../models';
 import {services} from '../../../shared/services';
 import {FullHeightLogsViewer} from './full-height-logs-viewer';
-import {Checkbox} from "argo-ui/src/index";
 
 require('./workflow-logs-viewer.scss');
 
