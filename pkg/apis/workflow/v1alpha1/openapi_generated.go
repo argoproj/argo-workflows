@@ -258,7 +258,8 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 					},
 					"azureBlob": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.AzureBlobArtifact"),
+							Description: "AzureBlob contains Azure Blob artifact location details",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.AzureBlobArtifact"),
 						},
 					},
 					"globalName": {
@@ -354,7 +355,8 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref common.ReferenceCall
 					},
 					"azureBlob": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.AzureBlobArtifact"),
+							Description: "AzureBlob contains Azure Blob artifact location details",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.AzureBlobArtifact"),
 						},
 					},
 				},
@@ -455,19 +457,19 @@ func schema_pkg_apis_workflow_v1alpha1_AzureBlobArtifact(ref common.ReferenceCal
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "GCSArtifact is the location of a GCS artifact",
+				Description: "AzureBlobArtifact is the location of a an Azure Blob artifact",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"accountKey": {
+					"endpoint": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Key is the service url associated with an account",
+							Description: "Endpoint is the service url associated with an account. It is most likely \"<ACCOUNT_NAME>.blob.core.windows.net\"",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"container": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Container is the place where resources are stored together",
+							Description: "Container is the container where resources will be stored",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -492,7 +494,7 @@ func schema_pkg_apis_workflow_v1alpha1_AzureBlobArtifact(ref common.ReferenceCal
 						},
 					},
 				},
-				Required: []string{"accountKey", "container", "accountNameSecret", "accountKeySecret", "key"},
+				Required: []string{"endpoint", "container", "accountNameSecret", "accountKeySecret", "key"},
 			},
 		},
 		Dependencies: []string{
@@ -507,16 +509,16 @@ func schema_pkg_apis_workflow_v1alpha1_AzureBlobContainer(ref common.ReferenceCa
 				Description: "AzureBlob contains the access information for interfacing with an Azure blob",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"accountKey": {
+					"endpoint": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Key is the service url associated with an account",
+							Description: "Endpoint is the service url associated with an account. It is most likely \"<ACCOUNT_NAME>.blob.core.windows.net\"",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"container": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Container is the place where resources are stored together",
+							Description: "Container is the container where resources will be stored",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -534,7 +536,7 @@ func schema_pkg_apis_workflow_v1alpha1_AzureBlobContainer(ref common.ReferenceCa
 						},
 					},
 				},
-				Required: []string{"accountKey", "container", "accountNameSecret", "accountKeySecret"},
+				Required: []string{"endpoint", "container", "accountNameSecret", "accountKeySecret"},
 			},
 		},
 		Dependencies: []string{

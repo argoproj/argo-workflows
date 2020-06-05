@@ -1777,6 +1777,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
         },
         "azureBlob": {
+          "description": "AzureBlob contains Azure Blob artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureBlobArtifact"
         },
         "from": {
@@ -1847,6 +1848,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
         },
         "azureBlob": {
+          "description": "AzureBlob contains Azure Blob artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureBlobArtifact"
         },
         "gcs": {
@@ -1912,20 +1914,16 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.AzureBlobArtifact": {
-      "description": "GCSArtifact is the location of a GCS artifact",
+      "description": "AzureBlobArtifact is the location of a an Azure Blob artifact",
       "type": "object",
       "required": [
-        "accountKey",
+        "endpoint",
         "container",
         "accountNameSecret",
         "accountKeySecret",
         "key"
       ],
       "properties": {
-        "accountKey": {
-          "description": "Key is the service url associated with an account",
-          "type": "string"
-        },
         "accountKeySecret": {
           "description": "AccountKeySecret is the secret selector to the Azurer blob storage account key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
@@ -1935,7 +1933,11 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "container": {
-          "description": "Container is the place where resources are stored together",
+          "description": "Container is the container where resources will be stored",
+          "type": "string"
+        },
+        "endpoint": {
+          "description": "Endpoint is the service url associated with an account. It is most likely \"\u003cACCOUNT_NAME\u003e.blob.core.windows.net\"",
           "type": "string"
         },
         "key": {

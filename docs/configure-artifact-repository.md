@@ -8,6 +8,7 @@ Subsequent sections will show how to use it.
 | Name | Inputs | Outputs | Usage (Feb 2020) |
 |---|---|---|---|
 | Artifactory | Yes | Yes | 11% |
+| Azure | Yes | Yes | - | 
 | GCS | Yes | Yes | - |
 | Git | Yes | No | - |
 | HDFS | Yes | Yes | 3% |

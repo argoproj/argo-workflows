@@ -724,6 +724,7 @@ type ArtifactLocation struct {
 	// GCS contains GCS artifact location details
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 
+	// AzureBlob contains Azure Blob artifact location details
 	AzureBlob *AzureBlobArtifact `json:"azureBlob,omitempty" protobuf:"bytes,10,opt,name=azureBlob"`
 }
 
@@ -1576,10 +1577,10 @@ func (o *OSSArtifact) HasLocation() bool {
 
 // AzureBlob contains the access information for interfacing with an Azure blob
 type AzureBlobContainer struct {
-	// Key is the service url associated with an account
-	Endpoint string `json:"accountKey" protobuf:"bytes,1,opt,name=accountKey"`
+	// Endpoint is the service url associated with an account. It is most likely "<ACCOUNT_NAME>.blob.core.windows.net"
+	Endpoint string `json:"endpoint" protobuf:"bytes,1,opt,name=endpoint"`
 
-	// Container is the place where resources are stored together
+	// Container is the container where resources will be stored
 	Container string `json:"container" protobuf:"bytes,2,opt,name=container"`
 
 	// AccountNameSecret is the secret selector to the Azure blob storage account name
@@ -1589,7 +1590,7 @@ type AzureBlobContainer struct {
 	AccountKeySecret apiv1.SecretKeySelector `json:"accountKeySecret" protobuf:"bytes,4,opt,name=accountKeySecret"`
 }
 
-// GCSArtifact is the location of a GCS artifact
+// AzureBlobArtifact is the location of a an Azure Blob artifact
 type AzureBlobArtifact struct {
 	AzureBlobContainer `json:",inline" protobuf:"bytes,1,opt,name=azureBlobContainer"`
 

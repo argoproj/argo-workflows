@@ -1825,7 +1825,7 @@ Artifact indicates an artifact to place at a specified path
 |`archive`|[`ArchiveStrategy`](#archivestrategy)|Archive controls how the artifact will be saved to the artifact repository.|
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
-|`azureBlob`|[`AzureBlobArtifact`](#azureblobartifact)|_No description available_|
+|`azureBlob`|[`AzureBlobArtifact`](#azureblobartifact)|AzureBlob contains Azure Blob artifact location details|
 |`from`|`string`|From allows an artifact to reference an artifact from a previous step|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
 |`git`|[`GitArtifact`](#gitartifact)|Git contains git artifact location details|
@@ -2010,7 +2010,7 @@ ArtifactLocation describes a location for a single or multiple artifacts. It is 
 |:----------:|:----------:|---------------|
 |`archiveLogs`|`boolean`|ArchiveLogs indicates if the container logs should be archived|
 |`artifactory`|[`ArtifactoryArtifact`](#artifactoryartifact)|Artifactory contains artifactory artifact location details|
-|`azureBlob`|[`AzureBlobArtifact`](#azureblobartifact)|_No description available_|
+|`azureBlob`|[`AzureBlobArtifact`](#azureblobartifact)|AzureBlob contains Azure Blob artifact location details|
 |`gcs`|[`GCSArtifact`](#gcsartifact)|GCS contains GCS artifact location details|
 |`git`|[`GitArtifact`](#gitartifact)|Git contains git artifact location details|
 |`hdfs`|[`HDFSArtifact`](#hdfsartifact)|HDFS contains HDFS artifact location details|
@@ -2876,15 +2876,15 @@ ArtifactoryArtifact is the location of an artifactory artifact
 
 ## AzureBlobArtifact
 
-GCSArtifact is the location of a GCS artifact
+AzureBlobArtifact is the location of a an Azure Blob artifact
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`accountKey`|`string`|Key is the service url associated with an account|
 |`accountKeySecret`|[`SecretKeySelector`](#secretkeyselector)|AccountKeySecret is the secret selector to the Azurer blob storage account key|
 |`accountNameSecret`|[`SecretKeySelector`](#secretkeyselector)|AccountNameSecret is the secret selector to the Azure blob storage account name|
-|`container`|`string`|Container is the place where resources are stored together|
+|`container`|`string`|Container is the container where resources will be stored|
+|`endpoint`|`string`|Endpoint is the service url associated with an account. It is most likely "<ACCOUNT_NAME>.blob.core.windows.net"|
 |`key`|`string`|Key is the path in the bucket where the artifact resides|
 
 ## GCSArtifact

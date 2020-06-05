@@ -423,7 +423,8 @@
           "title": "GCS contains GCS artifact location details"
         },
         "azureBlob": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.AzureBlobArtifact"
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.AzureBlobArtifact",
+          "title": "AzureBlob contains Azure Blob artifact location details"
         }
       },
       "description": "ArtifactLocation describes a location for a single or multiple artifacts.\nIt is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).\nIt is also used to describe the location of multiple artifacts such as the archive location\nof a single workflow step, which the executor will use as a default location to store its files."
@@ -477,18 +478,18 @@
           "title": "Key is the path in the bucket where the artifact resides"
         }
       },
-      "title": "GCSArtifact is the location of a GCS artifact"
+      "title": "AzureBlobArtifact is the location of a an Azure Blob artifact"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.AzureBlobContainer": {
       "type": "object",
       "properties": {
-        "accountKey": {
+        "endpoint": {
           "type": "string",
-          "title": "Key is the service url associated with an account"
+          "title": "Endpoint is the service url associated with an account. It is most likely \"\u003cACCOUNT_NAME\u003e.blob.core.windows.net\""
         },
         "container": {
           "type": "string",
-          "title": "Container is the place where resources are stored together"
+          "title": "Container is the container where resources will be stored"
         },
         "accountNameSecret": {
           "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector",
