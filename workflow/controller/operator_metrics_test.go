@@ -41,7 +41,7 @@ spec:
 `
 
 func TestBasicMetric(t *testing.T) {
-	cancel, controller := NewController()
+	cancel, controller := newController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(basicMetric)
@@ -97,7 +97,7 @@ spec:
 `
 
 func TestCounterMetric(t *testing.T) {
-	cancel, controller := NewController()
+	cancel, controller := newController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(counterMetric)
@@ -197,7 +197,7 @@ status:
 `
 
 func TestMetricEmissionSameOperationCreationAndFailure(t *testing.T) {
-	cancel, controller := NewController()
+	cancel, controller := newController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(testMetricEmissionSameOperationCreationAndFailure)

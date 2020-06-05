@@ -89,7 +89,7 @@ func TestSingleDependency(t *testing.T) {
 	var controller *WorkflowController
 	for _, status := range []string{"Succeeded", "Failed", "Skipped"} {
 		fmt.Printf("\n\n\nCurrent status %s\n\n\n", status)
-		closer, controller = NewController()
+		closer, controller = newController()
 		wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 		// If the status is "skipped" skip the root node.
@@ -185,7 +185,7 @@ spec:
 
 // Tests ability to reference workflow parameters from within top level spec fields (e.g. spec.volumes)
 func TestArtifactResolutionWhenSkippedDAG(t *testing.T) {
-	cancel, controller := NewController()
+	cancel, controller := newController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
@@ -615,7 +615,7 @@ status:
 
 // Tests whether assessPhase marks a DAG as successful when it contains failed tasks with continueOn failed
 func TestDagAssessPhaseContinueOnExpandedTaskVariables(t *testing.T) {
-	cancel, controller := NewController()
+	cancel, controller := newController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
@@ -836,7 +836,7 @@ status:
 
 // Tests whether assessPhase marks a DAG as successful when it contains failed tasks with continueOn failed
 func TestDagAssessPhaseContinueOnExpandedTask(t *testing.T) {
-	cancel, controller := NewController()
+	cancel, controller := newController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
@@ -883,7 +883,7 @@ spec:
 `
 
 func TestDAGWithParamAndGlobalParam(t *testing.T) {
-	cancel, controller := NewController()
+	cancel, controller := newController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
@@ -1120,7 +1120,7 @@ status:
 
 // This tests that a DAG with retry strategy in its tasks fails successfully when terminated
 func TestTerminatingDAGWithRetryStrategyNodes(t *testing.T) {
-	cancel, controller := NewController()
+	cancel, controller := newController()
 	defer cancel()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 

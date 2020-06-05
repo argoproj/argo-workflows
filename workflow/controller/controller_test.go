@@ -99,7 +99,7 @@ spec:
       args: ["hello world"]
 `
 
-func NewController(objects ...runtime.Object) (context.CancelFunc, *WorkflowController) {
+func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowController) {
 	wfclientset := fakewfclientset.NewSimpleClientset(objects...)
 	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
 	wftmplInformer := informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
@@ -133,7 +133,7 @@ func NewController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 }
 
 func newControllerWithDefaults() (context.CancelFunc, *WorkflowController) {
-	cancel, controller := NewController()
+	cancel, controller := newController()
 	myBool := true
 	controller.Config.WorkflowDefaults = &wfv1.Workflow{
 		Spec: wfv1.WorkflowSpec{
@@ -144,7 +144,7 @@ func newControllerWithDefaults() (context.CancelFunc, *WorkflowController) {
 }
 
 func newControllerWithComplexDefaults() (context.CancelFunc, *WorkflowController) {
-	cancel, controller := NewController()
+	cancel, controller := newController()
 	myBool := true
 	var ten int32 = 10
 	var seven int32 = 10
@@ -232,7 +232,7 @@ func makePodsPhaseAll(t *testing.T, phase apiv1.PodPhase, kubeclientset kubernet
 func TestAddingWorkflowDefaultValueIfValueNotExist(t *testing.T) {
 	ans := true
 	t.Run("WithoutDefaults", func(t *testing.T) {
-		cancel, controller := NewController()
+		cancel, controller := newController()
 		defer cancel()
 		workflow := unmarshalWF(helloWorldWf)
 		err := controller.setWorkflowDefaults(workflow)
@@ -299,7 +299,7 @@ func TestNamespacedController(t *testing.T) {
 		}, nil
 	})
 
-	_, controller := NewController()
+	_, controller := newController()
 	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
@@ -315,7 +315,7 @@ func TestClusterController(t *testing.T) {
 		}, nil
 	})
 
-	_, controller := NewController()
+	_, controller := newController()
 	controller.kubeclientset = kubernetes.Interface(&kubeClient)
 	controller.cwftmplInformer = nil
 	controller.createClusterWorkflowTemplateInformer(context.TODO())
@@ -323,7 +323,7 @@ func TestClusterController(t *testing.T) {
 }
 
 func TestWorkflowController_archivedWorkflowGarbageCollector(t *testing.T) {
-	cancel, controller := NewController()
+	cancel, controller := newController()
 	defer cancel()
 
 	controller.archivedWorkflowGarbageCollector(make(chan struct{}))
@@ -363,12 +363,9 @@ spec:
 `
 
 func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
-	//_, controller := NewController()
 	wf := unmarshalWF(wfWithTmplRef)
 	wftmpl := unmarshalWFTmpl(wfTmpl)
-	_, controller := NewController(wf, wftmpl)
-	//_, err := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("default").Create(wftmpl)
-	//assert.NoError(t, err)
+	_, controller := newController(wf, wftmpl)
 	woc := wfOperationCtx{controller: controller,
 		wf: wf}
 	t.Run("WithWorkflowTmplRef", func(t *testing.T) {

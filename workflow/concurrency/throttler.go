@@ -101,9 +101,7 @@ func (pq *priorityQueue) pop() *item {
 	return heap.Pop(pq).(*item)
 }
 func (pq *priorityQueue) peek() *item {
-	item := pq.pop()
-	heap.Push(pq, item)
-	return  item
+	return pq.items[0]
 }
 
 func (pq *priorityQueue) add(key interface{}, priority int32, creationTime time.Time) {

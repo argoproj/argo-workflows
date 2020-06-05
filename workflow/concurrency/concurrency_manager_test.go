@@ -327,6 +327,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		status, msg, err = concurrenyMgr.TryAcquire(holderKey, wf.Namespace, 0, time.Now(), wf.Spec.Semaphore, wf)
 		assert.NoError(t, err)
 		assert.True(t, status)
+		assert.Empty(t, msg)
 
 		wf1 := wf.DeepCopy()
 		wf1.Name = "two"
@@ -343,6 +344,13 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
+
+		wf3 := wf.DeepCopy()
+		wf3.Name = "four"
+		holderKey3 := concurrenyMgr.GetHolderKey(wf3, "")
+		status, msg, err = concurrenyMgr.TryAcquire(holderKey3, wf3.Namespace, 0, time.Now(), wf3.Spec.Semaphore, wf3)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, msg)
 
 		concurrenyMgr.Release(holderKey, wf.Namespace, wf.Spec.Semaphore, wf)
 		assert.Equal(t, holderKey2, nextKey)
@@ -403,7 +411,7 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		wf2 := wf.DeepCopy()
 		wf1.Name = "three"
 		holderKey2 := concurrenyMgr.GetHolderKey(wf1, "")
-		status, msg, err = concurrenyMgr.TryAcquire(holderKey2, wf2.Namespace, 0, createTime.Add(1*time.Millisecond), wf2.Spec.Semaphore, wf2)
+		status, msg, err = concurrenyMgr.TryAcquire(holderKey2, wf2.Namespace, 0, createTime.Add(10*time.Millisecond), wf2.Spec.Semaphore, wf2)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
@@ -423,7 +431,7 @@ func TestResizeSemaphoreSize(t *testing.T) {
 		assert.NotNil(t, wf.Status.ConcurrencyLockStatus.SemaphoreHolders)
 		assert.Equal(t, SemaName, wf.Status.ConcurrencyLockStatus.SemaphoreHolders[holderKey])
 
-		status, msg, err = concurrenyMgr.TryAcquire(holderKey2, wf2.Namespace, 0, createTime.Add(1*time.Millisecond), wf2.Spec.Semaphore, wf2)
+		status, msg, err = concurrenyMgr.TryAcquire(holderKey2, wf2.Namespace, 0, createTime.Add(10*time.Millisecond), wf2.Spec.Semaphore, wf2)
 		assert.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)
@@ -433,7 +441,6 @@ func TestResizeSemaphoreSize(t *testing.T) {
 
 	})
 }
-
 
 func TestSemaphoreTmplLevel(t *testing.T) {
 	kube := fake.NewSimpleClientset()
@@ -464,6 +471,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		status, msg, err = concurrenyMgr.TryAcquire(holderKey, wf.Namespace, 0, time.Now(), tmpl.Semaphore, wf)
 		assert.NoError(t, err)
 		assert.True(t, status)
+		assert.Empty(t, msg)
 
 		holderKey1 := concurrenyMgr.GetHolderKey(wf, "semaphore-tmpl-level-xjvln-1607747183")
 		status, msg, err = concurrenyMgr.TryAcquire(holderKey1, wf.Namespace, 0, time.Now(), tmpl.Semaphore, wf)
