@@ -351,6 +351,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		status, msg, err = concurrenyMgr.TryAcquire(holderKey3, wf3.Namespace, 0, time.Now(), wf3.Spec.Semaphore, wf3)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
+		assert.False(t, status)
 
 		concurrenyMgr.Release(holderKey, wf.Namespace, wf.Spec.Semaphore, wf)
 		assert.Equal(t, holderKey2, nextKey)
