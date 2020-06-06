@@ -88,7 +88,8 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		}
 
 		// Check Node status
-		woc_two.podReconciliation()
+		err = woc_two.podReconciliation()
+		assert.NoError(t, err)
 		for _, node := range woc_two.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
 		}
@@ -119,7 +120,8 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 		wf, err := controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Create(wf)
 		assert.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
-		woc.podReconciliation()
+		err = woc.podReconciliation()
+		assert.NoError(t, err)
 		for _, node := range woc.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodePending, node.Phase)
 		}
