@@ -182,6 +182,13 @@
             "in": "query",
             "required": false,
             "type": "string"
+          },
+          {
+            "name": "fields",
+            "description": "Fields to be included or excluded in the response. e.g. \"items.spec,items.status.phase\", \"-items.status.nodes\".",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
