@@ -35,6 +35,7 @@ type When struct {
 	cronWorkflowName  string
 	kubeClient        kubernetes.Interface
 	resourceQuota     *corev1.ResourceQuota
+	configMap         *corev1.ConfigMap
 }
 
 func (w *When) SubmitWorkflow() *When {
@@ -187,6 +188,24 @@ func (w *When) RunCli(args []string, block func(t *testing.T, output string, err
 	if w.t.Failed() {
 		w.t.FailNow()
 	}
+	return w
+}
+
+func (w *When) CreateConfigMap(name string, data map[string]string) *When {
+	obj, err := util.CreateConfigMap(w.kubeClient, "argo", name, data)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	w.configMap = obj
+	return w
+}
+
+func (w *When) DeleteConfigMap() *When {
+	err := util.DeleteConfigMap(w.kubeClient, w.configMap)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	w.configMap = nil
 	return w
 }
 
