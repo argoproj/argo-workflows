@@ -80,13 +80,6 @@ func (cm *ConcurrencyManager) Initialize(namespace string, wfClient wfclientset.
 	log.Infof("ConcurrencyManager initialized successfully")
 }
 
-func (cm *ConcurrencyManager) getLockStatus(lockName string) (int, int, []string) {
-	if semaphore, found := cm.semaphoreMap[lockName]; found {
-		return len(semaphore.lockHolder), semaphore.limit, semaphore.getCurrentHolders()
-	}
-	return 0, 0, nil
-}
-
 func (cm *ConcurrencyManager) getConfigMapKeyRef(lockName string) (int, error) {
 	items := strings.Split(lockName, "/")
 	if len(items) < 4 {

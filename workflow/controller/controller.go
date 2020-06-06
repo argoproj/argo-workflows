@@ -566,15 +566,6 @@ func getWfPriority(obj interface{}) (int32, time.Time) {
 	return int32(priority), un.GetCreationTimestamp().Time
 }
 
-func (wfc *WorkflowController) addWorkflowToQueue(obj interface{}) {
-	key, err := cache.MetaNamespaceKeyFunc(obj)
-	if err == nil {
-		wfc.wfQueue.Add(key)
-		priority, creation := getWfPriority(obj)
-		wfc.throttler.Add(key, priority, creation)
-	}
-}
-
 func getWfPhase(obj interface{}) wfv1.NodePhase {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
