@@ -55,15 +55,13 @@ func watchWorkflow(wfName string, getArgs getFlags) {
 	defer cancel()
 
 	if getArgs.latest {
-		var workflows wfv1.Workflows
 		wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{Namespace: namespace})
 		errors.CheckError(err)
-		workflows = append(workflows, wfList.Items...)
-		if len(workflows) == 0 {
+		if len(wfList.Items) == 0 {
 			fmt.Println("No workflows. Exiting")
 			os.Exit(1)
 		}
-		latestWf := GetLatestWorkflow(workflows)
+		latestWf := GetLatestWorkflow(wfList.Items)
 		wfName = latestWf.ObjectMeta.Name
 	} else {
 		// ensure that the desired workflow exists
