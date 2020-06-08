@@ -386,6 +386,8 @@ data:
         key: secretkey
 kind: ConfigMap
 metadata:
+  labels:
+    app.kubernetes.io/part-of: argo
   name: artifact-repositories
 ---
 apiVersion: v1
