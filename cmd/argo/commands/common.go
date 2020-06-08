@@ -101,5 +101,4 @@ func GetLatestWorkflow(workflows []wfv1.Workflow) (*wfv1.Workflow, error) {
 
 func ProvideLatestFlag(command *cobra.Command, flag *bool) {
 	command.Flags().BoolVar(flag, "latest", false, "Perform command on last submitted workflow")
-	return
 }
