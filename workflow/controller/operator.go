@@ -258,8 +258,7 @@ func (woc *wfOperationCtx) operate() {
 	woc.setGlobalParameters(execArgs)
 
 	if woc.wfSpec.ArtifactRepositoryRef != nil {
-		repoReference := woc.wfSpec.ArtifactRepositoryRef
-		repo, err := woc.getArtifactRepositoryByRef(woc.controller, repoReference.ConfigMap, repoReference.Key, woc.wf.ObjectMeta.Namespace)
+		repo, err := woc.getArtifactRepositoryByRef(woc.wfSpec.ArtifactRepositoryRef)
 		if err == nil {
 			woc.artifactRepository = repo
 		} else {
