@@ -20,6 +20,8 @@ Workflow is the definition of a workflow resource
 
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
+- [`artifact-repository-ref.yaml`](../examples/artifact-repository-ref.yaml)
+
 - [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
 - [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
@@ -312,6 +314,8 @@ WorkflowSpec is the specification of a Workflow.
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
 
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
+
+- [`artifact-repository-ref.yaml`](../examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
@@ -622,6 +626,8 @@ CronWorkflowSpec is the specification of a CronWorkflow
 
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
+- [`artifact-repository-ref.yaml`](../examples/artifact-repository-ref.yaml)
+
 - [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
 - [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
@@ -894,6 +900,8 @@ WorkflowTemplateSpec is a spec of WorkflowTemplate.
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
 
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
+
+- [`artifact-repository-ref.yaml`](../examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
@@ -1301,6 +1309,13 @@ Arguments to a template
 
 _No description available_
 
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`artifact-repository-ref.yaml`](../examples/artifact-repository-ref.yaml)
+</details>
+
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
@@ -1367,6 +1382,8 @@ Template is a reusable and composable unit of execution in a workflow
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
 
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
+
+- [`artifact-repository-ref.yaml`](../examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
@@ -1738,6 +1755,8 @@ Outputs hold parameters, artifacts, and results from a step
 
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
+- [`artifact-repository-ref.yaml`](../examples/artifact-repository-ref.yaml)
+
 - [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
 - [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
@@ -1798,6 +1817,8 @@ Artifact indicates an artifact to place at a specified path
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
 
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
+
+- [`artifact-repository-ref.yaml`](../examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
@@ -2270,6 +2291,8 @@ Pod metdata
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
 
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
+
+- [`artifact-repository-ref.yaml`](../examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
@@ -3482,6 +3505,8 @@ ObjectMeta is metadata that all persisted resources must have, which includes al
 
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
 
+- [`artifact-repository-ref.yaml`](../examples/artifact-repository-ref.yaml)
+
 - [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
 - [`ci-output-artifact.yaml`](../examples/ci-output-artifact.yaml)
@@ -3957,6 +3982,8 @@ A single application container that you want to run within a pod.
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
 
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
+
+- [`artifact-repository-ref.yaml`](../examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
@@ -4559,6 +4586,8 @@ PersistentVolumeClaimSpec describes the common attributes of storage devices and
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
 
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
+
+- [`artifact-repository-ref.yaml`](../examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 
@@ -5525,6 +5554,8 @@ ListMeta describes metadata that synthetic resources must have, including lists 
 - [`artifact-passing.yaml`](../examples/artifact-passing.yaml)
 
 - [`artifact-path-placeholders.yaml`](../examples/artifact-path-placeholders.yaml)
+
+- [`artifact-repository-ref.yaml`](../examples/artifact-repository-ref.yaml)
 
 - [`artifactory-artifact.yaml`](../examples/artifactory-artifact.yaml)
 

@@ -745,6 +745,13 @@ type ArtifactRepositoryRef struct {
 	Key       string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
 }
 
+func (r ArtifactRepositoryRef) GetConfigMap() string {
+	if r.ConfigMap == "" {
+		return "artifact-repositories"
+	}
+	return r.ConfigMap
+}
+
 func ArtifactRepositoryRefFromID(id string) ArtifactRepositoryRef {
 	parts := strings.SplitN(id, "/", 2)
 	return ArtifactRepositoryRef{ConfigMap: parts[0], Key: parts[1]}

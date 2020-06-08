@@ -2357,11 +2357,11 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: artifact-repo-config-ref-
+  namespace: my-ns
 spec:
   entrypoint: whalesay
   artifactRepositoryRef:
-    configMap: artifact-repository
-    key: config
+    key: minio
   templates:
   - name: whalesay
     container:
@@ -2394,10 +2394,10 @@ func TestArtifactRepositoryRef(t *testing.T) {
 	_, err := woc.controller.kubeclientset.CoreV1().ConfigMaps(wf.ObjectMeta.Namespace).Create(
 		&apiv1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "artifact-repository",
+				Name: "artifact-repositories",
 			},
 			Data: map[string]string{
-				"config": artifactRepositoryConfigMapData,
+				"minio": artifactRepositoryConfigMapData,
 			},
 		},
 	)
@@ -2828,7 +2828,7 @@ func TestEventFailArtifactRepoCm(t *testing.T) {
 	assert.Equal(t, argo.EventReasonWorkflowRunning, runningEvent.Reason)
 	failEvent := events.Items[1]
 	assert.Equal(t, argo.EventReasonWorkflowFailed, failEvent.Reason)
-	assert.Equal(t, "Failed to load artifact repository configMap: configmaps \"artifact-repository\" not found", failEvent.Message)
+	assert.Equal(t, "Failed to load artifact repository configMap: failed to find artifactory ref {,}/artifact-repository#config", failEvent.Message)
 }
 
 var pdbwf = `

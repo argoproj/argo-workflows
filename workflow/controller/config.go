@@ -5,14 +5,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
@@ -91,34 +89,4 @@ func (wfc *WorkflowController) executorImagePullPolicy() apiv1.PullPolicy {
 	} else {
 		return apiv1.PullPolicy(wfc.Config.ExecutorImagePullPolicy)
 	}
-}
-
-func ReadConfigMapValue(clientset kubernetes.Interface, namespace string, name string, key string) (string, error) {
-	cm, err := clientset.CoreV1().ConfigMaps(namespace).Get(name, metav1.GetOptions{})
-	if err != nil {
-		return "", err
-	}
-	value, ok := cm.Data[key]
-	if !ok {
-		return "", errors.InternalErrorf("Key %s was not found in the %s configMap.", key, name)
-	}
-	return value, nil
-}
-
-func getArtifactRepositoryRef(wfc *WorkflowController, configMapName string, key string, namespace string) (*v1alpha1.ArtifactRepository, error) {
-	// Getting the ConfigMap from the workflow's namespace
-	configStr, err := ReadConfigMapValue(wfc.kubeclientset, namespace, configMapName, key)
-	if err != nil {
-		// Falling back to getting the ConfigMap from the controller's namespace
-		configStr, err = ReadConfigMapValue(wfc.kubeclientset, wfc.namespace, configMapName, key)
-		if err != nil {
-			return nil, err
-		}
-	}
-	var config v1alpha1.ArtifactRepository
-	err = yaml.Unmarshal([]byte(configStr), &config)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-	return &config, nil
 }
