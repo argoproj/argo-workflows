@@ -170,7 +170,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             })
             .then(() => {
                 this.subscription = services.workflows
-                    .watch({namespace: newNamespace, phases: selectedPhases, labels: selectedLabels})
+                    .watchFields({namespace: newNamespace, phases: selectedPhases, labels: selectedLabels})
                     .map(workflowChange => {
                         const workflows = this.state.workflows;
                         if (!workflowChange) {
