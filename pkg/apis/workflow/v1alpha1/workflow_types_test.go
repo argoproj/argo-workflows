@@ -155,3 +155,22 @@ func TestDisplayConditions(t *testing.T) {
 `
 	assert.Equal(t, expected, cwfCond.DisplayString(fmtStr, map[ConditionType]string{ConditionTypeSubmissionError: "✖"}))
 }
+
+func TestPrometheus_GetDescIsStable(t *testing.T) {
+	metric := &Prometheus{
+		Name: "test-metric",
+		Labels: []*MetricLabel{
+			{Key: "foo", Value: "bar"},
+			{Key: "hello", Value: "World"},
+		},
+		Histogram: &Histogram{
+			Buckets: []float64{10, 20, 30},
+		},
+	}
+	stableDesc := metric.GetDesc()
+	for i := 0; i < 10; i++ {
+		if !assert.Equal(t, stableDesc, metric.GetDesc()) {
+			break
+		}
+	}
+}
