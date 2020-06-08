@@ -4,7 +4,13 @@
   padding: 1em;
 
   &__status {
-    max-width: 40px;
+    max-width: 60px;
+    display: flex; 
+    align-items: center; 
+
+    &--checkbox {
+      margin-right: 12px;
+    }
   }
 
   &__labels-container {

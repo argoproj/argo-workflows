@@ -34,6 +34,7 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
             <div className='workflows-list__row-container'>
                 <Link className='row argo-table-list__row' to={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)}>
                     <div className='columns small-1 workflows-list__status'>
+                        <input type='checkbox' className='workflows-list__status--checkbox' />
                         <PhaseIcon value={wf.status.phase} />
                     </div>
                     <div className='columns small-3'>{wf.metadata.name}</div>
