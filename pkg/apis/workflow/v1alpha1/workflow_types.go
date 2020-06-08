@@ -738,10 +738,19 @@ func (a *ArtifactLocation) HasLocation() bool {
 		a.GCS.HasLocation()
 }
 
+var DefaultArtifactRepositoryRef = &ArtifactRepositoryRef{}
+
 type ArtifactRepositoryRef struct {
 	ConfigMap string `json:"configMap,omitempty" protobuf:"bytes,1,opt,name=configMap"`
 	Key       string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
 }
+
+func ArtifactRepositoryRefFromID(id string) ArtifactRepositoryRef {
+	parts := strings.SplitN(id, "/", 2)
+	return ArtifactRepositoryRef{ConfigMap: parts[0], Key: parts[1]}
+}
+
+func (r ArtifactRepositoryRef) ID() string { return r.ConfigMap + "/" + r.Key }
 
 // Outputs hold parameters, artifacts, and results from a step
 type Outputs struct {
@@ -975,6 +984,11 @@ type WorkflowStatus struct {
 
 	// StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.
 	StoredWorkflowSpec *WorkflowSpec `json:"storedWorkflowTemplateSpec,omitempty" protobuf:"bytes,14,opt,name=storedWorkflowTemplateSpec"`
+
+	// ArtifactRepositories stores artifact repositories used by the workflow. This is used if the input/output artifact does not
+	// specify this (for legacy behaviour).
+	// May keys are string representation of a ArtifactRepositoryRef - see `ArtifactRepositoryRef.ID()` and `ArtifactRepositoryRefFromID`
+	ArtifactRepositories map[string]ArtifactRepository `json:"artifactRepositories,omitempty" protobuf:"bytes,15,rep,name=artifactRepositories"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -1287,6 +1301,10 @@ func (n NodeStatus) Completed() bool {
 
 func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
 	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
+}
+
+func (ws *WorkflowStatus) DefaultArtifactRepository() ArtifactRepository {
+	return ws.ArtifactRepositories[DefaultArtifactRepositoryRef.ID()]
 }
 
 // Pending returns whether or not the node is in pending state

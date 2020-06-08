@@ -162,7 +162,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.Spec.ShareProcessNamespace = pointer.BoolPtr(true)
 	}
 
-	err := woc.addArchiveLocation(pod, tmpl)
+	err := woc.addArchiveLocation(tmpl)
 	if err != nil {
 		return nil, err
 	}
@@ -844,7 +844,7 @@ func addOutputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) {
 // information configured in the controller, for the purposes of archiving outputs. This is skipped
 // for templates which do not need to archive anything, or have explicitly set an archive location
 // in the template.
-func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Template) error {
+func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 	// needLocation keeps track if the workflow needs to have an archive location set.
 	// If so, and one was not supplied (or defaulted), we will return error
 	var needLocation bool
@@ -864,7 +864,8 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 			break
 		}
 	}
-	if woc.artifactRepository.IsArchiveLogs() {
+	artifactRepository := woc.wf.Status.DefaultArtifactRepository()
+	if artifactRepository.IsArchiveLogs() {
 		needLocation = true
 	}
 	if !needLocation {
@@ -872,12 +873,12 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 		return nil
 	}
 	tmpl.ArchiveLocation = &wfv1.ArtifactLocation{
-		ArchiveLogs: woc.artifactRepository.ArchiveLogs,
+		ArchiveLogs: artifactRepository.ArchiveLogs,
 	}
 	// artifact location is defaulted using the following formula:
 	// <worflow_name>/<pod_name>/<artifact_name>.tgz
 	// (e.g. myworkflowartifacts/argo-wf-fhljp/argo-wf-fhljp-123291312382/src.tgz)
-	if s3Location := woc.artifactRepository.S3; s3Location != nil {
+	if s3Location := artifactRepository.S3; s3Location != nil {
 		woc.log.Debugf("Setting s3 artifact repository information")
 		artLocationKey := s3Location.KeyFormat
 		// NOTE: we use unresolved variables, will get substituted later
@@ -888,25 +889,25 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 			S3Bucket: s3Location.S3Bucket,
 			Key:      artLocationKey,
 		}
-	} else if woc.artifactRepository.Artifactory != nil {
+	} else if artifactRepository.Artifactory != nil {
 		woc.log.Debugf("Setting artifactory artifact repository information")
 		repoURL := ""
-		if woc.artifactRepository.Artifactory.RepoURL != "" {
-			repoURL = woc.artifactRepository.Artifactory.RepoURL + "/"
+		if artifactRepository.Artifactory.RepoURL != "" {
+			repoURL = artifactRepository.Artifactory.RepoURL + "/"
 		}
 		artURL := fmt.Sprintf("%s%s", repoURL, common.DefaultArchivePattern)
 		tmpl.ArchiveLocation.Artifactory = &wfv1.ArtifactoryArtifact{
-			ArtifactoryAuth: woc.artifactRepository.Artifactory.ArtifactoryAuth,
+			ArtifactoryAuth: artifactRepository.Artifactory.ArtifactoryAuth,
 			URL:             artURL,
 		}
-	} else if hdfsLocation := woc.artifactRepository.HDFS; hdfsLocation != nil {
+	} else if hdfsLocation := artifactRepository.HDFS; hdfsLocation != nil {
 		woc.log.Debugf("Setting HDFS artifact repository information")
 		tmpl.ArchiveLocation.HDFS = &wfv1.HDFSArtifact{
 			HDFSConfig: hdfsLocation.HDFSConfig,
 			Path:       hdfsLocation.PathFormat,
 			Force:      hdfsLocation.Force,
 		}
-	} else if ossLocation := woc.artifactRepository.OSS; ossLocation != nil {
+	} else if ossLocation := artifactRepository.OSS; ossLocation != nil {
 		woc.log.Debugf("Setting OSS artifact repository information")
 		artLocationKey := ossLocation.KeyFormat
 		// NOTE: we use unresolved variables, will get substituted later
@@ -922,7 +923,7 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 			},
 			Key: artLocationKey,
 		}
-	} else if gcsLocation := woc.artifactRepository.GCS; gcsLocation != nil {
+	} else if gcsLocation := artifactRepository.GCS; gcsLocation != nil {
 		woc.log.Debugf("Setting GCS artifact repository information")
 		artLocationKey := gcsLocation.KeyFormat
 		if artLocationKey == "" {

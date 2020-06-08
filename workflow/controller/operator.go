@@ -63,8 +63,6 @@ type wfOperationCtx struct {
 	// volumes holds a DeepCopy of wf.Spec.Volumes to perform substitutions.
 	// It is then used in addVolumeReferences() when creating a pod.
 	volumes []apiv1.Volume
-	// ArtifactRepository contains the default location of an artifact repository for container artifacts
-	artifactRepository *wfv1.ArtifactRepository
 	// map of pods which need to be labeled with completed=true
 	completedPods map[string]bool
 	// map of pods which is identified as succeeded=true
@@ -127,7 +125,6 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		controller:             wfc,
 		globalParams:           make(map[string]string),
 		volumes:                wf.Spec.DeepCopy().Volumes,
-		artifactRepository:     &wfc.Config.ArtifactRepository,
 		completedPods:          make(map[string]bool),
 		succeededPods:          make(map[string]bool),
 		deadline:               time.Now().UTC().Add(maxOperationTime),
@@ -142,6 +139,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 	if woc.wf.Status.StoredTemplates == nil {
 		woc.wf.Status.StoredTemplates = make(map[string]wfv1.Template)
 	}
+	woc.wf.Status.ArtifactRepositories["default"] = wfc.Config.ArtifactRepository
 	return &woc
 }
 
@@ -260,7 +258,7 @@ func (woc *wfOperationCtx) operate() {
 		repoReference := woc.wfSpec.ArtifactRepositoryRef
 		repo, err := getArtifactRepositoryRef(woc.controller, repoReference.ConfigMap, repoReference.Key, woc.wf.ObjectMeta.Namespace)
 		if err == nil {
-			woc.artifactRepository = repo
+			woc.wf.Status.ArtifactRepositories[wfv1.DefaultArtifactRepositoryRef.ID()] = *repo
 		} else {
 			msg := fmt.Sprintf("Failed to load artifact repository configMap: %+v", err)
 			woc.log.Errorf(msg)

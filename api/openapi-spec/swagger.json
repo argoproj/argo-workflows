@@ -1873,6 +1873,36 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.ArtifactRepository": {
+      "description": "ArtifactRepository represents a artifact repository in which a controller will store its artifacts",
+      "type": "object",
+      "properties": {
+        "archiveLogs": {
+          "description": "ArchiveLogs enables log archiving",
+          "type": "boolean"
+        },
+        "artifactory": {
+          "description": "Artifactory stores artifacts to JFrog Artifactory",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifactRepository"
+        },
+        "gcs": {
+          "description": "GCS stores artifact in a GCS object store",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSArtifactRepository"
+        },
+        "hdfs": {
+          "description": "HDFS stores artifacts in HDFS",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HDFSArtifactRepository"
+        },
+        "oss": {
+          "description": "OSS stores artifact in a OSS-compliant object store",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OSSArtifactRepository"
+        },
+        "s3": {
+          "description": "S3 stores artifact in a S3-compliant object store",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3ArtifactRepository"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef": {
       "type": "object",
       "properties": {
@@ -1897,6 +1927,24 @@
         },
         "url": {
           "description": "URL of the artifact",
+          "type": "string"
+        },
+        "usernameSecret": {
+          "description": "UsernameSecret is the secret selector to the repository username",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ArtifactoryArtifactRepository": {
+      "description": "ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository",
+      "type": "object",
+      "properties": {
+        "passwordSecret": {
+          "description": "PasswordSecret is the secret selector to the repository password",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "repoURL": {
+          "description": "RepoURL is the url for artifactory repo.",
           "type": "string"
         },
         "usernameSecret": {
@@ -2319,6 +2367,27 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.GCSArtifactRepository": {
+      "description": "GCSArtifactRepository defines the controller configuration for a GCS artifact repository",
+      "type": "object",
+      "required": [
+        "bucket"
+      ],
+      "properties": {
+        "bucket": {
+          "description": "Bucket is the name of the bucket",
+          "type": "string"
+        },
+        "keyFormat": {
+          "description": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
+          "type": "string"
+        },
+        "serviceAccountKeySecret": {
+          "description": "ServiceAccountKeySecret is the secret selector to the bucket's service account key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Gauge": {
       "description": "Gauge is a Gauge prometheus metric",
       "type": "object",
@@ -2431,6 +2500,58 @@
         },
         "path": {
           "description": "Path is a file path in HDFS",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.HDFSArtifactRepository": {
+      "description": "HDFSArtifactRepository defines the controller configuration for an HDFS artifact repository",
+      "type": "object",
+      "required": [
+        "addresses"
+      ],
+      "properties": {
+        "addresses": {
+          "description": "Addresses is accessible addresses of HDFS name nodes",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "force": {
+          "description": "Force copies a file forcibly even if it exists (default: false)",
+          "type": "boolean"
+        },
+        "hdfsUser": {
+          "description": "HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.",
+          "type": "string"
+        },
+        "krbCCacheSecret": {
+          "description": "KrbCCacheSecret is the secret selector for Kerberos ccache Either ccache or keytab can be set to use Kerberos.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "krbConfigConfigMap": {
+          "description": "KrbConfig is the configmap selector for Kerberos config as string It must be set if either ccache or keytab is used.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
+        },
+        "krbKeytabSecret": {
+          "description": "KrbKeytabSecret is the secret selector for Kerberos keytab Either ccache or keytab can be set to use Kerberos.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "krbRealm": {
+          "description": "KrbRealm is the Kerberos realm used with Kerberos keytab It must be set if keytab is used.",
+          "type": "string"
+        },
+        "krbServicePrincipalName": {
+          "description": "KrbServicePrincipalName is the principal name of Kerberos service It must be set if either ccache or keytab is used.",
+          "type": "string"
+        },
+        "krbUsername": {
+          "description": "KrbUsername is the Kerberos username used with Kerberos keytab It must be set if keytab is used.",
+          "type": "string"
+        },
+        "pathFormat": {
+          "description": "PathFormat is defines the format of path to store a file. Can reference workflow variables",
           "type": "string"
         }
       }
@@ -2757,6 +2878,38 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.OSSArtifactRepository": {
+      "description": "OSSArtifactRepository defines the controller configuration for an OSS artifact repository",
+      "type": "object",
+      "required": [
+        "endpoint",
+        "bucket",
+        "accessKeySecret",
+        "secretKeySecret"
+      ],
+      "properties": {
+        "accessKeySecret": {
+          "description": "AccessKeySecret is the secret selector to the bucket's access key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "bucket": {
+          "description": "Bucket is the name of the bucket",
+          "type": "string"
+        },
+        "endpoint": {
+          "description": "Endpoint is the hostname of the bucket endpoint",
+          "type": "string"
+        },
+        "keyFormat": {
+          "description": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
+          "type": "string"
+        },
+        "secretKeySecret": {
+          "description": "SecretKeySecret is the secret selector to the bucket's secret key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Outputs": {
       "description": "Outputs hold parameters, artifacts, and results from a step",
       "type": "object",
@@ -2982,6 +3135,58 @@
         },
         "key": {
           "description": "Key is the key in the bucket where the artifact resides",
+          "type": "string"
+        },
+        "region": {
+          "description": "Region contains the optional bucket region",
+          "type": "string"
+        },
+        "roleARN": {
+          "description": "RoleARN is the Amazon Resource Name (ARN) of the role to assume.",
+          "type": "string"
+        },
+        "secretKeySecret": {
+          "description": "SecretKeySecret is the secret selector to the bucket's secret key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "useSDKCreds": {
+          "description": "UseSDKCreds tells the driver to figure out credentials based on sdk defaults.",
+          "type": "boolean"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.S3ArtifactRepository": {
+      "description": "S3ArtifactRepository defines the controller configuration for an S3 artifact repository",
+      "type": "object",
+      "required": [
+        "endpoint",
+        "bucket",
+        "accessKeySecret",
+        "secretKeySecret"
+      ],
+      "properties": {
+        "accessKeySecret": {
+          "description": "AccessKeySecret is the secret selector to the bucket's access key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "bucket": {
+          "description": "Bucket is the name of the bucket",
+          "type": "string"
+        },
+        "endpoint": {
+          "description": "Endpoint is the hostname of the bucket endpoint",
+          "type": "string"
+        },
+        "insecure": {
+          "description": "Insecure will connect to the service with TLS",
+          "type": "boolean"
+        },
+        "keyFormat": {
+          "description": "KeyFormat is defines the format of how to store keys. Can reference workflow variables",
+          "type": "string"
+        },
+        "keyPrefix": {
+          "description": "KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts. DEPRECATED. Use KeyFormat instead",
           "type": "string"
         },
         "region": {
@@ -3995,6 +4200,13 @@
       "description": "WorkflowStatus contains overall status information about a workflow",
       "type": "object",
       "properties": {
+        "artifactRepositories": {
+          "description": "ArtifactRepositories stores artifact repositories used by the io.argoproj.workflow.v1alpha1. This is used if the input/output artifact does not specify this (for legacy behaviour). May keys are string representation of a ArtifactRepositoryRef",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepository"
+          }
+        },
         "compressedNodes": {
           "description": "Compressed and base64 decoded Nodes map",
           "type": "string"
