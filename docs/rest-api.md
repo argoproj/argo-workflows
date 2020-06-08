@@ -18,7 +18,7 @@ curl -H "Authorization: $token" http://localhost:2746/api/v1/workflows/argo
 To view the API:
  
 1. Open [https://editor.swagger.io/](https://editor.swagger.io/)
-2. Copy and paste ../api/argo-server/swagger.json
+2. Copy and paste `../api/openapi-spec/swagger.json`
 
 ## Classic API
 

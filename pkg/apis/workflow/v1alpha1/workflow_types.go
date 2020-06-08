@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -99,6 +100,31 @@ func (w Workflows) Less(i, j int) bool {
 	}
 	return jFinish.Before(&iFinish)
 }
+
+type WorkflowPredicate = func(wf Workflow) bool
+
+func (w Workflows) Filter(predicate WorkflowPredicate) Workflows {
+	var out Workflows
+	for _, wf := range w {
+		if predicate(wf) {
+			out = append(out, wf)
+		}
+	}
+	return out
+}
+
+var (
+	WorkflowCreatedAfter = func(t time.Time) WorkflowPredicate {
+		return func(wf Workflow) bool {
+			return wf.ObjectMeta.CreationTimestamp.After(t)
+		}
+	}
+	WorkflowFinishedBefore = func(t time.Time) WorkflowPredicate {
+		return func(wf Workflow) bool {
+			return !wf.Status.FinishedAt.IsZero() && wf.Status.FinishedAt.Time.Before(t)
+		}
+	}
+)
 
 // WorkflowList is list of Workflow resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -1981,17 +2007,29 @@ func (p *Prometheus) SetValueString(val string) {
 func (p *Prometheus) GetDesc() string {
 	// This serves as a hash for the metric
 	// TODO: Make sure this is what we want to use as the hash
+	labels := p.GetMetricLabels()
 	desc := p.Name + "{"
-	for key, val := range p.GetMetricLabels() {
-		desc += key + "=" + val + ","
+	for _, key := range sortedMapStringStringKeys(labels) {
+		desc += key + "=" + labels[key] + ","
 	}
 	if p.Histogram != nil {
-		for _, bucket := range p.Histogram.Buckets {
+		sortedBuckets := p.Histogram.Buckets
+		sort.Float64s(sortedBuckets)
+		for _, bucket := range sortedBuckets {
 			desc += "bucket=" + fmt.Sprint(bucket) + ","
 		}
 	}
 	desc += "}"
 	return desc
+}
+
+func sortedMapStringStringKeys(in map[string]string) []string {
+	var stringList []string
+	for key := range in {
+		stringList = append(stringList, key)
+	}
+	sort.Strings(stringList)
+	return stringList
 }
 
 func (p *Prometheus) IsRealtime() bool {
