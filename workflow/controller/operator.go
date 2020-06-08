@@ -2704,14 +2704,22 @@ func (woc *wfOperationCtx) loadExecutionSpec() (wfv1.TemplateReferenceHolder, wf
 		return tmplRef, executionParameters, nil
 	}
 
-	// If the controller is in reference mode, don't trust the stored spec in the Workflow object and refetch it every time
-	if woc.wf.Status.StoredWorkflowSpec == nil || woc.controller.referenceMode {
+	if woc.wf.Status.StoredWorkflowSpec == nil {
 		wftSpec, err := woc.fetchWorkflowSpec()
 		if err != nil {
 			return nil, wfv1.Arguments{}, err
 		}
 		woc.wf.Status.StoredWorkflowSpec = wftSpec
 		woc.updated = true
+	} else if woc.controller.referenceMode {
+		// If the controller is in reference mode, ensure that the stored spec is identical to the reference spec at every operation
+		wftSpec, err := woc.fetchWorkflowSpec()
+		if err != nil {
+			return nil, wfv1.Arguments{}, err
+		}
+		if woc.wf.Status.StoredWorkflowSpec.String() != wftSpec.String() {
+			return nil, wfv1.Arguments{}, fmt.Errorf("workflowTemplateRef reference may not change during execution when the controller is in reference mode")
+		}
 	}
 
 	woc.wfSpec = woc.wf.Status.StoredWorkflowSpec
