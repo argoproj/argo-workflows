@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -2006,17 +2007,29 @@ func (p *Prometheus) SetValueString(val string) {
 func (p *Prometheus) GetDesc() string {
 	// This serves as a hash for the metric
 	// TODO: Make sure this is what we want to use as the hash
+	labels := p.GetMetricLabels()
 	desc := p.Name + "{"
-	for key, val := range p.GetMetricLabels() {
-		desc += key + "=" + val + ","
+	for _, key := range sortedMapStringStringKeys(labels) {
+		desc += key + "=" + labels[key] + ","
 	}
 	if p.Histogram != nil {
-		for _, bucket := range p.Histogram.Buckets {
+		sortedBuckets := p.Histogram.Buckets
+		sort.Float64s(sortedBuckets)
+		for _, bucket := range sortedBuckets {
 			desc += "bucket=" + fmt.Sprint(bucket) + ","
 		}
 	}
 	desc += "}"
 	return desc
+}
+
+func sortedMapStringStringKeys(in map[string]string) []string {
+	var stringList []string
+	for key := range in {
+		stringList = append(stringList, key)
+	}
+	sort.Strings(stringList)
+	return stringList
 }
 
 func (p *Prometheus) IsRealtime() bool {
