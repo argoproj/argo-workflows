@@ -1355,7 +1355,7 @@ message WorkflowStatus {
 
   // ArtifactRepositories stores artifact repositories used by the workflow. This is used if the input/output artifact does not
   // specify this (for legacy behaviour).
-  // May keys are string representation of a ArtifactRepositoryRef
+  // May keys are string representation of a ArtifactRepositoryRef - see `ArtifactRepositoryRef.ID()` and `ArtifactRepositoryRefFromID`
   map<string, ArtifactRepository> artifactRepositories = 15;
 }
 

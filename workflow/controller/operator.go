@@ -2668,7 +2668,7 @@ func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (boo
 	return false, nil
 }
 
-func (woc *wfOperationCtx) getArtifactRepositoryByRef(arRef *wfv1.ArtifactRepositoryRef) (*config.ArtifactRepository, error) {
+func (woc *wfOperationCtx) getArtifactRepositoryByRef(arRef *wfv1.ArtifactRepositoryRef) (*wfv1.ArtifactRepository, error) {
 	namespaces := []string{woc.wf.ObjectMeta.Namespace, woc.controller.namespace}
 	for _, namespace := range namespaces {
 		cm, err := woc.controller.kubeclientset.CoreV1().ConfigMaps(namespace).Get(arRef.GetConfigMap(), metav1.GetOptions{})
@@ -2683,7 +2683,7 @@ func (woc *wfOperationCtx) getArtifactRepositoryByRef(arRef *wfv1.ArtifactReposi
 			continue
 		}
 		woc.log.WithFields(log.Fields{"namespace": namespace, "name": cm.Name}).Debug("Found artifact repository by ref")
-		ar := &config.ArtifactRepository{}
+		ar := &wfv1.ArtifactRepository{}
 		err = yaml.Unmarshal([]byte(value), ar)
 		if err != nil {
 			return nil, err

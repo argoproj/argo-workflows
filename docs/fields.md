@@ -591,7 +591,7 @@ WorkflowStatus contains overall status information about a workflow
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`artifactRepositories`|[`ArtifactRepository`](#artifactrepository)|ArtifactRepositories stores artifact repositories used by the io.argoproj.workflow.v1alpha1. This is used if the input/output artifact does not specify this (for legacy behaviour). May keys are string representation of a ArtifactRepositoryRef|
+|`artifactRepositories`|[`ArtifactRepository`](#artifactrepository)|ArtifactRepositories stores artifact repositories used by the io.argoproj.workflow.v1alpha1. This is used if the input/output artifact does not specify this (for legacy behaviour). May keys are string representation of a ArtifactRepositoryRef - see `ArtifactRepositoryRef.ID()` and `ArtifactRepositoryRefFromID`|
 |`compressedNodes`|`string`|Compressed and base64 decoded Nodes map|
 |`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the Workflow may have|
 |`finishedAt`|[`Time`](#time)|Time at which this workflow completed|

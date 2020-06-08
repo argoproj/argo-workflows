@@ -10,7 +10,6 @@ import (
 	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
