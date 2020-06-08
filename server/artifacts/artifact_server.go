@@ -19,18 +19,18 @@ import (
 	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/util/instanceid"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
-	"github.com/argoproj/argo/workflow/packer"
+	"github.com/argoproj/argo/workflow/hydrator"
 )
 
 type ArtifactServer struct {
-	authN                 auth.Gatekeeper
-	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
-	wfArchive             sqldb.WorkflowArchive
-	instanceIDService     instanceid.Service
+	gatekeeper        auth.Gatekeeper
+	hydrator          hydrator.Interface
+	wfArchive         sqldb.WorkflowArchive
+	instanceIDService instanceid.Service
 }
 
-func NewArtifactServer(authN auth.Gatekeeper, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service) *ArtifactServer {
-	return &ArtifactServer{authN, offloadNodeStatusRepo, wfArchive, instanceIDService}
+func NewArtifactServer(authN auth.Gatekeeper, hydrator hydrator.Interface, wfArchive sqldb.WorkflowArchive, instanceIDService instanceid.Service) *ArtifactServer {
+	return &ArtifactServer{authN, hydrator, wfArchive, instanceIDService}
 }
 
 func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +55,6 @@ func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
 		a.serverInternalError(err, w)
 		return
 	}
-
 	data, err := a.getArtifact(ctx, wf, nodeId, artifactName)
 	if err != nil {
 		a.serverInternalError(err, w)
@@ -64,6 +63,7 @@ func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
 	a.ok(w, data)
 }
+
 func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request) {
 
 	ctx, err := a.gateKeeping(r)
@@ -95,6 +95,7 @@ func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
 	a.ok(w, data)
 }
+
 func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
 	token := r.Header.Get("Authorization")
 	if token == "" {
@@ -108,16 +109,14 @@ func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
 		}
 	}
 	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"authorization": []string{token}})
-	return a.authN.Context(ctx)
+	return a.gatekeeper.Context(ctx)
 }
 
 func (a *ArtifactServer) ok(w http.ResponseWriter, data []byte) {
 	w.WriteHeader(200)
 	_, err := w.Write(data)
 	if err != nil {
-		w.WriteHeader(500)
-		_, _ = w.Write([]byte(err.Error()))
-		return
+		a.serverInternalError(err, w)
 	}
 }
 
@@ -171,20 +170,9 @@ func (a *ArtifactServer) getWorkflowAndValidate(ctx context.Context, namespace s
 	if err != nil {
 		return nil, err
 	}
-	err = packer.DecompressWorkflow(wf)
+	err = a.hydrator.Hydrate(wf)
 	if err != nil {
 		return nil, err
-	}
-	if wf.Status.IsOffloadNodeStatus() {
-		if a.offloadNodeStatusRepo.IsEnabled() {
-			offloadedNodes, err := a.offloadNodeStatusRepo.Get(string(wf.UID), wf.GetOffloadNodeStatusVersion())
-			if err != nil {
-				return nil, err
-			}
-			wf.Status.Nodes = offloadedNodes
-		} else {
-			log.WithFields(log.Fields{"namespace": namespace, "name": workflowName}).Warn(sqldb.OffloadNodeStatusDisabled)
-		}
 	}
 	return wf, nil
 }

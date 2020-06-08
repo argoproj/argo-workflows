@@ -1,10 +1,10 @@
 import * as React from 'react';
-import {Link, RouteComponentProps} from 'react-router-dom';
+import {RouteComponentProps} from 'react-router-dom';
 import {Subscription} from 'rxjs';
 
 import {Autocomplete, Page, SlidingPanel} from 'argo-ui';
 import * as models from '../../../../models';
-import {Workflow} from '../../../../models';
+import {labels, Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
@@ -17,13 +17,11 @@ import {ZeroState} from '../../../shared/components/zero-state';
 import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
 
-import {Ticker} from 'argo-ui/src/index';
-import * as classNames from 'classnames';
+import {CostOptimisationNudge} from '../../../shared/components/cost-optimisation-nudge';
 import {PaginationPanel} from '../../../shared/components/pagination-panel';
-import {Timestamp} from '../../../shared/components/timestamp';
-import {formatDuration, wfDuration} from '../../../shared/duration';
 import {Pagination, parseLimit} from '../../../shared/pagination';
 import {WorkflowFilters} from '../workflow-filters/workflow-filters';
+import {WorkflowsRow} from '../workflows-row/workflows-row';
 
 require('./workflows-list.scss');
 
@@ -172,7 +170,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             })
             .then(() => {
                 this.subscription = services.workflows
-                    .watch({namespace: newNamespace, phases: selectedPhases, labels: selectedLabels})
+                    .watchFields({namespace: newNamespace, phases: selectedPhases, labels: selectedLabels})
                     .map(workflowChange => {
                         const workflows = this.state.workflows;
                         if (!workflowChange) {
@@ -225,6 +223,18 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.fetchWorkflows(namespace, selectedPhases, selectedLabels, pagination);
     }
 
+    private countsByCompleted() {
+        const counts = {complete: 0, incomplete: 0};
+        this.state.workflows.forEach(wf => {
+            if (wf.metadata.labels && wf.metadata.labels[labels.completed] === 'true') {
+                counts.complete++;
+            } else {
+                counts.incomplete++;
+            }
+        });
+        return counts;
+    }
+
     private renderWorkflows() {
         if (!this.state.workflows) {
             return <Loading />;
@@ -238,38 +248,42 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
             );
         }
 
+        const counts = this.countsByCompleted();
+
         return (
             <>
+                {(counts.complete > 100 || counts.incomplete > 100) && (
+                    <CostOptimisationNudge name='workflow-list'>
+                        You have at least {counts.incomplete} incomplete, and {counts.complete} complete workflows. Reducing these amounts will reduce your costs.
+                    </CostOptimisationNudge>
+                )}
                 <div className='argo-table-list'>
                     <div className='row argo-table-list__head'>
-                        <div className='columns small-1' />
+                        <div className='columns small-1 workflows-list__status' />
                         <div className='columns small-3'>NAME</div>
                         <div className='columns small-2'>NAMESPACE</div>
                         <div className='columns small-2'>STARTED</div>
                         <div className='columns small-2'>FINISHED</div>
-                        <div className='columns small-2'>DURATION</div>
+                        <div className='columns small-1'>DURATION</div>
+                        <div className='columns small-1'>DETAILS</div>
                     </div>
-                    {this.state.workflows.map(w => (
-                        <Link
-                            className='row argo-table-list__row'
-                            key={`${w.metadata.namespace}-${w.metadata.name}`}
-                            to={uiUrl(`workflows/${w.metadata.namespace}/${w.metadata.name}`)}>
-                            <div className='columns small-1'>
-                                <i className={classNames('fa', Utils.statusIconClasses(w.status.phase))} />
-                            </div>
-                            <div className='columns small-3'>{w.metadata.name}</div>
-                            <div className='columns small-2'>{w.metadata.namespace}</div>
-                            <div className='columns small-2'>
-                                <Timestamp date={w.status.startedAt} />
-                            </div>
-                            <div className='columns small-2'>
-                                <Timestamp date={w.status.finishedAt} />
-                            </div>
-                            <div className='columns small-2'>
-                                <Ticker>{() => formatDuration(wfDuration(w.status))}</Ticker>
-                            </div>
-                        </Link>
-                    ))}
+                    {this.state.workflows.map(wf => {
+                        return (
+                            <WorkflowsRow
+                                workflow={wf}
+                                key={`${wf.metadata.namespace}-${wf.metadata.name}`}
+                                onChange={key => {
+                                    const value = `${key}=${wf.metadata.labels[key]}`;
+                                    let newTags: string[] = [];
+                                    if (this.state.selectedLabels.indexOf(value) === -1) {
+                                        newTags = this.state.selectedLabels.concat(value);
+                                        this.setState({selectedLabels: newTags});
+                                    }
+                                    this.changeFilters(this.state.namespace, this.state.selectedPhases, newTags, this.state.pagination);
+                                }}
+                            />
+                        );
+                    })}
                 </div>
                 <PaginationPanel
                     onChange={pagination => this.changeFilters(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, pagination)}

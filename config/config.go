@@ -4,12 +4,16 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/server/auth/sso"
 )
 
 var emptyConfig = Config{}
 
 // Config contain the configuration settings for the workflow controller
 type Config struct {
+	// SSO in settings for single-sign on
+	SSO sso.Config `json:"sso,omitempty"`
+
 	// ExecutorImage is the image name of the executor to use when running pods
 	// DEPRECATED: use --executor-image flag to workflow-controller instead
 	ExecutorImage string `json:"executorImage,omitempty"`

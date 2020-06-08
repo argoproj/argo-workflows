@@ -6,6 +6,7 @@ bases:
   - minio
 
 resources:
+  - argo-server-sso-secret.yaml
   - workflow-role.yaml
   - workflow-default-rolebinding.yaml
   - cluster-workflow-template-rbac.yaml
@@ -13,3 +14,4 @@ resources:
 
 patchesStrategicMerge:
   - overlays/workflow-controller-configmap.yaml
+  - overlays/argo-server-deployment.yaml

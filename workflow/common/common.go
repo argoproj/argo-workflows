@@ -136,6 +136,12 @@ const (
 	LocalVarPodName = "pod.name"
 	// LocalVarRetries is a step level variable that references the retries number if retryStrategy is specified
 	LocalVarRetries = "retries"
+	// LocalVarDuration is a step level variable (currently only available in metric emission) that tracks the duration of the step
+	LocalVarDuration = "duration"
+	// LocalVarStatus is a step level variable (currently only available in metric emission) that tracks the duration of the step
+	LocalVarStatus = "status"
+	// LocalVarResourcesDuration is a step level variable (currently only available in metric emission) that tracks the resources duration of the step
+	LocalVarResourcesDuration = "resourcesDuration"
 
 	KubeConfigDefaultMountPath    = "/kube/config"
 	KubeConfigDefaultVolumeName   = "kubeconfig"
@@ -161,5 +167,5 @@ func UnstructuredHasCompletedLabel(obj interface{}) bool {
 	if wf, ok := obj.(*unstructured.Unstructured); ok {
 		return wf.GetLabels()[LabelKeyCompleted] == "true"
 	}
-	panic("obj passed is not an Unstructured")
+	return false
 }

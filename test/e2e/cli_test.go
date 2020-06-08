@@ -27,6 +27,13 @@ func (s *CLISuite) BeforeTest(suiteName, testName string) {
 	_ = os.Unsetenv("ARGO_TOKEN")
 }
 
+func (s *CLISuite) testNeedsOffloading() {
+	skip := s.Persistence.IsEnabled() && os.Getenv("ARGO_SERVER") == ""
+	if skip {
+		s.T().Skip("test needs offloading, but not Argo Server available")
+	}
+}
+
 func (s *CLISuite) TestCompletion() {
 	s.Given().RunCli([]string{"completion", "bash"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
@@ -214,6 +221,7 @@ func (s *CLISuite) TestRoot() {
 		})
 	})
 	s.Run("List", func() {
+		s.testNeedsOffloading()
 		for i := 0; i < 3; i++ {
 			s.Given().
 				Workflow("@smoke/basic-generate-name.yaml").
@@ -232,6 +240,7 @@ func (s *CLISuite) TestRoot() {
 		})
 	})
 	s.Run("Get", func() {
+		s.testNeedsOffloading()
 		s.Given().RunCli([]string{"get", "basic"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
@@ -267,11 +276,7 @@ func (s *CLISuite) TestRoot() {
 }
 
 func (s *CLISuite) TestWorkflowSuspendResume() {
-	if s.Persistence.IsEnabled() {
-		// Persistence is enabled for this test, but it is not enabled for the Argo Server in this test suite.
-		// When this is the case, this behavior is tested in cli_with_server_test.go
-		s.T().SkipNow()
-	}
+	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/sleep-3s.yaml").
 		When().
@@ -294,15 +299,8 @@ func (s *CLISuite) TestWorkflowSuspendResume() {
 		})
 }
 
-func (s *CLISuite) TestNodeSuspendResumeNoPersistence() {
-	if s.Persistence.IsEnabled() {
-		// Persistence is enabled for this test, but it is not enabled for the Argo Server in this test suite.
-		s.T().SkipNow()
-	}
-	NodeSuspendResumeCommon(s.E2ESuite)
-}
-
-func NodeSuspendResumeCommon(s fixtures.E2ESuite) {
+func (s *CLISuite) TestNodeSuspendResume() {
+	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@testdata/node-suspend.yaml").
 		When().
@@ -337,69 +335,128 @@ func NodeSuspendResumeCommon(s fixtures.E2ESuite) {
 		})
 }
 
-func (s *CLISuite) TestWorkflowDelete() {
-	s.Run("DeleteByName", func() {
-		s.Given().
-			Workflow("@smoke/basic.yaml").
-			When().
-			SubmitWorkflow().
-			WaitForWorkflow(30*time.Second).
-			Given().
-			RunCli([]string{"delete", "basic"}, func(t *testing.T, output string, err error) {
-				if assert.NoError(t, err) {
-					assert.Contains(t, output, "Workflow 'basic' deleted")
-				}
-			})
-	})
-	s.Run("DeleteAll", func() {
-		s.Given().
-			Workflow("@smoke/basic.yaml").
-			When().
-			SubmitWorkflow().
-			WaitForWorkflow(1*time.Minute).
-			Given().
-			RunCli([]string{"delete", "--all", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
-				if assert.NoError(t, err) {
-					assert.Contains(t, output, "Workflow 'basic' deleted")
-				}
-			})
-	})
-	s.Run("DeleteCompleted", func() {
-		s.Given().
-			Workflow("@testdata/sleep-3s.yaml").
-			When().
-			SubmitWorkflow().
-			Given().
-			RunCli([]string{"delete", "--completed", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
-				if assert.NoError(t, err) {
-					// nothing should be deleted yet
-					assert.NotContains(t, output, "deleted")
-				}
-			}).
-			When().
-			WaitForWorkflow(1*time.Minute).
-			Given().
-			RunCli([]string{"delete", "--completed", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
-				if assert.NoError(t, err) {
-					assert.Contains(t, output, "deleted")
-				}
-			})
-	})
-	s.Run("DeleteOlder", func() {
-		s.Given().
-			Workflow("@smoke/basic.yaml").
-			When().
-			SubmitWorkflow().
-			WaitForWorkflow(1*time.Minute).
-			Given().
-			RunCli([]string{"delete", "--older", "1d", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
-				if assert.NoError(t, err) {
-					// nothing over a day should be deleted
-					assert.NotContains(t, output, "deleted")
-				}
-			})
-	})
+func (s *CLISuite) TestWorkflowDeleteByName() {
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30*time.Second).
+		RunCli([]string{"delete", "basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Workflow 'basic' deleted")
+			}
+		})
 }
+
+func (s *CLISuite) TestWorkflowDeleteDryRun() {
+	s.Given().
+		When().
+		RunCli([]string{"delete", "--dry-run", "basic"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Workflow 'basic' deleted (dry-run)")
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowDeleteNothing() {
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30*time.Second).
+		RunCli([]string{"delete"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.NotContains(t, output, "deleted")
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowDeleteNotFound() {
+	s.Given().
+		When().
+		RunCli([]string{"delete", "not-found"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Workflow 'not-found' not found")
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowDeleteAll() {
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30*time.Second).
+		Given().
+		RunCli([]string{"delete", "--all", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Workflow 'basic' deleted")
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowDeleteCompleted() {
+	s.Given().
+		Workflow("@testdata/sleep-3s.yaml").
+		When().
+		SubmitWorkflow().
+		Given().
+		RunCli([]string{"delete", "--completed", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				// nothing should be deleted yet
+				assert.NotContains(t, output, "deleted")
+			}
+		}).
+		When().
+		WaitForWorkflow(30*time.Second).
+		Given().
+		RunCli([]string{"delete", "--completed", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "deleted")
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowDeleteOlder() {
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30*time.Second).
+		Given().
+		RunCli([]string{"delete", "--older", "1d", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				// nothing over a day should be deleted
+				assert.NotContains(t, output, "deleted")
+			}
+		}).
+		RunCli([]string{"delete", "--older", "0s", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "deleted")
+			}
+		})
+}
+
+func (s *CLISuite) TestWorkflowDeleteByPrefix() {
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(30*time.Second).
+		Given().
+		RunCli([]string{"delete", "--prefix", "missing-prefix", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				// nothing should be deleted
+				assert.NotContains(t, output, "deleted")
+			}
+		}).
+		RunCli([]string{"delete", "--prefix", "basic", "-l", "argo-e2e"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "deleted")
+			}
+		})
+}
+
 func (s *CLISuite) TestWorkflowLint() {
 	s.Run("LintFile", func() {
 		s.Given().RunCli([]string{"lint", "smoke/basic.yaml"}, func(t *testing.T, output string, err error) {
@@ -497,13 +554,8 @@ func (s *CLISuite) TestWorkflowLint() {
 	})
 }
 
-func (s *CLISuite) TestWorkflowRetryNoPersistence() {
-	if s.Persistence.IsEnabled() {
-		// Persistence is enabled for this test, but it is not enabled for the Argo Server in this test suite.
-		// When this is the case, this behavior is tested in cli_with_server_test.go
-		s.T().SkipNow()
-	}
-
+func (s *CLISuite) TestWorkflowRetry() {
+	s.testNeedsOffloading()
 	var retryTime corev1.Time
 
 	s.Given().
@@ -556,6 +608,7 @@ func (s *CLISuite) TestWorkflowTerminate() {
 }
 
 func (s *CLISuite) TestWorkflowWait() {
+	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
@@ -569,6 +622,7 @@ func (s *CLISuite) TestWorkflowWait() {
 }
 
 func (s *CLISuite) TestWorkflowWatch() {
+	s.testNeedsOffloading()
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
@@ -620,6 +674,7 @@ func (s *CLISuite) TestTemplate() {
 		})
 	})
 	s.Run("Submittable-Template", func() {
+		s.testNeedsOffloading()
 		s.Given().RunCli([]string{"submit", "--from", "workflowtemplate/workflow-template-whalesay-template", "-l", "argo-e2e=true"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
@@ -806,6 +861,44 @@ func (s *CLISuite) TestClusterTemplateCommands() {
 					assert.Contains(t, output, "cluster-workflow-template-whalesay-template")
 				}
 			})
+	})
+}
+
+func (s *CLISuite) TestWorkflowTemplateRefSubmit() {
+	s.Run("CreateWFT", func() {
+		s.Given().RunCli([]string{"template", "create", "smoke/workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
+	})
+	s.Run("CreateWF", func() {
+		s.Given().RunCli([]string{"submit", "testdata/workflow-template-ref.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
+	})
+	s.Run("CreateCWFT", func() {
+		s.Given().RunCli([]string{"cluster-template", "create", "smoke/cluster-workflow-template-whalesay-template.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
+	})
+	s.Run("CreateWFWithCWFTRef", func() {
+		s.Given().RunCli([]string{"submit", "testdata/cluster-workflow-template-ref.yaml"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Name:")
+				assert.Contains(t, output, "Namespace:")
+				assert.Contains(t, output, "Created:")
+			}
+		})
 	})
 }
 

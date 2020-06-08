@@ -70,11 +70,20 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.$(VERSION)
 # perform static compilation
 STATIC_BUILD          ?= true
 CI                    ?= false
-DB                    ?= postgres
+DB                    ?= no-db
+ifeq ($(CI),false)
+AUTH_MODE             := hybrid
+else
+AUTH_MODE             := client
+endif
 K3D                   := $(shell if [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
-# which components to start, useful if you want to disable them to debug
-COMPONENTS            := controller,argo-server
 LOG_LEVEL             := debug
+
+ifeq ($(DB),no-db)
+ALWAYS_OFFLOAD_NODE_STATUS := false
+else
+ALWAYS_OFFLOAD_NODE_STATUS := true
+endif
 
 ifeq ($(CI),true)
 TEST_OPTS := -coverprofile=coverage.out
@@ -104,7 +113,7 @@ E2E_MANIFESTS    := $(shell find test/e2e/manifests -mindepth 2 -type f)
 E2E_EXECUTOR     ?= pns
 # The sort puts _.primary first in the list. 'env LC_COLLATE=C' makes sure underscore comes first in both Mac and Linux.
 SWAGGER_FILES    := $(shell find pkg/apiclient -name '*.swagger.json' | env LC_COLLATE=C sort)
-MOCK_FILES       := $(shell find persist workflow -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
+MOCK_FILES       := $(shell find persist server workflow -maxdepth 4 -not -path '/vendor/*' -not -path './ui/*' -path '*/mocks/*' -type f -name '*.go')
 UI_FILES         := $(shell find ui/src -type f && find ui -maxdepth 1 -type f)
 
 define backup_go_mod
@@ -124,6 +133,10 @@ define docker_build
 	if [ $(DEV_IMAGE) = true ]; then mv $(2) dist/$(2)-$(OUTPUT_IMAGE_OS)-$(OUTPUT_IMAGE_ARCH); fi
 	if [ $(K3D) = true ]; then k3d import-images $(IMAGE_NAMESPACE)/$(1):$(VERSION); fi
 	touch $(3)
+endef
+define docker_pull
+	docker pull $(1)
+	if [ $(K3D) = true ]; then k3d import-images $(1); fi
 endef
 
 .PHONY: build
@@ -166,7 +179,7 @@ $(GOPATH)/bin/staticfiles:
 
 server/static/files.go: $(GOPATH)/bin/staticfiles ui/dist/app/index.html
 	# Pack UI into a Go file.
-	staticfiles -o server/static/files.go ui/dist/app
+	$(GOPATH)/bin/staticfiles -o server/static/files.go ui/dist/app
 
 dist/argo-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
 dist/argo-darwin-amd64: GOARGS = GOOS=darwin GOARCH=amd64
@@ -310,32 +323,22 @@ $(VERSION_FILE):
 	@mkdir -p dist
 	touch $(VERSION_FILE)
 
-dist/postgres.yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
-	kustomize build --load_restrictor=none test/e2e/manifests/postgres | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/postgres.yaml
-
-dist/no-db.yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
-	# We additionally disable ALWAYS_OFFLOAD_NODE_STATUS
-	kustomize build --load_restrictor=none test/e2e/manifests/no-db | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' | sed 's/"true"/"false"/' > dist/no-db.yaml
-
-dist/mysql.yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
-	kustomize build --load_restrictor=none test/e2e/manifests/mysql | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/' > dist/mysql.yaml
+dist/$(DB).yaml: $(MANIFESTS) $(E2E_MANIFESTS) $(VERSION_FILE)
+	kustomize build --load_restrictor=none test/e2e/manifests/$(DB) | sed 's/:$(MANIFESTS_VERSION)/:$(VERSION)/' | sed 's/pns/$(E2E_EXECUTOR)/'  > dist/$(DB).yaml
 
 .PHONY: install
-install: dist/postgres.yaml dist/mysql.yaml dist/no-db.yaml
+install: dist/$(DB).yaml
 ifeq ($(K3D),true)
 	k3d start
 endif
-	# Install quick-start
 	kubectl apply -f test/e2e/manifests/argo-ns.yaml
-ifeq ($(DB),postgres)
-	kubectl -n argo apply -f dist/postgres.yaml
+	# If you want SSO, then we want Dex, otherwise we delete any previouly installed Dex.
+ifeq ($(AUTH_MODE),sso)
+	kubectl -n argo apply -l app.kubernetes.io/part-of=dex --prune --force -k manifests/quick-start/base/dex
 else
-ifeq ($(DB),mysql)
-	kubectl -n argo apply -f dist/mysql.yaml
-else
-	kubectl -n argo apply -f dist/no-db.yaml
+	kubectl -n argo delete all -l app.kubernetes.io/part-of=dex
 endif
-endif
+	kubectl -n argo apply -l app.kubernetes.io/part-of=argo --prune --force -f dist/$(DB).yaml
 
 .PHONY: pull-build-images
 pull-build-images:
@@ -354,43 +357,38 @@ test/e2e/images/argosay/v2/argosay: $(shell find test/e2e/images/argosay/v2/main
 
 .PHONY: test-images
 test-images:
-	docker pull argoproj/argosay:v1
-	docker pull argoproj/argosay:v2
-	docker pull python:alpine3.6
+	$(call docker_pull,argoproj/argosay:v1)
+	$(call docker_pull,argoproj/argosay:v2)
+	$(call docker_pull,python:alpine3.6)
 
 .PHONY: stop
 stop:
 	killall argo workflow-controller pf.sh kubectl || true
 
-.PHONY: start-aux
-start-aux:
+$(GOPATH)/bin/goreman:
+	go get github.com/mattn/goreman
+
+.PHONY: start
+start: status stop install controller cli executor-image $(GOPATH)/bin/goreman
 	kubectl config set-context --current --namespace=argo
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
 	./hack/port-forward.sh
-	# Check minio, postgres and mysql are in hosts file
+	# Check dex, minio, postgres and mysql are in hosts file
+ifeq ($(AUTH_MODE),sso)
+	grep '127.0.0.1 *dex' /etc/hosts
+endif
 	grep '127.0.0.1 *minio' /etc/hosts
 	grep '127.0.0.1 *postgres' /etc/hosts
 	grep '127.0.0.1 *mysql' /etc/hosts
-ifneq ($(findstring controller,$(COMPONENTS)),)
-	ALWAYS_OFFLOAD_NODE_STATUS=true OFFLOAD_NODE_STATUS_TTL=30s WORKFLOW_GC_PERIOD=30s UPPERIO_DB_DEBUG=1 ARCHIVED_WORKFLOW_GC_PERIOD=30s ./dist/workflow-controller --executor-image argoproj/argoexec:$(VERSION) --namespaced --loglevel $(LOG_LEVEL) &
-endif
-ifneq ($(findstring argo-server,$(COMPONENTS)),)
-	UPPERIO_DB_DEBUG=1 ./dist/argo --loglevel $(LOG_LEVEL) server --namespaced --auth-mode client --secure &
-endif
+	env ALWAYS_OFFLOAD_NODE_STATUS=$(ALWAYS_OFFLOAD_NODE_STATUS) LOG_LEVEL=$(LOG_LEVEL) VERSION=$(VERSION) AUTH_MODE=$(AUTH_MODE) $(GOPATH)/bin/goreman -set-ports=false -logtime=false start
 
-.PHONY: start
-start: status stop install controller cli executor-image start-aux wait env
 
 .PHONY: wait
 wait:
-ifneq ($(findstring controller,$(COMPONENTS)),)
 	# Wait for workflow controller
 	until lsof -i :9090 > /dev/null ; do sleep 10s ; done
-endif
-ifneq ($(findstring argo-server,$(COMPONENTS)),)
 	# Wait for Argo Server
 	until lsof -i :2746 > /dev/null ; do sleep 10s ; done
-endif
 
 define print_env
 	export ARGO_SERVER=localhost:2746
@@ -429,7 +427,7 @@ test-e2e: test-images cli
 test-e2e-cron: test-images cli
 	# Run E2E tests
 	@mkdir -p test-results
-	go test -timeout 4m -v -count 1 -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
+	go test -timeout 5m -v -count 1 -parallel 10 -run CronSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: smoke
 smoke: test-images
@@ -438,12 +436,12 @@ smoke: test-images
 	go test -timeout 1m -v -count 1 -p 1 -run SmokeSuite ./test/e2e 2>&1 | tee test-results/test.out
 
 .PHONY: test-api
-test-api: test-images
+test-api:
 	# Run API tests
 	go test -timeout 1m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
 
 .PHONY: test-cli
-test-cli: test-images cli
+test-cli: cli
 	# Run CLI tests
 	go test -timeout 2m -v -count 1 -p 1 -run CLISuite ./test/e2e
 	go test -timeout 2m -v -count 1 -p 1 -run CLIWithServerSuite ./test/e2e
@@ -465,7 +463,7 @@ $(GOPATH)/bin/swagger:
 .PHONY: swagger
 swagger: api/openapi-spec/swagger.json
 
-pkg/apis/workflow/v1alpha1/openapi_generated.go:
+pkg/apis/workflow/v1alpha1/openapi_generated.go: $(shell find pkg/apis/workflow/v1alpha1 -type f -not -name openapi_generated.go)
 	$(call backup_go_mod)
 	go install k8s.io/kube-openapi/cmd/openapi-gen
 	openapi-gen \
@@ -475,20 +473,29 @@ pkg/apis/workflow/v1alpha1/openapi_generated.go:
 	  --report-filename pkg/apis/api-rules/violation_exceptions.list
 	$(call restore_go_mod)
 
-pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
-	go run ./hack secondaryswaggergen
-
-dist/swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
-	swagger mixin -c 680 $(SWAGGER_FILES) | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > dist/swagger.json
-
 dist/kubernetes.swagger.json:
 	./hack/recurl.sh dist/kubernetes.swagger.json https://raw.githubusercontent.com/kubernetes/kubernetes/release-1.15/api/openapi-spec/swagger.json
 
-dist/kubeified.swagger.json: dist/swagger.json dist/kubernetes.swagger.json hack/kubeifyswagger.go
-	go run ./hack kubeifyswagger dist/swagger.json dist/kubeified.swagger.json
+pkg/apiclient/_.secondary.swagger.json: hack/secondaryswaggergen.go pkg/apis/workflow/v1alpha1/openapi_generated.go dist/kubernetes.swagger.json
+	go run ./hack secondaryswaggergen
+
+# we always ignore the conflicts, so lets automated figuring out how many there will be and just use that
+dist/swagger-conflicts: $(GOPATH)/bin/swagger $(SWAGGER_FILES)
+	swagger mixin $(SWAGGER_FILES) 2>&1 | grep -c skipping > dist/swagger-conflicts || true
+
+dist/mixed.swagger.json: $(GOPATH)/bin/swagger $(SWAGGER_FILES) dist/swagger-conflicts
+	swagger mixin -c $(shell cat dist/swagger-conflicts) $(SWAGGER_FILES) > dist/mixed.swagger.json.tmp
+	mv dist/mixed.swagger.json.tmp dist/mixed.swagger.json
+
+dist/swaggifed.swagger.json: dist/mixed.swagger.json $(MANIFESTS_VERSION_FILE) hack/swaggify.sh
+	cat dist/mixed.swagger.json | sed 's/VERSION/$(MANIFESTS_VERSION)/' | ./hack/swaggify.sh > dist/swaggifed.swagger.json
+
+dist/kubeified.swagger.json: dist/swaggifed.swagger.json dist/kubernetes.swagger.json hack/kubeifyswagger.go
+	go run ./hack kubeifyswagger dist/swaggifed.swagger.json dist/kubeified.swagger.json
 
 api/openapi-spec/swagger.json: dist/kubeified.swagger.json
-	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json > api/openapi-spec/swagger.json
+	swagger flatten --with-flatten minimal --with-flatten remove-unused dist/kubeified.swagger.json > dist/swagger.json
+	mv dist/swagger.json api/openapi-spec/swagger.json
 	swagger validate api/openapi-spec/swagger.json
 	go test ./api/openapi-spec
 

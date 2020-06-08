@@ -22,6 +22,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/informers/externalversions"
 	extv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -40,6 +41,7 @@ type Controller struct {
 	cronWfInformer     extv1alpha1.CronWorkflowInformer
 	cronWfQueue        workqueue.RateLimitingInterface
 	restConfig         *rest.Config
+	metrics            *metrics.Metrics
 }
 
 const (
@@ -54,6 +56,7 @@ func NewCronController(
 	namespace string,
 	managedNamespace string,
 	instanceId string,
+	metrics *metrics.Metrics,
 ) *Controller {
 	return &Controller{
 		wfClientset:        wfclientset,
@@ -66,6 +69,7 @@ func NewCronController(
 		nameEntryIDMapLock: &sync.Mutex{},
 		wfQueue:            workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		cronWfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		metrics:            metrics,
 	}
 }
 
@@ -142,7 +146,7 @@ func (cc *Controller) processNextCronItem() bool {
 		return true
 	}
 
-	cronWorkflowOperationCtx, err := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.wfLister)
+	cronWorkflowOperationCtx, err := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.wfLister, cc.metrics)
 	if err != nil {
 		log.Error(err)
 		return true
@@ -238,7 +242,7 @@ func (cc *Controller) processNextWorkflowItem() bool {
 	}
 
 	// If the workflow is completed or was deleted, remove it from Active Workflows
-	if wf.Status.Completed() || !wfExists {
+	if wf.Status.Fulfilled() || !wfExists {
 		log.Warnf("Workflow '%s' from CronWorkflow '%s' completed", wf.Name, woc.cronWf.Name)
 		woc.removeActiveWf(wf)
 	}
