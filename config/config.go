@@ -42,7 +42,7 @@ type Config struct {
 	KubeletInsecure bool `json:"kubeletInsecure,omitempty"`
 
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
-	ArtifactRepository ArtifactRepository `json:"artifactRepository,omitempty"`
+	ArtifactRepository wfv1.ArtifactRepository `json:"artifactRepository,omitempty"`
 
 	// Namespace is a label selector filter to limit the controller's watch to a specific namespace
 	// DEPRECATED: support will be remove in a future release

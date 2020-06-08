@@ -28,7 +28,6 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -65,7 +64,7 @@ type wfOperationCtx struct {
 	// It is then used in addVolumeReferences() when creating a pod.
 	volumes []apiv1.Volume
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
-	artifactRepository *config.ArtifactRepository
+	artifactRepository *wfv1.ArtifactRepository
 	// map of pods which need to be labeled with completed=true
 	completedPods map[string]bool
 	// map of pods which is identified as succeeded=true

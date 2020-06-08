@@ -15,7 +15,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
 	"github.com/argoproj/argo/util/argo"
@@ -2056,7 +2055,7 @@ spec:
 func TestResolveIOPathPlaceholders(t *testing.T) {
 	wf := unmarshalWF(ioPathPlaceholders)
 	woc := newWoc(*wf)
-	woc.artifactRepository.S3 = new(config.S3ArtifactRepository)
+	woc.artifactRepository.S3 = new(wfv1.S3ArtifactRepository)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
@@ -2086,7 +2085,7 @@ spec:
 func TestResolvePlaceholdersInOutputValues(t *testing.T) {
 	wf := unmarshalWF(outputValuePlaceholders)
 	woc := newWoc(*wf)
-	woc.artifactRepository.S3 = new(config.S3ArtifactRepository)
+	woc.artifactRepository.S3 = new(wfv1.S3ArtifactRepository)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
@@ -2125,7 +2124,7 @@ spec:
 func TestResolvePodNameInRetries(t *testing.T) {
 	wf := unmarshalWF(podNameInRetries)
 	woc := newWoc(*wf)
-	woc.artifactRepository.S3 = new(config.S3ArtifactRepository)
+	woc.artifactRepository.S3 = new(wfv1.S3ArtifactRepository)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
@@ -3327,7 +3326,7 @@ spec:
 func TestResolvePlaceholdersInGlobalVariables(t *testing.T) {
 	wf := unmarshalWF(globalVariablePlaceholders)
 	woc := newWoc(*wf)
-	woc.artifactRepository.S3 = new(config.S3ArtifactRepository)
+	woc.artifactRepository.S3 = new(wfv1.S3ArtifactRepository)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})

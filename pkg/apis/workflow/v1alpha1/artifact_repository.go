@@ -1,6 +1,4 @@
-package config
-
-import wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+package v1alpha1
 
 // ArtifactRepository represents a artifact repository in which a controller will store its artifacts
 type ArtifactRepository struct {
@@ -24,7 +22,7 @@ func (a *ArtifactRepository) IsArchiveLogs() bool {
 
 // S3ArtifactRepository defines the controller configuration for an S3 artifact repository
 type S3ArtifactRepository struct {
-	wfv1.S3Bucket `json:",inline"`
+	S3Bucket `json:",inline"`
 
 	// KeyFormat is defines the format of how to store keys. Can reference workflow variables
 	KeyFormat string `json:"keyFormat,omitempty"`
@@ -36,7 +34,7 @@ type S3ArtifactRepository struct {
 
 // OSSArtifactRepository defines the controller configuration for an OSS artifact repository
 type OSSArtifactRepository struct {
-	wfv1.OSSBucket `json:",inline"`
+	OSSBucket `json:",inline"`
 
 	// KeyFormat is defines the format of how to store keys. Can reference workflow variables
 	KeyFormat string `json:"keyFormat,omitempty"`
@@ -44,7 +42,7 @@ type OSSArtifactRepository struct {
 
 // GCSArtifactRepository defines the controller configuration for a GCS artifact repository
 type GCSArtifactRepository struct {
-	wfv1.GCSBucket `json:",inline"`
+	GCSBucket `json:",inline"`
 
 	// KeyFormat is defines the format of how to store keys. Can reference workflow variables
 	KeyFormat string `json:"keyFormat,omitempty"`
@@ -52,14 +50,14 @@ type GCSArtifactRepository struct {
 
 // ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository
 type ArtifactoryArtifactRepository struct {
-	wfv1.ArtifactoryAuth `json:",inline"`
+	ArtifactoryAuth `json:",inline"`
 	// RepoURL is the url for artifactory repo.
 	RepoURL string `json:"repoURL,omitempty"`
 }
 
 // HDFSArtifactRepository defines the controller configuration for an HDFS artifact repository
 type HDFSArtifactRepository struct {
-	wfv1.HDFSConfig `json:",inline"`
+	HDFSConfig `json:",inline"`
 
 	// PathFormat is defines the format of path to store a file. Can reference workflow variables
 	PathFormat string `json:"pathFormat,omitempty"`

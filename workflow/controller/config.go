@@ -12,6 +12,7 @@ import (
 	"github.com/argoproj/argo/config"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
+	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/workflow/hydrator"
 )
@@ -104,7 +105,7 @@ func ReadConfigMapValue(clientset kubernetes.Interface, namespace string, name s
 	return value, nil
 }
 
-func getArtifactRepositoryRef(wfc *WorkflowController, configMapName string, key string, namespace string) (*config.ArtifactRepository, error) {
+func getArtifactRepositoryRef(wfc *WorkflowController, configMapName string, key string, namespace string) (*v1alpha1.ArtifactRepository, error) {
 	// Getting the ConfigMap from the workflow's namespace
 	configStr, err := ReadConfigMapValue(wfc.kubeclientset, namespace, configMapName, key)
 	if err != nil {
@@ -114,7 +115,7 @@ func getArtifactRepositoryRef(wfc *WorkflowController, configMapName string, key
 			return nil, err
 		}
 	}
-	var config config.ArtifactRepository
+	var config v1alpha1.ArtifactRepository
 	err = yaml.Unmarshal([]byte(configStr), &config)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
