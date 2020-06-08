@@ -40,7 +40,6 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/templateresolution"
-	workflowutil "github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
 
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
@@ -505,16 +504,6 @@ func (woc *wfOperationCtx) persistUpdates() {
 	}
 
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
-
-	un, err := workflowutil.ToUnstructured(woc.wf)
-	if err != nil {
-		log.WithError(err).Warn("failed to convert workflow to unstructured")
-	} else {
-		err = woc.controller.wfInformer.GetStore().Update(un)
-		if err != nil {
-			log.WithError(err).Warn("failed to stuff the workflow back into the informer")
-		}
-	}
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.

@@ -508,6 +508,8 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 		log.Warnf("watch returned pod unrelated to any workflow: %s", pod.ObjectMeta.Name)
 		return true
 	}
+	// add this change after 1s - this reduces the number of workflow reconciliations -
+	//with each reconciliation doing more work
 	wfc.wfQueue.AddAfter(pod.ObjectMeta.Namespace+"/"+workflowName, 1*time.Second)
 	return true
 }
@@ -566,6 +568,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandlers() {
 				},
 				UpdateFunc: func(old, new interface{}) {
 					oldWf, newWf := old.(*unstructured.Unstructured), new.(*unstructured.Unstructured)
+					// this check is very important to prevent doing many reconciliations we do not need to do
 					if oldWf.GetResourceVersion() == newWf.GetResourceVersion() {
 						return
 					}
