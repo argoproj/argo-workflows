@@ -7,6 +7,8 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/fields"
 
+	"github.com/argoproj/pkg/errors"
+
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 )
@@ -18,6 +20,7 @@ type resumeOps struct {
 func NewResumeCommand() *cobra.Command {
 	var (
 		resumeArgs resumeOps
+		latest     bool
 	)
 
 	var command = &cobra.Command{
@@ -33,7 +36,16 @@ func NewResumeCommand() *cobra.Command {
 				log.Fatalf("Unable to parse node field selector '%s': %s", resumeArgs.nodeFieldSelector, err)
 			}
 
-			for _, wfName := range args {
+			var names []string = args
+			if latest {
+				wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{Namespace: namespace})
+				errors.CheckError(err)
+				latest, err := GetLatestWorkflow(wfList.Items)
+				errors.CheckError(err)
+				names = append(names, latest.ObjectMeta.Name)
+			}
+
+			for _, wfName := range names {
 				_, err := serviceClient.ResumeWorkflow(ctx, &workflowpkg.WorkflowResumeRequest{
 					Name:              wfName,
 					Namespace:         namespace,
@@ -48,5 +60,6 @@ func NewResumeCommand() *cobra.Command {
 		},
 	}
 	command.Flags().StringVar(&resumeArgs.nodeFieldSelector, "node-field-selector", "", "selector of node to resume, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
+	ProvideLatestFlag(command, &latest)
 	return command
 }
