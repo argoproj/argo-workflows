@@ -105,7 +105,6 @@ type KubeConfig struct {
 	MountPath string `json:"mountPath,omitempty"`
 }
 
-
 type PersistConfig struct {
 	NodeStatusOffload bool `json:"nodeStatusOffLoad,omitempty"`
 	// Archive workflows to persistence.

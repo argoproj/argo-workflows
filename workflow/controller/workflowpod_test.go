@@ -539,7 +539,7 @@ func TestConditionalArchiveLocation(t *testing.T) {
 	woc := newWoc()
 	woc.wf.Status.ArtifactRepositories[wfv1.DefaultArtifactRepositoryRef.ID()] = wfv1.ArtifactRepository{
 		S3: &wfv1.S3ArtifactRepository{
-			S3Bucket:  wfv1.S3Bucket{Bucket: "foo",},
+			S3Bucket:  wfv1.S3Bucket{Bucket: "foo"},
 			KeyFormat: "path/in/bucket",
 		},
 	}

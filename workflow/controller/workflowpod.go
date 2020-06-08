@@ -850,11 +850,11 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 	var needLocation bool
 
 	if tmpl.ArchiveLocation != nil {
-		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil || tmpl.ArchiveLocation.OSS != nil || tmpl.ArchiveLocation.GCS != nil {
+		if tmpl.ArchiveLocation.HasLocation() {
 			// User explicitly set the location. nothing else to do.
 			return nil
 		}
-		if tmpl.ArchiveLocation.ArchiveLogs != nil && *tmpl.ArchiveLocation.ArchiveLogs {
+		if tmpl.ArchiveLocation.IsArchiveLogs() {
 			needLocation = true
 		}
 	}
@@ -872,9 +872,7 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 		woc.log.Debugf("archive location unnecessary")
 		return nil
 	}
-	tmpl.ArchiveLocation = &wfv1.ArtifactLocation{
-		ArchiveLogs: artifactRepository.ArchiveLogs,
-	}
+	tmpl.ArchiveLocation = &wfv1.ArtifactLocation{ArchiveLogs: artifactRepository.ArchiveLogs}
 	// artifact location is defaulted using the following formula:
 	// <worflow_name>/<pod_name>/<artifact_name>.tgz
 	// (e.g. myworkflowartifacts/argo-wf-fhljp/argo-wf-fhljp-123291312382/src.tgz)
@@ -915,13 +913,8 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 			artLocationKey = path.Join(ossLocation.KeyFormat, common.DefaultArchivePattern)
 		}
 		tmpl.ArchiveLocation.OSS = &wfv1.OSSArtifact{
-			OSSBucket: wfv1.OSSBucket{
-				Bucket:          ossLocation.Bucket,
-				Endpoint:        ossLocation.Endpoint,
-				AccessKeySecret: ossLocation.AccessKeySecret,
-				SecretKeySecret: ossLocation.SecretKeySecret,
-			},
-			Key: artLocationKey,
+			OSSBucket: ossLocation.OSSBucket,
+			Key:       artLocationKey,
 		}
 	} else if gcsLocation := artifactRepository.GCS; gcsLocation != nil {
 		woc.log.Debugf("Setting GCS artifact repository information")
@@ -930,11 +923,8 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 			artLocationKey = common.DefaultArchivePattern
 		}
 		tmpl.ArchiveLocation.GCS = &wfv1.GCSArtifact{
-			GCSBucket: wfv1.GCSBucket{
-				Bucket:                  gcsLocation.Bucket,
-				ServiceAccountKeySecret: gcsLocation.ServiceAccountKeySecret,
-			},
-			Key: artLocationKey,
+			GCSBucket: gcsLocation.GCSBucket,
+			Key:       artLocationKey,
 		}
 	} else {
 		return errors.Errorf(errors.CodeBadRequest, "controller is not configured with a default archive location")
