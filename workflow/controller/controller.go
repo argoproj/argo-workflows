@@ -550,12 +550,11 @@ func getWfPhase(obj interface{}) wfv1.NodePhase {
 }
 
 func (wfc *WorkflowController) addWorkflowInformerHandlers() {
-	incomplete := func(obj interface{}) bool {
-		return !common.UnstructuredHasCompletedLabel(obj)
-	}
 	wfc.wfInformer.AddEventHandler(
 		cache.FilteringResourceEventHandler{
-			FilterFunc: incomplete,
+			FilterFunc: func(obj interface{}) bool {
+				return !common.UnstructuredHasCompletedLabel(obj)
+			},
 			Handler: cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {
 					key, err := cache.MetaNamespaceKeyFunc(obj)
