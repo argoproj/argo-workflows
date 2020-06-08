@@ -59,6 +59,6 @@ func NewStopCommand() *cobra.Command {
 	}
 	command.Flags().StringVar(&stopArgs.message, "message", "", "Message to add to previously running nodes")
 	command.Flags().StringVar(&stopArgs.nodeFieldSelector, "node-field-selector", "", "selector of node to stop, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
-	command.Flags().BoolVar(&stopArgs.latest, "latest", false, "Stop last submitted workflow")
+	ProvideLatestFlag(command, &stopArgs.latest)
 	return command
 }

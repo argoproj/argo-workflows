@@ -62,6 +62,7 @@ func NewGetCommand() *cobra.Command {
 		Use:   "get WORKFLOW...",
 		Short: "display details about a workflow",
 		Run: func(cmd *cobra.Command, args []string) {
+
 			if (len(args) == 0 && !getArgs.latest) || (len(args) > 0 && getArgs.latest) {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
@@ -98,7 +99,7 @@ func NewGetCommand() *cobra.Command {
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
 	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
 	command.Flags().StringVar(&getArgs.nodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
-	command.Flags().BoolVar(&getArgs.latest, "latest", false, "Show last submitted workflow")
+	ProvideLatestFlag(command, &getArgs.latest)
 	return command
 }
 
