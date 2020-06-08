@@ -30,7 +30,7 @@ func createWorkflowTemplate(yamlStr string) error {
 
 // validate is a test helper to accept Workflow YAML as a string and return
 // its validation result.
-func validate(yamlStr string) (*wfv1.WorkflowConditions, error) {
+func validate(yamlStr string) (*wfv1.Conditions, error) {
 	wf := unmarshalWf(yamlStr)
 	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
 }
@@ -1675,7 +1675,7 @@ func TestTemplateRef(t *testing.T) {
 	// Ensure that a deprecated SpecWarning was issued
 	foundSpecWarning := false
 	for _, condition := range *wfConditions {
-		if condition.Type == wfv1.WorkflowConditionSpecWarning {
+		if condition.Type == wfv1.ConditionTypeSpecWarning {
 			foundSpecWarning = true
 			break
 		}
@@ -1763,7 +1763,7 @@ func TestDeprecatedNestedTemplateRef(t *testing.T) {
 	// Ensure that a deprecated SpecWarning was issued
 	foundSpecWarning := false
 	for _, condition := range *wfConditions {
-		if condition.Type == wfv1.WorkflowConditionSpecWarning {
+		if condition.Type == wfv1.ConditionTypeSpecWarning {
 			foundSpecWarning = true
 			break
 		}
@@ -1810,7 +1810,7 @@ func TestNestedLocalTemplateRef(t *testing.T) {
 	// Ensure that a deprecated SpecWarning was issued
 	foundSpecWarning := false
 	for _, condition := range *wfConditions {
-		if condition.Type == wfv1.WorkflowConditionSpecWarning {
+		if condition.Type == wfv1.ConditionTypeSpecWarning {
 			foundSpecWarning = true
 			break
 		}

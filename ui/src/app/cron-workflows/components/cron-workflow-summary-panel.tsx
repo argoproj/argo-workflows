@@ -1,8 +1,12 @@
 import * as React from 'react';
 
+import * as kubernetes from 'argo-ui/src/models/kubernetes';
+import {Link} from 'react-router-dom';
 import {CronWorkflow} from '../../../models';
+import {uiUrl} from '../../shared/base';
 import {Timestamp} from '../../shared/components/timestamp';
 import {YamlEditor} from '../../shared/components/yaml/yaml-editor';
+import {ConditionsPanel} from '../../shared/conditions-panel';
 import {services} from '../../shared/services';
 
 const jsonMergePatch = require('json-merge-patch');
@@ -10,11 +14,12 @@ const jsonMergePatch = require('json-merge-patch');
 interface Props {
     cronWorkflow: CronWorkflow;
     onChange: (cronWorkflow: CronWorkflow) => void;
+
     onError(error: Error): void;
 }
 
 export const CronWorkflowSummaryPanel = (props: Props) => {
-    const attributes = [
+    const specAttributes = [
         {title: 'Name', value: props.cronWorkflow.metadata.name},
         {title: 'Namespace', value: props.cronWorkflow.metadata.namespace},
         {title: 'Schedule', value: props.cronWorkflow.spec.schedule},
@@ -29,11 +34,27 @@ export const CronWorkflowSummaryPanel = (props: Props) => {
         {title: 'Suspended', value: (!!props.cronWorkflow.spec.suspend).toString()},
         {title: 'Created', value: <Timestamp date={props.cronWorkflow.metadata.creationTimestamp} />}
     ];
+    const statusAttributes = [
+        {title: 'Active', value: props.cronWorkflow.status.active ? getCronWorkflowActiveWorkflowList(props.cronWorkflow.status.active) : <i>No Workflows Active</i>},
+        {title: 'Last Scheduled Time', value: props.cronWorkflow.status.lastScheduledTime},
+        {title: 'Conditions', value: <ConditionsPanel conditions={props.cronWorkflow.status.conditions} />}
+    ];
     return (
         <div>
             <div className='white-box'>
                 <div className='white-box__details'>
-                    {attributes.map(attr => (
+                    {specAttributes.map(attr => (
+                        <div className='row white-box__details-row' key={attr.title}>
+                            <div className='columns small-3'>{attr.title}</div>
+                            <div className='columns small-9'>{attr.value}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className='white-box'>
+                <div className='white-box__details'>
+                    {statusAttributes.map(attr => (
                         <div className='row white-box__details-row' key={attr.title}>
                             <div className='columns small-3'>{attr.title}</div>
                             <div className='columns small-9'>{attr.value}</div>
@@ -64,3 +85,17 @@ export const CronWorkflowSummaryPanel = (props: Props) => {
         </div>
     );
 };
+
+function getCronWorkflowActiveWorkflowList(active: kubernetes.ObjectReference[]): JSX.Element {
+    return (
+        <div>
+            {active.reverse().map(activeWf => (
+                <div>
+                    <Link to={uiUrl(`workflows/${activeWf.namespace}/${activeWf.name}`)}>
+                        {activeWf.namespace}/{activeWf.name}
+                    </Link>
+                </div>
+            ))}
+        </div>
+    );
+}

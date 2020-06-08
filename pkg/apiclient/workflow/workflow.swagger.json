@@ -928,6 +928,23 @@
       },
       "title": "Backoff is a backoff strategy to use within retryStrategy"
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Condition": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "title": "Type is the type of condition"
+        },
+        "status": {
+          "type": "string",
+          "title": "Status is the status of the condition"
+        },
+        "message": {
+          "type": "string",
+          "title": "Message is the condition message"
+        }
+      }
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ContinueOn": {
       "type": "object",
       "properties": {
@@ -1476,7 +1493,7 @@
           "title": "Key is the path in the bucket where the artifact resides"
         }
       },
-      "title": "OSSArtifact is the location of an OSS artifact"
+      "title": "OSSArtifact is the location of an Alibaba Cloud OSS artifact"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.OSSBucket": {
       "type": "object",
@@ -1498,7 +1515,7 @@
           "title": "SecretKeySecret is the secret selector to the bucket's secret key"
         }
       },
-      "title": "OSSBucket contains the access information required for interfacing with an OSS bucket"
+      "title": "OSSBucket contains the access information required for interfacing with an Alibaba Cloud OSS bucket"
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Outputs": {
       "type": "object",
@@ -2112,23 +2129,6 @@
       },
       "title": "Workflow is the definition of a workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowCondition": {
-      "type": "object",
-      "properties": {
-        "type": {
-          "type": "string",
-          "title": "Type is the type of condition"
-        },
-        "status": {
-          "type": "string",
-          "title": "Status is the status of the condition"
-        },
-        "message": {
-          "type": "string",
-          "title": "Message is the condition message"
-        }
-      }
-    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowList": {
       "type": "object",
       "properties": {
@@ -2310,7 +2310,7 @@
         },
         "workflowTemplateRef": {
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateRef",
-          "description": "WorkflowTemplateRef holds top level WorkflowTemplate reference to execute it."
+          "title": "WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution"
         }
       },
       "description": "WorkflowSpec is the specification of a Workflow."
@@ -2370,7 +2370,7 @@
         "conditions": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowCondition"
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Condition"
           },
           "title": "Conditions is a list of conditions the Workflow may have"
         },

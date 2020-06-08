@@ -9,24 +9,24 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
 
-	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/hydrator"
 )
 
 type Given struct {
-	t                     *testing.T
-	client                v1alpha1.WorkflowInterface
-	wfTemplateClient      v1alpha1.WorkflowTemplateInterface
-	cwfTemplateClient     v1alpha1.ClusterWorkflowTemplateInterface
-	cronClient            v1alpha1.CronWorkflowInterface
-	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
-	wf                    *wfv1.Workflow
-	wfTemplates           []*wfv1.WorkflowTemplate
-	cwfTemplates          []*wfv1.ClusterWorkflowTemplate
-	cronWf                *wfv1.CronWorkflow
-	workflowName          string
-	kubeClient            kubernetes.Interface
+	t                 *testing.T
+	client            v1alpha1.WorkflowInterface
+	wfTemplateClient  v1alpha1.WorkflowTemplateInterface
+	cwfTemplateClient v1alpha1.ClusterWorkflowTemplateInterface
+	cronClient        v1alpha1.CronWorkflowInterface
+	hydrator          hydrator.Interface
+	wf                *wfv1.Workflow
+	wfTemplates       []*wfv1.WorkflowTemplate
+	cwfTemplates      []*wfv1.ClusterWorkflowTemplate
+	cronWf            *wfv1.CronWorkflow
+	workflowName      string
+	kubeClient        kubernetes.Interface
 }
 
 // creates a workflow based on the parameter, this may be:
@@ -221,17 +221,17 @@ func (g *Given) ClusterWorkflowTemplate(text string) *Given {
 
 func (g *Given) When() *When {
 	return &When{
-		t:                     g.t,
-		wf:                    g.wf,
-		wfTemplates:           g.wfTemplates,
-		cwfTemplates:          g.cwfTemplates,
-		cronWf:                g.cronWf,
-		client:                g.client,
-		wfTemplateClient:      g.wfTemplateClient,
-		cwfTemplateClient:     g.cwfTemplateClient,
-		cronClient:            g.cronClient,
-		offloadNodeStatusRepo: g.offloadNodeStatusRepo,
-		workflowName:          g.workflowName,
-		kubeClient:            g.kubeClient,
+		t:                 g.t,
+		wf:                g.wf,
+		wfTemplates:       g.wfTemplates,
+		cwfTemplates:      g.cwfTemplates,
+		cronWf:            g.cronWf,
+		client:            g.client,
+		wfTemplateClient:  g.wfTemplateClient,
+		cwfTemplateClient: g.cwfTemplateClient,
+		cronClient:        g.cronClient,
+		hydrator:          g.hydrator,
+		workflowName:      g.workflowName,
+		kubeClient:        g.kubeClient,
 	}
 }

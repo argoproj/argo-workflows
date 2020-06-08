@@ -22,6 +22,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
+	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/metrics"
 )
 
@@ -125,6 +126,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		wfQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		wfArchive:       sqldb.NullWorkflowArchive,
+		hydrator:        hydratorfake.Noop,
 		metrics:         metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
 	}
 	return cancel, controller
@@ -370,7 +372,7 @@ func TestCheckAndInitWorkflowTmplRef(t *testing.T) {
 	woc := wfOperationCtx{controller: controller,
 		wf: wf}
 	t.Run("WithWorkflowTmplRef", func(t *testing.T) {
-		err := woc.loadWorkflowSpec()
+		_, _, err := woc.loadExecutionSpec()
 		assert.NoError(t, err)
 		assert.Equal(t, &wftmpl.Spec.WorkflowSpec, woc.wfSpec)
 

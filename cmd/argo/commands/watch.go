@@ -81,5 +81,5 @@ func printWorkflowStatus(wf *wfv1.Workflow, getArgs getFlags) {
 	errors.CheckError(err)
 	print("\033[H\033[2J")
 	print("\033[0;0H")
-	printWorkflowHelper(wf, getArgs)
+	fmt.Print(printWorkflowHelper(wf, getArgs))
 }
