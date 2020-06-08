@@ -1,6 +1,7 @@
 package oss
 
 import (
+	"io"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -16,6 +17,8 @@ type OSSArtifactDriver struct {
 	Endpoint  string
 	AccessKey string
 	SecretKey string
+
+	appendPosition int64
 }
 
 func (ossDriver *OSSArtifactDriver) newOSSClient() (*oss.Client, error) {
@@ -68,6 +71,30 @@ func (ossDriver *OSSArtifactDriver) Save(path string, outputArtifact *wfv1.Artif
 			}
 			objectName := outputArtifact.OSS.Key
 			err = bucket.PutObjectFromFile(objectName, path)
+			if err != nil {
+				return false, err
+			}
+			return true, nil
+		})
+	return err
+}
+
+func (ossDriver *OSSArtifactDriver) Write(reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
+		func() (bool, error) {
+			log.Infof("OSS Save key: %s", outputArtifact.OSS.Key)
+			osscli, err := ossDriver.newOSSClient()
+			if err != nil {
+				log.Warnf("Failed to create new OSS client: %v", err)
+				return false, nil
+			}
+			bucketName := outputArtifact.OSS.Bucket
+			bucket, err := osscli.Bucket(bucketName)
+			if err != nil {
+				return false, err
+			}
+			objectName := outputArtifact.OSS.Key
+			ossDriver.appendPosition, err = bucket.AppendObject(objectName, reader, ossDriver.appendPosition)
 			if err != nil {
 				return false, err
 			}

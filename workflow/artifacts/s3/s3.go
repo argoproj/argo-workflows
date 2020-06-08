@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"io"
 	"os"
 	"time"
 
@@ -109,4 +110,8 @@ func (s3Driver *S3ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifac
 			return true, nil
 		})
 	return err
+}
+
+func (s3Driver *S3ArtifactDriver) Write(reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	return errors.Errorf(errors.CodeBadRequest, "S3 output artifacts unsupported")
 }

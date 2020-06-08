@@ -2,6 +2,7 @@ package hdfs
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -219,4 +220,8 @@ func (driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) e
 	}
 
 	return hdfscli.CopyToRemote(path, driver.Path)
+}
+
+func (driver *ArtifactDriver) Write(reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	return errors.Errorf(errors.CodeBadRequest, "HDFS output artifacts unsupported")
 }

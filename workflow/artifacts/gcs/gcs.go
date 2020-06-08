@@ -236,3 +236,7 @@ func uploadObject(client *storage.Client, bucket, key, localPath string) error {
 	}
 	return nil
 }
+
+func (g *ArtifactDriver) Write(reader io.Reader, outputArtifact *wfv1.Artifact) error {
+	return errors.Errorf(errors.CodeBadRequest, "GCS output artifacts unsupported")
+}

@@ -73,3 +73,22 @@ func (a *ArtifactoryArtifactDriver) Save(path string, artifact *wfv1.Artifact) e
 	}
 	return nil
 }
+
+func (a *ArtifactoryArtifactDriver) Write(reader io.Reader, artifact *wfv1.Artifact) error {
+	req, err := http.NewRequest(http.MethodPut, artifact.Artifactory.URL, reader)
+	if err != nil {
+		return err
+	}
+	req.SetBasicAuth(a.Username, a.Password)
+	res, err := (&http.Client{}).Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = res.Body.Close()
+	}()
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return errors.InternalErrorf("saving file to artifactory failed with reason:%s", res.Status)
+	}
+	return nil
+}

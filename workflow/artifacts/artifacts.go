@@ -2,6 +2,7 @@ package executor
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/argoproj/argo/workflow/artifacts/gcs"
 	"github.com/argoproj/argo/workflow/artifacts/oss"
@@ -23,6 +24,9 @@ type ArtifactDriver interface {
 
 	// Save uploads the path to artifact destination
 	Save(path string, outputArtifact *wfv1.Artifact) error
+
+	// Write reader to artifact destination
+	Write(reader io.Reader, outputArtifact *wfv1.Artifact) error
 }
 
 var ErrUnsupportedDriver = fmt.Errorf("unsupported artifact driver")

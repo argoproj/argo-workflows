@@ -1,6 +1,7 @@
 package http
 
 import (
+	"io"
 	"os/exec"
 	"strings"
 
@@ -36,5 +37,9 @@ func (h *HTTPArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) err
 }
 
 func (h *HTTPArtifactDriver) Save(string, *wfv1.Artifact) error {
+	return errors.Errorf(errors.CodeBadRequest, "HTTP output artifacts unsupported")
+}
+
+func (h *HTTPArtifactDriver) Write(reader io.Reader, outputArtifact *wfv1.Artifact) error {
 	return errors.Errorf(errors.CodeBadRequest, "HTTP output artifacts unsupported")
 }
