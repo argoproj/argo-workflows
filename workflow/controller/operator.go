@@ -139,7 +139,9 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 	if woc.wf.Status.StoredTemplates == nil {
 		woc.wf.Status.StoredTemplates = make(map[string]wfv1.Template)
 	}
-	woc.wf.Status.ArtifactRepositories["default"] = wfc.Config.ArtifactRepository
+	woc.wf.Status.ArtifactRepositories = map[string]wfv1.ArtifactRepository{
+		wfv1.DefaultArtifactRepositoryRef.ID(): wfc.Config.ArtifactRepository,
+	}
 	return &woc
 }
 
