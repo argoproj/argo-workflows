@@ -44,7 +44,8 @@ in the past. However, a quick description should clarify each and their differen
         container:                # The type of this "template" is "container"
           image: docker/whalesay
           command: [cowsay]
-          args: ["{{inputs.parameters.message}}"]```
+          args: ["{{inputs.parameters.message}}"]
+    ```
   
 - A `WorkflowTemplate` is a definition of a `Workflow` that lives in your cluster. Since it is a definition of a `Workflow`
 it also contains `templates`. These `templates` can be referenced from within the `WorkflowTemplate` and from other `Workflows`
