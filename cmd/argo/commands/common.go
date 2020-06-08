@@ -86,14 +86,17 @@ func ansiFormat(s string, codes ...int) string {
 }
 
 // return the last submitted workflow, given a list of workflows
-func GetLatestWorkflow(workflows []wfv1.Workflow) wfv1.Workflow {
+func GetLatestWorkflow(workflows []wfv1.Workflow) (*wfv1.Workflow, error) {
+	if len(workflows) < 1 {
+		return nil, fmt.Errorf("No workflows to query.")
+	}
 	latest := workflows[0]
 	for _, wf := range workflows {
 		if latest.ObjectMeta.CreationTimestamp.Before(&wf.ObjectMeta.CreationTimestamp) {
 			latest = wf
 		}
 	}
-	return latest
+	return &latest, nil
 }
 
 func ProvideLatestFlag(command *cobra.Command, flag *bool) {

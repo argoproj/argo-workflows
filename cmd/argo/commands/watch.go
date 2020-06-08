@@ -61,7 +61,8 @@ func watchWorkflow(wfName string, getArgs getFlags) {
 			fmt.Println("No workflows. Exiting")
 			os.Exit(1)
 		}
-		latestWf := GetLatestWorkflow(wfList.Items)
+		latestWf, err := GetLatestWorkflow(wfList.Items)
+		errors.CheckError(err)
 		wfName = latestWf.ObjectMeta.Name
 	} else {
 		// ensure that the desired workflow exists

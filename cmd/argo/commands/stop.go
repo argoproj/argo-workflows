@@ -36,7 +36,8 @@ func NewStopCommand() *cobra.Command {
 			if stopArgs.latest {
 				wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{Namespace: namespace})
 				errors.CheckError(err)
-				latest := GetLatestWorkflow(wfList.Items)
+				latest, err := GetLatestWorkflow(wfList.Items)
+				errors.CheckError(err)
 				names = append(names, latest.ObjectMeta.Name)
 			}
 

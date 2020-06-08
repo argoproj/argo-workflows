@@ -79,8 +79,9 @@ func NewGetCommand() *cobra.Command {
 					fmt.Println("No workflows. Exiting")
 					os.Exit(1)
 				}
-				min := GetLatestWorkflow(wfList.Items)
-				printWorkflow(&min, getArgs)
+				latest, err := GetLatestWorkflow(wfList.Items)
+				errors.CheckError(err)
+				printWorkflow(latest, getArgs)
 				os.Exit(0)
 			}
 
