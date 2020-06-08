@@ -84,3 +84,14 @@ func ansiFormat(s string, codes ...int) string {
 	sequence := strings.Join(codeStrs, ";")
 	return fmt.Sprintf("%s[%sm%s%s[%dm", escape, sequence, s, escape, noFormat)
 }
+
+// return the last submitted workflow, given a list of workflows
+func GetLatestWorkflow(workflows []wfv1.Workflow) wfv1.Workflow {
+	latest := workflows[0]
+	for _, wf := range workflows {
+		if latest.ObjectMeta.CreationTimestamp.Before(&wf.ObjectMeta.CreationTimestamp) {
+			latest = wf
+		}
+	}
+	return latest
+}

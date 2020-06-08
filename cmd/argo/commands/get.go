@@ -80,12 +80,7 @@ func NewGetCommand() *cobra.Command {
 					fmt.Println("No workflows. Exiting")
 					os.Exit(1)
 				}
-				min := workflows[0]
-				for _, wf := range workflows {
-					if wf.ObjectMeta.CreationTimestamp.Before(&min.ObjectMeta.CreationTimestamp) {
-						min = wf
-					}
-				}
+				min := GetLatestWorkflow(workflows)
 				printWorkflow(&min, getArgs)
 				os.Exit(0)
 			}

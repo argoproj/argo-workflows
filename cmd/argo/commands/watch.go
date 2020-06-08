@@ -63,13 +63,8 @@ func watchWorkflow(wfName string, getArgs getFlags) {
 			fmt.Println("No workflows. Exiting")
 			os.Exit(1)
 		}
-		min := workflows[0]
-		for _, wf := range workflows {
-			if wf.ObjectMeta.CreationTimestamp.Before(&min.ObjectMeta.CreationTimestamp) {
-				min = wf
-			}
-		}
-		wfName = min.ObjectMeta.Name
+		latestWf := GetLatestWorkflow(workflows)
+		wfName = latestWf.ObjectMeta.Name
 	} else {
 		// ensure that the desired workflow exists
 		_, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
