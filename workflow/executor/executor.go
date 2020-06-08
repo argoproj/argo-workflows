@@ -314,11 +314,12 @@ func (we *WorkflowExecutor) saveArtifact(mainCtrID string, art *wfv1.Artifact) e
 	return nil
 }
 
-func (we *WorkflowExecutor) setArtifactFilename(art *wfv1.Artifact, fileName string, saveArt *wfv1.Artifact) error {
+func (we *WorkflowExecutor) setArtifactFilename(art *wfv1.Artifact, fileName string) (*wfv1.Artifact, error) {
 	location := we.Template.ArchiveLocation
 	if location == nil {
-		return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. No archive location", art.Name)
+		return nil, errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. No archive location", art.Name)
 	}
+	saveArt := art.DeepCopy()
 	if location.S3 != nil {
 		art.S3 = &wfv1.S3Artifact{Key: path.Join(location.S3.Key, fileName)}
 		saveArt.S3 = location.S3
@@ -326,7 +327,7 @@ func (we *WorkflowExecutor) setArtifactFilename(art *wfv1.Artifact, fileName str
 	} else if location.Artifactory != nil {
 		uri, err := url.Parse(art.Artifactory.URL)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		uri.Path = path.Join(uri.Path, fileName)
 		art.Artifactory = &wfv1.ArtifactoryArtifact{URL: uri.String()}
@@ -345,9 +346,9 @@ func (we *WorkflowExecutor) setArtifactFilename(art *wfv1.Artifact, fileName str
 		saveArt.GCS = location.GCS
 		saveArt.GCS.Key = art.GCS.Key
 	} else {
-		return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
+		return nil, errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
 	}
-	return nil
+	return saveArt, nil
 }
 
 // stageArchiveFile stages a path in a container for archiving from the wait sidecar.
@@ -549,8 +550,7 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 		return nil, err
 	}
 	art := &wfv1.Artifact{Name: "main-logs"}
-	saveArt := art.DeepCopy()
-	err = we.setArtifactFilename(art, fileName, saveArt)
+	saveArt, err := we.setArtifactFilename(art, fileName)
 	artDriver, err := we.InitDriver(saveArt)
 	if err != nil {
 		return nil, err
