@@ -462,7 +462,6 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactoryArtifact(ref common.ReferenceC
 						},
 					},
 				},
-				Required: []string{"url"},
 			},
 		},
 		Dependencies: []string{
