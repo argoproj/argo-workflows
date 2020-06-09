@@ -40,6 +40,7 @@ const (
 	NodeSkipped   NodePhase = "Skipped"
 	NodeFailed    NodePhase = "Failed"
 	NodeError     NodePhase = "Error"
+	NodeOmitted   NodePhase = "Omitted"
 )
 
 // NodeType is the type of a node
@@ -1247,16 +1248,18 @@ func (n Nodes) GetResourcesDuration() ResourcesDuration {
 	return i
 }
 
-// Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped
+// Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted
 func (phase NodePhase) Fulfilled() bool {
-	return phase.Completed() || phase == NodeSkipped
+	return phase.Completed() || phase == NodeSkipped || phase == NodeOmitted
 }
 
 // Completed returns whether or not a phase completed. Notably, a skipped phase is not considered as having completed
 func (phase NodePhase) Completed() bool {
-	return phase == NodeSucceeded ||
-		phase == NodeFailed ||
-		phase == NodeError
+	return phase.FailedOrError() || phase == NodeSucceeded
+}
+
+func (phase NodePhase) FailedOrError() bool {
+	return phase == NodeFailed || phase == NodeError
 }
 
 // Fulfilled returns whether or not the workflow has fulfilled its execution, i.e. it completed execution or was skipped
@@ -1309,13 +1312,16 @@ func (n NodeStatus) IsDaemoned() bool {
 	return true
 }
 
-// Successful returns whether or not this node completed successfully
-func (n NodeStatus) Successful() bool {
-	return n.Phase == NodeSucceeded || n.Phase == NodeSkipped || n.IsDaemoned() && n.Phase != NodePending
+func (n NodeStatus) Succeeded() bool {
+	return n.Phase == NodeSucceeded
 }
 
-func (n NodeStatus) Failed() bool {
-	return !n.Successful()
+func (n NodeStatus) FailedOrError() bool {
+	return n.Phase.FailedOrError()
+}
+
+func (n NodeStatus) Omitted() bool {
+	return n.Type == NodeTypeSkipped && n.Phase == NodeOmitted
 }
 
 func (n NodeStatus) StartTime() *metav1.Time {
@@ -1329,7 +1335,7 @@ func (n NodeStatus) FinishTime() *metav1.Time {
 // CanRetry returns whether the node should be retried or not.
 func (n NodeStatus) CanRetry() bool {
 	// TODO(shri): Check if there are some 'unretryable' errors.
-	return n.Fulfilled() && !n.Successful()
+	return n.FailedOrError()
 }
 
 func (n NodeStatus) GetTemplateScope() (ResourceScope, string) {
