@@ -1492,10 +1492,6 @@ type S3Artifact struct {
 	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
 }
 
-func (s *S3Artifact) hasFilename() bool {
-	return s != nil && s.Key != ""
-}
-
 // GitArtifact is the location of an git artifact
 type GitArtifact struct {
 	// Repo is the git repository
@@ -1522,10 +1518,6 @@ type GitArtifact struct {
 
 	// InsecureIgnoreHostKey disables SSH strict host key checking during git clone
 	InsecureIgnoreHostKey bool `json:"insecureIgnoreHostKey,omitempty" protobuf:"varint,8,opt,name=insecureIgnoreHostKey"`
-}
-
-func (g *GitArtifact) hasFilename() bool {
-	return g != nil
 }
 
 // ArtifactoryAuth describes the secret selectors required for authenticating to artifactory
