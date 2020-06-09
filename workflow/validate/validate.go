@@ -874,7 +874,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 	if tmpl.Daemon != nil && *tmpl.Daemon {
 		scope[fmt.Sprintf("%s.ip", prefix)] = true
 	}
-	if tmpl.Script != nil || tmpl.Container != nil {
+	if tmpl.Script != nil || tmpl.Container != nil || tmpl.Suspend != nil {
 		scope[fmt.Sprintf("%s.outputs.result", prefix)] = true
 		scope[fmt.Sprintf("%s.exitCode", prefix)] = true
 	}
