@@ -591,9 +591,9 @@ WorkflowStatus contains overall status information about a workflow
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`artifactRepositories`|[`ArtifactRepository`](#artifactrepository)|ArtifactRepositories stores artifact repositories used by the io.argoproj.workflow.v1alpha1. This is used if the input/output artifact does not specify this (for legacy behaviour). May keys are string representation of a ArtifactRepositoryRef - see `ArtifactRepositoryRef.ID()` and `ArtifactRepositoryRefFromID`|
 |`compressedNodes`|`string`|Compressed and base64 decoded Nodes map|
 |`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the Workflow may have|
+|`defaultArtifactRepository`|[`ArtifactRepository`](#artifactrepository)|DefaultArtifactRepository stores the default (typically configured) artifact repository|
 |`finishedAt`|[`Time`](#time)|Time at which this workflow completed|
 |`message`|`string`|A human readable message indicating details about why the workflow is in this condition.|
 |`nodes`|[`NodeStatus`](#nodestatus)|Nodes is a mapping between a node ID and the node's status.|
@@ -1686,6 +1686,17 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 |`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).|
 |`name`|`string`|Name is the resource name of the workflow template.|
 
+## Condition
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`message`|`string`|Message is the condition message|
+|`status`|`string`|Status is the status of the condition|
+|`type`|`string`|Type is the type of condition|
+
 ## ArtifactRepository
 
 ArtifactRepository represents a artifact repository in which a controller will store its artifacts
@@ -1699,17 +1710,6 @@ ArtifactRepository represents a artifact repository in which a controller will s
 |`hdfs`|[`HDFSArtifactRepository`](#hdfsartifactrepository)|HDFS stores artifacts in HDFS|
 |`oss`|[`OSSArtifactRepository`](#ossartifactrepository)|OSS stores artifact in a OSS-compliant object store|
 |`s3`|[`S3ArtifactRepository`](#s3artifactrepository)|S3 stores artifact in a S3-compliant object store|
-
-## Condition
-
-_No description available_
-
-### Fields
-| Field Name | Field Type | Description   |
-|:----------:|:----------:|---------------|
-|`message`|`string`|Message is the condition message|
-|`status`|`string`|Status is the status of the condition|
-|`type`|`string`|Type is the type of condition|
 
 ## NodeStatus
 

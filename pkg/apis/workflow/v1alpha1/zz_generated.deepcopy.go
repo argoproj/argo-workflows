@@ -2151,12 +2151,10 @@ func (in *WorkflowStatus) DeepCopyInto(out *WorkflowStatus) {
 		*out = new(WorkflowSpec)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.ArtifactRepositories != nil {
-		in, out := &in.ArtifactRepositories, &out.ArtifactRepositories
-		*out = make(map[string]ArtifactRepository, len(*in))
-		for key, val := range *in {
-			(*out)[key] = *val.DeepCopy()
-		}
+	if in.DefaultArtifactRepository != nil {
+		in, out := &in.DefaultArtifactRepository, &out.DefaultArtifactRepository
+		*out = new(ArtifactRepository)
+		(*in).DeepCopyInto(*out)
 	}
 	return
 }

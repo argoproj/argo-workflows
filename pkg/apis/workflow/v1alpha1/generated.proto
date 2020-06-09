@@ -1353,10 +1353,7 @@ message WorkflowStatus {
   // StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.
   optional WorkflowSpec storedWorkflowTemplateSpec = 14;
 
-  // ArtifactRepositories stores artifact repositories used by the workflow. This is used if the input/output artifact does not
-  // specify this (for legacy behaviour).
-  // May keys are string representation of a ArtifactRepositoryRef - see `ArtifactRepositoryRef.ID()` and `ArtifactRepositoryRefFromID`
-  map<string, ArtifactRepository> artifactRepositories = 15;
+  optional ArtifactRepository artifactRepositories = 15;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

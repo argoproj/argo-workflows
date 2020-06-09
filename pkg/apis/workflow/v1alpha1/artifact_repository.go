@@ -1,5 +1,17 @@
 package v1alpha1
 
+import (
+	"fmt"
+	"path"
+
+	"github.com/argoproj/argo/errors"
+)
+
+const (
+	// the default pattern when storing artifacts in an archive repository
+	defaultArchivePattern = "{{workflow.name}}/{{pod.name}}"
+)
+
 // ArtifactRepository represents a artifact repository in which a controller will store its artifacts
 type ArtifactRepository struct {
 	// ArchiveLogs enables log archiving
@@ -18,6 +30,68 @@ type ArtifactRepository struct {
 
 func (a ArtifactRepository) IsArchiveLogs() bool {
 	return a.ArchiveLogs != nil && *a.ArchiveLogs
+}
+
+func (a *ArtifactRepository) getType() ArtifactType {
+	if a == nil {
+		return None
+	} else if a.Artifactory != nil {
+		return Artifactory
+	} else if a.GCS != nil {
+		return GCS
+	} else if a.HDFS != nil {
+		return HDFS
+	} else if a.OSS != nil {
+		return OSS
+	} else if a.S3 != nil {
+		return S3
+	}
+	return None
+}
+
+// artifact location is defaulted using the following formula:
+// <worflow_name>/<pod_name>/<artifact_name>.tgz
+// (e.g. myworkflowartifacts/argo-wf-fhljp/argo-wf-fhljp-123291312382/src.tgz)
+func (a *ArtifactRepository) AsArtifactLocation() (*ArtifactLocation, error) {
+	if a == nil {
+		return nil, nil
+	}
+	l := &ArtifactLocation{ArchiveLogs: a.ArchiveLogs}
+	switch a.getType() {
+	case Artifactory:
+		repoURL := ""
+		if a.Artifactory.RepoURL != "" {
+			repoURL = a.Artifactory.RepoURL + "/"
+		}
+		artURL := fmt.Sprintf("%s%s", repoURL, defaultArchivePattern)
+		l.Artifactory = &ArtifactoryArtifact{ArtifactoryAuth: a.Artifactory.ArtifactoryAuth, URL: artURL}
+	case GCS:
+		key := a.GCS.KeyFormat
+		if key == "" {
+			key = defaultArchivePattern
+		}
+		l.GCS = &GCSArtifact{GCSBucket: a.GCS.GCSBucket, Key: key}
+	case HDFS:
+		// TODO - every other branch takes `defaultArtifactPattern` into account - why does this one not do that? looks like a bug to me
+		l.HDFS = &HDFSArtifact{HDFSConfig: a.HDFS.HDFSConfig, Path: a.HDFS.PathFormat, Force: a.HDFS.Force}
+	case OSS:
+		key := a.OSS.KeyFormat
+		// NOTE: we use unresolved variables, will get substituted later
+		if key == "" {
+			key = path.Join(a.OSS.KeyFormat, defaultArchivePattern)
+		}
+		l.OSS = &OSSArtifact{OSSBucket: a.OSS.OSSBucket, Key: key}
+	case S3:
+		key := a.S3.KeyFormat
+		// NOTE: we use unresolved variables, will get substituted later
+		if key == "" {
+			key = path.Join(a.S3.KeyPrefix, defaultArchivePattern)
+		}
+		l.S3 = &S3Artifact{S3Bucket: a.S3.S3Bucket, Key: key}
+	default:
+		return nil, errors.Errorf(errors.CodeBadRequest, "controller is not configured with a default archive location")
+	}
+	return l, nil
 }
 
 // S3ArtifactRepository defines the controller configuration for an S3 artifact repository

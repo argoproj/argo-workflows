@@ -139,9 +139,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 	if woc.wf.Status.StoredTemplates == nil {
 		woc.wf.Status.StoredTemplates = make(map[string]wfv1.Template)
 	}
-	woc.wf.Status.ArtifactRepositories = map[string]wfv1.ArtifactRepository{
-		wfv1.DefaultArtifactRepositoryRef.ID(): wfc.Config.ArtifactRepository,
-	}
+	woc.wf.Status.DefaultArtifactRepository = &wfc.Config.ArtifactRepository
 	return &woc
 }
 
@@ -259,7 +257,7 @@ func (woc *wfOperationCtx) operate() {
 	if woc.wfSpec.ArtifactRepositoryRef != nil {
 		repo, err := woc.getArtifactRepositoryByRef(woc.wfSpec.ArtifactRepositoryRef)
 		if err == nil {
-			woc.wf.Status.ArtifactRepositories[wfv1.DefaultArtifactRepositoryRef.ID()] = *repo
+			woc.wf.Status.DefaultArtifactRepository = repo
 		} else {
 			msg := fmt.Sprintf("Failed to load artifact repository configMap: %+v", err)
 			woc.log.Errorf(msg)

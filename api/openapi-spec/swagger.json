@@ -4160,13 +4160,6 @@
       "description": "WorkflowStatus contains overall status information about a workflow",
       "type": "object",
       "properties": {
-        "artifactRepositories": {
-          "description": "ArtifactRepositories stores artifact repositories used by the io.argoproj.workflow.v1alpha1. This is used if the input/output artifact does not specify this (for legacy behaviour). May keys are string representation of a ArtifactRepositoryRef - see `ArtifactRepositoryRef.ID()` and `ArtifactRepositoryRefFromID`",
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepository"
-          }
-        },
         "compressedNodes": {
           "description": "Compressed and base64 decoded Nodes map",
           "type": "string"
@@ -4177,6 +4170,10 @@
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Condition"
           }
+        },
+        "defaultArtifactRepository": {
+          "description": "DefaultArtifactRepository stores the default (typically configured) artifact repository",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepository"
         },
         "finishedAt": {
           "description": "Time at which this workflow completed",

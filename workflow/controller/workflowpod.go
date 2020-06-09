@@ -2,9 +2,7 @@ package controller
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
-	"path"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -848,9 +846,8 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 	// needLocation keeps track if the workflow needs to have an archive location set.
 	// If so, and one was not supplied (or defaulted), we will return error
 	var needLocation bool
-
 	if tmpl.ArchiveLocation != nil {
-		if tmpl.ArchiveLocation.HasKey() {
+		if tmpl.ArchiveLocation.HasLocation() {
 			// User explicitly set the location. nothing else to do.
 			return nil
 		}
@@ -859,76 +856,23 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 		}
 	}
 	for _, art := range tmpl.Outputs.Artifacts {
-		if !art.HasKey() {
+		if !art.HasLocation() {
 			needLocation = true
 			break
 		}
 	}
-	artifactRepository := woc.wf.Status.DefaultArtifactRepository()
-	if artifactRepository.IsArchiveLogs() {
+	if woc.wf.Status.DefaultArtifactRepository.IsArchiveLogs() {
 		needLocation = true
 	}
 	if !needLocation {
 		woc.log.Debugf("archive location unnecessary")
 		return nil
 	}
-	tmpl.ArchiveLocation = &wfv1.ArtifactLocation{ArchiveLogs: artifactRepository.ArchiveLogs}
-	// artifact location is defaulted using the following formula:
-	// <worflow_name>/<pod_name>/<artifact_name>.tgz
-	// (e.g. myworkflowartifacts/argo-wf-fhljp/argo-wf-fhljp-123291312382/src.tgz)
-	if s3Location := artifactRepository.S3; s3Location != nil {
-		woc.log.Debugf("Setting s3 artifact repository information")
-		artLocationKey := s3Location.KeyFormat
-		// NOTE: we use unresolved variables, will get substituted later
-		if artLocationKey == "" {
-			artLocationKey = path.Join(s3Location.KeyPrefix, common.DefaultArchivePattern)
-		}
-		tmpl.ArchiveLocation.S3 = &wfv1.S3Artifact{
-			S3Bucket: s3Location.S3Bucket,
-			Key:      artLocationKey,
-		}
-	} else if artifactRepository.Artifactory != nil {
-		woc.log.Debugf("Setting artifactory artifact repository information")
-		repoURL := ""
-		if artifactRepository.Artifactory.RepoURL != "" {
-			repoURL = artifactRepository.Artifactory.RepoURL + "/"
-		}
-		artURL := fmt.Sprintf("%s%s", repoURL, common.DefaultArchivePattern)
-		tmpl.ArchiveLocation.Artifactory = &wfv1.ArtifactoryArtifact{
-			ArtifactoryAuth: artifactRepository.Artifactory.ArtifactoryAuth,
-			URL:             artURL,
-		}
-	} else if hdfsLocation := artifactRepository.HDFS; hdfsLocation != nil {
-		woc.log.Debugf("Setting HDFS artifact repository information")
-		tmpl.ArchiveLocation.HDFS = &wfv1.HDFSArtifact{
-			HDFSConfig: hdfsLocation.HDFSConfig,
-			Path:       hdfsLocation.PathFormat,
-			Force:      hdfsLocation.Force,
-		}
-	} else if ossLocation := artifactRepository.OSS; ossLocation != nil {
-		woc.log.Debugf("Setting OSS artifact repository information")
-		artLocationKey := ossLocation.KeyFormat
-		// NOTE: we use unresolved variables, will get substituted later
-		if artLocationKey == "" {
-			artLocationKey = path.Join(ossLocation.KeyFormat, common.DefaultArchivePattern)
-		}
-		tmpl.ArchiveLocation.OSS = &wfv1.OSSArtifact{
-			OSSBucket: ossLocation.OSSBucket,
-			Key:       artLocationKey,
-		}
-	} else if gcsLocation := artifactRepository.GCS; gcsLocation != nil {
-		woc.log.Debugf("Setting GCS artifact repository information")
-		artLocationKey := gcsLocation.KeyFormat
-		if artLocationKey == "" {
-			artLocationKey = common.DefaultArchivePattern
-		}
-		tmpl.ArchiveLocation.GCS = &wfv1.GCSArtifact{
-			GCSBucket: gcsLocation.GCSBucket,
-			Key:       artLocationKey,
-		}
-	} else {
-		return errors.Errorf(errors.CodeBadRequest, "controller is not configured with a default archive location")
+	location, err := woc.wf.Status.DefaultArtifactRepository.AsArtifactLocation()
+	if err != nil {
+		return err
 	}
+	tmpl.ArchiveLocation = location
 	return nil
 }
 

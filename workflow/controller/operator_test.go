@@ -2055,7 +2055,7 @@ spec:
 func TestResolveIOPathPlaceholders(t *testing.T) {
 	wf := unmarshalWF(ioPathPlaceholders)
 	woc := newWoc(*wf)
-	woc.wf.Status.ArtifactRepositories[wfv1.DefaultArtifactRepositoryRef.ID()] = wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{}}
+	woc.wf.Status.DefaultArtifactRepository = &wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{}}
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
@@ -2085,7 +2085,7 @@ spec:
 func TestResolvePlaceholdersInOutputValues(t *testing.T) {
 	wf := unmarshalWF(outputValuePlaceholders)
 	woc := newWoc(*wf)
-	woc.wf.Status.ArtifactRepositories[wfv1.DefaultArtifactRepositoryRef.ID()] = wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{}}
+	woc.wf.Status.DefaultArtifactRepository = &wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{}}
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
@@ -2124,7 +2124,7 @@ spec:
 func TestResolvePodNameInRetries(t *testing.T) {
 	wf := unmarshalWF(podNameInRetries)
 	woc := newWoc(*wf)
-	woc.wf.Status.ArtifactRepositories[wfv1.DefaultArtifactRepositoryRef.ID()] = wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{}}
+	woc.wf.Status.DefaultArtifactRepository = &wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{}}
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
@@ -2403,7 +2403,7 @@ func TestArtifactRepositoryRef(t *testing.T) {
 	)
 	assert.NoError(t, err)
 	woc.operate()
-	artifactRepository := woc.wf.Status.ArtifactRepositories[wfv1.DefaultArtifactRepositoryRef.ID()]
+	artifactRepository := woc.wf.Status.DefaultArtifactRepository
 	assert.Equal(t, artifactRepository.S3.Bucket, "my-bucket")
 	assert.Equal(t, artifactRepository.S3.Endpoint, "my-minio-endpoint.default:9000")
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
@@ -3327,7 +3327,7 @@ spec:
 func TestResolvePlaceholdersInGlobalVariables(t *testing.T) {
 	wf := unmarshalWF(globalVariablePlaceholders)
 	woc := newWoc(*wf)
-	woc.wf.Status.ArtifactRepositories[wfv1.DefaultArtifactRepositoryRef.ID()] = wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{}}
+	woc.wf.Status.DefaultArtifactRepository = &wfv1.ArtifactRepository{S3: &wfv1.S3ArtifactRepository{}}
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})

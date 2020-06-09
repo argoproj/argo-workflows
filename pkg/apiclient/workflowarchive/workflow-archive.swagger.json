@@ -1822,11 +1822,7 @@
           "description": "StoredWorkflowSpec stores the WorkflowTemplate spec for future execution."
         },
         "artifactRepositories": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactRepository"
-          },
-          "title": "ArtifactRepositories stores artifact repositories used by the workflow. This is used if the input/output artifact does not\nspecify this (for legacy behaviour).\nMay keys are string representation of a ArtifactRepositoryRef - see `ArtifactRepositoryRef.ID()` and `ArtifactRepositoryRefFromID`"
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactRepository"
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"

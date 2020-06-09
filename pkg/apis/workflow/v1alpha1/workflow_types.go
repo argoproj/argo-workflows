@@ -538,8 +538,12 @@ func (tmpl *Template) HasPodSpecPatch() bool {
 type Artifacts []Artifact
 
 func (a Artifacts) GetArtifactByName(name string) *Artifact {
+	return a.Find(func(art Artifact) bool { return art.Name == name })
+}
+
+func (a Artifacts) Find(f func(art Artifact) bool) *Artifact {
 	for _, art := range a {
-		if art.Name == name {
+		if f(art) {
 			return &art
 		}
 	}
@@ -728,6 +732,20 @@ type ArtifactLocation struct {
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 }
 
+func (a *ArtifactLocation) HasLocation() bool {
+	if a == nil {
+		return false
+	}
+	if !a.HasKey() {
+		return false
+	}
+	switch a.GetType() {
+	case Git, HTTP, Raw:
+		return true
+	}
+	return a.HasBucket()
+}
+
 // Has a key (or key-like field) set
 func (a *ArtifactLocation) HasKey() bool {
 	return a != nil && (a.S3 != nil && a.S3.Key != "" ||
@@ -766,11 +784,11 @@ func (a *ArtifactLocation) SetKey(fileName string) error {
 
 // If the location has a bucket (or bucket-like field)
 func (a *ArtifactLocation) HasBucket() bool {
+	// you'll see we skip HTTP and Raw as these do not have anything bucket-like at all
 	switch a.GetType() {
 	case Artifactory:
 		return a.Artifactory.UsernameSecret != nil
 	case Git:
-		// bit more complex due to no "bucket"
 		return a.Git.UsernameSecret != nil ||
 			a.Git.PasswordSecret != nil ||
 			a.Git.SSHPrivateKeySecret != nil
@@ -814,21 +832,7 @@ func (a *ArtifactLocation) SetBucket(from *ArtifactLocation) {
 	}
 }
 
-type ArtifactLocationType int
-
-const (
-	None ArtifactLocationType = iota
-	Artifactory
-	Git
-	GCS
-	HDFS
-	HTTP
-	OSS
-	Raw
-	S3
-)
-
-func (a *ArtifactLocation) GetType() ArtifactLocationType {
+func (a *ArtifactLocation) GetType() ArtifactType {
 	if a == nil {
 		return None
 	} else if a.Artifactory != nil {
@@ -852,7 +856,7 @@ func (a *ArtifactLocation) GetType() ArtifactLocationType {
 }
 
 // Set the type of artifact to be the same as the argument
-func (a *ArtifactLocation) SetType(from ArtifactLocationType) {
+func (a *ArtifactLocation) SetType(from ArtifactType) {
 	if a.GetType() != None {
 		return
 	}
@@ -880,8 +884,6 @@ func (a *ArtifactLocation) IsArchiveLogs() bool {
 	return a != nil && a.ArchiveLogs != nil && *a.ArchiveLogs
 }
 
-var DefaultArtifactRepositoryRef = &ArtifactRepositoryRef{}
-
 type ArtifactRepositoryRef struct {
 	ConfigMap string `json:"configMap,omitempty" protobuf:"bytes,1,opt,name=configMap"`
 	Key       string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
@@ -893,8 +895,6 @@ func (r ArtifactRepositoryRef) GetConfigMap() string {
 	}
 	return r.ConfigMap
 }
-
-func (r ArtifactRepositoryRef) ID() string { return r.ConfigMap + "/" + r.Key }
 
 // Outputs hold parameters, artifacts, and results from a step
 type Outputs struct {
@@ -1129,10 +1129,8 @@ type WorkflowStatus struct {
 	// StoredWorkflowSpec stores the WorkflowTemplate spec for future execution.
 	StoredWorkflowSpec *WorkflowSpec `json:"storedWorkflowTemplateSpec,omitempty" protobuf:"bytes,14,opt,name=storedWorkflowTemplateSpec"`
 
-	// ArtifactRepositories stores artifact repositories used by the workflow. This is used if the input/output artifact does not
-	// specify this (for legacy behaviour).
-	// May keys are string representation of a ArtifactRepositoryRef - see `ArtifactRepositoryRef.ID()` and `ArtifactRepositoryRefFromID`
-	ArtifactRepositories map[string]ArtifactRepository `json:"artifactRepositories,omitempty" protobuf:"bytes,15,rep,name=artifactRepositories"`
+	// DefaultArtifactRepository stores the default (typically configured) artifact repository
+	DefaultArtifactRepository *ArtifactRepository `json:"defaultArtifactRepository,omitempty" protobuf:"bytes,15,rep,name=defaultArtifactRepository"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {
@@ -1447,10 +1445,6 @@ func (in *WorkflowStatus) AnyActiveSuspendNode() bool {
 	return in.Nodes.Any(func(node NodeStatus) bool { return node.IsActiveSuspendNode() })
 }
 
-func (ws *WorkflowStatus) DefaultArtifactRepository() ArtifactRepository {
-	return ws.ArtifactRepositories[DefaultArtifactRepositoryRef.ID()]
-}
-
 // Pending returns whether or not the node is in pending state
 func (n NodeStatus) Pending() bool {
 	return n.Phase == NodePending
@@ -1748,7 +1742,7 @@ type ResourceTemplate struct {
 	Flags []string `json:"flags,omitempty" protobuf:"varint,7,opt,name=flags"`
 }
 
-// GetType returns the type of this template
+// getType returns the type of this template
 func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Container != nil {
 		return TemplateTypeContainer

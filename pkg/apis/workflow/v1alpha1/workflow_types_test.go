@@ -89,14 +89,14 @@ func TestArtifactLocation_SetBucket(t *testing.T) {
 	(&ArtifactLocation{}).SetBucket(nil)
 	(&ArtifactLocation{}).SetBucket(&ArtifactLocation{})
 	(&ArtifactLocation{Artifactory: &ArtifactoryArtifact{}}).SetBucket(&ArtifactLocation{})
-	(&ArtifactLocation{Artifactory: &ArtifactoryArtifact{}}).SetBucket(&ArtifactLocation{Artifactory: &ArtifactoryArtifact{}})
-	(&ArtifactLocation{Git: &GitArtifact{}}).SetBucket(&ArtifactLocation{Git: &GitArtifact{}})
-	(&ArtifactLocation{GCS: &GCSArtifact{}}).SetBucket(&ArtifactLocation{GCS: &GCSArtifact{}})
-	(&ArtifactLocation{HDFS: &HDFSArtifact{}}).SetBucket(&ArtifactLocation{HDFS: &HDFSArtifact{}})
-	(&ArtifactLocation{HTTP: &HTTPArtifact{}}).SetBucket(&ArtifactLocation{HTTP: &HTTPArtifact{}})
-	(&ArtifactLocation{OSS: &OSSArtifact{}}).SetBucket(&ArtifactLocation{OSS: &OSSArtifact{}})
-	(&ArtifactLocation{Raw: &RawArtifact{}}).SetBucket(&ArtifactLocation{Raw: &RawArtifact{}})
-	(&ArtifactLocation{S3: &S3Artifact{}}).SetBucket(&ArtifactLocation{S3: &S3Artifact{}})
+	(&ArtifactLocation{}).SetBucket(&ArtifactLocation{Artifactory: &ArtifactoryArtifact{}})
+	(&ArtifactLocation{}).SetBucket(&ArtifactLocation{Git: &GitArtifact{}})
+	(&ArtifactLocation{}).SetBucket(&ArtifactLocation{GCS: &GCSArtifact{}})
+	(&ArtifactLocation{}).SetBucket(&ArtifactLocation{HDFS: &HDFSArtifact{}})
+	(&ArtifactLocation{}).SetBucket(&ArtifactLocation{HTTP: &HTTPArtifact{}})
+	(&ArtifactLocation{}).SetBucket(&ArtifactLocation{OSS: &OSSArtifact{}})
+	(&ArtifactLocation{}).SetBucket(&ArtifactLocation{Raw: &RawArtifact{}})
+	(&ArtifactLocation{}).SetBucket(&ArtifactLocation{S3: &S3Artifact{}})
 }
 
 func TestArtifact_GetArchive(t *testing.T) {

@@ -4582,18 +4582,10 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
 						},
 					},
-					"artifactRepositories": {
+					"defaultArtifactRepository": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ArtifactRepositories stores artifact repositories used by the workflow. This is used if the input/output artifact does not specify this (for legacy behaviour). May keys are string representation of a ArtifactRepositoryRef - see `ArtifactRepositoryRef.ID()` and `ArtifactRepositoryRefFromID`",
-							Type:        []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepository"),
-									},
-								},
-							},
+							Description: "DefaultArtifactRepository stores the default (typically configured) artifact repository",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepository"),
 						},
 					},
 				},
