@@ -39,8 +39,17 @@ func NewSemaphore(name string, limit int, callbackFunc func(string)) *Semaphore 
 	}
 }
 
+func (s *Semaphore) getName() string {
+	return s.name
+}
+
+func (s *Semaphore) getLimit() int {
+	return s.limit
+}
+
+
 func (s *Semaphore) getCurrentHolders() []string {
-	keys := make([]string, len(s.lockHolder))
+	var keys []string
 	for k := range s.lockHolder {
 		keys = append(keys, k)
 	}
@@ -67,11 +76,7 @@ func (s *Semaphore) resize(n int) bool {
 	return status
 }
 
-func (s *Semaphore) enqueueWorkflow(key string) {
-	s.releaseNotifyFunc(key)
-}
-
-func (s *Semaphore) release(key string) {
+func (s *Semaphore) release(key string) LockStatus {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	if _, ok := s.lockHolder[key]; ok {
@@ -79,10 +84,12 @@ func (s *Semaphore) release(key string) {
 		// Remove the excess holders from map once the done.
 		if len(s.lockHolder) > s.limit {
 			delete(s.lockHolder, key)
-			return
+			return Released
 		}
+		log.Println(key)
 		s.semaphore.Release(1)
 		delete(s.lockHolder, key)
+
 		s.log.Infof("Lock has been released by %s. Available locks: %d", key, s.limit-len(s.lockHolder))
 		if s.pending.Len() > 0 {
 			item := s.pending.peek()
@@ -93,9 +100,10 @@ func (s *Semaphore) release(key string) {
 				workflowKey = fmt.Sprintf("%s/%s", items[0], items[1])
 			}
 			s.log.Debugf("Enqueue the Workflow %s \n", workflowKey)
-			s.enqueueWorkflow(workflowKey)
+			s.releaseNotifyFunc(workflowKey)
 		}
 	}
+	return Released
 }
 
 func (s *Semaphore) addToQueue(holderKey string, priority int32, creationTime time.Time) {
@@ -114,21 +122,23 @@ func (s *Semaphore) addToQueue(holderKey string, priority int32, creationTime ti
 	s.inPending[holderKey] = true
 	s.log.Debugf("Added into Queue %s \n", holderKey)
 }
-func (s *Semaphore) acquire(holderKey string) bool {
+
+
+func (s *Semaphore) acquire(holderKey string) LockStatus {
 	if s.semaphore.TryAcquire(1) {
 		s.lockHolder[holderKey] = true
-		return true
+		return Acquired
 	}
-	return false
+	return Waiting
 }
 
-func (s *Semaphore) tryAcquire(holderKey string) (bool, string) {
-	s.lock.Lock()
+func (s *Semaphore) tryAcquire(holderKey string) (LockStatus, string) {
+    s.lock.Lock()
 	defer s.lock.Unlock()
 
 	if _, ok := s.lockHolder[holderKey]; ok {
 		s.log.Debugf("%s is already holding a lock\n", holderKey)
-		return true, ""
+		return AlreadyAcquired, ""
 	}
 	var nextKey string
 
@@ -137,17 +147,17 @@ func (s *Semaphore) tryAcquire(holderKey string) (bool, string) {
 		item := s.pending.peek()
 		nextKey = fmt.Sprintf("%v", item.key)
 		if holderKey != nextKey {
-			return false, waitingMsg
+			return Waiting, waitingMsg
 		}
 	}
 
-	if s.acquire(holderKey) {
+	if status :=s.acquire(holderKey); status == Acquired {
 		s.pending.pop()
 		delete(s.inPending, holderKey)
 		s.log.Infof("%s acquired by %s \n", s.name, nextKey)
-		return true, ""
+		return status, ""
 	}
-	s.log.Infof("Current Semaphore Holders. %v", s.lockHolder)
-	return false, waitingMsg
+	s.log.Debugf("Current Semaphore Holders. %v", s.lockHolder)
+	return Waiting, waitingMsg
 
 }

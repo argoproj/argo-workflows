@@ -597,7 +597,7 @@ WorkflowStatus contains overall status information about a workflow
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
 |`compressedNodes`|`string`|Compressed and base64 decoded Nodes map|
-|`concurrencyLockStatus`|[`ConcurrencyLockStatus`](#concurrencylockstatus)|ConcurrencyLockStatus stores the currently holding locks|
+|`concurrency`|[`ConcurrencyStatus`](#concurrencystatus)|ConcurrencyLockStatus stores the currently holding locks|
 |`conditions`|`Array<`[`Condition`](#condition)`>`|Conditions is a list of conditions the Workflow may have|
 |`finishedAt`|[`Time`](#time)|Time at which this workflow completed|
 |`message`|`string`|A human readable message indicating details about why the workflow is in this condition.|
@@ -1712,14 +1712,14 @@ WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 |`clusterScope`|`boolean`|ClusterScope indicates the referred template is cluster scoped (i.e. a ClusterWorkflowTemplate).|
 |`name`|`string`|Name is the resource name of the workflow template.|
 
-## ConcurrencyLockStatus
+## ConcurrencyStatus
 
 _No description available_
 
 ### Fields
 | Field Name | Field Type | Description   |
 |:----------:|:----------:|---------------|
-|`semaphoreHolders`|`Map< string , string >`|SemaphoreHolders stores the Semaphore holder details|
+|`semaphore`|[`SemaphoreStatus`](#semaphorestatus)|SemaphoreHolders stores this workflow's Semaphore holder details|
 
 ## Condition
 
@@ -2900,6 +2900,25 @@ TemplateRef is a reference of template resource.
 |`runtimeResolution`|`boolean`|RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime.|
 |`template`|`string`|Template is the name of referred template in the resource.|
 
+## SemaphoreStatus
+
+_No description available_
+
+<details>
+<summary>Examples with this field (click to open)</summary>
+<br>
+
+- [`semaphore-tmpl-level.yaml`](../examples/semaphore-tmpl-level.yaml)
+
+- [`semaphore-wf-level.yaml`](../examples/semaphore-wf-level.yaml)
+</details>
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`holding`|[`HolderNames`](#holdernames)|_No description available_|
+|`waiting`|[`WaitingStatus`](#waitingstatus)|_No description available_|
+
 ## ArchiveStrategy
 
 ArchiveStrategy describes how to archive files/directory when saving artifacts
@@ -3378,6 +3397,24 @@ Sequence expands a workflow step into numeric range
 |`end`|`string`|Number at which to end the sequence (default: 0). Not to be used with Count|
 |`format`|`string`|Format is a printf format string to format the value in the sequence|
 |`start`|`string`|Number at which to start the sequence (default: 0)|
+
+## HolderNames
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`name`|`Array< string >`|_No description available_|
+
+## WaitingStatus
+
+_No description available_
+
+### Fields
+| Field Name | Field Type | Description   |
+|:----------:|:----------:|---------------|
+|`holder`|[`HolderNames`](#holdernames)|_No description available_|
 
 ## NoneStrategy
 

@@ -2011,15 +2011,12 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.ConcurrencyLockStatus": {
+    "io.argoproj.workflow.v1alpha1.ConcurrencyStatus": {
       "type": "object",
       "properties": {
-        "semaphoreHolders": {
-          "description": "SemaphoreHolders stores the Semaphore holder details",
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
+        "semaphore": {
+          "description": "SemaphoreHolders stores this workflow's Semaphore holder details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SemaphoreStatus"
         }
       }
     },
@@ -2479,6 +2476,17 @@
         "value": {
           "description": "Value is the value of the metric",
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.HolderNames": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -3160,6 +3168,23 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.SemaphoreStatus": {
+      "type": "object",
+      "properties": {
+        "holding": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HolderNames"
+          }
+        },
+        "waiting": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WaitingStatus"
+          }
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Sequence": {
       "description": "Sequence expands a workflow step into numeric range",
       "type": "object",
@@ -3697,6 +3722,14 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.WaitingStatus": {
+      "type": "object",
+      "properties": {
+        "holder": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HolderNames"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Workflow": {
       "description": "Workflow is the definition of a workflow resource",
       "type": "object",
@@ -4029,9 +4062,9 @@
           "description": "Compressed and base64 decoded Nodes map",
           "type": "string"
         },
-        "concurrencyLockStatus": {
+        "concurrency": {
           "description": "ConcurrencyLockStatus stores the currently holding locks",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ConcurrencyLockStatus"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ConcurrencyStatus"
         },
         "conditions": {
           "description": "Conditions is a list of conditions the Workflow may have",

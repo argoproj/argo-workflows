@@ -71,9 +71,9 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 
 		// Acquired the lock
 		woc.operate()
-		assert.NotNil(t, woc.wf.Status.ConcurrencyLockStatus)
-		assert.NotNil(t, woc.wf.Status.ConcurrencyLockStatus.SemaphoreHolders)
-		assert.Equal(t, 1, len(woc.wf.Status.ConcurrencyLockStatus.SemaphoreHolders))
+		assert.NotNil(t, woc.wf.Status.Concurrency)
+		assert.NotNil(t, woc.wf.Status.Concurrency.Semaphore)
+		assert.Equal(t, 1, len(woc.wf.Status.Concurrency.Semaphore.Holding))
 
 		// Try to Acquire the lock, But lock is not available
 		wf_Two := wf.DeepCopy()
@@ -96,15 +96,15 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 
 		// Release the lock
 		woc.operate()
-		assert.NotNil(t, woc.wf.Status.ConcurrencyLockStatus)
-		assert.Empty(t, woc.wf.Status.ConcurrencyLockStatus.SemaphoreHolders)
-		assert.Equal(t, 0, len(woc.wf.Status.ConcurrencyLockStatus.SemaphoreHolders))
+		assert.NotNil(t, woc.wf.Status.Concurrency)
+		assert.NotNil(t, woc.wf.Status.Concurrency.Semaphore)
+		assert.Equal(t, 0, len(woc.wf.Status.Concurrency.Semaphore.Holding))
 
 		// Try to Acquired the lock
 		woc_two.operate()
-		assert.NotNil(t, woc_two.wf.Status.ConcurrencyLockStatus)
-		assert.NotNil(t, woc_two.wf.Status.ConcurrencyLockStatus.SemaphoreHolders)
-		assert.Equal(t, 1, len(woc_two.wf.Status.ConcurrencyLockStatus.SemaphoreHolders))
+		assert.NotNil(t, woc_two.wf.Status.Concurrency)
+		assert.NotNil(t, woc_two.wf.Status.Concurrency.Semaphore)
+		assert.Equal(t, 1, len(woc_two.wf.Status.Concurrency.Semaphore.Holding))
 
 	})
 }
@@ -127,7 +127,7 @@ func TestSemaphoreWithOutConfigMap(t *testing.T) {
 		}
 		// Acquire the lock
 		woc.operate()
-		assert.Nil(t, woc.wf.Status.ConcurrencyLockStatus)
+		assert.Nil(t, woc.wf.Status.Concurrency)
 		for _, node := range woc.wf.Status.Nodes {
 			assert.Equal(t, wfv1.NodeError, node.Phase)
 		}

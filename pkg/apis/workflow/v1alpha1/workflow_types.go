@@ -873,6 +873,16 @@ type SemaphoreRef struct {
 	ConfigMapKeyRef *apiv1.ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,1,opt,name=configMapKeyRef"`
 }
 
+func (sr SemaphoreRef) GetType() ConcurrencyType {
+	return Semaphore
+}
+func (sr SemaphoreRef) GetKey(namespace string) string {
+	if sr.ConfigMapKeyRef != nil {
+		return fmt.Sprintf("%s/configmap/%s/%s", namespace, sr.ConfigMapKeyRef.Name, sr.ConfigMapKeyRef.Key)
+	}
+	return namespace
+}
+
 // WorkflowTemplateRef is a reference to a WorkflowTemplate resource.
 type WorkflowTemplateRef struct {
 	// Name is the resource name of the workflow template.
@@ -988,12 +998,24 @@ type WorkflowStatus struct {
 	StoredWorkflowSpec *WorkflowSpec `json:"storedWorkflowTemplateSpec,omitempty" protobuf:"bytes,14,opt,name=storedWorkflowTemplateSpec"`
 
 	// ConcurrencyLockStatus stores the currently holding locks
-	ConcurrencyLockStatus *ConcurrencyLockStatus `json:"concurrencyLockStatus,omitempty" protobuf:"bytes,15,opt,name=concurrencyLockStatus"`
+	Concurrency *ConcurrencyStatus `json:"concurrency,omitempty" protobuf:"bytes,15,opt,name=concurrency"`
 }
 
-type ConcurrencyLockStatus struct {
-	// SemaphoreHolders stores the Semaphore holder details
-	SemaphoreHolders map[string]string `json:"semaphoreHolders,omitempty" protobuf:"bytes,1,opt,name=semaphoreHolders"`
+type SemaphoreStatus struct {
+	Holding map[string]HolderNames   `json:"holding,omitempty" protobuf:"bytes,1,opt,name=holding"`
+	Waiting map[string]WaitingStatus `json:"waiting,omitempty" protobuf:"bytes,2,opt,name=waiting"`
+}
+type WaitingStatus struct {
+	Holders HolderNames `json:"holder,omitempty" protobuf:"bytes,1,opt,name=holder"`
+}
+
+type HolderNames struct {
+	Name []string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+}
+
+type ConcurrencyStatus struct {
+	// SemaphoreHolders stores this workflow's Semaphore holder details
+	Semaphore *SemaphoreStatus `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
 }
 
 func (ws *WorkflowStatus) IsOffloadNodeStatus() bool {

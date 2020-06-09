@@ -150,9 +150,9 @@ message ClusterWorkflowTemplateList {
   repeated ClusterWorkflowTemplate items = 2;
 }
 
-message ConcurrencyLockStatus {
-  // SemaphoreHolders stores the Semaphore holder details
-  map<string, string> semaphoreHolders = 1;
+message ConcurrencyStatus {
+  // SemaphoreHolders stores this workflow's Semaphore holder details
+  optional SemaphoreStatus semaphore = 1;
 }
 
 message Condition {
@@ -430,6 +430,10 @@ message Histogram {
 
   // Buckets is a list of bucket divisors for the histogram
   repeated double buckets = 4;
+}
+
+message HolderNames {
+  repeated string name = 1;
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
@@ -804,6 +808,12 @@ message SemaphoreRef {
   optional k8s.io.api.core.v1.ConfigMapKeySelector configMapKeyRef = 1;
 }
 
+message SemaphoreStatus {
+  map<string, HolderNames> holding = 1;
+
+  map<string, WaitingStatus> waiting = 2;
+}
+
 // Sequence expands a workflow step into numeric range
 message Sequence {
   // Count is number of elements in the sequence (default: 0). Not to be used with end
@@ -1082,6 +1092,10 @@ message Version {
   optional string platform = 8;
 }
 
+message WaitingStatus {
+  optional HolderNames holder = 1;
+}
+
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
@@ -1303,7 +1317,7 @@ message WorkflowStatus {
   optional WorkflowSpec storedWorkflowTemplateSpec = 14;
 
   // ConcurrencyLockStatus stores the currently holding locks
-  optional ConcurrencyLockStatus concurrencyLockStatus = 15;
+  optional ConcurrencyStatus concurrency = 15;
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

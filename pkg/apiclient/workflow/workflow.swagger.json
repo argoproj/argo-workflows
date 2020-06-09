@@ -928,15 +928,12 @@
       },
       "title": "Backoff is a backoff strategy to use within retryStrategy"
     },
-    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyLockStatus": {
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyStatus": {
       "type": "object",
       "properties": {
-        "semaphoreHolders": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          },
-          "title": "SemaphoreHolders stores the Semaphore holder details"
+        "semaphore": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreStatus",
+          "title": "SemaphoreHolders stores this workflow's Semaphore holder details"
         }
       }
     },
@@ -1255,6 +1252,17 @@
         }
       },
       "title": "Histogram is a Histogram prometheus metric"
+    },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HolderNames": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
     },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Inputs": {
       "type": "object",
@@ -1784,6 +1792,23 @@
       },
       "title": "SemaphoreRef is a reference of Semaphore"
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreStatus": {
+      "type": "object",
+      "properties": {
+        "holding": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HolderNames"
+          }
+        },
+        "waiting": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WaitingStatus"
+          }
+        }
+      }
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Sequence": {
       "type": "object",
       "properties": {
@@ -2140,6 +2165,14 @@
       },
       "title": "ValueFrom describes a location in which to obtain the value to a parameter"
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WaitingStatus": {
+      "type": "object",
+      "properties": {
+        "holder": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.HolderNames"
+        }
+      }
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow": {
       "type": "object",
       "properties": {
@@ -2416,8 +2449,8 @@
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowSpec",
           "description": "StoredWorkflowSpec stores the WorkflowTemplate spec for future execution."
         },
-        "concurrencyLockStatus": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyLockStatus",
+        "concurrency": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyStatus",
           "title": "ConcurrencyLockStatus stores the currently holding locks"
         }
       },

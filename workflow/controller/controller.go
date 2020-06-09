@@ -430,23 +430,6 @@ func (wfc *WorkflowController) processNextItem() bool {
 		// but we are still draining the controller's workflow workqueue
 		return true
 	}
-	if wf.Spec.Semaphore != nil {
-		wfKey := fmt.Sprintf("%v", key)
-		priority, creationTime := getWfPriority(wf)
-		acquired, msg, err := wfc.concurrencyMgr.TryAcquire(wfKey, wf.Namespace, priority, creationTime, wf.Spec.Semaphore, wf)
-		if err != nil {
-			log.Warnf("Failed to acquire the lock for '%s' : %v", key, err)
-			woc := newWorkflowOperationCtx(wf, wfc)
-			woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
-			woc.persistUpdates()
-			wfc.throttler.Remove(key)
-			return true
-		}
-		if !acquired {
-			log.Warnf("Workflow %s processing has been postponed due to semaphore limit. %s", key, msg)
-			return true
-		}
-	}
 
 	woc := newWorkflowOperationCtx(wf, wfc)
 
@@ -459,15 +442,38 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
+	if wf.Spec.Semaphore != nil {
+		wfKey := wfc.concurrencyMgr.GetHolderKey(woc.wf,"")
+		priority, creationTime := getWfPriority(woc.wf)
+		acquired, msg, err := wfc.concurrencyMgr.TryAcquire(wfKey, woc.wf.Namespace, priority, creationTime, woc.wf.Spec.Semaphore, woc.wf)
+		if err != nil {
+			log.Warnf("Failed to acquire the lock for '%s' : %v", key, err)
+			woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
+			woc.persistUpdates()
+			wfc.throttler.Remove(key)
+			return true
+		}
+		woc.updated = true
+		if !acquired {
+			log.Warnf("Workflow %s processing has been postponed due to concurrency limit. %s", key, msg)
+			woc.persistUpdates()
+			return true
+		}
+	}
+
 	startTime := time.Now()
 	woc.operate()
 
 	wfc.metrics.OperationCompleted(time.Since(startTime).Seconds())
 	if woc.wf.Status.Fulfilled() {
-		wfc.throttler.Remove(key)
-
 		// Release all acquired lock for completed workflow
-		wfc.concurrencyMgr.ReleaseAll(woc.wf)
+		if wfc.concurrencyMgr.ReleaseAll(woc.wf) {
+			log.Infof("%s released all acquired locks", wf.Name)
+			woc.updated = true
+			woc.persistUpdates()
+		}
+
+		wfc.throttler.Remove(key)
 
 		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 		var doPodGC bool
