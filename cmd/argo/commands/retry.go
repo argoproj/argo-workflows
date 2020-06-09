@@ -34,7 +34,6 @@ func NewRetryCommand() *cobra.Command {
 				log.Fatalf("Unable to parse node field selector '%s': %s", retryOps.nodeFieldSelector, err)
 			}
 
-			last := args[0]
 			for _, name := range args {
 				wf, err := serviceClient.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{
 					Name:              name,
@@ -45,13 +44,10 @@ func NewRetryCommand() *cobra.Command {
 				if err != nil {
 					errors.CheckError(err)
 					return
-				} else {
-					last = name
 				}
 				printWorkflow(wf, getFlags{output: cliSubmitOpts.output})
 				waitOrWatch([]string{name}, cliSubmitOpts)
 			}
-			TouchWorkflow(last, "retry")
 		},
 	}
 	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+
 	"github.com/argoproj/pkg/cli"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -65,9 +66,6 @@ If you're using the Argo Server (e.g. because you need large workflow support or
 	var logLevel string
 	var verbose bool
 	command.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-
-		GetLastModifiedWorkflowName()
-
 		if verbose {
 			logLevel = "debug"
 		}

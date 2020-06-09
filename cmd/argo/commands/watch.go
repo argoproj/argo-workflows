@@ -49,7 +49,6 @@ func watchWorkflow(wfName string, getArgs getFlags) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-
 	// ensure that the desired workflow exists
 	_, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
 		Name:      wfName,

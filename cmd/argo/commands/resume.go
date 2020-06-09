@@ -33,7 +33,6 @@ func NewResumeCommand() *cobra.Command {
 				log.Fatalf("Unable to parse node field selector '%s': %s", resumeArgs.nodeFieldSelector, err)
 			}
 
-			last := args[0]
 			for _, wfName := range args {
 				_, err := serviceClient.ResumeWorkflow(ctx, &workflowpkg.WorkflowResumeRequest{
 					Name:              wfName,
@@ -42,12 +41,9 @@ func NewResumeCommand() *cobra.Command {
 				})
 				if err != nil {
 					log.Fatalf("Failed to resume %s: %+v", wfName, err)
-				} else  {
-					last = wfName
 				}
 				fmt.Printf("workflow %s resumed\n", wfName)
 			}
-			TouchWorkflow(last, "resume")
 		},
 	}
 	command.Flags().StringVar(&resumeArgs.nodeFieldSelector, "node-field-selector", "", "selector of node to resume, eg: --node-field-selector inputs.paramaters.myparam.value=abc")

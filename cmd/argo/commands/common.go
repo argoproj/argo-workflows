@@ -2,8 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"github.com/argoproj/pkg/errors"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -85,24 +83,4 @@ func ansiFormat(s string, codes ...int) string {
 	}
 	sequence := strings.Join(codeStrs, ";")
 	return fmt.Sprintf("%s[%sm%s%s[%dm", escape, sequence, s, escape, noFormat)
-}
-
-func GetLastModifiedWorkflowName() string {
-	file, err := os.OpenFile("/tmp/argo", os.O_RDWR|os.O_CREATE, 0655)
-	defer file.Close()
-	errors.CheckError(err)
-	lastModified, err := ioutil.ReadFile("/tmp/argo")
-	errors.CheckError(err)
-	fmt.Printf("Last modified workflow: %s\n", lastModified)
-	return string(lastModified)
-}
-
-func TouchWorkflow(wfName string, command string) {
-	fmt.Printf("Command %s touched workflow: %s\n", command, wfName)
-	file, err := os.OpenFile("/tmp/argo", os.O_RDWR|os.O_CREATE, 0655)
-	defer file.Close()
-	errors.CheckError(err)
-	file.Truncate(0)
-	_, err = file.Write([]byte(wfName + "\n" + command))
-	errors.CheckError(err)
 }

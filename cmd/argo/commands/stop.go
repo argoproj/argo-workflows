@@ -15,7 +15,24 @@ import (
 type stopOps struct {
 	message           string // --message
 	nodeFieldSelector string // --node-field-selector
-	latest            bool   // --latest
+}
+package commands
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/argoproj/pkg/errors"
+	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/fields"
+
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
+)
+
+type stopOps struct {
+	message           string // --message
+	nodeFieldSelector string // --node-field-selector
 }
 
 func NewStopCommand() *cobra.Command {
@@ -31,7 +48,6 @@ func NewStopCommand() *cobra.Command {
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
-
 
 			selector, err := fields.ParseSelector(stopArgs.nodeFieldSelector)
 			if err != nil {
