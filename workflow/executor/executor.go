@@ -123,12 +123,12 @@ func (we *WorkflowExecutor) HandleError() {
 func (we *WorkflowExecutor) LoadArtifacts() error {
 	log.Infof("Start loading input artifacts...")
 
-	for _, a := range we.Template.Inputs.Artifacts {
+	for _, inputArt := range we.Template.Inputs.Artifacts {
 
-		log.Infof("Downloading artifact: %s", a.Name)
-		log.WithField("art", a).Info("ALEXs")
+		log.Infof("Downloading artifact: %s", inputArt.Name)
+		log.WithField("art", inputArt).Info("ALEXs")
 
-		art := a.DeepCopy()
+		art := inputArt.DeepCopy()
 		if !art.HasBucket() {
 			art.SetBucket(we.Template.ArchiveLocation)
 		}

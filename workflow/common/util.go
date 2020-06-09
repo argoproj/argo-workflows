@@ -277,6 +277,15 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 			continue
 		}
 		argArt := args.GetArtifactByName(inArt.Name)
+		if !inArt.Optional {
+			// artifact must be supplied
+			if argArt == nil {
+				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s was not supplied", inArt.Name)
+			}
+			if !argArt.HasKey() && !validateOnly {
+				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s missing location information", inArt.Name)
+			}
+		}
 		if argArt != nil {
 			argArt.Path = inArt.Path
 			argArt.Mode = inArt.Mode
