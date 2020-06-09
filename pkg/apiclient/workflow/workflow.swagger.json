@@ -2491,8 +2491,9 @@
           "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowSpec",
           "description": "StoredWorkflowSpec stores the WorkflowTemplate spec for future execution."
         },
-        "artifactRepositories": {
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactRepository"
+        "defaultArtifactRepository": {
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ArtifactRepository",
+          "title": "DefaultArtifactRepository stores the default (typically configured) artifact repository"
         }
       },
       "title": "WorkflowStatus contains overall status information about a workflow"
