@@ -777,7 +777,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 		if art.Path == "" {
 			return errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s did not specify a path", art.Name)
 		}
-		if !art.HasLocation() && art.Optional {
+		if !art.HasKey() && art.Optional {
 			woc.log.Infof("skip volume mount of %s (%s): optional artifact was not provided",
 				art.Name, art.Path)
 			continue
@@ -850,7 +850,7 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 	var needLocation bool
 
 	if tmpl.ArchiveLocation != nil {
-		if tmpl.ArchiveLocation.HasLocation() {
+		if tmpl.ArchiveLocation.HasKey() {
 			// User explicitly set the location. nothing else to do.
 			return nil
 		}
@@ -859,7 +859,7 @@ func (woc *wfOperationCtx) addArchiveLocation(tmpl *wfv1.Template) error {
 		}
 	}
 	for _, art := range tmpl.Outputs.Artifacts {
-		if !art.HasLocation() {
+		if !art.HasKey() {
 			needLocation = true
 			break
 		}

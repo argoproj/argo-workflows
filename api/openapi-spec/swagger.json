@@ -2348,10 +2348,6 @@
     "io.argoproj.workflow.v1alpha1.GCSArtifact": {
       "description": "GCSArtifact is the location of a GCS artifact",
       "type": "object",
-      "required": [
-        "bucket",
-        "key"
-      ],
       "properties": {
         "bucket": {
           "description": "Bucket is the name of the bucket",
@@ -2370,9 +2366,6 @@
     "io.argoproj.workflow.v1alpha1.GCSArtifactRepository": {
       "description": "GCSArtifactRepository defines the controller configuration for a GCS artifact repository",
       "type": "object",
-      "required": [
-        "bucket"
-      ],
       "properties": {
         "bucket": {
           "description": "Bucket is the name of the bucket",
@@ -2454,10 +2447,6 @@
     "io.argoproj.workflow.v1alpha1.HDFSArtifact": {
       "description": "HDFSArtifact is the location of an HDFS artifact",
       "type": "object",
-      "required": [
-        "addresses",
-        "path"
-      ],
       "properties": {
         "addresses": {
           "description": "Addresses is accessible addresses of HDFS name nodes",
@@ -2507,9 +2496,6 @@
     "io.argoproj.workflow.v1alpha1.HDFSArtifactRepository": {
       "description": "HDFSArtifactRepository defines the controller configuration for an HDFS artifact repository",
       "type": "object",
-      "required": [
-        "addresses"
-      ],
       "properties": {
         "addresses": {
           "description": "Addresses is accessible addresses of HDFS name nodes",
@@ -2848,13 +2834,6 @@
     "io.argoproj.workflow.v1alpha1.OSSArtifact": {
       "description": "OSSArtifact is the location of an Alibaba Cloud OSS artifact",
       "type": "object",
-      "required": [
-        "endpoint",
-        "bucket",
-        "accessKeySecret",
-        "secretKeySecret",
-        "key"
-      ],
       "properties": {
         "accessKeySecret": {
           "description": "AccessKeySecret is the secret selector to the bucket's access key",
@@ -2881,12 +2860,6 @@
     "io.argoproj.workflow.v1alpha1.OSSArtifactRepository": {
       "description": "OSSArtifactRepository defines the controller configuration for an OSS artifact repository",
       "type": "object",
-      "required": [
-        "endpoint",
-        "bucket",
-        "accessKeySecret",
-        "secretKeySecret"
-      ],
       "properties": {
         "accessKeySecret": {
           "description": "AccessKeySecret is the secret selector to the bucket's access key",
@@ -3110,10 +3083,6 @@
       "description": "S3Artifact is the location of an S3 artifact",
       "type": "object",
       "required": [
-        "endpoint",
-        "bucket",
-        "accessKeySecret",
-        "secretKeySecret",
         "key"
       ],
       "properties": {
@@ -3158,12 +3127,6 @@
     "io.argoproj.workflow.v1alpha1.S3ArtifactRepository": {
       "description": "S3ArtifactRepository defines the controller configuration for an S3 artifact repository",
       "type": "object",
-      "required": [
-        "endpoint",
-        "bucket",
-        "accessKeySecret",
-        "secretKeySecret"
-      ],
       "properties": {
         "accessKeySecret": {
           "description": "AccessKeySecret is the secret selector to the bucket's access key",

@@ -2,8 +2,11 @@ package v1alpha1
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"hash/fnv"
+	"net/url"
+	"path"
 	"reflect"
 	"sort"
 	"strings"
@@ -726,16 +729,90 @@ type ArtifactLocation struct {
 	GCS *GCSArtifact `json:"gcs,omitempty" protobuf:"bytes,9,opt,name=gcs"`
 }
 
-// HasLocation whether or not an artifact has a location defined
-func (a *ArtifactLocation) HasLocation() bool {
-	return a != nil && (a.S3.HasLocation() ||
-		a.Git.HasLocation() ||
-		a.HTTP.HasLocation() ||
-		a.Artifactory.HasLocation() ||
-		a.Raw.HasLocation() ||
-		a.HDFS.HasLocation() ||
-		a.OSS.HasLocation() ||
-		a.GCS.HasLocation())
+// Has a key (or key-like field) set
+func (a *ArtifactLocation) HasKey() bool {
+	return a != nil && (a.S3 != nil && a.S3.Key != "" ||
+		a.Git != nil && a.Git.Repo != "" ||
+		a.Artifactory != nil && a.Artifactory.URL != "" ||
+		a.HDFS != nil && a.HDFS.Path != "" ||
+		a.OSS != nil && a.OSS.Key != "" ||
+		a.GCS != nil && a.GCS.Key != "")
+}
+
+// Set the key (or key-like field)
+func (a *ArtifactLocation) SetKey(fileName string) error {
+	if a.S3 != nil {
+		a.S3.Key = path.Join(a.S3.Key, fileName)
+	} else if a.Artifactory != nil {
+		uri, err := url.Parse(a.Artifactory.URL)
+		if err != nil {
+			return err
+		}
+		uri.Path = path.Join(uri.Path, fileName)
+		a.Artifactory.URL = uri.String()
+	} else if a.HDFS != nil {
+		a.HDFS.Path = path.Join(a.HDFS.Path, fileName)
+	} else if a.OSS != nil {
+		a.OSS.Key = path.Join(a.OSS.Key, fileName)
+	} else if a.GCS != nil {
+		a.GCS.Key = path.Join(a.GCS.Key, fileName)
+	} else {
+		return errors.New("unable to set key")
+	}
+	return nil
+}
+
+// If the location has a bucket (or bucket-like field)
+func (a *ArtifactLocation) HasBucket() bool {
+	if a == nil {
+		return false
+	} else if a.S3 != nil {
+		return a.S3.Bucket != ""
+	} else if a.Artifactory != nil {
+		return a.Artifactory.UsernameSecret.Key != ""
+	} else if a.HDFS != nil {
+		return len(a.HDFS.Addresses) > 0
+	} else if a.OSS != nil {
+		return a.OSS.Key != ""
+	} else if a.GCS != nil {
+		return a.GCS.Key != ""
+	}
+	return false
+}
+
+// Set the bucket (or bucket-like field)
+func (a *ArtifactLocation) SetBucket(from *ArtifactLocation) {
+	a.SetType(from)
+	if a == nil || from == nil {
+		// noop
+	} else if from.S3 != nil {
+		a.S3.S3Bucket = from.S3.S3Bucket
+	} else if from.Artifactory != nil {
+		a.Artifactory.ArtifactoryAuth = from.Artifactory.ArtifactoryAuth
+	} else if from.HDFS != nil {
+		a.HDFS.HDFSConfig = from.HDFS.HDFSConfig
+	} else if from.OSS != nil {
+		a.OSS.OSSBucket = from.OSS.OSSBucket
+	} else if from.GCS != nil {
+		a.GCS.GCSBucket = from.GCS.GCSBucket
+	}
+}
+
+// Set the type of artifact to be the same as the argument
+func (a *ArtifactLocation) SetType(from *ArtifactLocation) {
+	if a == nil || from == nil {
+		// noop
+	} else if from.S3 != nil && a.S3 == nil {
+		a.S3 = &S3Artifact{}
+	} else if from.Artifactory != nil && a.Artifactory == nil {
+		a.Artifactory = &ArtifactoryArtifact{}
+	} else if from.HDFS != nil && a.HDFS == nil {
+		a.HDFS = &HDFSArtifact{}
+	} else if from.OSS != nil && a.OSS == nil {
+		a.OSS = &OSSArtifact{}
+	} else if from.GCS != nil && a.GCS == nil {
+		a.GCS = &GCSArtifact{}
+	}
 }
 
 func (a *ArtifactLocation) IsArchiveLogs() bool {
@@ -754,11 +831,6 @@ func (r ArtifactRepositoryRef) GetConfigMap() string {
 		return "artifact-repositories"
 	}
 	return r.ConfigMap
-}
-
-func ArtifactRepositoryRefFromID(id string) ArtifactRepositoryRef {
-	parts := strings.SplitN(id, "/", 2)
-	return ArtifactRepositoryRef{ConfigMap: parts[0], Key: parts[1]}
 }
 
 func (r ArtifactRepositoryRef) ID() string { return r.ConfigMap + "/" + r.Key }
@@ -1418,8 +1490,8 @@ type S3Artifact struct {
 	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
 }
 
-func (s *S3Artifact) HasLocation() bool {
-	return s != nil && s.Endpoint != "" && s.Bucket != "" && s.Key != ""
+func (s *S3Artifact) hasFilename() bool {
+	return s != nil && s.Key != ""
 }
 
 // GitArtifact is the location of an git artifact
@@ -1450,8 +1522,8 @@ type GitArtifact struct {
 	InsecureIgnoreHostKey bool `json:"insecureIgnoreHostKey,omitempty" protobuf:"varint,8,opt,name=insecureIgnoreHostKey"`
 }
 
-func (g *GitArtifact) HasLocation() bool {
-	return g != nil && g.Repo != ""
+func (g *GitArtifact) hasFilename() bool {
+	return g != nil
 }
 
 // ArtifactoryAuth describes the secret selectors required for authenticating to artifactory
@@ -1466,7 +1538,7 @@ type ArtifactoryAuth struct {
 // ArtifactoryArtifact is the location of an artifactory artifact
 type ArtifactoryArtifact struct {
 	// URL of the artifact
-	URL             string `json:"url" protobuf:"bytes,1,opt,name=url"`
+	URL             string `json:"url,omitempty" protobuf:"bytes,1,opt,name=url"`
 	ArtifactoryAuth `json:",inline" protobuf:"bytes,2,opt,name=artifactoryAuth"`
 }
 
@@ -1474,23 +1546,15 @@ type ArtifactoryArtifact struct {
 //	return a.URL
 //}
 
-func (a *ArtifactoryArtifact) HasLocation() bool {
-	return a != nil && a.URL != ""
-}
-
 // HDFSArtifact is the location of an HDFS artifact
 type HDFSArtifact struct {
 	HDFSConfig `json:",inline" protobuf:"bytes,1,opt,name=hDFSConfig"`
 
 	// Path is a file path in HDFS
-	Path string `json:"path" protobuf:"bytes,2,opt,name=path"`
+	Path string `json:"path,omitempty" protobuf:"bytes,2,opt,name=path"`
 
 	// Force copies a file forcibly even if it exists (default: false)
 	Force bool `json:"force,omitempty" protobuf:"varint,3,opt,name=force"`
-}
-
-func (h *HDFSArtifact) HasLocation() bool {
-	return h != nil && len(h.Addresses) > 0
 }
 
 // HDFSConfig is configurations for HDFS
@@ -1498,7 +1562,7 @@ type HDFSConfig struct {
 	HDFSKrbConfig `json:",inline" protobuf:"bytes,1,opt,name=hDFSKrbConfig"`
 
 	// Addresses is accessible addresses of HDFS name nodes
-	Addresses []string `json:"addresses" protobuf:"bytes,2,rep,name=addresses"`
+	Addresses []string `json:"addresses,omitempty" protobuf:"bytes,2,rep,name=addresses"`
 
 	// HDFSUser is the user to access HDFS file system.
 	// It is ignored if either ccache or keytab is used.
@@ -1538,25 +1602,17 @@ type RawArtifact struct {
 	Data string `json:"data" protobuf:"bytes,1,opt,name=data"`
 }
 
-func (r *RawArtifact) HasLocation() bool {
-	return r != nil
-}
-
 // HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
 type HTTPArtifact struct {
 	// URL of the artifact
 	URL string `json:"url" protobuf:"bytes,1,opt,name=url"`
 }
 
-func (h *HTTPArtifact) HasLocation() bool {
-	return h != nil && h.URL != ""
-}
-
 // GCSBucket contains the access information for interfacring with a GCS bucket
 type GCSBucket struct {
 
 	// Bucket is the name of the bucket
-	Bucket string `json:"bucket" protobuf:"bytes,1,opt,name=bucket"`
+	Bucket string `json:"bucket,omitempty" protobuf:"bytes,1,opt,name=bucket"`
 
 	// ServiceAccountKeySecret is the secret selector to the bucket's service account key
 	ServiceAccountKeySecret apiv1.SecretKeySelector `json:"serviceAccountKeySecret,omitempty" protobuf:"bytes,2,opt,name=serviceAccountKeySecret"`
@@ -1567,26 +1623,22 @@ type GCSArtifact struct {
 	GCSBucket `json:",inline" protobuf:"bytes,1,opt,name=gCSBucket"`
 
 	// Key is the path in the bucket where the artifact resides
-	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
-}
-
-func (g *GCSArtifact) HasLocation() bool {
-	return g != nil && g.Bucket != "" && g.Key != ""
+	Key string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
 }
 
 // OSSBucket contains the access information required for interfacing with an Alibaba Cloud OSS bucket
 type OSSBucket struct {
 	// Endpoint is the hostname of the bucket endpoint
-	Endpoint string `json:"endpoint" protobuf:"bytes,1,opt,name=endpoint"`
+	Endpoint string `json:"endpoint,omitempty" protobuf:"bytes,1,opt,name=endpoint"`
 
 	// Bucket is the name of the bucket
-	Bucket string `json:"bucket" protobuf:"bytes,2,opt,name=bucket"`
+	Bucket string `json:"bucket,omitempty" protobuf:"bytes,2,opt,name=bucket"`
 
 	// AccessKeySecret is the secret selector to the bucket's access key
-	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret" protobuf:"bytes,3,opt,name=accessKeySecret"`
+	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret,omitempty" protobuf:"bytes,3,opt,name=accessKeySecret"`
 
 	// SecretKeySecret is the secret selector to the bucket's secret key
-	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret" protobuf:"bytes,4,opt,name=secretKeySecret"`
+	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret,omitempty" protobuf:"bytes,4,opt,name=secretKeySecret"`
 }
 
 // OSSArtifact is the location of an Alibaba Cloud OSS artifact
@@ -1594,11 +1646,7 @@ type OSSArtifact struct {
 	OSSBucket `json:",inline" protobuf:"bytes,1,opt,name=oSSBucket"`
 
 	// Key is the path in the bucket where the artifact resides
-	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
-}
-
-func (o *OSSArtifact) HasLocation() bool {
-	return o != nil && o.Bucket != "" && o.Endpoint != "" && o.Key != ""
+	Key string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
 }
 
 // ExecutorConfig holds configurations of an executor container.

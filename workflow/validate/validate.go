@@ -750,7 +750,7 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments) error {
 		}
 	}
 	for _, art := range arguments.Artifacts {
-		if art.From == "" && !art.HasLocation() {
+		if art.From == "" && !art.HasKey() {
 			return errors.Errorf(errors.CodeBadRequest, "%s%s.from or artifact location is required", prefix, art.Name)
 		}
 	}

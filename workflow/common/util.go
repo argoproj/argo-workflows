@@ -272,7 +272,7 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 	newInputArtifacts := make([]wfv1.Artifact, len(newTmpl.Inputs.Artifacts))
 	for i, inArt := range newTmpl.Inputs.Artifacts {
 		// if artifact has hard-wired location, we prefer that
-		if inArt.HasLocation() {
+		if inArt.HasKey() {
 			newInputArtifacts[i] = inArt
 			continue
 		}
