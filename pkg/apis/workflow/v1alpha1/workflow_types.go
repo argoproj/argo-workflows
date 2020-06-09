@@ -538,12 +538,8 @@ func (tmpl *Template) HasPodSpecPatch() bool {
 type Artifacts []Artifact
 
 func (a Artifacts) GetArtifactByName(name string) *Artifact {
-	return a.Find(func(art Artifact) bool { return art.Name == name })
-}
-
-func (a Artifacts) Find(f func(art Artifact) bool) *Artifact {
 	for _, art := range a {
-		if f(art) {
+		if art.Name == name {
 			return &art
 		}
 	}

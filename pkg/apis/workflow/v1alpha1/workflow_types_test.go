@@ -47,6 +47,34 @@ func TestWorkflowFinishedBefore(t *testing.T) {
 	assert.True(t, WorkflowFinishedBefore(t1)(Workflow{Status: WorkflowStatus{FinishedAt: metav1.Time{Time: t0}}}))
 }
 
+func TestArtifactLocation_HasLocation(t *testing.T) {
+	assert.False(t, (&ArtifactLocation{}).HasLocation())
+	assert.False(t, (&ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}).HasLocation())
+	assert.True(t, (&ArtifactLocation{Artifactory: &ArtifactoryArtifact{
+		URL:             "my-url",
+		ArtifactoryAuth: ArtifactoryAuth{UsernameSecret: &corev1.SecretKeySelector{}},
+	}}).HasLocation())
+	assert.True(t, (&ArtifactLocation{GCS: &GCSArtifact{
+		GCSBucket: GCSBucket{Bucket: "my-bucket"},
+		Key:       "my-key",
+	}}).HasLocation())
+	assert.True(t, (&ArtifactLocation{Git: &GitArtifact{Repo: "my-repo"}}).HasLocation())
+	assert.True(t, (&ArtifactLocation{HDFS: &HDFSArtifact{
+		HDFSConfig: HDFSConfig{Addresses: []string{"my-address"}},
+		Path:       "my-path",
+	}}).HasLocation())
+	assert.True(t, (&ArtifactLocation{HTTP: &HTTPArtifact{URL: "my-url"}}).HasLocation())
+	assert.True(t, (&ArtifactLocation{OSS: &OSSArtifact{
+		OSSBucket: OSSBucket{Bucket: "my-bucket"},
+		Key:       "my-key",
+	}}).HasLocation())
+	assert.True(t, (&ArtifactLocation{Raw: &RawArtifact{Data: "my-data"}}).HasLocation())
+	assert.True(t, (&ArtifactLocation{S3: &S3Artifact{
+		S3Bucket: S3Bucket{Bucket: "my-bucket"},
+		Key:      "my-key",
+	}}).HasLocation())
+}
+
 func TestArtifactLocation_SetKey(t *testing.T) {
 	assert.Error(t, (&ArtifactLocation{}).SetKey("my-key"))
 	assert.Error(t, (&ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}).SetKey("my-key"))

@@ -126,7 +126,6 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 	for _, inputArt := range we.Template.Inputs.Artifacts {
 
 		log.Infof("Downloading artifact: %s", inputArt.Name)
-		log.WithField("art", inputArt).Info("ALEXs")
 
 		art := inputArt.DeepCopy()
 		if !art.HasBucket() {
