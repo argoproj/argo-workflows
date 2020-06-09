@@ -123,11 +123,12 @@ func (we *WorkflowExecutor) HandleError() {
 func (we *WorkflowExecutor) LoadArtifacts() error {
 	log.Infof("Start loading input artifacts...")
 
-	for _, art := range we.Template.Inputs.Artifacts {
+	for _, a := range we.Template.Inputs.Artifacts {
 
-		log.Infof("Downloading artifact: %s", art.Name)
+		log.Infof("Downloading artifact: %s", a.Name)
+		log.WithField("art", a).Info("ALEXs")
 
-		art = *art.DeepCopy()
+		art := a.DeepCopy()
 		if !art.HasBucket() {
 			art.SetBucket(we.Template.ArchiveLocation)
 		}
@@ -139,7 +140,8 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 				return errors.Errorf("required artifact %s not supplied", art.Name)
 			}
 		}
-		artDriver, err := we.InitDriver(&art)
+
+		artDriver, err := we.InitDriver(art)
 		if err != nil {
 			return err
 		}
@@ -165,7 +167,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 		// the file is a tarball or not. If it is, it is first extracted then renamed to
 		// the desired location. If not, it is simply renamed to the location.
 		tempArtPath := artPath + ".tmp"
-		err = artDriver.Load(&art, tempArtPath)
+		err = artDriver.Load(art, tempArtPath)
 		if err != nil {
 			if art.Optional && errors.IsCode(errors.CodeNotFound, err) {
 				log.Infof("Skipping optional input artifact that was not found: %s", art.Name)
@@ -488,7 +490,7 @@ func (we *WorkflowExecutor) saveFileToArtifactRepository(art *wfv1.Artifact, loc
 		saveArt.SetBucket(we.Template.ArchiveLocation)
 	}
 	if !art.HasBucket() {
-		art.SetType(we.Template.ArchiveLocation)
+		art.SetType(we.Template.ArchiveLocation.GetType())
 	}
 	if !saveArt.HasKey() {
 		err := saveArt.SetKey(fileName)

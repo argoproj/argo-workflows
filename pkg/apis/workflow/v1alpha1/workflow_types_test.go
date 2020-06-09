@@ -47,26 +47,56 @@ func TestWorkflowFinishedBefore(t *testing.T) {
 	assert.True(t, WorkflowFinishedBefore(t1)(Workflow{Status: WorkflowStatus{FinishedAt: metav1.Time{Time: t0}}}))
 }
 
+func TestArtifactLocation_SetKey(t *testing.T) {
+	assert.Error(t, (&ArtifactLocation{}).SetKey("my-key"))
+	assert.Error(t, (&ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}).SetKey("my-key"))
+	assert.NoError(t, (&ArtifactLocation{Artifactory: &ArtifactoryArtifact{URL: "my-url"}}).SetKey("my-key"))
+	assert.NoError(t, (&ArtifactLocation{GCS: &GCSArtifact{Key: "my-key"}}).SetKey("my-key"))
+	assert.Error(t, (&ArtifactLocation{Git: &GitArtifact{Repo: "my-repo"}}).SetKey("my-key"))
+	assert.NoError(t, (&ArtifactLocation{HDFS: &HDFSArtifact{Path: "my-path"}}).SetKey("my-key"))
+	assert.Error(t, (&ArtifactLocation{HTTP: &HTTPArtifact{URL: "my-url"}}).SetKey("my-key"))
+	assert.NoError(t, (&ArtifactLocation{OSS: &OSSArtifact{Key: "my-key"}}).SetKey("my-key"))
+	assert.Error(t, (&ArtifactLocation{Raw: &RawArtifact{Data: "my-data"}}).SetKey("my-key"))
+	assert.NoError(t, (&ArtifactLocation{S3: &S3Artifact{Key: "my-key"}}).SetKey("my-key"))
+}
+
 func TestArtifactLocation_HasKey(t *testing.T) {
 	assert.False(t, (&ArtifactLocation{}).HasKey())
 	assert.False(t, (&ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}).HasKey())
-	assert.True(t, (&ArtifactLocation{S3: &S3Artifact{Key: "my-key"}}).HasKey())
-	assert.True(t, (&ArtifactLocation{Git: &GitArtifact{Repo: "my-repo"}}).HasKey())
-	assert.True(t, (&ArtifactLocation{HTTP: &HTTPArtifact{URL: "my-url"}}).HasKey())
 	assert.True(t, (&ArtifactLocation{Artifactory: &ArtifactoryArtifact{URL: "my-url"}}).HasKey())
-	assert.True(t, (&ArtifactLocation{Raw: &RawArtifact{Data: "my-data"}}).HasKey())
-	assert.True(t, (&ArtifactLocation{HDFS: &HDFSArtifact{Path: "my-path"}}).HasKey())
-	assert.True(t, (&ArtifactLocation{OSS: &OSSArtifact{Key: "my-key"}}).HasKey())
 	assert.True(t, (&ArtifactLocation{GCS: &GCSArtifact{Key: "my-key"}}).HasKey())
+	assert.True(t, (&ArtifactLocation{Git: &GitArtifact{Repo: "my-repo"}}).HasKey())
+	assert.True(t, (&ArtifactLocation{HDFS: &HDFSArtifact{Path: "my-path"}}).HasKey())
+	assert.True(t, (&ArtifactLocation{HTTP: &HTTPArtifact{URL: "my-url"}}).HasKey())
+	assert.True(t, (&ArtifactLocation{OSS: &OSSArtifact{Key: "my-key"}}).HasKey())
+	assert.True(t, (&ArtifactLocation{Raw: &RawArtifact{Data: "my-data"}}).HasKey())
+	assert.True(t, (&ArtifactLocation{S3: &S3Artifact{Key: "my-key"}}).HasKey())
 }
 
 func TestArtifactLocation_HasBucket(t *testing.T) {
 	assert.False(t, (&ArtifactLocation{}).HasBucket())
-	assert.True(t, (&ArtifactLocation{S3: &S3Artifact{S3Bucket: S3Bucket{Bucket: "my-bucket"}}}).HasBucket())
 	assert.True(t, (&ArtifactLocation{Artifactory: &ArtifactoryArtifact{ArtifactoryAuth: ArtifactoryAuth{UsernameSecret: &corev1.SecretKeySelector{}}}}).HasBucket())
-	assert.True(t, (&ArtifactLocation{HDFS: &HDFSArtifact{HDFSConfig: HDFSConfig{Addresses: []string{"my-address"}}}}).HasBucket())
-	assert.True(t, (&ArtifactLocation{OSS: &OSSArtifact{OSSBucket: OSSBucket{Bucket: "my-bucket"}}}).HasBucket())
+	assert.True(t, (&ArtifactLocation{Git: &GitArtifact{UsernameSecret: &corev1.SecretKeySelector{}}}).HasBucket())
 	assert.True(t, (&ArtifactLocation{GCS: &GCSArtifact{GCSBucket: GCSBucket{Bucket: "my-bucket"}}}).HasBucket())
+	assert.True(t, (&ArtifactLocation{HDFS: &HDFSArtifact{HDFSConfig: HDFSConfig{Addresses: []string{"my-address"}}}}).HasBucket())
+	assert.False(t, (&ArtifactLocation{HTTP: &HTTPArtifact{}}).HasBucket())
+	assert.True(t, (&ArtifactLocation{OSS: &OSSArtifact{OSSBucket: OSSBucket{Bucket: "my-bucket"}}}).HasBucket())
+	assert.False(t, (&ArtifactLocation{Raw: &RawArtifact{}}).HasBucket())
+	assert.True(t, (&ArtifactLocation{S3: &S3Artifact{S3Bucket: S3Bucket{Bucket: "my-bucket"}}}).HasBucket())
+}
+
+func TestArtifactLocation_SetBucket(t *testing.T) {
+	(&ArtifactLocation{}).SetBucket(nil)
+	(&ArtifactLocation{}).SetBucket(&ArtifactLocation{})
+	(&ArtifactLocation{Artifactory: &ArtifactoryArtifact{}}).SetBucket(&ArtifactLocation{})
+	(&ArtifactLocation{Artifactory: &ArtifactoryArtifact{}}).SetBucket(&ArtifactLocation{Artifactory: &ArtifactoryArtifact{}})
+	(&ArtifactLocation{Git: &GitArtifact{}}).SetBucket(&ArtifactLocation{Git: &GitArtifact{}})
+	(&ArtifactLocation{GCS: &GCSArtifact{}}).SetBucket(&ArtifactLocation{GCS: &GCSArtifact{}})
+	(&ArtifactLocation{HDFS: &HDFSArtifact{}}).SetBucket(&ArtifactLocation{HDFS: &HDFSArtifact{}})
+	(&ArtifactLocation{HTTP: &HTTPArtifact{}}).SetBucket(&ArtifactLocation{HTTP: &HTTPArtifact{}})
+	(&ArtifactLocation{OSS: &OSSArtifact{}}).SetBucket(&ArtifactLocation{OSS: &OSSArtifact{}})
+	(&ArtifactLocation{Raw: &RawArtifact{}}).SetBucket(&ArtifactLocation{Raw: &RawArtifact{}})
+	(&ArtifactLocation{S3: &S3Artifact{}}).SetBucket(&ArtifactLocation{S3: &S3Artifact{}})
 }
 
 func TestArtifact_GetArchive(t *testing.T) {

@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"hash/fnv"
 	"net/url"
@@ -743,77 +742,137 @@ func (a *ArtifactLocation) HasKey() bool {
 
 // Set the key (or key-like field)
 func (a *ArtifactLocation) SetKey(fileName string) error {
-	if a.S3 != nil {
-		a.S3.Key = path.Join(a.S3.Key, fileName)
-	} else if a.Artifactory != nil {
+	switch a.GetType() {
+	case Artifactory:
 		uri, err := url.Parse(a.Artifactory.URL)
 		if err != nil {
 			return err
 		}
 		uri.Path = path.Join(uri.Path, fileName)
 		a.Artifactory.URL = uri.String()
-	} else if a.HDFS != nil {
-		a.HDFS.Path = path.Join(a.HDFS.Path, fileName)
-	} else if a.OSS != nil {
-		a.OSS.Key = path.Join(a.OSS.Key, fileName)
-	} else if a.GCS != nil {
+	case GCS:
 		a.GCS.Key = path.Join(a.GCS.Key, fileName)
-	} else {
-		return errors.New("unable to set key")
+	case HDFS:
+		a.HDFS.Path = path.Join(a.HDFS.Path, fileName)
+	case OSS:
+		a.OSS.Key = path.Join(a.OSS.Key, fileName)
+	case S3:
+		a.S3.Key = path.Join(a.S3.Key, fileName)
+	default:
+		return fmt.Errorf("unable to set key for %v", a.GetType())
 	}
 	return nil
 }
 
 // If the location has a bucket (or bucket-like field)
 func (a *ArtifactLocation) HasBucket() bool {
-	if a == nil {
-		return false
-	} else if a.S3 != nil {
-		return a.S3.Bucket != ""
-	} else if a.Artifactory != nil {
+	switch a.GetType() {
+	case Artifactory:
 		return a.Artifactory.UsernameSecret != nil
-	} else if a.HDFS != nil {
-		return len(a.HDFS.Addresses) > 0
-	} else if a.OSS != nil {
-		return a.OSS.Bucket != ""
-	} else if a.GCS != nil {
+	case Git:
+		// bit more complex due to no "bucket"
+		return a.Git.UsernameSecret != nil ||
+			a.Git.PasswordSecret != nil ||
+			a.Git.SSHPrivateKeySecret != nil
+	case GCS:
 		return a.GCS.Bucket != ""
+	case HDFS:
+		return len(a.HDFS.Addresses) > 0
+	case OSS:
+		return a.OSS.Bucket != ""
+	case S3:
+		return a.S3.Bucket != ""
 	}
 	return false
 }
 
 // Set the bucket (or bucket-like field)
 func (a *ArtifactLocation) SetBucket(from *ArtifactLocation) {
-	a.SetType(from)
 	if a == nil || from == nil {
-		// noop
-	} else if from.S3 != nil {
-		a.S3.S3Bucket = from.S3.S3Bucket
-	} else if from.Artifactory != nil {
+		return
+	}
+	a.SetType(from.GetType())
+	if a.GetType() != from.GetType() {
+		return
+	}
+	switch a.GetType() {
+	case Artifactory:
 		a.Artifactory.ArtifactoryAuth = from.Artifactory.ArtifactoryAuth
-	} else if from.HDFS != nil {
-		a.HDFS.HDFSConfig = from.HDFS.HDFSConfig
-	} else if from.OSS != nil {
-		a.OSS.OSSBucket = from.OSS.OSSBucket
-	} else if from.GCS != nil {
+	case Git:
+		a.Git.UsernameSecret = from.Git.UsernameSecret
+		a.Git.PasswordSecret = from.Git.PasswordSecret
+		a.Git.SSHPrivateKeySecret = from.Git.SSHPrivateKeySecret
+		a.Git.InsecureIgnoreHostKey = from.Git.InsecureIgnoreHostKey
+	case GCS:
 		a.GCS.GCSBucket = from.GCS.GCSBucket
+	case HDFS:
+		a.HDFS.HDFSConfig = from.HDFS.HDFSConfig
+	case OSS:
+		a.OSS.OSSBucket = from.OSS.OSSBucket
+	case S3:
+		a.S3.S3Bucket = from.S3.S3Bucket
 	}
 }
 
+type ArtifactLocationType int
+
+const (
+	None ArtifactLocationType = iota
+	Artifactory
+	Git
+	GCS
+	HDFS
+	HTTP
+	OSS
+	Raw
+	S3
+)
+
+func (a *ArtifactLocation) GetType() ArtifactLocationType {
+	if a == nil {
+		return None
+	} else if a.Artifactory != nil {
+		return Artifactory
+	} else if a.Git != nil {
+		return Git
+	} else if a.GCS != nil {
+		return GCS
+	} else if a.HDFS != nil {
+		return HDFS
+	} else if a.HTTP != nil {
+		return HTTP
+	} else if a.OSS != nil {
+		return OSS
+	} else if a.Raw != nil {
+		return Raw
+	} else if a.S3 != nil {
+		return S3
+	}
+	return None
+}
+
 // Set the type of artifact to be the same as the argument
-func (a *ArtifactLocation) SetType(from *ArtifactLocation) {
-	if a == nil || from == nil {
-		// noop
-	} else if from.S3 != nil && a.S3 == nil {
-		a.S3 = &S3Artifact{}
-	} else if from.Artifactory != nil && a.Artifactory == nil {
+func (a *ArtifactLocation) SetType(from ArtifactLocationType) {
+	if a.GetType() != None {
+		return
+	}
+	switch from {
+	case Artifactory:
 		a.Artifactory = &ArtifactoryArtifact{}
-	} else if from.HDFS != nil && a.HDFS == nil {
-		a.HDFS = &HDFSArtifact{}
-	} else if from.OSS != nil && a.OSS == nil {
-		a.OSS = &OSSArtifact{}
-	} else if from.GCS != nil && a.GCS == nil {
+	case Git:
+		a.Git = &GitArtifact{}
+	case GCS:
 		a.GCS = &GCSArtifact{}
+	case HDFS:
+		a.HDFS = &HDFSArtifact{}
+	case HTTP:
+		a.HTTP = &HTTPArtifact{}
+	case OSS:
+		a.OSS = &OSSArtifact{}
+	case Raw:
+		a.Raw = &RawArtifact{}
+	case S3:
+		a.S3 = &S3Artifact{}
 	}
 }
 
