@@ -733,8 +733,10 @@ type ArtifactLocation struct {
 func (a *ArtifactLocation) HasKey() bool {
 	return a != nil && (a.S3 != nil && a.S3.Key != "" ||
 		a.Git != nil && a.Git.Repo != "" ||
+		a.HTTP != nil && a.HTTP.URL != "" ||
 		a.Artifactory != nil && a.Artifactory.URL != "" ||
 		a.HDFS != nil && a.HDFS.Path != "" ||
+		a.Raw != nil ||
 		a.OSS != nil && a.OSS.Key != "" ||
 		a.GCS != nil && a.GCS.Key != "")
 }
@@ -769,13 +771,13 @@ func (a *ArtifactLocation) HasBucket() bool {
 	} else if a.S3 != nil {
 		return a.S3.Bucket != ""
 	} else if a.Artifactory != nil {
-		return a.Artifactory.UsernameSecret.Key != ""
+		return a.Artifactory.UsernameSecret != nil
 	} else if a.HDFS != nil {
 		return len(a.HDFS.Addresses) > 0
 	} else if a.OSS != nil {
-		return a.OSS.Key != ""
+		return a.OSS.Bucket != ""
 	} else if a.GCS != nil {
-		return a.GCS.Key != ""
+		return a.GCS.Bucket != ""
 	}
 	return false
 }

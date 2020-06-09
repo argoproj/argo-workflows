@@ -47,17 +47,26 @@ func TestWorkflowFinishedBefore(t *testing.T) {
 	assert.True(t, WorkflowFinishedBefore(t1)(Workflow{Status: WorkflowStatus{FinishedAt: metav1.Time{Time: t0}}}))
 }
 
-func TestArtifactLocation_HasLocation(t *testing.T) {
+func TestArtifactLocation_HasKey(t *testing.T) {
 	assert.False(t, (&ArtifactLocation{}).HasKey())
 	assert.False(t, (&ArtifactLocation{ArchiveLogs: pointer.BoolPtr(true)}).HasKey())
-	assert.True(t, (&ArtifactLocation{S3: &S3Artifact{Key: "my-key", S3Bucket: S3Bucket{Endpoint: "my-endpoint", Bucket: "my-bucket"}}}).HasKey())
+	assert.True(t, (&ArtifactLocation{S3: &S3Artifact{Key: "my-key"}}).HasKey())
 	assert.True(t, (&ArtifactLocation{Git: &GitArtifact{Repo: "my-repo"}}).HasKey())
 	assert.True(t, (&ArtifactLocation{HTTP: &HTTPArtifact{URL: "my-url"}}).HasKey())
 	assert.True(t, (&ArtifactLocation{Artifactory: &ArtifactoryArtifact{URL: "my-url"}}).HasKey())
 	assert.True(t, (&ArtifactLocation{Raw: &RawArtifact{Data: "my-data"}}).HasKey())
-	assert.True(t, (&ArtifactLocation{HDFS: &HDFSArtifact{HDFSConfig: HDFSConfig{Addresses: []string{"my-address"}}}}).HasKey())
-	assert.True(t, (&ArtifactLocation{OSS: &OSSArtifact{Key: "my-key", OSSBucket: OSSBucket{Endpoint: "my-endpoint", Bucket: "my-bucket"}}}).HasKey())
-	assert.True(t, (&ArtifactLocation{GCS: &GCSArtifact{Key: "my-key", GCSBucket: GCSBucket{Bucket: "my-bucket"}}}).HasKey())
+	assert.True(t, (&ArtifactLocation{HDFS: &HDFSArtifact{Path: "my-path"}}).HasKey())
+	assert.True(t, (&ArtifactLocation{OSS: &OSSArtifact{Key: "my-key"}}).HasKey())
+	assert.True(t, (&ArtifactLocation{GCS: &GCSArtifact{Key: "my-key"}}).HasKey())
+}
+
+func TestArtifactLocation_HasBucket(t *testing.T) {
+	assert.False(t, (&ArtifactLocation{}).HasBucket())
+	assert.True(t, (&ArtifactLocation{S3: &S3Artifact{S3Bucket: S3Bucket{Bucket: "my-bucket"}}}).HasBucket())
+	assert.True(t, (&ArtifactLocation{Artifactory: &ArtifactoryArtifact{ArtifactoryAuth: ArtifactoryAuth{UsernameSecret: &corev1.SecretKeySelector{}}}}).HasBucket())
+	assert.True(t, (&ArtifactLocation{HDFS: &HDFSArtifact{HDFSConfig: HDFSConfig{Addresses: []string{"my-address"}}}}).HasBucket())
+	assert.True(t, (&ArtifactLocation{OSS: &OSSArtifact{OSSBucket: OSSBucket{Bucket: "my-bucket"}}}).HasBucket())
+	assert.True(t, (&ArtifactLocation{GCS: &GCSArtifact{GCSBucket: GCSBucket{Bucket: "my-bucket"}}}).HasBucket())
 }
 
 func TestArtifact_GetArchive(t *testing.T) {
