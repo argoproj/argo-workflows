@@ -32,21 +32,13 @@ func NewStopCommand() *cobra.Command {
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 
-			var names []string = args
-			if stopArgs.latest {
-				wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{Namespace: namespace})
-				errors.CheckError(err)
-				latest, err := GetLatestWorkflow(wfList.Items)
-				errors.CheckError(err)
-				names = append(names, latest.ObjectMeta.Name)
-			}
 
 			selector, err := fields.ParseSelector(stopArgs.nodeFieldSelector)
 			if err != nil {
 				log.Fatalf("Unable to parse node field selector '%s': %s", stopArgs.nodeFieldSelector, err)
 			}
 
-			for _, name := range names {
+			for _, name := range args {
 				wf, err := serviceClient.StopWorkflow(ctx, &workflowpkg.WorkflowStopRequest{
 					Name:              name,
 					Namespace:         namespace,
@@ -60,6 +52,5 @@ func NewStopCommand() *cobra.Command {
 	}
 	command.Flags().StringVar(&stopArgs.message, "message", "", "Message to add to previously running nodes")
 	command.Flags().StringVar(&stopArgs.nodeFieldSelector, "node-field-selector", "", "selector of node to stop, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
-	ProvideLatestFlag(command, &stopArgs.latest)
 	return command
 }

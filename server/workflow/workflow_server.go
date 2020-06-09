@@ -286,16 +286,16 @@ func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *workflowpkg
 
 func (s *workflowServer) StopWorkflow(ctx context.Context, req *workflowpkg.WorkflowStopRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	_, err := s.getWorkflowAndValidate(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflowAndValidate(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	err = util.StopWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), s.hydrator, req.Name, req.NodeFieldSelector, req.Message)
+	err = util.StopWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), s.hydrator, wf.ObjectMeta.Name, req.NodeFieldSelector, req.Message)
 	if err != nil {
 		return nil, err
 	}
 
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
+	wf, err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -321,14 +321,22 @@ func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflo
 	ctx := ws.Context()
 	wfClient := auth.GetWfClient(ctx)
 	kubeClient := auth.GetKubeClient(ctx)
-	_, err := s.getWorkflowAndValidate(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflowAndValidate(ctx, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
+	req.Name = wf.Name
 	return logs.WorkflowLogs(ctx, wfClient, kubeClient, req, ws)
 }
 
 func (s *workflowServer) getWorkflowAndValidate(ctx context.Context, namespace string, name string, options metav1.GetOptions) (*v1alpha1.Workflow, error) {
+	if name == "@latest" {
+		latest, err := getLatestWorkflow(ctx, namespace)
+		if (err != nil) {
+			return nil, err
+		}
+		name = latest.ObjectMeta.Name
+	}
 	wfClient := auth.GetWfClient(ctx)
 	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(name, options)
 	if err != nil {
@@ -339,6 +347,24 @@ func (s *workflowServer) getWorkflowAndValidate(ctx context.Context, namespace s
 		return nil, err
 	}
 	return wf, nil
+}
+
+func getLatestWorkflow(ctx context.Context, namespace string) (*v1alpha1.Workflow, error) {
+	wfClient := auth.GetWfClient(ctx)
+	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	if len(wfList.Items) < 1 {
+		return nil, fmt.Errorf("No workflows found.")
+	}
+	latest := wfList.Items[0]
+	for _, wf := range wfList.Items {
+		if latest.ObjectMeta.CreationTimestamp.Before(&wf.ObjectMeta.CreationTimestamp) {
+			latest = wf
+		}
+	}
+	return &latest, nil
 }
 
 func (s *workflowServer) SubmitWorkflow(ctx context.Context, req *workflowpkg.WorkflowSubmitRequest) (*v1alpha1.Workflow, error) {

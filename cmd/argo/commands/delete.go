@@ -21,7 +21,6 @@ func NewDeleteCommand() *cobra.Command {
 		all           bool
 		allNamespaces bool
 		dryRun        bool
-		latest        bool
 	)
 	var command = &cobra.Command{
 		Use:   "delete [--dry-run] [WORKFLOW...|[--all] [--older] [--completed] [--prefix PREFIX] [--selector SELECTOR]]",
@@ -42,13 +41,6 @@ func NewDeleteCommand() *cobra.Command {
 				listed, err := listWorkflows(ctx, serviceClient, flags)
 				errors.CheckError(err)
 				workflows = append(workflows, listed...)
-			}
-			if latest {
-				wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{Namespace: flags.namespace})
-				errors.CheckError(err)
-				latest, err := GetLatestWorkflow(wfList.Items)
-				errors.CheckError(err)
-				workflows = append(workflows, *latest)
 			}
 			for _, wf := range workflows {
 				if !dryRun {
@@ -73,6 +65,5 @@ func NewDeleteCommand() *cobra.Command {
 	command.Flags().StringVar(&flags.finishedAfter, "older", "", "Delete completed workflows finished before the specified duration (e.g. 10m, 3h, 1d)")
 	command.Flags().StringVarP(&flags.labels, "selector", "l", "", "Selector (label query) to filter on, not including uninitialized ones")
 	command.Flags().BoolVar(&dryRun, "dry-run", false, "Do not delete the workflow, only print what would happen")
-	ProvideLatestFlag(command, &latest)
 	return command
 }

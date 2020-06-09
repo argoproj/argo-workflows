@@ -14,7 +14,6 @@ import (
 type retryOps struct {
 	nodeFieldSelector string // --node-field-selector
 	restartSuccessful bool   // --restart-successful
-	latest            bool   // --latest
 }
 
 func NewRetryCommand() *cobra.Command {
@@ -35,16 +34,8 @@ func NewRetryCommand() *cobra.Command {
 				log.Fatalf("Unable to parse node field selector '%s': %s", retryOps.nodeFieldSelector, err)
 			}
 
-			var names []string = args
-			if retryOps.latest {
-				wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{Namespace: namespace})
-				errors.CheckError(err)
-				latest, err := GetLatestWorkflow(wfList.Items)
-				errors.CheckError(err)
-				names = append(names, latest.ObjectMeta.Name)
-			}
-
-			for _, name := range names {
+			last := args[0]
+			for _, name := range args {
 				wf, err := serviceClient.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{
 					Name:              name,
 					Namespace:         namespace,
@@ -54,10 +45,13 @@ func NewRetryCommand() *cobra.Command {
 				if err != nil {
 					errors.CheckError(err)
 					return
+				} else {
+					last = name
 				}
 				printWorkflow(wf, getFlags{output: cliSubmitOpts.output})
 				waitOrWatch([]string{name}, cliSubmitOpts)
 			}
+			TouchWorkflow(last, "retry")
 		},
 	}
 	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
@@ -65,6 +59,5 @@ func NewRetryCommand() *cobra.Command {
 	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes")
 	command.Flags().BoolVar(&retryOps.restartSuccessful, "restart-successful", false, "indicates to restart successful nodes matching the --node-field-selector")
 	command.Flags().StringVar(&retryOps.nodeFieldSelector, "node-field-selector", "", "selector of nodes to reset, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
-	ProvideLatestFlag(command, &retryOps.latest)
 	return command
 }

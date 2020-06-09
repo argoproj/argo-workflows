@@ -2,6 +2,8 @@ package commands
 
 import (
 	"fmt"
+	"github.com/argoproj/pkg/errors"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -85,20 +87,22 @@ func ansiFormat(s string, codes ...int) string {
 	return fmt.Sprintf("%s[%sm%s%s[%dm", escape, sequence, s, escape, noFormat)
 }
 
-// return the last submitted workflow, given a list of workflows
-func GetLatestWorkflow(workflows []wfv1.Workflow) (*wfv1.Workflow, error) {
-	if len(workflows) < 1 {
-		return nil, fmt.Errorf("No workflows to query.")
-	}
-	latest := workflows[0]
-	for _, wf := range workflows {
-		if latest.ObjectMeta.CreationTimestamp.Before(&wf.ObjectMeta.CreationTimestamp) {
-			latest = wf
-		}
-	}
-	return &latest, nil
+func GetLastModifiedWorkflowName() string {
+	file, err := os.OpenFile("/tmp/argo", os.O_RDWR|os.O_CREATE, 0655)
+	defer file.Close()
+	errors.CheckError(err)
+	lastModified, err := ioutil.ReadFile("/tmp/argo")
+	errors.CheckError(err)
+	fmt.Printf("Last modified workflow: %s\n", lastModified)
+	return string(lastModified)
 }
 
-func ProvideLatestFlag(command *cobra.Command, flag *bool) {
-	command.Flags().BoolVar(flag, "latest", false, "Perform command on last submitted workflow")
+func TouchWorkflow(wfName string, command string) {
+	fmt.Printf("Command %s touched workflow: %s\n", command, wfName)
+	file, err := os.OpenFile("/tmp/argo", os.O_RDWR|os.O_CREATE, 0655)
+	defer file.Close()
+	errors.CheckError(err)
+	file.Truncate(0)
+	_, err = file.Write([]byte(wfName + "\n" + command))
+	errors.CheckError(err)
 }

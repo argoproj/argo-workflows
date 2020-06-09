@@ -21,7 +21,6 @@ func NewLogsCommand() *cobra.Command {
 		since     time.Duration
 		sinceTime string
 		tailLines int64
-		latest    bool
 	)
 	logOptions := &corev1.PodLogOptions{}
 	var command = &cobra.Command{
@@ -53,10 +52,6 @@ func NewLogsCommand() *cobra.Command {
 			// parse all the args
 			workflow := ""
 			podName := ""
-			if (len(args) > 0 && latest) || (len(args) == 0 && !latest) {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
 
 			switch len(args) {
 			case 0:
@@ -91,14 +86,6 @@ func NewLogsCommand() *cobra.Command {
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
 
-			if latest {
-				wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{Namespace: namespace})
-				errors.CheckError(err)
-				latest, err := GetLatestWorkflow(wfList.Items)
-				errors.CheckError(err)
-				workflow = latest.ObjectMeta.Name
-			}
-
 			// logs
 			stream, err := serviceClient.PodLogs(ctx, &workflowpkg.WorkflowLogRequest{
 				Name:       workflow,
@@ -126,6 +113,5 @@ func NewLogsCommand() *cobra.Command {
 	command.Flags().Int64Var(&tailLines, "tail", -1, "If set, the number of lines from the end of the logs to show. If not specified, logs are shown from the creation of the container or sinceSeconds or sinceTime")
 	command.Flags().BoolVar(&logOptions.Timestamps, "timestamps", false, "Include timestamps on each line in the log output")
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
-	ProvideLatestFlag(command, &latest)
 	return command
 }

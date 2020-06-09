@@ -210,6 +210,8 @@ func submitWorkflows(workflows []wfv1.Workflow, submitOpts *wfv1.SubmitOpts, cli
 		})
 		if err != nil {
 			log.Fatalf("Failed to submit workflow: %v", err)
+		} else {
+			TouchWorkflow(created.Name, "submit")
 		}
 
 		printWorkflow(created, getFlags{output: cliOpts.output, status: cliOpts.getArgs.status})

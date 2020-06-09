@@ -29,7 +29,6 @@ const onExitSuffix = "onExit"
 type getFlags struct {
 	output                  string
 	nodeFieldSelectorString string
-	latest                  bool
 
 	// Only used for backwards compatibility
 	status string
@@ -63,7 +62,7 @@ func NewGetCommand() *cobra.Command {
 		Short: "display details about a workflow",
 		Run: func(cmd *cobra.Command, args []string) {
 
-			if (len(args) == 0 && !getArgs.latest) || (len(args) > 0 && getArgs.latest) {
+			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
@@ -71,19 +70,6 @@ func NewGetCommand() *cobra.Command {
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
-
-			if getArgs.latest {
-				wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{Namespace: namespace})
-				errors.CheckError(err)
-				if len(wfList.Items) == 0 {
-					fmt.Println("No workflows. Exiting")
-					os.Exit(1)
-				}
-				latest, err := GetLatestWorkflow(wfList.Items)
-				errors.CheckError(err)
-				printWorkflow(latest, getArgs)
-				os.Exit(0)
-			}
 
 			for _, name := range args {
 				wf, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
@@ -100,7 +86,6 @@ func NewGetCommand() *cobra.Command {
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
 	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
 	command.Flags().StringVar(&getArgs.nodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
-	ProvideLatestFlag(command, &getArgs.latest)
 	return command
 }
 

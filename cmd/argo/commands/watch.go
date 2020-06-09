@@ -28,21 +28,16 @@ func NewWatchCommand() *cobra.Command {
 		Use:   "watch WORKFLOW",
 		Short: "watch a workflow until it completes",
 		Run: func(cmd *cobra.Command, args []string) {
-			if (len(args) != 1 && !getArgs.latest) || (len(args) > 0 && getArgs.latest) {
+			if len(args) != 1 {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			wfName := ""
-			if len(args) > 0 {
-				wfName = args[0]
-			}
-			watchWorkflow(wfName, getArgs)
+			watchWorkflow(args[0], getArgs)
 
 		},
 	}
 	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
 	command.Flags().StringVar(&getArgs.nodeFieldSelectorString, "node-field-selector", "", "selector of node to display, eg: --node-field-selector phase=abc")
-	ProvideLatestFlag(command, &getArgs.latest)
 	return command
 }
 
@@ -54,24 +49,13 @@ func watchWorkflow(wfName string, getArgs getFlags) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	if getArgs.latest {
-		wfList, err := serviceClient.ListWorkflows(ctx, &workflowpkg.WorkflowListRequest{Namespace: namespace})
-		errors.CheckError(err)
-		if len(wfList.Items) == 0 {
-			fmt.Println("No workflows. Exiting")
-			os.Exit(1)
-		}
-		latestWf, err := GetLatestWorkflow(wfList.Items)
-		errors.CheckError(err)
-		wfName = latestWf.ObjectMeta.Name
-	} else {
-		// ensure that the desired workflow exists
-		_, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
-			Name:      wfName,
-			Namespace: namespace,
-		})
-		errors.CheckError(err)
-	}
+
+	// ensure that the desired workflow exists
+	_, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
+		Name:      wfName,
+		Namespace: namespace,
+	})
+	errors.CheckError(err)
 
 	req := &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
