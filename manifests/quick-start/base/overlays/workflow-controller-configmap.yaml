@@ -2,7 +2,9 @@ apiVersion: v1
 data:
   sso : |
     issuer: http://dex:5556/dex
-    clientId: argo-server
+    clientIdSecret:
+      name: argo-server-sso
+      key: clientId
     clientSecret:
       name: argo-server-sso
       key: clientSecret

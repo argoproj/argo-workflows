@@ -39,19 +39,26 @@ type sso struct {
 }
 
 type Config struct {
-	Issuer       string                  `json:"issuer"`
-	ClientID     string                  `json:"clientId"`
-	ClientSecret apiv1.SecretKeySelector `json:"clientSecret"`
-	RedirectURL  string                  `json:"redirectUrl"`
+	Issuer         string                   `json:"issuer"`
+	ClientID       string                   `json:"clientId"`
+	ClientIDSecret *apiv1.SecretKeySelector `json:"clientIdSecret"`
+	ClientSecret   apiv1.SecretKeySelector  `json:"clientSecret"`
+	RedirectURL    string                   `json:"redirectUrl"`
 }
 
 func New(c Config, secretsIf corev1.SecretInterface, baseHRef string, secure bool) (Interface, error) {
 	if c.Issuer == "" {
 		return nil, fmt.Errorf("issuer empty")
 	}
-	if c.ClientID == "" {
-		return nil, fmt.Errorf("clientId empty")
+	if c.ClientID == "" && c.ClientIDSecret == nil {
+		return nil, fmt.Errorf("clientID or clientIDSecret must be specified")
 	}
+	if c.ClientID != "" && c.ClientIDSecret != nil {
+		return nil, fmt.Errorf("only one of clientID and clientIDSecret must be specified")
+	}
+  if c.ClientIDSecret != nil && (c.ClientSecret.Name == "" || c.ClientSecret.Key == "") {
+		return nil, fmt.Errorf("clientIDSecret empty")
+  }
 	if c.ClientSecret.Name == "" || c.ClientSecret.Key == "" {
 		return nil, fmt.Errorf("clientSecret empty")
 	}
@@ -66,8 +73,20 @@ func New(c Config, secretsIf corev1.SecretInterface, baseHRef string, secure boo
 	if err != nil {
 		return nil, err
 	}
+
+  var clientId string
+
+  if c.ClientIDSecret != nil {
+    clientIdSecret, err := secretsIf.Get(c.ClientIDSecret.Name, metav1.GetOptions{})
+    if err != nil {
+      return nil, err
+    }
+    clientId = string(clientIdSecret.Data[c.ClientIDSecret.Key])
+  } else {
+    clientId = c.ClientID
+  }
 	config := &oauth2.Config{
-		ClientID:     c.ClientID,
+		ClientID:     clientId,
 		ClientSecret: string(secrets.Data[c.ClientSecret.Key]),
 		RedirectURL:  c.RedirectURL,
 		Endpoint:     provider.Endpoint(),
