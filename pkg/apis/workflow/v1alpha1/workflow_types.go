@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -39,6 +40,7 @@ const (
 	NodeSkipped   NodePhase = "Skipped"
 	NodeFailed    NodePhase = "Failed"
 	NodeError     NodePhase = "Error"
+	NodeOmitted   NodePhase = "Omitted"
 )
 
 // NodeType is the type of a node
@@ -742,6 +744,13 @@ type ArtifactRepositoryRef struct {
 	Key       string `json:"key,omitempty" protobuf:"bytes,2,opt,name=key"`
 }
 
+func (r ArtifactRepositoryRef) GetConfigMap() string {
+	if r.ConfigMap == "" {
+		return "artifact-repositories"
+	}
+	return r.ConfigMap
+}
+
 // Outputs hold parameters, artifacts, and results from a step
 type Outputs struct {
 	// Parameters holds the list of output parameters produced by a step
@@ -1239,16 +1248,18 @@ func (n Nodes) GetResourcesDuration() ResourcesDuration {
 	return i
 }
 
-// Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped
+// Fulfilled returns whether a phase is fulfilled, i.e. it completed execution or was skipped or omitted
 func (phase NodePhase) Fulfilled() bool {
-	return phase.Completed() || phase == NodeSkipped
+	return phase.Completed() || phase == NodeSkipped || phase == NodeOmitted
 }
 
 // Completed returns whether or not a phase completed. Notably, a skipped phase is not considered as having completed
 func (phase NodePhase) Completed() bool {
-	return phase == NodeSucceeded ||
-		phase == NodeFailed ||
-		phase == NodeError
+	return phase.FailedOrError() || phase == NodeSucceeded
+}
+
+func (phase NodePhase) FailedOrError() bool {
+	return phase == NodeFailed || phase == NodeError
 }
 
 // Fulfilled returns whether or not the workflow has fulfilled its execution, i.e. it completed execution or was skipped
@@ -1301,13 +1312,16 @@ func (n NodeStatus) IsDaemoned() bool {
 	return true
 }
 
-// Successful returns whether or not this node completed successfully
-func (n NodeStatus) Successful() bool {
-	return n.Phase == NodeSucceeded || n.Phase == NodeSkipped || n.IsDaemoned() && n.Phase != NodePending
+func (n NodeStatus) Succeeded() bool {
+	return n.Phase == NodeSucceeded
 }
 
-func (n NodeStatus) Failed() bool {
-	return !n.Successful()
+func (n NodeStatus) FailedOrError() bool {
+	return n.Phase.FailedOrError()
+}
+
+func (n NodeStatus) Omitted() bool {
+	return n.Type == NodeTypeSkipped && n.Phase == NodeOmitted
 }
 
 func (n NodeStatus) StartTime() *metav1.Time {
@@ -1321,7 +1335,7 @@ func (n NodeStatus) FinishTime() *metav1.Time {
 // CanRetry returns whether the node should be retried or not.
 func (n NodeStatus) CanRetry() bool {
 	// TODO(shri): Check if there are some 'unretryable' errors.
-	return n.Fulfilled() && !n.Successful()
+	return n.FailedOrError()
 }
 
 func (n NodeStatus) GetTemplateScope() (ResourceScope, string) {
@@ -2006,17 +2020,29 @@ func (p *Prometheus) SetValueString(val string) {
 func (p *Prometheus) GetDesc() string {
 	// This serves as a hash for the metric
 	// TODO: Make sure this is what we want to use as the hash
+	labels := p.GetMetricLabels()
 	desc := p.Name + "{"
-	for key, val := range p.GetMetricLabels() {
-		desc += key + "=" + val + ","
+	for _, key := range sortedMapStringStringKeys(labels) {
+		desc += key + "=" + labels[key] + ","
 	}
 	if p.Histogram != nil {
-		for _, bucket := range p.Histogram.Buckets {
+		sortedBuckets := p.Histogram.Buckets
+		sort.Float64s(sortedBuckets)
+		for _, bucket := range sortedBuckets {
 			desc += "bucket=" + fmt.Sprint(bucket) + ","
 		}
 	}
 	desc += "}"
 	return desc
+}
+
+func sortedMapStringStringKeys(in map[string]string) []string {
+	var stringList []string
+	for key := range in {
+		stringList = append(stringList, key)
+	}
+	sort.Strings(stringList)
+	return stringList
 }
 
 func (p *Prometheus) IsRealtime() bool {

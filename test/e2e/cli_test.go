@@ -845,6 +845,21 @@ func (s *CLISuite) TestCron() {
 			}
 		})
 	})
+
+	s.Run("Delete", func() {
+		s.Given().RunCli([]string{"cron", "delete", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
+		})
+	})
+
+	s.Run("Create Schedule Override", func() {
+		s.Given().RunCli([]string{"cron", "create", "cron/basic.yaml", "--schedule", "1 2 3 * *"}, func(t *testing.T, output string, err error) {
+			if assert.NoError(t, err) {
+				assert.Contains(t, output, "Schedule:                      1 2 3 * *")
+			}
+		})
+	})
+
 	s.Run("List", func() {
 		s.Given().RunCli([]string{"cron", "list"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
@@ -886,11 +901,6 @@ func (s *CLISuite) TestCron() {
 				assert.Contains(t, output, "StartingDeadlineSeconds:")
 				assert.Contains(t, output, "ConcurrencyPolicy:")
 			}
-		})
-	})
-	s.Run("Delete", func() {
-		s.Given().RunCli([]string{"cron", "delete", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
-			assert.NoError(t, err)
 		})
 	})
 }
