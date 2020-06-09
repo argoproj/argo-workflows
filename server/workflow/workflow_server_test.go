@@ -633,6 +633,12 @@ func TestGetWorkflowWithNotFound(t *testing.T) {
 		_, err := getWorkflow(ctx, server, "test", "unlabelled")
 		assert.Error(t, err)
 	})
+	t.Run("Latest", func(t *testing.T) {
+		wf, err := getWorkflow(ctx, server, "test", "@latest")
+		if assert.NoError(t, err) {
+			assert.NotNil(t, wf)
+		}
+	})
 }
 
 func TestListWorkflow(t *testing.T) {
@@ -661,6 +667,10 @@ func TestDeleteWorkflow(t *testing.T) {
 		_, err := server.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: "unlabelled", Namespace: "workflows"})
 		assert.Error(t, err)
 	})
+	t.Run("Latest", func(t *testing.T) {
+		_, err := server.DeleteWorkflow(ctx, &workflowpkg.WorkflowDeleteRequest{Name: "@latest", Namespace: "workflows"})
+		assert.NoError(t, err)
+	})
 }
 
 func TestRetryWorkflow(t *testing.T) {
@@ -673,6 +683,10 @@ func TestRetryWorkflow(t *testing.T) {
 	})
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{Name: "unlabelled", Namespace: "workflows"})
+		assert.Error(t, err)
+	})
+	t.Run("Latest", func(t *testing.T) {
+		_, err := server.RetryWorkflow(ctx, &workflowpkg.WorkflowRetryRequest{Name: "latest", Namespace: "workflows"})
 		assert.Error(t, err)
 	})
 }
@@ -756,6 +770,12 @@ func TestResubmitWorkflow(t *testing.T) {
 	t.Run("Unlabelled", func(t *testing.T) {
 		_, err := server.ResubmitWorkflow(ctx, &workflowpkg.WorkflowResubmitRequest{Name: "unlabelled", Namespace: "workflows"})
 		assert.Error(t, err)
+	})
+	t.Run("Latest", func(t *testing.T) {
+		wf, err := server.ResubmitWorkflow(ctx, &workflowpkg.WorkflowResubmitRequest{Name: "@latest", Namespace: "workflows"})
+		if assert.NoError(t, err) {
+			assert.NotNil(t, wf)
+		}
 	})
 }
 
