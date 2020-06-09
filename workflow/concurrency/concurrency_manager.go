@@ -270,7 +270,7 @@ func (cm *ConcurrencyManager) updateWorkflowMetaData(key, semaphoreKey string, c
 			if wf.Status.Concurrency.Semaphore.Waiting == nil {
 				wf.Status.Concurrency.Semaphore.Waiting = make(map[string]wfv1.WaitingStatus)
 			}
-			wf.Status.Concurrency.Semaphore.Waiting[semaphoreKey] = wfv1.WaitingStatus{Holders: wfv1.HolderNames{Name: cm.getCurrentLockHolders(semaphoreKey),},}
+			wf.Status.Concurrency.Semaphore.Waiting[semaphoreKey] = wfv1.WaitingStatus{Holders: wfv1.HolderNames{Name: cm.getCurrentLockHolders(semaphoreKey)}}
 
 			return
 		}
@@ -297,7 +297,7 @@ func (cm *ConcurrencyManager) updateWorkflowMetaData(key, semaphoreKey string, c
 			}
 			if len(holding.Name) == 0 {
 				delete(wf.Status.Concurrency.Semaphore.Holding, semaphoreKey)
-			}else {
+			} else {
 				wf.Status.Concurrency.Semaphore.Holding[semaphoreKey] = holding
 			}
 			return
@@ -316,7 +316,7 @@ func RemoveFromSlice(slice []string, element string) []string {
 			if n-2 < i {
 				slice = append(slice[:i], slice[i+1:]...)
 			} else {
-	 			slice = slice[:i]
+				slice = slice[:i]
 			}
 		}
 	}

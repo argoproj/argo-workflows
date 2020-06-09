@@ -47,7 +47,6 @@ func (s *Semaphore) getLimit() int {
 	return s.limit
 }
 
-
 func (s *Semaphore) getCurrentHolders() []string {
 	var keys []string
 	for k := range s.lockHolder {
@@ -123,7 +122,6 @@ func (s *Semaphore) addToQueue(holderKey string, priority int32, creationTime ti
 	s.log.Debugf("Added into Queue %s \n", holderKey)
 }
 
-
 func (s *Semaphore) acquire(holderKey string) LockStatus {
 	if s.semaphore.TryAcquire(1) {
 		s.lockHolder[holderKey] = true
@@ -133,7 +131,7 @@ func (s *Semaphore) acquire(holderKey string) LockStatus {
 }
 
 func (s *Semaphore) tryAcquire(holderKey string) (LockStatus, string) {
-    s.lock.Lock()
+	s.lock.Lock()
 	defer s.lock.Unlock()
 
 	if _, ok := s.lockHolder[holderKey]; ok {
@@ -151,7 +149,7 @@ func (s *Semaphore) tryAcquire(holderKey string) (LockStatus, string) {
 		}
 	}
 
-	if status :=s.acquire(holderKey); status == Acquired {
+	if status := s.acquire(holderKey); status == Acquired {
 		s.pending.pop()
 		delete(s.inPending, holderKey)
 		s.log.Infof("%s acquired by %s \n", s.name, nextKey)

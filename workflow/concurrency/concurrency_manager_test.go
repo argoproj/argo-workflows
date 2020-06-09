@@ -307,7 +307,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		})
 		wf := unmarshalWF(wfWithStatus)
 		invalidMap := map[string]wfv1.HolderNames{
-			"argo/hello-world-vcrg5": wfv1.HolderNames{Name: []string{"default/configmap/my-config1/workflow",}},
+			"argo/hello-world-vcrg5": wfv1.HolderNames{Name: []string{"default/configmap/my-config1/workflow"}},
 		}
 		wf.Status.Concurrency.Semaphore.Holding = invalidMap
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)

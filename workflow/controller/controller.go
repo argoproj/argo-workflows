@@ -443,7 +443,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	}
 
 	if wf.Spec.Semaphore != nil {
-		wfKey := wfc.concurrencyMgr.GetHolderKey(woc.wf,"")
+		wfKey := wfc.concurrencyMgr.GetHolderKey(woc.wf, "")
 		priority, creationTime := getWfPriority(woc.wf)
 		acquired, msg, err := wfc.concurrencyMgr.TryAcquire(wfKey, woc.wf.Namespace, priority, creationTime, woc.wf.Spec.Semaphore, woc.wf)
 		if err != nil {
