@@ -53,16 +53,14 @@ func NewLogsCommand() *cobra.Command {
 			// parse all the args
 			workflow := ""
 			podName := ""
-
-			if len(args) > 0 && latest {
+			if (len(args) > 0 && latest) || (len(args) == 0 && !latest) {
 				cmd.HelpFunc()(cmd, args)
+				os.Exit(1)
 			}
 
 			switch len(args) {
 			case 0:
-				if !latest {
-					break
-				}
+				break
 			case 1:
 				workflow = args[0]
 			case 2:

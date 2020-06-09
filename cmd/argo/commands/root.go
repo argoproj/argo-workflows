@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-
 	"github.com/argoproj/pkg/cli"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
