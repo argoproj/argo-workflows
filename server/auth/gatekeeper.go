@@ -23,7 +23,7 @@ type ContextKey string
 const (
 	WfKey         ContextKey = "versioned.Interface"
 	KubeKey       ContextKey = "kubernetes.Interface"
-	RESTConfigKey ContextKey = "kubernetes.Interface"
+	RESTConfigKey ContextKey = "rest.Config"
 )
 
 type Gatekeeper interface {
