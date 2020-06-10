@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"regexp"
-	"strings"
 	"testing"
 	"time"
 
@@ -11,7 +10,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
 )
@@ -186,20 +184,23 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 		Workflow("@expectedfailures/failed-step-event.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(30 * time.Second).
+		WaitForWorkflow(30*time.Second).
 		Then().
-		ExpectAuditEvent(func(e corev1.Event) bool {
-			return strings.HasPrefix(e.InvolvedObject.Name, "failed-step-event-") &&
-				e.Reason == "WorkflowFailed" &&
-				e.Message == "failed with exit code 1"
-		}).
-		ExpectAuditEvent(func(e corev1.Event) bool {
-			return e.InvolvedObject.Kind == workflow.WorkflowKind &&
-				e.Reason == "WorkflowNodeFailed" &&
-				strings.HasPrefix(e.Message, "Failed node failed-step-event-") &&
-				e.Annotations["workflows.argoproj.io/node-type"] == "Pod" &&
-				strings.Contains(e.Annotations["workflows.argoproj.io/node-name"], "failed-step-event-")
-		})
+		ExpectAuditEvents(
+			func(t *testing.T, e corev1.Event) {
+				assert.Equal(t, "WorkflowRunning", e.Reason)
+			},
+			func(t *testing.T, e corev1.Event) {
+				assert.Equal(t, e.Reason, "WorkflowNodeFailed")
+				assert.Contains(t, e.Message, "Failed node failed-step-event-")
+				assert.Equal(t, e.Annotations["workflows.argoproj.io/node-type"], "Pod")
+				assert.Contains(t, e.Annotations["workflows.argoproj.io/node-name"], "failed-step-event-")
+			},
+			func(t *testing.T, e corev1.Event) {
+				assert.Equal(t, "WorkflowFailed", e.Reason)
+				assert.Equal(t, "failed with exit code 1", e.Message)
+			},
+		)
 }
 
 func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
@@ -208,20 +209,23 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		Workflow("@functional/success-event.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(60 * time.Second).
+		WaitForWorkflow(60*time.Second).
 		Then().
-		ExpectAuditEvent(func(e corev1.Event) bool {
-			return strings.HasPrefix(e.InvolvedObject.Name, "success-event-") &&
-				e.Reason == "WorkflowSucceeded" &&
-				e.Message == "Workflow completed"
-		}).
-		ExpectAuditEvent(func(e corev1.Event) bool {
-			return e.InvolvedObject.Kind == workflow.WorkflowKind &&
-				e.Reason == "WorkflowNodeSucceeded" &&
-				strings.HasPrefix(e.Message, "Succeeded node success-event-") &&
-				e.Annotations["workflows.argoproj.io/node-type"] == "Pod" &&
-				strings.Contains(e.Annotations["workflows.argoproj.io/node-name"], "success-event-")
-		})
+		ExpectAuditEvents(
+			func(t *testing.T, e corev1.Event) {
+				assert.Equal(t, "WorkflowRunning", e.Reason)
+			},
+			func(t *testing.T, e corev1.Event) {
+				assert.Equal(t, "WorkflowNodeSucceeded", e.Reason)
+				assert.Contains(t, e.Message, "Succeeded node success-event-")
+				assert.Equal(t, "Pod", e.Annotations["workflows.argoproj.io/node-type"])
+				assert.Contains(t, e.Annotations["workflows.argoproj.io/node-name"], "success-event-")
+			},
+			func(t *testing.T, e corev1.Event) {
+				assert.Equal(t, "WorkflowSucceeded", e.Reason)
+				assert.Equal(t, "Workflow completed", e.Message)
+			},
+		)
 }
 
 func (s *FunctionalSuite) TestEventOnPVCFail() {
@@ -230,13 +234,17 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 		Workflow("@expectedfailures/volumes-pvc-fail-event.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(120 * time.Second).
+		WaitForWorkflow(120*time.Second).
 		Then().
-		ExpectAuditEvent(func(e corev1.Event) bool {
-			return strings.HasPrefix(e.InvolvedObject.Name, "volumes-pvc-fail-event-") &&
-				e.Reason == "WorkflowFailed" &&
-				strings.Contains(e.Message, "pvc create error")
-		})
+		ExpectAuditEvents(
+			func(t *testing.T, e corev1.Event) {
+				assert.Equal(t, "WorkflowRunning", e.Reason)
+			},
+			func(t *testing.T, e corev1.Event) {
+				assert.Equal(t, "WorkflowFailed", e.Reason)
+				assert.Contains(t, e.Message, "pvc create error")
+			},
+		)
 }
 
 func (s *FunctionalSuite) TestArtifactRepositoryRef() {
