@@ -590,7 +590,7 @@ func (s *FunctionalSuite) TestTemplateLevelSemaphore() {
 		SubmitWorkflow().
 		Wait(10*time.Second).
 		RunCli([]string{"get", "semaphore-tmpl-level"}, func(t *testing.T, output string, err error) {
-			assert.Contains(t, output, "Current lock holders")
+			assert.Contains(t, output, "Waiting for Lock")
 		}).
 		WaitForWorkflow(20 * time.Second).
 		DeleteConfigMap()
