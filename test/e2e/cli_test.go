@@ -251,18 +251,6 @@ func (s *CLISuite) TestRoot() {
 			}
 		})
 	})
-	s.Run("Get", func() {
-		s.testNeedsOffloading()
-		s.Given().RunCli([]string{"get", "--latest"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "Name:")
-				assert.Contains(t, output, "Namespace:")
-				assert.Contains(t, output, "ServiceAccount:")
-				assert.Contains(t, output, "Status:")
-				assert.Contains(t, output, "Created:")
-			}
-		})
-	})
 
 	var createdWorkflowName string
 	s.Run("From", func() {
@@ -606,46 +594,6 @@ func (s *CLISuite) TestWorkflowRetry() {
 		})
 }
 
-func (s *CLISuite) TestWorkflowRetryLatest() {
-	s.testNeedsOffloading()
-	var retryTime corev1.Time
-
-	s.Given().
-		Workflow("@testdata/retry-test.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflowToStart(5*time.Second).
-		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.AnyActiveSuspendNode()
-		}, "suspended node", 30*time.Second).
-		RunCli([]string{"terminate", "retry-test"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "workflow retry-test terminated")
-			}
-		}).
-		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
-			retryTime = wf.Status.FinishedAt
-			return wf.Status.Phase == wfv1.NodeFailed
-		}, "terminated", 20*time.Second).
-		RunCli([]string{"retry", "--latest", "--restart-successful", "--node-field-selector", "templateName==steps-inner"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "Name:")
-				assert.Contains(t, output, "Namespace:")
-			}
-		}).
-		WaitForWorkflowCondition(func(wf *wfv1.Workflow) bool {
-			return wf.Status.AnyActiveSuspendNode()
-		}, "suspended node", 20*time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, _ *corev1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			outerStepsPodNode := status.Nodes.FindByDisplayName("steps-outer-step1")
-			innerStepsPodNode := status.Nodes.FindByDisplayName("steps-inner-step1")
-
-			assert.True(t, outerStepsPodNode.FinishedAt.Before(&retryTime))
-			assert.True(t, retryTime.Before(&innerStepsPodNode.FinishedAt))
-		})
-}
-
 func (s *CLISuite) TestWorkflowTerminate() {
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -681,20 +629,6 @@ func (s *CLISuite) TestWorkflowWatch() {
 		SubmitWorkflow().
 		Given().
 		RunCli([]string{"watch", "basic"}, func(t *testing.T, output string, err error) {
-			if assert.NoError(t, err) {
-				assert.Contains(t, output, "Name:")
-			}
-		})
-}
-
-func (s *CLISuite) TestWorkflowWatchLatest() {
-	s.testNeedsOffloading()
-	s.Given().
-		Workflow("@smoke/basic.yaml").
-		When().
-		SubmitWorkflow().
-		Given().
-		RunCli([]string{"watch", "--latest"}, func(t *testing.T, output string, err error) {
 			if assert.NoError(t, err) {
 				assert.Contains(t, output, "Name:")
 			}
