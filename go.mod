@@ -17,6 +17,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
 	github.com/evanphx/json-patch v4.2.0+incompatible
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
@@ -78,7 +79,6 @@ require (
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/genproto v0.0.0-20200317114155-1f3552e48f24
 	google.golang.org/grpc v1.28.0
-	google.golang.org/protobuf v1.21.0
 	gopkg.in/ini.v1 v1.54.0 // indirect
 	gopkg.in/jcmturner/goidentity.v2 v2.0.0 // indirect
 	gopkg.in/jcmturner/gokrb5.v5 v5.3.0
@@ -89,7 +89,6 @@ require (
 	k8s.io/api v0.0.0-20191219150132-17cfeff5d095
 	k8s.io/apimachinery v0.16.7-beta.0
 	k8s.io/client-go v0.0.0-20191225075139-73fd2ddc9180
-	k8s.io/code-generator v0.16.7-beta.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
 	k8s.io/utils v0.0.0-20191218082557-f07c713de883
 	sigs.k8s.io/yaml v1.1.0
