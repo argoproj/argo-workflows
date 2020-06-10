@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/types"
-	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -27,7 +27,7 @@ func (s sensorServer) ListSensors(ctx context.Context, req *sensor.ListSensorsRe
 	if err != nil {
 		return nil, err
 	}
-	items, err := unToStruct(list)
+	items, err := unstructuredListToStructList(list)
 	if err != nil {
 		return nil, err
 	}
@@ -51,23 +51,29 @@ func listOptions(req *sensor.ListSensorsRequest) metav1.ListOptions {
 	return listOptions
 }
 
-func unToStruct(list *unstructured.UnstructuredList) ([]*types.Struct, error) {
+func unstructuredListToStructList(list *unstructured.UnstructuredList) ([]*types.Struct, error) {
 	var items = make([]*types.Struct, len(list.Items))
-	log.WithField("items", list.Items).Debug()
 	for i, item := range list.Items {
-		b, err := json.Marshal(item)
-		if err != nil {
-			return nil, err
-		}
-		s := &types.Struct{}
-		err = json.Unmarshal(b, s)
+		s, err := unstructuredToStruct(item)
 		if err != nil {
 			return nil, err
 		}
 		items[i] = s
 	}
-	log.WithField("items", items).Debug()
 	return items, nil
+}
+
+func unstructuredToStruct(item unstructured.Unstructured) (*types.Struct, error) {
+	b, err := json.Marshal(item.Object)
+	if err != nil {
+		return nil, err
+	}
+	s := &types.Struct{}
+	err = jsonpb.UnmarshalString(string(b), s)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
 }
 
 func NewSensorServer() sensor.SensorServiceServer {

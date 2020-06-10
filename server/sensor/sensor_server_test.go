@@ -1,24 +1,23 @@
 package sensor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"k8s.io/client-go/rest"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/pkg/apiclient/sensor"
-	"github.com/argoproj/argo/server/auth"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/util"
 )
 
-func Test_sensorServer_ListSensors(t *testing.T) {
-	server := NewSensorServer()
-
-	ctx := context.WithValue(context.Background(), auth.RESTConfigKey, &rest.Config{})
-
-	sensors, err := server.ListSensors(ctx, &sensor.ListSensorsRequest{})
-
+func Test_unToStruct(t *testing.T) {
+	item, err := util.ToUnstructured(&wfv1.Workflow{
+		ObjectMeta: metav1.ObjectMeta{Name: "my-wf"},
+	})
+	assert.NoError(t, err)
+	s, err := unstructuredToStruct(*item)
 	if assert.NoError(t, err) {
-		assert.Len(t, sensors, 1)
+		assert.NotNil(t, s)
+		assert.Equal(t, "my-wf", s.Fields["metadata"].GetStructValue().Fields["name"])
 	}
 }
