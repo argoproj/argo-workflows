@@ -6,17 +6,20 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 )
 
 type AuditLogger struct {
-	kIf       kubernetes.Interface
-	component string
-	ns        string
+	kIf        kubernetes.Interface
+	component  string
+	ns         string
+	nodeEvents config.NodeEvents
 }
 
 type EventInfo struct {
@@ -34,21 +37,15 @@ const (
 	EventReasonWorkflowNodeError     = "WorkflowNodeError"
 )
 
-func (l *AuditLogger) logEvent(workflow *wfv1.Workflow, info EventInfo, message string, annotations map[string]string) {
+func (l *AuditLogger) logEvent(name string, t time.Time, workflow *wfv1.Workflow, info EventInfo, message string, annotations map[string]string) {
 	logCtx := log.WithFields(log.Fields{
 		"type":     info.Type,
 		"reason":   info.Reason,
 		"workflow": workflow.Name,
 	})
-	t := metav1.Time{Time: time.Now()}
 	event := corev1.Event{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        fmt.Sprintf("%v.%x", workflow.Name, t.UnixNano()),
-			Annotations: annotations,
-		},
-		Source: corev1.EventSource{
-			Component: l.component,
-		},
+		ObjectMeta: metav1.ObjectMeta{Name: name, Annotations: annotations},
+		Source:     corev1.EventSource{Component: l.component},
 		InvolvedObject: corev1.ObjectReference{
 			Kind:            wfv1.WorkflowSchemaGroupVersionKind.Kind,
 			APIVersion:      wfv1.SchemeGroupVersion.String(),
@@ -57,8 +54,8 @@ func (l *AuditLogger) logEvent(workflow *wfv1.Workflow, info EventInfo, message 
 			ResourceVersion: workflow.ResourceVersion,
 			UID:             workflow.UID,
 		},
-		FirstTimestamp: t,
-		LastTimestamp:  t,
+		FirstTimestamp: metav1.Time{Time: t},
+		LastTimestamp:  metav1.Time{Time: t},
 		Count:          1,
 		Message:        message,
 		Type:           info.Type,
@@ -66,14 +63,16 @@ func (l *AuditLogger) logEvent(workflow *wfv1.Workflow, info EventInfo, message 
 	}
 	logCtx.WithField("event", event).Debug()
 	_, err := l.kIf.CoreV1().Events(workflow.Namespace).Create(&event)
-	if err != nil {
+	if err != nil && !apierr.IsAlreadyExists(err) {
 		logCtx.Errorf("Unable to create audit event: %v", err)
-		return
 	}
 }
 
 func (l *AuditLogger) logWorkflowEvent(workflow *wfv1.Workflow, info EventInfo, message string, annotations map[string]string) {
-	l.logEvent(workflow, info, message, annotations)
+	// workflows only have one terminal state - successful
+	t := time.Now()
+	name := fmt.Sprintf("%v.%x", workflow.Name, t.UnixNano())
+	l.logEvent(name, t, workflow, info, message, annotations)
 }
 
 func (l *AuditLogger) LogWorkflowEvent(workflow *wfv1.Workflow, info EventInfo, message string) {
@@ -81,7 +80,18 @@ func (l *AuditLogger) LogWorkflowEvent(workflow *wfv1.Workflow, info EventInfo, 
 }
 
 func (l *AuditLogger) LogWorkflowNodeEvent(workflow *wfv1.Workflow, node *wfv1.NodeStatus) {
-	l.logWorkflowEvent(
+	if !l.nodeEvents.IsEnabled() {
+		return
+	}
+	// nodes only have one terminal state - successful
+	t := time.Now()
+	name := fmt.Sprintf("%s.%s", workflow.Name, node.ID)
+	if node.Phase != wfv1.NodeSucceeded {
+		name = fmt.Sprintf("%s.%x", name, t.UnixNano())
+	}
+	l.logEvent(
+		name,
+		time.Now(),
 		workflow,
 		EventInfo{Type: eventType(node.Phase), Reason: nodePhaseReason(node.Phase)},
 		nodeMessage(node),
@@ -114,10 +124,11 @@ func nodeMessage(node *wfv1.NodeStatus) string {
 	return message
 }
 
-func NewAuditLogger(ns string, kIf kubernetes.Interface, component string) *AuditLogger {
+func NewAuditLogger(ns string, kIf kubernetes.Interface, component string, nodeEvents config.NodeEvents) *AuditLogger {
 	return &AuditLogger{
-		ns:        ns,
-		kIf:       kIf,
-		component: component,
+		ns:         ns,
+		kIf:        kIf,
+		component:  component,
+		nodeEvents: nodeEvents,
 	}
 }

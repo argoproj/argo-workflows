@@ -132,7 +132,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		completedPods:          make(map[string]bool),
 		succeededPods:          make(map[string]bool),
 		deadline:               time.Now().UTC().Add(maxOperationTime),
-		auditLogger:            argo.NewAuditLogger(wf.ObjectMeta.Namespace, wfc.kubeclientset, wf.ObjectMeta.Name),
+		auditLogger:            argo.NewAuditLogger(wf.ObjectMeta.Namespace, wfc.kubeclientset, wf.ObjectMeta.Name, wfc.Config.NodeEvents),
 		preExecutionNodePhases: make(map[string]wfv1.NodePhase),
 	}
 
