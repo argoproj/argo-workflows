@@ -13,6 +13,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/config"
@@ -2729,14 +2730,11 @@ func TestEventInvalidSpec(t *testing.T) {
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
-	events, err := controller.kubeclientset.CoreV1().Events("").List(metav1.ListOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(events.Items))
-	runningEvent := events.Items[0]
-	assert.Equal(t, "WorkflowRunning", runningEvent.Reason)
-	invalidSpecEvent := events.Items[1]
-	assert.Equal(t, "WorkflowFailed", invalidSpecEvent.Reason)
-	assert.Equal(t, "invalid spec: template name '123' undefined", invalidSpecEvent.Message)
+	events := controller.eventRecorder.(*record.FakeRecorder).Events
+	runningEvent := <-events
+	assert.Equal(t, "Normal WorkflowRunning Workflow Running", runningEvent)
+	invalidSpecEvent := <-events
+	assert.Equal(t, "Warning WorkflowFailed invalid spec: template name '123' undefined", invalidSpecEvent)
 }
 
 var timeout = `

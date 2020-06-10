@@ -234,7 +234,7 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 		Then().
 		ExpectAuditEvent(func(e corev1.Event) bool {
 			return strings.HasPrefix(e.InvolvedObject.Name, "volumes-pvc-fail-event-") &&
-				e.Reason == argo.EventReasonWorkflowFailed &&
+				e.Reason == "WorkflowFailed" &&
 				strings.Contains(e.Message, "pvc create error")
 		})
 }

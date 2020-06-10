@@ -1752,20 +1752,18 @@ func (woc *wfOperationCtx) onNodeComplete(node *wfv1.NodeStatus) {
 	if node.Message != "" {
 		message = message + ": " + node.Message
 	}
+	eventType := apiv1.EventTypeWarning
+	if node.Phase == wfv1.NodeSucceeded {
+		eventType = apiv1.EventTypeNormal
+	}
 	woc.eventRecorder.AnnotatedEventf(
 		woc.wf,
 		map[string]string{
 			common.AnnotationKeyNodeType: string(node.Type),
 			common.AnnotationKeyNodeName: node.Name,
-		}, map[wfv1.NodePhase]string{
-			wfv1.NodeError:     apiv1.EventTypeWarning,
-			wfv1.NodeFailed:    apiv1.EventTypeWarning,
-			wfv1.NodeSucceeded: apiv1.EventTypeNormal,
-		}[node.Phase], map[wfv1.NodePhase]string{
-			wfv1.NodeError:     "WorkflowNodeError",
-			wfv1.NodeFailed:    "WorkflowNodeFailed",
-			wfv1.NodeSucceeded: "WorkflowNodeSucceeded",
-		}[node.Phase],
+		},
+		eventType,
+		fmt.Sprintf("WorkflowNode%s", node.Phase),
 		message,
 	)
 }

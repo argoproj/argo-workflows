@@ -129,7 +129,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		wfArchive:       sqldb.NullWorkflowArchive,
 		hydrator:        hydratorfake.Noop,
 		metrics:         metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
-		eventRecorder:   &record.FakeRecorder{},
+		eventRecorder:   record.NewFakeRecorder(2),
 	}
 	return cancel, controller
 }
