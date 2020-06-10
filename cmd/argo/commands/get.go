@@ -61,16 +61,13 @@ func NewGetCommand() *cobra.Command {
 		Use:   "get WORKFLOW...",
 		Short: "display details about a workflow",
 		Run: func(cmd *cobra.Command, args []string) {
-
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-
 			ctx, apiClient := client.NewAPIClient()
 			serviceClient := apiClient.NewWorkflowServiceClient()
 			namespace := client.Namespace()
-
 			for _, name := range args {
 				wf, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
 					Name:      name,

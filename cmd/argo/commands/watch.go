@@ -48,14 +48,6 @@ func watchWorkflow(wfName string, getArgs getFlags) {
 	namespace := client.Namespace()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-
-	// ensure that the desired workflow exists
-	_, err := serviceClient.GetWorkflow(ctx, &workflowpkg.WorkflowGetRequest{
-		Name:      wfName,
-		Namespace: namespace,
-	})
-	errors.CheckError(err)
-
 	req := &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{

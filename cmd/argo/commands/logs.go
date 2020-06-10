@@ -54,8 +54,6 @@ func NewLogsCommand() *cobra.Command {
 			podName := ""
 
 			switch len(args) {
-			case 0:
-				break
 			case 1:
 				workflow = args[0]
 			case 2:

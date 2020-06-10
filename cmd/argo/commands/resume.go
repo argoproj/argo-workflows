@@ -44,6 +44,7 @@ func NewResumeCommand() *cobra.Command {
 				}
 				fmt.Printf("workflow %s resumed\n", wfName)
 			}
+
 		},
 	}
 	command.Flags().StringVar(&resumeArgs.nodeFieldSelector, "node-field-selector", "", "selector of node to resume, eg: --node-field-selector inputs.paramaters.myparam.value=abc")
