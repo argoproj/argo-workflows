@@ -376,7 +376,7 @@ func (s *workflowServer) getWorkflow(ctx context.Context, namespace string, name
 		latest, err := getLatestWorkflow(ctx, namespace)
 		if err != nil {
 			return nil, err
-		} else if latest.Name != nil {
+		} else {
 			fmt.Printf("Resolved alias %s to workflow %s.\n", LATEST_ALIAS, latest.Name)
 		}
 		return latest, nil
