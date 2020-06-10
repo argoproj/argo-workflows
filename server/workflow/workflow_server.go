@@ -371,10 +371,13 @@ func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflo
 }
 
 func (s *workflowServer) getWorkflow(ctx context.Context, namespace string, name string, options metav1.GetOptions) (*v1alpha1.Workflow, error) {
-	if name == "@latest" {
+	const LATEST_ALIAS = "@latest"
+	if name == LATEST_ALIAS {
 		latest, err := getLatestWorkflow(ctx, namespace)
 		if err != nil {
 			return nil, err
+		} else if latest.Name != nil {
+			fmt.Printf("Resolved alias %s to workflow %s.\n", LATEST_ALIAS, latest.Name)
 		}
 		return latest, nil
 	} else {
