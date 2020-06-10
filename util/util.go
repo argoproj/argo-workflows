@@ -1,9 +1,12 @@
 package util
 
 import (
+	"fmt"
 	"io/ioutil"
 	"strconv"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/fields"
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -89,4 +92,19 @@ func RecoverIndexFromNodeName(name string) int {
 		return -1
 	}
 	return out
+}
+
+func GenerateFieldSelectorFromWorkflowName(wfName string) string {
+	result := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", wfName)).String()
+	compare := RecoverWorkflowNameFromSelectorString(result)
+	if wfName != compare {
+		panic(fmt.Errorf("Could not generate field selector from workflow name.\n"))
+	}
+	return result
+}
+
+func RecoverWorkflowNameFromSelectorString(selector string) string {
+	nameIndex := strings.Index(selector, "=")
+	name := selector[nameIndex+1:]
+	return name
 }

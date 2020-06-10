@@ -15,6 +15,7 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
+	globalUtil "github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/util/logs"
 	"github.com/argoproj/argo/workflow/common"
@@ -135,6 +136,12 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 	opts := &metav1.ListOptions{}
 	if req.ListOptions != nil {
 		opts = req.ListOptions
+		wfName := globalUtil.RecoverWorkflowNameFromSelectorString(opts.FieldSelector)
+		wf, err := s.getWorkflow(ctx, req.Namespace, wfName, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		opts.FieldSelector = globalUtil.GenerateFieldSelectorFromWorkflowName(wf.Name)
 	}
 	s.instanceIDService.With(opts)
 	wfIf := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace)

@@ -6,6 +6,10 @@ import (
 	"fmt"
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/argoproj/argo/util"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	corev1 "k8s.io/api/core/v1"
@@ -616,6 +620,24 @@ func TestWatchWorkflows(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 	go func() {
 		err := server.WatchWorkflows(&workflowpkg.WatchWorkflowsRequest{}, &testWatchWorkflowServer{testServerStream{ctx}})
+		assert.EqualError(t, err, "context canceled")
+	}()
+	cancel()
+}
+
+func TestWatchLatestWorkflow(t *testing.T) {
+	server, ctx := getWorkflowServer()
+	wf := &v1alpha1.Workflow{
+		Status: v1alpha1.WorkflowStatus{Phase: v1alpha1.NodeSucceeded},
+	}
+	assert.NoError(t, json.Unmarshal([]byte(wf1), &wf))
+	ctx, cancel := context.WithCancel(ctx)
+	go func() {
+		err := server.WatchWorkflows(&workflowpkg.WatchWorkflowsRequest{
+			ListOptions: &metav1.ListOptions{
+				FieldSelector: util.GenerateFieldSelectorFromWorkflowName("@latest"),
+			},
+		}, &testWatchWorkflowServer{testServerStream{ctx}})
 		assert.EqualError(t, err, "context canceled")
 	}()
 	cancel()
