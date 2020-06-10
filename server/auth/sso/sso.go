@@ -66,7 +66,13 @@ func New(c Config, secretsIf corev1.SecretInterface, baseHRef string, secure boo
 	return newSso(providerFactoryOidc, c, secretsIf, baseHRef, secure)
 }
 
-func newSso(factory providerFactory, c Config, secretsIf corev1.SecretInterface, baseHRef string, secure bool) (Interface, error) {
+func newSso(
+	factory providerFactory,
+	c Config,
+	secretsIf corev1.SecretInterface,
+	baseHRef string,
+	secure bool,
+) (Interface, error) {
 	if c.Issuer == "" {
 		return nil, fmt.Errorf("issuer empty")
 	}
