@@ -17,6 +17,7 @@ interface WorkflowsRowProps {
 interface WorkflowRowState {
     hideDrawer: boolean;
     workflow: models.Workflow;
+    selected: boolean;
 }
 
 export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRowState> {
@@ -24,7 +25,8 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
         super(props);
         this.state = {
             workflow: this.props.workflow,
-            hideDrawer: true
+            hideDrawer: true,
+            selected: false
         };
     }
 
@@ -34,7 +36,15 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
             <div className='workflows-list__row-container'>
                 <Link className='row argo-table-list__row' to={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)}>
                     <div className='columns small-1 workflows-list__status'>
-                        <input type='checkbox' className='workflows-list__status--checkbox' />
+                        <input
+                            type='checkbox'
+                            className='workflows-list__status--checkbox'
+                            checked={this.state.selected}
+                            onClick={e => {
+                                e.preventDefault();
+                                this.setState({selected: !this.state.selected});
+                            }}
+                        />
                         <PhaseIcon value={wf.status.phase} />
                     </div>
                     <div className='columns small-3'>{wf.metadata.name}</div>
