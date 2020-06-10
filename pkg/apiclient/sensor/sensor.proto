@@ -9,7 +9,8 @@ import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 package sensor;
 
 message ListSensorsRequest {
-    k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 1;
+    string namespace = 1;
+    k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
 }
 
 message ListSensorsResponse {
@@ -19,6 +20,6 @@ message ListSensorsResponse {
 
 service SensorService {
     rpc ListSensors (ListSensorsRequest) returns (ListSensorsResponse) {
-        option (google.api.http).get = "/api/v1/sensors";
+        option (google.api.http).get = "/api/v1/sensors/{namespace}";
     }
 }

@@ -674,13 +674,19 @@
         }
       }
     },
-    "/api/v1/sensors": {
+    "/api/v1/sensors/{namespace}": {
       "get": {
         "tags": [
           "SensorService"
         ],
         "operationId": "ListSensors",
         "parameters": [
+          {
+            "type": "string",
+            "name": "namespace",
+            "in": "path",
+            "required": true
+          },
           {
             "type": "string",
             "description": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional.",

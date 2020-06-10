@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 
-	_struct "github.com/golang/protobuf/ptypes/struct"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/types/known/structpb"
+	"github.com/gogo/protobuf/types"
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 
@@ -19,34 +19,55 @@ type sensorServer struct {
 }
 
 func (s sensorServer) ListSensors(ctx context.Context, req *sensor.ListSensorsRequest) (*sensor.ListSensorsResponse, error) {
-	if req.ListOptions == nil {
-		req.ListOptions = &metav1.ListOptions{}
+	resourceIf, err := resourceInterface(ctx, req.Namespace)
+	if err != nil {
+		return nil, err
 	}
+	list, err := resourceIf.List(listOptions(req))
+	if err != nil {
+		return nil, err
+	}
+	items, err := unToStruct(list)
+	if err != nil {
+		return nil, err
+	}
+	return &sensor.ListSensorsResponse{Metadata: &metav1.ListMeta{}, Items: items}, nil
+}
+
+func resourceInterface(ctx context.Context, namespace string) (dynamic.ResourceInterface, error) {
 	config, err := dynamic.NewForConfig(auth.GetRESTConfig(ctx))
 	if err != nil {
 		return nil, err
 	}
-	list, err := config.Resource(schema.GroupVersionResource{Group: "argoproj.io", Version: "v1alpha1", Resource: "sensors"}).List(*req.ListOptions)
-	if err != nil {
-		return nil, err
+	versionResource := schema.GroupVersionResource{Group: "argoproj.io", Version: "v1alpha1", Resource: "sensors"}
+	return config.Resource(versionResource).Namespace(namespace), nil
+}
+
+func listOptions(req *sensor.ListSensorsRequest) metav1.ListOptions {
+	listOptions := metav1.ListOptions{}
+	if req.ListOptions != nil {
+		listOptions = *req.ListOptions
 	}
-	var items = make([]*_struct.Struct, len(list.Items))
+	return listOptions
+}
+
+func unToStruct(list *unstructured.UnstructuredList) ([]*types.Struct, error) {
+	var items = make([]*types.Struct, len(list.Items))
+	log.WithField("items", list.Items).Debug()
 	for i, item := range list.Items {
 		b, err := json.Marshal(item)
 		if err != nil {
 			return nil, err
 		}
-		s := &structpb.Struct{}
-		err = protojson.Unmarshal(b, s)
+		s := &types.Struct{}
+		err = json.Unmarshal(b, s)
 		if err != nil {
 			return nil, err
 		}
 		items[i] = s
 	}
-	return &sensor.ListSensorsResponse{
-		Metadata: &metav1.ListMeta{},
-		Items:    items,
-	}, nil
+	log.WithField("items", items).Debug()
+	return items, nil
 }
 
 func NewSensorServer() sensor.SensorServiceServer {

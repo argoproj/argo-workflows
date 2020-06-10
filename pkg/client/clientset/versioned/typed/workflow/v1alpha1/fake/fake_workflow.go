@@ -5,6 +5,7 @@ package fake
 import (
 	v1alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -40,7 +41,18 @@ func (c *FakeWorkflows) List(opts v1.ListOptions) (result *v1alpha1.WorkflowList
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha1.WorkflowList), err
+
+	label, _, _ := testing.ExtractFromListOptions(opts)
+	if label == nil {
+		label = labels.Everything()
+	}
+	list := &v1alpha1.WorkflowList{ListMeta: obj.(*v1alpha1.WorkflowList).ListMeta}
+	for _, item := range obj.(*v1alpha1.WorkflowList).Items {
+		if label.Matches(labels.Set(item.Labels)) {
+			list.Items = append(list.Items, item)
+		}
+	}
+	return list, err
 }
 
 // Watch returns a watch.Interface that watches the requested workflows.
