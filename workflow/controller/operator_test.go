@@ -2730,11 +2730,18 @@ func TestEventInvalidSpec(t *testing.T) {
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
-	events := controller.eventRecorder.(*record.FakeRecorder).Events
-	runningEvent := <-events
-	assert.Equal(t, "Normal WorkflowRunning Workflow Running", runningEvent)
-	invalidSpecEvent := <-events
-	assert.Equal(t, "Warning WorkflowFailed invalid spec: template name '123' undefined", invalidSpecEvent)
+	events := getEvents(controller, 2)
+	assert.Equal(t, "Normal WorkflowRunning Workflow Running", events[0])
+	assert.Equal(t, "Warning WorkflowFailed invalid spec: template name '123' undefined", events[1])
+}
+
+func getEvents(controller *WorkflowController, num int) []string {
+	c := controller.eventRecorder.(*record.FakeRecorder).Events
+	events := make([]string, num)
+	for i := 0; i < num; i++ {
+		events[i] = <-c
+	}
+	return events
 }
 
 var timeout = `
@@ -2751,31 +2758,6 @@ spec:
       image: alpine:latest
       command: [sh, -c, sleep 10]
 `
-
-func TestEventTimeout(t *testing.T) {
-	// Test whether a WorkflowTimedOut event is emitted in case of timeout
-	cancel, controller := newController()
-	defer cancel()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(timeout)
-	wf, err := wfcset.Create(wf)
-	assert.NoError(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate()
-	makePodsPhase(t, apiv1.PodRunning, controller.kubeclientset, wf.ObjectMeta.Namespace)
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
-	assert.NoError(t, err)
-	woc = newWorkflowOperationCtx(wf, controller)
-	time.Sleep(10 * time.Second)
-	woc.operate()
-	events, err := controller.kubeclientset.CoreV1().Events("").List(metav1.ListOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(events.Items))
-	runningEvent := events.Items[0]
-	assert.Equal(t, "WorkflowRunning", runningEvent.Reason)
-	timeoutEvent := events.Items[1]
-	assert.Equal(t, "WorkflowFailed", timeoutEvent.Reason)
-}
 
 var failLoadArtifactRepoCm = `
 apiVersion: argoproj.io/v1alpha1
@@ -2809,14 +2791,9 @@ func TestEventFailArtifactRepoCm(t *testing.T) {
 	assert.NoError(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
-	events, err := controller.kubeclientset.CoreV1().Events("").List(metav1.ListOptions{})
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(events.Items))
-	runningEvent := events.Items[0]
-	assert.Equal(t, "WorkflowRunning", runningEvent.Reason)
-	failEvent := events.Items[1]
-	assert.Equal(t, "WorkflowFailed", failEvent.Reason)
-	assert.Equal(t, "Failed to load artifact repository configMap: failed to find artifactory ref {,}/artifact-repository#config", failEvent.Message)
+	events := getEvents(controller, 2)
+	assert.Equal(t, "Normal WorkflowRunning Workflow Running", events[0])
+	assert.Equal(t, "Warning WorkflowFailed Failed to load artifact repository configMap: failed to find artifactory ref {,}/artifact-repository#config", events[1])
 }
 
 var pdbwf = `

@@ -121,7 +121,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		},
 		kubeclientset:   kube,
 		wfclientset:     wfclientset,
-		completedPods:   make(chan string, 512),
+		completedPods:   make(chan string, 16),
 		wftmplInformer:  wftmplInformer,
 		cwftmplInformer: cwftmplInformer,
 		wfQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
@@ -129,7 +129,7 @@ func newController(objects ...runtime.Object) (context.CancelFunc, *WorkflowCont
 		wfArchive:       sqldb.NullWorkflowArchive,
 		hydrator:        hydratorfake.Noop,
 		metrics:         metrics.New(metrics.ServerConfig{}, metrics.ServerConfig{}),
-		eventRecorder:   record.NewFakeRecorder(2),
+		eventRecorder:   record.NewFakeRecorder(16),
 	}
 	return cancel, controller
 }
