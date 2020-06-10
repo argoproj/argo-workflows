@@ -36,6 +36,7 @@ import (
 	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	authutil "github.com/argoproj/argo/util/auth"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/controller/pod"
 	"github.com/argoproj/argo/workflow/cron"
 	"github.com/argoproj/argo/workflow/hydrator"
 	"github.com/argoproj/argo/workflow/metrics"
@@ -651,7 +652,9 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 				if oldPod.ResourceVersion == newPod.ResourceVersion {
 					return
 				}
-
+				if !pod.SignificantPodChange(oldPod, newPod) {
+					return
+				}
 				key, err := cache.MetaNamespaceKeyFunc(new)
 				if err == nil {
 					wfc.podQueue.Add(key)
