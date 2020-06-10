@@ -8,7 +8,7 @@ import (
 	fmt "fmt"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
-	_struct "github.com/golang/protobuf/ptypes/struct"
+	types "github.com/gogo/protobuf/types"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -78,11 +78,11 @@ func (m *ListSensorsRequest) GetListOptions() *v1.ListOptions {
 }
 
 type ListSensorsResponse struct {
-	Metadata             *v1.ListMeta      `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
-	Items                []*_struct.Struct `protobuf:"bytes,2,rep,name=items,proto3" json:"items,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
-	XXX_unrecognized     []byte            `json:"-"`
-	XXX_sizecache        int32             `json:"-"`
+	Metadata             *v1.ListMeta    `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	Items                []*types.Struct `protobuf:"bytes,2,rep,name=items,proto3" json:"items,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
 }
 
 func (m *ListSensorsResponse) Reset()         { *m = ListSensorsResponse{} }
@@ -125,7 +125,7 @@ func (m *ListSensorsResponse) GetMetadata() *v1.ListMeta {
 	return nil
 }
 
-func (m *ListSensorsResponse) GetItems() []*_struct.Struct {
+func (m *ListSensorsResponse) GetItems() []*types.Struct {
 	if m != nil {
 		return m.Items
 	}
@@ -577,7 +577,7 @@ func (m *ListSensorsResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Items = append(m.Items, &_struct.Struct{})
+			m.Items = append(m.Items, &types.Struct{})
 			if err := m.Items[len(m.Items)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
