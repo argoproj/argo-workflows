@@ -18,7 +18,6 @@ import (
 	"github.com/argoproj/argo/config"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
-	"github.com/argoproj/argo/util/argo"
 	"github.com/argoproj/argo/workflow/common"
 	hydratorfake "github.com/argoproj/argo/workflow/hydrator/fake"
 	"github.com/argoproj/argo/workflow/util"
@@ -2734,9 +2733,9 @@ func TestEventInvalidSpec(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(events.Items))
 	runningEvent := events.Items[0]
-	assert.Equal(t, argo.EventReasonWorkflowRunning, runningEvent.Reason)
+	assert.Equal(t, "WorkflowRunning", runningEvent.Reason)
 	invalidSpecEvent := events.Items[1]
-	assert.Equal(t, argo.EventReasonWorkflowFailed, invalidSpecEvent.Reason)
+	assert.Equal(t, "WorkflowFailed", invalidSpecEvent.Reason)
 	assert.Equal(t, "invalid spec: template name '123' undefined", invalidSpecEvent.Message)
 }
 
@@ -2775,9 +2774,9 @@ func TestEventTimeout(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(events.Items))
 	runningEvent := events.Items[0]
-	assert.Equal(t, argo.EventReasonWorkflowRunning, runningEvent.Reason)
+	assert.Equal(t, "WorkflowRunning", runningEvent.Reason)
 	timeoutEvent := events.Items[1]
-	assert.Equal(t, argo.EventReasonWorkflowFailed, timeoutEvent.Reason)
+	assert.Equal(t, "WorkflowFailed", timeoutEvent.Reason)
 }
 
 var failLoadArtifactRepoCm = `
@@ -2816,9 +2815,9 @@ func TestEventFailArtifactRepoCm(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(events.Items))
 	runningEvent := events.Items[0]
-	assert.Equal(t, argo.EventReasonWorkflowRunning, runningEvent.Reason)
+	assert.Equal(t, "WorkflowRunning", runningEvent.Reason)
 	failEvent := events.Items[1]
-	assert.Equal(t, argo.EventReasonWorkflowFailed, failEvent.Reason)
+	assert.Equal(t, "WorkflowFailed", failEvent.Reason)
 	assert.Equal(t, "Failed to load artifact repository configMap: failed to find artifactory ref {,}/artifact-repository#config", failEvent.Message)
 }
 

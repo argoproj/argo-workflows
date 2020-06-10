@@ -14,7 +14,6 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
-	"github.com/argoproj/argo/util/argo"
 )
 
 type FunctionalSuite struct {
@@ -191,12 +190,12 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 		Then().
 		ExpectAuditEvent(func(e corev1.Event) bool {
 			return strings.HasPrefix(e.InvolvedObject.Name, "failed-step-event-") &&
-				e.Reason == argo.EventReasonWorkflowFailed &&
+				e.Reason == "WorkflowFailed" &&
 				e.Message == "failed with exit code 1"
 		}).
 		ExpectAuditEvent(func(e corev1.Event) bool {
 			return e.InvolvedObject.Kind == workflow.WorkflowKind &&
-				e.Reason == argo.EventReasonWorkflowNodeFailed &&
+				e.Reason == "WorkflowNodeFailed" &&
 				strings.HasPrefix(e.Message, "Failed node failed-step-event-") &&
 				e.Annotations["workflows.argoproj.io/node-type"] == "Pod" &&
 				strings.Contains(e.Annotations["workflows.argoproj.io/node-name"], "failed-step-event-")
@@ -213,12 +212,12 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		Then().
 		ExpectAuditEvent(func(e corev1.Event) bool {
 			return strings.HasPrefix(e.InvolvedObject.Name, "success-event-") &&
-				e.Reason == argo.EventReasonWorkflowSucceeded &&
+				e.Reason == "WorkflowSucceeded" &&
 				e.Message == "Workflow completed"
 		}).
 		ExpectAuditEvent(func(e corev1.Event) bool {
 			return e.InvolvedObject.Kind == workflow.WorkflowKind &&
-				e.Reason == argo.EventReasonWorkflowNodeSucceeded &&
+				e.Reason == "WorkflowNodeSucceeded" &&
 				strings.HasPrefix(e.Message, "Succeeded node success-event-") &&
 				e.Annotations["workflows.argoproj.io/node-type"] == "Pod" &&
 				strings.Contains(e.Annotations["workflows.argoproj.io/node-name"], "success-event-")
