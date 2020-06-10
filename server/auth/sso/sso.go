@@ -2,6 +2,7 @@ package sso
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"strings"
@@ -46,7 +47,26 @@ type Config struct {
 	RedirectURL    string                   `json:"redirectUrl"`
 }
 
+// Abtsract methods of oidc.Provider that our code uses into an interface. That
+// will allow us to implement a stub for unit testing.  If you start using more
+// oidc.Provider methods in this file, add them here and provide a stub
+// implementation in test.
+type providerInterface interface {
+	Endpoint() oauth2.Endpoint
+	Verifier(config *oidc.Config) *oidc.IDTokenVerifier
+}
+
+type providerFactory func(ctx context.Context, issuer string) (providerInterface, error)
+
+func providerFactoryOidc(ctx context.Context, issuer string) (providerInterface, error) {
+	return oidc.NewProvider(ctx, issuer)
+}
+
 func New(c Config, secretsIf corev1.SecretInterface, baseHRef string, secure bool) (Interface, error) {
+	return newSso(providerFactoryOidc, c, secretsIf, baseHRef, secure)
+}
+
+func newSso(factory providerFactory, c Config, secretsIf corev1.SecretInterface, baseHRef string, secure bool) (Interface, error) {
 	if c.Issuer == "" {
 		return nil, fmt.Errorf("issuer empty")
 	}
@@ -56,9 +76,9 @@ func New(c Config, secretsIf corev1.SecretInterface, baseHRef string, secure boo
 	if c.ClientID != "" && c.ClientIDSecret != nil {
 		return nil, fmt.Errorf("only one of clientID and clientIDSecret must be specified")
 	}
-  if c.ClientIDSecret != nil && (c.ClientSecret.Name == "" || c.ClientSecret.Key == "") {
+	if c.ClientIDSecret != nil && (c.ClientSecret.Name == "" || c.ClientSecret.Key == "") {
 		return nil, fmt.Errorf("clientIDSecret empty")
-  }
+	}
 	if c.ClientSecret.Name == "" || c.ClientSecret.Key == "" {
 		return nil, fmt.Errorf("clientSecret empty")
 	}
@@ -69,24 +89,29 @@ func New(c Config, secretsIf corev1.SecretInterface, baseHRef string, secure boo
 	if err != nil {
 		return nil, err
 	}
-	provider, err := oidc.NewProvider(context.Background(), c.Issuer)
+	provider, err := factory(context.Background(), c.Issuer)
 	if err != nil {
 		return nil, err
 	}
 
-  var clientId string
+	var clientID string
 
-  if c.ClientIDSecret != nil {
-    clientIdSecret, err := secretsIf.Get(c.ClientIDSecret.Name, metav1.GetOptions{})
-    if err != nil {
-      return nil, err
-    }
-    clientId = string(clientIdSecret.Data[c.ClientIDSecret.Key])
-  } else {
-    clientId = c.ClientID
-  }
+	if c.ClientIDSecret != nil {
+		clientIDSecret, err := secretsIf.Get(c.ClientIDSecret.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+		clientIDEncoded := clientIDSecret.Data[c.ClientIDSecret.Key]
+		clientIDBytes, err := base64.StdEncoding.DecodeString(string(clientIDEncoded))
+		if err != nil {
+			return nil, fmt.Errorf("Unable to decode client id from secret: %w", err)
+		}
+		clientID = string(clientIDBytes)
+	} else {
+		clientID = c.ClientID
+	}
 	config := &oauth2.Config{
-		ClientID:     clientId,
+		ClientID:     clientID,
 		ClientSecret: string(secrets.Data[c.ClientSecret.Key]),
 		RedirectURL:  c.RedirectURL,
 		Endpoint:     provider.Endpoint(),
