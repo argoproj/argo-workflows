@@ -57,7 +57,7 @@ func watchWorkflow(wfName string, getArgs getFlags) {
 	stream, err := serviceClient.WatchWorkflows(ctx, req)
 	errors.CheckError(err)
 
-	wfEventChan := make(chan *workflowpkg.WorkflowWatchEvent)
+	wfChan := make(chan *wfv1.Workflow)
 	go func() {
 		for {
 			event, err := stream.Recv()
@@ -67,7 +67,7 @@ func watchWorkflow(wfName string, getArgs getFlags) {
 				errors.CheckError(err)
 			}
 			errors.CheckError(err)
-			wfEventChan <- event
+			wfChan <- event.Object
 		}
 	}()
 
@@ -75,12 +75,12 @@ func watchWorkflow(wfName string, getArgs getFlags) {
 	ticker := time.NewTicker(time.Second)
 	for {
 		select {
-		case event := <-wfEventChan:
+		case newWf := <-wfChan:
 			// If we get a new event, update our workflow
-			wf = event.Object
-			if wf == nil {
+			if newWf == nil {
 				return
 			}
+			wf = newWf
 		case <-ticker.C:
 			// If we don't, refresh the workflow screen every second
 		}
@@ -93,6 +93,9 @@ func watchWorkflow(wfName string, getArgs getFlags) {
 }
 
 func printWorkflowStatus(wf *wfv1.Workflow, getArgs getFlags) {
+	if wf == nil {
+		return
+	}
 	err := packer.DecompressWorkflow(wf)
 	errors.CheckError(err)
 	print("\033[H\033[2J")
