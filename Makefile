@@ -85,6 +85,10 @@ else
 ALWAYS_OFFLOAD_NODE_STATUS := true
 endif
 
+ifeq ($(PROFILE),sso)
+AUTH_MODE := sso
+endif
+
 ifeq ($(CI),true)
 TEST_OPTS := -coverprofile=coverage.out
 else
@@ -332,12 +336,6 @@ ifeq ($(K3D),true)
 	k3d start
 endif
 	kubectl apply -f test/e2e/manifests/argo-ns.yaml
-	# If you want SSO, then we want Dex, otherwise we delete any previouly installed Dex.
-ifeq ($(AUTH_MODE),sso)
-	kubectl -n argo apply -l app.kubernetes.io/part-of=dex --prune --force -k manifests/quick-start/base/dex
-else
-	kubectl -n argo delete all -l app.kubernetes.io/part-of=dex
-endif
 	kubectl -n argo apply -l app.kubernetes.io/part-of=argo --prune --force -f dist/$(PROFILE).yaml
 
 .PHONY: pull-build-images

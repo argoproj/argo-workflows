@@ -7,8 +7,5 @@ resources:
   - postgres-deployment.yaml
   - postgres-service.yaml
 
-commonLabels:
-  "app.kubernetes.io/part-of": "argo"
-
 patchesStrategicMerge:
   - overlays/workflow-controller-configmap.yaml

@@ -3,6 +3,3 @@ kind: Kustomization
 
 resources:
   - ../base
-
-commonLabels:
-  "app.kubernetes.io/part-of": "argo"
