@@ -19,7 +19,7 @@ func NewLintCommand() *cobra.Command {
 	)
 	var command = &cobra.Command{
 		Use:   "lint FILE...",
-		Short: "validate files or directories of workflow manifests",
+		Short: "validate files or directories of Workflow manifests",
 		Run: func(cmd *cobra.Command, args []string) {
 			resources, err := validate.ParseResourcesFromFiles(args, strict)
 			if err != nil {
@@ -36,11 +36,11 @@ func NewLintCommand() *cobra.Command {
 				for _, wf := range resources.Workflows {
 					conditions, err := validate.ValidateWorkflow(templateGetter, clusterTemplateGetter, &wf, opts)
 					if err != nil {
-						log.Errorf("Error in workflow %s: %s", wf.Name, err)
+						log.Errorf("Error in Workflow %s: %s", wf.Name, err)
 						invalid = true
 					}
 					for _, condition := range *conditions {
-						log.Warnf("Warning in workflow %s: %s", wf.Name, condition.Message)
+						log.Warnf("Warning in Workflow %s: %s", wf.Name, condition.Message)
 					}
 				}
 			} else {
@@ -51,7 +51,7 @@ func NewLintCommand() *cobra.Command {
 				for _, wf := range resources.Workflows {
 					_, err := serviceClient.LintWorkflow(ctx, &workflowpkg.WorkflowLintRequest{Namespace: namespace, Workflow: &wf})
 					if err != nil {
-						log.Errorf("Error in workflow %s: %s", wf.Name, err)
+						log.Errorf("Error in Workflow %s: %s", wf.Name, err)
 						invalid = true
 					}
 				}
@@ -63,7 +63,7 @@ func NewLintCommand() *cobra.Command {
 			fmt.Printf("Workflow manifests validated\n")
 		},
 	}
-	command.Flags().BoolVar(&strict, "strict", true, "perform strict workflow validation")
+	command.Flags().BoolVar(&strict, "strict", true, "perform strict validation")
 	command.Flags().BoolVar(&offline, "offline", false,
 		"lint template references against local files instead of remote server state")
 	return command

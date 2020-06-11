@@ -279,45 +279,45 @@ func ValidateWorkflowSpecFields(v interface{}, validFieldMap map[string]bool) er
 }
 
 // ValidateWorkflowTemplate accepts a workflow template and performs validation against it.
-func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate) (*wfv1.Conditions, error) {
+func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, wftmpl *wfv1.WorkflowTemplate, lint bool) (*wfv1.Conditions, error) {
 	wf := &wfv1.Workflow{
 		Spec: wftmpl.Spec.WorkflowSpec,
 	}
-	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true, Lint: lint})
 }
 
 // ValidateClusterWorkflowTemplate accepts a cluster workflow template and performs validation against it.
-func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate) (*wfv1.Conditions, error) {
+func ValidateClusterWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cwftmpl *wfv1.ClusterWorkflowTemplate, lint bool) (*wfv1.Conditions, error) {
 	wf := &wfv1.Workflow{
 		Spec: cwftmpl.Spec.WorkflowSpec,
 	}
-	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true})
+	return ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{IgnoreEntrypoint: wf.Spec.Entrypoint == "", WorkflowTemplateValidation: true, Lint: lint})
 }
 
 // ValidateCronWorkflow validates a CronWorkflow
-func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cronWf *wfv1.CronWorkflow) error {
+func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, cronWf *wfv1.CronWorkflow, lint bool) (*wfv1.Conditions, error) {
 	if _, err := cron.ParseStandard(cronWf.Spec.Schedule); err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "cron schedule is malformed: %s", err)
+		return nil, errors.Errorf(errors.CodeBadRequest, "cron schedule is malformed: %s", err)
 	}
 
 	switch cronWf.Spec.ConcurrencyPolicy {
 	case wfv1.AllowConcurrent, wfv1.ForbidConcurrent, wfv1.ReplaceConcurrent, "":
 		// Do nothing
 	default:
-		return errors.Errorf(errors.CodeBadRequest, "'%s' is not a valid concurrencyPolicy", cronWf.Spec.ConcurrencyPolicy)
+		return nil, errors.Errorf(errors.CodeBadRequest, "'%s' is not a valid concurrencyPolicy", cronWf.Spec.ConcurrencyPolicy)
 	}
 
 	if cronWf.Spec.StartingDeadlineSeconds != nil && *cronWf.Spec.StartingDeadlineSeconds < 0 {
-		return errors.Errorf(errors.CodeBadRequest, "startingDeadlineSeconds must be positive")
+		return nil, errors.Errorf(errors.CodeBadRequest, "startingDeadlineSeconds must be positive")
 	}
 
 	wf := common.ConvertCronWorkflowToWorkflow(cronWf)
 
-	_, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{})
+	conditions, err := ValidateWorkflow(wftmplGetter, cwftmplGetter, wf, ValidateOpts{Lint: lint})
 	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "cannot validate Workflow: %s", err)
+		return nil, errors.Errorf(errors.CodeBadRequest, "cannot validate Workflow: %s", err)
 	}
-	return nil
+	return conditions, nil
 }
 
 func getTemplateRefHelpString(tmpl *wfv1.Template) string {

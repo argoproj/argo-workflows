@@ -2,66 +2,67 @@ package clustertemplate
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
+	"github.com/prometheus/common/log"
 	"github.com/spf13/cobra"
-
-	"github.com/argoproj/pkg/errors"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/pkg/apiclient/clusterworkflowtemplate"
+	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/validate"
 )
 
 func NewLintCommand() *cobra.Command {
 	var (
-		strict bool
+		strict  bool
+		offline bool
 	)
 	var command = &cobra.Command{
 		Use:   "lint FILE...",
-		Short: "validate files or directories of cluster workflow template manifests",
+		Short: "validate files or directories of ClusterWorkflowTemplate manifests",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
+			resources, err := validate.ParseResourcesFromFiles(args, strict)
+			if err != nil {
+				log.Fatal(err)
+			}
 
-			lint := func(file string) error {
-				cwfTmpls, err := validate.ParseCWfTmplFromFile(file, strict)
-				if err != nil {
-					return err
-				}
-				for _, cfwft := range cwfTmpls {
-					_, err := serviceClient.LintClusterWorkflowTemplate(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateLintRequest{Template: &cfwft})
+			invalid := false
+
+			if offline {
+				templateGetter := templateresolution.WrapWorkflowTemplateList(resources.WorkflowTemplates)
+				clusterTemplateGetter := templateresolution.WrapClusterWorkflowTemplateList(resources.ClusterWorkflowTemplates)
+
+				for _, wftmpl := range resources.ClusterWorkflowTemplates {
+					conditions, err := validate.ValidateClusterWorkflowTemplate(templateGetter, clusterTemplateGetter, &wftmpl, true)
 					if err != nil {
-						return err
+						log.Errorf("Error in ClusterWorkflowTemplate %s: %s", wftmpl.Name, err)
+						invalid = true
+					}
+					for _, condition := range *conditions {
+						log.Warnf("Warning in ClusterWorkflowTemplate %s: %s", wftmpl.Name, condition.Message)
 					}
 				}
-				fmt.Printf("%s is valid\n", file)
-				return nil
-			}
+			} else {
+				ctx, apiClient := client.NewAPIClient()
+				serviceClient := apiClient.NewClusterWorkflowTemplateServiceClient()
 
-			for _, file := range args {
-				stat, err := os.Stat(file)
-				errors.CheckError(err)
-				if stat.IsDir() {
-					err := filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
-						fileExt := filepath.Ext(info.Name())
-						switch fileExt {
-						case ".yaml", ".yml", ".json":
-						default:
-							return nil
-						}
-						return lint(path)
-					})
-					errors.CheckError(err)
-				} else {
-					err := lint(file)
-					errors.CheckError(err)
+				for _, wftmpl := range resources.ClusterWorkflowTemplates {
+					_, err := serviceClient.LintClusterWorkflowTemplate(ctx, &clusterworkflowtemplate.ClusterWorkflowTemplateLintRequest{Template: &wftmpl})
+					if err != nil {
+						log.Errorf("Error in ClusterWorkflowTemplate %s: %s", wftmpl.Name, err)
+						invalid = true
+					}
 				}
 			}
-			fmt.Printf("Cluster Workflow Template manifests validated\n")
+
+			if invalid {
+				log.Fatalf("Errors encountered in validation")
+			}
+			fmt.Printf("ClusterWorkflowTemplate manifests validated\n")
 		},
 	}
-	command.Flags().BoolVar(&strict, "strict", true, "perform strict workflow validation")
+	command.Flags().BoolVar(&strict, "strict", true, "perform strict validation")
+	command.Flags().BoolVar(&offline, "offline", false,
+		"lint template references against local files instead of remote server state")
 	return command
 }

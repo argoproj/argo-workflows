@@ -31,7 +31,7 @@ func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, r
 	wts.instanceIDService.Label(req.Template)
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
-	_, err := validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template)
+	_, err := validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template, false)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func (wts *WorkflowTemplateServer) LintWorkflowTemplate(ctx context.Context, req
 	wts.instanceIDService.Label(req.Template)
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
-	_, err := validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template)
+	_, err := validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template, false)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (wts *WorkflowTemplateServer) UpdateWorkflowTemplate(ctx context.Context, r
 	wfClient := auth.GetWfClient(ctx)
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
-	_, err = validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template)
+	_, err = validate.ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, req.Template, false)
 	if err != nil {
 		return nil, err
 	}

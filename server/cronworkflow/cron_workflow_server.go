@@ -28,7 +28,7 @@ func (c *cronWorkflowServiceServer) LintCronWorkflow(ctx context.Context, req *c
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
 	c.instanceIDService.Label(req.CronWorkflow)
-	err := validate.ValidateCronWorkflow(wftmplGetter, cwftmplGetter, req.CronWorkflow)
+	_, err := validate.ValidateCronWorkflow(wftmplGetter, cwftmplGetter, req.CronWorkflow, false)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req 
 	c.instanceIDService.Label(req.CronWorkflow)
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 	cwftmplGetter := templateresolution.WrapClusterWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().ClusterWorkflowTemplates())
-	err := validate.ValidateCronWorkflow(wftmplGetter, cwftmplGetter, req.CronWorkflow)
+	_, err := validate.ValidateCronWorkflow(wftmplGetter, cwftmplGetter, req.CronWorkflow, false)
 	if err != nil {
 		return nil, err
 	}

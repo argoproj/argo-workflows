@@ -2,80 +2,68 @@ package cron
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
-	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	cronworkflowpkg "github.com/argoproj/argo/pkg/apiclient/cronworkflow"
+	"github.com/argoproj/argo/pkg/apiclient/cronworkflow"
+	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/validate"
 )
 
 func NewLintCommand() *cobra.Command {
 	var (
-		strict bool
+		strict  bool
+		offline bool
 	)
 	var command = &cobra.Command{
 		Use:   "lint FILE...",
-		Short: "validate files or directories of cron workflow manifests",
+		Short: "validate files or directories of CronWorkflow manifests",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, apiClient := client.NewAPIClient()
-			serviceClient := apiClient.NewCronWorkflowServiceClient()
-			namespace := client.Namespace()
-
-			lint := func(file string) error {
-				wfs, err := validate.ParseCronWorkflowsFromFile(file, strict)
-				if err != nil {
-					return err
-				}
-				if len(wfs) == 0 {
-					return fmt.Errorf("there was nothing to validate")
-				}
-				for _, wf := range wfs {
-					_, err := serviceClient.LintCronWorkflow(ctx, &cronworkflowpkg.LintCronWorkflowRequest{Namespace: namespace, CronWorkflow: &wf})
-					if err != nil {
-						return err
-					}
-				}
-				fmt.Printf("%s is valid\n", file)
-				return nil
+			resources, err := validate.ParseResourcesFromFiles(args, strict)
+			if err != nil {
+				log.Fatal(err)
 			}
 
 			invalid := false
-			for _, file := range args {
-				stat, err := os.Stat(file)
-				errors.CheckError(err)
-				if stat.IsDir() {
-					err := filepath.Walk(file, func(path string, info os.FileInfo, err error) error {
-						fileExt := filepath.Ext(info.Name())
-						switch fileExt {
-						case ".yaml", ".yml", ".json":
-						default:
-							return nil
-						}
-						if err := lint(path); err != nil {
-							log.Errorf("Error in file %s: %s", path, err)
-							invalid = true
-						}
-						return nil
-					})
-					errors.CheckError(err)
-				} else {
-					if err := lint(file); err != nil {
-						log.Errorf("Error in file %s: %s", file, err)
+
+			if offline {
+				templateGetter := templateresolution.WrapWorkflowTemplateList(resources.WorkflowTemplates)
+				clusterTemplateGetter := templateresolution.WrapClusterWorkflowTemplateList(resources.ClusterWorkflowTemplates)
+
+				for _, cron := range resources.CronWorkflows {
+					conditions, err := validate.ValidateCronWorkflow(templateGetter, clusterTemplateGetter, &cron, true)
+					if err != nil {
+						log.Errorf("Error in CronWorkflow %s: %s", cron.Name, err)
+						invalid = true
+					}
+					for _, condition := range *conditions {
+						log.Warnf("Warning in CronWorkflow %s: %s", cron.Name, condition.Message)
+					}
+				}
+			} else {
+				ctx, apiClient := client.NewAPIClient()
+				serviceClient := apiClient.NewCronWorkflowServiceClient()
+				namespace := client.Namespace()
+
+				for _, cron := range resources.CronWorkflows {
+					_, err := serviceClient.LintCronWorkflow(ctx, &cronworkflow.LintCronWorkflowRequest{Namespace: namespace, CronWorkflow: &cron})
+					if err != nil {
+						log.Errorf("Error in CronWorkflow %s: %s", cron.Name, err)
 						invalid = true
 					}
 				}
 			}
+
 			if invalid {
 				log.Fatalf("Errors encountered in validation")
 			}
-			fmt.Printf("Cron workflow manifests validated\n")
+			fmt.Printf("CronWorkflow manifests validated\n")
 		},
 	}
-	command.Flags().BoolVar(&strict, "strict", true, "perform strict workflow validation")
+	command.Flags().BoolVar(&strict, "strict", true, "perform strict validation")
+	command.Flags().BoolVar(&offline, "offline", false,
+		"lint template references against local files instead of remote server state")
 	return command
 }
