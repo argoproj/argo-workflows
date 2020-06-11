@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/gogo/protobuf/jsonpb"
+	sensorv1 "github.com/alexec/argo-events/pkg/apis/sensor/v1alpha1"
 	"github.com/gogo/protobuf/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -51,8 +51,8 @@ func listOptions(req *sensor.ListSensorsRequest) metav1.ListOptions {
 	return listOptions
 }
 
-func unstructuredListToStructList(list *unstructured.UnstructuredList) ([]*types.Struct, error) {
-	var items = make([]*types.Struct, len(list.Items))
+func unstructuredListToStructList(list *unstructured.UnstructuredList) ([]*sensorv1.Sensor, error) {
+	var items = make([]sensorv1.Sensor, len(list.Items))
 	for i, item := range list.Items {
 		s, err := unstructuredToStruct(item)
 		if err != nil {
@@ -63,13 +63,13 @@ func unstructuredListToStructList(list *unstructured.UnstructuredList) ([]*types
 	return items, nil
 }
 
-func unstructuredToStruct(item unstructured.Unstructured) (*types.Struct, error) {
+func unstructuredToStruct(item unstructured.Unstructured) (*sensorv1.Sensor, error) {
 	b, err := json.Marshal(item.Object)
 	if err != nil {
 		return nil, err
 	}
-	s := &types.Struct{}
-	err = jsonpb.UnmarshalString(string(b), s)
+	s := &sensorv1.Sensor{}
+	err = json.Unmarshal(b, s)
 	if err != nil {
 		return nil, err
 	}

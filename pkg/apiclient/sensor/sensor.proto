@@ -3,7 +3,7 @@ option go_package = "github.com/argoproj/argo/pkg/apiclient/sensor";
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/api/annotations.proto";
-import "google/protobuf/struct.proto";
+import "github.com/argoproj/argo-events/pkg/apis/sensor/v1alpha1/generated.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 
 package sensor;
@@ -13,13 +13,8 @@ message ListSensorsRequest {
     k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
 }
 
-message ListSensorsResponse {
-    k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
-    repeated google.protobuf.Struct items = 2;
-}
-
 service SensorService {
-    rpc ListSensors (ListSensorsRequest) returns (ListSensorsResponse) {
+    rpc ListSensors (ListSensorsRequest) returns (github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.SensorList) {
         option (google.api.http).get = "/api/v1/sensors/{namespace}";
     }
 }
