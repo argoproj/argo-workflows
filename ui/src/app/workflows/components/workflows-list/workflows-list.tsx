@@ -22,7 +22,7 @@ import {PaginationPanel} from '../../../shared/components/pagination-panel';
 import {Pagination, parseLimit} from '../../../shared/pagination';
 import {WorkflowFilters} from '../workflow-filters/workflow-filters';
 import {WorkflowsRow} from '../workflows-row/workflows-row';
-import {WorkflowsToolbar} from "../workflows-toolbar/workflows-toolbar";
+import {WorkflowsToolbar} from '../workflows-toolbar/workflows-toolbar';
 
 require('./workflows-list.scss');
 
@@ -164,11 +164,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         workflowList
             .then(wfList => {
                 const selectedWorkflows: {[index: string]: boolean} = {};
-                if (wfList.items) {
-                    wfList.items.forEach((wf: models.Workflow) => {
-                        selectedWorkflows[wf.metadata.name] = false;
-                    });
-                }
                 this.setState({
                     workflows: wfList.items || [],
                     pagination: {offset: pagination.offset, limit: pagination.limit, nextOffset: wfList.metadata.continue},
@@ -292,10 +287,14 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     }
                                     this.changeFilters(this.state.namespace, this.state.selectedPhases, newTags, this.state.pagination);
                                 }}
-                                select={wfName => {
-                                    let currentlySelected = this.state.selectedWorkflows;
-                                    currentlySelected[wfName] = !this.state.selectedWorkflows[wfName];
-                                    this.setState({selectedWorkflows: currentlySelected});
+                                select={wfUID => {
+                                    const currentlySelected = this.state.selectedWorkflows;
+                                    if (!(wfUID in currentlySelected)) {
+                                        currentlySelected[wfUID] = true;
+                                    } else {
+                                        delete currentlySelected[wfUID]
+                                    }
+                                    this.setState({selectedWorkflows: {...currentlySelected}});
                                 }}
                             />
                         );

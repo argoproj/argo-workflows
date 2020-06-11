@@ -15,12 +15,6 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
     }
 
     private getNumberSelected(): number {
-        let count = 0;
-        for (const wf of Object.keys(this.props.selectedWorkflows)) {
-            if (this.props.selectedWorkflows[wf]) {
-                count++;
-            }
-        }
-        return count;
+        return Object.keys(this.props.selectedWorkflows).length;
     }
 }

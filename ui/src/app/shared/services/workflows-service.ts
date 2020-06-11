@@ -23,7 +23,7 @@ export class WorkflowsService {
         if (pagination.limit) {
             params.push(`listOptions.limit=${pagination.limit}`);
         }
-        params.push(`fields=metadata,items.metadata.name,items.metadata.namespace,items.status.phase,items.status.finishedAt,items.status.startedAt`);
+        params.push(`fields=metadata,items.metadata.name,items.metadata.namespace,items.status.phase,items.status.finishedAt,items.status.startedAt,items.metadata.uid`);
         return requests.get(`api/v1/workflows/${namespace}?${params.join('&')}`).then(res => res.body as WorkflowList);
     }
 
