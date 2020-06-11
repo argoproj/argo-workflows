@@ -16,7 +16,7 @@ export class WorkflowsService {
     }
 
     public list(namespace: string, phases: string[], labels: string[], pagination: Pagination) {
-        const params = this.queryParams({phases, labels, resourceVersion: '0'});
+        const params = this.queryParams({phases, labels});
         if (pagination.offset) {
             params.push(`listOptions.continue=${pagination.offset}`);
         }
@@ -38,8 +38,7 @@ export class WorkflowsService {
         labels?: Array<string>;
         resourceVersion?: string;
     }): Observable<models.kubernetes.WatchEvent<Workflow>> {
-        const params = this.queryParams(filter);
-        const url = `api/v1/workflow-events/${filter.namespace || ''}?${params.join('&')}`;
+        const url = `api/v1/workflow-events/${filter.namespace || ''}?${this.queryParams(filter).join('&')}`;
         return requests.loadEventSource(url, true).map(data => JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>);
     }
 
