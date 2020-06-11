@@ -1,16 +1,14 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-bases:
-  - ../base
-
-commonLabels:
-  "app.kubernetes.io/part-of": "argo"
-
 resources:
+  - ../base
   - argo-mysql-config-secret.yaml
   - mysql-deployment.yaml
   - mysql-service.yaml
+
+commonLabels:
+  "app.kubernetes.io/part-of": "argo"
 
 patchesStrategicMerge:
   - overlays/workflow-controller-configmap.yaml

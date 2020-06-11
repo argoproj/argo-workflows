@@ -70,7 +70,7 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.$(VERSION)
 # perform static compilation
 STATIC_BUILD          ?= true
 CI                    ?= false
-DB                    ?= minimal
+PROFILE               ?= minimal
 ifeq ($(CI),false)
 AUTH_MODE             := hybrid
 else
@@ -79,7 +79,7 @@ endif
 K3D                   := $(shell if [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 LOG_LEVEL             := debug
 
-ifeq ($(DB),minimal)
+ifeq ($(PROFILE),minimal)
 ALWAYS_OFFLOAD_NODE_STATUS := false
 else
 ALWAYS_OFFLOAD_NODE_STATUS := true
