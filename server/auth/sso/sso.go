@@ -2,7 +2,6 @@ package sso
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"strings"
@@ -40,11 +39,10 @@ type sso struct {
 }
 
 type Config struct {
-	Issuer         string                   `json:"issuer"`
-	ClientID       string                   `json:"clientId"`
-	ClientIDSecret *apiv1.SecretKeySelector `json:"clientIdSecret"`
-	ClientSecret   apiv1.SecretKeySelector  `json:"clientSecret"`
-	RedirectURL    string                   `json:"redirectUrl"`
+	Issuer       string                  `json:"issuer"`
+	ClientID     apiv1.SecretKeySelector `json:"clientID"`
+	ClientSecret apiv1.SecretKeySelector `json:"clientSecret"`
+	RedirectURL  string                  `json:"redirectUrl"`
 }
 
 // Abtsract methods of oidc.Provider that our code uses into an interface. That
@@ -76,14 +74,8 @@ func newSso(
 	if c.Issuer == "" {
 		return nil, fmt.Errorf("issuer empty")
 	}
-	if c.ClientID == "" && c.ClientIDSecret == nil {
-		return nil, fmt.Errorf("clientID or clientIDSecret must be specified")
-	}
-	if c.ClientID != "" && c.ClientIDSecret != nil {
-		return nil, fmt.Errorf("only one of clientID and clientIDSecret must be specified")
-	}
-	if c.ClientIDSecret != nil && (c.ClientSecret.Name == "" || c.ClientSecret.Key == "") {
-		return nil, fmt.Errorf("clientIDSecret empty")
+	if c.ClientID.Name == "" || c.ClientID.Key == "" {
+		return nil, fmt.Errorf("clientID empty")
 	}
 	if c.ClientSecret.Name == "" || c.ClientSecret.Key == "" {
 		return nil, fmt.Errorf("clientSecret empty")
@@ -91,7 +83,7 @@ func newSso(
 	if c.RedirectURL == "" {
 		return nil, fmt.Errorf("redirectUrl empty")
 	}
-	secrets, err := secretsIf.Get(c.ClientSecret.Name, metav1.GetOptions{})
+	clientSecretObj, err := secretsIf.Get(c.ClientSecret.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -100,25 +92,27 @@ func newSso(
 		return nil, err
 	}
 
-	var clientID string
-
-	if c.ClientIDSecret != nil {
-		clientIDSecret, err := secretsIf.Get(c.ClientIDSecret.Name, metav1.GetOptions{})
+	var clientIDObj *apiv1.Secret
+	if c.ClientID.Name == c.ClientSecret.Name {
+		clientIDObj = clientSecretObj
+	} else {
+		clientIDObj, err = secretsIf.Get(c.ClientID.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
-		clientIDEncoded := clientIDSecret.Data[c.ClientIDSecret.Key]
-		clientIDBytes, err := base64.StdEncoding.DecodeString(string(clientIDEncoded))
-		if err != nil {
-			return nil, fmt.Errorf("Unable to decode client id from secret: %w", err)
-		}
-		clientID = string(clientIDBytes)
-	} else {
-		clientID = c.ClientID
 	}
+	clientID := clientIDObj.Data[c.ClientID.Key]
+	if clientID == nil {
+		return nil, fmt.Errorf("Key %s missing in secret %s", c.ClientID.Key, c.ClientID.Name)
+	}
+	clientSecret := clientSecretObj.Data[c.ClientSecret.Key]
+	if clientSecret == nil {
+		return nil, fmt.Errorf("Key %s missing in secret %s", c.ClientSecret.Key, c.ClientSecret.Name)
+	}
+
 	config := &oauth2.Config{
-		ClientID:     clientID,
-		ClientSecret: string(secrets.Data[c.ClientSecret.Key]),
+		ClientID:     string(clientID),
+		ClientSecret: string(clientSecret),
 		RedirectURL:  c.RedirectURL,
 		Endpoint:     provider.Endpoint(),
 		Scopes:       []string{oidc.ScopeOpenID, "groups"},

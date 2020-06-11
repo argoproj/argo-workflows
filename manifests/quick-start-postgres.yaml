@@ -437,9 +437,9 @@ data:
         key: password
   sso: |
     issuer: http://dex:5556/dex
-    clientIdSecret:
+    clientID:
       name: argo-server-sso
-      key: clientId
+      key: clientID
     clientSecret:
       name: argo-server-sso
       key: clientSecret
@@ -469,7 +469,7 @@ metadata:
     app.kubernetes.io/part-of: argo
   name: argo-server-sso
 stringData:
-  clientId: argo-server
+  clientID: argo-server
   clientSecret: ZXhhbXBsZS1hcHAtc2VjcmV0
 ---
 apiVersion: v1
