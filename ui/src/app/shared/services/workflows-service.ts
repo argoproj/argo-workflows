@@ -58,7 +58,7 @@ export class WorkflowsService {
             'result.object.status.finishedAt',
             'result.object.status.phase',
             'result.object.status.startedAt',
-            'result.type',
+            'result.type'
         ];
         params.push(`fields=${fields.join(',')}`);
         const url = `api/v1/workflow-events/${filter.namespace || ''}?${params.join('&')}`;
