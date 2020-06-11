@@ -2,8 +2,6 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: clusterworkflowtemplates.argoproj.io
 spec:
   group: argoproj.io
@@ -19,8 +17,6 @@ spec:
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: cronworkflows.argoproj.io
 spec:
   group: argoproj.io
@@ -36,8 +32,6 @@ spec:
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: workflows.argoproj.io
 spec:
   additionalPrinterColumns:
@@ -62,8 +56,6 @@ spec:
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: workflowtemplates.argoproj.io
 spec:
   group: argoproj.io
@@ -78,22 +70,16 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: argo
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: argo-server
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: argo-role
 rules:
 - apiGroups:
@@ -189,8 +175,6 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: argo-server-role
 rules:
 - apiGroups:
@@ -242,8 +226,6 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: workflow-role
 rules:
 - apiGroups:
@@ -265,8 +247,6 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: argo-clusterworkflowtemplate-role
 rules:
 - apiGroups:
@@ -282,8 +262,6 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: argo-server-clusterworkflowtemplate-role
 rules:
 - apiGroups:
@@ -302,8 +280,6 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: argo-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -316,8 +292,6 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: argo-server-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -330,8 +304,6 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: workflow-default-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -344,8 +316,6 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: argo-clusterworkflowtemplate-role-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -359,8 +329,6 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: argo-server-clusterworkflowtemplate-role-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -386,8 +354,6 @@ data:
         key: secretkey
 kind: ConfigMap
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: artifact-repositories
 ---
 apiVersion: v1
@@ -416,26 +382,13 @@ data:
     enabled: true
     path: /metrics
     port: 9090
-  sso: |
-    issuer: http://dex:5556/dex
-    clientId:
-      name: argo-server-sso
-      key: clientID
-    clientSecret:
-      name: argo-server-sso
-      key: clientSecret
-    redirectUrl: https://localhost:2746/oauth2/callback
 kind: ConfigMap
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: workflow-controller-configmap
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: argo-server-sso
 stringData:
   clientID: argo-server
@@ -446,7 +399,6 @@ kind: Secret
 metadata:
   labels:
     app: minio
-    app.kubernetes.io/part-of: argo
   name: my-minio-cred
 stringData:
   accesskey: admin
@@ -456,8 +408,6 @@ type: Opaque
 apiVersion: v1
 kind: Service
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: argo-server
 spec:
   ports:
@@ -466,14 +416,12 @@ spec:
     targetPort: 2746
   selector:
     app: argo-server
-    app.kubernetes.io/part-of: argo
 ---
 apiVersion: v1
 kind: Service
 metadata:
   labels:
     app: minio
-    app.kubernetes.io/part-of: argo
   name: minio
 spec:
   ports:
@@ -482,13 +430,10 @@ spec:
     targetPort: 9000
   selector:
     app: minio
-    app.kubernetes.io/part-of: argo
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: workflow-controller-metrics
 spec:
   ports:
@@ -498,24 +443,19 @@ spec:
     targetPort: 9090
   selector:
     app: workflow-controller
-    app.kubernetes.io/part-of: argo
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: argo-server
 spec:
   selector:
     matchLabels:
       app: argo-server
-      app.kubernetes.io/part-of: argo
   template:
     metadata:
       labels:
         app: argo-server
-        app.kubernetes.io/part-of: argo
     spec:
       containers:
       - args:
@@ -544,19 +484,15 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels:
-    app.kubernetes.io/part-of: argo
   name: workflow-controller
 spec:
   selector:
     matchLabels:
       app: workflow-controller
-      app.kubernetes.io/part-of: argo
   template:
     metadata:
       labels:
         app: workflow-controller
-        app.kubernetes.io/part-of: argo
     spec:
       containers:
       - args:
@@ -578,7 +514,6 @@ kind: Pod
 metadata:
   labels:
     app: minio
-    app.kubernetes.io/part-of: argo
   name: minio
 spec:
   containers:
