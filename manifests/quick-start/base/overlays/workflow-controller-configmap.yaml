@@ -1,14 +1,5 @@
 apiVersion: v1
 data:
-  sso : |
-    issuer: http://dex:5556/dex
-    clientId:
-      name: argo-server-sso
-      key: clientID
-    clientSecret:
-      name: argo-server-sso
-      key: clientSecret
-    redirectUrl: https://localhost:2746/oauth2/callback
   artifactRepository: |
     archiveLogs: true
     s3:
