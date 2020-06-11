@@ -56,12 +56,12 @@ type providerInterface interface {
 
 type providerFactory func(ctx context.Context, issuer string) (providerInterface, error)
 
-func providerFactoryOidc(ctx context.Context, issuer string) (providerInterface, error) {
+func providerFactoryOIDC(ctx context.Context, issuer string) (providerInterface, error) {
 	return oidc.NewProvider(ctx, issuer)
 }
 
 func New(c Config, secretsIf corev1.SecretInterface, baseHRef string, secure bool) (Interface, error) {
-	return newSso(providerFactoryOidc, c, secretsIf, baseHRef, secure)
+	return newSso(providerFactoryOIDC, c, secretsIf, baseHRef, secure)
 }
 
 func newSso(
