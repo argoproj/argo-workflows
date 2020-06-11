@@ -12,7 +12,7 @@ import {WorkflowDrawer} from '../workflow-drawer/workflow-drawer';
 interface WorkflowsRowProps {
     workflow: models.Workflow;
     onChange: (key: string) => void;
-    select: (wfUID: string) => void;
+    select: (wf: models.Workflow) => void;
 }
 
 interface WorkflowRowState {
@@ -46,7 +46,7 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                             }}
                             onChange={e => {
                                 this.setState({selected: !this.state.selected});
-                                this.props.select(this.state.workflow.metadata.uid);
+                                this.props.select(this.state.workflow);
                             }}
                         />
                         <PhaseIcon value={wf.status.phase} />

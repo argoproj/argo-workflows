@@ -34,7 +34,7 @@ interface State {
     namespace: string;
     selectedPhases: string[];
     selectedLabels: string[];
-    selectedWorkflows: {[index: string]: boolean};
+    selectedWorkflows: {[index: string]: models.Workflow};
     workflows?: Workflow[];
     error?: Error;
 }
@@ -163,7 +163,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         }
         workflowList
             .then(wfList => {
-                const selectedWorkflows: {[index: string]: boolean} = {};
+                const selectedWorkflows: {[index: string]: models.Workflow} = {};
                 this.setState({
                     workflows: wfList.items || [],
                     pagination: {offset: pagination.offset, limit: pagination.limit, nextOffset: wfList.metadata.continue},
@@ -287,10 +287,11 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     }
                                     this.changeFilters(this.state.namespace, this.state.selectedPhases, newTags, this.state.pagination);
                                 }}
-                                select={wfUID => {
+                                select={wf => {
+                                    const wfUID = wf.metadata.uid;
                                     const currentlySelected = this.state.selectedWorkflows;
                                     if (!(wfUID in currentlySelected)) {
-                                        currentlySelected[wfUID] = true;
+                                        currentlySelected[wfUID] = wf;
                                     } else {
                                         delete currentlySelected[wfUID]
                                     }
