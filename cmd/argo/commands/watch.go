@@ -65,7 +65,6 @@ func watchWorkflow(wfName string, getArgs getFlags) {
 				log.Debug("Re-establishing workflow watch")
 				stream, err = serviceClient.WatchWorkflows(ctx, req)
 				errors.CheckError(err)
-				continue
 			}
 			errors.CheckError(err)
 			wfEventChan <- event
@@ -83,7 +82,7 @@ func watchWorkflow(wfName string, getArgs getFlags) {
 				break
 			}
 		case <-ticker.C:
-			// If we don't, print workflow again every second
+			// If we don't, refresh the workflow screen every second
 		}
 
 		printWorkflowStatus(wf, getArgs)
