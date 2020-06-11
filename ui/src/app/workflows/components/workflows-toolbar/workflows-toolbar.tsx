@@ -1,4 +1,5 @@
 import * as React from 'react';
+require('./workflows-toolbar.scss');
 
 interface WorkflowsToolbarProps {
     selectedWorkflows: {[index: string]: boolean};
@@ -10,7 +11,7 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
     }
 
     public render() {
-        return <div> {this.getNumberSelected()} selected</div>;
+        return <div className='workflows-toolbar'> {this.getNumberSelected()} workflows selected</div>;
     }
 
     private getNumberSelected(): number {
