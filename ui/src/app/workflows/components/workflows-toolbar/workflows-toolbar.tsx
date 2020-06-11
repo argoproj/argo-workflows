@@ -1,8 +1,7 @@
 import * as React from 'react';
-import * as models from '../../../../models';
 
 interface WorkflowsToolbarProps {
-    selectedWorkflows: models.Workflow[];
+    selectedWorkflows: {[index: string]: boolean};
 }
 
 export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}> {
@@ -11,7 +10,16 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
     }
 
     public render() {
-        const wfList = this.props.selectedWorkflows;
-        return <div> {wfList.length || 'No'} workflows selected</div>;
+        return <div> {this.getNumberSelected()} selected</div>;
+    }
+
+    private getNumberSelected(): number {
+        let count = 0;
+        for (const wf of Object.keys(this.props.selectedWorkflows)) {
+            if (this.props.selectedWorkflows[wf]) {
+                count++;
+            }
+        }
+        return count;
     }
 }

@@ -12,6 +12,7 @@ import {WorkflowDrawer} from '../workflow-drawer/workflow-drawer';
 interface WorkflowsRowProps {
     workflow: models.Workflow;
     onChange: (key: string) => void;
+    select: (wfName: string) => void;
 }
 
 interface WorkflowRowState {
@@ -41,8 +42,11 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                             className='workflows-list__status--checkbox'
                             checked={this.state.selected}
                             onClick={e => {
-                                e.preventDefault();
+                                e.stopPropagation();
+                            }}
+                            onChange={e => {
                                 this.setState({selected: !this.state.selected});
+                                this.props.select(this.state.workflow.metadata.name);
                             }}
                         />
                         <PhaseIcon value={wf.status.phase} />
