@@ -150,22 +150,6 @@ func getWorkflowPhaseGauges() map[wfv1.NodePhase]prometheus.Gauge {
 	}
 }
 
-func getErrorCounters() map[ErrorCause]prometheus.Counter {
-	getOptsByPahse := func(phase ErrorCause) prometheus.CounterOpts {
-		return prometheus.CounterOpts{
-			Namespace:   argoNamespace,
-			Subsystem:   workflowsSubsystem,
-			Name:        "error_count",
-			Help:        "Number of errors encountered by the controller by cause",
-			ConstLabels: map[string]string{"cause": string(phase)},
-		}
-	}
-	return map[ErrorCause]prometheus.Counter{
-		ErrorCauseOperationPanic:              prometheus.NewCounter(getOptsByPahse(ErrorCauseOperationPanic)),
-		ErrorCauseCronWorkflowSubmissionError: prometheus.NewCounter(getOptsByPahse(ErrorCauseCronWorkflowSubmissionError)),
-	}
-}
-
 func IsValidMetricName(name string) bool {
 	return model.IsValidMetricName(model.LabelValue(name))
 }

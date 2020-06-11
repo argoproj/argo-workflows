@@ -34,13 +34,13 @@ func TestGetTaskDependenciesFromDepends(t *testing.T) {
 	}
 	assert.Equal(t, "((task-1.Succeeded || task-1.Skipped || task-1.Daemoned) || task-2.Succeeded) && !task-3.Succeeded", logic)
 
-	task = &wfv1.DAGTask{Depends: "(task-1||(task-2.Succeeded || task-2.Failed))&&!task-3.Failed"}
+	task = &wfv1.DAGTask{Depends: "(task-1||task-2.Completed)&&!task-3.Failed"}
 	deps, logic = GetTaskDependencies(task, ctx)
 	assert.Len(t, deps, 3)
 	for _, dep := range []string{"task-1", "task-2", "task-3"} {
 		assert.Contains(t, deps, dep)
 	}
-	assert.Equal(t, "((task-1.Succeeded || task-1.Skipped || task-1.Daemoned)||(task-2.Succeeded || task-2.Failed))&&!task-3.Failed", logic)
+	assert.Equal(t, "((task-1.Succeeded || task-1.Skipped || task-1.Daemoned)||task-2.Completed)&&!task-3.Failed", logic)
 
 	task = &wfv1.DAGTask{Depends: "(task-1 || task-1.Succeeded) && !task-1.Failed"}
 	deps, logic = GetTaskDependencies(task, ctx)
@@ -71,7 +71,7 @@ func TestValidateTaskResults(t *testing.T) {
 	err := ValidateTaskResults(task)
 	assert.NoError(t, err)
 
-	task = &wfv1.DAGTask{Depends: "((task-1.Succeeded || task-1.Failed) || task-2.Succeeded) && !task-3.Skipped && task-2.Failed || task-6.Succeeded"}
+	task = &wfv1.DAGTask{Depends: "(task-1.Completed || task-2.Succeeded) && !task-3.Skipped && task-2.Failed || task-6.Succeeded"}
 	err = ValidateTaskResults(task)
 	assert.NoError(t, err)
 

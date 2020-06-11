@@ -16,7 +16,6 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	typed "github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -29,10 +28,9 @@ type cronWfOperationCtx struct {
 	wfLister    util.WorkflowLister
 	cronWfIf    typed.CronWorkflowInterface
 	log         *log.Entry
-	metrics     *metrics.Metrics
 }
 
-func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface, wfLister util.WorkflowLister, metrics *metrics.Metrics) (*cronWfOperationCtx, error) {
+func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface, wfLister util.WorkflowLister) (*cronWfOperationCtx, error) {
 	return &cronWfOperationCtx{
 		name:        cronWorkflow.ObjectMeta.Name,
 		cronWf:      cronWorkflow,
@@ -44,7 +42,6 @@ func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset vers
 			"workflow":  cronWorkflow.ObjectMeta.Name,
 			"namespace": cronWorkflow.ObjectMeta.Namespace,
 		}),
-		metrics: metrics,
 	}, nil
 }
 
@@ -313,6 +310,5 @@ func (woc *cronWfOperationCtx) reportCronWorkflowError(errString string) {
 		Message: errString,
 		Status:  v1.ConditionTrue,
 	})
-	woc.metrics.CronWorkflowSubmissionError()
 	woc.persistUpdate()
 }

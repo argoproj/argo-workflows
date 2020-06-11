@@ -240,18 +240,6 @@ func (s *FunctionalSuite) TestEventOnPVCFail() {
 		})
 }
 
-func (s *FunctionalSuite) TestArtifactRepositoryRef() {
-	s.Given().
-		Workflow("@testdata/artifact-repository-ref.yaml").
-		When().
-		SubmitWorkflow().
-		WaitForWorkflow(30 * time.Second).
-		Then().
-		ExpectWorkflow(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
-		})
-}
-
 func (s *FunctionalSuite) TestLoopEmptyParam() {
 	s.Given().
 		Workflow("@functional/loops-empty-param.yaml").
@@ -468,10 +456,10 @@ func (s *FunctionalSuite) TestDAGDepends() {
 		Workflow("@functional/dag-depends.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(45 * time.Second).
+		WaitForWorkflow(30 * time.Second).
 		Then().
 		ExpectWorkflow(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
+			assert.Equal(t, wfv1.NodeFailed, status.Phase)
 			nodeStatus := status.Nodes.FindByDisplayName("A")
 			assert.NotNil(t, nodeStatus)
 			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
@@ -489,7 +477,7 @@ func (s *FunctionalSuite) TestDAGDepends() {
 			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)
 			nodeStatus = status.Nodes.FindByDisplayName("should-not-execute")
 			assert.NotNil(t, nodeStatus)
-			assert.Equal(t, wfv1.NodeOmitted, nodeStatus.Phase)
+			assert.Equal(t, wfv1.NodeSkipped, nodeStatus.Phase)
 			nodeStatus = status.Nodes.FindByDisplayName("should-execute-3")
 			assert.NotNil(t, nodeStatus)
 			assert.Equal(t, wfv1.NodeSucceeded, nodeStatus.Phase)

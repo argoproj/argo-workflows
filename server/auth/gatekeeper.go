@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -14,7 +13,6 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/server/auth/sso"
 	"github.com/argoproj/argo/util/kubeconfig"
 )
 
@@ -25,29 +23,25 @@ const (
 	KubeKey ContextKey = "kubernetes.Interface"
 )
 
-type Gatekeeper interface {
-	Context(ctx context.Context) (context.Context, error)
-	UnaryServerInterceptor() grpc.UnaryServerInterceptor
-	StreamServerInterceptor() grpc.StreamServerInterceptor
-}
+const (
+	Client = "client"
+	Server = "server"
+	Hybrid = "hybrid"
+)
 
-type gatekeeper struct {
-	Modes Modes
+type Gatekeeper struct {
+	authType string
 	// global clients, not to be used if there are better ones
 	wfClient   versioned.Interface
 	kubeClient kubernetes.Interface
 	restConfig *rest.Config
-	ssoIf      sso.Interface
 }
 
-func NewGatekeeper(modes Modes, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config, ssoIf sso.Interface) (Gatekeeper, error) {
-	if len(modes) == 0 {
-		return nil, fmt.Errorf("must specify at least one auth mode")
-	}
-	return &gatekeeper{modes, wfClient, kubeClient, restConfig, ssoIf}, nil
+func NewGatekeeper(authType string, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config) Gatekeeper {
+	return Gatekeeper{authType, wfClient, kubeClient, restConfig}
 }
 
-func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
+func (s *Gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		ctx, err = s.Context(ctx)
 		if err != nil {
@@ -57,7 +51,7 @@ func (s *gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	}
 }
 
-func (s *gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
+func (s *Gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		ctx, err := s.Context(ss.Context())
 		if err != nil {
@@ -69,7 +63,7 @@ func (s *gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	}
 }
 
-func (s *gatekeeper) Context(ctx context.Context) (context.Context, error) {
+func (s *Gatekeeper) Context(ctx context.Context) (context.Context, error) {
 	wfClient, kubeClient, err := s.getClients(ctx)
 	if err != nil {
 		return nil, err
@@ -83,6 +77,22 @@ func GetWfClient(ctx context.Context) versioned.Interface {
 
 func GetKubeClient(ctx context.Context) kubernetes.Interface {
 	return ctx.Value(KubeKey).(kubernetes.Interface)
+}
+func (s Gatekeeper) useServerAuth() bool {
+	return s.authType == Server
+}
+func (s Gatekeeper) useHybridAuth() bool {
+	return s.authType == Hybrid
+}
+
+func (s Gatekeeper) useClientAuth(token string) bool {
+	if s.authType == Client {
+		return true
+	}
+	if s.useHybridAuth() && token != "" {
+		return true
+	}
+	return false
 }
 
 func getAuthHeader(md metadata.MD) string {
@@ -103,40 +113,38 @@ func getAuthHeader(md metadata.MD) string {
 	return ""
 }
 
-func (s gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, error) {
-	md, _ := metadata.FromIncomingContext(ctx)
-	authorization := getAuthHeader(md)
-	mode, err := GetMode(authorization)
+func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, error) {
+
+	if s.useServerAuth() {
+		return s.wfClient, s.kubeClient, nil
+	}
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		if s.useHybridAuth() {
+			return s.wfClient, s.kubeClient, nil
+		}
+		return nil, nil, status.Error(codes.Unauthenticated, "unable to get metadata from incoming context")
+	}
+
+	authString := getAuthHeader(md)
+
+	if !s.useClientAuth(authString) {
+		return s.wfClient, s.kubeClient, nil
+	}
+
+	restConfig, err := kubeconfig.GetRestConfig(authString)
+
 	if err != nil {
-		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, nil, status.Errorf(codes.Unauthenticated, "failed to create REST config: %v", err)
 	}
-	if !s.Modes[mode] {
-		return nil, nil, status.Errorf(codes.Unauthenticated, "no valid authentication methods found for mode %v", mode)
+
+	wfClient, err := versioned.NewForConfig(restConfig)
+	if err != nil {
+		return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create wfClientset with ClientConfig: %v", err)
 	}
-	switch mode {
-	case Client:
-		restConfig, err := kubeconfig.GetRestConfig(authorization)
-		if err != nil {
-			return nil, nil, status.Errorf(codes.Unauthenticated, "failed to create REST config: %v", err)
-		}
-		wfClient, err := versioned.NewForConfig(restConfig)
-		if err != nil {
-			return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create wfClientset with ClientConfig: %v", err)
-		}
-		kubeClient, err := kubernetes.NewForConfig(restConfig)
-		if err != nil {
-			return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig: %v", err)
-		}
-		return wfClient, kubeClient, nil
-	case Server:
-		return s.wfClient, s.kubeClient, nil
-	case SSO:
-		err := s.ssoIf.Authorize(ctx, authorization)
-		if err != nil {
-			return nil, nil, status.Error(codes.Unauthenticated, err.Error())
-		}
-		return s.wfClient, s.kubeClient, nil
-	default:
-		panic("this should never happen")
+	kubeClient, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig: %v", err)
 	}
+	return wfClient, kubeClient, nil
 }

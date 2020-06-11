@@ -141,19 +141,18 @@ export const WorkflowNodeContainer = (props: {
     onShowContainerLogs: (nodeId: string, container: string) => any;
 }) => {
     const container = {name: 'main', args: Array<string>(), source: '', ...props.container};
-    const maybeQuote = (v: string) => (v.includes(' ') ? `'${v}'` : v);
     const attributes = [
         {title: 'NAME', value: container.name || 'main'},
         {title: 'IMAGE', value: container.image},
         {
             title: 'COMMAND',
-            value: <pre className='workflow-node-info__multi-line'>{(container.command || []).map(maybeQuote).join(' ')}</pre>
+            value: <pre className='workflow-node-info__multi-line'>{(container.command || []).join(' ')}</pre>
         },
         container.source
             ? {title: 'SOURCE', value: <pre className='workflow-node-info__multi-line'>{container.source}</pre>}
             : {
                   title: 'ARGS',
-                  value: <pre className='workflow-node-info__multi-line'>{(container.args || []).map(maybeQuote).join(' ')}</pre>
+                  value: <pre className='workflow-node-info__multi-line'>{(container.args || []).join(' ')}</pre>
               },
         hasEnv(container)
             ? {

@@ -12,7 +12,6 @@ You can scale the controller vertically:
 
 - If you have workflows with many steps, increase `--pod-workers`.
 - If you have many workflows, increase `--workflow-workers`. 
-- Increase both `--qps` and `--burst`.
 
 You will need to increase the controller's memory and CPU.
 

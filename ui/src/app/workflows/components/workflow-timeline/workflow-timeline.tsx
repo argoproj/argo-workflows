@@ -128,7 +128,7 @@ export class WorkflowTimeline extends React.Component<WorkflowTimelineProps, Wor
     }
 
     private ensureRunningWorkflowRefreshing(workflow: models.Workflow) {
-        const completedPhases = [models.NODE_PHASE.ERROR, models.NODE_PHASE.SUCCEEDED, models.NODE_PHASE.SKIPPED, models.NODE_PHASE.OMITTED, models.NODE_PHASE.FAILED];
+        const completedPhases = [models.NODE_PHASE.ERROR, models.NODE_PHASE.SUCCEEDED, models.NODE_PHASE.SKIPPED, models.NODE_PHASE.FAILED];
         const isCompleted = workflow && workflow.status && completedPhases.indexOf(workflow.status.phase) > -1;
         if (!this.refreshSubscription && !isCompleted) {
             this.refreshSubscription = Observable.interval(1000).subscribe(() => {

@@ -67,9 +67,6 @@ kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/
 * Automatically calculated resource usage per step
 * Pod Disruption Budget support
 
-## Community Meetings
-We host monthly community meetings where we and the community showcase demos and discuss the current and future state of the project. Feel free to join us! For Community Meeting information, minutes and recordings please [see here](https://bit.ly/argo-wf-cmty-mtng).
-
 ## Community Blogs and Presentations
 * [Argo Ansible role: Provisioning Argo Workflows on OpenShift](https://medium.com/@marekermk/provisioning-argo-on-openshift-with-ansible-and-kustomize-340a1fda8b50)
 * [Argo Workflows vs Apache Airflow](http://bit.ly/30YNIvT)
@@ -79,6 +76,7 @@ We host monthly community meetings where we and the community showcase demos and
 * [Producing 200 OpenStreetMap extracts in 35 minutes using a scalable data workflow](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
 * [Argo integration review](http://dev.matt.hillsdon.net/2018/03/24/argo-integration-review.html)
 * TGI Kubernetes with Joe Beda: [Argo workflow system](https://www.youtube.com/watch?v=M_rxPPLG8pU&start=859)
+* [Community meeting minutes and recordings](https://docs.google.com/document/d/16aWGQ1Te5IRptFuAIFtg3rONRQqHC1Z3X9rdDHYhYfE)
 
 ## Project Resources
 * Argo GitHub:  https://github.com/argoproj

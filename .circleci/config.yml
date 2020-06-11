@@ -11,9 +11,7 @@ commands:
     steps:
       - run:
           name: Install Kustomize
-          command: |
-            cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
-            kustomize version
+          command: cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
   restore_go_mod:
     steps:
       - restore_cache:
@@ -83,7 +81,6 @@ commands:
       - run:
           name: Start Argo
           command: |
-            echo '127.0.0.1 dex'      | sudo tee -a /etc/hosts
             echo '127.0.0.1 minio'    | sudo tee -a /etc/hosts
             echo '127.0.0.1 postgres' | sudo tee -a /etc/hosts
             echo '127.0.0.1 mysql'    | sudo tee -a /etc/hosts

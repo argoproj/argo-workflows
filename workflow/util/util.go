@@ -532,7 +532,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 		if node.BoundaryID != "" {
 			newNode.BoundaryID = convertNodeID(&newWF, replaceRegexp, node.BoundaryID, wf.Status.Nodes)
 		}
-		if newNode.FailedOrError() && newNode.Type == wfv1.NodeTypePod {
+		if !newNode.Successful() && newNode.Type == wfv1.NodeTypePod {
 			newNode.StartedAt = metav1.Time{}
 			newNode.FinishedAt = metav1.Time{}
 		} else {
@@ -549,7 +549,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 			newOutboundNodes[i] = convertNodeID(&newWF, replaceRegexp, outboundID, wf.Status.Nodes)
 		}
 		newNode.OutboundNodes = newOutboundNodes
-		if !newNode.FailedOrError() && newNode.Type == wfv1.NodeTypePod {
+		if newNode.Successful() && newNode.Type == wfv1.NodeTypePod {
 			newNode.Phase = wfv1.NodeSkipped
 			newNode.Type = wfv1.NodeTypeSkipped
 			newNode.Message = fmt.Sprintf("original pod: %s", originalID)

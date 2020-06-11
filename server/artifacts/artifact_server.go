@@ -23,7 +23,7 @@ import (
 )
 
 type ArtifactServer struct {
-	gatekeeper        auth.Gatekeeper
+	authN             auth.Gatekeeper
 	hydrator          hydrator.Interface
 	wfArchive         sqldb.WorkflowArchive
 	instanceIDService instanceid.Service
@@ -55,6 +55,7 @@ func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
 		a.serverInternalError(err, w)
 		return
 	}
+
 	data, err := a.getArtifact(ctx, wf, nodeId, artifactName)
 	if err != nil {
 		a.serverInternalError(err, w)
@@ -63,7 +64,6 @@ func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
 	a.ok(w, data)
 }
-
 func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request) {
 
 	ctx, err := a.gateKeeping(r)
@@ -95,7 +95,6 @@ func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request
 	w.Header().Add("Content-Disposition", fmt.Sprintf(`filename="%s.tgz"`, artifactName))
 	a.ok(w, data)
 }
-
 func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
 	token := r.Header.Get("Authorization")
 	if token == "" {
@@ -109,14 +108,16 @@ func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
 		}
 	}
 	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"authorization": []string{token}})
-	return a.gatekeeper.Context(ctx)
+	return a.authN.Context(ctx)
 }
 
 func (a *ArtifactServer) ok(w http.ResponseWriter, data []byte) {
 	w.WriteHeader(200)
 	_, err := w.Write(data)
 	if err != nil {
-		a.serverInternalError(err, w)
+		w.WriteHeader(500)
+		_, _ = w.Write([]byte(err.Error()))
+		return
 	}
 }
 

@@ -6,30 +6,20 @@ import {uiUrl} from '../../../shared/base';
 import {PhaseIcon} from '../../../shared/components/phase-icon';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {formatDuration, wfDuration} from '../../../shared/duration';
-import {services} from '../../../shared/services';
-import {WorkflowDrawer} from '../workflow-drawer/workflow-drawer';
+import {WorkflowLabels} from '../workflow-labels/workflow-labels';
 
 interface WorkflowsRowProps {
     workflow: models.Workflow;
     onChange: (key: string) => void;
 }
-
-interface WorkflowRowState {
-    hideDrawer: boolean;
-    workflow: models.Workflow;
-}
-
-export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRowState> {
+export class WorkflowsRow extends React.Component<WorkflowsRowProps, {hideLabels: boolean}> {
     constructor(props: WorkflowsRowProps) {
         super(props);
-        this.state = {
-            workflow: this.props.workflow,
-            hideDrawer: true
-        };
+        this.state = {hideLabels: true};
     }
 
     public render() {
-        const wf = this.state.workflow;
+        const wf = this.props.workflow;
         return (
             <div className='workflows-list__row-container'>
                 <Link className='row argo-table-list__row' to={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)}>
@@ -52,11 +42,10 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                             <div
                                 onClick={e => {
                                     e.preventDefault();
-                                    this.fetchFullWorkflow();
-                                    this.setState({hideDrawer: !this.state.hideDrawer});
+                                    this.setState({hideLabels: !this.state.hideLabels});
                                 }}
-                                className={`workflows-row__action workflows-row__action--${this.state.hideDrawer ? 'show' : 'hide'}`}>
-                                {this.state.hideDrawer ? (
+                                className={`workflows-row__action workflows-row__action--${this.state.hideLabels ? 'show' : 'hide'}`}>
+                                {this.state.hideLabels ? (
                                     <span>
                                         SHOW <i className='fas fa-caret-down' />{' '}
                                     </span>
@@ -69,23 +58,19 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
                         </div>
                     </div>
                 </Link>
-                {this.state.hideDrawer ? (
+                {this.state.hideLabels ? (
                     <span />
                 ) : (
-                    <WorkflowDrawer
-                        workflow={wf}
-                        onChange={key => {
-                            this.props.onChange(key);
-                        }}
-                    />
+                    <div>
+                        <WorkflowLabels
+                            workflow={wf}
+                            onChange={key => {
+                                this.props.onChange(key);
+                            }}
+                        />
+                    </div>
                 )}
             </div>
         );
-    }
-
-    private fetchFullWorkflow(): void {
-        services.workflows.get(this.props.workflow.metadata.namespace, this.props.workflow.metadata.name).then(wf => {
-            this.setState({workflow: wf});
-        });
     }
 }

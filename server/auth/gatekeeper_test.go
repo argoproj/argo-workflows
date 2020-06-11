@@ -2,62 +2,74 @@ package auth
 
 import (
 	"context"
+	"encoding/base64"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc/metadata"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/rest"
 
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/server/auth/sso/mocks"
 )
 
 func TestServer_GetWFClient(t *testing.T) {
 	wfClient := &fakewfclientset.Clientset{}
 	kubeClient := &fake.Clientset{}
-	t.Run("None", func(t *testing.T) {
-		_, err := NewGatekeeper(Modes{}, wfClient, kubeClient, nil, nil)
-		assert.Error(t, err)
-	})
-	t.Run("Invalid", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{Client: true}, wfClient, kubeClient, nil, nil)
+	restConfig := &rest.Config{}
+
+	t.Run("ServerAuth", func(t *testing.T) {
+		s := NewGatekeeper("server", wfClient, kubeClient, nil)
+		ctx, err := authAndHandle(s, context.TODO())
 		if assert.NoError(t, err) {
-			_, err := g.Context(x("invalid"))
-			assert.Error(t, err)
+			assert.Equal(t, wfClient, GetWfClient(*ctx))
+			assert.Equal(t, kubeClient, GetKubeClient(*ctx))
 		}
 	})
-	t.Run("NotAllowed", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, nil)
-		if assert.NoError(t, err) {
-			_, err := g.Context(x("Bearer "))
-			assert.Error(t, err)
-		}
-	})
-	// not possible to unit test client auth today
-	t.Run("Server", func(t *testing.T) {
-		g, err := NewGatekeeper(Modes{Server: true}, wfClient, kubeClient, nil, nil)
-		assert.NoError(t, err)
-		ctx, err := g.Context(x(""))
-		if assert.NoError(t, err) {
-			assert.Equal(t, wfClient, GetWfClient(ctx))
-			assert.Equal(t, kubeClient, GetKubeClient(ctx))
-		}
-	})
-	t.Run("SSO", func(t *testing.T) {
-		ssoIf := &mocks.Interface{}
-		ssoIf.On("Authorize", mock.Anything, mock.Anything).Return(nil)
-		g, err := NewGatekeeper(Modes{SSO: true}, wfClient, kubeClient, nil, ssoIf)
-		if assert.NoError(t, err) {
-			ctx, err := g.Context(x("Bearer id_token:whatever"))
+	t.Run("ClientAuth", func(t *testing.T) {
+		t.SkipNow() // TODO
+		s := NewGatekeeper("client", wfClient, kubeClient, restConfig)
+		t.Run("AuthorizationHeader", func(t *testing.T) {
+			ctx, err := authAndHandle(s, metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", base64.StdEncoding.EncodeToString([]byte("anything")))))
 			if assert.NoError(t, err) {
-				assert.Equal(t, wfClient, GetWfClient(ctx))
-				assert.Equal(t, kubeClient, GetKubeClient(ctx))
+				assert.NotEqual(t, wfClient, GetWfClient(*ctx))
+				assert.NotEqual(t, kubeClient, GetKubeClient(*ctx))
 			}
-		}
+		})
+		t.Run("Cookie", func(t *testing.T) {
+			ctx, err := authAndHandle(s, metadata.NewIncomingContext(context.Background(), metadata.Pairs("grpcgateway-cookie", "authorization="+base64.StdEncoding.EncodeToString([]byte("anything")))))
+			if assert.NoError(t, err) {
+				assert.NotEqual(t, wfClient, GetWfClient(*ctx))
+				assert.NotEqual(t, kubeClient, GetKubeClient(*ctx))
+			}
+		})
+	})
+	t.Run("HybridAuth", func(t *testing.T) {
+		t.SkipNow() // TODO
+		s := NewGatekeeper("hybrid", wfClient, kubeClient, restConfig)
+		t.Run("clientAuth", func(t *testing.T) {
+			ctx, err := authAndHandle(s, metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", base64.StdEncoding.EncodeToString([]byte("{anything}")))))
+			if assert.NoError(t, err) {
+				assert.NotEqual(t, wfClient, GetWfClient(*ctx))
+				assert.NotEqual(t, kubeClient, GetKubeClient(*ctx))
+			}
+		})
+		t.Run("ServerAuth", func(t *testing.T) {
+			ctx, err := authAndHandle(s, context.TODO())
+			if assert.NoError(t, err) {
+				assert.Equal(t, wfClient, GetWfClient(*ctx))
+				assert.Equal(t, kubeClient, GetKubeClient(*ctx))
+			}
+		})
+
 	})
 }
 
-func x(authorization string) context.Context {
-	return metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": authorization}))
+func authAndHandle(s Gatekeeper, ctx context.Context) (*context.Context, error) {
+	var usedCtx *context.Context
+	_, err := s.UnaryServerInterceptor()(ctx, nil, nil, func(ctx context.Context, req interface{}) (i interface{}, err error) {
+		usedCtx = &ctx
+		return nil, nil
+	})
+	return usedCtx, err
 }

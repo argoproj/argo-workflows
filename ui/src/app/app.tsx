@@ -70,7 +70,7 @@ const navItems = [
     {
         title: 'Login',
         path: loginUrl,
-        iconClassName: 'fa fa-shield-alt'
+        iconClassName: 'fa fa-user-circle'
     },
     {
         title: 'Help',

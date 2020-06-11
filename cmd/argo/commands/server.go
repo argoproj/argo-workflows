@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"os"
-	"reflect"
 	"time"
 
 	"github.com/argoproj/pkg/errors"
@@ -19,13 +18,12 @@ import (
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/server/apiserver"
-	"github.com/argoproj/argo/server/auth"
 	"github.com/argoproj/argo/util/help"
 )
 
 func NewServerCommand() *cobra.Command {
 	var (
-		authModes         []string
+		authMode          string
 		configMap         string
 		port              int
 		baseHRef          string
@@ -41,12 +39,14 @@ func NewServerCommand() *cobra.Command {
 		Short: "Start the Argo Server",
 		Example: fmt.Sprintf(`
 See %s`, help.ArgoSever),
-		Run: func(c *cobra.Command, args []string) {
+		RunE: func(c *cobra.Command, args []string) error {
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
 
 			config, err := client.GetConfig().ClientConfig()
-			errors.CheckError(err)
+			if err != nil {
+				return err
+			}
 			config.Burst = 30
 			config.QPS = 20.0
 
@@ -67,7 +67,7 @@ See %s`, help.ArgoSever),
 			}
 
 			log.WithFields(log.Fields{
-				"authModes":        authModes,
+				"authMode":         authMode,
 				"namespace":        namespace,
 				"managedNamespace": managedNamespace,
 				"baseHRef":         baseHRef,
@@ -84,15 +84,6 @@ See %s`, help.ArgoSever),
 				log.Warn("You are running in insecure mode. Learn how to enable transport layer security: https://github.com/argoproj/argo/blob/master/docs/tls.md")
 			}
 
-			modes := auth.Modes{}
-			for _, mode := range authModes {
-				err := modes.Add(mode)
-				errors.CheckError(err)
-			}
-			if reflect.DeepEqual(modes, auth.Modes{auth.Server: true}) {
-				log.Warn("You are running without client authentication. Learn how to enable client authentication: https://github.com/argoproj/argo/blob/master/docs/argo-server-auth-mode.md")
-			}
-
 			opts := apiserver.ArgoServerOpts{
 				BaseHRef:         baseHRef,
 				TLSConfig:        tlsConfig,
@@ -101,9 +92,13 @@ See %s`, help.ArgoSever),
 				WfClientSet:      wflientset,
 				KubeClientset:    kubeConfig,
 				RestConfig:       config,
-				AuthModes:        modes,
+				AuthMode:         authMode,
 				ManagedNamespace: managedNamespace,
 				ConfigName:       configMap,
+			}
+			err = opts.ValidateOpts()
+			if err != nil {
+				return err
 			}
 			browserOpenFunc := func(url string) {}
 			if enableOpenBrowser {
@@ -115,9 +110,8 @@ See %s`, help.ArgoSever),
 					}
 				}
 			}
-			server, err := apiserver.NewArgoServer(opts)
-			errors.CheckError(err)
-			server.Run(ctx, port, browserOpenFunc)
+			apiserver.NewArgoServer(opts).Run(ctx, port, browserOpenFunc)
+			return nil
 		},
 	}
 
@@ -130,7 +124,7 @@ See %s`, help.ArgoSever),
 	// "-e" for encrypt, like zip
 	command.Flags().BoolVarP(&secure, "secure", "e", false, "Whether or not we should listen on TLS.")
 	command.Flags().BoolVar(&htst, "hsts", true, "Whether or not we should add a HTTP Secure Transport Security header. This only has effect if secure is enabled.")
-	command.Flags().StringArrayVar(&authModes, "auth-mode", []string{"server"}, "API server authentication mode. One of: client|server|sso")
+	command.Flags().StringVar(&authMode, "auth-mode", "server", "API server authentication mode. One of: client|server|hybrid")
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().BoolVar(&namespaced, "namespaced", false, "run as namespaced mode")
 	command.Flags().StringVar(&managedNamespace, "managed-namespace", "", "namespace that watches, default to the installation namespace")
