@@ -13,7 +13,7 @@ func TestGenerateFieldSelectorFromWorkflowName(t *testing.T) {
 		args args
 		want string
 	}{
-		{"TestGenerateFieldSelectorFromWorkflowName", args{ "whalesay" }, "metadata.name=whalesay" },
+		{"TestGenerateFieldSelectorFromWorkflowName", args{"whalesay"}, "metadata.name=whalesay"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -33,7 +33,7 @@ func TestRecoverWorkflowNameFromSelectorString(t *testing.T) {
 		args args
 		want string
 	}{
-		{"TestRecoverWorkflowNameFromSelectorString", args{ "metadata.name=whalesay" }, "whalesay"},
+		{"TestRecoverWorkflowNameFromSelectorString", args{"metadata.name=whalesay"}, "whalesay"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
