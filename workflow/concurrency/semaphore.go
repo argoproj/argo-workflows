@@ -85,7 +85,6 @@ func (s *Semaphore) release(key string) LockStatus {
 			delete(s.lockHolder, key)
 			return Released
 		}
-		log.Println(key)
 		s.semaphore.Release(1)
 		delete(s.lockHolder, key)
 
