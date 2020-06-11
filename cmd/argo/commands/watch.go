@@ -79,7 +79,7 @@ func watchWorkflow(wfName string, getArgs getFlags) {
 			// If we get a new event, update our workflow
 			wf = event.Object
 			if wf == nil {
-				break
+				return
 			}
 		case <-ticker.C:
 			// If we don't, refresh the workflow screen every second
