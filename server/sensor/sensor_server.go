@@ -4,8 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	sensorv1 "github.com/alexec/argo-events/pkg/apis/sensor/v1alpha1"
-	"github.com/gogo/protobuf/types"
+	sensorv1 "github.com/argoproj/argo-events/pkg/apis/sensor/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
