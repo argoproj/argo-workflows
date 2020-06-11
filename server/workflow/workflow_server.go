@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"sort"
 
+	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,7 +17,7 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/server/auth"
-	globalUtil "github.com/argoproj/argo/util"
+	argoutil "github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/util/instanceid"
 	"github.com/argoproj/argo/util/logs"
 	"github.com/argoproj/argo/workflow/common"
@@ -30,6 +32,8 @@ type workflowServer struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 }
+
+const latestAlias = "@latest"
 
 // NewWorkflowServer returns a new workflowServer
 func NewWorkflowServer(instanceIDService instanceid.Service, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) workflowpkg.WorkflowServiceServer {
@@ -81,7 +85,8 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *workflowpkg.Workf
 	if req.GetOptions != nil {
 		wfGetOption = *req.GetOptions
 	}
-	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, wfGetOption)
+	wfClient := auth.GetWfClient(ctx)
+	wf, err := s.getWorkflow(wfClient, req.Namespace, req.Name, wfGetOption)
 	if err != nil {
 		return nil, err
 	}
@@ -136,12 +141,12 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 	opts := &metav1.ListOptions{}
 	if req.ListOptions != nil {
 		opts = req.ListOptions
-		wfName := globalUtil.RecoverWorkflowNameFromSelectorString(opts.FieldSelector)
-		wf, err := s.getWorkflow(ctx, req.Namespace, wfName, metav1.GetOptions{})
+		wfName := argoutil.RecoverWorkflowNameFromSelectorString(opts.FieldSelector)
+		wf, err := s.getWorkflow(wfClient, req.Namespace, wfName, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
-		opts.FieldSelector = globalUtil.GenerateFieldSelectorFromWorkflowName(wf.Name)
+		opts.FieldSelector = argoutil.GenerateFieldSelectorFromWorkflowName(wf.Name)
 	}
 	s.instanceIDService.With(opts)
 	wfIf := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace)
@@ -187,7 +192,8 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 }
 
 func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *workflowpkg.WorkflowDeleteRequest) (*workflowpkg.WorkflowDeleteResponse, error) {
-	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	wfClient := auth.GetWfClient(ctx)
+	wf, err := s.getWorkflow(wfClient, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +212,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 	wfClient := auth.GetWfClient(ctx)
 	kubeClient := auth.GetKubeClient(ctx)
 
-	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflow(wfClient, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +231,7 @@ func (s *workflowServer) RetryWorkflow(ctx context.Context, req *workflowpkg.Wor
 
 func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.WorkflowResubmitRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflow(wfClient, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +255,7 @@ func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *workflowpkg.
 
 func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.WorkflowResumeRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflow(wfClient, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +282,7 @@ func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *workflowpkg.Wo
 func (s *workflowServer) SuspendWorkflow(ctx context.Context, req *workflowpkg.WorkflowSuspendRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflow(wfClient, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -302,7 +308,7 @@ func (s *workflowServer) SuspendWorkflow(ctx context.Context, req *workflowpkg.W
 func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *workflowpkg.WorkflowTerminateRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflow(wfClient, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -326,7 +332,7 @@ func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *workflowpkg
 
 func (s *workflowServer) StopWorkflow(ctx context.Context, req *workflowpkg.WorkflowStopRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflow(wfClient, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -365,7 +371,7 @@ func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflo
 	ctx := ws.Context()
 	wfClient := auth.GetWfClient(ctx)
 	kubeClient := auth.GetKubeClient(ctx)
-	wf, err := s.getWorkflow(ctx, req.Namespace, req.Name, metav1.GetOptions{})
+	wf, err := s.getWorkflow(wfClient, req.Namespace, req.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -377,34 +383,27 @@ func (s *workflowServer) PodLogs(req *workflowpkg.WorkflowLogRequest, ws workflo
 	return logs.WorkflowLogs(ctx, wfClient, kubeClient, req, ws)
 }
 
-func (s *workflowServer) getWorkflow(ctx context.Context, namespace string, name string, options metav1.GetOptions) (*v1alpha1.Workflow, error) {
-	const LATEST_ALIAS = "@latest"
-	if name == LATEST_ALIAS {
-		latest, err := getLatestWorkflow(ctx, namespace)
+func (s *workflowServer) getWorkflow(wfClient versioned.Interface, namespace string, name string, options metav1.GetOptions) (*v1alpha1.Workflow, error) {
+	if name == latestAlias {
+		latest, err := getLatestWorkflow(wfClient, namespace)
 		if err != nil {
 			return nil, err
-		} else {
-			fmt.Printf("Resolved alias %s to workflow %s.\n", LATEST_ALIAS, latest.Name)
 		}
+		log.Infof("Resolved alias %s to workflow %s.\n", latestAlias, latest.Name)
 		return latest, nil
-	} else {
-		wfClient := auth.GetWfClient(ctx)
-		wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(name, options)
-		if err != nil {
-			return nil, err
-		}
-		return wf, nil
 	}
-
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(name, options)
+	if err != nil {
+		return nil, err
+	}
+	return wf, nil
 }
 
 func (s *workflowServer) validateWorkflow(wf *v1alpha1.Workflow) error {
-	err := s.instanceIDService.Validate(wf)
-	return err
+	return s.instanceIDService.Validate(wf)
 }
 
-func getLatestWorkflow(ctx context.Context, namespace string) (*v1alpha1.Workflow, error) {
-	wfClient := auth.GetWfClient(ctx)
+func getLatestWorkflow(wfClient versioned.Interface, namespace string) (*v1alpha1.Workflow, error) {
 	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err

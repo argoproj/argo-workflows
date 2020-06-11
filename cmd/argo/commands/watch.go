@@ -6,8 +6,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/argoproj/argo/util"
-
 	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -17,6 +15,7 @@ import (
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/workflow/packer"
 )
 

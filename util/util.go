@@ -96,9 +96,8 @@ func RecoverIndexFromNodeName(name string) int {
 
 func GenerateFieldSelectorFromWorkflowName(wfName string) string {
 	result := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", wfName)).String()
-	compare := RecoverWorkflowNameFromSelectorString(result)
-	if wfName != compare {
-		panic(fmt.Errorf("Could not generate field selector from workflow name.\n"))
+	if compare := RecoverWorkflowNameFromSelectorString(result); wfName != compare {
+		panic(fmt.Sprintf("Could not recover field selector from workflow name. Expected '%s' but got '%s'\n", wfName, compare))
 	}
 	return result
 }

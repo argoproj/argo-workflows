@@ -7,8 +7,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/argoproj/argo/util"
-
 	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -19,6 +17,7 @@ import (
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/util"
 )
 
 func NewWaitCommand() *cobra.Command {
