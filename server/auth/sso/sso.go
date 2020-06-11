@@ -103,11 +103,11 @@ func newSso(
 	}
 	clientID := clientIDObj.Data[c.ClientID.Key]
 	if clientID == nil {
-		return nil, fmt.Errorf("Key %s missing in secret %s", c.ClientID.Key, c.ClientID.Name)
+		return nil, fmt.Errorf("key %s missing in secret %s", c.ClientID.Key, c.ClientID.Name)
 	}
 	clientSecret := clientSecretObj.Data[c.ClientSecret.Key]
 	if clientSecret == nil {
-		return nil, fmt.Errorf("Key %s missing in secret %s", c.ClientSecret.Key, c.ClientSecret.Name)
+		return nil, fmt.Errorf("key %s missing in secret %s", c.ClientSecret.Key, c.ClientSecret.Name)
 	}
 
 	config := &oauth2.Config{
