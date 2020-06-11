@@ -40,17 +40,42 @@ type sso struct {
 
 type Config struct {
 	Issuer       string                  `json:"issuer"`
-	ClientID     string                  `json:"clientId"`
+	ClientID     apiv1.SecretKeySelector `json:"clientId"`
 	ClientSecret apiv1.SecretKeySelector `json:"clientSecret"`
 	RedirectURL  string                  `json:"redirectUrl"`
 }
 
+// Abtsract methods of oidc.Provider that our code uses into an interface. That
+// will allow us to implement a stub for unit testing.  If you start using more
+// oidc.Provider methods in this file, add them here and provide a stub
+// implementation in test.
+type providerInterface interface {
+	Endpoint() oauth2.Endpoint
+	Verifier(config *oidc.Config) *oidc.IDTokenVerifier
+}
+
+type providerFactory func(ctx context.Context, issuer string) (providerInterface, error)
+
+func providerFactoryOIDC(ctx context.Context, issuer string) (providerInterface, error) {
+	return oidc.NewProvider(ctx, issuer)
+}
+
 func New(c Config, secretsIf corev1.SecretInterface, baseHRef string, secure bool) (Interface, error) {
+	return newSso(providerFactoryOIDC, c, secretsIf, baseHRef, secure)
+}
+
+func newSso(
+	factory providerFactory,
+	c Config,
+	secretsIf corev1.SecretInterface,
+	baseHRef string,
+	secure bool,
+) (Interface, error) {
 	if c.Issuer == "" {
 		return nil, fmt.Errorf("issuer empty")
 	}
-	if c.ClientID == "" {
-		return nil, fmt.Errorf("clientId empty")
+	if c.ClientID.Name == "" || c.ClientID.Key == "" {
+		return nil, fmt.Errorf("clientID empty")
 	}
 	if c.ClientSecret.Name == "" || c.ClientSecret.Key == "" {
 		return nil, fmt.Errorf("clientSecret empty")
@@ -58,17 +83,36 @@ func New(c Config, secretsIf corev1.SecretInterface, baseHRef string, secure boo
 	if c.RedirectURL == "" {
 		return nil, fmt.Errorf("redirectUrl empty")
 	}
-	secrets, err := secretsIf.Get(c.ClientSecret.Name, metav1.GetOptions{})
+	clientSecretObj, err := secretsIf.Get(c.ClientSecret.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	provider, err := oidc.NewProvider(context.Background(), c.Issuer)
+	provider, err := factory(context.Background(), c.Issuer)
 	if err != nil {
 		return nil, err
 	}
+
+	var clientIDObj *apiv1.Secret
+	if c.ClientID.Name == c.ClientSecret.Name {
+		clientIDObj = clientSecretObj
+	} else {
+		clientIDObj, err = secretsIf.Get(c.ClientID.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+	}
+	clientID := clientIDObj.Data[c.ClientID.Key]
+	if clientID == nil {
+		return nil, fmt.Errorf("key %s missing in secret %s", c.ClientID.Key, c.ClientID.Name)
+	}
+	clientSecret := clientSecretObj.Data[c.ClientSecret.Key]
+	if clientSecret == nil {
+		return nil, fmt.Errorf("key %s missing in secret %s", c.ClientSecret.Key, c.ClientSecret.Name)
+	}
+
 	config := &oauth2.Config{
-		ClientID:     c.ClientID,
-		ClientSecret: string(secrets.Data[c.ClientSecret.Key]),
+		ClientID:     string(clientID),
+		ClientSecret: string(clientSecret),
 		RedirectURL:  c.RedirectURL,
 		Endpoint:     provider.Endpoint(),
 		Scopes:       []string{oidc.ScopeOpenID, "groups"},
