@@ -3,6 +3,7 @@ package validate
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -12,10 +13,7 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/templateresolution"
 )
-
-// LintWorkflowDir validates all workflow manifests in a directory. Ignores non-workflow manifests
 
 func ParseWfFromFile(filePath string, strict bool) ([]wfv1.Workflow, error) {
 	body, err := ioutil.ReadFile(filePath)
@@ -79,62 +77,6 @@ func ParseWfTmplFromFile(filePath string, strict bool) ([]wfv1.WorkflowTemplate,
 	return workflowTmpls, nil
 }
 
-// LintWorkflowTemplateDir validates all workflow manifests in a directory. Ignores non-workflow template manifests
-func LintWorkflowTemplateDir(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, dirPath string, strict bool) error {
-	walkFunc := func(path string, info os.FileInfo, err error) error {
-		if info == nil || info.IsDir() {
-			return nil
-		}
-		fileExt := filepath.Ext(info.Name())
-		switch fileExt {
-		case ".yaml", ".yml", ".json":
-		default:
-			return nil
-		}
-		return LintWorkflowTemplateFile(wftmplGetter, cwftmplGetter, path, strict)
-	}
-	return filepath.Walk(dirPath, walkFunc)
-}
-
-// LintWorkflowTemplateFile lints a json file, or multiple workflow template manifest in a single yaml file. Ignores
-// non-workflow template manifests
-func LintWorkflowTemplateFile(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cwftmplGetter templateresolution.ClusterWorkflowTemplateGetter, filePath string, strict bool) error {
-	body, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "Can't read from file: %s, err: %v", filePath, err)
-	}
-	var workflowTemplates []wfv1.WorkflowTemplate
-	if json.IsJSON(body) {
-		var wftmpl wfv1.WorkflowTemplate
-		if strict {
-			err = json.UnmarshalStrict(body, &wftmpl)
-		} else {
-			err = json.Unmarshal(body, &wftmpl)
-		}
-		if err == nil {
-			workflowTemplates = []wfv1.WorkflowTemplate{wftmpl}
-		} else {
-			if wftmpl.Kind != "" && wftmpl.Kind != workflow.WorkflowTemplateKind {
-				// If we get here, it was a k8s manifest which was not of type 'Workflow'
-				// We ignore these since we only care about validating Workflow manifests.
-				return nil
-			}
-		}
-	} else {
-		workflowTemplates, err = common.SplitWorkflowTemplateYAMLFile(body, strict)
-	}
-	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "%s failed to parse: %v", filePath, err)
-	}
-	for _, wftmpl := range workflowTemplates {
-		_, err = ValidateWorkflowTemplate(wftmplGetter, cwftmplGetter, &wftmpl)
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "%s: %s", filePath, err.Error())
-		}
-	}
-	return nil
-}
-
 func ParseCronWorkflowsFromFile(filePath string, strict bool) ([]wfv1.CronWorkflow, error) {
 	body, err := ioutil.ReadFile(filePath)
 	if err != nil {
@@ -195,4 +137,94 @@ func ParseCWfTmplFromFile(filePath string, strict bool) ([]wfv1.ClusterWorkflowT
 		return nil, errors.Errorf(errors.CodeBadRequest, "%s failed to parse: %v", filePath, err)
 	}
 	return clusterWorkflowTmpls, nil
+}
+
+// Wrapper for collection of all Argo resources parsed from a file / set of files / directory.
+type ArgoResources struct {
+	Workflows                []wfv1.Workflow
+	WorkflowTemplates        []wfv1.WorkflowTemplate
+	CronWorkflows            []wfv1.CronWorkflow
+	ClusterWorkflowTemplates []wfv1.ClusterWorkflowTemplate
+}
+
+func ParseResourcesFromFiles(fileNames []string, strict bool) (*ArgoResources, error) {
+	allWorkflows := make([]wfv1.Workflow, 0)
+	allWorkflowTemplates := make([]wfv1.WorkflowTemplate, 0)
+	allCronWorkflows := make([]wfv1.CronWorkflow, 0)
+	allClusterWorkflowTemplates := make([]wfv1.ClusterWorkflowTemplate, 0)
+
+	// Try parsing every type of Argo resource from the file.
+	parseResources := func(fileName string) error {
+		workflows, err := ParseWfFromFile(fileName, strict)
+		if err != nil {
+			return err
+		}
+		if workflows != nil {
+			allWorkflows = append(allWorkflows, workflows...)
+		}
+		templates, err := ParseWfTmplFromFile(fileName, strict)
+		if err != nil {
+			return err
+		}
+		if templates != nil {
+			allWorkflowTemplates = append(allWorkflowTemplates, templates...)
+		}
+		crons, err := ParseCronWorkflowsFromFile(fileName, strict)
+		if err != nil {
+			return err
+		}
+		if crons != nil {
+			allCronWorkflows = append(allCronWorkflows, crons...)
+		}
+		clusterTemplates, err := ParseCWfTmplFromFile(fileName, strict)
+		if err != nil {
+			return err
+		}
+		if clusterTemplates != nil {
+			allClusterWorkflowTemplates = append(allClusterWorkflowTemplates, clusterTemplates...)
+		}
+		return nil
+	}
+
+	for _, fileName := range fileNames {
+		stat, err := os.Stat(fileName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if stat.IsDir() {
+			err := filepath.Walk(fileName, func(path string, info os.FileInfo, err error) error {
+				// If there was an error with the walk, return.
+				if err != nil {
+					return err
+				}
+
+				// Only try parsing file types that make sense.
+				fileExt := filepath.Ext(info.Name())
+				switch fileExt {
+				case ".yaml", ".yml", ".json":
+				default:
+					return nil
+				}
+
+				return parseResources(fileName)
+			})
+
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			err := parseResources(fileName)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	resources := ArgoResources{
+		Workflows:                allWorkflows,
+		WorkflowTemplates:        allWorkflowTemplates,
+		CronWorkflows:            allCronWorkflows,
+		ClusterWorkflowTemplates: allClusterWorkflowTemplates,
+	}
+	return &resources, nil
 }

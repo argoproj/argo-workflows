@@ -1,6 +1,8 @@
 package templateresolution
 
 import (
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -16,6 +18,12 @@ import (
 // maxResolveDepth is the limit of template reference resolution.
 const maxResolveDepth int = 10
 
+// WorkflowTemplateNamespacedGetter abstracts over ways to resolve WorkflowTemplates.
+type WorkflowTemplateNamespacedGetter interface {
+	// Get retrieves the WorkflowTemplate from the indexer for a given name.
+	Get(name string) (*wfv1.WorkflowTemplate, error)
+}
+
 // workflowTemplateInterfaceWrapper is an internal struct to wrap clientset.
 type workflowTemplateInterfaceWrapper struct {
 	clientset typed.WorkflowTemplateInterface
@@ -30,10 +38,32 @@ func (wrapper *workflowTemplateInterfaceWrapper) Get(name string) (*wfv1.Workflo
 	return wrapper.clientset.Get(name, metav1.GetOptions{})
 }
 
-// WorkflowTemplateNamespaceLister helps get WorkflowTemplates.
-type WorkflowTemplateNamespacedGetter interface {
-	// Get retrieves the WorkflowTemplate from the indexer for a given name.
-	Get(name string) (*wfv1.WorkflowTemplate, error)
+// workflowTemplateMapWrapper is an internal struct for resolving locally-available templates.
+type workflowTemplateMapWrapper struct {
+	templates map[string]*wfv1.WorkflowTemplate
+}
+
+func WrapWorkflowTemplateList(templates []wfv1.WorkflowTemplate) WorkflowTemplateNamespacedGetter {
+	templateMap := make(map[string]*wfv1.WorkflowTemplate, len(templates))
+	for _, tmpl := range templates {
+		templateMap[tmpl.Name] = &tmpl
+	}
+	return &workflowTemplateMapWrapper{templates: templateMap}
+}
+
+// Get looks up the template by name in the local map.
+func (wrapper *workflowTemplateMapWrapper) Get(name string) (*wfv1.WorkflowTemplate, error) {
+	tmpl, ok := wrapper.templates[name]
+	if ok {
+		return tmpl, nil
+	}
+	return nil, errors.New("404", fmt.Sprintf("No such WorkflowTemplate: %s", name))
+}
+
+// ClusterWorkflowTemplateGetter abstracts over ways to resolve ClusterWorkflowTemplates.
+type ClusterWorkflowTemplateGetter interface {
+	// Get retrieves the ClusterWorkflowTemplate from the indexer for a given name.
+	Get(name string) (*wfv1.ClusterWorkflowTemplate, error)
 }
 
 // clusterWorkflowTemplateInterfaceWrapper is an internal struct to wrap clientset.
@@ -41,26 +71,43 @@ type clusterWorkflowTemplateInterfaceWrapper struct {
 	clientset typed.ClusterWorkflowTemplateInterface
 }
 
-// WorkflowTemplateNamespaceLister helps get WorkflowTemplates.
-type ClusterWorkflowTemplateGetter interface {
-	// Get retrieves the WorkflowTemplate from the indexer for a given name.
-	Get(name string) (*wfv1.ClusterWorkflowTemplate, error)
-}
-
 func WrapClusterWorkflowTemplateInterface(clusterClientset v1alpha1.ClusterWorkflowTemplateInterface) ClusterWorkflowTemplateGetter {
 	return &clusterWorkflowTemplateInterfaceWrapper{clientset: clusterClientset}
 }
 
+// Get retrieves the ClusterWorkflowTemplate of a given name.
+func (wrapper *clusterWorkflowTemplateInterfaceWrapper) Get(name string) (*wfv1.ClusterWorkflowTemplate, error) {
+	return wrapper.clientset.Get(name, metav1.GetOptions{})
+}
+
+// clusterWorkflowTemplateMapWrapper is an internal struct for resolving locally-available templates.
+type clusterWorkflowTemplateMapWrapper struct {
+	templates map[string]*wfv1.ClusterWorkflowTemplate
+}
+
+func WrapClusterWorkflowTemplateList(templates []wfv1.ClusterWorkflowTemplate) ClusterWorkflowTemplateGetter {
+	templateMap := make(map[string]*wfv1.ClusterWorkflowTemplate, len(templates))
+	for _, tmpl := range templates {
+		templateMap[tmpl.Name] = &tmpl
+	}
+	return &clusterWorkflowTemplateMapWrapper{templates: templateMap}
+}
+
+// Get looks up the template by name in the local map.
+func (wrapper *clusterWorkflowTemplateMapWrapper) Get(name string) (*wfv1.ClusterWorkflowTemplate, error) {
+	tmpl, ok := wrapper.templates[name]
+	if ok {
+		return tmpl, nil
+	}
+	return nil, errors.New("404", fmt.Sprintf("No such ClusterWorkflowTemplate: %s", name))
+}
+
+// NullClusterWorkflowTemplateGetter always fails to resolve CWFTs.
 type NullClusterWorkflowTemplateGetter struct{}
 
 func (n *NullClusterWorkflowTemplateGetter) Get(name string) (*wfv1.ClusterWorkflowTemplate, error) {
 	return nil, errors.Errorf("", "invalid spec: clusterworkflowtemplates.argoproj.io `%s` is "+
 		"forbidden: User cannot get resource 'clusterworkflowtemplates' in API group argoproj.io at the cluster scope", name)
-}
-
-// Get retrieves the WorkflowTemplate of a given name.
-func (wrapper *clusterWorkflowTemplateInterfaceWrapper) Get(name string) (*wfv1.ClusterWorkflowTemplate, error) {
-	return wrapper.clientset.Get(name, metav1.GetOptions{})
 }
 
 // Context is a context of template search.
