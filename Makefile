@@ -71,22 +71,22 @@ CONTROLLER_IMAGE_FILE  := dist/controller-image.$(VERSION)
 STATIC_BUILD          ?= true
 CI                    ?= false
 PROFILE               ?= minimal
-ifeq ($(CI),false)
 AUTH_MODE             := hybrid
-else
+ifeq ($(PROFILE),sso)
+AUTH_MODE             := sso
+endif
+ifeq ($(CI),true)
 AUTH_MODE             := client
 endif
 K3D                   := $(shell if [ "`which kubectl`" != '' ] && [ "`kubectl config current-context`" = "k3s-default" ]; then echo true; else echo false; fi)
 LOG_LEVEL             := debug
 
-ifeq ($(PROFILE),minimal)
 ALWAYS_OFFLOAD_NODE_STATUS := false
-else
+ifeq ($(PROFILE),mysql)
 ALWAYS_OFFLOAD_NODE_STATUS := true
 endif
-
-ifeq ($(PROFILE),sso)
-AUTH_MODE := sso
+ifeq ($(PROFILE),postgres)
+ALWAYS_OFFLOAD_NODE_STATUS := true
 endif
 
 ifeq ($(CI),true)
