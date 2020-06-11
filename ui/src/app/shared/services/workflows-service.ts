@@ -16,14 +16,14 @@ export class WorkflowsService {
     }
 
     public list(namespace: string, phases: string[], labels: string[], pagination: Pagination) {
-        const params = this.queryParams({phases, labels});
+        const params = this.queryParams({phases, labels, resourceVersion: '0'});
         if (pagination.offset) {
             params.push(`listOptions.continue=${pagination.offset}`);
         }
         if (pagination.limit) {
             params.push(`listOptions.limit=${pagination.limit}`);
         }
-        params.push(`fields=metadata,items.metadata.name,items.metadata.namespace,items.status.phase,items.status.finishedAt,items.status.startedAt`);
+        params.push(`fields=metadata,items.metadata.uid,items.metadata.name,items.metadata.namespace,items.status.phase,items.status.finishedAt,items.status.startedAt`);
         return requests.get(`api/v1/workflows/${namespace}?${params.join('&')}`).then(res => res.body as WorkflowList);
     }
 
@@ -31,17 +31,37 @@ export class WorkflowsService {
         return requests.get(`api/v1/workflows/${namespace}/${name}`).then(res => res.body as Workflow);
     }
 
-    public watch(filter: {namespace?: string; name?: string; phases?: Array<string>; labels?: Array<string>}): Observable<models.kubernetes.WatchEvent<Workflow>> {
-        const url = `api/v1/workflow-events/${filter.namespace || ''}?${this.queryParams(filter).join('&')}`;
-
+    public watch(filter: {
+        namespace?: string;
+        name?: string;
+        phases?: Array<string>;
+        labels?: Array<string>;
+        resourceVersion?: string;
+    }): Observable<models.kubernetes.WatchEvent<Workflow>> {
+        const params = this.queryParams(filter);
+        const url = `api/v1/workflow-events/${filter.namespace || ''}?${params.join('&')}`;
         return requests.loadEventSource(url, true).map(data => JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>);
     }
 
-    public watchFields(filter: {namespace?: string; name?: string; phases?: Array<string>; labels?: Array<string>}): Observable<models.kubernetes.WatchEvent<Workflow>> {
+    public watchFields(filter: {
+        namespace?: string;
+        name?: string;
+        phases?: Array<string>;
+        labels?: Array<string>;
+        resourceVersion?: string;
+    }): Observable<models.kubernetes.WatchEvent<Workflow>> {
         const params = this.queryParams(filter);
-        params.push(
-            `fields=result.object.metadata.name,result.object.metadata.namespace,result.object.status.finishedAt,result.object.status.startedAt,result.object.status.phase`
-        );
+        const fields = [
+            'result.object.metadata.name',
+            'result.object.metadata.namespace',
+            'result.object.metadata.resourceVersion',
+            'result.object.metadata.uid',
+            'result.object.status.finishedAt',
+            'result.object.status.phase',
+            'result.object.status.startedAt',
+            'result.type',
+        ];
+        params.push(`fields=${fields.join(',')}`);
         const url = `api/v1/workflow-events/${filter.namespace || ''}?${params.join('&')}`;
 
         return requests.loadEventSource(url, true).map(data => JSON.parse(data).result as models.kubernetes.WatchEvent<Workflow>);
@@ -115,7 +135,7 @@ export class WorkflowsService {
             : `artifacts/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}`;
     }
 
-    private queryParams(filter: {namespace?: string; name?: string; phases?: Array<string>; labels?: Array<string>}) {
+    private queryParams(filter: {namespace?: string; name?: string; phases?: Array<string>; labels?: Array<string>; resourceVersion?: string}) {
         const queryParams: string[] = [];
         if (filter.name) {
             queryParams.push(`listOptions.fieldSelector=metadata.name=${filter.name}`);
@@ -123,6 +143,9 @@ export class WorkflowsService {
         const labelSelector = this.labelSelectorParams(filter.phases, filter.labels);
         if (labelSelector.length > 0) {
             queryParams.push(`listOptions.labelSelector=${labelSelector}`);
+        }
+        if (filter.resourceVersion) {
+            queryParams.push(`listOptions.resourceVersion=${filter.resourceVersion}`);
         }
         return queryParams;
     }
