@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -33,7 +34,6 @@ func NewWatchCommand() *cobra.Command {
 				os.Exit(1)
 			}
 			watchWorkflow(args[0], getArgs)
-
 		},
 	}
 	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
@@ -56,19 +56,36 @@ func watchWorkflow(wfName string, getArgs getFlags) {
 	}
 	stream, err := serviceClient.WatchWorkflows(ctx, req)
 	errors.CheckError(err)
-	for {
-		event, err := stream.Recv()
-		if err == io.EOF {
-			log.Debug("Re-establishing workflow watch")
-			stream, err = serviceClient.WatchWorkflows(ctx, req)
+
+	wfEventChan := make(chan *workflowpkg.WorkflowWatchEvent)
+	go func() {
+		for {
+			event, err := stream.Recv()
+			if err == io.EOF {
+				log.Debug("Re-establishing workflow watch")
+				stream, err = serviceClient.WatchWorkflows(ctx, req)
+				errors.CheckError(err)
+				continue
+			}
 			errors.CheckError(err)
-			continue
+			wfEventChan <- event
 		}
-		errors.CheckError(err)
-		wf := event.Object
-		if wf == nil {
-			break
+	}()
+
+	var wf *wfv1.Workflow
+	ticker := time.NewTicker(time.Second)
+	for {
+		select {
+		case event := <-wfEventChan:
+			// If we get a new event, update our workflow
+			wf = event.Object
+			if wf == nil {
+				break
+			}
+		case <-ticker.C:
+			// If we don't, print workflow again every second
 		}
+
 		printWorkflowStatus(wf, getArgs)
 		if !wf.Status.FinishedAt.IsZero() {
 			return
