@@ -40,7 +40,7 @@ type sso struct {
 
 type Config struct {
 	Issuer       string                  `json:"issuer"`
-	ClientID     apiv1.SecretKeySelector `json:"clientID"`
+	ClientID     apiv1.SecretKeySelector `json:"clientId"`
 	ClientSecret apiv1.SecretKeySelector `json:"clientSecret"`
 	RedirectURL  string                  `json:"redirectUrl"`
 }

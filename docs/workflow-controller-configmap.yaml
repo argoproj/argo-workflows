@@ -200,7 +200,7 @@ data:
       issuer: https://issuer.root.url/
       # This is name of the secret and the key in it that contain OIDC client
       # ID issued to the application by the provider (required).
-      clientID:
+      clientId:
         name: client-id-secret
         key: client-id-key
       # This is name of the secret and the key in it that contain OIDC client
