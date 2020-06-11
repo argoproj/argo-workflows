@@ -40,7 +40,7 @@ func NewLintCommand() *cobra.Command {
 						invalid = true
 					}
 					for _, condition := range *conditions {
-						log.Warnf("Warning in workflow %s: %s", condition.Message)
+						log.Warnf("Warning in workflow %s: %s", wf.Name, condition.Message)
 					}
 				}
 			} else {
