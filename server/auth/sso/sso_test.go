@@ -100,5 +100,5 @@ func TestLoadSsoClientIdFromSecretNoKeyFails(t *testing.T) {
 	}
 	_, err := newSso(fakeOidcFactory, config, fakeClient, "/", false)
 	require.Error(t, err)
-	assert.Regexp(t, "Key nonexistent missing in secret argo-sso-secret", err.Error())
+	assert.Regexp(t, "key nonexistent missing in secret argo-sso-secret", err.Error())
 }
