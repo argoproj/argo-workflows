@@ -2,12 +2,12 @@
 
 ## Pre-requisites
 
-* Golang
-* Yarn. `brew install yarn` 
-* Docker
+* [Go](https://golang.org/dl/) (The project currently uses version 1.13)
+* [Yarn](https://classic.yarnpkg.com/en/docs/install/#mac-stable)
+* [Docker](https://docs.docker.com/get-docker/)
 * [Kustomize](https://github.com/kubernetes-sigs/kustomize/blob/master/docs/INSTALL.md)
 * [protoc](http://google.github.io/proto-lens/installing-protoc.html) `brew install protobuf`
-* `jq`
+* [`jq`](https://stedolan.github.io/jq/download/)
 * A local Kubernetes cluster
 
 We recommend using [K3D](https://k3d.io/) to set up the local Kubernetes cluster since this will allow you to test RBAC set-up and is fast. You can set-up K3D to be part of your default kube config as follows:

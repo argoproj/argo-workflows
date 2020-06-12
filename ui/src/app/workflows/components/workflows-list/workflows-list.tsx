@@ -167,16 +167,17 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                     selectedLabels
                 });
                 Utils.setCurrentNamespace(newNamespace);
+                return wfList.metadata.resourceVersion;
             })
-            .then(() => {
+            .then(resourceVersion => {
                 this.subscription = services.workflows
-                    .watch({namespace: newNamespace, phases: selectedPhases, labels: selectedLabels})
+                    .watchFields({namespace: newNamespace, phases: selectedPhases, labels: selectedLabels, resourceVersion})
                     .map(workflowChange => {
                         const workflows = this.state.workflows;
                         if (!workflowChange) {
                             return {workflows, updated: false};
                         }
-                        const index = workflows.findIndex(item => item.metadata.name === workflowChange.object.metadata.name);
+                        const index = workflows.findIndex(item => item.metadata.uid === workflowChange.object.metadata.uid);
                         if (index > -1 && workflowChange.object.metadata.resourceVersion === workflows[index].metadata.resourceVersion) {
                             return {workflows, updated: false};
                         }
@@ -195,9 +196,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                     })
                     .filter(item => item.updated)
                     .map(item => item.workflows)
-                    .catch((error, caught) => {
-                        return caught;
-                    })
+                    .catch((error, caught) => caught)
                     .subscribe(workflows => this.setState({workflows}));
             })
             .then(_ => this.setState({loading: false}))
@@ -265,13 +264,13 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         <div className='columns small-2'>STARTED</div>
                         <div className='columns small-2'>FINISHED</div>
                         <div className='columns small-1'>DURATION</div>
-                        <div className='columns small-1'>LABELS</div>
+                        <div className='columns small-1'>DETAILS</div>
                     </div>
                     {this.state.workflows.map(wf => {
                         return (
                             <WorkflowsRow
                                 workflow={wf}
-                                key={`${wf.metadata.namespace}-${wf.metadata.name}`}
+                                key={wf.metadata.uid}
                                 onChange={key => {
                                     const value = `${key}=${wf.metadata.labels[key]}`;
                                     let newTags: string[] = [];

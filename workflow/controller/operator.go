@@ -258,8 +258,7 @@ func (woc *wfOperationCtx) operate() {
 	woc.setGlobalParameters(execArgs)
 
 	if woc.wfSpec.ArtifactRepositoryRef != nil {
-		repoReference := woc.wfSpec.ArtifactRepositoryRef
-		repo, err := getArtifactRepositoryRef(woc.controller, repoReference.ConfigMap, repoReference.Key, woc.wf.ObjectMeta.Namespace)
+		repo, err := woc.getArtifactRepositoryByRef(woc.wfSpec.ArtifactRepositoryRef)
 		if err == nil {
 			woc.artifactRepository = repo
 		} else {
@@ -365,7 +364,7 @@ func (woc *wfOperationCtx) operate() {
 	}
 
 	var workflowMessage string
-	if !node.Successful() && woc.wfSpec.Shutdown != "" {
+	if node.FailedOrError() && woc.wfSpec.Shutdown != "" {
 		workflowMessage = fmt.Sprintf("Stopped with strategy '%s'", woc.wfSpec.Shutdown)
 	} else {
 		workflowMessage = node.Message
@@ -376,7 +375,7 @@ func (woc *wfOperationCtx) operate() {
 	// node phase.
 	switch workflowStatus {
 	case wfv1.NodeSucceeded, wfv1.NodeSkipped:
-		if onExitNode != nil && !onExitNode.Successful() {
+		if onExitNode != nil && onExitNode.FailedOrError() {
 			// if main workflow succeeded, but the exit node was unsuccessful
 			// the workflow is now considered unsuccessful.
 			woc.markWorkflowPhase(onExitNode.Phase, true, onExitNode.Message)
@@ -505,14 +504,6 @@ func (woc *wfOperationCtx) persistUpdates() {
 
 	woc.log.WithFields(log.Fields{"resourceVersion": woc.wf.ResourceVersion, "phase": woc.wf.Status.Phase}).Info("Workflow update successful")
 
-	// HACK(jessesuen) after we successfully persist an update to the workflow, the informer's
-	// cache is now invalid. It's very common that we will need to immediately re-operate on a
-	// workflow due to queuing by the pod workers. The following sleep gives a *chance* for the
-	// informer's cache to catch up to the version of the workflow we just persisted. Without
-	// this sleep, the next worker to work on this workflow will very likely operate on a stale
-	// object and redo work.
-	time.Sleep(1 * time.Second)
-
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
 	// TODO: The completedPods will be labeled multiple times. I think it would be improved in the future.
@@ -628,10 +619,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	if node.Fulfilled() {
 		return node, true, nil
 	}
-	lastChildNode, err := woc.getLastChildNode(node)
-	if err != nil {
-		return nil, false, fmt.Errorf("Failed to find last child of node " + node.Name)
-	}
+	lastChildNode := getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
 
 	if lastChildNode == nil {
 		return node, true, nil
@@ -642,7 +630,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return node, true, nil
 	}
 
-	if lastChildNode.Successful() {
+	if !lastChildNode.FailedOrError() {
 		node.Outputs = lastChildNode.Outputs.DeepCopy()
 		woc.wf.Status.Nodes[node.ID] = *node
 		return woc.markNodePhase(node.Name, wfv1.NodeSucceeded), true, nil
@@ -659,18 +647,15 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return woc.markNodePhase(node.Name, lastChildNode.Phase, message), true, nil
 	}
 
-	maxDurationDeadline := time.Time{}
 	if retryStrategy.Backoff != nil {
+		maxDurationDeadline := time.Time{}
 		// Process max duration limit
 		if retryStrategy.Backoff.MaxDuration != "" && len(node.Children) > 0 {
 			maxDuration, err := parseStringToDuration(retryStrategy.Backoff.MaxDuration)
 			if err != nil {
 				return nil, false, err
 			}
-			firstChildNode, err := woc.getFirstChildNode(node)
-			if err != nil {
-				return nil, false, fmt.Errorf("Failed to find first child of node " + node.Name)
-			}
+			firstChildNode := getChildNodeIndex(node, woc.wf.Status.Nodes, 0)
 			maxDurationDeadline = firstChildNode.StartedAt.Add(maxDuration)
 			if time.Now().After(maxDurationDeadline) {
 				woc.log.Infoln("Max duration limit exceeded. Failing...")
@@ -791,7 +776,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 					woc.onNodeComplete(&node)
 				}
 			}
-			if node.Successful() {
+			if !node.FailedOrError() {
 				woc.succeededPods[pod.ObjectMeta.Name] = true
 			}
 		}
@@ -870,7 +855,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 // shouldPrintPodSpec return eligible to print to the pod spec
 func (woc *wfOperationCtx) shouldPrintPodSpec(node wfv1.NodeStatus) bool {
 	return woc.controller.Config.PodSpecLogStrategy.AllPods ||
-		(woc.controller.Config.PodSpecLogStrategy.FailedPod && node.Failed())
+		(woc.controller.Config.PodSpecLogStrategy.FailedPod && node.FailedOrError())
 }
 
 //fails any suspended nodes if the workflow deadline has passed
@@ -1345,32 +1330,26 @@ func (woc *wfOperationCtx) deletePVCs() error {
 	return firstErr
 }
 
-func (woc *wfOperationCtx) getLastChildNode(node *wfv1.NodeStatus) (*wfv1.NodeStatus, error) {
+func getChildNodeIndex(node *wfv1.NodeStatus, nodes wfv1.Nodes, index int) *wfv1.NodeStatus {
 	if len(node.Children) <= 0 {
-		return nil, nil
+		return nil
 	}
 
-	lastChildNodeName := node.Children[len(node.Children)-1]
-	lastChildNode, ok := woc.wf.Status.Nodes[lastChildNodeName]
+	nodeIndex := index
+	if index < 0 {
+		nodeIndex = len(node.Children) + index // This actually subtracts, since index is negative
+		if nodeIndex < 0 {
+			panic(fmt.Sprintf("child index '%d' out of bounds", index))
+		}
+	}
+
+	lastChildNodeName := node.Children[nodeIndex]
+	lastChildNode, ok := nodes[lastChildNodeName]
 	if !ok {
-		return nil, fmt.Errorf("Failed to find node " + lastChildNodeName)
+		panic("could not find child node")
 	}
 
-	return &lastChildNode, nil
-}
-
-func (woc *wfOperationCtx) getFirstChildNode(node *wfv1.NodeStatus) (*wfv1.NodeStatus, error) {
-	if len(node.Children) <= 0 {
-		return nil, nil
-	}
-
-	firstChildNodeName := node.Children[0]
-	firstChildNode, ok := woc.wf.Status.Nodes[firstChildNodeName]
-	if !ok {
-		return nil, fmt.Errorf("Failed to find node " + firstChildNodeName)
-	}
-
-	return &firstChildNode, nil
+	return &lastChildNode
 }
 
 func isResubmitAllowed(tmpl *wfv1.Template) bool {
@@ -1517,10 +1496,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		if retryParentNode.Fulfilled() {
 			return retryParentNode, nil
 		}
-		lastChildNode, err := woc.getLastChildNode(retryParentNode)
-		if err != nil {
-			return woc.markNodeError(retryNodeName, err), err
-		}
+		lastChildNode := getChildNodeIndex(retryParentNode, woc.wf.Status.Nodes, -1)
 		if lastChildNode != nil && !lastChildNode.Fulfilled() {
 			// Last child node is still running.
 			nodeName = lastChildNode.Name
@@ -2051,9 +2027,7 @@ func (woc *wfOperationCtx) buildLocalScope(scope *wfScope, prefix string, node *
 	// It may be that the node is a retry node, in which case we want to get the outputs of the last node
 	// in the retry group instead of the retry node itself.
 	if node.Type == wfv1.NodeTypeRetry {
-		if lastNode, err := woc.getLastChildNode(node); err == nil {
-			node = lastNode
-		}
+		node = getChildNodeIndex(node, woc.wf.Status.Nodes, -1)
 	}
 
 	if node.PodIP != "" {
@@ -2374,7 +2348,7 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 	switch item.Type {
 	case wfv1.String, wfv1.Number, wfv1.Bool:
 		replaceMap["item"] = fmt.Sprintf("%v", item)
-		newName = fmt.Sprintf("%s(%d:%v)", name, index, item)
+		newName = generateNodeName(name, index, item)
 	case wfv1.Map:
 		// Handle the case when withItems is a list of maps.
 		// vals holds stringified versions of the map items which are incorporated as part of the step name.
@@ -2395,14 +2369,14 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 
 		// sort the values so that the name is deterministic
 		sort.Strings(vals)
-		newName = fmt.Sprintf("%s(%d:%v)", name, index, strings.Join(vals, ","))
+		newName = generateNodeName(name, index, strings.Join(vals, ","))
 	case wfv1.List:
 		byteVal, err := json.Marshal(item.ListVal)
 		if err != nil {
 			return "", errors.InternalWrapError(err)
 		}
 		replaceMap["item"] = string(byteVal)
-		newName = fmt.Sprintf("%s(%d:%v)", name, index, item.ListVal)
+		newName = generateNodeName(name, index, item.ListVal)
 	default:
 		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, list, or map. received: %v", index, item)
 	}
@@ -2415,6 +2389,14 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 		return "", errors.InternalWrapError(err)
 	}
 	return newName, nil
+}
+
+func generateNodeName(name string, index int, desc interface{}) string {
+	newName := fmt.Sprintf("%s(%d:%v)", name, index, desc)
+	if out := util.RecoverIndexFromNodeName(newName); out != index {
+		panic(fmt.Sprintf("unrecoverable digit in generateName; wanted '%d' and got '%d'", index, out))
+	}
+	return newName
 }
 
 func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
@@ -2504,14 +2486,15 @@ func (woc *wfOperationCtx) createTemplateContext(scope wfv1.ResourceScope, resou
 	}
 }
 
-func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID string, tmplCtx *templateresolution.Context) (bool, *wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) runOnExitNode(templateRef, parentDisplayName, parentNodeName, boundaryID string, tmplCtx *templateresolution.Context) (bool, *wfv1.NodeStatus, error) {
 	if templateRef != "" && woc.wf.Spec.Shutdown.ShouldExecute(true) {
 		woc.log.Infof("Running OnExit handler: %s", templateRef)
-		onExitNodeName := parentName + ".onExit"
+		onExitNodeName := parentDisplayName + ".onExit"
 		onExitNode, err := woc.executeTemplate(onExitNodeName, &wfv1.WorkflowStep{Template: templateRef}, tmplCtx, woc.wfSpec.Arguments, &executeTemplateOpts{
 			boundaryID:     boundaryID,
 			onExitTemplate: true,
 		})
+		woc.addChildNode(parentNodeName, onExitNodeName)
 		return true, onExitNode, err
 	}
 	return false, nil, nil
@@ -2715,6 +2698,31 @@ func (woc *wfOperationCtx) includeScriptOutput(nodeName, boundaryID string) (boo
 		return hasOutputResultRef(name, parentTemplate), nil
 	}
 	return false, nil
+}
+
+func (woc *wfOperationCtx) getArtifactRepositoryByRef(arRef *wfv1.ArtifactRepositoryRef) (*config.ArtifactRepository, error) {
+	namespaces := []string{woc.wf.ObjectMeta.Namespace, woc.controller.namespace}
+	for _, namespace := range namespaces {
+		cm, err := woc.controller.kubeclientset.CoreV1().ConfigMaps(namespace).Get(arRef.GetConfigMap(), metav1.GetOptions{})
+		if err != nil {
+			if apierr.IsNotFound(err) {
+				continue
+			}
+			return nil, err
+		}
+		value, ok := cm.Data[arRef.Key]
+		if !ok {
+			continue
+		}
+		woc.log.WithFields(log.Fields{"namespace": namespace, "name": cm.Name}).Debug("Found artifact repository by ref")
+		ar := &config.ArtifactRepository{}
+		err = yaml.Unmarshal([]byte(value), ar)
+		if err != nil {
+			return nil, err
+		}
+		return ar, nil
+	}
+	return nil, fmt.Errorf("failed to find artifactory ref {%s}/%s#%s", strings.Join(namespaces, ","), arRef.GetConfigMap(), arRef.Key)
 }
 
 func (woc *wfOperationCtx) fetchWorkflowSpec() (*wfv1.WorkflowSpec, error) {

@@ -6,16 +6,23 @@ import {uiUrl} from '../../../shared/base';
 import {PhaseIcon} from '../../../shared/components/phase-icon';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {formatDuration, wfDuration} from '../../../shared/duration';
-import {WorkflowLabels} from '../workflow-labels/workflow-labels';
+import {WorkflowDrawer} from '../workflow-drawer/workflow-drawer';
 
 interface WorkflowsRowProps {
     workflow: models.Workflow;
     onChange: (key: string) => void;
 }
-export class WorkflowsRow extends React.Component<WorkflowsRowProps, {hideLabels: boolean}> {
+
+interface WorkflowRowState {
+    hideDrawer: boolean;
+}
+
+export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRowState> {
     constructor(props: WorkflowsRowProps) {
         super(props);
-        this.state = {hideLabels: true};
+        this.state = {
+            hideDrawer: true
+        };
     }
 
     public render() {
@@ -42,10 +49,10 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, {hideLabels
                             <div
                                 onClick={e => {
                                     e.preventDefault();
-                                    this.setState({hideLabels: !this.state.hideLabels});
+                                    this.setState({hideDrawer: !this.state.hideDrawer});
                                 }}
-                                className={`workflows-row__action workflows-row__action--${this.state.hideLabels ? 'show' : 'hide'}`}>
-                                {this.state.hideLabels ? (
+                                className={`workflows-row__action workflows-row__action--${this.state.hideDrawer ? 'show' : 'hide'}`}>
+                                {this.state.hideDrawer ? (
                                     <span>
                                         SHOW <i className='fas fa-caret-down' />{' '}
                                     </span>
@@ -58,17 +65,16 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, {hideLabels
                         </div>
                     </div>
                 </Link>
-                {this.state.hideLabels ? (
+                {this.state.hideDrawer ? (
                     <span />
                 ) : (
-                    <div>
-                        <WorkflowLabels
-                            workflow={wf}
-                            onChange={key => {
-                                this.props.onChange(key);
-                            }}
-                        />
-                    </div>
+                    <WorkflowDrawer
+                        name={wf.metadata.name}
+                        namespace={wf.metadata.namespace}
+                        onChange={key => {
+                            this.props.onChange(key);
+                        }}
+                    />
                 )}
             </div>
         );
