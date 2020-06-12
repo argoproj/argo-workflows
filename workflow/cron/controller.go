@@ -146,9 +146,11 @@ func (cc *Controller) processNextCronItem() bool {
 		return true
 	}
 
-	cronWorkflowOperationCtx, err := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.wfLister, cc.metrics)
+	cronWorkflowOperationCtx := newCronWfOperationCtx(cronWf, cc.wfClientset, cc.wfLister, cc.metrics)
+
+	err = cronWorkflowOperationCtx.validateCronWorkflow()
 	if err != nil {
-		log.Error(err)
+		log.Errorf("invalid cron workflow: %s", err)
 		return true
 	}
 
