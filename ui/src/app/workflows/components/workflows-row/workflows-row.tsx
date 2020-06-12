@@ -1,7 +1,7 @@
 import {Ticker} from 'argo-ui/src/index';
 import * as React from 'react';
 import {Link} from 'react-router-dom';
-import * as models from '../../../../models';
+import {Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {PhaseIcon} from '../../../shared/components/phase-icon';
 import {Timestamp} from '../../../shared/components/timestamp';
@@ -9,19 +9,22 @@ import {formatDuration, wfDuration} from '../../../shared/duration';
 import {WorkflowDrawer} from '../workflow-drawer/workflow-drawer';
 
 interface WorkflowsRowProps {
-    workflow: models.Workflow;
+    workflow: Workflow;
     onChange: (key: string) => void;
+    select: (wf: Workflow) => void;
 }
 
 interface WorkflowRowState {
     hideDrawer: boolean;
+    selected: boolean;
 }
 
 export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRowState> {
     constructor(props: WorkflowsRowProps) {
         super(props);
         this.state = {
-            hideDrawer: true
+            hideDrawer: true,
+            selected: false
         };
     }
 
@@ -31,6 +34,18 @@ export class WorkflowsRow extends React.Component<WorkflowsRowProps, WorkflowRow
             <div className='workflows-list__row-container'>
                 <Link className='row argo-table-list__row' to={uiUrl(`workflows/${wf.metadata.namespace}/${wf.metadata.name}`)}>
                     <div className='columns small-1 workflows-list__status'>
+                        <input
+                            type='checkbox'
+                            className='workflows-list__status--checkbox'
+                            checked={this.state.selected}
+                            onClick={e => {
+                                e.stopPropagation();
+                            }}
+                            onChange={e => {
+                                this.setState({selected: !this.state.selected});
+                                this.props.select(this.props.workflow);
+                            }}
+                        />
                         <PhaseIcon value={wf.status.phase} />
                     </div>
                     <div className='columns small-3'>{wf.metadata.name}</div>

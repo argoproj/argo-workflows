@@ -7,7 +7,6 @@ require('./workflows-toolbar.scss');
 
 interface WorkflowsToolbarProps {
     selectedWorkflows: {[index: string]: Workflow};
-    removeWorkflow: (wfUID: string) => void;
 }
 
 export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}> {
@@ -19,11 +18,11 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
     public render() {
         return (
             <Consumer>
-                { ctx => (
+                {ctx => (
                     <div className='workflows-toolbar'>
                         <div className='workflows-toolbar__count'>{this.getNumberSelected()} workflows selected</div>
                         <div className='workflows-toolbar__actions'>
-                            <button onClick={this.deleteSelectedWorkflows(ctx)} className='workflows-toolbar__actions--delete'>
+                            <button onClick={() => this.deleteSelectedWorkflows(ctx)} className='workflows-toolbar__actions--delete'>
                                 Delete Selected&nbsp;
                                 <i className='fas fa-trash-alt' />
                             </button>
@@ -47,7 +46,8 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
             services.workflows
                 .delete(wf.metadata.name, wf.metadata.namespace)
                 .then(() => {
-                    this.props.removeWorkflow(wfUID)
+                    this.setState({ selectedWorkflows: {}}); 
+                    ctx.navigation.goto('/');
                 })
                 .catch((err) => {
                     // TODO: Error handling

@@ -97,9 +97,6 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         }}>
                         <WorkflowsToolbar
                             selectedWorkflows={this.state.selectedWorkflows}
-                            removeWorkflow={(wfUID) => {
-
-                            }}
                         />
                         <div className='row'>
                             <div className='columns small-12 xlarge-2'>
