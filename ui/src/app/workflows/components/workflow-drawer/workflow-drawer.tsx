@@ -1,19 +1,40 @@
 import * as React from 'react';
-import * as models from '../../../../models';
+import {Workflow} from '../../../../models';
 
+import {Loading} from '../../../shared/components/loading';
 import {ConditionsPanel} from '../../../shared/conditions-panel';
+import {services} from '../../../shared/services';
 import {WorkflowLabels} from '../workflow-labels/workflow-labels';
 
 require('./workflow-drawer.scss');
 
 interface WorkflowDrawerProps {
-    workflow: models.Workflow;
+    name: string;
+    namespace: string;
     onChange: (key: string) => void;
 }
 
-export class WorkflowDrawer extends React.Component<WorkflowDrawerProps, {}> {
+interface WorkflowDrawerState {
+    workflow?: Workflow;
+}
+
+export class WorkflowDrawer extends React.Component<WorkflowDrawerProps, WorkflowDrawerState> {
+    constructor(props: Readonly<WorkflowDrawerProps>) {
+        super(props);
+        this.state = {};
+    }
+
+    public componentDidMount() {
+        services.workflows.get(this.props.namespace, this.props.name).then(workflow => {
+            this.setState({workflow});
+        });
+    }
+
     public render() {
-        const wf = this.props.workflow;
+        if (!this.state.workflow) {
+            return <Loading />;
+        }
+        const wf = this.state.workflow;
         return (
             <div className='workflow-drawer'>
                 {!wf.status.message ? null : (
