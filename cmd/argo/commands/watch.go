@@ -10,12 +10,12 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	workflowpkg "github.com/argoproj/argo/pkg/apiclient/workflow"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/workflow/packer"
 )
 
@@ -51,7 +51,7 @@ func watchWorkflow(wfName string, getArgs getFlags) {
 	req := &workflowpkg.WatchWorkflowsRequest{
 		Namespace: namespace,
 		ListOptions: &metav1.ListOptions{
-			FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", wfName)).String(),
+			FieldSelector: util.GenerateFieldSelectorFromWorkflowName(wfName),
 		},
 	}
 	stream, err := serviceClient.WatchWorkflows(ctx, req)
