@@ -63,7 +63,7 @@
           },
           {
             "name": "listOptions.allowWatchBookmarks",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "in": "query",
             "required": false,
             "type": "boolean",
@@ -147,7 +147,7 @@
           },
           {
             "name": "listOptions.allowWatchBookmarks",
-            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional.",
             "in": "query",
             "required": false,
             "type": "boolean",
@@ -747,6 +747,14 @@
             "required": false,
             "type": "string",
             "format": "int64"
+          },
+          {
+            "name": "logOptions.insecureSkipTLSVerifyBackend",
+            "description": "insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the\nserving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver\nand the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real\nkubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the\nconnection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept\nthe actual log data coming from the real kubelet).\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
           }
         ],
         "tags": [
@@ -3025,7 +3033,7 @@
       "properties": {
         "fieldRef": {
           "$ref": "#/definitions/k8s.io.api.core.v1.ObjectFieldSelector",
-          "title": "Selects a field of the pod: supports metadata.name, metadata.namespace, metadata.labels, metadata.annotations,\nspec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP.\n+optional"
+          "title": "Selects a field of the pod: supports metadata.name, metadata.namespace, metadata.labels, metadata.annotations,\nspec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.\n+optional"
         },
         "resourceFieldRef": {
           "$ref": "#/definitions/k8s.io.api.core.v1.ResourceFieldSelector",
@@ -3775,6 +3783,11 @@
           "type": "string",
           "format": "int64",
           "title": "If set, the number of bytes to read from the server before terminating the\nlog output. This may not display a complete final line of logging, and may return\nslightly more or slightly less than the specified limit.\n+optional"
+        },
+        "insecureSkipTLSVerifyBackend": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "insecureSkipTLSVerifyBackend indicates that the apiserver should not confirm the validity of the\nserving certificate of the backend it is connecting to.  This will make the HTTPS connection between the apiserver\nand the backend insecure. This means the apiserver cannot verify the log data it is receiving came from the real\nkubelet.  If the kubelet is configured to verify the apiserver's TLS credentials, it does not mean the\nconnection to the real kubelet is vulnerable to a man in the middle attack (e.g. an attacker could not intercept\nthe actual log data coming from the real kubelet).\n+optional"
         }
       },
       "description": "PodLogOptions is the query options for a Pod's logs REST call."
@@ -4404,7 +4417,7 @@
         },
         "subPathExpr": {
           "type": "string",
-          "title": "Expanded path within the volume from which the container's volume should be mounted.\nBehaves similarly to SubPath but environment variable references $(VAR_NAME) are expanded using the container's environment.\nDefaults to \"\" (volume's root).\nSubPathExpr and SubPath are mutually exclusive.\nThis field is beta in 1.15.\n+optional"
+          "title": "Expanded path within the volume from which the container's volume should be mounted.\nBehaves similarly to SubPath but environment variable references $(VAR_NAME) are expanded using the container's environment.\nDefaults to \"\" (volume's root).\nSubPathExpr and SubPath are mutually exclusive.\n+optional"
         }
       },
       "description": "VolumeMount describes a mounting of a Volume within a container."
@@ -4599,7 +4612,7 @@
         },
         "runAsUserName": {
           "type": "string",
-          "title": "The UserName in Windows to run the entrypoint of the container process.\nDefaults to the user specified in image metadata if unspecified.\nMay also be set in PodSecurityContext. If set in both SecurityContext and\nPodSecurityContext, the value specified in SecurityContext takes precedence.\nThis field is alpha-level and it is only honored by servers that enable the WindowsRunAsUserName feature flag.\n+optional"
+          "title": "The UserName in Windows to run the entrypoint of the container process.\nDefaults to the user specified in image metadata if unspecified.\nMay also be set in PodSecurityContext. If set in both SecurityContext and\nPodSecurityContext, the value specified in SecurityContext takes precedence.\nThis field is beta-level and may be disabled with the WindowsRunAsUserName feature flag.\n+optional"
         }
       },
       "description": "WindowsSecurityContextOptions contain Windows-specific options and credentials."
@@ -4658,7 +4671,7 @@
         },
         "preconditions": {
           "$ref": "#/definitions/k8s.io.apimachinery.pkg.apis.meta.v1.Preconditions",
-          "title": "Must be fulfilled before a deletion is carried out. If not possible, a 409 Conflict status will be\nreturned.\n+optional"
+          "title": "Must be fulfilled before a deletion is carried out. If not possible, a 409 Conflict status will be\nreturned.\n+k8s:conversion-gen=false\n+optional"
         },
         "orphanDependents": {
           "type": "boolean",
@@ -4783,7 +4796,7 @@
         "allowWatchBookmarks": {
           "type": "boolean",
           "format": "boolean",
-          "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional"
+          "title": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n+optional"
         },
         "resourceVersion": {
           "type": "string",
@@ -4907,7 +4920,7 @@
           "items": {
             "type": "string"
           },
-          "title": "Must be empty before the object is deleted from the registry. Each entry\nis an identifier for the responsible component that will remove the entry\nfrom the list. If the deletionTimestamp of the object is non-nil, entries\nin this list can only be removed.\n+optional\n+patchStrategy=merge"
+          "title": "Must be empty before the object is deleted from the registry. Each entry\nis an identifier for the responsible component that will remove the entry\nfrom the list. If the deletionTimestamp of the object is non-nil, entries\nin this list can only be removed.\nFinalizers may be processed and removed in any order.  Order is NOT enforced\nbecause it introduces significant risk of stuck finalizers.\nfinalizers is a shared field, any actor with permission can reorder it.\nIf the finalizer list is processed in order, then this can lead to a situation\nin which the component responsible for the first finalizer in the list is\nwaiting for a signal (field value, external system, or other) produced by a\ncomponent responsible for a finalizer later in the list, resulting in a deadlock.\nWithout enforced ordering finalizers are free to order amongst themselves and\nare not vulnerable to ordering changes in the list.\n+optional\n+patchStrategy=merge"
         },
         "clusterName": {
           "type": "string",

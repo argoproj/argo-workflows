@@ -17,7 +17,7 @@ import (
 type sensorServer struct {
 }
 
-func (s sensorServer) ListSensors(ctx context.Context, req *sensor.ListSensorsRequest) (*sensor.ListSensorsResponse, error) {
+func (s sensorServer) ListSensors(ctx context.Context, req *sensor.ListSensorsRequest) (*sensorv1.SensorList, error) {
 	resourceIf, err := resourceInterface(ctx, req.Namespace)
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func (s sensorServer) ListSensors(ctx context.Context, req *sensor.ListSensorsRe
 	if err != nil {
 		return nil, err
 	}
-	return &sensor.ListSensorsResponse{Metadata: &metav1.ListMeta{}, Items: items}, nil
+	return &sensorv1.SensorList{Items: items}, nil
 }
 
 func resourceInterface(ctx context.Context, namespace string) (dynamic.ResourceInterface, error) {
@@ -50,14 +50,14 @@ func listOptions(req *sensor.ListSensorsRequest) metav1.ListOptions {
 	return listOptions
 }
 
-func unstructuredListToStructList(list *unstructured.UnstructuredList) ([]*sensorv1.Sensor, error) {
+func unstructuredListToStructList(list *unstructured.UnstructuredList) ([]sensorv1.Sensor, error) {
 	var items = make([]sensorv1.Sensor, len(list.Items))
 	for i, item := range list.Items {
 		s, err := unstructuredToStruct(item)
 		if err != nil {
 			return nil, err
 		}
-		items[i] = s
+		items[i] = *s
 	}
 	return items, nil
 }
