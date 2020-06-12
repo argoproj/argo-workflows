@@ -95,7 +95,12 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                             },
                             tools: []
                         }}>
-                        <WorkflowsToolbar selectedWorkflows={this.state.selectedWorkflows} />
+                        <WorkflowsToolbar
+                            selectedWorkflows={this.state.selectedWorkflows}
+                            removeWorkflow={(wfUID) => {
+
+                            }}
+                        />
                         <div className='row'>
                             <div className='columns small-12 xlarge-2'>
                                 <div>{this.renderQuery(ctx)}</div>
@@ -289,6 +294,9 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 }}
                                 select={wf => {
                                     const wfUID = wf.metadata.uid;
+                                    if (!wfUID) {
+                                        return;
+                                    }
                                     const currentlySelected = this.state.selectedWorkflows;
                                     if (!(wfUID in currentlySelected)) {
                                         currentlySelected[wfUID] = wf;

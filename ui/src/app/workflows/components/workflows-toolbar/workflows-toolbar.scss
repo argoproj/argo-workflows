@@ -4,4 +4,17 @@
   background: $argo-color-gray-2;
   padding: 1em 20px;
   margin-bottom: 0.5em;
+  display: flex;
+  align-items: center;
+
+  &__actions {
+    margin-left: auto;
+    button {
+      cursor: pointer;
+      background: $argo-color-red;
+      color: white;
+      border-radius: 3px;
+      padding: 0.5em 10px;
+    }
+  }
 }
