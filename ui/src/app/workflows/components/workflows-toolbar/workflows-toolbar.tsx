@@ -1,7 +1,8 @@
 import * as React from 'react';
 import {Workflow} from '../../../../models';
-import {Consumer, ContextApis} from '../../../shared/context';
+import {AppContext, Consumer, ContextApis} from '../../../shared/context';
 import {services} from '../../../shared/services';
+import { NotificationType } from '../../../../../node_modules/argo-ui';
 
 require('./workflows-toolbar.scss');
 
@@ -23,8 +24,15 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
                         <div className='workflows-toolbar__count'>{this.getNumberSelected()} workflows selected</div>
                         <div className='workflows-toolbar__actions'>
                             <button onClick={() => this.deleteSelectedWorkflows(ctx)} className='workflows-toolbar__actions--delete'>
-                                Delete Selected&nbsp;
-                                <i className='fas fa-trash-alt' />
+                                <i className='fas fa-trash-alt' />&nbsp;
+                                Delete Selected
+                            </button>
+                            <button
+                                onClick={() => this.suspendSelectedWorkflows(ctx)}
+                                className={'workflows-toolbar__actions--suspend'}
+                                disabled={false}>
+                                <i className='fas fa-pause'/>&nbsp;
+                                Suspend Selected
                             </button>
                         </div>
                     </div>
@@ -50,8 +58,34 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, {}>
                     ctx.navigation.goto('/');
                 })
                 .catch((err) => {
-                    // TODO: Error handling
+                    this.appContext.apis.notifications.show({
+                        content: 'Unable to delete workflows',
+                        type: NotificationType.Error
+                    });
                 });
         }
+    }
+
+    private suspendSelectedWorkflows(ctx: ContextApis): void {
+        if (!confirm('Are you sure you want to suspend all selected workflows?')) {
+            return;
+        }
+        for (const wfUID of Object.keys(this.props.selectedWorkflows)) {
+            const wf = this.props.selectedWorkflows[wfUID];
+            services.workflows
+                .suspend(wf.metadata.name, wf.metadata.namespace)
+                .then(() => {
+                })
+                .catch((err) => {
+                   this.appContext.apis.notifications.show({
+                        content: 'Unable to suspend workflows',
+                        type: NotificationType.Error
+                    });
+                });
+        }
+    }
+
+    private get appContext(): AppContext {
+        return this.context as AppContext;
     }
 }

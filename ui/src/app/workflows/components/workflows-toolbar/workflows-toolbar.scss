@@ -6,15 +6,24 @@
   margin-bottom: 0.5em;
   display: flex;
   align-items: center;
+  position: -webkit-sticky;
 
   &__actions {
     margin-left: auto;
     button {
       cursor: pointer;
-      background: $argo-color-red;
       color: white;
       border-radius: 3px;
       padding: 0.5em 10px;
+      margin-right: 10px;
+    }
+
+    &--suspend {
+      background: $argo-color-gray-6;
+    }
+
+    &--delete {
+      background: $argo-color-red;
     }
   }
 }
