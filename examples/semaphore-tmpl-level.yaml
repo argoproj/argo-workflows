@@ -30,10 +30,11 @@ spec:
     inputs:
       parameters:
       - name: seconds
-    semaphore:
-      configMapKeyRef:
-        name: my-config
-        key: template
+    concurrency:
+      semaphore:
+        configMapKeyRef:
+          name: my-config
+          key: template
     container:
       image: alpine:latest
       command: [sh, -c]

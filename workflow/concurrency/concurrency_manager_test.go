@@ -40,10 +40,11 @@ metadata:
 spec:
   arguments: {}
   entrypoint: whalesay
-  semaphore:
-    configMapKeyRef:
-      key: workflow
-      name: my-config
+  concurrency:
+    semaphore:
+      configMapKeyRef:
+        key: workflow
+        name: my-config
   templates:
   - arguments: {}
     container:
@@ -90,10 +91,11 @@ metadata:
  namespace: default
 spec:
  entrypoint: whalesay
- semaphore:
-   configMapKeyRef:
-     name: my-config
-     key: workflow
+ concurrency:
+   semaphore:
+     configMapKeyRef:
+       name: my-config
+       key: workflow
  templates:
  - name: whalesay
    container:
@@ -159,10 +161,11 @@ spec:
     metadata: {}
     name: sleep-n-sec
     outputs: {}
-    semaphore:
-      configMapKeyRef:
-        key: template
-        name: my-config
+    concurrency:
+      semaphore:
+        configMapKeyRef:
+          key: template
+          name: my-config
 status:
   finishedAt: null
   nodes:
@@ -294,7 +297,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 	_, err = kube.CoreV1().ConfigMaps("default").Create(&cm)
 	assert.NoError(t, err)
 	t.Run("InitializeConcurrency", func(t *testing.T) {
-		concurrenyMgr := NewConcurrencyManager(kube, func(key string) {
+		concurrenyMgr := NewLockManager(kube, func(key string) {
 		})
 		wf := unmarshalWF(wfWithStatus)
 		wfclientset := fakewfclientset.NewSimpleClientset(wf)
@@ -302,7 +305,7 @@ func TestSemaphoreWfLevel(t *testing.T) {
 		assert.Equal(t, 1, len(concurrenyMgr.concurrencyMap))
 	})
 	t.Run("InitializeConcurrencyWithInvalid", func(t *testing.T) {
-		concurrenyMgr := NewConcurrencyManager(kube, func(key string) {
+		concurrenyMgr := NewLockManager(kube, func(key string) {
 
 		})
 		wf := unmarshalWF(wfWithStatus)
@@ -316,64 +319,64 @@ func TestSemaphoreWfLevel(t *testing.T) {
 	})
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
 		var nextKey string
-		concurrenyMgr := NewConcurrencyManager(kube, func(key string) {
+		concurrenyMgr := NewLockManager(kube, func(key string) {
 			nextKey = key
 		})
 		wf := unmarshalWF(wfWithSemaphore)
-		holderKey := concurrenyMgr.GetHolderKey(wf, "")
-		SemaName := wf.Spec.Semaphore.GetKey(wf.Namespace)
-		status, msg, err := concurrenyMgr.TryAcquire(holderKey, wf.Namespace, 0, time.Now(), wf.Spec.Semaphore, wf)
+		wf1 := wf.DeepCopy()
+		wf2 := wf.DeepCopy()
+		wf3 := wf.DeepCopy()
+		SemaName :=  getSemaphoreKey(wf.Namespace, wf.Spec.Concurrency.Semaphore)
+		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "", 0, time.Now(), wf.Spec.Concurrency)
 		assert.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)
+		assert.True(t, wfUpdate)
 		assert.NotNil(t, wf.Status.Concurrency)
 		assert.NotNil(t, wf.Status.Concurrency.Semaphore)
 		assert.NotNil(t, wf.Status.Concurrency.Semaphore.Holding)
 		assert.Equal(t, wf.Name, wf.Status.Concurrency.Semaphore.Holding[SemaName].Name[0])
 
 		// Try to acquire again
-		status, msg, err = concurrenyMgr.TryAcquire(holderKey, wf.Namespace, 0, time.Now(), wf.Spec.Semaphore, wf)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "", 0, time.Now(), wf.Spec.Concurrency)
 		assert.NoError(t, err)
 		assert.True(t, status)
 		assert.Empty(t, msg)
 
-		wf1 := wf.DeepCopy()
+
 		wf1.Name = "two"
-		holderKey1 := concurrenyMgr.GetHolderKey(wf1, "")
-		status, msg, err = concurrenyMgr.TryAcquire(holderKey1, wf1.Namespace, 0, time.Now(), wf1.Spec.Semaphore, wf1)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", 0, time.Now(), wf1.Spec.Concurrency)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
 
-		wf2 := wf.DeepCopy()
-		wf1.Name = "three"
-		holderKey2 := concurrenyMgr.GetHolderKey(wf1, "")
-		status, msg, err = concurrenyMgr.TryAcquire(holderKey2, wf2.Namespace, 5, time.Now(), wf2.Spec.Semaphore, wf2)
+
+		wf2.Name = "three"
+		holderKey2 := getHolderKey(wf2, "")
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", 5, time.Now(), wf2.Spec.Concurrency)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
 
-		wf3 := wf.DeepCopy()
 		wf3.Name = "four"
-		holderKey3 := concurrenyMgr.GetHolderKey(wf3, "")
-		status, msg, err = concurrenyMgr.TryAcquire(holderKey3, wf3.Namespace, 0, time.Now(), wf3.Spec.Semaphore, wf3)
+		status,wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf3, "", 0, time.Now(), wf3.Spec.Concurrency)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
 
-		concurrenyMgr.Release(holderKey, wf.Namespace, wf.Spec.Semaphore, wf)
+		concurrenyMgr.Release(wf, "", wf.Namespace, wf.Spec.Concurrency)
 		assert.Equal(t, holderKey2, nextKey)
 		assert.NotNil(t, wf.Status.Concurrency)
 		assert.Equal(t, 0, len(wf.Status.Concurrency.Semaphore.Holding))
 
 		// Low priority workflow try to acquire the lock
-		status, msg, err = concurrenyMgr.TryAcquire(holderKey1, wf1.Namespace, 0, time.Now(), wf1.Spec.Semaphore, wf1)
+		status,wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", 0, time.Now(), wf1.Spec.Concurrency)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
 
 		// High Priority workflow acquires the lock
-		status, msg, err = concurrenyMgr.TryAcquire(holderKey2, wf2.Namespace, 5, time.Now(), wf2.Spec.Semaphore, wf2)
+		status,wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", 5, time.Now(), wf2.Spec.Concurrency)
 		assert.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)
@@ -394,52 +397,50 @@ func TestResizeSemaphoreSize(t *testing.T) {
 	_, err = kube.CoreV1().ConfigMaps("default").Create(&cm)
 	assert.NoError(t, err)
 	t.Run("WfLevelAcquireAndRelease", func(t *testing.T) {
-		concurrenyMgr := NewConcurrencyManager(kube, func(key string) {
+		concurrenyMgr := NewLockManager(kube, func(key string) {
 		})
 		createTime := time.Now()
 		wf := unmarshalWF(wfWithSemaphore)
-		holderKey := concurrenyMgr.GetHolderKey(wf, "")
-		SemaName := wf.Spec.Semaphore.GetKey(wf.Namespace)
-		status, msg, err := concurrenyMgr.TryAcquire(holderKey, wf.Namespace, 0, createTime, wf.Spec.Semaphore, wf)
+		wf1 := wf.DeepCopy()
+		wf2 := wf.DeepCopy()
+		SemaName :=  getSemaphoreKey(wf.Namespace, wf.Spec.Concurrency.Semaphore)
+		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "", 0, createTime, wf.Spec.Concurrency)
 		assert.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)
+		assert.True(t, wfUpdate)
 		assert.NotNil(t, wf.Status.Concurrency)
 		assert.NotNil(t, wf.Status.Concurrency.Semaphore)
 		assert.Equal(t, wf.Name, wf.Status.Concurrency.Semaphore.Holding[SemaName].Name[0])
 
-		wf1 := wf.DeepCopy()
 		wf1.Name = "two"
-		holderKey1 := concurrenyMgr.GetHolderKey(wf1, "")
-		status, msg, err = concurrenyMgr.TryAcquire(holderKey1, wf1.Namespace, 0, createTime, wf1.Spec.Semaphore, wf1)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "",0, createTime, wf1.Spec.Concurrency)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
 
-		wf2 := wf.DeepCopy()
-		wf1.Name = "three"
-		holderKey2 := concurrenyMgr.GetHolderKey(wf1, "")
-		status, msg, err = concurrenyMgr.TryAcquire(holderKey2, wf2.Namespace, 0, createTime.Add(10*time.Millisecond), wf2.Spec.Semaphore, wf2)
+		wf2.Name = "three"
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", 0, createTime.Add(10*time.Millisecond), wf2.Spec.Concurrency)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
 
-		// Increase the Semaphore Size
+		// Increase the TypeSemaphore Size
 		cm, err := kube.CoreV1().ConfigMaps("default").Get("my-config", metav1.GetOptions{})
 		assert.NoError(t, err)
 		cm.Data["workflow"] = "3"
 		_, err = kube.CoreV1().ConfigMaps("default").Update(cm)
 		assert.NoError(t, err)
 
-		status, msg, err = concurrenyMgr.TryAcquire(holderKey1, wf1.Namespace, 0, createTime, wf1.Spec.Semaphore, wf1)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf1, "", 0, createTime, wf1.Spec.Concurrency)
 		assert.NoError(t, err)
 		assert.True(t, status)
 		assert.Empty(t, msg)
-		assert.NotNil(t, wf.Status.Concurrency)
-		assert.NotNil(t, wf.Status.Concurrency.Semaphore)
-		assert.Equal(t, wf.Name, wf.Status.Concurrency.Semaphore.Holding[SemaName].Name[0])
+		assert.NotNil(t, wf1.Status.Concurrency)
+		assert.NotNil(t, wf1.Status.Concurrency.Semaphore)
+		assert.Equal(t, wf1.Name, wf1.Status.Concurrency.Semaphore.Holding[SemaName].Name[0])
 
-		status, msg, err = concurrenyMgr.TryAcquire(holderKey2, wf2.Namespace, 0, createTime.Add(10*time.Millisecond), wf2.Spec.Semaphore, wf2)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf2, "", 0, createTime.Add(10*time.Millisecond), wf2.Spec.Concurrency)
 		assert.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)
@@ -460,39 +461,39 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 
 	t.Run("TemplateLevelAcquireAndRelease", func(t *testing.T) {
 		//var nextKey string
-		concurrenyMgr := NewConcurrencyManager(kube, func(key string) {
+		concurrenyMgr := NewLockManager(kube, func(key string) {
 			//nextKey = key
 		})
 		wf := unmarshalWF(wfWithTmplSemaphore)
 		tmpl := wf.Spec.Templates[2]
-		holderKey := concurrenyMgr.GetHolderKey(wf, "semaphore-tmpl-level-xjvln-3448864205")
-		SemaName := tmpl.Semaphore.GetKey(wf.Namespace)
-		status, msg, err := concurrenyMgr.TryAcquire(holderKey, wf.Namespace, 0, time.Now(), tmpl.Semaphore, wf)
+		holderKey := getHolderKey(wf, "semaphore-tmpl-level-xjvln-3448864205")
+		SemaName := getSemaphoreKey(wf.Namespace, tmpl.Concurrency.Semaphore)
+		status, wfUpdate, msg, err := concurrenyMgr.TryAcquire(wf, "semaphore-tmpl-level-xjvln-3448864205", 0, time.Now(), tmpl.Concurrency)
 		assert.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)
+		assert.True(t, wfUpdate)
 		assert.NotNil(t, wf.Status.Concurrency)
 		assert.NotNil(t, wf.Status.Concurrency.Semaphore)
 		assert.Equal(t, "semaphore-tmpl-level-xjvln-3448864205", wf.Status.Concurrency.Semaphore.Holding[SemaName].Name[0])
 
 		// Try to acquire again
-		status, msg, err = concurrenyMgr.TryAcquire(holderKey, wf.Namespace, 0, time.Now(), tmpl.Semaphore, wf)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "semaphore-tmpl-level-xjvln-3448864205", 0, time.Now(), tmpl.Concurrency)
 		assert.NoError(t, err)
 		assert.True(t, status)
 		assert.Empty(t, msg)
 
-		holderKey1 := concurrenyMgr.GetHolderKey(wf, "semaphore-tmpl-level-xjvln-1607747183")
-		status, msg, err = concurrenyMgr.TryAcquire(holderKey1, wf.Namespace, 0, time.Now(), tmpl.Semaphore, wf)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "semaphore-tmpl-level-xjvln-1607747183", 0, time.Now(), tmpl.Concurrency)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, msg)
 		assert.False(t, status)
 
-		concurrenyMgr.Release(holderKey, wf.Namespace, tmpl.Semaphore, wf)
+		concurrenyMgr.Release(wf,"semaphore-tmpl-level-xjvln-3448864205", wf.Namespace, tmpl.Concurrency)
 		assert.NotNil(t, wf.Status.Concurrency)
 		assert.NotNil(t, wf.Status.Concurrency.Semaphore)
 		assert.Empty(t, wf.Status.Concurrency.Semaphore.Holding[holderKey])
 
-		status, msg, err = concurrenyMgr.TryAcquire(holderKey1, wf.Namespace, 0, time.Now(), tmpl.Semaphore, wf)
+		status, wfUpdate, msg, err = concurrenyMgr.TryAcquire(wf, "semaphore-tmpl-level-xjvln-1607747183", 0, time.Now(), tmpl.Concurrency)
 		assert.NoError(t, err)
 		assert.Empty(t, msg)
 		assert.True(t, status)

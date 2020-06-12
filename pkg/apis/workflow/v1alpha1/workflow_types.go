@@ -298,8 +298,8 @@ type WorkflowSpec struct {
 	// WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution
 	WorkflowTemplateRef *WorkflowTemplateRef `json:"workflowTemplateRef,omitempty" protobuf:"bytes,34,opt,name=workflowTemplateRef"`
 
-	// SemaphoreRef will holds semaphore configuration for this Workflow
-	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,35,opt,name=semaphore,casttype=SemaphoreRef"`
+	// ConcurrencyRef will holds concurrency configuration for this Workflow
+	Concurrency *ConcurrencyRef `json:"concurrency,omitempty" protobuf:"bytes,35,opt,name=concurrency,casttype=ConcurrencyRef"`
 }
 
 type ShutdownStrategy string
@@ -506,8 +506,8 @@ type Template struct {
 	// Metrics are a list of metrics emitted from this template
 	Metrics *Metrics `json:"metrics,omitempty" protobuf:"bytes,35,opt,name=metrics"`
 
-	// SemaphoreRef will holds semaphore configuration for this Template.
-	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,36,opt,name=semaphore,casttype=SemaphoreRef"`
+	// ConcurrencyRef will holds concurrency configuration for this Template.
+	Concurrency *ConcurrencyRef `json:"concurrency,omitempty" protobuf:"bytes,36,opt,name=concurrency,casttype=ConcurrencyRef"`
 }
 
 // DEPRECATED: Templates should not be used as TemplateReferenceHolder
@@ -867,20 +867,16 @@ type TemplateRef struct {
 	ClusterScope bool `json:"clusterScope,omitempty" protobuf:"varint,4,opt,name=clusterScope"`
 }
 
+// ConcurrencyRef is a reference of the concurrency
+type ConcurrencyRef struct {
+	// Semaphore will hold the Semaphore configuration
+	Semaphore *SemaphoreRef `json:"semaphore,omitempty" protobuf:"bytes,1,opt,name=semaphore"`
+}
+
 // SemaphoreRef is a reference of Semaphore
 type SemaphoreRef struct {
 	// ConfigMapKeyRef is configmap selector for Semaphore configuration
 	ConfigMapKeyRef *apiv1.ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,1,opt,name=configMapKeyRef"`
-}
-
-func (sr SemaphoreRef) GetType() ConcurrencyType {
-	return Semaphore
-}
-func (sr SemaphoreRef) GetKey(namespace string) string {
-	if sr.ConfigMapKeyRef != nil {
-		return fmt.Sprintf("%s/configmap/%s/%s", namespace, sr.ConfigMapKeyRef.Name, sr.ConfigMapKeyRef.Key)
-	}
-	return namespace
 }
 
 // WorkflowTemplateRef is a reference to a WorkflowTemplate resource.

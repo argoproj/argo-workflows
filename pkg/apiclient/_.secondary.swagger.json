@@ -267,6 +267,16 @@
         }
       }
     },
+    "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyRef": {
+      "description": "ConcurrencyRef is a reference of the concurrency",
+      "type": "object",
+      "properties": {
+        "semaphore": {
+          "description": "Semaphore will hold the Semaphore configuration",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreRef"
+        }
+      }
+    },
     "github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyStatus": {
       "type": "object",
       "properties": {
@@ -1739,6 +1749,10 @@
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
         },
+        "concurrency": {
+          "description": "ConcurrencyRef will holds concurrency configuration for this Template.",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyRef"
+        },
         "container": {
           "description": "Container is the main container image to run in the pod",
           "$ref": "#/definitions/k8s.io.api.core.v1.Container"
@@ -1841,10 +1855,6 @@
         "securityContext": {
           "description": "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
           "$ref": "#/definitions/k8s.io.api.core.v1.PodSecurityContext"
-        },
-        "semaphore": {
-          "description": "SemaphoreRef will holds semaphore configuration for this Template.",
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreRef"
         },
         "serviceAccountName": {
           "description": "ServiceAccountName to apply to workflow pods",
@@ -2211,6 +2221,10 @@
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
         },
+        "concurrency": {
+          "description": "ConcurrencyRef will holds concurrency configuration for this Workflow",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyRef"
+        },
         "dnsConfig": {
           "description": "PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy.",
           "$ref": "#/definitions/k8s.io.api.core.v1.PodDNSConfig"
@@ -2301,10 +2315,6 @@
         "securityContext": {
           "description": "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
           "$ref": "#/definitions/k8s.io.api.core.v1.PodSecurityContext"
-        },
-        "semaphore": {
-          "description": "SemaphoreRef will holds semaphore configuration for this Workflow",
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreRef"
         },
         "serviceAccountName": {
           "description": "ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.",
@@ -2588,6 +2598,10 @@
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
         },
+        "concurrency": {
+          "description": "ConcurrencyRef will holds concurrency configuration for this Workflow",
+          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.ConcurrencyRef"
+        },
         "dnsConfig": {
           "description": "PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy.",
           "$ref": "#/definitions/k8s.io.api.core.v1.PodDNSConfig"
@@ -2678,10 +2692,6 @@
         "securityContext": {
           "description": "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
           "$ref": "#/definitions/k8s.io.api.core.v1.PodSecurityContext"
-        },
-        "semaphore": {
-          "description": "SemaphoreRef will holds semaphore configuration for this Workflow",
-          "$ref": "#/definitions/github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.SemaphoreRef"
         },
         "serviceAccountName": {
           "description": "ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.",

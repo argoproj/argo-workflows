@@ -23,23 +23,25 @@ data:
 const wfWithSemaphore = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
-metadata:
+metadata: 
   name: hello-world
   namespace: default
-spec:
+spec: 
   entrypoint: whalesay
-  templates:
-
-
-  - name: whalesay
-    semaphore:
-      configMapKeyRef:
-        name: my-config
-        key: template
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
+  templates: 
+    - 
+      concurrency: 
+        semaphore: 
+          configMapKeyRef: 
+            key: template
+            name: my-config
+      container: 
+        args: 
+          - "hello world"
+        command: 
+          - cowsay
+        image: "docker/whalesay:latest"
+      name: whalesay
 `
 
 func TestGetNodeType(t *testing.T) {
@@ -55,7 +57,7 @@ func TestGetNodeType(t *testing.T) {
 
 func TestSemaphoreTmplLevel(t *testing.T) {
 	_, controller := newController()
-	controller.concurrencyMgr = concurrency.NewConcurrencyManager(controller.kubeclientset, func(key string) {
+	controller.concurrencyMgr = concurrency.NewLockManager(controller.kubeclientset, func(key string) {
 	})
 	var cm v1.ConfigMap
 	err := yaml.Unmarshal([]byte(configMap), &cm)
@@ -69,7 +71,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		assert.NoError(t, err)
 		woc := newWorkflowOperationCtx(wf, controller)
 
-		// Acquired the lock
+		// acquired the lock
 		woc.operate()
 		assert.NotNil(t, woc.wf.Status.Concurrency)
 		assert.NotNil(t, woc.wf.Status.Concurrency.Semaphore)
@@ -100,7 +102,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 		assert.NotNil(t, woc.wf.Status.Concurrency.Semaphore)
 		assert.Equal(t, 0, len(woc.wf.Status.Concurrency.Semaphore.Holding))
 
-		// Try to Acquired the lock
+		// Try to acquired the lock
 		woc_two.operate()
 		assert.NotNil(t, woc_two.wf.Status.Concurrency)
 		assert.NotNil(t, woc_two.wf.Status.Concurrency.Semaphore)
@@ -111,7 +113,7 @@ func TestSemaphoreTmplLevel(t *testing.T) {
 
 func TestSemaphoreWithOutConfigMap(t *testing.T) {
 	_, controller := newController()
-	controller.concurrencyMgr = concurrency.NewConcurrencyManager(controller.kubeclientset, func(key string) {
+	controller.concurrencyMgr = concurrency.NewLockManager(controller.kubeclientset, func(key string) {
 	})
 
 	t.Run("SemaphoreRefWithOutConfigMap", func(t *testing.T) {

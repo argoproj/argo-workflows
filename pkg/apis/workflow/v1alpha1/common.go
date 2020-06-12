@@ -13,12 +13,6 @@ const (
 	ResourceScopeCluster    ResourceScope = "cluster"
 )
 
-type ConcurrencyType string
-
-const (
-	Semaphore ConcurrencyType = "semaphore"
-)
-
 // TemplateHolder is an object that holds templates; e.g. Workflow, WorkflowTemplate, and ClusterWorkflowTemplate
 type TemplateHolder interface {
 	GetNamespace() string
@@ -26,11 +20,6 @@ type TemplateHolder interface {
 	GroupVersionKind() schema.GroupVersionKind
 	GetTemplateByName(name string) *Template
 	GetResourceScope() ResourceScope
-}
-
-type ConcurrencyRef interface {
-	GetType() ConcurrencyType
-	GetKey(namespace string) string
 }
 
 // WorkflowSpecHolder is an object that holds a WorkflowSpec; e.g., WorkflowTemplate, and ClusterWorkflowTemplate

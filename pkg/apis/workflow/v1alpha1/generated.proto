@@ -150,6 +150,12 @@ message ClusterWorkflowTemplateList {
   repeated ClusterWorkflowTemplate items = 2;
 }
 
+// ConcurrencyRef is a reference of the concurrency
+message ConcurrencyRef {
+  // Semaphore will hold the Semaphore configuration
+  optional SemaphoreRef semaphore = 1;
+}
+
 message ConcurrencyStatus {
   // SemaphoreHolders stores this workflow's Semaphore holder details
   optional SemaphoreStatus semaphore = 1;
@@ -1024,8 +1030,8 @@ message Template {
   // Metrics are a list of metrics emitted from this template
   optional Metrics metrics = 35;
 
-  // SemaphoreRef will holds semaphore configuration for this Template.
-  optional SemaphoreRef semaphore = 36;
+  // ConcurrencyRef will holds concurrency configuration for this Template.
+  optional ConcurrencyRef concurrency = 36;
 }
 
 // TemplateRef is a reference of template resource.
@@ -1269,8 +1275,8 @@ message WorkflowSpec {
   // WorkflowTemplateRef holds a reference to a WorkflowTemplate for execution
   optional WorkflowTemplateRef workflowTemplateRef = 34;
 
-  // SemaphoreRef will holds semaphore configuration for this Workflow
-  optional SemaphoreRef semaphore = 35;
+  // ConcurrencyRef will holds concurrency configuration for this Workflow
+  optional ConcurrencyRef concurrency = 35;
 }
 
 // WorkflowStatus contains overall status information about a workflow

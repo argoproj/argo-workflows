@@ -11,10 +11,11 @@ metadata:
   generateName: hello-world-
 spec:
   entrypoint: whalesay
-  semaphore:
-    configMapKeyRef:
-      name: my-config
-      key: workflow
+  concurrency:
+    semaphore:
+      configMapKeyRef:
+        name: my-config
+        key: workflow
   templates:
   - name: whalesay
     container:

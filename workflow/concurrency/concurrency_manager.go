@@ -22,7 +22,7 @@ import (
 
 type ReleaseNotifyCallbackFunc func(string)
 
-type ConcurrencyManager struct {
+type LockManager struct {
 	kubeClient        kubernetes.Interface
 	concurrencyMap    map[string]Concurrency
 	lock              *sync.Mutex
@@ -30,9 +30,9 @@ type ConcurrencyManager struct {
 }
 
 type Concurrency interface {
-	acquire(holderKey string) LockStatus
-	tryAcquire(holderKey string) (LockStatus, string)
-	release(key string) LockStatus
+	acquire(holderKey string) bool
+	tryAcquire(holderKey string) (bool, string)
+	release(key string) bool
 	addToQueue(holderKey string, priority int32, creationTime time.Time)
 	getCurrentHolders() []string
 	getName() string
@@ -40,17 +40,22 @@ type Concurrency interface {
 	resize(n int) bool
 }
 
-type LockStatus string
+type LockAction string
 
 const (
-	Acquired        LockStatus = "acquired"
-	AlreadyAcquired LockStatus = "alreadyAcquired"
-	Released        LockStatus = "released"
-	Waiting         LockStatus = "waiting"
+	acquired LockAction = "acquired"
+	released LockAction = "released"
+	waiting  LockAction = "waiting"
 )
 
-func NewConcurrencyManager(kubeClient kubernetes.Interface, callbackFunc func(string)) *ConcurrencyManager {
-	return &ConcurrencyManager{
+type LockType string
+
+const (
+	TypeSemaphore LockType = "semaphore"
+)
+
+func NewLockManager(kubeClient kubernetes.Interface, callbackFunc func(string)) *LockManager {
+	return &LockManager{
 		kubeClient:        kubeClient,
 		concurrencyMap:    make(map[string]Concurrency),
 		lock:              &sync.Mutex{},
@@ -58,7 +63,7 @@ func NewConcurrencyManager(kubeClient kubernetes.Interface, callbackFunc func(st
 	}
 }
 
-func (cm *ConcurrencyManager) Initialize(namespace string, wfClient wfclientset.Interface) {
+func (cm *LockManager) Initialize(namespace string, wfClient wfclientset.Interface) {
 	labelSelector := v1Label.NewSelector()
 	req, _ := v1Label.NewRequirement(common.LabelKeyPhase, selection.Equals, []string{string(wfv1.NodeRunning)})
 	if req != nil {
@@ -82,7 +87,7 @@ func (cm *ConcurrencyManager) Initialize(namespace string, wfClient wfclientset.
 			if semaphore == nil {
 				semaphore, err = cm.initializeSemaphore(k)
 				if err != nil {
-					log.Warnf("Concurrency configmap %s is not found. %v", v, err)
+					log.Warnf("ConcurrencyRef configmap %s is not found. %v", v, err)
 					continue
 				}
 
@@ -90,33 +95,24 @@ func (cm *ConcurrencyManager) Initialize(namespace string, wfClient wfclientset.
 			}
 			for _, ele := range v.Name {
 
-				resourceKey := cm.getResourceKey(wf.Namespace, wf.Name, ele)
-				if semaphore != nil && semaphore.acquire(resourceKey) == Acquired {
-					log.Infof("Lock Acquired by %s from %s", resourceKey, k)
+				resourceKey := getResourceKey(wf.Namespace, wf.Name, ele)
+				if semaphore != nil && semaphore.acquire(resourceKey) {
+					log.Infof("Lock acquired by %s from %s", resourceKey, k)
 				}
 			}
 		}
 	}
-	log.Infof("ConcurrencyManager initialized successfully")
+	log.Infof("LockManager initialized successfully")
 }
 
-func (cm *ConcurrencyManager) getCurrentLockHolders(lockName string) []string {
+func (cm *LockManager) getCurrentLockHolders(lockName string) []string {
 	if concurrency, ok := cm.concurrencyMap[lockName]; ok {
 		return concurrency.getCurrentHolders()
 	}
 	return nil
 }
 
-func (cm *ConcurrencyManager) getResourceKey(namespace, wfName, resourceName string) string {
-	resourceKey := fmt.Sprintf("%s/%s", namespace, wfName)
-	// Template level Semaphore
-	if resourceName != wfName {
-		resourceKey = fmt.Sprintf("%s/%s", resourceKey, resourceName)
-	}
-	return resourceKey
-}
-
-func (cm *ConcurrencyManager) getConfigMapKeyRef(lockName string) (int, error) {
+func (cm *LockManager) getConfigMapKeyRef(lockName string) (int, error) {
 	items := strings.Split(lockName, "/")
 	if len(items) < 4 {
 		return 0, errors.New(errors.CodeBadRequest, "Invalid Config Map Key")
@@ -131,12 +127,12 @@ func (cm *ConcurrencyManager) getConfigMapKeyRef(lockName string) (int, error) {
 	value, ok := configMap.Data[items[3]]
 
 	if !ok {
-		return 0, errors.New(errors.CodeBadRequest, "Invalid Concurrency Key")
+		return 0, errors.New(errors.CodeBadRequest, "Invalid ConcurrencyRef Key")
 	}
 	return strconv.Atoi(value)
 }
 
-func (cm *ConcurrencyManager) initializeSemaphore(semaphoreName string) (Concurrency, error) {
+func (cm *LockManager) initializeSemaphore(semaphoreName string) (Concurrency, error) {
 	limit, err := cm.getConfigMapKeyRef(semaphoreName)
 	if err != nil {
 		return nil, err
@@ -144,7 +140,7 @@ func (cm *ConcurrencyManager) initializeSemaphore(semaphoreName string) (Concurr
 	return NewSemaphore(semaphoreName, limit, cm.releaseNotifyFunc), nil
 }
 
-func (cm *ConcurrencyManager) isSemaphoreSizeChanged(semaphore Concurrency) (bool, int, error) {
+func (cm *LockManager) isSemaphoreSizeChanged(semaphore Concurrency) (bool, int, error) {
 	limit, err := cm.getConfigMapKeyRef(semaphore.getName())
 	if err != nil {
 		return false, semaphore.getLimit(), err
@@ -152,7 +148,7 @@ func (cm *ConcurrencyManager) isSemaphoreSizeChanged(semaphore Concurrency) (boo
 	return !(semaphore.getLimit() == limit), limit, nil
 }
 
-func (cm *ConcurrencyManager) checkAndUpdateSemaphoreSize(semaphore Concurrency) error {
+func (cm *LockManager) checkAndUpdateSemaphoreSize(semaphore Concurrency) error {
 
 	changed, newLimit, err := cm.isSemaphoreSizeChanged(semaphore)
 	if err != nil {
@@ -166,86 +162,157 @@ func (cm *ConcurrencyManager) checkAndUpdateSemaphoreSize(semaphore Concurrency)
 
 // TryAcquire tries to acquire the lock from semaphore.
 // It returns status of acquiring a lock , waiting message if lock is not available and any error encountered
-func (cm *ConcurrencyManager) TryAcquire(key, namespace string, priority int32, creationTime time.Time, concurrencyRef wfv1.ConcurrencyRef, wf *wfv1.Workflow) (bool, string, error) {
+func (cm *LockManager) TryAcquire(wf *wfv1.Workflow, nodeName string, priority int32, creationTime time.Time, concurrencyRef *wfv1.ConcurrencyRef) (bool, bool, string, error) {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
-	lockName := concurrencyRef.GetKey(namespace)
-	var concurrency Concurrency
+
+	if concurrencyRef == nil {
+		return true, false, "", nil
+	}
+
+	var lock Concurrency
+	var lockKey string
+	var lockType LockType
 	var err error
 
-	concurrency, found := cm.concurrencyMap[lockName]
+	if concurrencyRef.Semaphore != nil {
+		var found bool
+		lockKey = getSemaphoreKey(wf.Namespace, concurrencyRef.Semaphore)
 
-	if !found {
-		if concurrencyRef.GetType() == wfv1.Semaphore {
-			concurrency, err = cm.initializeSemaphore(lockName)
+		lock, found = cm.concurrencyMap[lockKey]
+
+		if !found {
+			lock, err = cm.initializeSemaphore(lockKey)
 			if err != nil {
-				return false, "", err
+				return false, false, "", err
 			}
-			cm.concurrencyMap[lockName] = concurrency
+			cm.concurrencyMap[lockKey] = lock
 		}
+
+		lock, found = cm.concurrencyMap[lockKey]
+		if !found {
+			return false, false, "", errors.New(errors.CodeBadRequest, "Requested SemaphoreRef is invalid")
+		}
+
+		// Check lock configmap changes
+		err := cm.checkAndUpdateSemaphoreSize(lock)
+
+		if err != nil {
+			return false, false, "", err
+		}
+		lockType = TypeSemaphore
 	}
 
-	if concurrency == nil {
-		return false, "", errors.New(errors.CodeBadRequest, "Requested Concurrency is invalid")
+	if lockKey == "" {
+		return false, false, "", errors.New(errors.CodeBadRequest, "Requested Concurrency is invalid")
 	}
 
-	// Check concurrency configmap changes
-	err = cm.checkAndUpdateSemaphoreSize(concurrency)
+	holderKey := getHolderKey(wf, nodeName)
 
-	if err != nil {
-		return false, "", err
+	lock.addToQueue(holderKey, priority, creationTime)
+
+	status, msg := lock.tryAcquire(holderKey)
+	if status {
+		updated := cm.updateConcurrencyStatus(holderKey, lockKey, lockType, acquired, wf)
+		return true, updated, "", nil
 	}
 
-	concurrency.addToQueue(key, priority, creationTime)
-
-	status, msg := concurrency.tryAcquire(key)
-	if status == AlreadyAcquired {
-		return true, "", nil
-	} else if status == Acquired {
-		cm.updateWorkflowMetaData(key, lockName, concurrencyRef.GetType(), status, wf)
-		return true, "", nil
-	}
-
-	cm.updateWorkflowMetaData(key, lockName, concurrencyRef.GetType(), status, wf)
-	return false, msg, nil
+	udpated := cm.updateConcurrencyStatus(holderKey, lockKey, lockType, waiting, wf)
+	return false, udpated, msg, nil
 }
 
-func (cm *ConcurrencyManager) Release(key, namespace string, concurrencyRef wfv1.ConcurrencyRef, wf *wfv1.Workflow) {
-	lockName := concurrencyRef.GetKey(namespace)
-	if concurrency, ok := cm.concurrencyMap[lockName]; ok {
-		concurrency.release(key)
-		log.Debugf("%s concurrecy lock is released by %s", lockName, key)
-		cm.updateWorkflowMetaData(key, lockName, concurrencyRef.GetType(), Released, wf)
+func (cm *LockManager) Release(wf *wfv1.Workflow, nodeName, namespace string, concurrencyRef *wfv1.ConcurrencyRef) {
+	if concurrencyRef == nil {
+		return
+	}
+	holderKey := getHolderKey(wf, nodeName)
+	if concurrencyRef.Semaphore != nil {
+		concurrencyKey := getSemaphoreKey(namespace, concurrencyRef.Semaphore)
+		if concurrency, ok := cm.concurrencyMap[concurrencyKey]; ok {
+			concurrency.release(holderKey)
+			log.Debugf("%s concurrency lock is released by %s", concurrencyKey, holderKey)
+			cm.updateConcurrencyStatus(holderKey, concurrencyKey, TypeSemaphore, released, wf)
+		}
 	}
 }
 
-func (cm *ConcurrencyManager) ReleaseAll(wf *wfv1.Workflow) bool {
-	released := false
-	if wf.Spec.Semaphore != nil {
-
-		if wf.Status.Concurrency == nil || wf.Status.Concurrency.Semaphore == nil {
-			return released
-		}
+func (cm *LockManager) ReleaseAll(wf *wfv1.Workflow) bool {
+	if wf.Status.Concurrency == nil {
+		return true
+	}
+	if wf.Status.Concurrency.Semaphore != nil {
 		for k, v := range wf.Status.Concurrency.Semaphore.Holding {
 			concurrency := cm.concurrencyMap[k]
 			if concurrency == nil {
 				continue
 			}
 			for _, ele := range v.Name {
-				resourceKey := cm.getResourceKey(wf.Namespace, wf.Name, ele)
+				resourceKey := getResourceKey(wf.Namespace, wf.Name, ele)
 				concurrency.release(resourceKey)
-				cm.updateWorkflowMetaData(ele, k, wfv1.Semaphore, Released, wf)
-				released = true
+				cm.updateConcurrencyStatus(ele, k, TypeSemaphore, released, wf)
 				log.Infof("%s released a lock from %s", resourceKey, k)
 			}
 		}
-		// Clear the Concurrency details
+		// Clear the ConcurrencyRef details
+		wf.Status.Concurrency.Semaphore = nil
 		wf.Status.Concurrency = nil
 	}
-	return released
+	return true
 }
 
-func (cm *ConcurrencyManager) GetHolderKey(wf *wfv1.Workflow, nodeName string) string {
+func (cm *LockManager) updateConcurrencyStatus(holderKey, lockKey string, lockType LockType, lockAction LockAction, wf *wfv1.Workflow) bool {
+
+	if wf.Status.Concurrency == nil {
+		wf.Status.Concurrency = &wfv1.ConcurrencyStatus{Semaphore: &wfv1.SemaphoreStatus{}}
+	}
+	if lockType == TypeSemaphore {
+		if wf.Status.Concurrency.Semaphore == nil {
+			wf.Status.Concurrency.Semaphore = &wfv1.SemaphoreStatus{}
+		}
+
+		if lockAction == waiting {
+			if wf.Status.Concurrency.Semaphore.Waiting == nil {
+				wf.Status.Concurrency.Semaphore.Waiting = make(map[string]wfv1.WaitingStatus)
+			}
+			wf.Status.Concurrency.Semaphore.Waiting[lockKey] = wfv1.WaitingStatus{Holders: wfv1.HolderNames{Name: cm.getCurrentLockHolders(lockKey)}}
+			return true
+		}
+
+		if lockAction == acquired {
+			if wf.Status.Concurrency.Semaphore.Holding == nil {
+				wf.Status.Concurrency.Semaphore.Holding = make(map[string]wfv1.HolderNames)
+			}
+			holding := wf.Status.Concurrency.Semaphore.Holding[lockKey]
+			if holding.Name == nil {
+				holding = wfv1.HolderNames{}
+			}
+			items := strings.Split(holderKey, "/")
+			holdingName := items[len(items)-1]
+			if !Contains(holding.Name, holdingName) {
+				holding.Name = append(holding.Name, items[len(items)-1])
+				wf.Status.Concurrency.Semaphore.Holding[lockKey] = holding
+				return true
+			}
+			return false
+		}
+		if lockAction == released {
+			log.Debugf("%s removed from Status", holderKey)
+			holding := wf.Status.Concurrency.Semaphore.Holding[lockKey]
+			if holding.Name != nil {
+				holding.Name = RemoveFromSlice(holding.Name, holderKey)
+			}
+			if len(holding.Name) == 0 {
+				delete(wf.Status.Concurrency.Semaphore.Holding, lockKey)
+			} else {
+				wf.Status.Concurrency.Semaphore.Holding[lockKey] = holding
+			}
+			return true
+		}
+	}
+	return false
+}
+
+func getHolderKey(wf *wfv1.Workflow, nodeName string) string {
 	if wf == nil {
 		return ""
 	}
@@ -256,53 +323,20 @@ func (cm *ConcurrencyManager) GetHolderKey(wf *wfv1.Workflow, nodeName string) s
 	return key
 }
 
-func (cm *ConcurrencyManager) updateWorkflowMetaData(key, semaphoreKey string, concurrencyType wfv1.ConcurrencyType, action LockStatus, wf *wfv1.Workflow) {
-
-	if wf.Status.Concurrency == nil {
-		wf.Status.Concurrency = &wfv1.ConcurrencyStatus{Semaphore: &wfv1.SemaphoreStatus{}}
+func getSemaphoreKey(namespace string, semaphoreRef *wfv1.SemaphoreRef) string {
+	if semaphoreRef.ConfigMapKeyRef != nil {
+		return fmt.Sprintf("%s/configmap/%s/%s", namespace, semaphoreRef.ConfigMapKeyRef.Name, semaphoreRef.ConfigMapKeyRef.Key)
 	}
-	if concurrencyType == wfv1.Semaphore {
-		if wf.Status.Concurrency.Semaphore == nil {
-			wf.Status.Concurrency.Semaphore = &wfv1.SemaphoreStatus{}
-		}
+	return ""
+}
 
-		if action == Waiting {
-			if wf.Status.Concurrency.Semaphore.Waiting == nil {
-				wf.Status.Concurrency.Semaphore.Waiting = make(map[string]wfv1.WaitingStatus)
-			}
-			wf.Status.Concurrency.Semaphore.Waiting[semaphoreKey] = wfv1.WaitingStatus{Holders: wfv1.HolderNames{Name: cm.getCurrentLockHolders(semaphoreKey)}}
-
-			return
-		}
-
-		if action == Acquired {
-			if wf.Status.Concurrency.Semaphore.Holding == nil {
-				wf.Status.Concurrency.Semaphore.Holding = make(map[string]wfv1.HolderNames)
-			}
-			holding := wf.Status.Concurrency.Semaphore.Holding[semaphoreKey]
-			if holding.Name == nil {
-				holding = wfv1.HolderNames{}
-			}
-			items := strings.Split(key, "/")
-
-			holding.Name = append(holding.Name, items[len(items)-1])
-			wf.Status.Concurrency.Semaphore.Holding[semaphoreKey] = holding
-			return
-		}
-		if action == Released {
-			log.Debugf("%s removed from Status", key)
-			holding := wf.Status.Concurrency.Semaphore.Holding[semaphoreKey]
-			if holding.Name != nil {
-				holding.Name = RemoveFromSlice(holding.Name, key)
-			}
-			if len(holding.Name) == 0 {
-				delete(wf.Status.Concurrency.Semaphore.Holding, semaphoreKey)
-			} else {
-				wf.Status.Concurrency.Semaphore.Holding[semaphoreKey] = holding
-			}
-			return
-		}
+func getResourceKey(namespace, wfName, resourceName string) string {
+	resourceKey := fmt.Sprintf("%s/%s", namespace, wfName)
+	// Template level TypeSemaphore
+	if resourceName != wfName {
+		resourceKey = fmt.Sprintf("%s/%s", resourceKey, resourceName)
 	}
+	return resourceKey
 }
 
 // TODO -- Need to move it to util package -Bala
@@ -321,4 +355,14 @@ func RemoveFromSlice(slice []string, element string) []string {
 		}
 	}
 	return slice
+}
+
+// TODO -- Need to move it to util package -Bala
+func Contains(slice []string, element string) bool {
+	for _, item := range slice {
+		if item == element {
+			return true
+		}
+	}
+	return false
 }

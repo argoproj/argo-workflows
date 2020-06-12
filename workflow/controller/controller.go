@@ -80,7 +80,7 @@ type WorkflowController struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 	hydrator              hydrator.Interface
 	wfArchive             sqldb.WorkflowArchive
-	concurrencyMgr        *concurrency.ConcurrencyManager
+	concurrencyMgr        *concurrency.LockManager
 	metrics               metrics.Metrics
 }
 
@@ -166,7 +166,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.runCronController(ctx)
 	go wfc.metrics.RunServer(ctx)
 
-	wfc.concurrencyMgr = concurrency.NewConcurrencyManager(wfc.kubeclientset, func(key string) {
+	wfc.concurrencyMgr = concurrency.NewLockManager(wfc.kubeclientset, func(key string) {
 		wfc.wfQueue.AddAfter(key, 0)
 	})
 	wfc.concurrencyMgr.Initialize(wfc.GetManagedNamespace(), wfc.wfclientset)
@@ -442,10 +442,9 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	if wf.Spec.Semaphore != nil {
-		wfKey := wfc.concurrencyMgr.GetHolderKey(woc.wf, "")
+	if wf.Spec.Concurrency != nil {
 		priority, creationTime := getWfPriority(woc.wf)
-		acquired, msg, err := wfc.concurrencyMgr.TryAcquire(wfKey, woc.wf.Namespace, priority, creationTime, woc.wf.Spec.Semaphore, woc.wf)
+		acquired, wfUpdate, msg, err := wfc.concurrencyMgr.TryAcquire(woc.wf, "", priority, creationTime, woc.wf.Spec.Concurrency )
 		if err != nil {
 			log.Warnf("Failed to acquire the lock for '%s' : %v", key, err)
 			woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
@@ -453,7 +452,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 			wfc.throttler.Remove(key)
 			return true
 		}
-		woc.updated = true
+		woc.updated = wfUpdate
 		if !acquired {
 			log.Warnf("Workflow %s processing has been postponed due to concurrency limit. %s", key, msg)
 			woc.persistUpdates()
