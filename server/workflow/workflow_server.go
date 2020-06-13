@@ -142,11 +142,13 @@ func (s *workflowServer) WatchWorkflows(req *workflowpkg.WatchWorkflowsRequest, 
 	if req.ListOptions != nil {
 		opts = req.ListOptions
 		wfName := argoutil.RecoverWorkflowNameFromSelectorString(opts.FieldSelector)
-		wf, err := s.getWorkflow(wfClient, req.Namespace, wfName, metav1.GetOptions{})
-		if err != nil {
-			return err
+		if len(wfName) > 0 {
+			wf, err := s.getWorkflow(wfClient, req.Namespace, wfName, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			opts.FieldSelector = argoutil.GenerateFieldSelectorFromWorkflowName(wf.Name)
 		}
-		opts.FieldSelector = argoutil.GenerateFieldSelectorFromWorkflowName(wf.Name)
 	}
 	s.instanceIDService.With(opts)
 	wfIf := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace)

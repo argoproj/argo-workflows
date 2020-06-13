@@ -23,7 +23,17 @@ export class WorkflowsService {
         if (pagination.limit) {
             params.push(`listOptions.limit=${pagination.limit}`);
         }
-        params.push(`fields=metadata,items.metadata.uid,items.metadata.name,items.metadata.namespace,items.status.phase,items.status.finishedAt,items.status.startedAt`);
+        const fields = [
+            'metadata',
+            'items.metadata.uid',
+            'items.metadata.name',
+            'items.metadata.namespace',
+            'items.metadata.labels',
+            'items.status.phase',
+            'items.status.finishedAt',
+            'items.status.startedAt',
+        ];
+        params.push(`fields=${fields.join(',')}`);
         return requests.get(`api/v1/workflows/${namespace}?${params.join('&')}`).then(res => res.body as WorkflowList);
     }
 
@@ -58,7 +68,8 @@ export class WorkflowsService {
             'result.object.status.finishedAt',
             'result.object.status.phase',
             'result.object.status.startedAt',
-            'result.type'
+            'result.type',
+            'result.object.metadata.labels'
         ];
         params.push(`fields=${fields.join(',')}`);
         const url = `api/v1/workflow-events/${filter.namespace || ''}?${params.join('&')}`;
