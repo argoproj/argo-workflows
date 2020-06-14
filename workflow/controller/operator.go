@@ -678,7 +678,11 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 			// Formula: timeToWait = duration * factor^retry_number
 			timeToWait = baseDuration * time.Duration(math.Pow(float64(retryStrategy.Backoff.Factor), float64(len(node.Children))))
 		}
-		waitingDeadline := lastChildNode.FinishedAt.Add(timeToWait)
+
+		// The deadline is based on StartedAt instead of FinishedAt, because:
+		// * FinishedAt may not be available, e.g. when the node fails due to a "pod-deleted" error.
+		// * It's more consistent with the behavior of MaxDuration.
+		waitingDeadline := lastChildNode.StartedAt.Add(timeToWait)
 
 		// If the waiting deadline is after the max duration deadline, then it's futile to wait until then. Stop early
 		if !maxDurationDeadline.IsZero() && waitingDeadline.After(maxDurationDeadline) {
