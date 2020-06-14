@@ -97,6 +97,91 @@
     }
   },
   "definitions": {
+    "github.com.argoproj.argo_events.pkg.apis.common.Backoff": {
+      "type": "object",
+      "properties": {
+        "duration": {
+          "type": "string",
+          "format": "int64",
+          "title": "Duration is the duration in nanoseconds"
+        },
+        "factor": {
+          "type": "number",
+          "format": "double",
+          "title": "Duration is multiplied by factor each iteration"
+        },
+        "jitter": {
+          "type": "number",
+          "format": "double",
+          "title": "The amount of jitter applied each iteration"
+        },
+        "steps": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Exit with error after this many steps"
+        }
+      },
+      "title": "Backoff for an operation"
+    },
+    "github.com.argoproj.argo_events.pkg.apis.common.S3Artifact": {
+      "type": "object",
+      "properties": {
+        "endpoint": {
+          "type": "string"
+        },
+        "bucket": {
+          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.common.S3Bucket"
+        },
+        "region": {
+          "type": "string"
+        },
+        "insecure": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "accessKey": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector"
+        },
+        "secretKey": {
+          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "+listType=string"
+        },
+        "filter": {
+          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.common.S3Filter"
+        }
+      },
+      "title": "S3Artifact contains information about an S3 connection and bucket"
+    },
+    "github.com.argoproj.argo_events.pkg.apis.common.S3Bucket": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "title": "S3Bucket contains information to describe an S3 Bucket"
+    },
+    "github.com.argoproj.argo_events.pkg.apis.common.S3Filter": {
+      "type": "object",
+      "properties": {
+        "prefix": {
+          "type": "string"
+        },
+        "suffix": {
+          "type": "string"
+        }
+      },
+      "title": "S3Filter represents filters to apply to bucket nofifications for specifying constraints on objects"
+    },
     "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.AWSLambdaTrigger": {
       "type": "object",
       "properties": {
@@ -166,7 +251,7 @@
       "type": "object",
       "properties": {
         "s3": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.S3Artifact",
+          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.common.S3Artifact",
           "title": "S3 compliant artifact"
         },
         "inline": {
@@ -190,37 +275,12 @@
           "title": "Git repository hosting the artifact"
         },
         "resource": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.ResourceArtifact",
+          "type": "string",
+          "format": "byte",
           "title": "Resource is generic template for K8s resource"
         }
       },
       "title": "ArtifactLocation describes the source location for an external artifact"
-    },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Backoff": {
-      "type": "object",
-      "properties": {
-        "duration": {
-          "type": "string",
-          "format": "int64",
-          "title": "Duration is the duration in nanoseconds"
-        },
-        "factor": {
-          "type": "number",
-          "format": "double",
-          "title": "Duration is multiplied by factor each iteration"
-        },
-        "jitter": {
-          "type": "number",
-          "format": "double",
-          "title": "The amount of jitter applied each iteration"
-        },
-        "steps": {
-          "type": "string",
-          "format": "int64",
-          "title": "Exit with error after this many steps"
-        }
-      },
-      "title": "Backoff for an operation"
     },
     "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.BasicAuth": {
       "type": "object",
@@ -318,7 +378,7 @@
           "items": {
             "type": "string"
           },
-          "title": "+listType=value\nData is the allowed string values for this key\nBooleans are passed using strconv.ParseBool()\nNumbers are parsed using as float64 using strconv.ParseFloat()\nStrings are taken as is\nNils this value is ignored"
+          "title": "+listType=value\nValue is the allowed string values for this key\nBooleans are passed using strconv.ParseBool()\nNumbers are parsed using as float64 using strconv.ParseFloat()\nStrings are taken as is\nNils this value is ignored"
         },
         "comparator": {
           "type": "string",
@@ -526,8 +586,8 @@
       "type": "object",
       "properties": {
         "port": {
-          "type": "string",
-          "format": "int64",
+          "type": "integer",
+          "format": "int32",
           "description": "Port on which sensor server should run."
         }
       },
@@ -576,12 +636,12 @@
           "additionalProperties": {
             "type": "string"
           },
-          "title": "Headers for the HTTP request.\n+mapType=granular\n+optional"
+          "title": "Headers for the HTTP request.\n+optional"
         }
       },
       "title": "HTTPTrigger is the trigger for the HTTP request"
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.K8sResourcePolicy": {
+    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.K8SResourcePolicy": {
       "type": "object",
       "properties": {
         "labels": {
@@ -592,7 +652,7 @@
           "title": "Labels required to identify whether a resource is in success state"
         },
         "backoff": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Backoff",
+          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.common.Backoff",
           "title": "Backoff before checking resource state"
         },
         "errorOnBackoffTimeout": {
@@ -601,7 +661,7 @@
           "title": "ErrorOnBackoffTimeout determines whether sensor should transition to error state if the trigger policy is unable to determine\nthe state of the resource"
         }
       },
-      "title": "K8sResourcePolicy refers to the policy used to check the state of K8s based triggers using using labels"
+      "title": "K8SResourcePolicy refers to the policy used to check the state of K8s based triggers using using labels"
     },
     "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.KafkaTrigger": {
       "type": "object",
@@ -615,8 +675,8 @@
           "title": "Name of the topic.\nMore info at https://kafka.apache.org/documentation/#intro_topics"
         },
         "partition": {
-          "type": "string",
-          "format": "int64",
+          "type": "integer",
+          "format": "int32",
           "description": "Partition to write data to."
         },
         "parameters": {
@@ -627,8 +687,8 @@
           "title": "Parameters is the list of parameters that is applied to resolved Kafka trigger object.\n+listType=triggerParameters"
         },
         "requiredAcks": {
-          "type": "string",
-          "format": "int64",
+          "type": "integer",
+          "format": "int32",
           "description": "RequiredAcks used in producer to tell the broker how many replica acknowledgements\nDefaults to 1 (Only wait for the leader to ack).\n+optional."
         },
         "compress": {
@@ -637,8 +697,8 @@
           "title": "Compress determines whether to compress message or not.\nDefaults to false.\nIf set to true, compresses message using snappy compression.\n+optional"
         },
         "flushFrequency": {
-          "type": "string",
-          "format": "int64",
+          "type": "integer",
+          "format": "int32",
           "title": "FlushFrequency refers to the frequency in milliseconds to flush batches.\nDefaults to 500 milliseconds.\n+optional"
         },
         "tls": {
@@ -794,71 +854,6 @@
         }
       },
       "description": "OpenWhiskTrigger refers to the specification of the OpenWhisk trigger."
-    },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.ResourceArtifact": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "type": "string",
-          "format": "byte"
-        }
-      }
-    },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.S3Artifact": {
-      "type": "object",
-      "properties": {
-        "endpoint": {
-          "type": "string"
-        },
-        "bucket": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.S3Bucket"
-        },
-        "region": {
-          "type": "string"
-        },
-        "insecure": {
-          "type": "boolean",
-          "format": "boolean"
-        },
-        "accessKey": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector"
-        },
-        "secretKey": {
-          "$ref": "#/definitions/k8s.io.api.core.v1.SecretKeySelector"
-        },
-        "events": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "title": "+listType=string"
-        },
-        "filter": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.S3Filter"
-        }
-      }
-    },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.S3Bucket": {
-      "type": "object",
-      "properties": {
-        "key": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        }
-      }
-    },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.S3Filter": {
-      "type": "object",
-      "properties": {
-        "prefix": {
-          "type": "string"
-        },
-        "suffix": {
-          "type": "string"
-        }
-      }
     },
     "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.Sensor": {
       "type": "object",
@@ -1038,7 +1033,7 @@
       },
       "description": "SlackTrigger refers to the specification of the slack notification trigger."
     },
-    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.StandardK8sTrigger": {
+    "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.StandardK8STrigger": {
       "type": "object",
       "properties": {
         "groupVersionResource": {
@@ -1070,7 +1065,7 @@
           "title": "LiveObject specifies whether the resource should be directly fetched from K8s instead\nof being marshaled from the resource artifact. If set to true, the resource artifact\nmust contain the information required to uniquely identify the resource in the cluster,\nthat is, you must specify \"apiVersion\", \"kind\" as well as \"name\" and \"namespace\" meta\ndata.\nOnly valid for operation type `update`\n+optional"
         }
       },
-      "title": "StandardK8sTrigger is the standard Kubernetes resource trigger"
+      "title": "StandardK8STrigger is the standard Kubernetes resource trigger"
     },
     "github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.StatusPolicy": {
       "type": "object",
@@ -1078,8 +1073,8 @@
         "allow": {
           "type": "array",
           "items": {
-            "type": "string",
-            "format": "int64"
+            "type": "integer",
+            "format": "int32"
           },
           "title": "Allow refers to the list of allowed response statuses. If the response status of the the trigger is within the list,\nthe trigger will marked as successful else it will result in trigger failure.\n+listType=allowedStatuses"
         }
@@ -1225,7 +1220,7 @@
         },
         "value": {
           "type": "string",
-          "description": "Data is the default literal value to use for this parameter source\nThis is only used if the DataKey is invalid.\nIf the DataKey is invalid and this is not defined, this param source will produce an error."
+          "description": "Value is the default literal value to use for this parameter source\nThis is only used if the DataKey is invalid.\nIf the DataKey is invalid and this is not defined, this param source will produce an error."
         }
       },
       "title": "TriggerParameterSource defines the source for a parameter from a event event"
@@ -1234,8 +1229,8 @@
       "type": "object",
       "properties": {
         "k8s": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.K8sResourcePolicy",
-          "title": "K8sResourcePolicy refers to the policy used to check the state of K8s based triggers using using labels"
+          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.K8SResourcePolicy",
+          "title": "K8SResourcePolicy refers to the policy used to check the state of K8s based triggers using using labels"
         },
         "status": {
           "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.StatusPolicy",
@@ -1276,8 +1271,8 @@
           "title": "Switch is the condition to execute the trigger.\n+optional"
         },
         "k8s": {
-          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.StandardK8sTrigger",
-          "title": "StandardK8sTrigger refers to the trigger designed to create or update a generic Kubernetes resource.\n+optional"
+          "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.StandardK8STrigger",
+          "title": "StandardK8STrigger refers to the trigger designed to create or update a generic Kubernetes resource.\n+optional"
         },
         "argoWorkflow": {
           "$ref": "#/definitions/github.com.argoproj.argo_events.pkg.apis.sensor.v1alpha1.ArgoWorkflowTrigger",
