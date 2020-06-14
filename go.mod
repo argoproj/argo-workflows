@@ -72,7 +72,7 @@ require (
 	upper.io/db.v3 v3.6.3+incompatible
 )
 
-replace github.com/argoproj/argo-events => github.com/alexec/argo-events v0.16.0
+replace github.com/argoproj/argo-events => ../argo-events
 
 // copied from ../argo-events
 replace k8s.io/api => k8s.io/api v0.17.5
