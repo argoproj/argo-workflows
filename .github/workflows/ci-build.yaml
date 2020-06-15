@@ -1,4 +1,4 @@
-name: Integration tests
+name: Argo CI
 on: 
   push:
     branches:
@@ -8,41 +8,29 @@ on:
       - 'master'
 
 jobs:
-  check-go:
-    name: Ensure Go modules synchronicity
+  test:
+    name: Run Unit Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Setup Golang
-        uses: actions/setup-go@v1
-        with:
-          go-version: '1.13.12'
-      - name: Download all Go modules
+      - name: install-kustomize
         run: |
-          go mod download
-      - name: Check for tidyness of go.mod and go.sum
-        run: |
-          go mod tidy
-          git diff --exit-code -- .
-
-  build-go:
-    name: Build & cache Go code
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Setup Golang
-        uses: actions/setup-go@v1
-        with:
-          go-version: '1.13.12'
+            cd /usr/local/bin && curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | sudo bash
+            kustomize version
       - name: Restore go build cache
         uses: actions/cache@v1
         with:
           path: ~/.cache/go-build
           key: ${{ runner.os }}-go-build-v1-${{ github.run_id }}
+      - name: Setup Golang
+        uses: actions/setup-go@v1
+        with:
+          go-version: '1.13.12'
       - name: Download all Go modules
         run: |
           go mod download
-      - name: Compile all packages
-        run: make start
+      - name: Run tests
+        run: |
+          trap 'make test-results/junit.xml' EXIT
+          make test
