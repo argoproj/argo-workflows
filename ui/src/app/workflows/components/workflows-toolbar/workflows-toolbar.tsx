@@ -117,6 +117,20 @@ export class WorkflowsToolbar extends React.Component<WorkflowsToolbarProps, Wor
                 className: 'resume'
             },
             {
+                action: () => this.performActionOnSelectedWorkflows(ctx, 'stop', Actions.stopWorkflow),
+                disabled: false,
+                iconClassName: 'fas fa-stop-circle',
+                title: 'Stop',
+                className: 'stop'
+            },
+            {
+                action: () => this.performActionOnSelectedWorkflows(ctx, 'terminate', Actions.terminateWorkflow),
+                disabled: false,
+                iconClassName: 'fas fa-times-circle',
+                title: 'Terminate',
+                className: 'terminate'
+            },
+            {
                 action: () => this.performActionOnSelectedWorkflows(ctx, 'delete', Actions.deleteWorkflow),
                 disabled: false,
                 iconClassName: 'fas fa-trash-alt',
