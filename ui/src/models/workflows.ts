@@ -839,7 +839,7 @@ export interface Condition {
     message: string;
 }
 
-export type ConditionType = 'Completed' | 'SpecWarning' | 'MetricsError' | 'SubmissionError';
+export type ConditionType = 'Completed' | 'SpecWarning' | 'MetricsError' | 'SubmissionError' | 'SpecError';
 export type ConditionStatus = 'True' | 'False' | 'Unknown;';
 
 /**
